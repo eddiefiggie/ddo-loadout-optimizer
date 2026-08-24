@@ -4063,3 +4063,105 @@ test("#499: the bar filters BEFORE the ranking, not after", () => {
   assert.ok(filterAt >= 0 && rankAt >= 0, "both steps are present");
   assert.ok(filterAt < rankAt, "the bar decides eligibility, then the ranking orders what is left");
 });
+
+// ---------------------------------------------------------------------------
+// Code-review fixes: the three defects found in the #498-#501 branch. All three
+// are wiring, not rendering, so they are asserted against the source of
+// `renderResults` — there is no DOM here to drive.
+// ---------------------------------------------------------------------------
+
+function _resultsSrc() {
+  return require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+}
+
+test("review fix 1: every per-build panel reads the ACTIVE build, not the optimum", () => {
+  // The defect: `renderBuild` refreshed the paperdoll, weapons, ranked cards and
+  // set panel; the Farming List and Versions tabs were filled once from the
+  // optimum and never again. Clicking an upgrade card left a player looking at
+  // one build's paperdoll and a DIFFERENT build's farming list — and the farming
+  // list is the surface that sends them out of the app for an evening.
+  const src = _resultsSrc();
+  const body = srcBetween(src, "function renderBuild(build) {", "function setActive(", "renderBuild");
+  assert.ok(/activeBuild = build/.test(body),
+    "renderBuild records which build is now on screen");
+  assert.ok(/fillFarmingPanel\(/.test(body), "…and refreshes the farming list for it");
+  assert.ok(/renderVersionDiff\(/.test(body), "…and re-runs the comparison against it");
+
+  const live = srcBetween(src, "function liveRecord() {", "function fillVersionsPanel(", "liveRecord");
+  assert.ok(/snapshot: activeBuild/.test(live),
+    "and the record both panels read is the ACTIVE build");
+  assert.ok(!/snapshot: optimum/.test(live),
+    "never the optimum — that is the bug, stated exactly");
+});
+
+test("review fix 1: the two panel inputs are declared before renderBuild runs", () => {
+  // `renderBuild(optimum)` fires before the Versions and Farming wiring blocks.
+  // With `verApi` and `farmCharacter` still declared down beside that wiring,
+  // the first render reads two `const`s inside their temporal dead zone and
+  // throws — and renderResults sits inside a try/catch whose catch replaces the
+  // whole results box with "Solver error", so the failure would present as a
+  // broken solver on a perfectly good solve.
+  const src = _resultsSrc();
+  const verAt = src.indexOf("const verApi = versions");
+  const farmAt = src.indexOf("const farmCharacter = String(");
+  const renderAt = src.indexOf("renderBuild(optimum);");
+  assert.ok(verAt >= 0 && farmAt >= 0 && renderAt >= 0, "all three sites are present");
+  assert.ok(verAt < renderAt, "verApi is initialized before the first renderBuild");
+  assert.ok(farmAt < renderAt, "and so is farmCharacter");
+});
+
+test("review fix 2: the farming panel's wiring is not inside its fill function", () => {
+  // `#rp-farmingpanel` is minted once by the container template and then only has
+  // its innerHTML replaced, so it outlives every fill. Wiring inside the fill
+  // stacked one listener per call: a tick on an unnamed build re-rendered with a
+  // message and added a second handler, and the next tick ran both — each
+  // flipping `box.checked`, so the box landed back where it started while two
+  // more handlers were added.
+  const src = _resultsSrc();
+  const fill = srcBetween(src, "function fillFarmingPanel(note) {", "function printFarmingList(", "fillFarmingPanel");
+  assert.ok(!/addEventListener/.test(fill),
+    "the fill function only replaces content — it binds nothing");
+  assert.ok(/farmHost\.addEventListener\("change"/.test(src),
+    "the tick handler is delegated on the long-lived host instead");
+  assert.ok(/farmHost\.addEventListener\("click"/.test(src),
+    "…and so are Copy and Print, which are rebuilt with the content");
+});
+
+test("review fix 2: Copy recomputes the plan rather than capturing it", () => {
+  // The panel is now rebuilt on every build swap. A handler closing over the plan
+  // it was wired with would copy the previous build's farming list.
+  const src = _resultsSrc();
+  const click = srcBetween(src, 'farmHost.addEventListener("click"', "wireResultTabs(", "farm click handler");
+  assert.ok(/const plan = currentPlan\(\)/.test(click),
+    "the plan is read at click time, not captured at wiring time");
+});
+
+test("review fix 3: the farming print rules are scoped to a body class", () => {
+  // Unscoped, they applied to every print the page performed: a plain Ctrl+P
+  // returned the farming list instead of the page, or a blank sheet when Farming
+  // was not the active tab. The Share tab's print has always been scoped this
+  // way (`body.printing`); this follows it.
+  const css = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "styles.css"), "utf8");
+  const block = srcBetween(css, "body.farming-printing > *:not(main)", "\n}", "farming print block");
+  assert.ok(block.length > 0, "the block exists");
+  // Every declaration inside it must carry the scope, or that one leaks to all prints.
+  for (const line of block.split("\n")) {
+    if (!/[{;]/.test(line) || /^\s*\/?\*/.test(line) || /^\s*$/.test(line)) continue;
+    if (!/display|grid-template|break-inside/.test(line)) continue;
+    assert.ok(/body\.farming-printing/.test(line) || !/^\s*[.#a-z]/.test(line),
+      `unscoped print rule leaks to every print: ${line.trim()}`);
+  }
+  assert.ok(/body\.farming-printing #wz-printarea \{ display: none/.test(css),
+    "the Share tab's print container is suppressed — it is never removed from the DOM "
+    + "and its own ID rule forces it visible on any print");
+  assert.ok(/body\.farming-printing #rp-farming \{ display: block/.test(css),
+    "and the panel is un-hidden, since `hidden` is on it whenever another tab is active");
+});
+
+test("review fix 3: the print button sets and clears the scope class", () => {
+  const src = _resultsSrc();
+  const fn = srcBetween(src, "function printFarmingList() {", "function farmNote(", "printFarmingList");
+  assert.ok(/classList\.add\("farming-printing"\)/.test(fn), "the scope is set before printing");
+  assert.ok(/classList\.remove\("farming-printing"\)/.test(fn), "…and removed again");
+  assert.ok(/afterprint/.test(fn), "on afterprint, the same seam printLoadout uses");
+});

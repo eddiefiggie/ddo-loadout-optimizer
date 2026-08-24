@@ -2056,6 +2056,23 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // card's select writes it back and the search reads it on the next run; the
   // caller's `onUpgradeBar` seam is how it outlives this render.
   let barPct = Math.max(0, Number(upgradeBar) || 0);
+  // #500/#501 — declared HERE, above `renderBuild`, because `renderBuild` now
+  // refreshes the Versions and Farming panels and therefore reads both on the
+  // very first call at `renderBuild(optimum)`. Left further down beside their own
+  // wiring they would be in the temporal dead zone at that moment, and a `const`
+  // read before its initializer throws rather than reading undefined.
+  //
+  // `verApi` is the caller's Versions seam: the comparison candidates it can
+  // offer, plus what to do when the player saves one. Absent (a pure-test render,
+  // or a host that stores nothing) means the panel renders its empty state —
+  // never a control that cannot work, the rule the outbid pricing, the concession
+  // probe and the upgrades search all follow.
+  const verApi = versions || {};
+  // The name the farming ticks are filed under. Its own option rather than read
+  // off `query`, which does not carry it: farming progress belongs to a
+  // character, and an unnamed build has nowhere to file it — which the panel says
+  // out loud instead of dropping the tick on the floor.
+  const farmCharacter = String(characterName || "").trim();
   const cs = optimum.computeScale || { variants: 0, crafts: 0, stages: 0 };
   // The verdict is a tap/keyboard-openable explanation (R7): native <details>, so
   // it works on touch (no hover) and via keyboard. Explains MILP plainly + links
@@ -2123,14 +2140,34 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     <div class="sr-only" aria-live="polite" id="rp-live"></div>`;
 
   const q = (s) => container.querySelector(s);
-  // Render the paperdoll + Ranked/Sets/Deep-Dive panels from ANY build (the optimum
-  // or a selected alternative) — the alternative's solution has the same shape.
+  // #499/#500/#501 — THE BUILD EVERY PANEL DESCRIBES. Selecting an upgrade card
+  // swaps the whole readout to that candidate, not just the paperdoll, so this is
+  // the one place that answers "which build is on screen".
+  //
+  // It exists because the answer used to be split. `renderBuild` refreshed the
+  // doll, weapons, ranked cards and set panel; the Farming List and Versions tabs
+  // were filled once from the optimum and never again. A player who clicked an
+  // upgrade got a paperdoll showing the candidate, a banner saying "Viewing
+  // upgrade", and a farming list for a DIFFERENT set of items — and the farming
+  // list is the surface that sends them out of the app for an evening.
+  let activeBuild = optimum;
+
+  // Render every panel that describes one build. The three template-driven
+  // panels come from `buildViews`; the Farming List and the Versions diff read
+  // `activeBuild` through `liveRecord()`, so they must be refreshed here rather
+  // than only at first render.
   function renderBuild(build) {
+    activeBuild = build;
     const v = buildViews(build, model, query, { concessions: build === optimum && canProbeConcession() });
     q("#rp-doll").innerHTML = v.paperdoll;
     q("#rp-weapons").innerHTML = v.weapons;
     q("#rp-cards").innerHTML = v.cards;
     q("#rp-setspanel").innerHTML = v.setsPanel;
+    // Both tolerate being called before their own wiring exists: the initial
+    // `renderBuild(optimum)` runs ahead of the panel setup further down, and each
+    // is a no-op until its host is in the DOM.
+    fillFarmingPanel();
+    renderVersionDiff(false);
     animateCounters(container);
   }
   function setActive(build, isAlt, label) {
@@ -2424,38 +2461,61 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // (a pure-test render, or a host that stores nothing) means the panel simply
   // renders its empty state — never a control that cannot work, the same rule
   // the outbid pricing, the concession probe and the upgrades search follow.
-  const verApi = versions || {};
   function verRecords() {
     return typeof verApi.records === "function" ? (verApi.records() || []) : (verApi.records || []);
   }
-  /** The build on screen, in the shape `diffVersions` compares. `result` is the
-   *  LIVE solve rather than a stripped snapshot, which `Proj.project` reads
-   *  identically — a saved character's snapshot IS this shape minus the fields
-   *  persist.js drops. */
+  /** The build ON SCREEN, in the shape `diffVersions` and `farmingPlan` consume.
+   *
+   *  Reads `activeBuild`, NOT `optimum`: after an upgrade card is selected the
+   *  readout describes that candidate, and a farming list or a comparison still
+   *  answering for the optimum would be describing gear the player is not
+   *  looking at.
+   *
+   *  The snapshot is the LIVE solve rather than a stripped one, which
+   *  `Proj.project` reads identically — a saved character's snapshot IS this
+   *  shape minus the fields persist.js drops. */
   function liveRecord() {
     return { id: "__current__", name: "This build", kind: "named",
-      query, inputs: { priorities: (query && query.targets) || [] }, snapshot: optimum };
+      query, inputs: { priorities: (query && query.targets) || [] }, snapshot: activeBuild };
+  }
+  /** Re-run the comparison for whatever the picker currently holds.
+   *
+   *  Deliberately separate from `fillVersionsPanel`: a build swap has to re-diff
+   *  against the NEW active build, and rebuilding the panel to do it would reset
+   *  the picker — discarding the player's chosen comparison at the exact moment
+   *  they changed what is being compared. This touches only `.ver-diff`.
+   *
+   *  A no-op until the panel has been built, which is what lets `renderBuild`
+   *  call it on the very first render before `fillVersionsPanel` has run.
+   *
+   *  `announce` is false on a build swap: the live region is already saying which
+   *  build is now shown, and a second message about the comparison on top of it
+   *  is two announcements for one action. */
+  function renderVersionDiff(announce) {
+    const host = q("#rp-versionspanel");
+    if (!host) return;
+    const pick = host.querySelector(".ver-pick");
+    const out = host.querySelector(".ver-diff");
+    if (!pick || !out) return;
+    const rec = verRecords().find((r) => String(r.id) === pick.value);
+    if (!rec) { out.innerHTML = ""; return; }
+    // The diff runs over the two records, never over the rendered HTML: the
+    // labels below are presentation, the comparison is data.
+    const d = (typeof VersionStore !== "undefined" && VersionStore.diffVersions)
+      ? VersionStore.diffVersions(liveRecord(), rec.record || rec) : null;
+    out.innerHTML = versionDiffView(d, { a: "This build", b: rec.label });
+    if (announce) {
+      q("#rp-live").textContent = d && d.identical
+        ? `This build is identical to ${rec.label}.`
+        : `Comparison with ${rec.label} ready.`;
+    }
   }
   function fillVersionsPanel(note) {
     const host = q("#rp-versionspanel");
     if (!host) return;
     host.innerHTML = versionsPanel(verRecords(), { note: note || "" });
     const pick = host.querySelector(".ver-pick");
-    const out = host.querySelector(".ver-diff");
-    if (pick) {
-      pick.addEventListener("change", () => {
-        const rec = verRecords().find((r) => String(r.id) === pick.value);
-        if (!rec) { out.innerHTML = ""; return; }
-        // The diff runs over the two records, never over the rendered HTML: the
-        // labels below are presentation, the comparison is data.
-        const d = (typeof VersionStore !== "undefined" && VersionStore.diffVersions)
-          ? VersionStore.diffVersions(liveRecord(), rec.record || rec) : null;
-        out.innerHTML = versionDiffView(d, { a: "This build", b: rec.label });
-        q("#rp-live").textContent = d && d.identical
-          ? `This build is identical to ${rec.label}.`
-          : `Comparison with ${rec.label} ready.`;
-      });
-    }
+    if (pick) pick.addEventListener("change", () => renderVersionDiff(true));
     const save = host.querySelector(".ver-save");
     if (save) {
       save.addEventListener("click", () => {
@@ -2481,27 +2541,59 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // #501 — the Farming List. `character` names whose progress is being ticked;
   // without one the list still renders and the ticks simply have nowhere to go,
   // which is stated rather than silently discarded.
-  // The name the ticks are filed under. Passed in as its own option rather than
-  // read off `query`, which does not carry it: farming progress belongs to a
-  // character, and an unnamed build has nowhere to file it — which the panel
-  // says out loud instead of dropping the tick on the floor.
-  const farmCharacter = String(characterName || "").trim();
   function currentPlan() {
     return (typeof FarmingList !== "undefined" && FarmingList.farmingPlan)
       ? FarmingList.farmingPlan(liveRecord()) : null;
   }
+  /** Rebuild the panel's CONTENT only. Wiring lives outside this function on
+   *  purpose — see the delegation block below. */
   function fillFarmingPanel(note) {
     const host = q("#rp-farmingpanel");
     if (!host) return;
-    const plan = currentPlan();
     const acquired = (typeof FarmingList !== "undefined" && FarmingList.loadProgress)
       ? FarmingList.loadProgress(farmCharacter) : {};
-    host.innerHTML = farmingPanel(plan, acquired, { note: note || "" });
-    if (!plan) return;
+    host.innerHTML = farmingPanel(currentPlan(), acquired, { note: note || "" });
+  }
+  /** Print the farming list alone.
+   *
+   *  Scoped with a body class and cleared on `afterprint`, exactly as the Share
+   *  tab's `printLoadout` does. The rules were unscoped at first, which meant a
+   *  player pressing Ctrl+P anywhere in the app got the farming list instead of
+   *  the page — or a blank sheet, since `#rp-farming` still carries `hidden`
+   *  whenever another tab is active.
+   *
+   *  The class also has to suppress `#wz-printarea`. That container is created by
+   *  the Share tab's print, is never removed from the DOM afterwards, and its own
+   *  `@media print` rule forces it visible by ID — so without an explicit
+   *  override a farming printout that followed a Share printout carried the
+   *  previous loadout table along with it. */
+  function printFarmingList() {
+    document.body.classList.add("farming-printing");
+    const cleanup = () => {
+      document.body.classList.remove("farming-printing");
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+  }
+  function farmNote(msg) {
+    const el = container.querySelector(".farm-note");
+    if (el) el.textContent = msg;
+  }
 
-    // Delegated once on the freshly built host, so a re-render cannot stack a
-    // second listener that ticks the same box twice.
-    host.addEventListener("change", (e) => {
+  // Wired ONCE, on the long-lived panel host.
+  //
+  // `#rp-farmingpanel` is minted by THIS render's container template and then only
+  // ever has its innerHTML replaced, so it outlives every `fillFarmingPanel` call.
+  // Wiring inside that function therefore stacked one listener per call: a tick on
+  // an unnamed build re-rendered with a message and added a second handler, and the
+  // next tick ran both — each flipping `box.checked`, so the box landed back where
+  // it started and two more handlers were added. Delegation on the host is what
+  // makes the wiring independent of how often the content is rebuilt, which it now
+  // is on every build swap as well.
+  const farmHost = q("#rp-farmingpanel");
+  if (farmHost) {
+    farmHost.addEventListener("change", (e) => {
       const box = e.target.closest(".farm-tick");
       if (!box) return;
       if (!farmCharacter) {
@@ -2518,28 +2610,28 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       }
       box.closest(".farm-item").classList.toggle("is-got", !!res.acquired[box.dataset.item]);
     });
-
-    const md = () => FarmingList.farmingMarkdown(plan, { character: farmCharacter });
-    const copy = host.querySelector(".farm-copy");
-    if (copy) {
-      copy.addEventListener("click", () => {
-        const text = md();
-        // The clipboard API is permissioned and absent over plain http on some
-        // browsers, so a failure is reported rather than swallowed — a Copy
-        // button that silently does nothing is worse than one that says it did not.
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text)
-            .then(() => { host.querySelector(".farm-note").textContent = "Copied."; })
-            .catch(() => { host.querySelector(".farm-note").textContent = "Could not reach the clipboard — use Print instead."; });
-        } else {
-          host.querySelector(".farm-note").textContent = "This browser will not let the page reach the clipboard — use Print instead.";
-        }
-      });
-    }
-    const print = host.querySelector(".farm-print");
-    if (print) print.addEventListener("click", () => { window.print(); });
+    // Both buttons are rebuilt with the content, so they are reached by delegation
+    // too rather than re-bound per fill. The plan is recomputed at click time
+    // instead of captured, so a build swap cannot leave a stale list behind the
+    // Copy button.
+    farmHost.addEventListener("click", (e) => {
+      if (e.target.closest(".farm-print")) { printFarmingList(); return; }
+      if (!e.target.closest(".farm-copy")) return;
+      const plan = currentPlan();
+      if (!plan) return;
+      const text = FarmingList.farmingMarkdown(plan, { character: farmCharacter });
+      // The clipboard API is permissioned and absent over plain http on some
+      // browsers, so a failure is reported rather than swallowed — a Copy button
+      // that silently does nothing is worse than one that says it did not.
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => farmNote("Copied."))
+          .catch(() => farmNote("Could not reach the clipboard — use Print instead."));
+      } else {
+        farmNote("This browser will not let the page reach the clipboard — use Print instead.");
+      }
+    });
   }
-  fillFarmingPanel();
 
   wireResultTabs(container, () => {});
 
