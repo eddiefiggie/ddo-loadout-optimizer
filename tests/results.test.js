@@ -1879,6 +1879,93 @@ test("#91 U5: utilityCard takes the build being rendered — an alternative's re
   });
 }
 
+// ---- #485 — a bundled enchantment the build is not getting must say so ------
+//
+// Reported as "why is Enhancement Combat Mastery listed twice for 2 separate
+// items". Both items really do carry it; buckets are max-of-type, so only the
+// larger copy contributes and the block was presenting the dead one identically.
+{
+  const bundleAffix = (name, value) => ({ name, type: "Enhancement", value, via: "Combat Mastery" });
+  const carrier = (id, value) => ({ slot: "Armor", variant: {
+    variant_id: id, ml: 34, affixes: [bundleAffix("Stunning", value), bundleAffix("Vertigo", value)],
+  } });
+  // Two equipped items carry Combat Mastery. Only the 12s are credited.
+  const build = {
+    chosen: [carrier("Chain Shirt of Toppling", 12), carrier("Bracers of Baphomet", 6)],
+    effective: { Stunning: 12, Vertigo: 12 },
+    breakdown: {
+      Stunning: [{ bonus_type: "Enhancement", value: 12, source: "Chain Shirt of Toppling", sourceKind: "worn", slot: "Armor", hostIds: ["Chain Shirt of Toppling"] }],
+      Vertigo: [{ bonus_type: "Enhancement", value: 12, source: "Chain Shirt of Toppling", sourceKind: "worn", slot: "Armor", hostIds: ["Chain Shirt of Toppling"] }],
+    },
+    augmentsPlaced: [], setsActive: [], dinoPlaced: [], ncPlaced: [], rollPlaced: [],
+    vikPlaced: [], sealPlaced: [], tfPlaced: [], gsPlaced: [], jokerPlaced: [], membershipPlaced: [],
+  };
+  const targets = ["Stunning", "Vertigo"];
+  const prioCtx = { result: build, attr: R.attributionByTarget(build, { byIndex: new Map() }), targets };
+  test("#485: the credited carrier's bundle reads as live", () => {
+    const b = { name: "Combat Mastery", carrier: "Chain Shirt of Toppling",
+      members: [{ name: "Stunning", value: 12, type: "Enhancement" }, { name: "Vertigo", value: 12, type: "Enhancement" }] };
+    const c = R.bundleCredit(b, prioCtx);
+    assert.strictEqual(c.live, true, "this copy is what the solver counted");
+    assert.deepStrictEqual(c.members.map((m) => m.live), [true, true]);
+  });
+
+  test("#485: the beaten carrier's bundle is NOT reported as though the build gets it", () => {
+    const b = { name: "Combat Mastery", carrier: "Bracers of Baphomet",
+      members: [{ name: "Stunning", value: 6, type: "Enhancement" }, { name: "Vertigo", value: 6, type: "Enhancement" }] };
+    const c = R.bundleCredit(b, prioCtx);
+    assert.strictEqual(c.live, false, "a larger source fills the bucket, so this copy adds nothing");
+    assert.deepStrictEqual(c.members.map((m) => m.live), [false, false]);
+  });
+
+  test("#485: within ONE carrier, superseded members are judged apart from live ones", () => {
+    // Legendary Bracers of Baphomet carries the trio at BOTH 6 and 12. A
+    // bundle-level verdict alone would light up the dead 6s beside the live 12s.
+    const solo = {
+      chosen: [{ slot: "Bracers", variant: { variant_id: "Legendary Bracers of Baphomet", ml: 35,
+        affixes: [bundleAffix("Stunning", 6), bundleAffix("Vertigo", 6), bundleAffix("Stunning", 12), bundleAffix("Vertigo", 12)] } }],
+      effective: { Stunning: 12, Vertigo: 12 },
+      breakdown: {
+        Stunning: [{ bonus_type: "Enhancement", value: 12, source: "Legendary Bracers of Baphomet", sourceKind: "worn", slot: "Bracers", hostIds: ["Legendary Bracers of Baphomet"] }],
+        Vertigo: [{ bonus_type: "Enhancement", value: 12, source: "Legendary Bracers of Baphomet", sourceKind: "worn", slot: "Bracers", hostIds: ["Legendary Bracers of Baphomet"] }],
+      },
+      augmentsPlaced: [], setsActive: [], dinoPlaced: [], ncPlaced: [], rollPlaced: [],
+      vikPlaced: [], sealPlaced: [], tfPlaced: [], gsPlaced: [], jokerPlaced: [], membershipPlaced: [],
+    };
+    const ctx = { result: solo, attr: R.attributionByTarget(solo, { byIndex: new Map() }), targets };
+    const b = { name: "Combat Mastery", carrier: "Legendary Bracers of Baphomet",
+      members: [{ name: "Stunning", value: 6, type: "Enhancement" }, { name: "Stunning", value: 12, type: "Enhancement" }] };
+    const c = R.bundleCredit(b, ctx);
+    assert.deepStrictEqual(c.members.map((m) => m.live), [false, true],
+      "the 6 is dead against the item's own 12");
+    assert.strictEqual(c.live, true, "the bundle itself is live — one of its members is credited");
+  });
+
+  test("#485: a superseded bundle keeps its card and states why", () => {
+    const html = R.bundlesBlock(build, new Map(), prioCtx);
+    assert.ok(/Combat Mastery/.test(html), "the enchantment is still named");
+    assert.ok(/Bracers of Baphomet/.test(html), "the beaten carrier keeps its card — the player owns that item");
+    assert.ok(/is-incidental/.test(html), "…rendered as not-credited");
+    assert.ok(/already fills these bonus-type buckets/.test(html),
+      "…and says so in words, not only in a shade");
+    assert.ok(/bundle-dead/.test(html), "the dead members are marked individually");
+  });
+
+  test("#485: with no priority context the block makes NO claim, in either direction", () => {
+    // The first cut of this guard marked everything superseded when it had no
+    // build to ask, which printed "a larger source elsewhere fills these buckets"
+    // about a build the code could not see. Inventing the fact is a worse failure
+    // than the duplicate the guard exists to remove.
+    const c = R.bundleCredit({ name: "Combat Mastery", members: [{ name: "Stunning", value: 6 }] }, null);
+    assert.strictEqual(c.judged, false, "the credit is unjudged, not decided");
+    assert.strictEqual(c.live, null, "…and neither live nor dead");
+    const html = R.bundlesBlock(build, new Map(), null);
+    assert.ok(!/is-incidental/.test(html), "no card is asserted superseded");
+    assert.ok(!/already fills these bonus-type buckets/.test(html), "and nothing is claimed about a build we cannot see");
+    assert.ok(!/bundle-dead/.test(html), "no member is struck through");
+  });
+}
+
 console.log(`\n${passed} passed`);
 
 // #346 (U5, R12, AE7) — a rung can take a stat's last source out of the pool.

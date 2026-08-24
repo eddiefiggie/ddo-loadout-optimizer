@@ -566,6 +566,13 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 /* #481 — the concession control and its answer, on a ranked stat card. Ghost
    weight at rest: it is an optional question, not an action the card is asking
    for, and a primary button here would compete with the headline number. */
+/* #485 — a bundled enchantment the build is not getting. Dimmed AND struck:
+   the shade alone would read as one more decorative tier, and the row language
+   standard here is that a class carries its meaning as a shape before a colour. */
+.set-card.bundle.is-incidental strong { color: var(--muted); }
+.bundle-dead { color: var(--muted); text-decoration: line-through; }
+.bundle-note { color: var(--muted); font-style: italic; }
+
 .stat-card .concession-probe {
   margin-top: var(--sp-3); font-size: var(--fs-xs); padding: 2px var(--sp-2);
 }
