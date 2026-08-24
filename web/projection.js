@@ -677,6 +677,14 @@
         if (!boolean && !(p.value > 0)) continue;
         rows.push({ stat, value: p.value, bonus_type: p.bonus_type,
           viaSet: !!p.isSet, boolean, via: p.via || null,
+          // #471 — WHICH channel credited this point. The Loadout card stopped
+          // restating craft- and augment-granted stats in its Stats section (they
+          // are now stated in place, beside the slot that yields them), and its
+          // residual sweep — the guard that chips any credited contribution no
+          // other row covers — needs to tell "nothing rendered this" apart from
+          // "the Craft section rendered this". Without the kind here the sweep
+          // re-adds every crafted point to Stats and the de-duplication is inert.
+          sourceKind: p.sourceKind || null,
           // U3 (#290/#291) — the cross-add source stat rides with the row so the
           // per-item why-this can label the credit "from <source stat>".
           crossAdd: p.crossAdd || null,
@@ -1248,6 +1256,74 @@
       default: return craftLabel(o, family);
     }
   }
+
+  /** #471 — one craft placement split into the three parts the Loadout card's
+   *  row language needs: WHERE the craft goes, WHAT it grants, and the system it
+   *  belongs to.
+   *
+   *  `craftLabel` fuses all three into one sentence ("Slot Dolorous Viktranium
+   *  augment: Melee Power +8 Profane"). That is right for a text export, which
+   *  has one column; the card now has three, and splitting the sentence at
+   *  render time by looking for the colon would break on `craftValue` output
+   *  that contains one. So the split lives HERE, beside the fused label, and
+   *  both are generated from the same fields — which is what keeps them from
+   *  drifting (KTD6).
+   *
+   *  `craftLabel` is deliberately left alone: every text exporter renders from
+   *  it and the export goldens pin it, so this is a third label function rather
+   *  than a flag on that one — the same reasoning `craftStepLabel` records.
+   *
+   *  `vikEmpty` is the one family whose `what` is SHORTER here than in
+   *  `craftLabel`. The full sentence ("left empty — no option adds to your
+   *  ranked stats") is a whole clause, and at 375px it wrapped to two lines on
+   *  every declared-but-unfilled slot — three of them on a Ravenloft accessory,
+   *  six lines of card spent saying nothing happened. The card shows "left
+   *  empty" and carries the full sentence as the row's `title`; every export
+   *  keeps the full sentence via `craftLabel`, unchanged. */
+  function craftRowLabel(o, family) {
+    const sys = (f) => (o && o.pool) || CRAFT_SECTION_LABEL[f] || "";
+    switch (family) {
+      case "dino": return { where: o.dino_type, what: `${o.name ? o.name + ", " : ""}${craftAffixes(o)}`,
+        system: sys(family), title: "Isle of Dread insert" };
+      // #371 — the per-item pools are a DIFFERENT crafting system with a different
+      // in-game name, carried on `pool`. It is the SYSTEM here (it captions the
+      // section), which frees the where-column to name the option the solve chose
+      // — the fact a player standing at the station actually needs.
+      case "nc": return { where: o.name || sys(family), what: craftAffixes(o),
+        system: sys(family),
+        title: o.pool ? `${o.pool} — per-item upgrade slot` : "Terror of Demogorgon — Nearly Completed" };
+      case "roll": return { where: "Choice", what: craftValue(o), system: sys(family),
+        title: "choice slot, best option selected" };
+      case "vik": return { where: o.slot_type, what: craftAffixes(o), system: sys(family),
+        title: "The Chill of Ravenloft — Viktranium Experiment crafting" };
+      case "vikEmpty": return { where: o.slot_type, what: "left empty", system: sys(family),
+        title: craftLabel(o, "vikEmpty") };
+      case "seal": return { where: o.seal_type, what: craftValue(o), system: sys(family),
+        title: "unseal one effect at the crafting table" };
+      case "tf": return { where: `Tier ${o.tier}`, what: craftValue(o), system: sys(family),
+        title: "Legendary Thunder-Forged tier upgrade" };
+      case "gs": return { where: "Green Steel", what: craftValue(o), system: sys(family),
+        title: "Legendary Green Steel craft" };
+      default: return { where: "", what: craftLabel(o, family), system: "", title: "" };
+    }
+  }
+
+  /** #471 — the crafting system a family belongs to, for the Craft section's
+   *  caption. Rendered only when every craft row on an item shares one family;
+   *  a mixed-family item says just "Craft", because naming one of two systems
+   *  in the caption would be a false claim about the rows under it.
+   *
+   *  Separate from `CRAFT_FAMILY_LABEL`, which `craftCarried` reads: that map is
+   *  keyed by attribution `sourceKind` and reads mid-sentence ("its value here
+   *  depends on augments"), while this one is a section heading. `roll` is in
+   *  this map and deliberately absent from that one — a choice slot is native
+   *  (#257), so it is never craft-CARRIED, but it is still a thing you go and
+   *  pick, so it earns a caption. */
+  const CRAFT_SECTION_LABEL = {
+    vik: "Viktranium", vikEmpty: "Viktranium", nc: "Nearly Completed",
+    dino: "Dino crafting", seal: "Seal crafting", tf: "Thunder-Forged",
+    gs: "Green Steel", roll: "Choice slots",
+  };
 
   /** #455 — the affixes a placed craft actually grants, as affix records.
    *
@@ -2285,6 +2361,9 @@
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
     buildCraftMaps, craftLabel, craftValue, unfilledVikSlots, lunarSolar, setAugmentSlotRule,
+    // #471 — the split craft label + section caption for the Loadout card's row
+    // language. Generated from the same fields as craftLabel, beside it (KTD6).
+    craftRowLabel, CRAFT_SECTION_LABEL,
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line

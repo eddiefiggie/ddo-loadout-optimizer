@@ -1182,94 +1182,174 @@ input.wz-ml { width: 120px; }
      the card beside it. The name RESERVES two lines and is not clamped — the
      equipped list has shown full names since it replaced the paperdoll figure,
      and truncating an item name on a shopping list is the wrong trade;
-   - the body grows, so it absorbs the difference between a five-chip item and a
-     twelve-chip one instead of pushing the notes around;
+   - the body grows, so it absorbs the difference between a five-row item and a
+     twelve-row one instead of pushing the notes around;
    - the foot is pinned to the bottom edge by that growth, so a note sits in the
      same place on every card that has one and leaves no gap on the cards that
-     do not. */
-.pd-card-head { display: flex; flex-direction: column; gap: 1px;
-  padding-bottom: 6px; border-bottom: 1px solid var(--border-2); }
+     do not.
+
+   #471 — the SEPARATION between them is no longer two rules across the card.
+   Three different devices, each matched to what it divides:
+
+   - HEAD: a top-lit tint that fades out downward, closed by a hairline that
+     tapers to nothing at both ends. A full-width rule states a hard boundary
+     between two things of equal weight; the head is a label for what follows,
+     so it should dissolve into it rather than be fenced off from it.
+   - BODY: a vertical SPINE down the left gutter that every row hangs off, with
+     each section's label tick attached to it. The sections are a sequence, not
+     three stacked boxes, and a spine says sequence where stacked rules say
+     boxes. It also does the job the old `.pd-sec ~ .pd-sec` hairline did — the
+     boundary is visible — without spending a horizontal line on it.
+   - FOOT: a recessed plate, flush to the card's edges and darker than its
+     surface, so the notes read as a different KIND of statement from the rows
+     above. Depth rather than a line. */
+.pd-row { padding: 0; overflow: hidden; }
+.pd-card-head { display: flex; flex-direction: column; gap: 1px; position: relative;
+  padding: var(--sp-2) var(--sp-3) 10px; border-bottom: 0;
+  background:
+    linear-gradient(180deg, rgba(91,140,255,0.10) 0%, rgba(91,140,255,0.00) 78%),
+    linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0) 100%); }
+.pd-card-head::after { content: ""; position: absolute; bottom: 0;
+  left: var(--sp-3); right: var(--sp-3); height: 1px; opacity: 0.55;
+  background: linear-gradient(90deg, transparent, var(--border-2) 18%, var(--border-2) 82%, transparent); }
 .pd-card-head .pd-rname { min-height: 2.6em; display: flex; align-items: flex-start; }
 .pd-rmeta { min-height: 1.4em; }
-.pd-rbody { margin-top: 6px; display: flex; flex-direction: column; gap: 6px;
-  flex: 1 1 auto; }
+/* #471 — state moves to the card's TOP EDGE. It was an inset ring around the
+   whole card plus a recoloured item name; the ring competed with the new head
+   tint for the same pixels, and an edge reads as a label on the card while a
+   ring reads as a border on it. The name keeps its colour. */
+.pd-row.is-set { border-color: var(--border); box-shadow: inset 0 2px 0 0 var(--set), inset 0 0 0 1px rgba(240,180,90,0.16); }
+.pd-row.is-artifact { box-shadow: inset 0 2px 0 0 var(--artifact); }
+.pd-row.is-set.is-artifact { box-shadow: inset 0 2px 0 0 var(--artifact), inset 0 0 0 1px rgba(240,180,90,0.16); }
+.pd-rbody { margin: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 11px;
+  position: relative; padding: 10px var(--sp-3) 10px calc(var(--sp-3) + 9px); }
+.pd-rbody::before { content: ""; position: absolute; width: 1px; opacity: 0.8;
+  left: calc(var(--sp-3) + 1px); top: 12px; bottom: 10px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--border-2) 22%, var(--border) 78%, transparent); }
+.pd-rbody:empty::before { display: none; }
 /* An empty foot must take NO space — the alternative is fourteen cards each
-   carrying a divider under nothing. */
+   carrying a plate under nothing. */
 .pd-card-foot:empty { display: none; }
-.pd-card-foot { margin-top: 6px; padding-top: 6px;
-  border-top: 1px dashed var(--border-2); display: flex; flex-direction: column; gap: 3px; }
+.pd-card-foot { margin: 0; padding: 8px var(--sp-3); border-top: 0;
+  display: flex; flex-direction: column; gap: 4px;
+  background: rgba(0,0,0,0.20); box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.045); }
+/* #471 — the global `.empty { text-align: center }` empty-state helper leaks
+   onto `.pd-row.empty`, which centred the note on every optimizer-left-empty
+   card while every other card left-aligned. Found while rebuilding this family. */
+.pd-row.empty { text-align: left; }
 
 /* #469 — the body's three sub-sections: Stats, Augments, Craft, always in that
-   order. Each is labelled, and the hairline between them is what makes the
-   "which of these did I have to go craft" boundary visible without reading the
-   provenance tag on every chip. */
-.pd-sec { display: flex; flex-direction: column; gap: 3px; }
-/* General sibling, not adjacent: in owned-inventory mode the "Recommended (not
-   owned)" note sits between the Stats section and the Augments one, and an
-   adjacent-sibling rule would silently drop the divider on exactly those
-   cards. */
-.pd-sec ~ .pd-sec { padding-top: 6px; border-top: 1px solid var(--border); }
-.pd-sec .pd-slabel { margin-right: 0; }
-/* #453 U2 (R1/R2/R3) -- every affix is a chip, so the card speaks one visual
-   language instead of three (a chip row for ranked contributions, a text run for
-   everything else, a third inline style for augment-granted stats). The dot
-   separator goes with the run it separated. */
-.pd-stats { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 3px 4px;
-  font-size: var(--fs-xs); color: var(--muted); }
-/* Follows #449 R22's rule for the .pd-chip family, for the same reason: the row
-   wraps BETWEEN chips and a chip caps at the row width and wraps its own text,
-   so a long label ("Universal Spell Power +15 Exceptional") cannot push the page
-   into horizontal scroll at 375px. The plain-text run this replaced was
-   `white-space: nowrap` with no cap and did exactly that — measured at 375px on
-   an ML36 caster solve, the base tree scrolls to 516px. Inheriting nowrap would
-   have carried a live defect into the new family unchanged. */
-.pd-stat-chip { max-width: 100%; overflow-wrap: anywhere; border: 1px solid transparent;
-  border-radius: 5px; padding: 1px 5px; line-height: 1.35; }
-/* R2/R3 -- each class carries a NON-COLOUR carrier as well as its colour, so the
-   four stay distinguishable to a colour-vision difference and in a monochrome
-   print export: tracked is filled, bordered and bold; ranked is bordered only;
-   utility is dashed; incidental is borderless. Colour alone would make the
-   distinction decorative.
+   order. #471 — the divider between them is gone; the spine plus the labelled
+   tick is what marks the boundary now. */
+.pd-sec { display: flex; flex-direction: column; gap: 4px; }
+.pd-sec ~ .pd-sec { padding-top: 0; border-top: 0; }
+.pd-slabel { text-transform: uppercase; letter-spacing: 0.09em; color: var(--faint);
+  font-size: 0.6rem; position: relative; margin: 0 0 1px -9px; padding-left: 13px; }
+.pd-slabel::before { content: ""; position: absolute; left: 0; top: 50%; width: 8px; height: 2px;
+  transform: translateY(-50%); border-radius: 1px; background: var(--border-2); }
+/* Each section's tick takes the colour of what it introduces: the priority
+   accent for stats, the augment blue, the craft amber. */
+.pd-sec-stats .pd-slabel::before { background: var(--accent); opacity: 0.7; }
+.pd-sec-aug   .pd-slabel::before { background: var(--accent-2); }
+.pd-sec-craft .pd-slabel::before { background: var(--warn); opacity: 0.8; }
 
-   #469 -- `is-ranked` is the new middle step, and it is a step DOWN from tracked,
-   not a second shade of it: solid frame and full-strength text, but no fill and
-   no bold. It says "this is on your list"; only the filled chip says "this is
-   what the solver credited". Reading the ramp: filled > framed > dashed > bare. */
-.pd-stat-chip.is-tracked { border-color: var(--optimal); background: rgba(67,197,158,0.10);
-  color: var(--text); font-weight: 600; }
-.pd-stat-chip.is-ranked { border-color: rgba(67,197,158,0.55); background: transparent;
-  color: var(--text); }
-.pd-stat-chip.is-utility { border-style: dashed; border-color: var(--accent-2);
-  color: var(--muted); }
-.pd-stat-chip.is-incidental { border-color: transparent; background: transparent; color: var(--muted); }
-/* #455 R21 -- the rank-1 accent moved here when pd-prio was retired. Border
-   WEIGHT as well as colour, so the top priority is distinguishable without
-   relying on hue (#449 R21's rule, unchanged in intent). */
-.pd-stat-chip.is-rank1 { border-width: 2px; border-color: var(--accent); padding: 0 4px; }
-/* #455 -- provenance is a TAG, orthogonal to the three classes: they answer
-   "did I ask for this", this answers "where does it come from". A set- or
-   craft-granted point is not printed on the drop, and a shopping list that does
-   not say so sends the player looking for it on the item. */
-.pd-src { margin-left: 4px; padding: 0 3px; border-radius: 3px; font-size: 0.85em;
-  text-transform: uppercase; letter-spacing: 0.03em; }
-.pd-src-set { background: rgba(143,214,176,0.16); color: #8fd6b0; }
-.pd-src-craft { background: rgba(217,164,65,0.16); color: var(--warn, #d9a441); }
-/* The qualifiers pd-prio used to carry. They wrap under the chip's own text
+/* #471 — THE ONE ROW LANGUAGE.
+   Every fact on the card is the same three columns:
+
+       [ marker ]  [ where it comes from ]  [ what it gives ]
+
+   A printed affix, a set bonus, a slotted gem and an applied craft are all that
+   row; the sections differ only in what fills the middle column. This replaces
+   three chip families — stat pills, augment pips, craft pills — that between
+   them made a single card speak three visual languages about the same subject.
+
+   The three columns are FIXED, so the middle column lines up down the whole
+   card: that alignment is what lets the eye run down "where does each of these
+   come from" without reading any of the values. */
+.pd-lines { list-style: none; margin: 0; padding: 0; display: flex;
+  flex-direction: column; gap: 2px; }
+.pd-line { display: grid; grid-template-columns: 11px 6.7em 1fr; align-items: baseline;
+  column-gap: 6px; min-width: 0; font-size: var(--fs-xs); line-height: 1.4; color: var(--muted); }
+.pd-ln-mark { justify-self: center; font-size: 0.68rem; line-height: 1.5; color: var(--border-2); }
+.pd-ln-where { color: var(--faint); font-size: 0.63rem; text-transform: uppercase;
+  letter-spacing: 0.05em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The value column wraps INSIDE itself rather than widening the row — the 375px
+   lesson from #453, carried over unchanged: a long label ("Universal Spell
+   Power +15 Exceptional") must never push the page into horizontal scroll. */
+.pd-ln-what { min-width: 0; overflow-wrap: anywhere; }
+
+/* #471 — the highlight vocabulary, reduced to what it claims:
+   WHITE + BOLD  = credited to your priority list (this is why the item is here);
+   WHITE         = on your list, but outbid elsewhere in the build;
+   grey          = came along with the item.
+   Colour is never the only carrier. Weight separates the top two, and the
+   marker is a SHAPE ramp — filled, hollow, ring, dot — so all four classes stay
+   apart in monochrome and to a colour-vision difference (#453 R2/R3's rule,
+   moved onto the family that replaced the chips). */
+.pd-line.is-tracked .pd-ln-what { color: #fff; font-weight: 700; }
+.pd-line.is-tracked .pd-ln-mark { color: var(--optimal); }
+.pd-line.is-tracked .pd-ln-where { color: var(--muted); }
+.pd-line.is-ranked .pd-ln-what { color: #fff; }
+.pd-line.is-ranked .pd-ln-mark { color: rgba(67,197,158,0.6); }
+.pd-line.is-utility .pd-ln-mark { color: var(--accent-2); }
+.pd-line.is-incidental .pd-ln-mark { color: var(--border-2); }
+/* #455 R21 — the rank-1 accent. Kept as a second visible mark on the marker
+   rather than a hue change, for the reason the chip's border WEIGHT was. */
+.pd-line.is-rank1 .pd-ln-mark { color: var(--accent);
+  text-shadow: 0 0 6px rgba(91,140,255,0.85); }
+/* A declared slot the solve left empty. The row still exists — an item that
+   ships with four slots must never read as a three-slot item (#370) — and says
+   so plainly; the reason rides the row's title. */
+.pd-line.is-empty .pd-ln-what { color: var(--faint); font-style: italic; }
+.pd-line.is-empty .pd-ln-mark { color: var(--border-2); }
+
+/* R9 — overflow is HIDDEN, never dropped: the rows stay in the DOM so the fact
+   stays on the card, which is the whole point. */
+.pd-line.is-overflow { display: none; }
+.pd-lines.is-expanded .pd-line.is-overflow { display: grid; }
+.pd-more-btn { background: none; border: 0; border-bottom: 1px dotted var(--border-2);
+  border-radius: 0; color: var(--muted); font: inherit; font-size: 0.63rem;
+  text-transform: uppercase; letter-spacing: 0.06em; padding: 0; cursor: pointer; }
+.pd-more-btn:hover { color: var(--text); border-bottom-color: var(--muted); }
+
+/* The qualifiers `pd-prio` used to carry. They wrap under the row's own value
    rather than extending it, so a long #88 override disclosure cannot widen the
-   row (the 375px lesson from #453). */
+   row. `(set)` was retired in #471 — the WHERE column states it. */
 .pd-chip-q { display: block; color: var(--faint); font-size: 0.85em; line-height: 1.3; }
 .pd-q + .pd-q::before { content: " · "; }
 .pd-q-override { color: var(--warn, #d9a441); }
-/* R9 -- overflow is HIDDEN, never dropped: the chips stay in the DOM so the fact
-   stays on the card, which is the whole point. */
-.pd-stat-chip.is-overflow { display: none; }
-.pd-stats.is-expanded .pd-stat-chip.is-overflow { display: inline-block; }
-.pd-stat-more { display: inline-block; }
-.pd-more-btn { background: none; border: 1px dashed var(--line); border-radius: 5px;
-  color: var(--muted); font: inherit; padding: 1px 5px; cursor: pointer; }
-.pd-more-btn:hover { color: var(--text); border-color: var(--muted); }
-.pd-slots { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: var(--fs-xs); }
-.pd-slabel { text-transform: uppercase; letter-spacing: 0.04em; color: var(--faint); font-size: 0.62rem; margin-right: 2px; }
+
+/* #453 U3 (R6) / #471 — what a gem or a craft grants, indented under it. Kept
+   nested rather than merged into the card-level row: the loadout is a shopping
+   list, and "which gem do I actually go slot" has to survive. */
+.pd-sub { list-style: none; margin: 1px 0 2px; padding: 0;
+  display: flex; flex-direction: column; gap: 1px; }
+.pd-sub li { position: relative; padding-left: 10px; font-size: 0.95em; color: var(--muted); }
+.pd-sub li::before { content: ""; position: absolute; left: 1px; top: 0.62em;
+  width: 5px; height: 1px; background: var(--border-2); }
+.pd-sub li.is-tracked { color: #fff; font-weight: 700; }
+.pd-sub li.is-ranked { color: #fff; }
+
+/* #471 — the augment marker carries its slot colour, and Sun/Moon carry the
+   SAME glyphs the Set Bonuses tab prints for a set-like Lunar/Solar bonus.
+   Those two belong to a separate gem system that accepts no standard augment
+   (wiki-ruled) and were previously a coloured dot indistinguishable from a Red
+   or a Green one. */
+.aug-mark.aug-blue { color: #5a8fd0; }
+.aug-mark.aug-red { color: #cf6a63; }
+.aug-mark.aug-yellow { color: #cbb45e; }
+.aug-mark.aug-green { color: #6fae74; }
+.aug-mark.aug-orange { color: #d08a4a; }
+.aug-mark.aug-purple { color: #a074c0; }
+.aug-mark.aug-colorless, .aug-mark.aug-clear { color: var(--border-2); }
+.aug-mark.aug-sun { color: #e6c86a; }
+.aug-mark.aug-moon { color: #9cc2ee; }
+.pd-line.is-empty .aug-mark { opacity: 0.6; }
+.aug-name { color: inherit; font-weight: inherit; }
+.pd-line.aug-filled.is-tracked .aug-name { color: #fff; font-weight: 700; }
+.pd-line.aug-filled.is-ranked .aug-name { color: #fff; }
+/* The augment pip survives for the paperdoll cell and the browse rows, which
+   still draw slot colours as pips rather than as row markers. */
 .aug-pip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 999px; font-size: 0.62rem;
   border: 1px solid var(--border-2); color: var(--muted); }
 .aug-pip.aug-blue { border-color: #5a8fd0; color: #9cc2ee; }
@@ -1280,44 +1360,40 @@ input.wz-ml { width: 120px; }
 .aug-pip.aug-purple { border-color: #a074c0; color: #cbb0e0; }
 .aug-pip.aug-colorless, .aug-pip.aug-clear { border-color: var(--border-2); color: var(--faint); }
 .craft-mark { padding: 1px 6px; border-radius: var(--radius-sm); border: 1px dashed var(--border-2); font-size: 0.62rem; color: var(--muted); }
-/* U2 — assigned-augment list inside an equipped block: a filled slot shows the
-   augment name + the affixes it adds; an open slot shows its color, so a block
-   reads what is slotted rather than just which colors exist. Chips in the Craft
-   row reuse the shared .chip styles. */
-.pd-auglist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; width: 100%; }
-.pd-auglist li { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
-.pd-auglist .aug-pip { width: 8px; height: 8px; min-width: 8px; padding: 0; border-radius: 999px; }
-.pd-auglist .aug-open .aug-pip { background: repeating-linear-gradient(45deg, transparent, transparent 2px, var(--border-2) 2px, var(--border-2) 3px); }
-.aug-name { color: var(--text); font-size: var(--fs-xs); }
-/* #469 -- the priority link on the two surfaces the player is sent to ACT on.
-   The stats a gem or a craft grants are chipped and classified already; these
-   mark the INSTRUCTION, so a run of eighteen augment names can be scanned for
-   the ones that serve the ranked list without opening each one. Same ramp as the
-   stat chips (filled = credited, framed = on the list), so the card teaches one
-   vocabulary rather than two. */
-.pd-auglist .aug-filled.is-tracked, .pd-auglist .aug-filled.is-ranked {
-  padding-left: 6px; border-left: 2px solid var(--optimal); }
-.pd-auglist .aug-filled.is-ranked { border-left-color: rgba(67,197,158,0.55); }
-.pd-auglist .aug-filled.is-tracked .aug-name { font-weight: 600; }
-.pd-auglist .aug-filled.is-ranked .aug-name { color: var(--text); }
-/* A craft chip's own border already encodes WHICH crafting system it belongs to
-   (dino amber, Nearly Completed violet, Lamordia rose, …), and that is a fact
-   the player needs to find the right station. So the priority link is drawn as a
-   ring OUTSIDE that border rather than by repainting it — both facts survive,
-   and the ring is a second visible line, not a hue change, so it carries in
-   monochrome too. */
+
+/* #471 — ONE foot-note family. The card's bottom edge carried four shapes: an
+   amber text line ("here only for its crafts"), a muted one ("included to
+   complete the loadout"), a third for the no-drop-source disclosure and a
+   fourth, in the BODY, for the owned-mode note. They are all the same KIND of
+   statement — something about the whole pick rather than about one stat — so
+   they are now one stacked chip that differs only in its role colour and glyph.
+   The user reported the mismatch directly; it was four spellings of one idea. */
+.pd-note { display: grid; grid-template-columns: 13px 1fr; column-gap: 6px; align-items: start;
+  font-size: 0.68rem; line-height: 1.4; color: var(--muted);
+  padding: 3px 7px 3px 5px; border-radius: 5px;
+  background: rgba(255,255,255,0.028); border-left: 2px solid var(--border-2); }
+.pd-note .pd-note-ico { justify-self: center; opacity: 0.9; }
+.pd-note b { color: var(--text); font-weight: 600; }
+.pd-note.is-craft { border-left-color: var(--warn); }
+.pd-note.is-empty { border-left-color: var(--border-2); color: var(--faint); }
+.pd-note.is-source { border-left-color: var(--quarantined); }
+.pd-note.is-owned { border-left-color: var(--accent-2); }
+.pd-note.muted { color: var(--faint); }
+
+/* Chips survive on the Deep Dive's craft block, which is a run of instructions
+   rather than a per-slot list. A craft chip's own border encodes WHICH crafting
+   system it belongs to (dino amber, Nearly Completed violet, Lamordia rose, …),
+   a fact the player needs to find the right station — so the priority link is
+   drawn as a ring OUTSIDE that border rather than by repainting it. Both facts
+   survive, and the ring is a second visible line, not a hue change. */
 .chip.is-tracked { box-shadow: 0 0 0 1px var(--optimal); color: var(--text); font-weight: 600; }
 .chip.is-ranked { box-shadow: 0 0 0 1px rgba(67,197,158,0.55); color: var(--text); }
-/* #453 U3 (R6) -- the augment's granted stats are a nested chip row, kept under
-   the augment that grants them so "which gem do I go slot" survives. */
-.aug-affx { color: var(--muted); font-size: 0.62rem; margin-top: 2px; }
-/* #457 -- a Deep Dive augment chip carrying its granted stats becomes a small
-   block: name on top, classified chips beneath, matching the gear box's nesting
-   so "which gem grants what" reads the same on both surfaces. */
+/* #457 — a Deep Dive augment chip carrying its granted stats becomes a small
+   block: name on top, grants beneath, matching the gear card's nesting. */
 .chip.aug.has-affx { display: inline-flex; flex-direction: column; align-items: flex-start;
   gap: 2px; max-width: 100%; }
 .chip.aug.has-affx .aug-head { white-space: normal; }
-.aug-open .muted { font-size: 0.62rem; font-style: italic; }
+.chip.aug .pd-sub { font-size: 0.62rem; }
 
 /* Per-slot constraint controls (U6) on the equipped-list rows. */
 .pd-row { position: relative; }

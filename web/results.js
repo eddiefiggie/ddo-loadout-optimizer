@@ -273,10 +273,9 @@ function craftChips(v, idx, maps, augById, stepOnly, contribIdx, rank1, ranked) 
     // classified directly.
     const meta = augById && augById.get(a.variant_id);
     const augAffixes = (meta && meta.affixes) || [];
-    const affx = augAffixes.length
-      ? `<ul class="aug-affx pd-stats">${statChipRow(
-          augAffixes.map((x) => ({ affix: x, source: null })),
-          Proj.affixStatCoverage(augAffixes), contribIdx, rank1, ranked)}</ul>` : "";
+    // #471 — the nested grants use the shared `pd-sub` list, the same one the
+    // gear card indents under a gem, rather than a second copy of the stat row.
+    const affx = subLines(augAffixes, contribIdx, rank1, ranked);
     // #469 — the gem itself inherits the link, so a run of eighteen augments can
     // be scanned for the ones that serve the priority list without reading every
     // nested chip.
@@ -415,8 +414,14 @@ function loadoutDeepDive(result, query, maps, attr, augById) {
     // drift: a stat framed as ranked on the card and unframed here would read as
     // the Deep Dive disagreeing about what the player asked for.
     const ddRanked = rankedStatSet(query);
+    // #471 — the same row language as the gear card. This list keeps
+    // `includeCraft` ON (the default): the Deep Dive's craft block shows
+    // instructions only, so the craft-granted VALUES have nowhere else to be
+    // read here, and #457 exists precisely because the exhaustive surface must
+    // never show less than the summary it details. #472 — the craft block below
+    // is still the chip run, so this surface speaks two languages until that lands.
     const affixes = ddEntries.entries.length
-      ? `<ul class="dd-list pd-stats">${statChipRow(
+      ? `<ul class="dd-list pd-lines">${statChipRow(
           ddEntries.entries, Proj.affixStatCoverage(ddEntries.raw), ddContribIdx, ddRank1, ddRanked)}</ul>`
       : `<p class="dd-none muted">No parsed affixes on this item.</p>`;
     // #457 — the instruction alone, for the reason #455 gave: the value it used to
@@ -502,7 +507,10 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
           ? "No owned item here improves your ranked priorities."
           : "You own no item for this slot.")
       : "No item here improves your ranked priorities.";
-    reasonNote = `<div class="pd-rnote muted">${esc(reason)}</div>`;
+    // #471 — one note family. `pd-rnote` is kept as a second class so the two
+    // tests that read it (and any selector that did) still resolve; the
+    // presentation comes from `pd-note`, which every foot note now shares.
+    reasonNote = `<div class="pd-note pd-rnote is-empty"><span class="pd-note-ico" aria-hidden="true">◇</span><span>${esc(reason)}</span></div>`;
   }
   // U9/U2: per-item stats + assigned augments (with their affixes) + assigned
   // craft slots, shown uniformly on every occupied block (empty blocks stay the
@@ -516,7 +524,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   // the pick is where the player must learn it, not at the wiki after farming.
   // Same shared wording as the Deep Dive and every export (projection.js).
   const noDropNote = (v && !locked && v.no_drop_source)
-    ? `<div class="pd-rnote pd-nodrop" title="the DDO wiki records no current in-game source for this item — it stays a solver candidate; block it to exclude it">${Proj.NO_DROP_SOURCE_WORDING}</div>` : "";
+    ? `<div class="pd-note pd-rnote pd-nodrop is-source" title="the DDO wiki records no current in-game source for this item — it stays a solver candidate; block it to exclude it"><span class="pd-note-ico" aria-hidden="true">⌖</span><span>${Proj.NO_DROP_SOURCE_WORDING}</span></div>` : "";
   // U3 (plan 2026-08-12-001) — the priority summary sits at the bottom of the
   // box, outside `.pd-rbody` so equippedBody's emptiness guard cannot swallow it.
   // #455 — `pd-prio` is retired. It was a second chip family restating 62% of
@@ -539,7 +547,14 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   // which is what makes a grid row of cards line up rather than merely share a
   // border. `pd-card-foot` is deliberately NOT `pd-rnote*`: that name means "one
   // note" and is matched as such.
-  const notes = `${reasonNote}${noDropNote}${prio}`;
+  // #471 — the owned-mode disclosure moves out of `pd-rbody` and joins the other
+  // three here, so the foot is ONE uniform note family stacked in a fixed order
+  // rather than three shapes in two places.
+  const rec = (v && !locked)
+    ? recNote(owned.mode, owned.augments, hasAugmentSlots(pick ? pick.idx : -1, maps),
+        craftRowsFor(v, pick ? pick.idx : -1, maps).length > 0)
+    : "";
+  const notes = `${reasonNote}${noDropNote}${rec}${prio}`;
   return `<div class="${rowCls}">
     <div class="pd-card-head">
       <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
@@ -679,7 +694,10 @@ const INCIDENTAL_CHIP_CAP = 6;
 function chipQualifiers(contrib) {
   if (!contrib) return "";
   const bits = [];
-  if (contrib.viaSet) bits.push(`<span class="pd-q pd-q-set">set</span>`);
+  // #471 — the `(set)` qualifier is retired for the same reason `pd-src` is: the
+  // row's WHERE column already reads "set" on exactly these rows. The two
+  // qualifiers below stay, and the #88 one is the load-bearing case — it is the
+  // one fact on the card that is NOT the wiki's, and nothing else states it.
   if (contrib.crossAdd) {
     bits.push(`<span class="pd-q pd-q-from" title="${esc(contrib.crossAdd)} fully stacks with this stat — its value adds on top of the stat's own bonuses, so it is counted here.">from ${esc(contrib.crossAdd)}</span>`);
   }
@@ -722,24 +740,91 @@ function statChipRow(entries, cover, idx, rank1, ranked) {
     // too. It has no contribution to match on, so it matches on the key.
     const isTop = !!(rank1 && ((contrib && (contrib.stat === rank1 || key === rank1))
       || (cls === "ranked" && key === rank1)));
-    const tag = source
-      ? `<span class="pd-src pd-src-${esc(source)}" title="${source === "set" ? "granted by a set bonus, not printed on the item" : "granted by a craft you apply, not printed on the item"}">${esc(source)}</span>`
-      : "";
+    // #471 — the `pd-src` pill is retired. It named the provenance ("set" /
+    // "craft") in a coloured pill AT THE END of the chip; the row language now
+    // names it in the WHERE column at the start of every row, which is the
+    // column that exists for exactly this fact. Keeping both would print the
+    // same word twice on one row — the redundancy #455 removed between
+    // `pd-prio` and the stat row, rebuilt inside a single line.
     // #469 — the ranked chip says WHY it is framed but not filled, or the
     // treatment reads as an unexplained second shade of the tracked one.
     const why = cls === "ranked"
-      ? ` title="On your priority list — but a larger source elsewhere in this build already fills its bonus-type bucket, so these points are not what the solver credited this item for."` : "";
-    return `<li class="pd-stat-chip is-${cls}${isTop ? " is-rank1" : ""}${over ? " is-overflow" : ""}"${why}>`
-      + `${esc(affixLabel(a))}${tag}${chipQualifiers(contrib)}</li>`;
+      ? "On your priority list — but a larger source elsewhere in this build already fills its bonus-type bucket, so these points are not what the solver credited this item for." : "";
+    // #471 — the WHERE column. `source` is the provenance tag #455 introduced;
+    // absent it, the affix is printed on the item itself.
+    const where = source || "item";
+    return stackLine(cls, where,
+      `${esc(affixLabel(a))}${chipQualifiers(contrib)}`,
+      { rank1: isTop, overflow: over, title: why });
   }).join("") + overflowToggle(rows);
+}
+
+/** #471 — the attribution channels the Loadout card states IN PLACE rather than
+ *  in its Stats section. Keys are `sourceKind` on an `itemContributions` row;
+ *  the values are the solver's own channel names (projection.js
+ *  `CRAFT_FAMILY_LABEL` plus `roll`, which is native-but-chosen). `worn`, `set`
+ *  and `declared` are deliberately absent — those have no slot of their own to
+ *  be stated beside, so Stats is where they belong. */
+const CRAFT_SOURCE_KINDS = new Set(["vik", "seal", "nc", "dino", "tf", "gs", "roll", "augment"]);
+
+/** #471 — the marker glyph per class. A SHAPE ramp, filled -> hollow -> ring ->
+ *  dot, so the four classes stay apart without hue: the same rule #453 R2/R3
+ *  wrote for the chip borders, carried onto the family that replaced them. */
+const LINE_MARK = { tracked: "◆", ranked: "◇", utility: "◦", incidental: "·" };
+
+/** #471 — one row of the card's shared row language.
+ *
+ *  Every fact on the card is the same three columns — a marker, WHERE the fact
+ *  comes from, and WHAT it gives — whether it is a printed affix, a set bonus,
+ *  an augment or a craft. That is the whole change from the chip families this
+ *  replaced: three visual languages (stat pills, augment pips, craft pills)
+ *  became one, and the sections differ only in what fills the middle column.
+ *
+ *  `cls` is the priority class; `mark` overrides the glyph (the augment section
+ *  uses the Sun/Moon symbols there). `title` is optional and rides the row. */
+function stackLine(cls, where, what, opts) {
+  opts = opts || {};
+  const extra = `${opts.rank1 ? " is-rank1" : ""}${opts.overflow ? " is-overflow" : ""}${opts.cls ? " " + opts.cls : ""}`;
+  const mark = opts.mark != null ? opts.mark : (LINE_MARK[cls] || LINE_MARK.incidental);
+  const markCls = opts.markCls ? ` ${opts.markCls}` : "";
+  return `<li class="pd-line is-${cls}${extra}"${opts.title ? ` title="${esc(opts.title)}"` : ""}>`
+    + `<span class="pd-ln-mark${markCls}" aria-hidden="true">${mark}</span>`
+    + `<span class="pd-ln-where">${esc(where)}</span>`
+    + `<span class="pd-ln-what">${what}</span></li>`;
+}
+
+/** #471 — the class a wrapper's own affixes earn, as a bare class name.
+ *  `grantLinkClass` answers the same question for a chip and returns a CSS
+ *  fragment (" is-tracked"); the row language needs the word. */
+function grantClass(affixes, contribIdx, ranked) {
+  const link = grantLinkClass(affixes, contribIdx, ranked);
+  return link === " is-tracked" ? "tracked" : link === " is-ranked" ? "ranked" : "incidental";
+}
+
+/** #471 — the affixes a gem or craft grants, indented under it.
+ *
+ *  NOT collapsed, matching `craftChips`: augment affixes are never collapsed
+ *  anywhere in the app, because the collapse changes what the player compares
+ *  against the in-game tooltip. */
+function subLines(affixes, contribIdx, rank1, ranked) {
+  const list = affixes || [];
+  if (!list.length) return "";
+  const cover = Proj.affixStatCoverage(list);
+  return `<ul class="pd-sub">${list.map((a) => {
+    const cls = affixChipClass(a, cover, contribIdx.keys, ranked);
+    const key = Proj.affixCoverageKey(a);
+    return `<li class="is-${cls}${rank1 && key === rank1 ? " is-rank1" : ""}">${esc(affixLabel(a))}</li>`;
+  }).join("")}</ul>`;
 }
 
 /** #453 U4 (R9) — the in-place expander, emitted only when something is hidden. */
 function overflowToggle(rows) {
   const hidden = rows.filter((r) => r.cls === "incidental").length - INCIDENTAL_CHIP_CAP;
   return hidden > 0
-    ? `<li class="pd-stat-more"><button type="button" class="pd-more-btn" data-statmore
-        aria-expanded="false">+${hidden} more</button></li>` : "";
+    ? `<li class="pd-line pd-stat-more"><span class="pd-ln-mark" aria-hidden="true"></span>`
+      + `<span class="pd-ln-where"></span><span class="pd-ln-what">`
+      + `<button type="button" class="pd-more-btn" data-statmore aria-expanded="false">+${hidden} more</button>`
+      + `</span></li>` : "";
 }
 
 /** #455 — every stat an equipped item yields, from all three sources, as chip
@@ -753,10 +838,19 @@ function overflowToggle(rows) {
  *  Set contributions are synthesized from the contribution itself — they have no
  *  affix record on the item, which is exactly why `pd-prio` was the only place
  *  they appeared. */
-function statChipEntries(v, idx2, maps, contribIdx) {
+function statChipEntries(v, idx2, maps, contribIdx, includeCraft) {
+  // #471 — `includeCraft` false drops the craft-granted affixes from this list.
+  // The Loadout card now states every craft in place, in the Craft section,
+  // beside the slot that yields it, so carrying them here as well printed the
+  // same point twice on one card. Defaults to TRUE: the Deep Dive is the
+  // exhaustive per-item surface and its craft block shows instructions only
+  // (`stepOnly`), so dropping them there would lose the values entirely. That
+  // asymmetry is deliberate and tracked: #472 converts the Deep Dive's craft
+  // block to the row language, at which point this flag is revisited there too.
+  includeCraft = includeCraft !== false;
   const printed = (v.affixes || []).map((a) => [a, null]);
   const crafted = [];
-  if (maps && idx2 != null && idx2 >= 0) {
+  if (includeCraft && maps && idx2 != null && idx2 >= 0) {
     const take = (arr) => { for (const o of arr || []) for (const a of Proj.craftAffixRecords(o)) crafted.push([a, "craft"]); };
     take(maps.dinoAssign && maps.dinoAssign.byIndex && maps.dinoAssign.byIndex.get(idx2));
     take(maps.ncByItem && maps.ncByItem.get(v.variant_id));
@@ -816,6 +910,14 @@ function statChipEntries(v, idx2, maps, contribIdx) {
   }
   for (const c of contribIdx.list) {
     if (c.viaSet || c.stat == null || covered.has(c.stat)) continue;
+    // #471 — with the craft affixes deliberately excluded above, EVERY crafted
+    // point is uncovered here, and the sweep would faithfully re-add all of them
+    // to the Stats section — restoring the duplication in a form no test that
+    // reads the craft list would catch. The sweep's job is "a credited point
+    // that reaches no row at all"; a point the Craft section states in place has
+    // a row, so it is not residual. Augment-granted points never reach this list
+    // (`hostIds` is null for that kind) but are named for the same reason.
+    if (!includeCraft && CRAFT_SOURCE_KINDS.has(c.sourceKind)) continue;
     covered.add(c.stat);
     entries.push({ affix: { name: c.stat, stat: c.stat, value: c.value, type: c.bonus_type }, source: null });
   }
@@ -836,7 +938,12 @@ function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) 
   // set-sourced contributions all become chips in the same row; `pd-prio` is
   // retired rather than left beside it restating 62% of what it says.
   const contribIdx = itemContribIndex(prioCtx, v.variant_id);
-  const { entries, raw } = statChipEntries(v, idx, maps, contribIdx);
+  // #471 — craft-granted affixes are EXCLUDED here. They are stated in place in
+  // the Craft section below, beside the slot that yields them, which is what
+  // "show the slot and the affix it applies" means; carrying them here as well
+  // put `Melee Power +8` twice on one card. Augment-granted affixes were never
+  // in this list (never credited to the host) and are stated under their gem.
+  const { entries, raw } = statChipEntries(v, idx, maps, contribIdx, false);
   // #453 U2 — classify against the RAW affixes, render from the collapsed ones.
   // The collapse is what makes the card readable and is also what destroys the
   // stat names classification needs, so the two run side by side (KTD1).
@@ -849,66 +956,157 @@ function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) 
   // run of chips with two labelled rows hanging off the bottom.
   const stats = entries.length
     ? `<div class="pd-sec pd-sec-stats"><span class="pd-slabel">Stats</span>`
-      + `<ul class="pd-stats">${statChipRow(entries, cover, contribIdx, rank1, ranked)}</ul></div>` : "";
+      + `<ul class="pd-lines">${statChipRow(entries, cover, contribIdx, rank1, ranked)}</ul></div>` : "";
 
-  let augs = "";
-  if (maps && maps.augAssign && idx != null && idx >= 0) {
-    // Filled slots: the assigned augment + the affixes it adds (R3). Open slots:
-    // still shown as a pip so an empty augment slot reads as an open upgrade (AE2).
-    const placed = maps.augAssign.byIndex.get(idx) || [];
-    const open = maps.augAssign.freeByIndex.get(idx) || [];
-    const filled = placed.map((p) => {
-      const meta = augById && augById.get(p.variant_id);
-      // #453 U3 (R6/KD3) — the augment's granted stats become chips in the same
-      // three classes, but stay NESTED under the augment rather than merging
-      // into a card-level row. The loadout is a shopping list: "which gem do I
-      // actually go slot" has to survive, and a hover-only source marker is
-      // unavailable on touch.
-      //
-      // No collapse here, and that is deliberate — augment affixes are never
-      // collapsed anywhere in the app (see `bundleGroups`' doc-comment), so
-      // classification reads them directly. Collapsing them "for consistency"
-      // would change what the player compares against the in-game tooltip.
-      const augAffixes = (meta && meta.affixes) || [];
-      const affx = augAffixes.length
-        ? `<ul class="aug-affx pd-stats">${statChipRow(
-            augAffixes.map((a) => ({ affix: a, source: null })),
-            Proj.affixStatCoverage(augAffixes), contribIdx, rank1, ranked)}</ul>` : "";
-      const col = String(p.color || "").toLowerCase();
-      const where = p.slot_color && p.slot_color !== p.color ? `${p.color} in ${p.slot_color} slot` : `${p.color || ""} slot`;
-      // #469 — the gem row inherits the strongest class its affixes earn, so the
-      // one to go slot is findable without reading every nested chip.
-      return `<li class="aug-filled${grantLinkClass(augAffixes, contribIdx, ranked)}"><span class="aug-pip aug-${esc(col)}" title="${esc(where)}"></span><span class="aug-name">${esc(p.variant_id)}</span>${affx}</li>`;
-    });
-    const openPips = open.map((c) =>
-      `<li class="aug-open"><span class="aug-pip aug-${esc(String(c).toLowerCase())}" title="open ${esc(c)} augment slot"></span><span class="muted">open ${esc(c)} slot</span></li>`);
-    if (filled.length || openPips.length) {
-      augs = `<div class="pd-sec pd-sec-aug"><span class="pd-slabel">Augments</span><ul class="pd-auglist">${filled.join("")}${openPips.join("")}</ul></div>`;
-    }
-  }
-
-  // Assigned craft-upgrade slots (R4) — the same shared chips the Deep Dive uses,
-  // so the two surfaces never drift. Assigned-only (the maps carry no empty-slot
-  // inventory); an unfilled craft slot renders nothing extra.
-  const craftArr = (maps && idx != null && idx >= 0) ? craftSlotChips(v, idx, maps, true, contribIdx, ranked) : [];
-  const crafts = craftArr.length
-    ? `<div class="pd-sec pd-sec-craft"><span class="pd-slabel">Craft</span><div class="pd-slots">${craftArr.join("")}</div></div>` : "";
+  const augs = augmentSection(v, idx, maps, augById, contribIdx, rank1, ranked);
+  const crafts = craftSection(v, idx, maps, contribIdx, rank1, ranked);
 
   if (!stats && !augs && !crafts) return "";
-  // R7/AE6 — in owned-inventory mode the base item is yours, but augments and
-  // crafting are RECOMMENDATIONS from the full catalog, not your inventory. Mark
-  // the augment/craft block so it reads as "craft/slot this", not "you own this".
-  // #359 — the note has to track which pool the augments actually came from.
-  // With the augment restriction ON they are drawn from `owned UNION acquirable`,
-  // so "not owned" would now overstate: every augment shown is either in the
-  // player's export or one anyone can buy. Crafting is still full-catalog in
-  // both cases, which is why the restricted wording still says so.
-  const recNote = (ownedMode && (augs || crafts))
-    ? (ownedAugments
-      ? `<div class="pd-rec-note muted" title="Augments are limited to your imported inventory plus augments anyone can buy or trade for; crafting still comes from the full catalog">Owned or buyable${crafts ? " · crafting recommended" : ""}</div>`
-      : `<div class="pd-rec-note muted" title="Augments and crafting always come from the full catalog, not your imported inventory">Recommended (not owned)</div>`)
-    : "";
-  return `<div class="pd-rbody">${stats}${recNote}${augs}${crafts}</div>`;
+  return `<div class="pd-rbody">${stats}${augs}${crafts}</div>`;
+}
+
+/** #471 — the owned-inventory disclosure, as one of the card's foot notes.
+ *
+ *  It used to sit INSIDE `pd-rbody`, between the Stats section and the Augments
+ *  one, which is why `.pd-sec ~ .pd-sec` had to be a general sibling selector.
+ *  It is a statement about the whole pick — "these augments are recommendations,
+ *  not your inventory" — which is what the foot is for, and putting it in the
+ *  body made it the one note whose position depended on which sections rendered.
+ *
+ *  R7/AE6 — in owned-inventory mode the base item is yours, but augments and
+ *  crafting are RECOMMENDATIONS from the full catalog, not your inventory.
+ *  #359 — the wording tracks which pool the augments actually came from. With
+ *  the augment restriction ON they are drawn from `owned UNION acquirable`, so
+ *  "not owned" would overstate: every augment shown is either in the player's
+ *  export or one anyone can buy. Crafting is full-catalog either way, which is
+ *  why the restricted wording still says so. */
+function recNote(ownedMode, ownedAugments, hasAug, hasCraft) {
+  if (!ownedMode || !(hasAug || hasCraft)) return "";
+  return ownedAugments
+    ? `<div class="pd-note is-owned" title="Augments are limited to your imported inventory plus augments anyone can buy or trade for; crafting still comes from the full catalog"><span class="pd-note-ico" aria-hidden="true">◈</span><span>Owned or buyable${hasCraft ? " · crafting recommended" : ""}</span></div>`
+    : `<div class="pd-note is-owned" title="Augments and crafting always come from the full catalog, not your imported inventory"><span class="pd-note-ico" aria-hidden="true">◈</span><span>Recommended (not owned)</span></div>`;
+}
+
+/** #471 — the Sun/Moon glyphs, the SAME pair the Set Bonuses tab prints for a
+ *  set-like Lunar/Solar bonus. Those two slots belong to a separate gem system
+ *  that accepts no standard augment (wiki-ruled), and on the card they were
+ *  previously a coloured dot indistinguishable from a Red or a Green one. Two
+ *  surfaces naming the same system with different symbols is the drift this
+ *  repo files as a defect, so the glyph is shared rather than re-chosen. */
+const SUN_MOON_GLYPH = { sun: "☀\uFE0F", moon: "🌙" };
+
+/** #471 — every augment slot the item declares, filled or not, in place.
+ *
+ *  The open slots were already rendered (AE2) but only as a bare coloured pip
+ *  reading "open Blue slot", which said a slot existed and nothing about why it
+ *  was not used. Both states are now the same row: marker, colour, and what is
+ *  in it — a gem with the stats it grants, or "empty".
+ *
+ *  The empty wording is SHORT on purpose. "no augment in this colour adds to
+ *  your ranked stats" is a full clause, and an item with four open colours spent
+ *  eight wrapped lines saying nothing happened four times. The sentence rides
+ *  the row's `title`; the row says "empty". */
+function augmentSection(v, idx, maps, augById, contribIdx, rank1, ranked) {
+  if (!(maps && maps.augAssign && idx != null && idx >= 0)) return "";
+  const placed = maps.augAssign.byIndex.get(idx) || [];
+  const open = maps.augAssign.freeByIndex.get(idx) || [];
+  if (!placed.length && !open.length) return "";
+  const mark = (color) => SUN_MOON_GLYPH[String(color || "").toLowerCase()] || null;
+  const filled = placed.map((p) => {
+    const meta = augById && augById.get(p.variant_id);
+    // #453 U3 (R6/KD3) — the augment's granted stats stay NESTED under the gem
+    // rather than merging into a card-level row. The loadout is a shopping list:
+    // "which gem do I actually go slot" has to survive.
+    const augAffixes = (meta && meta.affixes) || [];
+    const col = String(p.color || "").toLowerCase();
+    const where = p.slot_color && p.slot_color !== p.color
+      ? `${p.color} in ${p.slot_color} slot` : `${p.color || ""} slot`;
+    // #469 — the gem row inherits the strongest class its affixes earn, so the
+    // one to go slot is findable without reading every nested line.
+    return stackLine(grantClass(augAffixes, contribIdx, ranked), p.color || "—",
+      `<span class="aug-name">${esc(p.variant_id)}</span>${subLines(augAffixes, contribIdx, rank1, ranked)}`,
+      { cls: `aug-filled aug-${esc(col)}`, mark: mark(p.color) || "●", markCls: `aug-mark aug-${esc(col)}`, title: where });
+  });
+  const openRows = open.map((c) => {
+    const col = String(c).toLowerCase();
+    return stackLine("empty", c, "empty", {
+      cls: `aug-open aug-${esc(col)}`,
+      mark: mark(c) || "◇", markCls: `aug-mark aug-${esc(col)}`,
+      title: `open ${c} augment slot — no augment in this colour adds to your ranked stats`,
+    });
+  });
+  return `<div class="pd-sec pd-sec-aug"><span class="pd-slabel">Augments</span>`
+    + `<ul class="pd-lines pd-auglist">${filled.join("")}${openRows.join("")}</ul></div>`;
+}
+
+/** #471 — the craft rows for one item: every assigned craft across every family,
+ *  plus the Viktranium slots the item declares that the solve left empty.
+ *
+ *  Split out from `craftSection` because `equippedRow` needs to know whether the
+ *  section exists before it renders the foot (the owned-mode note only fires
+ *  when there is an augment or craft recommendation to qualify), and sniffing
+ *  the rendered HTML for a class name would make that note depend on markup. */
+function craftRowsFor(v, idx, maps) {
+  if (!(maps && idx != null && idx >= 0)) return [];
+  const rows = [];
+  const push = (arr, family) => { for (const o of arr || []) rows.push({ family, o }); };
+  push(maps.dinoAssign && maps.dinoAssign.byIndex && maps.dinoAssign.byIndex.get(idx), "dino");
+  push(maps.ncByItem && maps.ncByItem.get(v.variant_id), "nc");
+  push(maps.rollByItem && maps.rollByItem.get(v.variant_id), "roll");
+  const vikPlaced = (maps.vikByItem && maps.vikByItem.get(v.variant_id)) || [];
+  push(vikPlaced, "vik");
+  // #370 — a Lamordia slot the item DECLARES but the solve left empty keeps its
+  // row. The slot is part of the item's identity: an item that ships with four
+  // slots must never read as a three-slot item.
+  for (const s of Proj.unfilledVikSlots(v, vikPlaced)) rows.push({ family: "vikEmpty", o: s, empty: true });
+  push(maps.sealByItem && maps.sealByItem.get(v.variant_id), "seal");
+  push(maps.tfByItem && maps.tfByItem.get(v.variant_id), "tf");
+  push(maps.gsByItem && maps.gsByItem.get(v.variant_id), "gs");
+  return rows;
+}
+
+/** #471 — does this item declare any augment slot at all, filled or open? */
+function hasAugmentSlots(idx, maps) {
+  if (!(maps && maps.augAssign && idx != null && idx >= 0)) return false;
+  return !!((maps.augAssign.byIndex.get(idx) || []).length
+    || (maps.augAssign.freeByIndex.get(idx) || []).length);
+}
+
+/** #471 — every craft slot on the item, filled or not, with the affix it applies
+ *  stated beside it.
+ *
+ *  This is the section that made de-duplicating Stats possible: before it, a
+ *  craft row was an instruction with no value ("Slot Dolorous Viktranium
+ *  augment") and the value lived only in the Stats section, so the two had to be
+ *  read together. Now the row carries both, and Stats carries neither.
+ *
+ *  The caption names the crafting system when every row on the item belongs to
+ *  one — which is the overwhelmingly common case, and it is what tells the
+ *  player which station to walk to. A mixed-family item says just "Craft":
+ *  naming one of two systems above rows from both would be false. */
+function craftSection(v, idx, maps, contribIdx, rank1, ranked) {
+  const rows = craftRowsFor(v, idx, maps);
+  if (!rows.length) return "";
+  const parted = rows.map((r) => ({ r, parts: Proj.craftRowLabel(r.o, r.family) }));
+  const systems = new Set(parted.map(({ parts }) => parts.system).filter(Boolean));
+  const one = systems.size === 1 ? [...systems][0] : null;
+  const lines = parted.map(({ r, parts }) => {
+    const cls = r.empty ? "empty" : grantClass(Proj.craftAffixRecords(r.o), contribIdx, ranked);
+    const key = r.empty ? null : Proj.affixCoverageKey(Proj.craftAffixRecords(r.o)[0]);
+    // A family whose slot has no name of its own (Green Steel) returns the system
+    // as its `where`; when the caption already says it, blank the column rather
+    // than print the same word twice on one row.
+    const where = (one && parts.where === one) ? "" : parts.where;
+    return stackLine(cls, where, esc(parts.what), {
+      cls: `craft-${esc(r.family)}`,
+      mark: r.empty ? "◇" : LINE_MARK[cls],
+      rank1: !!(rank1 && key === rank1 && cls === "tracked"),
+      title: parts.title,
+    });
+  });
+  const caption = one ? `Craft · ${one}` : "Craft";
+  return `<div class="pd-sec pd-sec-craft"><span class="pd-slabel">${esc(caption)}</span>`
+    + `<ul class="pd-lines pd-craftlist">${lines.join("")}</ul></div>`;
 }
 
 // Front-facing armored-adventurer silhouette (retired from the results layout;
@@ -1010,12 +1208,19 @@ function attributionList(contribs) {
 function whyThisNote(result, item, attr, targets) {
   attr = attr || attributionByTarget(result);
   const contribs = itemContributions(result, item, attr, targets);
-  if (!contribs.length) return `<div class="pd-why muted">included to complete the loadout</div>`;
+  // #471 — both statements join the card's one foot-note family. They were the
+  // two shapes the user named: a warn-coloured text line and a muted one, sitting
+  // beside a third (`pd-rnote`) and a fourth (`pd-rec-note`) that looked like
+  // neither. `pd-why` / `pd-carried` are kept as second classes — the Alternatives
+  // tab reads `whyThisLine`'s markup and the tests read these names.
+  if (!contribs.length) {
+    return `<div class="pd-note pd-why muted"><span class="pd-note-ico" aria-hidden="true">·</span><span>included to complete the loadout</span></div>`;
+  }
   const carried = Proj.craftCarried(result, item, attr);
   if (!carried) return "";
   const txt = carried.slice(0, 3).map((p) =>
     `${esc(p.stat)} +${esc(p.value)} (${esc(p.family)})`).join(", ");
-  return `<div class="pd-why pd-carried" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab.">⚒ here only for its crafts: ${txt}</div>`;
+  return `<div class="pd-note pd-why pd-carried is-craft" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab."><span class="pd-note-ico" aria-hidden="true">⚒</span><span><b>Here only for its crafts.</b> ${txt}</span></div>`;
 }
 
 function whyThisLine(result, item, attr, targets) {
@@ -2325,7 +2530,11 @@ function buildViews(build, model, query) {
         ? x.a.affixes
         : ((augById.get(x.a.variant_id) || {}).affixes || []);
       const eff = from.length ? esc(from.map(affixLabel).join(", ")) : "";
-      const glyph = x.ls === "Lunar" ? "🌙" : "☀️";
+      // #471 — ONE source for the pair. The Loadout card marks a Sun/Moon augment
+      // slot with these too, and the user reported the two surfaces naming the
+      // same gem system with different symbols; a shared constant is what stops
+      // them drifting again.
+      const glyph = x.ls === "Lunar" ? SUN_MOON_GLYPH.moon : SUN_MOON_GLYPH.sun;
       return `<li class="set-card setlike"><strong>${glyph} ${esc(x.ls)}</strong> <span class="meta">${esc(x.a.variant_id)}</span>${eff ? `<div class="set-grants">${eff}</div>` : ""}</li>`;
     }).join("");
 
@@ -2426,5 +2635,8 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl };
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+    // #471 — the card's row language: the three-column row itself, the two
+    // in-place slot sections, and the foot-note family.
+    stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH };
 }
