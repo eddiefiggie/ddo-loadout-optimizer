@@ -537,9 +537,101 @@ test("#370/#472: the app row states the same slots the exports do, and carries t
   assert.strictEqual((html.match(/is-empty/g) || []).length, 3,
     "each rendered as an open slot, not as a craft to apply");
   // Same sentence on both surfaces — the app and the share cannot disagree about
-  // how many slots an item has.
-  const label = P.craftLabel({ slot_type: "Dolorous" }, "vikEmpty");
+  // how many slots an item has. Built from the ROW the app is rendering rather
+  // than from a hand-written slot object: the hand-written one omitted the
+  // category and so pinned a sentence neither surface produces (#484). Derived,
+  // this still proves the property it is here for — that the app renders the
+  // exports' label instead of inventing its own wording.
+  const dolorous = rows.find((r) => r.o.slot_type === "Dolorous");
+  assert.ok(dolorous, "the Dolorous slot is one of the open rows");
+  const label = P.craftLabel(dolorous.o, "vikEmpty");
+  assert.ok(label.includes("(Weapon)"), "…and the sentence names the slot's category");
   assert.ok(html.includes(`title="${label}"`), "the exports' full sentence rides the row");
+});
+
+// ---- #484 — two slots of one type must be tellable apart, and every slot must
+// ---- appear once, in in-game order, filled or not ---------------------------
+//
+// Reported against Legendary Frozen Contraption, which declares THREE slots:
+// Dolorous (Weapon), Melancholic (Armor), Melancholic (Weapon). One Melancholic
+// filled and one empty is CORRECT, and the card made it unreadable two ways: the
+// category was never rendered, so the two rows were identical; and placements
+// and gaps were sorted as separate blocks, so the concatenation was not slot
+// order.
+
+const CONTRAPTION = [
+  { type: "Dolorous", category: "Weapon" },
+  { type: "Melancholic", category: "Armor" },
+  { type: "Melancholic", category: "Weapon" },
+];
+
+test("#484: every declared slot appears once, in in-game order, filled and empty interleaved", () => {
+  const v = { variant_id: "Legendary Frozen Contraption", lamordia_slots: CONTRAPTION };
+  const placed = [{ item: "Legendary Frozen Contraption", slot_type: "Melancholic",
+    category: "Armor", stat: "Fortification", bonus_type: "Quality", value: 160 }];
+  const rows = P.vikSlotRows(v, placed);
+  assert.deepStrictEqual(rows.map((r) => `${r.slot_type}/${r.category}`),
+    ["Melancholic/Armor", "Melancholic/Weapon", "Dolorous/Weapon"],
+    "Melancholic before Dolorous, and the two Melancholics in declaration order");
+  assert.deepStrictEqual(rows.map((r) => !!r.placement), [true, false, false],
+    "the filled slot sits in its own position, not ahead of the empty ones");
+  assert.strictEqual(rows.length, CONTRAPTION.length, "no slot is dropped or duplicated");
+});
+
+test("#484: the placement pairs by (type, category), not by type alone", () => {
+  const v = { variant_id: "Legendary Frozen Contraption", lamordia_slots: CONTRAPTION };
+  // The craft went into the WEAPON Melancholic slot. Pairing on type alone would
+  // hand it to the Armor slot — the first match — and tell the player to craft in
+  // a slot whose option pool does not even offer it.
+  const placed = [{ item: "Legendary Frozen Contraption", slot_type: "Melancholic",
+    category: "Weapon", stat: "Fortification", bonus_type: "Quality", value: 160 }];
+  const rows = P.vikSlotRows(v, placed);
+  assert.deepStrictEqual(rows.map((r) => !!r.placement), [false, true, false],
+    "the Weapon Melancholic is the one shown as filled");
+});
+
+test("#484: a placement with no category still pairs, rather than reading as a dropped craft", () => {
+  // A snapshot saved before the category rode along. Degrading to the old
+  // type-only behaviour is right; showing a filled slot as empty is not.
+  const v = { variant_id: "Legendary Frozen Contraption", lamordia_slots: CONTRAPTION };
+  const rows = P.vikSlotRows(v, [{ item: "Legendary Frozen Contraption", slot_type: "Melancholic" }]);
+  assert.strictEqual(rows.filter((r) => r.placement).length, 1, "the placement is paired, not lost");
+  assert.strictEqual(rows.length, CONTRAPTION.length, "and no slot is invented for it");
+  // …and the row does NOT borrow the slot's category. Which of the two Melancholic
+  // slots this craft went into is genuinely unknown here, so stamping one on it
+  // would present a guess as a fact — and the guess is actionable, since the two
+  // slots draw from different option pools.
+  const filled = rows.find((r) => r.placement);
+  assert.ok(!filled.placement.category, "no category is invented for a snapshot that never carried one");
+  assert.ok(!P.craftLabel(filled.placement, "vik").includes("("),
+    "so the exported sentence names the type alone");
+});
+
+test("#484: a placement matching no declared slot is reported, never silently dropped", () => {
+  const v = { variant_id: "Odd Item", lamordia_slots: [{ type: "Woeful", category: "Accessory" }] };
+  const rows = P.vikSlotRows(v, [{ item: "Odd Item", slot_type: "Miserable", category: "Accessory" }]);
+  assert.strictEqual(rows.length, 2, "the declared slot AND the unmatched placement");
+  assert.ok(rows.some((r) => r.slot_type === "Miserable" && r.placement),
+    "the craft the solve told the player to apply still appears");
+});
+
+test("#484: the card renders one interleaved list, and the two Melancholic rows differ", () => {
+  const rec = makeRec();
+  rec.snapshot.chosen[0].variant.lamordia_slots = CONTRAPTION;
+  // The solver stamps `category` on every placement (`vikMeta`), so this is the
+  // live shape. The fixture's default placement omits it — that is the legacy
+  // snapshot shape, covered by its own test above.
+  rec.snapshot.vikPlaced = [{ item: "Epic Spectacles", stat: "Resistance",
+    bonus_type: "Enhancement", value: 3, slot_type: "Melancholic", category: "Armor" }];
+  const maps = P.buildCraftMaps(rec.snapshot);
+  const v = rec.snapshot.chosen[0].variant;
+  const rows = R.craftRowsFor(v, 0, maps).filter((r) => r.family === "vik" || r.family === "vikEmpty");
+  assert.deepStrictEqual(rows.map((r) => `${r.o.slot_type}/${r.o.category}`),
+    ["Melancholic/Armor", "Melancholic/Weapon", "Dolorous/Weapon"],
+    "one list in slot order — not every placement followed by every gap");
+  const html = R.craftSection(v, 0, maps, { keys: new Set(), byStat: new Map(), list: [] }, null, new Set());
+  assert.ok(/· Armor/.test(html) && /· Weapon/.test(html),
+    "the category is on the row, so the two Melancholic slots are not identical");
 });
 
 // ---- U6/#249: the compound-absorption quarantine, as sentences --------------
