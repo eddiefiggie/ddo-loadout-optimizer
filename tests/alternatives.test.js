@@ -126,6 +126,61 @@ const tradeModel = () => ({
     assert.ok(reb.sol.effective.Strength >= 18, "gives up Strength only within the bounded give");
   });
 
+  // #480 — the rebalance candidate must state the MINIMUM concession that buys its
+  // gain. Phase 1 alone leaves the traded-from stat unconstrained anywhere inside
+  // its give window among the solutions attaining the gain, so HiGHS returns an
+  // incidental vertex and the card overstates the price. Ring Y1 and Ring Y2 deliver
+  // the IDENTICAL +50 Doublestrike; only Y2 keeps Strength at 19.
+  const minimalModel = () => ({
+    targets: ["Strength", "Doublestrike"], mlCap: 34, dodgeCap: null,
+    worn: [slot("Ring", [
+      item("Ring X", "Ring", [["Strength", "Enhancement", 20]]),
+      item("Ring Y1", "Ring", [["Strength", "Enhancement", 18], ["Doublestrike", "Enhancement", 50]]),
+      item("Ring Y2", "Ring", [["Strength", "Enhancement", 19], ["Doublestrike", "Enhancement", 50]]),
+    ])],
+    augments: [],
+  });
+
+  await test("#480: the rebalance candidate states the MINIMAL concession, not a give-window vertex", async () => {
+    const opt = await S.solveLexicographic(minimalModel(), highs);
+    assert.strictEqual(opt.effective.Strength, 20, "optimum takes the plain +20 ring");
+    assert.strictEqual(opt.effective.Doublestrike, 0);
+    assert.strictEqual(S.alternativeGive(20), 2, "the give window admits BOTH Y1 (18) and Y2 (19)");
+    const reb = S.generateAlternatives(opt, minimalModel(), highs)
+      .find((a) => a.gainAxis === "rebalance");
+    assert.ok(reb, "produced a rebalance candidate");
+    // The whole point: 19, exactly — not merely ">= 18", which is what the
+    // pre-#480 tree returned and what a loose assertion would let through.
+    assert.strictEqual(reb.sol.effective.Strength, 19, "costs ONE point of Strength, not two");
+    assert.ok(reb.sol.chosen.some((c) => c.variant.variant_id === "Ring Y2"),
+      "equips the variant that buys the same gain for less");
+  });
+
+  await test("#480: re-tightening never lowers the gain it was bought with", async () => {
+    const opt = await S.solveLexicographic(minimalModel(), highs);
+    const reb = S.generateAlternatives(opt, minimalModel(), highs)
+      .find((a) => a.gainAxis === "rebalance");
+    assert.strictEqual(reb.sol.effective.Doublestrike, 50,
+      "the traded-to priority still holds its phase-1 maximum");
+  });
+
+  await test("#480: a pair with no slack is unchanged by the re-tighten stage", async () => {
+    // Only one build attains the Constitution gain, so there is nothing to tighten.
+    const model = {
+      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Gloves", [
+        item("Glove A", "Gloves", [["Strength", "Enhancement", 20]]),
+        item("Glove B", "Gloves", [["Strength", "Enhancement", 18], ["Constitution", "Enhancement", 12]]),
+      ])],
+      augments: [],
+    };
+    const opt = await S.solveLexicographic(model, highs);
+    const reb = S.generateAlternatives(opt, model, highs).find((a) => a.gainAxis === "rebalance");
+    assert.ok(reb, "produced a rebalance candidate");
+    assert.strictEqual(reb.sol.effective.Strength, 18, "the only build that buys the gain is still returned");
+    assert.strictEqual(reb.sol.effective.Constitution, 12);
+  });
+
   await test("unranked-stat generator finds a zero-cost strict improvement", async () => {
     const model = {
       targets: ["Strength"], mlCap: 34, dodgeCap: null,
@@ -143,6 +198,82 @@ const tradeModel = () => ({
     assert.strictEqual(un.meta.zeroCost, true, "the Fortitude gain costs no Strength");
     assert.strictEqual(un.sol.effective.Strength, 10, "Strength is unchanged");
     assert.ok(un.sol.chosen.some((c) => c.variant.variant_id === "Boots High"), "equips the higher-Fortitude boots");
+  });
+
+  // ---- #481: the concession axis ----
+
+  // A ONE-SLOT concession: conceding 3 Strength makes Ring Y stage-optimal, and Ring
+  // is the only slot that changes. This is the common shape of a small concession and
+  // the exact shape the shared K=2 distinctness filter would throw away.
+  const oneSlotModel = () => ({
+    targets: ["Strength", "Doublestrike"], mlCap: 34, dodgeCap: null,
+    worn: [slot("Ring", [
+      item("Ring X", "Ring", [["Strength", "Enhancement", 20]]),
+      item("Ring Y", "Ring", [["Strength", "Enhancement", 17], ["Doublestrike", "Enhancement", 30]]),
+    ])],
+    augments: [],
+  });
+  const asCandidate = (probe, stat) => ({
+    sol: probe.sol, gainAxis: "concession",
+    meta: { stat, cap: probe.cap, concession: probe.concession },
+  });
+
+  await test("#481: a concession is analyzed as its own axis, with the gain as the headline", async () => {
+    const opt = await S.solveLexicographic(oneSlotModel(), highs);
+    const query = { targets: ["Strength", "Doublestrike"] };
+    const probe = await S.probeConcession(oneSlotModel(), opt.program, highs, "Strength",
+      opt.program.targetList, opt.perTarget || opt.effective, {});
+    assert.ok(probe, "the probe found a concession");
+    const a = A.analyzeAlternative(opt, asCandidate(probe, "Strength"), query);
+    assert.ok(a.tags.includes("concession"), "carries its own axis tag");
+    assert.strictEqual(a.gainText, "+30 Doublestrike", "the headline is what the trade buys");
+    assert.ok(/-3 Strength/.test(a.costText), "…and the concession is stated as a cost");
+  });
+
+  await test("#481 (KTD5): a ONE-SLOT concession survives ranking, and is dropped without the exemption", async () => {
+    const opt = await S.solveLexicographic(oneSlotModel(), highs);
+    const query = { targets: ["Strength", "Doublestrike"] };
+    const probe = await S.probeConcession(oneSlotModel(), opt.program, highs, "Strength",
+      opt.program.targetList, opt.perTarget || opt.effective, {});
+    const a = A.analyzeAlternative(opt, asCandidate(probe, "Strength"), query);
+    assert.strictEqual(a.minDistinct, 1, "the family carries its own minimum distinctness");
+    assert.strictEqual(A.rankAlternatives([a], opt, {}).length, 1, "kept");
+    // The counterfactual: the SAME candidate under the shared K is thrown away. This
+    // is what makes the exemption load-bearing rather than incidental — a one-item
+    // swap is the most valuable thing the probe can find, and the shared filter
+    // exists to drop near-identical builds.
+    const shared = { ...a, minDistinct: null };
+    assert.strictEqual(A.rankAlternatives([shared], opt, {}).length, 0,
+      "…and would be silently dropped without it");
+  });
+
+  await test("#481: a concession that costs a LOWER priority states that loss as a cost row", async () => {
+    // Strength > Doublestrike > Deadly. Conceding Strength unlocks an Insight
+    // Doublestrike that outranks the Necklace's, flipping the Necklace to the
+    // Enhancement source and taking its Deadly with it.
+    const lossy = () => ({
+      targets: ["Strength", "Doublestrike", "Deadly"], mlCap: 34, dodgeCap: null,
+      worn: [
+        slot("Ring", [
+          item("Ring X", "Ring", [["Strength", "Enhancement", 20]]),
+          item("Ring Y", "Ring", [["Strength", "Enhancement", 17], ["Doublestrike", "Insight", 30]]),
+        ]),
+        slot("Necklace", [
+          item("Neck P", "Necklace", [["Doublestrike", "Insight", 20], ["Deadly", "Enhancement", 25]]),
+          item("Neck Q", "Necklace", [["Doublestrike", "Enhancement", 12]]),
+        ]),
+      ],
+      augments: [],
+    });
+    const opt = await S.solveLexicographic(lossy(), highs);
+    const query = { targets: ["Strength", "Doublestrike", "Deadly"] };
+    const probe = await S.probeConcession(lossy(), opt.program, highs, "Strength",
+      opt.program.targetList, opt.perTarget || opt.effective, {});
+    const a = A.analyzeAlternative(opt, asCandidate(probe, "Strength"), query);
+    assert.ok(/-25 Deadly/.test(a.costText), "the loss beneath the gain is a stated cost");
+    assert.ok(a.costText !== "no priority cost", "a lossy trade can never read as free");
+    const html = R.renderAltCards([a]);
+    assert.ok(/Deadly -25/.test(html), "…and it reaches the rendered card");
   });
 
   // ---- U3: trade-off analysis, dedupe, ranking ----

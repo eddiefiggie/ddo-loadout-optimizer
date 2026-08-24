@@ -1822,6 +1822,63 @@ test("#91 U5: utilityCard takes the build being rendered — an alternative's re
     "selecting an alternative re-renders receipts from THAT build");
 });
 
+// ---- #481: where the concession control may appear ----
+//
+// The gate is the feature's honesty surface: offered on a priority with nothing
+// beneath it, or on a stat sitting at zero, the control can only ever answer
+// "nothing found" — which teaches the player that the control is noise.
+{
+  const cQuery = { targets: ["Strength", "Doublestrike", "Deadly"] };
+  const cOn = { concessions: true };
+
+  test("#481: the control is offered on a priority with something ranked beneath it", () => {
+    const html = R.concessionControl("Strength", 0, 20, cQuery, cOn);
+    assert.ok(/class="btn ghost concession-probe"/.test(html), "renders the control");
+    assert.ok(/data-stat="Strength"/.test(html), "carries the stat it prices");
+  });
+
+  test("#481: the LAST ranked priority is never offered the control", () => {
+    assert.strictEqual(R.concessionControl("Deadly", 2, 25, cQuery, cOn), "",
+      "nothing is ranked beneath it, so there is nothing a concession could buy");
+  });
+
+  test("#481: a priority sitting at zero is never offered the control", () => {
+    assert.strictEqual(R.concessionControl("Doublestrike", 1, 0, cQuery, cOn), "",
+      "nothing to concede");
+  });
+
+  test("#481: the control is withheld without the solver, not offered and then failed", () => {
+    assert.strictEqual(R.concessionControl("Strength", 0, 20, cQuery, { concessions: false }), "");
+    assert.strictEqual(R.concessionControl("Strength", 0, 20, cQuery, undefined), "",
+      "a caller that passes no gate at all gets no control");
+  });
+
+  test("#481: the probe handler is bound to a per-render element, not the container", () => {
+    // `renderResults` is called again on every solve, load and per-slot constraint
+    // change, and it does NOT replace `container` itself — only its innerHTML. A
+    // delegated listener bound to `container` therefore accumulates one copy per
+    // render and would fire the probe once per stacked copy. `#rp-cards` is minted
+    // by each render's template, so binding there gives exactly one live handler.
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "..", "web", "results.js"), "utf-8");
+    const bind = srcFrom(src, 'q("#rp-cards").addEventListener("click"', 200, "concession handler");
+    assert.ok(/concession-probe/.test(bind), "…and it is the concession handler bound there");
+    assert.ok(!/container\.addEventListener\("click", \(e\) => \{\s*const btn = e\.target\.closest\("\.concession-probe"\)/.test(src),
+      "the handler must not be bound to the long-lived container");
+  });
+
+  test("#481: a selected alternative's cards do not offer the control", () => {
+    // `renderBuild` computes the gate, so an alternative arrives here with it
+    // already false. Guard the SOURCE of that expression: the probe is defined
+    // against the OPTIMUM's program, and pricing from an alternative's card would
+    // answer a question about a build the player is not looking at.
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "..", "web", "results.js"), "utf-8");
+    assert.ok(/concessions:\s*build === optimum && canProbeConcession\(\)/.test(src),
+      "renderBuild must gate the control on the build being the optimum");
+  });
+}
+
 console.log(`\n${passed} passed`);
 
 // #346 (U5, R12, AE7) — a rung can take a stat's last source out of the pool.
