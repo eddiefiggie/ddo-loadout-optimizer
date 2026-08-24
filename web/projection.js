@@ -747,7 +747,7 @@
    *  family}], highest first) when the item's native (worn/choice-slot) and set
    *  contributions to the RANKED targets are both zero and at least one crafted
    *  channel contributes — and null otherwise, including for a filler pick that
-   *  contributes nothing at all (that is `whyThisLine`'s "included to complete
+   *  contributes nothing at all (that is `whyThisNote`'s "included to complete
    *  the loadout", not a craft story). */
   function craftCarried(result, item, attr) {
     attr = attr || attributionByTarget(result);

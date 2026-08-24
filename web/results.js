@@ -437,7 +437,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   // same height via the grid stretch + the .pd-row min-height). Assignment data
   // comes from `maps` (keyed by the pick's chosen index); `augById` resolves an
   // augment's affixes by variant_id (the placed meta carries none).
-  // #453 U2 (KTD2) — `prioCtx` was already here for whyThisLine two lines down;
+  // #453 U2 (KTD2) — `prioCtx` was already here for the per-item note below;
   // the chips derive "tracked" from the same source rather than a second one.
   const body = (v && !locked) ? equippedBody(v, pick ? pick.idx : -1, maps, augById, owned.mode, owned.augments, prioCtx) : "";
   // #262 — the no-drop-source note on the gear box itself: the moment of seeing
@@ -450,8 +450,8 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   // #455 — `pd-prio` is retired. It was a second chip family restating 62% of
   // the stat row (measured, ML34 solve, 21 of 34 chips), and its only unique
   // content — set- and craft-sourced contributions — is now chipped in the row
-  // itself. `whyThisLine` survives ONLY for its two non-chip statements: the
-  // #245 craft-carried line and the empty-state.
+  // itself. Its two non-chip statements — the #245 craft-carried line and the
+  // empty-state — live on in `whyThisNote`; the renderer itself went in #476.
   const prio = (v && !locked && prioCtx && prioCtx.result)
     ? whyThisNote(prioCtx.result, { slot: label, variant_id: v.variant_id }, prioCtx.attr, prioCtx.targets)
     : "";
@@ -489,8 +489,8 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
 
 /** #453 U2 / #455 — this solve's credited contributions for one item, indexed.
  *
- *  Derived from `itemContributions`, which is the same function `whyThisLine`
- *  read. That is the point: deriving "tracked" twice from two sources is how the
+ *  Derived from `itemContributions`, the same function the per-item note reads.
+ *  That is the point: deriving "tracked" twice from two sources is how the
  *  card's surfaces come to disagree about what the solver was steering toward.
  *  `prioCtx` is already threaded to `equippedRow`, so this costs one parameter
  *  rather than a new data path.
@@ -1194,17 +1194,18 @@ function attributionList(contribs) {
 /** #455 — the two statements the per-item summary makes that are NOT chips.
  *
  *  `whyThisLine` did three jobs: an empty-state, the #245 craft-carried line,
- *  and a chip row. The chip row is retired — it restated the stat row — but
- *  these two are different kinds of statement, not a list of contributions, and
- *  neither belongs in the chip language:
+ *  and a chip row. The chip row was retired in #455 — it restated the stat row —
+ *  and the renderer itself in #476. These two are different kinds of statement,
+ *  not a list of contributions, and neither belonged in the chip language:
  *
  *    - the empty-state says the item earned its slot on no ranked stat at all;
  *    - #245 says every ranked point here is CONDITIONAL on crafting, which is a
  *      claim about the pick, not about any one stat.
  *
- *  `whyThisLine` itself is kept and still exported: `tests/results.test.js`
- *  pins it, and the Alternatives tab reads it. Retiring the row from the gear
- *  box is a render decision, not a reason to delete a tested function. */
+ *  #476 — `whyThisLine` is gone. Retiring the row from the gear box was a
+ *  render decision and not by itself a reason to delete a tested function, so it
+ *  was left in place; what settled it is that the surviving justification turned
+ *  out to be a claim about a caller that never existed. */
 function whyThisNote(result, item, attr, targets) {
   attr = attr || attributionByTarget(result);
   const contribs = itemContributions(result, item, attr, targets);
@@ -1214,12 +1215,10 @@ function whyThisNote(result, item, attr, targets) {
   // neither. `pd-why` / `pd-carried` are kept as second classes because the tests
   // read these names.
   //
-  // #475 — the claim that "the Alternatives tab reads `whyThisLine`'s markup" was
-  // false and is removed. `whyThisLine` has NO call sites anywhere; it is dead
-  // production code kept alive by roughly thirty tests across three files whose
-  // stated justification was that claim. Retiring it is real work with a real
-  // cost — those tests encode presence-not-+1, the cross-add label and the #88
-  // override disclosure — so it is filed as #476 rather than done here.
+  // #475/#476 — the claim that "the Alternatives tab reads `whyThisLine`'s
+  // markup" was false; #475 removed it and #476 removed the function. This note
+  // is now the only surviving statement of the two non-chip forms, which is what
+  // it always was in substance.
   if (!contribs.length) {
     return `<div class="pd-note pd-why muted"><span class="pd-note-ico" aria-hidden="true">·</span><span>included to complete the loadout</span></div>`;
   }
@@ -1230,68 +1229,25 @@ function whyThisNote(result, item, attr, targets) {
   return `<div class="pd-note pd-why pd-carried is-craft" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab."><span class="pd-note-ico" aria-hidden="true">⚒</span><span><b>Here only for its crafts.</b> ${txt}</span></div>`;
 }
 
-function whyThisLine(result, item, attr, targets) {
-  attr = attr || attributionByTarget(result);
-  const contribs = itemContributions(result, item, attr, targets);
-  if (!contribs.length) return `<div class="pd-why muted">included to complete the loadout</div>`;
-  // #245 — an item whose every ranked contribution is a craftable option is not
-  // "best in slot", it is best *once you go craft it*. The wildcard families
-  // (a Viktranium slot reaches 126 stats) win whole slots on a single crafted
-  // point, so the reason must be on the pick, not buried in the deep dive.
-  const carried = Proj.craftCarried(result, item, attr);
-  if (carried) {
-    const txt = carried.slice(0, 3).map((p) =>
-      `${esc(p.stat)} +${esc(p.value)} (${esc(p.family)})`).join(", ");
-    return `<div class="pd-why pd-carried" title="Nothing printed on this item advances your priorities — its value here depends entirely on crafting it. Un-craftable alternatives are on the Alternatives tab.">⚒ here only for its crafts: ${txt}</div>`;
-  }
-  // #449 U7 (R20) — one chip per contribution, replacing the comma-run of inline
-  // spans. The run carried FIVE qualifiers, not one label, and every one of them
-  // survives: the value, the stat, the bonus type, `(set)`, `(from <stat>)` and
-  // the override disclosure. That last one shipped under #88 precisely because a
-  // gear box stating a bonus type without it "states a bonus type as though the
-  // wiki said so" — dropping it here would re-open the claim it was written to
-  // close. The primary line is the value and the stat; the qualifiers move to a
-  // sub-label rather than off the surface.
-  //
-  // R31 — the three-contribution cap is retained. It governs the row's height at
-  // phone width, which is what R22 is about.
-  const rank1 = (targets && targets.length) ? targets[0] : null;
-  const chips = contribs.slice(0, 3).map((c) => {
-    // #227 — untyped is a real bucket; never print a raw null.
-    const typeLabel = (c.bonus_type == null || c.bonus_type === "") ? "untyped" : c.bonus_type;
-    // U3 (#290/#291) — a cross-added credit is labeled "(from <source stat>)",
-    // the same wording as the Ranked Priorities rows and every export.
-    const from = c.crossAdd ? ` (from ${esc(c.crossAdd)})` : "";
-    // #88 U8 (R13/R16) — a player-asserted bonus type is labelled here too, and
-    // names both types. Without it the gear box states a bonus type as though the
-    // wiki said so, which is exactly the claim an override does not support.
-    const ovr = c.overriddenFrom
-      ? ` (your call — catalog says ${esc(c.overriddenFrom)})`
-      : "";
-    // A boolean contribution has no magnitude and no bonus type to state, so its
-    // sub-label carries only what actually applies to it (U4: presence, not "+1").
-    const sub = c.boolean
-      ? `${c.viaSet ? "(set)" : ""}${from}${ovr}`.trim()
-      : `${esc(typeLabel)}${c.viaSet ? " (set)" : ""}${from}${ovr}`;
-    const head = c.boolean
-      ? `<span class="pd-chip-check" aria-hidden="true">✓</span><span class="pd-chip-stat">${esc(c.stat)}</span>`
-      : `<span class="pd-chip-value">+${esc(c.value)}</span><span class="pd-chip-stat">${esc(c.stat)}</span>`;
-    // #449 U4 (R17a) — no at-ceiling marker here. An item is not the whole
-    // contribution to a stat, so a green marker on one of its spans read as a
-    // claim about that item rather than about the summed total. The fact now
-    // renders once, on the ranked card that actually describes it (`statReach`).
-    //
-    // `pd-contrib` is kept alongside `pd-chip`: it is the class every existing
-    // guard names, and the chip is what that span became rather than a new thing
-    // beside it.
-    const isTop = rank1 != null && c.stat === rank1;
-    return `<span class="pd-contrib pd-chip${isTop ? " is-rank1" : ""}">`
-      + `<span class="pd-chip-head">${head}</span>`
-      + (sub ? `<span class="pd-chip-sub">${sub}</span>` : "")
-      + `</span>`;
-  });
-  return `<div class="pd-prio" title="this item's contributions to your ranked priorities">${chips.join("")}</div>`;
-}
+// #476 — `whyThisLine` is deleted. It rendered the gear box's per-item
+// contribution row and became dead in #455, when `pd-prio` was retired and its
+// two non-chip statements moved into `whyThisNote`. From then on nothing called
+// it; roughly thirty tests across three files were its only consumer, and the
+// doc-comment justifying that said the Alternatives tab read it — which was
+// false, and was corrected in #475.
+//
+// Nothing it asserted is lost. Each behaviour it encoded is now covered on a
+// surface that actually renders: presence-not-+1, the cross-add label and the
+// rank-1 accent by the stat row; the absent at-ceiling marker by the two
+// #449 U4 guards on `equippedRow` and `loadoutDeepDive`; contribution ordering
+// by `itemContributions`' own tests in projection.test.js; and the four that had
+// NO live guard — the untyped bucket (#227), the craft-carried note's content
+// (#245), the filler empty-state, and the #88 override disclosure driven through
+// the whole chain — by the tests added under #476, each proven to fail when its
+// own behaviour is broken.
+//
+// The `.pd-chip` / `.pd-prio` CSS family went with it; `.pd-chip-q` did not, and
+// is still what `chipQualifiers` emits on the live row.
 
 // Count-up motion (KTD4), robust to motion NOT running (AE4). The final value is
 // written into the DOM first and stays there unless an animation frame actually
@@ -2704,7 +2660,7 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, loadoutDeepDive, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, loadoutDeepDive, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,
