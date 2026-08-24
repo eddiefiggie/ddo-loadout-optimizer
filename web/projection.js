@@ -634,7 +634,25 @@
 
   /** Which ranked targets a specific equipped item wins, and by how much. `item` is
    *  { slot, variant_id }. Returns [{ stat, value, viaSet, boolean }], highest first;
-   *  empty for a filler/tie-break pick. */
+   *  empty for a filler/tie-break pick.
+   *
+   *  #476 — NO IN-APP CALLER, DELIBERATELY. This is a data API on the projection
+   *  export surface, exercised by `tests/attribution.test.js` and pinned by the
+   *  re-export guard in `tests/projection.test.js`. Nothing in `web/` calls it,
+   *  and that is not a defect to clean up.
+   *
+   *  The note is here because a dead-code sweep will find it and it looks exactly
+   *  like `whyThisLine`, which #476 deleted for being uncalled — and which cost a
+   *  twelve-behaviour audit to remove safely. The two are not the same case:
+   *  `whyThisLine` was a RENDERER that rendered on no surface, so its tests
+   *  covered nothing a player could see; this is a pure function over the
+   *  attribution model, and its tests cover the model. `itemContributions` is
+   *  what the surfaces read, and it is deliberately a different shape — it keeps
+   *  each contribution separate and carries the bonus type, where this one sums
+   *  per stat and drops it.
+   *
+   *  Ruled on 2026-08-23 and not filed as an issue, because filing it re-raises
+   *  exactly what this note exists to prevent. */
   function whyThis(result, item, attr) {
     attr = attr || attributionByTarget(result);
     const wins = [];
