@@ -3184,6 +3184,15 @@ if (typeof window !== "undefined" && window.App) {
     // load and per-slot constraint change, which is why the flag lives out here
     // and is stamped back in at build time rather than read off `[open]`.
     let notesSeen = false;
+    // #499 — the upgrade bar: the most a suggestion may cost any one ranked
+    // priority, as a percentage. Session-scoped for exactly `notesSeen`'s reason
+    // — it is how this player wants to be shown suggestions right now, not part
+    // of the build — so it does not reach the save record. It DOES have to
+    // outlive the panel, which renderResults destroys and rebuilds on every
+    // solve, load and per-slot constraint change; hence out here rather than
+    // read back off the select.
+    let upgradeBar = 0;
+    const rememberUpgradeBar = (pct) => { upgradeBar = pct; };
     // #345 (U4, R9/R10) — accept an outbid trade: require the effect, then
     // re-solve. Writes through the SAME state field and sanitizer the Advanced
     // min input writes (cleanBoundMap on the way to the query, targetFloors in
@@ -3338,7 +3347,7 @@ if (typeof window !== "undefined" && window.App) {
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; } });
+        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar });
       } catch (err) {
         state.step = "results"; render();
         const box = document.getElementById("wz-results");
@@ -3645,7 +3654,7 @@ if (typeof window !== "undefined" && window.App) {
         // report-absent utility card is reachable without touching the solved record.
         const renderQuery = restoredRenderQuery(query, !!i.utility_tier_aware);
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; } });
+        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar });
         // #88 U8 (R30/AE9) — either cause shows the banner, and the text says which.
         refreshStaleBanner();
       } else {
@@ -4470,7 +4479,7 @@ if (typeof window !== "undefined" && window.App) {
           if (state.lastRun) {
             state.lastRun.query.slotConstraints = { ...state.slotConstraints };
             // eslint-disable-next-line no-undef
-            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; } });
+            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
           refreshResultsEmphasis();

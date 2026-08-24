@@ -1479,6 +1479,46 @@ function blockNotice(result) {
     : "";
 }
 
+/** #499 — the upgrades notice: the surface that replaced the Alternatives tab.
+ *
+ *  The tab generated candidates on five axes and showed the best five whatever
+ *  they cost, which is how it came to offer +1 of a low-ranked affix for 5
+ *  points of a higher-ranked one. The generator is unchanged; what changed is
+ *  that nothing reaches the player without clearing the bar in alternatives.js,
+ *  and the bar ships at free-only.
+ *
+ *  This renders the OFFER, not the answer. The search re-solves several times
+ *  and must never run on the solve path, so the card carries its own control and
+ *  the click handler in renderResults fills it in — the same shape `outbidNotice`
+ *  has used for on-request pricing since #345.
+ *
+ *  Classed INFORMATIONAL rather than actionable on purpose. An un-run search has
+ *  found nothing yet, and marking every solve "needs attention" for an offer
+ *  would inflate the pill that exists to mean something is wrong. */
+function upgradeNotice(canUpgrade, bar) {
+  if (!canUpgrade) return "";
+  const pct = Math.max(0, Number(bar) || 0);
+  const opt = (v, label) => `<option value="${esc(v)}"${v === pct ? " selected" : ""}>${esc(label)}</option>`;
+  return `<p class="notice-sentence">Your ranked priorities are already locked in. Some builds reach the same
+    totals while completing another set, freeing a slot, taking fewer crafting steps, or picking up a stat you
+    never ranked — search for the ones that cost you nothing.</p>
+  <div class="upg-controls">
+    <label class="upg-bar">Willing to give up
+      <select class="upgrade-bar" aria-label="Most a suggestion may cost any ranked priority">
+        ${opt(0, "nothing — free upgrades only")}
+        ${opt(2, "up to 2% of a priority")}
+        ${opt(5, "up to 5% of a priority")}
+        ${opt(10, "up to 10% of a priority")}
+      </select>
+    </label>
+    <button class="btn primary upgrade-run" type="button">Find upgrades</button>
+  </div>
+  <p class="upg-fineprint muted">A suggestion must clear the bar twice: the loss must be small as a share of that
+    priority's total, <em>and</em> what it buys must outweigh it once your ranking is taken into account. A point
+    of your first priority is worth far more than a point of your last.</p>
+  <div class="upg-out"></div>`;
+}
+
 // ---- #449 U5 — the notices panel -------------------------------------------
 //
 // Eleven notices rendered as flat siblings under the OPTIMAL banner, some as
@@ -1501,7 +1541,7 @@ const NOTICE_CLASS_TAG = {
 // R5 — actionable, then qualifying, then informational.
 const NOTICE_CLASS_ORDER = [NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMATIONAL];
 
-/** #449 U5 (KTD5) — the settled classification of the eight single-fact notices.
+/** #449 U5 (KTD5) — the settled classification of the nine single-fact notices.
  *
  *  Keyed by the notice's function name, which is also what the render array
  *  carries, so the completeness assertion can compare the two directly. The
@@ -1548,6 +1588,10 @@ const NOTICE_TABLE = {
   // R35 — already returns its own `<details>`. Unwrapped inside the panel so the
   // panel stays the only fold.
   saturationNotice: { id: "at-ceiling", title: "AT CEILING", subject: "at ceiling", cls: NOTICE_INFORMATIONAL, jump: null, unwrap: true },
+  // #499 — `jump: null` for the same reason `outbidNotice` carries one: the card
+  // already holds the control that resolves it, and a jump beside it would offer
+  // a second, worse route to the thing the player is looking straight at.
+  upgradeNotice: { id: "upgrades", title: "UPGRADES", subject: "upgrades", cls: NOTICE_INFORMATIONAL, jump: null },
 };
 
 /** #449 U6 (R26) — the short subject each card contributes to the qualifying
@@ -1599,10 +1643,10 @@ function _unwrapDetails(html) {
 
 /** #449 U5 — the render array as descriptors: one per CARD, not one per notice
  *  function. The three multi-fact notices contribute one descriptor per fired
- *  branch (U10); the other eight contribute at most one each, and none when the
+ *  branch (U10); the other nine contribute at most one each, and none when the
  *  notice returns empty.
  *
- *  `name` is the notice function's name for the eight, and the source function's
+ *  `name` is the notice function's name for the nine, and the source function's
  *  name for a split entry — so the completeness assertion covers both tables
  *  from one array. */
 function noticeDescriptors(ctx) {
@@ -1639,6 +1683,7 @@ function noticeDescriptors(ctx) {
   push("craftingExcludedNotice", craftingExcludedNotice(query, result));
   push("augCeilingNotice", augCeilingNotice(query, result));
   push("blockNotice", blockNotice(result));
+  push("upgradeNotice", upgradeNotice(ctx.canUpgrade, ctx.upgradeBar));
 
   const rank = (d) => {
     const i = NOTICE_CLASS_ORDER.indexOf(d.cls);
@@ -1992,7 +2037,7 @@ function outbidNotice(query, result, model, canPrice, canRequire) {
     + (ask ? `<span class="outbid-ask">${ask}</span>` : "") + `</p>`;
 }
 
-function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump, notesSeen, onNotesOpen }) {
+function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump, notesSeen, onNotesOpen, upgradeBar, onUpgradeBar }) {
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
     // is exactly when the user needs to loosen priorities/constraints in place.
@@ -2005,6 +2050,12 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   }
 
   const optimum = result;
+  // #499 — the upgrade bar: the most a suggestion may cost any one ranked
+  // priority, as a percentage of that priority's total. Ships at
+  // `DEFAULT_LOSS_PCT` (0 — free upgrades only). Held as a `let` because the
+  // card's select writes it back and the search reads it on the next run; the
+  // caller's `onUpgradeBar` seam is how it outlives this render.
+  let barPct = Math.max(0, Number(upgradeBar) || 0);
   const cs = optimum.computeScale || { variants: 0, crafts: 0, stages: 0 };
   // The verdict is a tap/keyboard-openable explanation (R7): native <details>, so
   // it works on touch (no hover) and via keyboard. Explains MILP plainly + links
@@ -2033,11 +2084,12 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       </div>
     </div>`;
 
-  // #449 U5 — the eleven notices, contained. Built once so the panel, the
+  // #449 U5 — the notices, contained (#499 made them twelve). Built once so the panel, the
   // summary counts (U6) and the live announcement all read the same array
   // rather than three independent recomputations of "what fired".
   const notices = noticeDescriptors({ result, query, model, dataset,
-    canPrice: canPriceOutbid(), canRequire: typeof onRequire === "function" });
+    canPrice: canPriceOutbid(), canRequire: typeof onRequire === "function",
+    canUpgrade: canFindUpgrades(), upgradeBar: barPct });
   container.innerHTML = `
     ${banner}
     ${noticePanel(notices, { latched: !!notesSeen })}
@@ -2054,7 +2106,6 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
         <button class="rtab" role="tab" id="rt-loadout" aria-controls="rp-loadout" aria-selected="true" tabindex="0" type="button">Loadout</button>
         <button class="rtab" role="tab" id="rt-ranked" aria-controls="rp-ranked" aria-selected="false" tabindex="-1" type="button">Ranked Priorities</button>
         <button class="rtab" role="tab" id="rt-sets" aria-controls="rp-sets" aria-selected="false" tabindex="-1" type="button">Set Bonuses</button>
-        <button class="rtab" role="tab" id="rt-alts" aria-controls="rp-alts" aria-selected="false" tabindex="-1" type="button">Alternatives</button>
         <button class="rtab" role="tab" id="rt-share" aria-controls="rp-share" aria-selected="false" tabindex="-1" type="button">Share</button>
       </div>
       <div class="wz-adjust-slot" id="wz-adjust-slot"></div>
@@ -2063,7 +2114,6 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       </section>
       <section id="rp-ranked" class="rpanel" role="tabpanel" aria-labelledby="rt-ranked" tabindex="0" hidden><div class="targets" id="rp-cards"></div></section>
       <section id="rp-sets" class="rpanel" role="tabpanel" aria-labelledby="rt-sets" tabindex="0" hidden><div id="rp-setspanel"></div></section>
-      <section id="rp-alts" class="rpanel" role="tabpanel" aria-labelledby="rt-alts" tabindex="0" hidden><div id="rp-altspanel"></div></section>
       <section id="rp-share" class="rpanel" role="tabpanel" aria-labelledby="rt-share" tabindex="0" hidden><div id="rp-sharepanel"></div></section>
     </div>
     <div class="sr-only" aria-live="polite" id="rp-live"></div>`;
@@ -2082,14 +2132,16 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   function setActive(build, isAlt, label) {
     renderBuild(build);
     q(".active-build-bar").hidden = !isAlt;
-    if (isAlt) q(".active-build-msg").textContent = `Viewing alternative — ${label}`;
+    if (isAlt) q(".active-build-msg").textContent = `Viewing upgrade — ${label}`;
     // Returning to the optimum: clear any card's selected state so the listbox does not
-    // report a selection while the optimum (not that alternative) is shown.
+    // report a selection while the optimum (not that upgrade) is shown. The list now
+    // lives in the upgrades notice, which may not be on screen at all.
     if (!isAlt) {
-      q("#rp-altspanel").querySelectorAll('.alt-card[aria-selected="true"]')
+      const out = container.querySelector(".upg-out");
+      if (out) out.querySelectorAll('.alt-card[aria-selected="true"]')
         .forEach((c) => c.setAttribute("aria-selected", "false"));
     }
-    q("#rp-live").textContent = isAlt ? `Now viewing alternative: ${label}` : "Now viewing the optimal build";
+    q("#rp-live").textContent = isAlt ? `Now viewing upgrade: ${label}` : "Now viewing the optimal build";
   }
   q(".return-optimum").addEventListener("click", () => setActive(optimum, false));
 
@@ -2160,22 +2212,26 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   }
   renderBuild(optimum);
 
-  // Alternatives tab (U4): gated behind an explicit "Run analysis" button (R7) so
-  // the base solve stays instant and nothing computes until asked. While it runs,
-  // a panel-local .wz-ring swirly shows (R8/KTD4 — the wizard's overlay() is a
-  // closure results.js can't reach). Every terminal state replaces the spinner —
-  // cards, "none found", an error-with-retry, or solver-unavailable — so it is
-  // never left spinning.
-  // `probed` holds concession candidates the player priced from a stat card (#481).
-  // Kept SEPARATE from `list` so the two states stay distinguishable: `list === null`
-  // still means "the full analysis has not been run", which is what keeps the Run
-  // analysis affordance on screen after a probe has already put a card there.
+  // #499 — the upgrades search, hosted by the notice card. Gated behind an
+  // explicit button (R7 of the tab this replaced) so the base solve stays
+  // instant and nothing computes until asked: the search re-solves several
+  // times. While it runs, a card-local .wz-ring swirly shows (KTD4 — the
+  // wizard's overlay() is a closure results.js can't reach). Every terminal
+  // state replaces the spinner — cards, "none found", or an error-with-retry —
+  // so it is never left spinning.
+  //
+  // `probed` holds concession candidates the player priced from a stat card
+  // (#481). Kept SEPARATE from `list` so the two states stay distinguishable:
+  // `list === null` still means "the search has not been run", which is what
+  // keeps the Find-upgrades affordance on screen after a probe has already put a
+  // card there. A probe is also EXEMPT from the bar — the player named that
+  // trade and asked what it costs, and answering a direct question is not the
+  // same act as volunteering a suggestion.
   const altState = { list: null, probed: [], computing: false };
-  const altUnavailable = () => typeof generateAlternatives !== "function" || !highs;
 
-  // #345 (U3, KTD4) — same shape as altUnavailable: a capability probe, not an
-  // assumption. The restored-character render passes highs: null, so pricing is
-  // withheld there and the disclosure still stands on its own.
+  // #345 (U3, KTD4) — a capability probe, not an assumption. The restored-character
+  // render passes highs: null, so pricing is withheld there and the disclosure
+  // still stands on its own.
   function canPriceOutbid() {
     return typeof attributeOutbid === "function" && !!highs && !!(optimum && optimum.program);
   }
@@ -2184,81 +2240,99 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   function canProbeConcession() {
     return typeof probeConcession === "function" && !!highs && !!(optimum && optimum.program);
   }
-  // Small helper: a message + a button that (re)runs the analysis.
-  function altPrompt(msg, btnLabel, cls) {
-    const panel = q("#rp-altspanel");
-    panel.innerHTML = `<div class="alt-intro"><p class="${cls || "muted"}">${msg}</p><button class="btn ${cls === "dd-none muted" ? "ghost" : "primary"} alt-run" type="button">${esc(btnLabel)}</button></div>`;
-    const run = panel.querySelector(".alt-run");
-    if (run) run.addEventListener("click", () => { altState.list = null; runAlternatives(); });
+  // #499 — same shape again. The notice does not render at all without this, so a
+  // restored character never sees a button that cannot work.
+  function canFindUpgrades() {
+    return typeof generateAlternatives === "function" && typeof filterUpgrades === "function"
+      && !!highs && !!(optimum && optimum.chosen && optimum.chosen.length);
   }
-  // Initial (or re-open) state: the Run-analysis button, unless already computed
-  // (leave the cards/message in place) or the solver never loaded.
-  function showAltIntro() {
-    if (altState.probed.length) { renderAltPanel(); return; }   // #481 — probed cards outlive a re-open
-    if (altState.list !== null || altState.computing) return;
-    if (altUnavailable()) {
-      q("#rp-altspanel").innerHTML = `<p class="dd-none muted">Alternatives are unavailable (the solver did not load).</p>`;
-      altState.list = []; return;
-    }
-    altPrompt("Explore near-optimal trade-off builds — complete a different set, free a slot, or take fewer crafting steps.", "Run analysis");
-  }
-  /** #481 (U5) — render whatever cards exist, from either source, as ONE listbox.
+
+  /** The card's output region. Absent whenever the notice did not render (no
+   *  solver) or the panel was rebuilt, so every caller tolerates null. */
+  function upgOut() { return container.querySelector(".upg-out"); }
+
+  /** Render whatever cards exist, from either source, as ONE listbox.
    *
-   *  Probed candidates come first: the player asked for those by name. When the
-   *  full analysis has not run, the Run-analysis affordance is kept BELOW the cards
-   *  rather than replaced by them — a probe answering one question must not look
-   *  like it answered all of them.
+   *  Probed concessions come first: the player asked for those by name. When the
+   *  search has not run, the Find-upgrades affordance stays in place above rather
+   *  than being replaced — a probe answering one question must not look like it
+   *  answered all of them.
    *
    *  Cards are wrapped in a fresh element each render and wired on THAT, because
    *  `wireAltCards` binds click/keydown to the element it is handed; wiring the
-   *  long-lived panel repeatedly would stack a listener per render and select
+   *  long-lived region repeatedly would stack a listener per render and select
    *  once per stacked copy. */
-  function renderAltPanel() {
-    const panel = q("#rp-altspanel");
+  function renderUpgrades() {
+    const out = upgOut();
+    if (!out) return false;
     const list = [...altState.probed, ...(altState.list || [])];
     if (!list.length) return false;
-    const more = altState.list === null
-      ? `<div class="alt-intro"><p class="muted">That is the trade you priced. Run the full analysis for set, crafting and unranked-stat trades too.</p>`
-        + `<button class="btn primary alt-run" type="button">Run analysis</button></div>`
-      : "";
-    panel.innerHTML = `<div class="alt-wrap">${renderAltCards(list)}</div>${more}`;
-    const wrap = panel.querySelector(".alt-wrap");
-    wireAltCards(wrap, list, setActive);
-    const run = panel.querySelector(".alt-run");
-    if (run) run.addEventListener("click", () => { altState.list = null; runAlternatives(); });
+    out.innerHTML = `<div class="alt-wrap">${renderAltCards(list)}</div>`;
+    wireAltCards(out.querySelector(".alt-wrap"), list, setActive);
     return true;
   }
-  function runAlternatives() {
-    const panel = q("#rp-altspanel");
-    if (altState.computing) return;
+  /** A terminal message in the output region, with the button left usable. */
+  function upgMessage(msg) {
+    const out = upgOut();
+    if (out) out.innerHTML = `<p class="dd-none muted">${esc(msg)}</p>`;
+  }
+  function runUpgrades() {
+    const out = upgOut();
+    if (!out || altState.computing) return;
     altState.computing = true;
-    // Panel-local swirly (KTD4), same markup as the main solve overlay.
-    panel.innerHTML = `<div class="alt-computing"><div class="wz-ring"></div><p class="muted">Computing alternatives…</p></div>`;
-    q("#rp-live").textContent = "Computing alternative loadouts…";
+    out.innerHTML = `<div class="alt-computing"><div class="wz-ring"></div><p class="muted">Searching for upgrades…</p></div>`;
+    q("#rp-live").textContent = "Searching for upgrades…";
     // Defer so the spinner paints before the synchronous re-solves run.
     setTimeout(() => {
-      // If a re-render (e.g. a per-slot constraint change) replaced this panel
+      // If a re-render (e.g. a per-slot constraint change) replaced this card
       // while we waited, abandon: don't run the stale solve or write cards/aria
       // into the fresh closure's live region.
-      if (q("#rp-altspanel") !== panel) { altState.computing = false; return; }
+      if (upgOut() !== out) { altState.computing = false; return; }
       try {
         const raw = generateAlternatives(optimum, model, highs);
         const analyzed = raw.map((c) => analyzeAlternative(optimum, c, query));
-        const ranked = rankAlternatives(analyzed, optimum, {});
+        // #499 — filter BEFORE ranking. `rankAlternatives` caps at five, so
+        // filtering after it would let five rejected candidates crowd out a free
+        // upgrade sitting sixth and report "none found" against a list that had
+        // one. The bar decides what is eligible; the ranking orders what is left.
+        const kept = filterUpgrades(analyzed, optimum, query,
+          { lossPct: barPct, utilitySentinel: _UTILITY_SENTINEL });
+        const ranked = rankAlternatives(kept, optimum, {});
         altState.list = ranked;
-        if (!renderAltPanel())
-          altPrompt("No worthwhile trade-off build was found — the optimum is hard to beat for these priorities.", "Run again", "dd-none muted");
+        if (!renderUpgrades()) {
+          upgMessage(barPct === 0
+            ? "No free upgrade found — every improvement here would cost you a ranked priority. Widen the bar above to see what those trades buy."
+            : "No upgrade clears your bar — the optimum is hard to beat for these priorities.");
+        }
         q("#rp-live").textContent = ranked.length
-          ? `${ranked.length} alternative loadout${ranked.length === 1 ? "" : "s"} found.`
-          : "No worthwhile alternative loadouts were found.";
+          ? `${ranked.length} upgrade${ranked.length === 1 ? "" : "s"} found.`
+          : "No upgrade cleared the bar.";
       } catch (e) {
         console.error(e);
         altState.list = null;   // let a retry recompute cleanly
-        altPrompt("Could not compute alternatives.", "Retry", "dd-none muted");
-        q("#rp-live").textContent = "Could not compute alternative loadouts.";
+        upgMessage("Could not search for upgrades. Press Find upgrades to try again.");
+        q("#rp-live").textContent = "Could not search for upgrades.";
       }
       altState.computing = false;
     }, 20);
+  }
+
+  // The card's two controls. Delegated on `container` — the notice panel is part
+  // of THIS render's innerHTML, so a listener here lives exactly as long as the
+  // card does and cannot stack across renders.
+  const runBtn = container.querySelector(".upgrade-run");
+  if (runBtn) runBtn.addEventListener("click", () => { altState.list = null; runUpgrades(); });
+  const barSel = container.querySelector(".upgrade-bar");
+  if (barSel) {
+    barSel.addEventListener("change", () => {
+      barPct = Math.max(0, Number(barSel.value) || 0);
+      if (typeof onUpgradeBar === "function") onUpgradeBar(barPct);
+      // A changed bar invalidates the answer, never the question: the probed
+      // concessions stay (the player asked for those), the searched list goes.
+      altState.list = null;
+      const out = upgOut();
+      if (out && !renderUpgrades()) out.innerHTML = "";
+    });
   }
   // #481 (U4) — price a concession on request. One probe per click, never on the
   // solve path. Delegated on the container rather than wired per button, because
@@ -2327,16 +2401,20 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
         { sol: res.sol, gainAxis: "concession", meta: { stat, cap: res.cap, concession: res.concession } },
         query);
       if (!altState.probed.some((c) => c.key === cand.key)) altState.probed.unshift(cand);
-      renderAltPanel();
+      // #499 — the probe's answer lands in the upgrades card, which is where every
+      // candidate build now lives. It is placed there WITHOUT consulting the bar:
+      // the player named this trade and asked what it costs, and answering the
+      // question they asked is not the same act as volunteering a suggestion.
+      renderUpgrades();
       // Select through the CARD rather than calling setActive directly, so the
       // listbox's own aria-selected/roving-tabindex state matches what is on screen.
       // A build shown with no card marked selected reads as an unrelated render.
-      const card = q("#rp-altspanel").querySelector('.alt-card[data-idx="0"]');
+      const out = upgOut();
+      const card = out && out.querySelector('.alt-card[data-idx="0"]');
       if (card) card.click(); else setActive(res.sol, true, cand.gainText);
     });
   }
 
-  showAltIntro();   // pre-render the button so the tab is ready on first open
   wireResultTabs(container, () => {});
 
   // KTD3 — the Adjust (U3) and Share (U5) panels live inside this container and so
@@ -2773,7 +2851,7 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, upgradeNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,

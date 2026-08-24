@@ -619,5 +619,157 @@ const tradeModel = () => ({
     for (const a of ranked) assert.ok(!a.tags.includes("utility effects"));
   });
 
+  // -------------------------------------------------------------------------
+  // #499 — the bar. The Alternatives tab showed the best five candidates on
+  // five axes, whatever they cost. These tests pin the rule that replaced that.
+  // -------------------------------------------------------------------------
+
+  /** An analyzed candidate with a chosen cost/gain profile, without going
+   *  through a solve. `analyzeAlternative` derives cost/gains from the deltas
+   *  between two `effective` maps, so the fixture states both totals and lets
+   *  the real analyzer do the subtraction — a hand-built `cost` array would pin
+   *  the bar against a shape the analyzer might stop producing. */
+  function candidate(optEffective, altEffective, targets, axis) {
+    const optimum = { chosen: [{ slot: "Ring", variant: { variant_id: "R1" } }],
+      setsActive: [], augmentsPlaced: [], effective: optEffective };
+    const cand = A.analyzeAlternative(optimum,
+      { sol: { chosen: [{ slot: "Ring", variant: { variant_id: "R2" } }], setsActive: [],
+        augmentsPlaced: [], effective: altEffective },
+        gainAxis: axis || "rebalance", meta: {} },
+      { targets });
+    return { optimum, cand, query: { targets } };
+  }
+
+  await test("#499: the suggestion that broke trust is rejected, at every bar setting", () => {
+    // THE case, verbatim from the maintainer report: +1 of a low-ranked affix
+    // bought with 5 points of a higher-ranked one. It must not come back at any
+    // setting a player can choose — this is the rule, not a default.
+    const { optimum, cand, query } = candidate(
+      { "Melee Power": 300, Doublestrike: 40, Dodge: 20 },
+      { "Melee Power": 295, Doublestrike: 40, Dodge: 21 },
+      ["Melee Power", "Doublestrike", "Dodge"]);
+    assert.deepStrictEqual(cand.cost.map((c) => [c.stat, c.delta]), [["Melee Power", -5]],
+      "the fixture really does cost 5 of priority 1");
+    assert.deepStrictEqual(cand.gains.map((g) => [g.stat, g.delta]), [["Dodge", 1]],
+      "…to buy 1 of priority 3");
+    for (const lossPct of [0, 2, 5, 10, 50, 100]) {
+      const v = A.tradeVerdict(cand, optimum, query, { lossPct });
+      assert.ok(!v.passes, `bar ${lossPct}% still lets it through`);
+    }
+    // And it is the RANK-WEIGHTED test that keeps it out once the bar is wide
+    // open: 5/300 is only 1.7%, so the proportional test alone would admit it at
+    // any bar of 2% or more. That is precisely the blind spot the second test
+    // covers, so assert the mechanism and not merely the outcome.
+    const wide = A.tradeVerdict(cand, optimum, query, { lossPct: 100 });
+    assert.ok(wide.lossPct < 2, "the proportional test finds this loss small…");
+    assert.ok(wide.ratio < A.MIN_GAIN_RATIO, "…and the rank-weighted test is what rejects it");
+  });
+
+  await test("#499: free upgrades pass at the shipped default, and cost-bearing ones do not", () => {
+    const free = candidate({ "Melee Power": 300, Dodge: 20 }, { "Melee Power": 300, Dodge: 24 },
+      ["Melee Power", "Dodge"]);
+    const fv = A.tradeVerdict(free.cand, free.optimum, free.query, {});
+    assert.ok(fv.free && fv.passes, "+4 Dodge for nothing is a free upgrade");
+    assert.strictEqual(A.DEFAULT_LOSS_PCT, 0, "the shipped default is free-only");
+
+    // A trade that is genuinely good — a small loss low down buying a large gain
+    // — is still withheld at the default, because the default promises free.
+    const good = candidate({ Doublestrike: 60, "Melee Power": 300 },
+      { Doublestrike: 57, "Melee Power": 342 }, ["Doublestrike", "Melee Power"]);
+    assert.ok(!A.tradeVerdict(good.cand, good.optimum, good.query, {}).passes,
+      "withheld at the default…");
+    assert.ok(A.tradeVerdict(good.cand, good.optimum, good.query, { lossPct: 10 }).passes,
+      "…and offered once the player opens the bar to 10%");
+  });
+
+  await test("#499: neither test alone is enough — each covers the other's blind spot", () => {
+    // Blind spot of the PROPORTIONAL test: a big absolute loss riding on a big
+    // total. 30 Melee Power is a real loss, but it is only 10% of 300.
+    const bigTotal = candidate({ "Melee Power": 300, Dodge: 20 },
+      { "Melee Power": 270, Dodge: 25 }, ["Melee Power", "Dodge"]);
+    const b = A.tradeVerdict(bigTotal.cand, bigTotal.optimum, bigTotal.query, { lossPct: 10 });
+    assert.ok(b.lossPct <= 10, "the proportional test is satisfied");
+    assert.ok(!b.passes, "but rank weighting rejects paying priority 1 for priority 2");
+
+    // Blind spot of the RANK-WEIGHTED test: a trade paid out of a small total
+    // into a large one, where weighting raises no objection because the gain is
+    // on a LOWER priority and huge. 15 of a 20-point stat is most of it.
+    const smallTotal = candidate({ Doublestrike: 20, Dodge: 5 },
+      { Doublestrike: 5, Dodge: 400 }, ["Doublestrike", "Dodge"]);
+    const sm = A.tradeVerdict(smallTotal.cand, smallTotal.optimum, smallTotal.query, { lossPct: 10 });
+    assert.ok(sm.ratio >= A.MIN_GAIN_RATIO, "the rank-weighted test is satisfied");
+    assert.ok(!sm.passes, "but losing 75% of a priority is not a small concession");
+  });
+
+  await test("#499: an upgrade that sheds a utility effect is never free", () => {
+    // #348 settled that the tier is a cost and never a gain. A "free upgrade"
+    // that quietly drops Ghostly is exactly the hidden price the bar exists to
+    // stop, so a shed effect must break `free` even when no stat moves down.
+    const SENT = "__utility__";
+    const mkSol = (id, report) => ({
+      chosen: [{ slot: "Ring", variant: { variant_id: id } }],
+      setsActive: [], augmentsPlaced: [], effective: { Dodge: 20 },
+      utilityReport: report,
+    });
+    const optimum = Object.assign(mkSol("R1", { count: 1, effects: [{ name: "Ghostly", item: "R1" }] }),
+      { utilityOrdered: { secured: ["Ghostly"], unsecured: [] } });
+    const cand = A.analyzeAlternative(optimum,
+      { sol: mkSol("R2", { count: 0, effects: [] }), gainAxis: "rebalance", meta: {} },
+      { targets: ["Dodge", SENT] });
+    assert.deepStrictEqual(cand.shedEffects, ["Ghostly"], "the fixture sheds an effect");
+    assert.deepStrictEqual(cand.cost, [], "…and no ranked stat moves down");
+    const v = A.tradeVerdict(cand, optimum, { targets: ["Dodge", SENT] },
+      { utilitySentinel: SENT });
+    assert.ok(!v.free, "a shed effect is a cost, so this is not free");
+    assert.ok(!v.passes, "and it does not pass a free-only bar");
+  });
+
+  await test("#499: filterUpgrades keeps the ranking it was handed and tags each verdict", () => {
+    const free = candidate({ Dodge: 20 }, { Dodge: 24 }, ["Dodge"]);
+    const costly = candidate({ "Melee Power": 300, Dodge: 20 },
+      { "Melee Power": 295, Dodge: 21 }, ["Melee Power", "Dodge"]);
+    const kept = A.filterUpgrades([costly.cand, free.cand], free.optimum, free.query, {});
+    assert.strictEqual(kept.length, 1, "only the free one survives the default bar");
+    assert.ok(kept[0].verdict.free, "and it carries the verdict that let it through");
+    // Rejections carry a verdict too, so a caller can say WHY rather than
+    // silently showing a shorter list.
+    const v = A.tradeVerdict(costly.cand, costly.optimum, costly.query, {});
+    assert.ok(!v.passes && typeof v.lossPct === "number" && typeof v.ratio === "number",
+      "a rejection is explainable, not just absent");
+  });
+
+  await test("#499: a gain outside the ranked list can only ever be free", () => {
+    // Observed on a real ML20 melee solve: of the five candidates the generator
+    // produced, two were `unranked` — they cost nothing on any ranked stat but
+    // shed Ethereal and Immunity to Fear to buy a stat the player never asked
+    // for. Weighted gain is measured over the ranked priorities, so a candidate
+    // gaining outside that list scores zero and passes only by costing nothing.
+    // That is the rule, not a gap: an unranked stat is one rung BELOW the
+    // low-ranked affix in the report that motivated the bar.
+    const SENT = "__utility__";
+    const mkSol = (id, report) => ({
+      chosen: [{ slot: "Ring", variant: { variant_id: id } }],
+      setsActive: [], augmentsPlaced: [], effective: { Dodge: 20 }, utilityReport: report,
+    });
+    const optimum = Object.assign(mkSol("R1", { count: 1, effects: [{ name: "Ethereal", item: "R1" }] }),
+      { utilityOrdered: { secured: ["Ethereal"], unsecured: [] } });
+    const cand = A.analyzeAlternative(optimum,
+      { sol: mkSol("R2", { count: 0, effects: [] }), gainAxis: "unranked",
+        meta: { stat: "Repair Amplification", zeroCost: false } },
+      { targets: ["Dodge", SENT] });
+    assert.deepStrictEqual(cand.gains, [], "the gain is off the ranked list, so nothing scores it");
+    for (const lossPct of [0, 2, 5, 10, 100]) {
+      assert.ok(!A.tradeVerdict(cand, optimum, { targets: ["Dodge", SENT] },
+        { lossPct, utilitySentinel: SENT }).passes, `bar ${lossPct}% must still refuse it`);
+    }
+    // …and the same axis IS admitted when it genuinely costs nothing.
+    const freeCand = A.analyzeAlternative(optimum,
+      { sol: mkSol("R2", { count: 1, effects: [{ name: "Ethereal", item: "R2" }] }),
+        gainAxis: "unranked", meta: { stat: "Repair Amplification", zeroCost: true } },
+      { targets: ["Dodge", SENT] });
+    assert.ok(A.tradeVerdict(freeCand, optimum, { targets: ["Dodge", SENT] },
+      { utilitySentinel: SENT }).passes, "a free unranked gain is exactly what the default is for");
+  });
+
   console.log(`\n${passed} passed`);
 })();

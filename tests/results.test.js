@@ -2569,6 +2569,7 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       outbidNotice: ["PRIORITY SCORED 0", "actionable"],
       absorptionQuarantineNotice: ["AFFIX WITHHELD", "qualifying"],
       saturationNotice: ["AT CEILING", "informational"],
+      upgradeNotice: ["UPGRADES", "informational"],
     });
 });
 
@@ -2580,14 +2581,14 @@ test("#449 U5 (KTD5): every notice the builder renders has a table entry", () =>
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
   const build = srcBetween(src, "function noticeDescriptors(", "function noticePanel(", "noticeDescriptors");
   const pushed = [...build.matchAll(/push\("(\w+)"/g)].map((m) => m[1]);
-  assert.strictEqual(pushed.length, 8, "the eight single-fact notices");
+  assert.strictEqual(pushed.length, 9, "the nine single-fact notices");
   for (const name of pushed) {
     assert.ok(R.NOTICE_TABLE[name], `${name} is rendered but has no KTD5 table entry`);
   }
   const split = [...build.matchAll(/split\("(\w+)"/g)].map((m) => m[1]);
   assert.deepStrictEqual(split.sort(), ["artifactNotice", "boundNotice", "zeroSourceNotice"],
     "and the three multi-fact notices come through their U10 entry functions");
-  assert.strictEqual(pushed.length + split.length, 11, "eleven notices, all reached");
+  assert.strictEqual(pushed.length + split.length, 12, "twelve notices, all reached");
 });
 
 test("#449 U5 (KTD5): a notice absent from the table renders unclassified, and does not throw", () => {
@@ -4005,4 +4006,60 @@ test("#476/#88: the override disclosure survives the whole chain, not just a han
     "beside the type the catalog records — a gear box must never state a bonus type as though the wiki said so");
   const plain = R.equippedBody({ variant_id: "Ring of Y" }, -1, null, null, false, false, ctx);
   assert.ok(!/catalog says/.test(plain), "an unoverridden item's card is unchanged");
+});
+
+// ---------------------------------------------------------------------------
+// #499 — the upgrades notice, which replaced the Alternatives tab. The bar
+// itself is tested in tests/alternatives.test.js; these cover the surface.
+// ---------------------------------------------------------------------------
+
+test("#499: no solver, no offer — the card withholds rather than showing a dead button", () => {
+  // A restored character renders with `highs: null` and no program. The same
+  // rule the outbid pricing and concession probe follow (#345, #481): a control
+  // that cannot work is not offered and then failed, it is not offered.
+  assert.strictEqual(R.upgradeNotice(false, 0), "", "no capability -> no card at all");
+  assert.ok(R.upgradeNotice(true, 0), "with the capability, the card renders");
+});
+
+test("#499: the bar's current setting is what the select shows", () => {
+  // The bar outlives the panel — renderResults destroys and rebuilds it on every
+  // solve, load and per-slot constraint change — so the value must be stamped in
+  // at render time. A select that always reopened at 0 would silently discard
+  // the player's choice and then quietly withhold the trades they asked to see.
+  const free = R.upgradeNotice(true, 0);
+  assert.ok(/<option value="0" selected>/.test(free), "free-only is selected at the default");
+  const wide = R.upgradeNotice(true, 5);
+  assert.ok(/<option value="5" selected>/.test(wide), "…and a raised bar comes back raised");
+  assert.strictEqual((wide.match(/selected/g) || []).length, 1, "exactly one option is selected");
+});
+
+test("#499: the card offers the search rather than claiming a finding", () => {
+  const html = R.upgradeNotice(true, 0);
+  assert.ok(/upgrade-run/.test(html) && /Find upgrades/.test(html), "it carries its own control");
+  assert.strictEqual(R.NOTICE_TABLE.upgradeNotice.cls, "informational",
+    "an un-run search has found nothing yet, so it must not inflate the needs-attention pill");
+  assert.strictEqual(R.NOTICE_TABLE.upgradeNotice.jump, null,
+    "and it needs no jump — the control that resolves it is in the card");
+});
+
+test("#499: the result tabs no longer offer Alternatives or a Deep Dive", () => {
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  const tablist = srcBetween(src, '<div class="result-tabs"', "</div>", "result tabs");
+  const labels = [...tablist.matchAll(/type="button">([^<]+)</g)].map((m) => m[1]);
+  assert.deepStrictEqual(labels, ["Loadout", "Ranked Priorities", "Set Bonuses", "Share"],
+    "the two retired tabs are gone and the survivors keep their order");
+});
+
+test("#499: the bar filters BEFORE the ranking, not after", () => {
+  // `rankAlternatives` caps at five. Filtering after it would let five rejected
+  // candidates crowd out a free upgrade sitting sixth, and the card would report
+  // "no free upgrade found" against a list that had one — a false negative that
+  // looks exactly like a true one. Source-text, because the ordering is not
+  // observable from either function's output alone.
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  const body = srcBetween(src, "function runUpgrades()", "// The card's two controls", "runUpgrades");
+  const filterAt = body.indexOf("filterUpgrades(");
+  const rankAt = body.indexOf("rankAlternatives(");
+  assert.ok(filterAt >= 0 && rankAt >= 0, "both steps are present");
+  assert.ok(filterAt < rankAt, "the bar decides eligibility, then the ranking orders what is left");
 });
