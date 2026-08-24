@@ -685,6 +685,12 @@
           // "the Craft section rendered this". Without the kind here the sweep
           // re-adds every crafted point to Stats and the de-duplication is inert.
           sourceKind: p.sourceKind || null,
+          // #472 — WHAT credited it, by name. For a set contribution this is the
+          // set's name, which is the only thing that can link a "go awaken this
+          // set" row to the points the solver actually credited. Matching on
+          // `viaSet` alone would over-claim on an item that feeds two sets and is
+          // credited for one of them.
+          source: p.source || null,
           // U3 (#290/#291) — the cross-add source stat rides with the row so the
           // per-item why-this can label the credit "from <source stat>".
           crossAdd: p.crossAdd || null,
@@ -1224,7 +1230,8 @@
   // The single, unescaped label for one crafting placement (KTD6). Membership routes
   // through the CraftingSystems registry (Vecna "Awaken" vs Dino "Slot Set Bonus");
   // every other family keeps its literal template, moved verbatim from
-  // results.js craftSlotChips so results.js stays byte-identical when it wraps this in
+  // the retired results.js craftSlotChips (#472), which is why it stays byte-identical
+  // to those inline templates when a caller wraps it in
   // a single esc(). `results.js` re-applies esc(); each text exporter applies its own
   // escaper — this function never escapes.
   /** #455 — the crafting STEP alone, with no affix list.
@@ -1304,6 +1311,58 @@
         title: "Legendary Thunder-Forged tier upgrade" };
       case "gs": return { where: "Green Steel", what: craftValue(o), system: sys(family),
         title: "Legendary Green Steel craft" };
+      // #472 — the three families that yield a SET rather than an affix. They were
+      // the open question on that issue: a wildcard, a chosen membership and a Set
+      // Augment wrap a set, not a slot with a stat in it, so it was not obvious
+      // what their middle column should say.
+      //
+      // The answer is that they have the same shape after all, one level up. Every
+      // row on the card answers "where does this come from" and "what does it
+      // give"; for these three the WHERE is the mechanism you go and use, and the
+      // WHAT is the set membership you get for it. That is exactly the actionable
+      // half the `Part of set:` line above them does NOT carry — that line says you
+      // are in the set, and says nothing about the trip to the Cannith Repurposing
+      // Station that puts you there.
+      case "joker": return { where: "Wildcard", what: o.set, system: sys(family),
+        title: "a Gem of Many Facets slotted here counts this item as a member of the set" };
+      case "membership": {
+        // KTD2 — Vecna Lost Purpose and the Isle-of-Dread Set Bonus flow through
+        // ONE solver primitive and must read differently; the fork is the station,
+        // and the wording comes from the CraftingSystems registry rather than a
+        // literal here, so a terminology edit there reaches this row. "Awaken" is
+        // correct only for Vecna.
+        const sysId = (Craft && Craft.systemForStation(o.station)) || "isle-of-dread-set-bonus";
+        const isVecna = sysId === "vecna-lost-purpose";
+        const reg = Craft && Craft.get(sysId);
+        // BOTH columns come from the registry, and that is the point. Splitting
+        // the label into `Awaken` + the set name would have read better and would
+        // have put a hardcoded "Awaken" back in the renderer — the exact drift
+        // KTD2 removed when it routed this fork through `crafting-systems.js`.
+        // So the value column stays the registry's own action label, byte-identical
+        // to what every export prints, and the where column is the registry's
+        // system name. A terminology edit there still reaches this row.
+        return {
+          where: (reg && reg.system_name) || CRAFT_SECTION_LABEL[family] || "",
+          what: craftLabel(o, "membership"),
+          system: (reg && reg.system_name) || CRAFT_SECTION_LABEL[family] || "",
+          title: isVecna
+            ? `awaken this set at the ${o.station || "Cannith Repurposing Station"}`
+            : `slot a Dinosaur Bone Set Bonus augment at ${o.station || "Dinosaur Bone crafting"}`,
+        };
+      }
+      case "augmentset": {
+        // #316 — a Set Augment consumes a coloured slot, and an unnamed colour
+        // reads as Colorless, so the colour IS the where. The suppression note
+        // rides the `what`: it is what the augment COST, and a host that gave up
+        // its own set without saying so is the misreading U7 shipped to prevent.
+        const supp = (o.suppresses && o.suppresses.length)
+          ? ` (suppresses ${o.suppresses.join(", ")})` : "";
+        return { where: o.slot_color || "Colorless", what: `${o.set}${supp}`,
+          system: sys(family),
+          title: (o.suppresses && o.suppresses.length)
+            ? `Set Augment — overrides this item's own set bonus (${o.suppresses.join(", ")})`
+            : "solver-placed Set Augment" };
+      }
       default: return { where: "", what: craftLabel(o, family), system: "", title: "" };
     }
   }
@@ -1323,6 +1382,10 @@
     vik: "Viktranium", vikEmpty: "Viktranium", nc: "Nearly Completed",
     dino: "Dino crafting", seal: "Seal crafting", tf: "Thunder-Forged",
     gs: "Green Steel", roll: "Choice slots",
+    // #472 — the set-yielding families. `membership` is a fallback only: that case
+    // reads its system name from the CraftingSystems registry, because the two
+    // stations behind the one primitive are two different systems.
+    joker: "Gem of Many Facets", membership: "Set membership", augmentset: "Set Augment",
   };
 
   /** #455 — the affixes a placed craft actually grants, as affix records.

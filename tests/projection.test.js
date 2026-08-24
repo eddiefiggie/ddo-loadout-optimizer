@@ -517,18 +517,29 @@ test("#370: the empty slots ride project() — every export states the item's re
     "and WHY — so it reads as an open slot, not as missing data");
 });
 
-test("#370: the app chip renders the same sentence the exports do", () => {
+test("#370/#472: the app row states the same slots the exports do, and carries their sentence", () => {
+  // #472 retired `craftSlotChips`; the app renders `craftSection` now, on both
+  // the gear card and the Deep Dive. #370's guarantee is untouched: a declared
+  // slot the solve left empty must still appear, or a 4-slot item reads as a
+  // 3-slot item and that is indistinguishable from missing data.
+  //
+  // What changed is the DISPLAY wording — the row says "left empty" and carries
+  // the full sentence in its title, because the clause wrapped to two lines per
+  // slot at 375px. The exports' sentence is unchanged, which is why this test
+  // still compares against `craftLabel`.
   const rec = makeRec();
   rec.snapshot.chosen[0].variant.lamordia_slots = LAM4;
   const maps = P.buildCraftMaps(rec.snapshot);
-  const chips = R.craftSlotChips(rec.snapshot.chosen[0].variant, 0, maps);
-  const empty = chips.filter((c) => c.includes("left empty"));
-  assert.strictEqual(empty.length, 3, "three open slots, three chips");
-  assert.ok(empty[0].includes("chip lamordia unfilled"), "styled as an open slot, not as a craft to apply");
+  const v = rec.snapshot.chosen[0].variant;
+  const rows = R.craftRowsFor(v, 0, maps).filter((r) => r.family === "vikEmpty");
+  assert.strictEqual(rows.length, 3, "three open slots, three rows");
+  const html = R.craftSection(v, 0, maps, { keys: new Set(), byStat: new Map(), list: [] }, null, new Set());
+  assert.strictEqual((html.match(/is-empty/g) || []).length, 3,
+    "each rendered as an open slot, not as a craft to apply");
   // Same sentence on both surfaces — the app and the share cannot disagree about
   // how many slots an item has.
   const label = P.craftLabel({ slot_type: "Dolorous" }, "vikEmpty");
-  assert.ok(empty[0].includes(label));
+  assert.ok(html.includes(`title="${label}"`), "the exports' full sentence rides the row");
 });
 
 // ---- U6/#249: the compound-absorption quarantine, as sentences --------------

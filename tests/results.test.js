@@ -147,90 +147,113 @@ test("#316: coverageNote discloses the set-augment placement rule from the defs,
   assert.ok(!/Set Augments:/.test(bare), "no defs -> no placement-rule line");
 });
 
-test("craftChips renders the Gem's wildcard set assignment, load-bearing only", () => {
-  const gem = { variant_id: "Legendary Gem of Many Facets", wiki_url: "https://ddowiki.com/x" };
-  const maps = {
-    augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
-    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
-    jokerByHost: new Map([["Legendary Gem of Many Facets",
-      [{ host: "Legendary Gem of Many Facets", group: 0, set: "Legendary Draconic Prophecy" }]]]),
-  };
-  const chips = R.craftChips(gem, 0, maps).join(" ");
-  assert.ok(/Wildcard set: Legendary Draconic Prophecy/.test(chips), "renders the assigned set");
-  // A non-Gem item with no joker pick renders no wildcard chip.
-  const other = { variant_id: "Some Ring" };
-  const chips2 = R.craftChips(other, 1, maps).join(" ");
-  assert.ok(!/Wildcard set/.test(chips2), "no wildcard chip for a non-joker item");
-});
-
-function membershipMaps(host, set, station) {
+// #472 — these six pinned `craftChips`, which is retired. Every guarantee they
+// held is still a guarantee; it is now held on the row renderers the card and
+// the Deep Dive share. The membership pair is the load-bearing one: "Awaken" is
+// correct for exactly one crafting system, and the fork reads the
+// crafting-systems.js registry rather than a literal in the renderer (KTD2).
+function setMaps(o) {
+  o = o || {};
   return {
-    augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+    augAssign: { byIndex: new Map(), freeByIndex: new Map() }, dinoAssign: { byIndex: new Map() },
     ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
-    jokerByHost: new Map(),
-    membershipByHost: new Map([[host, [{ host, set, station }]]]),
+    tfByItem: new Map(), gsByItem: new Map(),
+    jokerByHost: o.jokerByHost || new Map(),
+    membershipByHost: o.membershipByHost || new Map(),
+    setAugByHost: o.setAugByHost || new Map(),
   };
 }
 
-test("craftChips renders Vecna as 'Awaken Set Bonus' (the only place 'awaken' survives)", () => {
+test("#472: a wildcard names the set it makes this item a member of", () => {
+  const gem = { variant_id: "Legendary Gem of Many Facets", wiki_url: "https://ddowiki.com/x" };
+  const maps = setMaps({ jokerByHost: new Map([["Legendary Gem of Many Facets",
+    [{ host: "Legendary Gem of Many Facets", group: 0, set: "Legendary Draconic Prophecy" }]]]) });
+  const html = R.setMembershipSection(gem, maps, null);
+  assert.ok(/<span class="pd-ln-where">Wildcard<\/span><span class="pd-ln-what">Legendary Draconic Prophecy/.test(html),
+    "the mechanism on the left, the set it yields on the right");
+  // A non-Gem item with no joker pick renders no set-membership section at all.
+  assert.strictEqual(R.setMembershipSection({ variant_id: "Some Ring" }, maps, null), "",
+    "no wildcard row for a non-joker item");
+});
+
+function membershipMaps(host, set, station) {
+  return setMaps({ membershipByHost: new Map([[host, [{ host, set, station }]]]) });
+}
+
+test("#472: Vecna renders as 'Awaken Set Bonus' — the only place 'awaken' survives", () => {
   const host = { variant_id: "Legendary University Mage's Hat", wiki_url: "https://ddowiki.com/x" };
   const maps = membershipMaps("Legendary University Mage's Hat", "Legendary Vol's Influence", "Cannith Repurposing Station");
-  const chips = R.craftChips(host, 0, maps).join(" ");
+  const html = R.setMembershipSection(host, maps, null);
   // esc() HTML-escapes the apostrophe in "Vol's", so match around it.
-  assert.ok(/Awaken Set Bonus: Legendary Vol/.test(chips) && /Influence/.test(chips), "renders the awakened set");
-  assert.ok(/Cannith Repurposing Station/.test(chips), "names the station");
-  const other = { variant_id: "Some Ring" };
-  assert.ok(!/Awaken Set Bonus:/.test(R.craftChips(other, 1, maps).join(" ")), "no membership chip for a non-host item");
+  assert.ok(/Awaken Set Bonus: Legendary Vol/.test(html) && /Influence/.test(html), "renders the awakened set");
+  assert.ok(/Cannith Repurposing Station/.test(html),
+    "names the station VISIBLY — 'awaken this set' is useless without where to go");
+  assert.strictEqual(R.setMembershipSection({ variant_id: "Some Ring" }, maps, null), "",
+    "no membership row for a non-host item");
 });
 
-test("craftChips renders Isle-of-Dread Set Bonus as 'Slot Set Bonus augment' (not 'awaken')", () => {
+test("#472: Isle-of-Dread renders as 'Slot Set Bonus augment', never 'awaken'", () => {
   const host = { variant_id: "Legendary Dino Vest" };
   const maps = membershipMaps("Legendary Dino Vest", "The Legendary Dread Isle's Curse", "Dinosaur Bone crafting");
-  const chips = R.craftChips(host, 0, maps).join(" ");
-  assert.ok(/Slot Set Bonus augment: The Legendary Dread Isle/.test(chips), "renders the crafted Set Bonus augment");
-  assert.ok(!/awaken/i.test(chips), "Dino Set Bonus must not say 'awaken'");
+  const html = R.setMembershipSection(host, maps, null);
+  assert.ok(/Slot Set Bonus augment: The Legendary Dread Isle/.test(html), "renders the crafted Set Bonus augment");
+  assert.ok(!/awaken/i.test(html), "Dino Set Bonus must not say 'awaken'");
 });
 
-test("craftChips membership label IS the registry's actionLabel output (no drift)", () => {
-  // The chip must render exactly what crafting-systems.js produces, so a
-  // terminology edit in the registry can never silently diverge from the UI.
+test("#472: the membership row IS the registry's actionLabel output, in both columns", () => {
+  // KTD2, unchanged in force. The row must render exactly what
+  // crafting-systems.js produces, so a terminology edit in the registry can
+  // never silently diverge from the UI. Splitting the label into a hardcoded
+  // "Awaken" plus the set name would have read better and would have put the
+  // literal back in the renderer — which is the drift this rule exists to stop.
   const CS = require("../web/crafting-systems.js");
-  const vec = R.craftChips({ variant_id: "V" },
-    0, membershipMaps("V", "Legendary Vol's Influence", "Cannith Repurposing Station")).join(" ");
+  const vec = R.setMembershipSection({ variant_id: "V" },
+    membershipMaps("V", "Legendary Vol's Influence", "Cannith Repurposing Station"), null);
   assert.ok(vec.includes(R.esc(CS.actionLabel("vecna-lost-purpose", { set_name: "Legendary Vol's Influence" }))),
-    "Vecna chip text equals the registry label");
-  const dino = R.craftChips({ variant_id: "D" },
-    0, membershipMaps("D", "Legendary Dread Stalker", "Dinosaur Bone crafting")).join(" ");
+    "the Vecna row's value equals the registry label");
+  // The system name is registry-sourced too, asserted on the label rather than
+  // the rendered row: the row blanks a where-column that only restates what its
+  // value column already says (a 6.7em uppercase column truncates it anyway).
+  const P472 = require("../web/projection.js");
+  assert.strictEqual(
+    P472.craftRowLabel({ set: "S", station: "Cannith Repurposing Station" }, "membership").system,
+    CS.get("vecna-lost-purpose").system_name, "the system name comes from the registry");
+  const dino = R.setMembershipSection({ variant_id: "D" },
+    membershipMaps("D", "Legendary Dread Stalker", "Dinosaur Bone crafting"), null);
   assert.ok(dino.includes(R.esc(CS.actionLabel("isle-of-dread-set-bonus", { set_name: "Legendary Dread Stalker" }))),
-    "Dino chip text equals the registry label");
+    "the Dino row's value equals the registry label");
+  assert.strictEqual(
+    P472.craftRowLabel({ set: "S", station: "Dinosaur Bone crafting" }, "membership").system,
+    CS.get("isle-of-dread-set-bonus").system_name, "…for the other station too");
 });
 
-test("craftChips uses 'Nearly Completed' and 'Viktranium' (not 'Nearly Complete'/'Lamordia')", () => {
+// Deliberately NOT proven red: `craftSection` already existed (#471) and already
+// said this. It is carried over from the retired `craftChips` test as a
+// regression guard — the player-facing names are "Nearly Completed" and
+// "Viktranium"; "Lamordia" is the internal one and has leaked before.
+test("#472: the craft rows say 'Nearly Completed' and 'Viktranium', not 'Nearly Complete'/'Lamordia'", () => {
   const v = { variant_id: "Legendary Thing" };
-  const maps = {
-    augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
+  const maps = blockMaps({
     ncByItem: new Map([["Legendary Thing", [{ stat: "Charisma", value: 4, bonus_type: "Quality" }]]]),
-    rollByItem: new Map(), sealByItem: new Map(), jokerByHost: new Map(), membershipByHost: new Map(),
     vikByItem: new Map([["Legendary Thing", [{ slot_type: "Melancholic", stat: "Constitution", value: 15 }]]]),
-  };
-  const chips = R.craftChips(v, 0, maps).join(" ");
-  assert.ok(/Nearly Completed:/.test(chips) && !/Nearly Complete:/.test(chips.replace(/Nearly Completed/g, "")), "Nearly Completed");
-  assert.ok(/Slot Melancholic Viktranium augment:/.test(chips), "Viktranium label");
-  assert.ok(!/Lamordia [A-Z]/.test(chips), "no 'Lamordia {type}:' label");
+  });
+  const html = R.craftSection(v, 0, maps, { keys: new Set(), byStat: new Map(), list: [] }, null, new Set());
+  assert.ok(/Nearly Completed/.test(html) && !/Nearly Complete[^d]/.test(html), "Nearly Completed");
+  assert.ok(/<span class="pd-ln-where">Melancholic<\/span>/.test(html), "the Viktranium slot is named by its type");
+  assert.ok(/Viktranium/.test(html), "and the system is named in the caption");
+  assert.ok(!/Lamordia/.test(html), "no 'Lamordia' anywhere — that is the internal name, not the player's");
 });
 
-test("U7: craftChips renders a placed Set Augment on its host with the suppression note", () => {
+test("#472/U7: a placed Set Augment renders on its host with the suppression note", () => {
   const v = { variant_id: "Vol Amulet", set_bonus: [{ set: "Vol Set" }] };
-  const maps = {
-    augAssign: { byIndex: new Map() }, dinoAssign: { byIndex: new Map() },
-    ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
-    jokerByHost: new Map(), membershipByHost: new Map(),
-    setAugByHost: new Map([["Vol Amulet", [{ set: "Legendary Prowess", host: "Vol Amulet" }]]]),
-  };
-  const chips = R.craftChips(v, 0, maps).join(" ");
-  assert.ok(/Set Augment: Legendary Prowess/.test(chips), "renders the placed Set Augment");
-  assert.ok(/suppresses Vol Set/.test(chips), "names the suppressed own set");
-  assert.ok(!/Set Augment:/.test(R.craftChips({ variant_id: "Some Ring" }, 1, maps).join(" ")), "no chip for a non-host item");
+  const maps = setMaps({ setAugByHost: new Map([["Vol Amulet",
+    [{ set: "Legendary Prowess", host: "Vol Amulet", slot_color: "Blue" }]]]) });
+  const html = R.setMembershipSection(v, maps, null);
+  assert.ok(/Legendary Prowess/.test(html), "renders the placed Set Augment");
+  assert.ok(/suppresses Vol Set/.test(html), "names the suppressed own set — what the augment COST");
+  assert.ok(/<span class="pd-ln-where">Blue<\/span>/.test(html), "…and the coloured slot it consumed (#316)");
+  assert.strictEqual(R.setMembershipSection({ variant_id: "Some Ring" }, maps, null), "",
+    "no row for a non-host item");
 });
 
 test("U7: satisfiedSets drops a set whose remaining member hosts a Set Augment", () => {
@@ -1350,7 +1373,11 @@ test("U4/R7+R8: the deep dive frames the gem, names both sets, and keeps its wil
   const gemBlock = html.split('<div class="dd-item').find((b) => /Gem of Many Facets/.test(b));
   assert.ok(/^ is-set/.test(gemBlock), "the gem's block is framed as a set piece");
   assert.ok(/Part of set: [^<]*Marshwalker/.test(gemBlock) && /Legendary Dread Isle/.test(gemBlock), "names both sets");
-  assert.ok(/Wildcard set: Marshwalker/.test(gemBlock), "R8 — the existing wildcard chip is retained alongside the frame");
+  // #472 — the wildcard is a Set membership ROW now, not a chip: the mechanism
+  // on the left, the set it yields on the right. R8's guarantee is unchanged —
+  // the frame does not replace the statement of WHY the gem is in the set.
+  assert.ok(/<span class="pd-ln-where">Wildcard<\/span><span class="pd-ln-what">Marshwalker/.test(gemBlock),
+    "R8 — the wildcard statement is retained alongside the frame");
 });
 
 test("U4/R9: Ranked Priorities names the gem's slot among a set bonus's sources", () => {
@@ -3453,24 +3480,41 @@ test("#457: the Deep Dive chips craft-granted points its affix list never had", 
     stat: "Armor-Piercing", bonus_type: "Enhancement", value: 23, unit: "flat" }]]]) });
   const html = R.loadoutDeepDive(res, { targets: ["Armor-Piercing"] }, maps, R.attributionByTarget(res));
   assert.ok(hasLine(html, "is-incidental", "Armor Class \\+41"), "the printed affix is a row");
+  // #457's guarantee is that the craft-granted point is READABLE on this surface
+  // at all — it used to live only in `pd-prio` and inside the fused craft label,
+  // so the exhaustive tab showed less than the summary card it details. #472
+  // moved WHERE it is read: the Craft section states it beside the slot that
+  // yields it, credited to the priority list, instead of the affix list carrying
+  // a second copy. Still readable, still classified, now stated once.
   assert.ok(hasLine(html, "is-tracked", "Armor-Piercing \\+23"),
-    "and the craft-granted point is one too — it was only in pd-prio and the craft label before");
-  // #471 — the Deep Dive KEEPS its craft-granted stats in this list, unlike the
-  // gear card. Its craft block shows instructions only (`stepOnly`), so dropping
-  // them here would leave the values with nowhere to be read — which is the
-  // exact failure #457 exists to prevent.
-  assert.ok(/<span class="pd-ln-where">craft<\/span>/.test(html), "named as craft-granted in the where column");
+    "and the craft-granted point is a credited row of its own");
+  assert.ok(/<span class="pd-ln-where">Miserable<\/span>/.test(html), "…named by the slot that applies it");
+  // Stated once as a STAT. The `here only for its crafts` foot note names it a
+  // second time, and that is a different statement — a claim about the pick, not
+  // a listing of what the item gives — so it is excluded from the count rather
+  // than counted as duplication.
+  const affixList = html.match(/<ul class="dd-list pd-lines">[\s\S]*?<\/ul>/);
+  assert.ok(affixList, "the affix list renders");
+  assert.ok(!/Armor-Piercing/.test(affixList[0]),
+    "the affix list does NOT restate what the craft row already states (#472)");
 });
 
-test("#457: the Deep Dive's craft chip trims to the instruction", () => {
+test("#457/#472: the Deep Dive's craft row is the slot and what it applies, once", () => {
+  // #457 trimmed the Deep Dive's craft chip to the instruction alone, because
+  // the value was already restated in its affix list. #472 inverts that: the row
+  // carries the value beside the slot, and the affix list no longer carries it.
+  // Either way the point is stated exactly once, which is the guarantee.
   const v = { variant_id: "Shield", affixes: [] };
   const res = { chosen: [{ slot: "Off Hand", variant: v }], augmentsPlaced: [], setsActive: [], breakdown: {} };
   const maps = ddMaps({ vikByItem: new Map([["Shield", [{ slot_type: "Miserable",
     stat: "Armor-Piercing", bonus_type: "Enhancement", value: 23, unit: "flat" }]]]) });
   const html = R.loadoutDeepDive(res, { targets: [] }, maps, R.attributionByTarget(res));
-  assert.ok(/Slot Miserable Viktranium augment</.test(html), "the step alone");
-  assert.ok(!/Slot Miserable Viktranium augment: Armor-Piercing/.test(html),
-    "…with the value no longer restated inside it");
+  assert.ok(/<span class="pd-ln-where">Miserable<\/span><span class="pd-ln-what">Armor-Piercing \+23<\/span>/.test(html),
+    "the slot on the left, the affix it applies on the right");
+  assert.strictEqual((html.match(/Armor-Piercing \+23/g) || []).length, 1,
+    "stated once on the Deep Dive too, not in the affix list as well");
+  assert.ok(!/Slot Miserable Viktranium augment/.test(html),
+    "…and the fused sentence is gone from this surface (the exports keep it)");
 });
 
 test("#457: an unfilled Viktranium slot keeps its full disclosure in the Deep Dive", () => {
@@ -3672,12 +3716,27 @@ test("#469/#471: the ramp is four steps, and only the credited one is bold white
   assert.strictEqual(R471.LINE_MARK.ranked, "◇", "outbid is the hollow one");
 });
 
-test("#469: a craft chip's link is a ring, so the crafting-system colour survives", () => {
-  const css = _reachCss();
-  const rule = _cssRule(css, ".chip.is-tracked {");
-  assert.ok(/box-shadow/.test(rule), "drawn outside the border");
-  assert.ok(!/border-color/.test(rule),
-    "the chip's own border still says WHICH crafting system, which is how the player finds the station");
+test("#469/#472: the crafting system is named in words, not carried by a colour", () => {
+  // #469 drew the priority link on a craft chip as a RING outside its border,
+  // because the border colour was the only thing saying which crafting system a
+  // step belonged to — and that is how the player finds the right station.
+  // #472 retires the chips and states the system in the caption instead. The
+  // guarantee is the same and stronger: a name survives monochrome, and an
+  // eleven-colour scheme keyed to crafting systems never did.
+  const v = { variant_id: "Eyes", affixes: [] };
+  const maps = blockMaps({ vikByItem: new Map([["Eyes",
+    [{ slot_type: "Dolorous", stat: "Seeker", bonus_type: "Enhancement", value: 15, unit: "flat" }]]]) });
+  const idx = { keys: new Set(), byStat: new Map(), list: [] };
+  assert.ok(/pd-slabel">Craft · Viktranium</.test(R.craftSection(v, 0, maps, idx, null, new Set())),
+    "a single-system item names that system above its rows");
+  // A mixed-family item must NOT name one of two systems above rows from both.
+  const mixed = blockMaps({
+    vikByItem: new Map([["Eyes", [{ slot_type: "Dolorous", stat: "Seeker", value: 15 }]]]),
+    tfByItem: new Map([["Eyes", [{ tier: 3, stat: "Melee Power", value: 12 }]]]),
+  });
+  assert.ok(/pd-slabel">Craft</.test(R.craftSection(v, 0, mixed, idx, null, new Set())),
+    "a mixed-family item says just Craft — naming one system would be a false claim");
+  assert.ok(!/Craft · /.test(R.craftSection(v, 0, mixed, idx, null, new Set())));
 });
 
 test("#469: the card regions are sized to line up, not merely stacked", () => {
@@ -3804,4 +3863,118 @@ test("#471: head, body and foot are separated without a rule across the card", (
   assert.ok(/\.pd-rbody::before/.test(css), "and the body's sections hang off a spine");
   const secs = _cssRule(css, ".pd-sec ~ .pd-sec {");
   assert.ok(/border-top: 0/.test(secs), "the between-section hairlines are gone too");
+});
+
+// ---------------------------------------------------------------------------
+// #472 — the Deep Dive spoke two languages after #471: its affix list was rows
+// while its craft and augment block was still the chip run. It now calls the
+// SAME section renderers the gear card does, and the three set-yielding
+// families — wildcard, chosen membership, Set Augment — get rows of their own.
+// ---------------------------------------------------------------------------
+
+test("#472: the Deep Dive renders the card's own section renderers, not a second set", () => {
+  // Shared functions, not matching output. Two implementations that agree today
+  // is what #457 and #469 each had to re-fix; one implementation cannot drift.
+  const v = { variant_id: "Shield", affixes: [{ name: "Armor Class", value: 41, type: "Shield" }] };
+  const res = { chosen: [{ slot: "Off Hand", variant: v }], augmentsPlaced: [], setsActive: [], breakdown: {} };
+  const maps = ddMaps({
+    byIndex: new Map([[0, [{ variant_id: "Gem", color: "Blue" }]]]),
+    freeByIndex: new Map([[0, ["Red"]]]),
+    vikByItem: new Map([["Shield", [{ slot_type: "Miserable", stat: "Armor-Piercing",
+      bonus_type: "Enhancement", value: 23, unit: "flat" }]]]),
+  });
+  const augById = new Map([["Gem", { affixes: [{ name: "Doublestrike", value: 3, type: "Quality" }] }]]);
+  const html = R.loadoutDeepDive(res, { targets: [] }, maps, R.attributionByTarget(res), augById);
+  assert.ok(/pd-sec pd-sec-aug/.test(html) && /pd-sec pd-sec-craft/.test(html),
+    "the Deep Dive carries the card's Augments and Craft sections");
+  assert.ok(!/class="chip /.test(html), "and no chip survives on this surface");
+  // The open slot is stated here too — the Deep Dive used to show placements
+  // only, with open slots surfacing solely as an aggregate upgrade note.
+  assert.ok(/aug-open aug-red/.test(html), "an open augment colour is a row here as well");
+});
+
+test("#472: the three set-yielding families get rows, and say what you go and do", () => {
+  const v = { variant_id: "Host", set_bonus: [{ set: "Own Set" }], affixes: [] };
+  const maps = setMaps({
+    jokerByHost: new Map([["Host", [{ host: "Host", set: "Wild Set" }]]]),
+    membershipByHost: new Map([["Host", [{ host: "Host", set: "Vol Set", station: "Cannith Repurposing Station" }]]]),
+    setAugByHost: new Map([["Host", [{ host: "Host", set: "Prowess", slot_color: "Blue" }]]]),
+  });
+  const html = R.setMembershipSection(v, maps, null);
+  assert.strictEqual((html.match(/<li class="pd-line/g) || []).length, 3, "one row per mechanism");
+  // The open question this issue named: these wrap a SET, not a slot with a stat
+  // in it. The answer is that the where column is the mechanism you go and use
+  // and the value column is the membership you get — which is exactly what the
+  // `Part of set:` line above them does NOT say.
+  assert.ok(/<span class="pd-ln-where">Wildcard<\/span><span class="pd-ln-what">Wild Set/.test(html));
+  assert.ok(/Awaken Set Bonus: Vol Set/.test(html) && /Cannith Repurposing Station/.test(html),
+    "the membership row carries the registry's instruction and the station, visibly");
+  assert.ok(/<span class="pd-ln-where">Blue<\/span><span class="pd-ln-what">Prowess \(suppresses Own Set\)/.test(html));
+});
+
+test("#472: a set row lights up only for the set this item was CREDITED through", () => {
+  // The precision that matters. An item feeding two sets and credited for one of
+  // them must not mark the row for the other — the filled treatment means "this
+  // is why the item is here", and that has been the rule since #453.
+  const v = { variant_id: "Host", affixes: [] };
+  const maps = setMaps({
+    jokerByHost: new Map([["Host", [{ host: "Host", set: "Credited Set" }]]]),
+    membershipByHost: new Map([["Host", [{ host: "Host", set: "Uncredited Set", station: "Dinosaur Bone crafting" }]]]),
+  });
+  const res = { chosen: [], breakdown: {} };
+  const attr = { "Melee Power": [{ hostIds: ["Host"], value: 10, bonus_type: "Artifact",
+    isSet: true, source: "Credited Set", sourceKind: "set" }] };
+  const idx = R.itemContribIndex({ result: res, attr, targets: ["Melee Power"] }, "Host");
+  const html = R.setMembershipSection(v, maps, idx);
+  assert.ok(/<li class="pd-line is-tracked pd-set-line set-joker"/.test(html),
+    "the set the solver actually credited is marked");
+  assert.ok(/<li class="pd-line is-incidental pd-set-line set-membership"/.test(html),
+    "the one it did not is left quiet — matching on viaSet alone would over-claim");
+});
+
+test("#472: the Deep Dive de-duplicates too, now that its craft rows carry values", () => {
+  // It kept `includeCraft` on while its craft block showed instructions only,
+  // because dropping the values would have left them nowhere to be read (#457).
+  // With the rows stating them, carrying them in the affix list as well is the
+  // same redundancy #471 removed from the card.
+  const v = { variant_id: "Shield", affixes: [{ name: "Armor Class", value: 41, type: "Shield" }] };
+  const res = { chosen: [{ slot: "Off Hand", variant: v }], augmentsPlaced: [], setsActive: [],
+    breakdown: { "Armor-Piercing": [{ bonus_type: "Enhancement", value: 23, source: "Shield",
+      sourceKind: "vik", slot: "Off Hand", hostIds: ["Shield"] }] } };
+  const maps = ddMaps({ vikByItem: new Map([["Shield", [{ slot_type: "Miserable",
+    stat: "Armor-Piercing", bonus_type: "Enhancement", value: 23, unit: "flat" }]]]) });
+  const html = R.loadoutDeepDive(res, { targets: ["Armor-Piercing"] }, maps, R.attributionByTarget(res));
+  const affixList = html.match(/<ul class="dd-list pd-lines">[\s\S]*?<\/ul>/)[0];
+  assert.ok(/Armor Class \+41/.test(affixList), "the printed affix is in the affix list");
+  assert.ok(!/Armor-Piercing/.test(affixList), "the crafted one is not — its row states it");
+});
+
+test("#472: a caller with NO craft section keeps every credited point in its stat list", () => {
+  // The safe direction, and the reason `craftStated` is computed rather than
+  // chosen. If the flag were a preference a caller could set it while rendering
+  // no Craft section, and a credited point would render nowhere at all — the
+  // invisible gap the residual sweep exists to make impossible.
+  const v = { variant_id: "Legacy" };
+  const ctx = { result: { chosen: [] },
+    attr: { Seeker: [{ hostIds: ["Legacy"], value: 15, bonus_type: "Enhancement", sourceKind: "vik" }] },
+    targets: ["Seeker"] };
+  const html = R.equippedBody(v, -1, null, null, false, false, ctx);
+  assert.ok(hasLine(html, "is-tracked", "Seeker \\+15"),
+    "with no craft rows to state it, the point stays in the stat list");
+});
+
+test("#472: the unrealized-upgrade note counts open slots; the rows name them", () => {
+  // It used to do both, because it was the only place an open slot appeared on
+  // this tab. With a row per open colour directly below it, listing them in the
+  // note as well is the duplication these two issues exist to remove — so the
+  // note keeps the judgement and the count, and the rows keep the facts.
+  const v = { variant_id: "Host", affixes: [] };
+  const res = { chosen: [{ slot: "Ring", variant: v }], augmentsPlaced: [], setsActive: [], breakdown: {} };
+  const maps = ddMaps({ freeByIndex: new Map([[0, ["Blue", "Colorless"]]]) });
+  const html = R.loadoutDeepDive(res, { targets: [] }, maps, R.attributionByTarget(res));
+  const note = html.match(/<div class="dd-upgrade">[\s\S]*?<\/div>/)[0];
+  assert.ok(/2 open augment slots/.test(note), "the note still counts them");
+  assert.ok(!/Blue/.test(note) && !/Colorless/.test(note), "…and no longer names them");
+  assert.ok(/aug-open aug-blue/.test(html) && /aug-open aug-colorless/.test(html),
+    "the rows name each one instead");
 });

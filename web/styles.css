@@ -287,15 +287,9 @@ button.primary:hover { filter: brightness(1.08); }
   border-radius: var(--radius-sm); padding: 0.1rem 0.5rem; margin: 0.1rem;
   font-size: var(--fs-xs);
 }
-.chip.aug { border-color: #3a4a6a; background: #131a26; }
-.chip.dino { border-color: #6a5a3a; background: #1a1712; }
-.chip.nc { border-color: #5a3a6a; background: #171220; }
-.chip.roll { border-color: #3a5a4a; background: #121a16; }
-.chip.lamordia { border-color: #6a3a4a; background: #1a1216; }
 /* #370 — a declared Lamordia slot the solve left empty: present, clearly not
    filled. Dashed and dimmed so it reads as an open slot at a glance, never as a
    craft the player should go apply. */
-.chip.lamordia.unfilled { border-style: dashed; background: transparent; color: var(--faint); }
 /* #332 — the ONE Utility-tier presence marker. `counted` is the affirmative
    signal (this effect earns a point). Every other presence effect stays
    deliberately unmarked, and #380 made that the whole rule: a second glyph for
@@ -308,7 +302,6 @@ button.primary:hover { filter: brightness(1.08); }
 .utility-legend { margin: 0.35rem 0 0; font-size: var(--fs-xs); color: var(--muted); }
 .utility-legend .chip-mark { opacity: 0.85; }
 .utility-legend-note { opacity: 0.8; }
-.chip.seal { border-color: #3a5a6a; background: #121a1e; }
 .muted { color: var(--muted); font-size: var(--fs-xs); }
 
 /* ============================================================================
@@ -577,11 +570,7 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 /* weapon row: Main Hand · [Off Hand/Rune Arm] · Quiver, beneath the figure */
 .pd-weapons { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); margin-top: var(--sp-2); }
 .setpip { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--set); flex: none; }
-.chip.joker { border-color: var(--accent-2); color: var(--accent-2); }
-.chip.awaken { border-color: #6a5a2a; background: #1a1710; color: #e6c86a; }
 .chip.setbonus { border-color: #3a5a4a; background: #101a16; color: #8fd6b0; }
-.chip.thunderforged { border-color: #4a4a6a; background: #14141c; color: #a6b0e6; }
-.chip.greensteel { border-color: #2a6a4a; background: #101a14; color: #6ae6a0; }
 /* Uniform, fixed-size slot cells: item name, ML, and set name only. */
 .pd-slot {
   border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -668,7 +657,6 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 .dd-affixes h5, .dd-crafts h5 { margin: var(--sp-2) 0 var(--sp-1); font-size: var(--fs-xs); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 .dd-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); }
 .dd-list li { color: var(--text); }
-.dd-chips { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .dd-none { font-size: var(--fs-sm); }
 
 /* alternatives (U4/U5): active-build banner + trade-off cards */
@@ -1252,6 +1240,10 @@ input.wz-ml { width: 120px; }
 .pd-sec-stats .pd-slabel::before { background: var(--accent); opacity: 0.7; }
 .pd-sec-aug   .pd-slabel::before { background: var(--accent-2); }
 .pd-sec-craft .pd-slabel::before { background: var(--warn); opacity: 0.8; }
+/* #472 — set membership: the wildcard, the chosen membership and any Set
+   Augment hosted here. Gold, because that is what a set is everywhere else in
+   this app (`--set` carries the set-bonus attribution). */
+.pd-sec-sets  .pd-slabel::before { background: var(--set); }
 
 /* #471 — THE ONE ROW LANGUAGE.
    Every fact on the card is the same three columns:
@@ -1330,6 +1322,15 @@ input.wz-ml { width: 120px; }
 .pd-sub li.is-tracked { color: #fff; font-weight: 700; }
 .pd-sub li.is-ranked { color: #fff; }
 
+/* #472 — a set-membership row's value is a SET NAME, not a stat, so it takes the
+   set colour the rest of the app uses for one. It still obeys the row's class:
+   a credited set is white and bold like any other credited fact, and an
+   uncredited one stays quiet. */
+.pd-line.pd-set-line .pd-ln-what { color: var(--set); }
+.pd-line.pd-set-line.is-tracked .pd-ln-what { color: #fff; font-weight: 700; }
+.pd-line.pd-set-line .pd-ln-mark { color: var(--set); opacity: 0.7; }
+.pd-line.pd-set-line.is-tracked .pd-ln-mark { color: var(--optimal); opacity: 1; }
+
 /* #471 — the augment marker carries its slot colour, and Sun/Moon carry the
    SAME glyphs the Set Bonuses tab prints for a set-like Lunar/Solar bonus.
    Those two belong to a separate gem system that accepts no standard augment
@@ -1348,18 +1349,10 @@ input.wz-ml { width: 120px; }
 .aug-name { color: inherit; font-weight: inherit; }
 .pd-line.aug-filled.is-tracked .aug-name { color: #fff; font-weight: 700; }
 .pd-line.aug-filled.is-ranked .aug-name { color: #fff; }
-/* The augment pip survives for the paperdoll cell and the browse rows, which
-   still draw slot colours as pips rather than as row markers. */
-.aug-pip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 999px; font-size: 0.62rem;
-  border: 1px solid var(--border-2); color: var(--muted); }
-.aug-pip.aug-blue { border-color: #5a8fd0; color: #9cc2ee; }
-.aug-pip.aug-red { border-color: #cf6a63; color: #e6a09a; }
-.aug-pip.aug-yellow { border-color: #cbb45e; color: #e6d68f; }
-.aug-pip.aug-green { border-color: #6fae74; color: #a6d6aa; }
-.aug-pip.aug-orange { border-color: #d08a4a; color: #eab98a; }
-.aug-pip.aug-purple { border-color: #a074c0; color: #cbb0e0; }
-.aug-pip.aug-colorless, .aug-pip.aug-clear { border-color: var(--border-2); color: var(--faint); }
-.craft-mark { padding: 1px 6px; border-radius: var(--radius-sm); border: 1px dashed var(--border-2); font-size: 0.62rem; color: var(--muted); }
+/* #472 — the `.aug-pip` family is gone with the chips it belonged to. Nothing
+   emits it: the row marker carries the slot colour now. It was kept in #471 on
+   the belief that the paperdoll cell and the browse rows still drew pips; they
+   do not, and the comment saying so was wrong. */
 
 /* #471 — ONE foot-note family. The card's bottom edge carried four shapes: an
    amber text line ("here only for its crafts"), a muted one ("included to
@@ -1380,20 +1373,16 @@ input.wz-ml { width: 120px; }
 .pd-note.is-owned { border-left-color: var(--accent-2); }
 .pd-note.muted { color: var(--faint); }
 
-/* Chips survive on the Deep Dive's craft block, which is a run of instructions
-   rather than a per-slot list. A craft chip's own border encodes WHICH crafting
-   system it belongs to (dino amber, Nearly Completed violet, Lamordia rose, …),
-   a fact the player needs to find the right station — so the priority link is
-   drawn as a ring OUTSIDE that border rather than by repainting it. Both facts
-   survive, and the ring is a second visible line, not a hue change. */
-.chip.is-tracked { box-shadow: 0 0 0 1px var(--optimal); color: var(--text); font-weight: 600; }
-.chip.is-ranked { box-shadow: 0 0 0 1px rgba(67,197,158,0.55); color: var(--text); }
-/* #457 — a Deep Dive augment chip carrying its granted stats becomes a small
-   block: name on top, grants beneath, matching the gear card's nesting. */
-.chip.aug.has-affx { display: inline-flex; flex-direction: column; align-items: flex-start;
-  gap: 2px; max-width: 100%; }
-.chip.aug.has-affx .aug-head { white-space: normal; }
-.chip.aug .pd-sub { font-size: 0.62rem; }
+/* #472 — the per-system chip colours are retired with the chips. A craft chip's
+   border encoded WHICH crafting system a step belonged to — dino amber, Nearly
+   Completed violet, Lamordia rose — because the player needs that to find the
+   right station. The row language states it in WORDS instead: the Craft
+   section's caption names the system ("Craft · Viktranium") whenever every row
+   on the item shares one. A name beats a hue that has to be learned, and it
+   survives monochrome, which the eleven-colour scheme never did.
+
+   `.chip` itself stays: the item browser still uses it for affix and set-bonus
+   chips, which are a run of labels rather than a per-slot list. */
 
 /* Per-slot constraint controls (U6) on the equipped-list rows. */
 .pd-row { position: relative; }
