@@ -209,112 +209,23 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined") ? pinnedVarian
   // eslint-disable-next-line global-require
   : require("./model.js").pinnedVariantIds;
 
-// The applied craft-upgrade chips for one item — Dino inserts, Nearly Completed,
-// choice slots, Viktranium, seals, Thunder-Forged, Green Steel — keyed by the
-// chosen index (dino) or variant_id (the rest). Assigned crafts only (the maps
-// carry no empty-slot inventory). Shared by the Loadout Deep Dive (craftChips)
-// and the equipped-block detail (equippedBody, U2) so these families never drift.
-// Each family's label text comes from Proj.craftLabel (the single label source,
-// KTD6); the whole label is wrapped in one esc() — byte-identical to the prior
-// inline templates because esc() distributes over string concatenation.
-// NOT included: the augment chips and the joker/membership (wildcard/set) chips —
-// craftChips keeps those, and the equipped block surfaces set state via its row
-// glow/setLine instead, so a joker/membership rendering change only hits the Deep Dive.
-function craftSlotChips(v, idx, maps, stepOnly, contribIdx, ranked) {
-  // #455 — on the Loadout card the affix half of each label is now a stat chip,
-  // so the instruction stands alone; the Deep Dive (via craftChips) keeps the
-  // full label, being the exhaustive per-item surface. `vikEmpty` is exempt by
-  // construction — craftStepLabel falls it through, because it is a disclosure
-  // that a declared slot went unfilled, not a craft to go apply.
-  const L = stepOnly ? Proj.craftStepLabel : Proj.craftLabel;
-  // #469 — the priority link for the INSTRUCTION chip. `stepOnly` moved the
-  // affix list off these labels and onto stat chips, which made the craft row a
-  // list of undifferentiated errands: nothing on it said which crafting trip
-  // actually serves the priority list. Optional, and empty without context — a
-  // caller that was not told what the player ranked marks nothing.
-  const link = (o) => grantLinkClass(Proj.craftAffixRecords(o), contribIdx, ranked);
-  const dinos = (maps.dinoAssign.byIndex.get(idx) || []).map((d) => `<span class="chip dino${link(d)}" title="Isle of Dread insert">${esc(L(d, "dino"))}</span>`);
-  // #371 — the per-item pools share this chip family; the tooltip names the
-  // system the placement actually came from (`pool`), not the category path's.
-  const ncs = (maps.ncByItem.get(v.variant_id) || []).map((n) => `<span class="chip nc${link(n)}" title="${esc(n.pool ? n.pool + " — per-item upgrade slot" : "Terror of Demogorgon — Nearly Completed")}">${esc(L(n, "nc"))}</span>`);
-  const rolls = (maps.rollByItem.get(v.variant_id) || []).map((r) => `<span class="chip roll${link(r)}" title="choice slot, best option selected">${esc(L(r, "roll"))}</span>`);
-  const vikPlaced = maps.vikByItem.get(v.variant_id) || [];
-  const viks = vikPlaced.map((n) => `<span class="chip lamordia${link(n)}" title="The Chill of Ravenloft — Viktranium Experiment crafting">${esc(L(n, "vik"))}</span>`);
-  // #370 — a Lamordia slot the item DECLARES but the solve left empty renders as
-  // a muted chip rather than vanishing. The slot is part of the item's identity,
-  // so an item that ships with four slots must never read as a three-slot item.
-  // The unfilled set comes from the shared projection helper, the same one every
-  // export reads.
-  viks.push(...Proj.unfilledVikSlots(v, vikPlaced).map((s) =>
-    `<span class="chip lamordia unfilled" title="The Chill of Ravenloft — this slot exists on the item; no option in its pool adds to your ranked stats">${esc(Proj.craftLabel(s, "vikEmpty"))}</span>`));
-  const seals = (maps.sealByItem.get(v.variant_id) || []).map((n) => `<span class="chip seal${link(n)}" title="unseal one effect at the crafting table">${esc(L(n, "seal"))}</span>`);
-  const tfs = ((maps.tfByItem && maps.tfByItem.get(v.variant_id)) || []).map((n) => `<span class="chip thunderforged${link(n)}" title="Legendary Thunder-Forged tier upgrade">${esc(L(n, "tf"))}</span>`);
-  const gss = ((maps.gsByItem && maps.gsByItem.get(v.variant_id)) || []).map((n) => `<span class="chip greensteel${link(n)}" title="Legendary Green Steel craft">${esc(L(n, "gs"))}</span>`);
-  return [...dinos, ...ncs, ...rolls, ...viks, ...seals, ...tfs, ...gss];
-}
-
-function craftChips(v, idx, maps, augById, stepOnly, contribIdx, rank1, ranked) {
-  // #457 — the classification context, optional. Without it an augment's stats
-  // still chip, they just cannot read as tracked — which is correct, since
-  // nothing has told this call what the player ranked.
-  contribIdx = contribIdx || { keys: new Set(), byStat: new Map(), list: [] };
-  const augs = (maps.augAssign.byIndex.get(idx) || []).map((a) => {
-    const where = a.slot_color && a.slot_color !== a.color ? `${a.color} in ${a.slot_color} slot` : (a.color || "");
-    // #457 — say what the augment GRANTS, not just its name. The gear box has
-    // nested these since #453; the Deep Dive named 18 augments across a loadout
-    // and showed nothing any of them gave, which left the exhaustive surface
-    // less informative than the summary. `augById` is optional so the pure-test
-    // callers and any caller without the catalog still render the name alone.
-    //
-    // Chips, not a text run — the same three classes as everywhere else. Showing
-    // them as plain text inside a chip would rebuild the two-languages problem
-    // #455 removed, on the surface #457 exists to make consistent. Augment
-    // affixes are never collapsed anywhere (see `bundleGroups`), so they are
-    // classified directly.
-    const meta = augById && augById.get(a.variant_id);
-    const augAffixes = (meta && meta.affixes) || [];
-    // #471 — the nested grants use the shared `pd-sub` list, the same one the
-    // gear card indents under a gem, rather than a second copy of the stat row.
-    const affx = subLines(augAffixes, contribIdx, rank1, ranked);
-    // #469 — the gem itself inherits the link, so a run of eighteen augments can
-    // be scanned for the ones that serve the priority list without reading every
-    // nested chip.
-    return `<span class="chip aug${affx ? " has-affx" : ""}${grantLinkClass(augAffixes, contribIdx, ranked)}" title="augment slotted">`
-      + `<span class="aug-head">${esc(a.variant_id)} <span class="muted">(${esc(where)})</span></span>${affx}</span>`;
-  });
-  const jokers = ((maps.jokerByHost && maps.jokerByHost.get(v.variant_id)) || []).map((j) => `<span class="chip joker" title="wildcard set piece">Wildcard set: ${esc(j.set)}</span>`);
-  // Membership chip (R3/R4): Vecna Lost Purpose and Isle-of-Dread Set Bonus flow
-  // through one solver primitive but must render different labels — fork on the
-  // station via the registry (KTD2). Only Vecna keeps "Awaken".
-  const memberships = ((maps.membershipByHost && maps.membershipByHost.get(v.variant_id)) || []).map((m) => {
-    // Unknown/absent station defaults to the Dino system (the non-Vecna label),
-    // matching the prior fallthrough behavior.
-    const sysId = (CraftingReg && CraftingReg.systemForStation(m.station)) || "isle-of-dread-set-bonus";
-    const isVecna = sysId === "vecna-lost-purpose";
-    const cls = isVecna ? "chip awaken" : "chip setbonus";
-    // The label text comes from the registry (single source of truth), not a
-    // hardcoded string — a terminology edit in crafting-systems.js now flows
-    // straight to the chip instead of drifting from it.
-    const text = Proj.craftLabel(m, "membership");
-    const title = isVecna ? `awaken this set at the ${esc(m.station || "Cannith Repurposing Station")}`
-      : `slot a Dinosaur Bone Set Bonus augment at ${esc(m.station || "Dinosaur Bone crafting")}`;
-    return `<span class="${cls}" title="${title}">${esc(text)}${m.station ? ` <span class="muted">(${esc(m.station)})</span>` : ""}</span>`;
-  });
-  // Set-Augment chips (U7): a solver-placed Set Augment attributed to its
-  // solver-DECIDED host (KTD-6 — keyed by setAugmentsPlaced[].host, never a greedy
-  // reconstruction). The label comes from the single source (Proj.craftLabel), so it
-  // matches every export byte-for-byte, including the inline suppression note. Only
-  // the first copy on a host carries the suppression note (a host suppresses its own
-  // set once).
-  const setAugs = ((maps.setAugByHost && maps.setAugByHost.get(v.variant_id)) || []).map((s, i) => {
-    const suppresses = i === 0 ? slotSetNames(v) : [];
-    const title = suppresses.length
-      ? `Set Augment — overrides this item's own set bonus (${esc(suppresses.join(", "))})`
-      : "solver-placed Set Augment";
-    return `<span class="chip setaug" title="${title}">${esc(Proj.craftLabel({ set: s.set, slot_color: s.slot_color, suppresses }, "augmentset"))}</span>`;
-  });
-  return [...augs, ...craftSlotChips(v, idx, maps, stepOnly, contribIdx, ranked), ...jokers, ...memberships, ...setAugs];
-}
+// #472 — `craftSlotChips` and `craftChips` are retired. They rendered this
+// item's crafts, augments, wildcard, membership and Set Augment as a run of
+// labelled chips, and were the LAST caller of the chip language on an item
+// surface: #471 moved the gear card to rows, and the Deep Dive — their only
+// consumer — now calls the same `augmentSection` / `craftSection` /
+// `setMembershipSection` the card does.
+//
+// What they uniquely knew is preserved, not deleted:
+//   - the split labels live in `Proj.craftRowLabel`, beside `craftLabel`;
+//   - the Vecna-vs-Dino membership fork still reads the CraftingSystems
+//     registry (KTD2), now inside that function, so "Awaken" stays correct for
+//     exactly one system;
+//   - `Proj.unfilledVikSlots` still supplies the declared-but-empty slots
+//     (#370), now via `craftRowsFor`;
+//   - the Set Augment's solver-decided host and its once-per-host suppression
+//     note still come from `setAugmentsPlaced[].host` (KTD-6), now via
+//     `setRowsFor`.
 
 // U4 (R7) — the sets one equipped slot CONTRIBUTES to, as [{set, kind}], from the
 // shared set-contributor resolver. A wildcard (Gem of Many Facets) or
@@ -383,8 +294,13 @@ function loadoutDeepDive(result, query, maps, attr, augById) {
     // U10: flag open standard-color augment slots as a concrete unrealized upgrade.
     const openAug = _g.indices.reduce((acc, i) => acc.concat(freeByIndex.get(i) || []), [])
       .filter((col) => STD_AUG_COLORS.has(String(col).toLowerCase()));
+    // #472 — the note stopped naming the colours. It used to be the ONLY place an
+    // open slot appeared on this tab, so it had to list them; the Augments
+    // section now gives each one a row of its own, directly below. What the note
+    // still uniquely says is the JUDGEMENT — that these are an unrealized
+    // upgrade — and the count, which the rows do not aggregate.
     const upgradeNote = openAug.length
-      ? `<div class="dd-upgrade"><span class="dd-upgrade-tag">Unrealized upgrade</span> ${openAug.length} open augment slot${openAug.length === 1 ? "" : "s"} (${esc(openAug.join(", "))}) — slot an augment here for more stats.</div>`
+      ? `<div class="dd-upgrade"><span class="dd-upgrade-tag">Unrealized upgrade</span> ${openAug.length} open augment slot${openAug.length === 1 ? "" : "s"} — slot an augment for more stats.</div>`
       : "";
     const contribs = slotContribs(c.slot, v, contributors);    // U4/R7: intrinsic + wildcard + membership
     const glow = contribGlow(contribs, satisfied);             // U6: is-set glow = satisfaction
@@ -407,28 +323,32 @@ function loadoutDeepDive(result, query, maps, attr, augById) {
     // reads as the one name engraved on the item rather than as seven school lines.
     const ddContribIdx = itemContribIndex(
       (attr || query) ? { result, attr, targets: query && query.targets } : null, v.variant_id);
-    const ddEntries = statChipEntries(v, idx, maps, ddContribIdx);
     const ddRank1 = (query && query.targets && query.targets.length) ? query.targets[0] : null;
     // #469 — the same priority link the gear card draws. These two surfaces
     // describe the same items and the repo's standing rule is that they must not
     // drift: a stat framed as ranked on the card and unframed here would read as
     // the Deep Dive disagreeing about what the player asked for.
     const ddRanked = rankedStatSet(query);
-    // #471 — the same row language as the gear card. This list keeps
-    // `includeCraft` ON (the default): the Deep Dive's craft block shows
-    // instructions only, so the craft-granted VALUES have nowhere else to be
-    // read here, and #457 exists precisely because the exhaustive surface must
-    // never show less than the summary it details. #472 — the craft block below
-    // is still the chip run, so this surface speaks two languages until that lands.
+    // #472 — the SAME three section renderers the gear card calls, not a second
+    // implementation of them. #471 left this surface speaking two languages: its
+    // affix list was rows while its craft and augment block was still the chip
+    // run. Sharing the functions outright is what makes a future divergence
+    // impossible rather than merely discouraged.
+    const ddAugs = augmentSection(v, idx, maps, augById, ddContribIdx, ddRank1, ddRanked);
+    const ddCrafts = craftSection(v, idx, maps, ddContribIdx, ddRank1, ddRanked);
+    const ddSets = setMembershipSection(v, maps, ddContribIdx);
+    // #472 — and therefore the same de-duplication. The Deep Dive kept
+    // `includeCraft` on while its craft block showed instructions only, because
+    // dropping the values from here would have left them nowhere (#457). Now the
+    // craft rows state their own affixes, so carrying them here as well prints
+    // the same point twice — the exact redundancy #471 removed from the card.
+    const ddEntries = statChipEntries(v, idx, maps, ddContribIdx, craftRowsFor(v, idx, maps).length > 0);
     const affixes = ddEntries.entries.length
       ? `<ul class="dd-list pd-lines">${statChipRow(
           ddEntries.entries, Proj.affixStatCoverage(ddEntries.raw), ddContribIdx, ddRank1, ddRanked)}</ul>`
       : `<p class="dd-none muted">No parsed affixes on this item.</p>`;
-    // #457 — the instruction alone, for the reason #455 gave: the value it used to
-    // restate is now a stat chip above.
-    const crafts = craftChips(v, idx, maps, augById, true, ddContribIdx, ddRank1, ddRanked);
-    const craftBlock = crafts.length
-      ? `<div class="dd-crafts"><h5>Applied crafting &amp; augments</h5><div class="dd-chips">${crafts.join(" ")}</div></div>` : "";
+    const craftBlock = (ddAugs || ddCrafts || ddSets)
+      ? `<div class="dd-crafts">${ddAugs}${ddCrafts}${ddSets}</div>` : "";
     const wiki = v.wiki_url ? `<a class="dd-wiki" href="${safeUrl(v.wiki_url)}" target="_blank" rel="noopener">wiki</a>` : "";
     const artifactTag = v.artifact ? `<span class="dd-artifact" title="your one equipped Artifact">Artifact</span>` : "";
     // #262 — the wiki-confirmed no-drop-source disclosure, beside the Artifact
@@ -588,16 +508,23 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
  *  not state a bonus type as though the wiki said so. */
 function itemContribIndex(prioCtx, variantId) {
   const keys = new Set(), byStat = new Map();
-  if (!prioCtx || !prioCtx.result || !variantId) return { keys, byStat, list: [] };
+  // #472 — the SETS this item was actually credited through, by name. A "go
+  // awaken this set" row is an instruction whose product is set membership, and
+  // this is what tells it apart from one that serves nothing the player ranked.
+  const creditedSets = new Set();
+  if (!prioCtx || !prioCtx.result || !variantId) {
+    return { keys, byStat, list: [], creditedSets };
+  }
   const list = itemContributions(
     prioCtx.result, { variant_id: variantId }, prioCtx.attr, prioCtx.targets);
   for (const c of list) {
+    if (c.viaSet && c.source) creditedSets.add(c.source);
     if (c.stat != null) { keys.add(c.stat); if (!byStat.has(c.stat)) byStat.set(c.stat, c); }
     // The collapsed entry is keyed by `via`, so the enchantment name has to be
     // in the set too or a collapsed bundle never matches (#453 KTD1).
     if (c.via != null) { keys.add(c.via); if (!byStat.has(c.via)) byStat.set(c.via, c); }
   }
-  return { keys, byStat, list };
+  return { keys, byStat, list, creditedSets };
 }
 
 /** #453 U2 (KTD3) / #469 — one of FOUR classes, tested in this order.
@@ -803,7 +730,7 @@ function grantClass(affixes, contribIdx, ranked) {
 
 /** #471 — the affixes a gem or craft grants, indented under it.
  *
- *  NOT collapsed, matching `craftChips`: augment affixes are never collapsed
+ *  NOT collapsed: augment affixes are never collapsed
  *  anywhere in the app, because the collapse changes what the player compares
  *  against the in-game tooltip. */
 function subLines(affixes, contribIdx, rank1, ranked) {
@@ -838,19 +765,20 @@ function overflowToggle(rows) {
  *  Set contributions are synthesized from the contribution itself — they have no
  *  affix record on the item, which is exactly why `pd-prio` was the only place
  *  they appeared. */
-function statChipEntries(v, idx2, maps, contribIdx, includeCraft) {
-  // #471 — `includeCraft` false drops the craft-granted affixes from this list.
-  // The Loadout card now states every craft in place, in the Craft section,
-  // beside the slot that yields it, so carrying them here as well printed the
-  // same point twice on one card. Defaults to TRUE: the Deep Dive is the
-  // exhaustive per-item surface and its craft block shows instructions only
-  // (`stepOnly`), so dropping them there would lose the values entirely. That
-  // asymmetry is deliberate and tracked: #472 converts the Deep Dive's craft
-  // block to the row language, at which point this flag is revisited there too.
-  includeCraft = includeCraft !== false;
+function statChipEntries(v, idx2, maps, contribIdx, craftStated) {
+  // #471/#472 — `craftStated` says the caller renders a Craft section, in which
+  // every craft states its own affix beside the slot that yields it. When it
+  // does, carrying those affixes here as well prints the same point twice.
+  //
+  // It is a QUESTION ABOUT THE CALLER, not a preference, which is why it is
+  // computed (`craftRowsFor(...).length > 0`) rather than chosen. Defaulting it
+  // to false is the safe direction: a caller with no craft section — the pure
+  // test callers, and any future one — keeps every credited point visible here
+  // rather than dropping it into a section that does not exist.
+  craftStated = !!craftStated;
   const printed = (v.affixes || []).map((a) => [a, null]);
   const crafted = [];
-  if (includeCraft && maps && idx2 != null && idx2 >= 0) {
+  if (!craftStated && maps && idx2 != null && idx2 >= 0) {
     const take = (arr) => { for (const o of arr || []) for (const a of Proj.craftAffixRecords(o)) crafted.push([a, "craft"]); };
     take(maps.dinoAssign && maps.dinoAssign.byIndex && maps.dinoAssign.byIndex.get(idx2));
     take(maps.ncByItem && maps.ncByItem.get(v.variant_id));
@@ -917,7 +845,7 @@ function statChipEntries(v, idx2, maps, contribIdx, includeCraft) {
     // that reaches no row at all"; a point the Craft section states in place has
     // a row, so it is not residual. Augment-granted points never reach this list
     // (`hostIds` is null for that kind) but are named for the same reason.
-    if (!includeCraft && CRAFT_SOURCE_KINDS.has(c.sourceKind)) continue;
+    if (craftStated && CRAFT_SOURCE_KINDS.has(c.sourceKind)) continue;
     covered.add(c.stat);
     entries.push({ affix: { name: c.stat, stat: c.stat, value: c.value, type: c.bonus_type }, source: null });
   }
@@ -938,12 +866,13 @@ function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) 
   // set-sourced contributions all become chips in the same row; `pd-prio` is
   // retired rather than left beside it restating 62% of what it says.
   const contribIdx = itemContribIndex(prioCtx, v.variant_id);
-  // #471 — craft-granted affixes are EXCLUDED here. They are stated in place in
-  // the Craft section below, beside the slot that yields them, which is what
-  // "show the slot and the affix it applies" means; carrying them here as well
-  // put `Melee Power +8` twice on one card. Augment-granted affixes were never
-  // in this list (never credited to the host) and are stated under their gem.
-  const { entries, raw } = statChipEntries(v, idx, maps, contribIdx, false);
+  // #471 — craft-granted affixes are EXCLUDED whenever the Craft section below
+  // will state them in place, beside the slot that yields them; carrying them
+  // here as well put `Melee Power +8` twice on one card. Augment-granted affixes
+  // were never in this list (never credited to the host) and are stated under
+  // their gem.
+  const { entries, raw } = statChipEntries(v, idx, maps, contribIdx,
+    craftRowsFor(v, idx, maps).length > 0);
   // #453 U2 — classify against the RAW affixes, render from the collapsed ones.
   // The collapse is what makes the card readable and is also what destroys the
   // stat names classification needs, so the two run side by side (KTD1).
@@ -1008,8 +937,11 @@ const SUN_MOON_GLYPH = { sun: "☀\uFE0F", moon: "🌙" };
  *  the row's `title`; the row says "empty". */
 function augmentSection(v, idx, maps, augById, contribIdx, rank1, ranked) {
   if (!(maps && maps.augAssign && idx != null && idx >= 0)) return "";
-  const placed = maps.augAssign.byIndex.get(idx) || [];
-  const open = maps.augAssign.freeByIndex.get(idx) || [];
+  // `freeByIndex` is optional: a caller that never computed the OPEN slots still
+  // has placements to show. The Deep Dive's fixtures have carried that shape
+  // since long before this section existed (#472).
+  const placed = (maps.augAssign.byIndex && maps.augAssign.byIndex.get(idx)) || [];
+  const open = (maps.augAssign.freeByIndex && maps.augAssign.freeByIndex.get(idx)) || [];
   if (!placed.length && !open.length) return "";
   const mark = (color) => SUN_MOON_GLYPH[String(color || "").toLowerCase()] || null;
   const filled = placed.map((p) => {
@@ -1065,11 +997,79 @@ function craftRowsFor(v, idx, maps) {
   return rows;
 }
 
+/** #472 — the set-membership rows for one item: a wildcard (Gem of Many Facets),
+ *  a chosen membership (Vecna "Awaken" / Isle-of-Dread "Set Bonus"), and any
+ *  solver-placed Set Augment hosted here.
+ *
+ *  These three were the open question on #472. They are not a slot with a stat
+ *  in it — they wrap a SET — so it was not obvious what the row's middle column
+ *  should say. It turns out they have the same shape one level up: the WHERE is
+ *  the mechanism you go and use, the WHAT is the membership you get for it.
+ *
+ *  They earn their own section rather than joining Craft, because the thing they
+ *  yield is a different kind: a set, whose points are credited to the whole
+ *  build, not an affix on this item. And they earn a place at all — even though
+ *  the `Part of set:` line above already names the set — because that line says
+ *  you ARE in the set and says nothing about the trip to the station that puts
+ *  you there. The set line is state; these are instructions. */
+function setRowsFor(v, maps) {
+  if (!maps) return [];
+  const rows = [];
+  for (const j of (maps.jokerByHost && maps.jokerByHost.get(v.variant_id)) || []) {
+    rows.push({ family: "joker", o: j, set: j.set });
+  }
+  for (const m of (maps.membershipByHost && maps.membershipByHost.get(v.variant_id)) || []) {
+    rows.push({ family: "membership", o: m, set: m.set });
+  }
+  // U7 (KTD-6) — attributed to the solver-DECIDED host, read from
+  // setAugmentsPlaced[].host, never greedily reconstructed. Only the FIRST copy
+  // on a host carries the suppression note: a host suppresses its own set once.
+  ((maps.setAugByHost && maps.setAugByHost.get(v.variant_id)) || []).forEach((sa, i) => {
+    rows.push({ family: "augmentset", set: sa.set,
+      o: { set: sa.set, slot_color: sa.slot_color, suppresses: i === 0 ? slotSetNames(v) : [] } });
+  });
+  return rows;
+}
+
+function setMembershipSection(v, maps, contribIdx) {
+  const rows = setRowsFor(v, maps);
+  if (!rows.length) return "";
+  const credited = (contribIdx && contribIdx.creditedSets) || _EMPTY_SET;
+  const lines = rows.map((r) => {
+    const parts = Proj.craftRowLabel(r.o, r.family);
+    // Matched on the SET NAME, not on "this item has some set contribution":
+    // an item feeding two sets and credited for one of them must not light up
+    // the row for the other. That is the same rule `tracked` has carried since
+    // #453 — the vivid treatment says "this is why the item is here", and it has
+    // to be true of the row it is drawn on.
+    const cls = credited.has(r.set) ? "tracked" : "incidental";
+    // The STATION stays visible, not just on hover. It is the one part of a
+    // membership row the player has to act on — "awaken this set" is useless
+    // without "at the Cannith Repurposing Station" — and the chip this replaced
+    // printed it. `craftRowLabel` returns plain text for every caller, so the
+    // markup for it belongs here rather than inside the label.
+    const station = (r.family === "membership" && r.o.station)
+      ? ` <span class="muted">· ${esc(r.o.station)}</span>` : "";
+    // Same blanking rule the Craft section uses: a family whose mechanism has no
+    // name distinct from its system returns the system as its `where`, and the
+    // value column already carries it. A membership row is exactly that case —
+    // its value IS the registry's action label, which names the system and the
+    // set — and "Dinosaur Bone Set Bonus" in a 6.7em uppercase column truncates
+    // to "DINOSAUR B…", which is worse than saying nothing.
+    const where = parts.where === parts.system ? "" : parts.where;
+    return stackLine(cls, where, `${esc(parts.what)}${station}`, {
+      cls: `pd-set-line set-${esc(r.family)}`, title: parts.title,
+    });
+  });
+  return `<div class="pd-sec pd-sec-sets"><span class="pd-slabel">Set membership</span>`
+    + `<ul class="pd-lines pd-setlist">${lines.join("")}</ul></div>`;
+}
+
 /** #471 — does this item declare any augment slot at all, filled or open? */
 function hasAugmentSlots(idx, maps) {
   if (!(maps && maps.augAssign && idx != null && idx >= 0)) return false;
-  return !!((maps.augAssign.byIndex.get(idx) || []).length
-    || (maps.augAssign.freeByIndex.get(idx) || []).length);
+  return !!(((maps.augAssign.byIndex && maps.augAssign.byIndex.get(idx)) || []).length
+    || ((maps.augAssign.freeByIndex && maps.augAssign.freeByIndex.get(idx)) || []).length);
 }
 
 /** #471 — every craft slot on the item, filled or not, with the affix it applies
@@ -2635,8 +2635,13 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, craftChips, craftSlotChips, loadoutDeepDive, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisLine, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, loadoutDeepDive, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
-    stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH };
+    stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,
+    // #472 — the set-yielding families, shared by the card and the Deep Dive.
+    setMembershipSection, setRowsFor,
+    // #472 — exported so a test can build the same credited-set index the
+    // renderers read, rather than hand-rolling its shape and drifting from it.
+    itemContribIndex };
 }
