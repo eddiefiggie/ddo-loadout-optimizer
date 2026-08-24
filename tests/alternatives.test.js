@@ -171,13 +171,18 @@ const tradeModel = () => ({
     };
     const html = R.renderAltCards([{ tags: ["set bonus"], gainText: "activates Alpha",
       costText: "-7 Constitution", activatedSets: ["Alpha"], sol }]);
-    assert.ok(/alt-grants/.test(html), "renders a dedicated grants detail line");
-    assert.ok(/Constitution \+3 Insightful/.test(html), "names the set's granted affix, not just the set");
+    // #475 — the grants are ROWS in the Gains section now, not a `grants …` line.
+    // U7's guarantee is unchanged: an alternative that says only "activates Alpha"
+    // makes the player go and look up what Alpha does.
+    assert.ok(/pd-slabel">Gains</.test(html), "the set's grants get a Gains section");
+    assert.ok(/<span class="pd-ln-where">set<\/span><span class="pd-ln-what">Constitution \+3 Insightful/.test(html),
+      "names the set's granted affix as its own row, not just the set");
   });
 
   await test("U7: renderAltCards omits the grants line for an alt that activates no set", () => {
     const html = R.renderAltCards([{ tags: ["rebalance"], gainText: "+5 Constitution", costText: "-3 Strength" }]);
-    assert.ok(!/alt-grants/.test(html), "no grants line when nothing new is activated (gainText already names the delta)");
+    assert.ok(!/pd-slabel">Gains</.test(html),
+      "no Gains section when nothing new is activated and no ranked stat went up");
   });
 
   await test("U7: renderAltCards degrades gracefully when an activated set resolves no affixes", () => {
@@ -185,8 +190,8 @@ const tradeModel = () => ({
     // finds no entry. The card must not crash and must still name the set via gainText.
     const html = R.renderAltCards([{ tags: ["set bonus"], gainText: "activates Ghost",
       costText: "no priority cost", activatedSets: ["Ghost"], sol: { setsActive: [], chosen: [] } }]);
-    assert.ok(!/alt-grants/.test(html), "no grants line when the set's affixes cannot be resolved");
-    assert.ok(/activates Ghost/.test(html), "the gain text still names the set (no silent break)");
+    assert.ok(!/pd-slabel">Gains</.test(html), "no Gains section when the set's affixes cannot be resolved");
+    assert.ok(/activates Ghost/.test(html), "the headline still names the set (no silent break)");
   });
 
   await test("rankAlternatives dedupes, drops within-K of the optimum, and caps to N", () => {
@@ -209,12 +214,19 @@ const tradeModel = () => ({
   // ---- U4: card rendering (a11y) ----
 
   await test("renderAltCards renders a keyboard listbox with tags, gain, and cost", () => {
-    const ranked = [{ tags: ["set bonus", "cheaper crafting"], gainText: "activates Alpha", costText: "-7 Constitution" }];
+    // #475 — the COST comes from the structured `cost` array now, not from the
+    // joined `costText` string. Re-parsing a rendered sentence back into data is
+    // how two surfaces come to disagree about a number; `costText` survives for
+    // the callers that want the one-line form.
+    const ranked = [{ tags: ["set bonus", "cheaper crafting"], gainText: "activates Alpha",
+      costText: "-7 Constitution", cost: [{ stat: "Constitution", delta: -7 }] }];
     const html = R.renderAltCards(ranked);
     assert.ok(/role="listbox"/.test(html) && /role="option"/.test(html), "listbox + option roles");
     assert.ok(/aria-selected="false"/.test(html) && /tabindex="0"/.test(html), "single-select a11y state");
-    assert.ok(/activates Alpha/.test(html) && /-7 Constitution/.test(html), "shows the gain and the cost");
-    assert.ok(/set bonus/.test(html) && /cheaper crafting/.test(html), "shows the gain tags");
+    assert.ok(/activates Alpha/.test(html), "shows the gain as the card's headline");
+    assert.ok(/<span class="pd-ln-what">Constitution -7<\/span>/.test(html), "…and the cost as a row");
+    assert.ok(/set bonus/.test(html) && /cheaper crafting/.test(html), "shows the axis tags");
+    assert.ok(!/alt-tag/.test(html), "…as the head's label, not as pill chips (#475)");
   });
 
   // ---- #321: TF/GS count as crafting steps ----
