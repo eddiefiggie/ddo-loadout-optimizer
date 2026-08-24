@@ -3978,3 +3978,90 @@ test("#472: the unrealized-upgrade note counts open slots; the rows name them", 
   assert.ok(/aug-open aug-blue/.test(html) && /aug-open aug-colorless/.test(html),
     "the rows name each one instead");
 });
+
+// ---------------------------------------------------------------------------
+// #475 — the Alternatives tab was the last surface still speaking the chip
+// idiom: `alt-tag` pills for the trade's axis, a green headline, a comma-run
+// cost line. It now takes the card system #471 built, plus the one thing its
+// subject earns — an alternative is a TRADE, so its body is Gains and Costs.
+// ---------------------------------------------------------------------------
+
+function altFixture(over) {
+  return Object.assign({
+    tags: ["set bonus"], gainText: "activates Alpha", costText: "-4 Doublestrike",
+    activatedSets: [], gains: [], cost: [{ stat: "Doublestrike", delta: -4 }], shedEffects: [],
+  }, over || {});
+}
+
+test("#475: the trade's axis is the card's head label, not a row of pills", () => {
+  const html = R.renderAltCards([altFixture({ tags: ["rebalance", "cheaper crafting"] })]);
+  assert.ok(!/alt-tag/.test(html), "the pill family is gone");
+  assert.ok(/<div class="alt-axis">rebalance<span class="sep">·<\/span>cheaper crafting<\/div>/.test(html),
+    "both axes read as one small-caps label, the way a gear card labels its slot");
+  assert.ok(/<div class="alt-headline">activates Alpha<\/div>/.test(html),
+    "and the gain text is the headline beneath it");
+});
+
+test("#475: gains and costs are rows, and a cost points down", () => {
+  const html = R.renderAltCards([altFixture({
+    gains: [{ stat: "Melee Power", delta: 18 }],
+    cost: [{ stat: "Armor Class", delta: -11 }],
+    shedEffects: ["Blunt Trauma"],
+  })]);
+  assert.ok(/pd-slabel">Gains</.test(html) && /pd-slabel">Costs</.test(html), "two labelled sections");
+  assert.ok(/<li class="pd-line is-gain"><span class="pd-ln-mark"[^>]*>▲<\/span><span class="pd-ln-where">stat<\/span><span class="pd-ln-what">Melee Power \+18</.test(html),
+    "a gain is an up row");
+  assert.ok(/<li class="pd-line is-cost"><span class="pd-ln-mark"[^>]*>▼<\/span><span class="pd-ln-where">stat<\/span><span class="pd-ln-what">Armor Class -11</.test(html),
+    "a cost is a down row — the direction is a GLYPH, so it survives monochrome");
+  // #348 — a shed effect is NAMED, never counted. One row each, not a comma-run.
+  assert.ok(/<span class="pd-ln-where">utility<\/span><span class="pd-ln-what">gives up Blunt Trauma</.test(html),
+    "and a shed utility effect is named on a row of its own");
+});
+
+test("#475: a set is expanded to the affixes it grants, as set rows", () => {
+  // U7's guarantee, carried into the row language: an alternative that says only
+  // "activates Alpha" makes the player go and look up what Alpha does.
+  const sol = { setsActive: [{ set: "Alpha", pieces_required: 2 }], chosen: [
+    { slot: "Necklace", variant: { variant_id: "N", set_bonus: [{ set: "Alpha" }],
+      parsed_set_bonuses: [{ set: "Alpha", pieces_required: 2, affixes: [
+        { stat: "Melee Power", bonus_type: "Artifact", name: "Melee Power", type: "Artifact", value: 15, unit: "flat" },
+      ], flagged: [] }] } },
+    { slot: "Ring", variant: { variant_id: "R", set_bonus: [{ set: "Alpha" }], parsed_set_bonuses: [] } },
+  ], effective: {} };
+  const html = R.renderAltCards([altFixture({ activatedSets: ["Alpha"], sol })]);
+  assert.ok(/<span class="pd-ln-where">set<\/span><span class="pd-ln-what">Melee Power \+15 Artifact</.test(html),
+    "the set's granted affix is a row attributed to the set");
+});
+
+test("#475: a costless candidate states it in the foot, with no empty Costs section", () => {
+  const html = R.renderAltCards([altFixture({
+    tags: ["free upgrade"], gainText: "free +Dodge", costText: "no priority cost",
+    cost: [], shedEffects: [],
+  })]);
+  assert.ok(!/pd-slabel">Costs</.test(html), "no Costs section when there is nothing to put in it");
+  assert.ok(/<div class="pd-note is-free">/.test(html), "the claim rides the shared foot-note family");
+  assert.ok(/No priority cost/.test(html), "…and says so");
+});
+
+test("#475: the rows come from the structured fields, never from re-parsing costText", () => {
+  // The precision that matters. Re-splitting a rendered sentence back into data
+  // is how two surfaces come to disagree about a number; here the joined string
+  // is deliberately WRONG and the rows must follow the structure instead.
+  const html = R.renderAltCards([altFixture({
+    costText: "-999 Nonsense", cost: [{ stat: "Accuracy", delta: -2 }],
+  })]);
+  assert.ok(/Accuracy -2/.test(html), "the row reads the structured cost");
+  assert.ok(!/Nonsense/.test(html), "and the joined string is not rendered at all");
+});
+
+test("#475: the listbox interaction is untouched — regression guard", () => {
+  // Deliberately NOT proven red. This was a restyle of the card's CONTENTS; the
+  // selection model is what loads an alternative into every shared surface, and
+  // breaking it would be the expensive failure here.
+  const html = R.renderAltCards([altFixture(), altFixture({ tags: ["rebalance"] })]);
+  assert.ok(/role="listbox"/.test(html), "still a listbox");
+  assert.strictEqual((html.match(/role="option"/g) || []).length, 2, "one option per candidate");
+  assert.ok(/tabindex="0"/.test(html) && /tabindex="-1"/.test(html), "roving tabindex preserved");
+  assert.strictEqual((html.match(/aria-selected="false"/g) || []).length, 2, "single-select state preserved");
+  assert.ok(/data-idx="0"/.test(html) && /data-idx="1"/.test(html), "and the index the click handler reads");
+});

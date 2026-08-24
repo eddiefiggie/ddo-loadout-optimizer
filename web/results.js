@@ -1211,8 +1211,15 @@ function whyThisNote(result, item, attr, targets) {
   // #471 — both statements join the card's one foot-note family. They were the
   // two shapes the user named: a warn-coloured text line and a muted one, sitting
   // beside a third (`pd-rnote`) and a fourth (`pd-rec-note`) that looked like
-  // neither. `pd-why` / `pd-carried` are kept as second classes — the Alternatives
-  // tab reads `whyThisLine`'s markup and the tests read these names.
+  // neither. `pd-why` / `pd-carried` are kept as second classes because the tests
+  // read these names.
+  //
+  // #475 — the claim that "the Alternatives tab reads `whyThisLine`'s markup" was
+  // false and is removed. `whyThisLine` has NO call sites anywhere; it is dead
+  // production code kept alive by roughly thirty tests across three files whose
+  // stated justification was that claim. Retiring it is real work with a real
+  // cost — those tests encode presence-not-+1, the cross-add label and the #88
+  // override disclosure — so it is filed as #476 rather than done here.
   if (!contribs.length) {
     return `<div class="pd-note pd-why muted"><span class="pd-note-ico" aria-hidden="true">·</span><span>included to complete the loadout</span></div>`;
   }
@@ -2556,25 +2563,87 @@ function buildViews(build, model, query) {
 function renderAltCards(ranked) {
   return `<ul class="alt-list" role="listbox" aria-label="Alternative loadouts">${ranked.map((a, i) => `
     <li class="alt-card" role="option" id="alt-opt-${i}" aria-selected="false" tabindex="${i === 0 ? 0 : -1}" data-idx="${i}">
-      <div class="alt-tags">${a.tags.map((t) => `<span class="alt-tag">${esc(t)}</span>`).join("")}</div>
-      <div class="alt-gain">${esc(a.gainText)}</div>
-      ${altGrantsLine(a)}
-      <div class="alt-cost">${esc(a.costText)}</div>
+      <div class="alt-head">
+        <div class="alt-axis">${altAxisLabel(a.tags)}</div>
+        <div class="alt-headline">${esc(a.gainText)}</div>
+      </div>
+      <div class="alt-body">${altGainSection(a)}${altCostSection(a)}</div>
+      <div class="alt-foot">${altFootNote(a)}</div>
     </li>`).join("")}</ul>`;
 }
 
-// U7: name the concrete bonuses an alternative adds. For every set the candidate
-// newly activates, expand its granted affixes via the same activeSetDetail
-// expander the build sheet uses (dedicated line so multi-affix grants read
-// consistently). Non-set gain families already name their delta in gainText.
-function altGrantsLine(a) {
-  if (!a.activatedSets || !a.activatedSets.length || !a.sol) return "";
-  const detail = activeSetDetail(a.sol);
-  const parts = (a.activatedSets || []).map((setName) => {
+/** #475 — the trade's axis, as the card's HEAD LABEL.
+ *
+ *  These were `alt-tag` pills — rounded, tinted, bordered — the last of the chip
+ *  idiom #471 and #472 retired from every other surface. They are not chips of
+ *  data: "set bonus" is what KIND of trade this is, which is the same job the
+ *  slot name does on a gear card, so it takes the same small-caps treatment.
+ *
+ *  The separator is a span rather than a literal " · " so it can be dimmed; a
+ *  full-strength dot between two labels reads as a third label. */
+function altAxisLabel(tags) {
+  return (tags || []).map(esc).join(`<span class="sep">·</span>`);
+}
+
+/** #475 — what an alternative GAINS, as rows.
+ *
+ *  Built from the structured fields `analyzeAlternative` already returns, never
+ *  by re-splitting `gainText`: that string is a headline ("+18 Melee Power"),
+ *  and re-parsing a rendered sentence back into data is how two surfaces come to
+ *  disagree about a number.
+ *
+ *  A set is expanded to the affixes it grants through the same `activeSetDetail`
+ *  the build sheet uses (U7) — an alternative that says only "activates X" makes
+ *  the player go and look up what X does. */
+function altGainSection(a) {
+  const rows = [];
+  const detail = (a.activatedSets && a.activatedSets.length && a.sol) ? activeSetDetail(a.sol) : [];
+  for (const setName of a.activatedSets || []) {
     const d = detail.find((s) => s.set === setName);
-    return d && d.affixes.length ? `${setName}: ${d.affixes.map(affixLabel).join(", ")}` : null;
-  }).filter(Boolean);
-  return parts.length ? `<div class="alt-grants">grants ${esc(parts.join("; "))}</div>` : "";
+    for (const affix of (d && d.affixes) || []) {
+      rows.push({ where: "set", what: affixLabel(affix) });
+    }
+  }
+  for (const g of a.gains || []) rows.push({ where: "stat", what: `${g.stat} +${g.delta}` });
+  // Deliberately NO row for the crafts and unranked axes. Their whole gain is
+  // already the headline — "6 fewer crafting steps", "free +Dodge" — and there
+  // is no structured detail underneath it to list. The head/body relationship on
+  // these cards is summary-then-detail (the gear card does the same with its set
+  // name); repeating the summary verbatim as its own detail row is not that.
+  if (!rows.length) return "";
+  const lines = rows.map((r) => stackLine("gain", r.where, esc(r.what), { mark: "▲" })).join("");
+  return `<div class="pd-sec alt-sec-gain"><span class="pd-slabel">Gains</span>`
+    + `<ul class="pd-lines">${lines}</ul></div>`;
+}
+
+/** #475 — what it COSTS, as rows in the same language.
+ *
+ *  `is-cost` is the one class this card adds to the row family, and `▼` against
+ *  the gain's `▲` is why: the direction of a trade is the single most important
+ *  thing on this card, and every other class on these surfaces carries its
+ *  meaning as a shape before a colour. Amber alone would fail in monochrome.
+ *
+ *  A shed utility effect gets a row per effect rather than one comma-run: #348
+ *  ruled that a trade must NAME what it sheds ("gives up Blunt Trauma") rather
+ *  than count it, and a row each is that ruling carried into the row language. */
+function altCostSection(a) {
+  const rows = (a.cost || []).map((c) => ({ where: "stat", what: `${c.stat} ${c.delta}` }));
+  for (const name of a.shedEffects || []) rows.push({ where: "utility", what: `gives up ${name}` });
+  if (!rows.length) return "";
+  const lines = rows.map((r) => stackLine("cost", r.where, esc(r.what), { mark: "▼" })).join("");
+  return `<div class="pd-sec alt-sec-cost"><span class="pd-slabel">Costs</span>`
+    + `<ul class="pd-lines">${lines}</ul></div>`;
+}
+
+/** #475 — a candidate that costs nothing says so in the foot, in the shared note
+ *  family, rather than rendering an empty Costs section. "Nothing you ranked
+ *  goes down" is a claim about the whole trade, not a row of it — the same
+ *  reason the craft-carried and no-drop-source statements live down there. */
+function altFootNote(a) {
+  const free = !(a.cost || []).length && !(a.shedEffects || []).length;
+  if (!free) return "";
+  return `<div class="pd-note is-free"><span class="pd-note-ico" aria-hidden="true">✓</span>`
+    + `<span><b>No priority cost.</b> Nothing you ranked goes down to get this.</span></div>`;
 }
 
 // Wire the alternative cards as a keyboard-operable listbox (U5): arrows rove focus,
