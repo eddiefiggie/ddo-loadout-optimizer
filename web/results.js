@@ -2037,7 +2037,7 @@ function outbidNotice(query, result, model, canPrice, canRequire) {
     + (ask ? `<span class="outbid-ask">${ask}</span>` : "") + `</p>`;
 }
 
-function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump, notesSeen, onNotesOpen, upgradeBar, onUpgradeBar, versions }) {
+function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump, notesSeen, onNotesOpen, upgradeBar, onUpgradeBar, versions, characterName }) {
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
     // is exactly when the user needs to loosen priorities/constraints in place.
@@ -2107,6 +2107,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
         <button class="rtab" role="tab" id="rt-ranked" aria-controls="rp-ranked" aria-selected="false" tabindex="-1" type="button">Ranked Priorities</button>
         <button class="rtab" role="tab" id="rt-sets" aria-controls="rp-sets" aria-selected="false" tabindex="-1" type="button">Set Bonuses</button>
         <button class="rtab" role="tab" id="rt-versions" aria-controls="rp-versions" aria-selected="false" tabindex="-1" type="button">Versions</button>
+        <button class="rtab" role="tab" id="rt-farming" aria-controls="rp-farming" aria-selected="false" tabindex="-1" type="button">Farming List</button>
         <button class="rtab" role="tab" id="rt-share" aria-controls="rp-share" aria-selected="false" tabindex="-1" type="button">Share</button>
       </div>
       <div class="wz-adjust-slot" id="wz-adjust-slot"></div>
@@ -2116,6 +2117,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       <section id="rp-ranked" class="rpanel" role="tabpanel" aria-labelledby="rt-ranked" tabindex="0" hidden><div class="targets" id="rp-cards"></div></section>
       <section id="rp-sets" class="rpanel" role="tabpanel" aria-labelledby="rt-sets" tabindex="0" hidden><div id="rp-setspanel"></div></section>
       <section id="rp-versions" class="rpanel" role="tabpanel" aria-labelledby="rt-versions" tabindex="0" hidden><div id="rp-versionspanel"></div></section>
+      <section id="rp-farming" class="rpanel" role="tabpanel" aria-labelledby="rt-farming" tabindex="0" hidden><div id="rp-farmingpanel"></div></section>
       <section id="rp-share" class="rpanel" role="tabpanel" aria-labelledby="rt-share" tabindex="0" hidden><div id="rp-sharepanel"></div></section>
     </div>
     <div class="sr-only" aria-live="polite" id="rp-live"></div>`;
@@ -2475,6 +2477,69 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     }
   }
   fillVersionsPanel(typeof verApi.note === "function" ? verApi.note() : verApi.note);
+
+  // #501 — the Farming List. `character` names whose progress is being ticked;
+  // without one the list still renders and the ticks simply have nowhere to go,
+  // which is stated rather than silently discarded.
+  // The name the ticks are filed under. Passed in as its own option rather than
+  // read off `query`, which does not carry it: farming progress belongs to a
+  // character, and an unnamed build has nowhere to file it — which the panel
+  // says out loud instead of dropping the tick on the floor.
+  const farmCharacter = String(characterName || "").trim();
+  function currentPlan() {
+    return (typeof FarmingList !== "undefined" && FarmingList.farmingPlan)
+      ? FarmingList.farmingPlan(liveRecord()) : null;
+  }
+  function fillFarmingPanel(note) {
+    const host = q("#rp-farmingpanel");
+    if (!host) return;
+    const plan = currentPlan();
+    const acquired = (typeof FarmingList !== "undefined" && FarmingList.loadProgress)
+      ? FarmingList.loadProgress(farmCharacter) : {};
+    host.innerHTML = farmingPanel(plan, acquired, { note: note || "" });
+    if (!plan) return;
+
+    // Delegated once on the freshly built host, so a re-render cannot stack a
+    // second listener that ticks the same box twice.
+    host.addEventListener("change", (e) => {
+      const box = e.target.closest(".farm-tick");
+      if (!box) return;
+      if (!farmCharacter) {
+        // A tick with nowhere to go is put back rather than left looking saved.
+        box.checked = !box.checked;
+        fillFarmingPanel("Name this build in the character step to save what you have collected.");
+        return;
+      }
+      const res = FarmingList.toggleAcquired(farmCharacter, box.dataset.item);
+      if (!res.ok) {
+        box.checked = !box.checked;
+        fillFarmingPanel("That could not be saved — your browser's storage for this site may be full.");
+        return;
+      }
+      box.closest(".farm-item").classList.toggle("is-got", !!res.acquired[box.dataset.item]);
+    });
+
+    const md = () => FarmingList.farmingMarkdown(plan, { character: farmCharacter });
+    const copy = host.querySelector(".farm-copy");
+    if (copy) {
+      copy.addEventListener("click", () => {
+        const text = md();
+        // The clipboard API is permissioned and absent over plain http on some
+        // browsers, so a failure is reported rather than swallowed — a Copy
+        // button that silently does nothing is worse than one that says it did not.
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text)
+            .then(() => { host.querySelector(".farm-note").textContent = "Copied."; })
+            .catch(() => { host.querySelector(".farm-note").textContent = "Could not reach the clipboard — use Print instead."; });
+        } else {
+          host.querySelector(".farm-note").textContent = "This browser will not let the page reach the clipboard — use Print instead.";
+        }
+      });
+    }
+    const print = host.querySelector(".farm-print");
+    if (print) print.addEventListener("click", () => { window.print(); });
+  }
+  fillFarmingPanel();
 
   wireResultTabs(container, () => {});
 
@@ -2978,6 +3043,95 @@ function versionDiffView(diff, labels) {
   return `${statsBlock}${setsBlock}${slotsBlock}`;
 }
 
+/** #501 — the Farming List tab: where the gear actually comes from.
+ *
+ *  Grouped by SOURCE, ordered by how many of your items each one yields. That
+ *  ordering is the whole value: "these three drop in Gianthold Tor" turns
+ *  thirteen lookups into one run, and it is the only thing this list can tell a
+ *  player that the Loadout tab cannot.
+ *
+ *  Adventure-pack-first is the intended grouping — "do I even own this pack" is
+ *  the first question — and it waits on the curated mapping in #495, because the
+ *  pack is not in the dataset and is not upstream in gear-planner either. The
+ *  gap is STATED here rather than papered over by guessing a pack from a quest
+ *  name: "The Twilight Forge" is a quest and "Ritual Table" is a crafting
+ *  station, and no pattern separates them reliably. */
+function farmingPanel(plan, acquired, opts) {
+  if (!plan) return `<p class="dd-none muted">No build to plan a farming run for.</p>`;
+  const o = opts || {};
+  const got = acquired || {};
+  const c = plan.counts;
+  const tick = (i) => {
+    const on = !!got[i.item];
+    return `<li class="farm-item${on ? " is-got" : ""}">
+      <label class="farm-check">
+        <input type="checkbox" class="farm-tick" data-item="${esc(i.item)}"${on ? " checked" : ""} />
+        <span class="farm-item-name">${esc(i.item)}${i.copies > 1 ? ` <span class="farm-copies">×${esc(i.copies)}</span>` : ""}</span>
+      </label>
+      <span class="farm-item-meta">${esc(i.slots.join(", "))}${i.ml != null ? ` · ML ${esc(i.ml)}` : ""}</span>
+      ${i.noDropSource ? `<span class="farm-nodrop">${esc(Proj.NO_DROP_SOURCE_WORDING)}</span>` : ""}
+    </li>`;
+  };
+  const sourceBlock = (s) => `<section class="farm-source">
+    <h4 class="farm-source-name">${esc(s.name)}
+      <span class="farm-source-count">${esc(s.itemCount)} item${s.itemCount === 1 ? "" : "s"}</span></h4>
+    <p class="farm-pack muted">Adventure pack not recorded</p>
+    <ul class="farm-items">${s.items.map(tick).join("")}</ul>
+  </section>`;
+
+  const unsourced = plan.unsourced.length
+    ? `<section class="farm-source is-gap">
+        <h4 class="farm-source-name">Source not recorded
+          <span class="farm-source-count">${esc(plan.unsourced.length)} item${plan.unsourced.length === 1 ? "" : "s"}</span></h4>
+        <p class="farm-pack muted">The dataset has no location for these. That is a gap in the data, not a claim
+          that they cannot be found.</p>
+        <ul class="farm-items">${plan.unsourced.map(tick).join("")}</ul>
+      </section>` : "";
+
+  // Augments get their own section and an explicit disclaimer, because the
+  // dataset carries acquisition data for exactly none of them. Listing them
+  // beside the quests would imply a source this list does not have.
+  const augs = plan.augments.length
+    ? `<section class="farm-source is-gap">
+        <h4 class="farm-source-name">Augments to slot
+          <span class="farm-source-count">${esc(plan.augments.length)}</span></h4>
+        <p class="farm-pack muted">No augment in the dataset carries acquisition data, so this says which augment
+          goes where — not where to find it.</p>
+        <ul class="farm-items">${plan.augments.map((a) => `<li class="farm-item farm-plain">
+          <span class="farm-item-name">${esc(a.name)}</span>
+          <span class="farm-item-meta">→ ${esc(a.host)}</span></li>`).join("")}</ul>
+      </section>` : "";
+
+  const crafts = plan.crafts.length
+    ? `<section class="farm-source">
+        <h4 class="farm-source-name">Crafting steps
+          <span class="farm-source-count">${esc(plan.crafts.length)}</span></h4>
+        <p class="farm-pack muted">Do these once you have the item in hand.</p>
+        <ul class="farm-items">${plan.crafts.map((x) => `<li class="farm-item farm-plain">
+          <span class="farm-item-name">${esc(x.label)}</span>
+          <span class="farm-item-meta">→ ${esc(x.host)}</span></li>`).join("")}</ul>
+      </section>` : "";
+
+  return `<p class="wz-help">Everything this build needs, grouped by where it comes from and ordered by how much
+      each place gives you — so the run at the top is the one worth doing first. Tick things off as you get them;
+      the ticks are saved with this character.</p>
+    <div class="farm-summary">
+      <span><strong>${esc(c.items)}</strong> items</span>
+      <span><strong>${esc(c.sources)}</strong> sources</span>
+      ${c.unsourced ? `<span><strong>${esc(c.unsourced)}</strong> without a recorded source</span>` : ""}
+      ${c.crafts ? `<span><strong>${esc(c.crafts)}</strong> crafting steps</span>` : ""}
+    </div>
+    <p class="farm-disclosure">Adventure pack is not in the dataset yet, so these are grouped by the source name the
+      DDO wiki records — a quest, a raid, a vendor, a crafting station or an event, in its own words. Nothing here
+      guesses which pack a quest belongs to.</p>
+    <div class="farm-actions">
+      <button class="btn ghost farm-copy" type="button">Copy as Markdown</button>
+      <button class="btn ghost farm-print" type="button">Print</button>
+      <span class="farm-note" role="status">${o.note ? esc(o.note) : ""}</span>
+    </div>
+    <div class="farm-groups">${plan.sources.map(sourceBlock).join("")}${unsourced}${augs}${crafts}</div>`;
+}
+
 // Wire the result sub-tabs (Ranked / Sets / …). Re-run on every render.
 function wireResultTabs(container, onShow) {
   const tablist = container.querySelector(".result-tabs");
@@ -3012,7 +3166,7 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, upgradeNotice, versionsPanel, versionDiffView, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,

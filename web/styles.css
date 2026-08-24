@@ -1647,6 +1647,54 @@ input.wz-ml { width: 120px; }
 @media (min-width: 640px) {
   .ver-slot-body { grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
 }
+
+/* ============================================================================
+   #501 — the Farming List: source groups, tickable items, and the stated gaps
+   ========================================================================== */
+.farm-summary { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); margin: var(--sp-3) 0 var(--sp-2);
+  font-size: var(--fs-sm); color: var(--muted); }
+.farm-summary strong { color: var(--text); font-variant-numeric: tabular-nums; }
+/* The pack gap is a disclosure, not decoration: it reads as a statement the
+   player is meant to act on ("check the wiki for the pack"), so it gets the
+   same left-rule treatment the other scope notes use. */
+.farm-disclosure { font-size: var(--fs-xs); color: var(--muted); line-height: 1.5; max-width: 70ch;
+  border-left: 2px solid var(--border); padding-left: var(--sp-2); margin: 0 0 var(--sp-3); }
+.farm-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-3); }
+.farm-note:empty { display: none; }
+.farm-note { font-size: var(--fs-sm); color: var(--muted); }
+.farm-groups { display: grid; grid-template-columns: 1fr; gap: var(--sp-3); }
+.farm-source { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel-2);
+  padding: var(--sp-3); }
+.farm-source.is-gap { border-style: dashed; }
+.farm-source-name { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap;
+  margin: 0; font-size: var(--fs-md); color: var(--text); }
+.farm-source-count { font-size: var(--fs-xs); color: var(--faint); font-variant-numeric: tabular-nums; }
+.farm-pack { font-size: var(--fs-xs); margin: 2px 0 var(--sp-2); line-height: 1.5; }
+.farm-items { list-style: none; margin: 0; padding: 0; }
+.farm-item { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2);
+  padding: 4px 0; border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
+.farm-item:last-child { border-bottom: 0; }
+.farm-check { display: inline-flex; align-items: baseline; gap: var(--sp-2); cursor: pointer; min-width: 0; }
+.farm-item-name { color: var(--text); overflow-wrap: anywhere; }
+/* A collected item stays on the list — a farming plan you can no longer read is
+   not a record of what you did. It is struck through and dimmed instead. */
+.farm-item.is-got .farm-item-name { text-decoration: line-through; color: var(--faint); }
+.farm-copies { color: var(--accent); font-weight: 700; }
+.farm-item-meta { font-size: var(--fs-xs); color: var(--faint); }
+.farm-nodrop { font-size: var(--fs-xs); color: var(--quarantined); flex-basis: 100%; }
+.farm-plain { padding-left: 0; }
+@media (min-width: 640px) {
+  .farm-groups { grid-template-columns: repeat(2, 1fr); }
+}
+@media print {
+  /* Print the list and nothing else — the whole point of the button is a sheet
+     you can read next to the game. */
+  body > *:not(main), .app-header, .app-footer, .wz-rail, .result-tabs,
+  .solve-banner, .notes-panel, .readout-header, .wz-adjust-slot,
+  .rpanel:not(#rp-farming), .farm-actions { display: none !important; }
+  .farm-groups { grid-template-columns: 1fr; }
+  .farm-source { break-inside: avoid; }
+}
 .alt-computing { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-5) 0; }
 .wz-adjust { margin-top: var(--sp-4); border: 1px dashed var(--border-2); border-radius: var(--radius);
   background: var(--panel-2); }

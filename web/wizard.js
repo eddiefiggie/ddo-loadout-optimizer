@@ -3422,7 +3422,7 @@ if (typeof window !== "undefined" && window.App) {
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam });
+        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam, characterName: state.characterName });
       } catch (err) {
         state.step = "results"; render();
         const box = document.getElementById("wz-results");
@@ -3729,7 +3729,7 @@ if (typeof window !== "undefined" && window.App) {
         // report-absent utility card is reachable without touching the solved record.
         const renderQuery = restoredRenderQuery(query, !!i.utility_tier_aware);
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam });
+        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam, characterName: state.characterName });
         // #88 U8 (R30/AE9) — either cause shows the banner, and the text says which.
         refreshStaleBanner();
       } else {
@@ -4554,7 +4554,7 @@ if (typeof window !== "undefined" && window.App) {
           if (state.lastRun) {
             state.lastRun.query.slotConstraints = { ...state.slotConstraints };
             // eslint-disable-next-line no-undef
-            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam });
+            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam, characterName: state.characterName });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
           refreshResultsEmphasis();

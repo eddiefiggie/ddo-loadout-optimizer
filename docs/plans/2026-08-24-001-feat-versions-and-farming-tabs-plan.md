@@ -139,9 +139,18 @@ and the `.deepdive` / `.dd-*` CSS.
 
 | Fact | Value |
 |---|---|
-| Variants with a `location_quest` | 7,836 of 9,110 |
-| Variants with none | 1,274 |
-| Distinct values | 533 |
+| Gear variants with a `location_quest` | 7,836 of 8,047 (97.4%) |
+| Gear variants with none | 211 |
+| Augment variants with any acquisition data | 0 of 1,063 |
+| Distinct source values | 533 |
+
+**Corrected during implementation.** This table first read "1,274 variants with
+none", which mixed two populations — per *a count is a claim about a population*.
+The 1,274 was every variant lacking the field, and 1,063 of those are augments,
+which carry no acquisition data at all by construction. Among gear, coverage is
+97.4%, not 86%. The two facts have opposite consequences: gear sourcing is nearly
+complete and the gaps are a short visible list, while augments cannot be sourced
+at all and the Farming List must say so rather than imply a location.
 
 The 533 values are heterogeneous by nature: real quests (`Gianthold Tor`), raids,
 NPC vendors (`Morten Edgewright`, `Captain Xendros`), crafting stations
