@@ -82,7 +82,7 @@
   // legacy `{stat,bonus_type}` fallback, because it formats native item affixes AND
   // the not-yet-native crafting-pool / set-bonus / Dino affixes (and any pre-overhaul
   // persisted item).
-  function affixLabel(a) {
+  function affixLabel(a, opts) {
     if (!a) return "";
     const name = a.name != null ? a.name : a.stat;
     // A COLLAPSED expansion whose members do not share one magnitude (see
@@ -91,7 +91,14 @@
     // listed rather than reduced to a number the data does not have.
     if (Array.isArray(a.parts) && a.parts.length) return `${name}: ${a.parts.join(", ")}`;
     const bt = a.type != null ? a.type : a.bonus_type;
-    if (isPresenceType(bt)) return `✓ ${name}`;
+    // A presence affix has no magnitude, so the label carries a mark instead of a
+    // number — otherwise an export renders `Ghostly +1 Bool`, which is the bug the
+    // note above records. `opts.mark: false` omits it for the ONE surface that
+    // already has a marker column: the card's rows draw a filled diamond in the
+    // gutter, and printing a check beside it says "present" twice, in two
+    // vocabularies, for one fact. Every export keeps the mark, because there is no
+    // gutter there to carry it.
+    if (isPresenceType(bt)) return (opts && opts.mark === false) ? name : `✓ ${name}`;
     const type = bt && bt !== "Enhancement" ? ` ${bt}` : "";
     return `${name} +${a.value}${a.unit === "pct" ? "%" : ""}${type}`;
   }

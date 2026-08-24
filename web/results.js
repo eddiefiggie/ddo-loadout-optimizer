@@ -681,7 +681,7 @@ function statChipRow(entries, cover, idx, rank1, ranked) {
     // absent it, the affix is printed on the item itself.
     const where = source || "item";
     return stackLine(cls, where,
-      `${esc(affixLabel(a))}${chipQualifiers(contrib)}`,
+      `${esc(affixLabel(a, { mark: false }))}${chipQualifiers(contrib)}`,
       { rank1: isTop, overflow: over, title: why });
   }).join("") + overflowToggle(rows);
 }
@@ -697,7 +697,23 @@ const CRAFT_SOURCE_KINDS = new Set(["vik", "seal", "nc", "dino", "tf", "gs", "ro
 /** #471 — the marker glyph per class. A SHAPE ramp, filled -> hollow -> ring ->
  *  dot, so the four classes stay apart without hue: the same rule #453 R2/R3
  *  wrote for the chip borders, carried onto the family that replaced them. */
-const LINE_MARK = { tracked: "◆", ranked: "◇", utility: "◦", incidental: "·" };
+// The card's marker vocabulary. FILLED means the thing is doing something —
+// a stat that is credited, a utility effect the build secures, a slotted
+// augment. HOLLOW means present but idle. One shape carries that distinction so
+// it survives in monochrome, which is the standard the alternatives cost rows
+// set with their ▲/▼ ("amber alone would fail in monochrome").
+//
+// `utility` was `◦` and the utility card printed a `✓` beside each effect. Both
+// said "satisfied" in a third and fourth visual language for a fact the diamond
+// already carries, so a secured utility effect is now filled like any other
+// satisfied affix.
+//
+// `ranked` and `incidental` stay DIFFERENT glyphs. Both are unfilled, but #469
+// exists because a ranked-but-outbid stat rendering identically to one the
+// player never asked about made a `Melee Power +10` against a #1 Melee Power
+// priority read as unrelated to the priority list. Collapsing them would buy
+// consistency by re-introducing that.
+const LINE_MARK = { tracked: "◆", ranked: "◇", utility: "◆", incidental: "·" };
 
 /** #471 — one row of the card's shared row language.
  *
@@ -740,7 +756,7 @@ function subLines(affixes, contribIdx, rank1, ranked) {
   return `<ul class="pd-sub">${list.map((a) => {
     const cls = affixChipClass(a, cover, contribIdx.keys, ranked);
     const key = Proj.affixCoverageKey(a);
-    return `<li class="is-${cls}${rank1 && key === rank1 ? " is-rank1" : ""}">${esc(affixLabel(a))}</li>`;
+    return `<li class="is-${cls}${rank1 && key === rank1 ? " is-rank1" : ""}">${esc(affixLabel(a, { mark: false }))}</li>`;
   }).join("")}</ul>`;
 }
 
@@ -957,7 +973,20 @@ function augmentSection(v, idx, maps, augById, contribIdx, rank1, ranked) {
     // one to go slot is findable without reading every nested line.
     return stackLine(grantClass(augAffixes, contribIdx, ranked), p.color || "—",
       `<span class="aug-name">${esc(p.variant_id)}</span>${subLines(augAffixes, contribIdx, rank1, ranked)}`,
-      { cls: `aug-filled aug-${esc(col)}`, mark: mark(p.color) || "●", markCls: `aug-mark aug-${esc(col)}`, title: where });
+      // A slotted augment is filled like every other live thing on the card, in
+      // the one filled colour. The augment's own colour is NOT carried by the
+      // marker any more: it is already the row's WHERE column, in words, and a
+      // marker that encodes both liveness and colour makes colour look like a
+      // priority ranking.
+      //
+      // Sun/Moon keep their emoji glyphs, and that is a RULING, not an omission.
+      // #487 originally asked for outline-when-idle / filled-when-used variants of
+      // those two symbols to match the diamond language; the maintainer declined it
+      // — an emoji cannot be restyled or hollowed, so honouring it would mean
+      // hand-drawing both as inline SVG, and the pair is a distinct gem system that
+      // reads fine as itself. Recorded here so a later sweep does not re-raise it.
+      { cls: `aug-filled aug-${esc(col)}`, mark: mark(p.color) || "◆",
+        markCls: mark(p.color) ? `aug-mark aug-${esc(col)}` : "", title: where });
   });
   const openRows = open.map((c) => {
     const col = String(c).toLowerCase();
@@ -2461,8 +2490,12 @@ function utilityCard(build, rankIdx) {
       ${utilityMissBlock(build)}
     </div>`;
   }
+  // The `✓` is gone: a secured effect is filled, in the same mark and the same
+  // colour as a satisfied affix, because that is what it is. A check mark was a
+  // second vocabulary for one fact, and it read as a form being ticked off
+  // rather than as a stat the build holds.
   const list = effects.map((e) =>
-    `<li class="utility-effect">✓ ${esc(e.name)}${e.item ? ` <span class="attrib-src">— from ${esc(e.item)}</span>` : ""}</li>`).join("");
+    `<li class="utility-effect"><span class="utility-mark" aria-hidden="true">${LINE_MARK.utility}</span> ${esc(e.name)}${e.item ? ` <span class="attrib-src">— from ${esc(e.item)}</span>` : ""}</li>`).join("");
   // #332 — a ranked presence effect the tier does NOT count is named here, not
   // left as a silent contradiction between a satisfied stat and a count that
   // omits it. Same helper and same sentence the exports use (projection.js owns

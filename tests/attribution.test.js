@@ -138,8 +138,13 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     // surface that renders: a presence win reads as presence, never as "+1".
     const card = R.equippedBody(r.chosen[0].variant, 0, null, null, false, false,
       { result: r, attr: R.attributionByTarget(r), targets: ["Salt"] });
-    assert.ok(/<span class="pd-ln-what">✓ Salt<\/span>/.test(card),
-      "the tick and the stat it is present for, on one row");
+    // #487 — the tick moved OFF the row's text and into its marker column, which
+    // already draws a filled diamond for a satisfied affix; printing both said
+    // "present" twice for one fact. U4's guarantee is untouched and is what these
+    // two assertions still hold: presence reads as presence, and never as "+1".
+    assert.ok(/<span class="pd-ln-mark[^"]*"[^>]*>◆<\/span><span class="pd-ln-where">[^<]*<\/span><span class="pd-ln-what">Salt<\/span>/.test(card),
+      "the stat, marked present in the gutter rather than ticked in the text");
+    assert.ok(!/✓ Salt/.test(card), "no doubled-up tick on the row");
     assert.ok(!card.includes("+1"), "no magnitude for a boolean win");
     assert.ok(/class="pd-line is-tracked/.test(card),
       "and a ranked presence affix is credited, not filed as a bonus that came along (KTD3)");
