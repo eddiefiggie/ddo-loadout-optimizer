@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -720,6 +720,107 @@ test("U1: the grid sizes to volume and viewport, with no JavaScript measuring", 
   for (const b of ["offsetWidth", "clientWidth", "getBoundingClientRect", "matchMedia"]) {
     assert.ok(!region.includes(b), `the renderer must not measure the viewport (${b})`);
   }
+});
+
+test("U3: a save captures the ranking's affixes, their ORDER, and their bounds", () => {
+  const rec = bundleFromRanking("b1", "Reaper Tank",
+    ["Constitution", "Dodge", "Melee Power"],
+    { Constitution: 40 }, { Dodge: 60 });
+  assert.deepStrictEqual(rec.affixes, ["Constitution", "Dodge", "Melee Power"],
+    "order is the build — #1 is maximized first");
+  assert.deepStrictEqual(rec.floors, { Constitution: 40 });
+  assert.deepStrictEqual(rec.caps, { Dodge: 60 });
+});
+
+test("U3: a save captures NO declared credit and no character-level setting", () => {
+  // The portability guarantee. A credit describes one character's enhancements,
+  // so a bundle carrying one would assert it on the next character it is applied
+  // to and the solver would act on a claim the player never made.
+  const rec = bundleFromRanking("b1", "T", ["Constitution"], { Constitution: 40 }, {});
+  assert.deepStrictEqual(Object.keys(rec).sort(),
+    ["affixes", "caps", "floors", "id", "name", "savedAt"],
+    "the record carries the goal and nothing about a character");
+  // And the caller cannot smuggle one past the store's write boundary.
+  const B = require("../web/saved-bundles.js");
+  const smuggled = B.makeBundle({ id: "b1", name: "T", affixes: ["Constitution"],
+    declaredCredits: { x: 1 }, craftingRung: "everything", race: "Dwarf" });
+  for (const k of ["declaredCredits", "craftingRung", "race"]) {
+    assert.ok(!(k in smuggled), `${k} must not survive a save`);
+  }
+});
+
+test("U3: the Utility tier sentinel is not saved as an affix", () => {
+  // It is not a vocab stat and deliberately never joins `known`; a bundle that
+  // stored it would restore a row the picker cannot describe.
+  const sentinel = require("../web/model.js").UTILITY_SENTINEL;
+  const rec = bundleFromRanking("b1", "T", ["Constitution", sentinel, "Dodge"], {}, {});
+  assert.deepStrictEqual(rec.affixes, ["Constitution", "Dodge"]);
+});
+
+test("U3: with no saved bundles, My bundles is an empty STATE, not an empty box", () => {
+  const html = savedBundlesHTML([]);
+  assert.ok(html.includes('data-group="mine"'), "the container renders");
+  assert.ok(/data-count="mine">0</.test(html), "and says zero rather than looking broken");
+  assert.ok(/wz-bundle-empty/.test(html), "with copy explaining what a saved bundle is for");
+  assert.ok(html.includes('id="wz-bundle-save"'),
+    "and the save action, which is the only way a bundle is ever created");
+  assert.ok(!html.includes("data-saved-bundle"), "no chips");
+});
+
+test("U3: saved bundles render as chips, and the count matches", () => {
+  const html = savedBundlesHTML([
+    { id: "b1", name: "Reaper Tank", affixes: ["Constitution", "Dodge"] },
+    { id: "b2", name: "EE Caster", affixes: ["Evocation Focus"] },
+  ]);
+  assert.ok(/data-count="mine">2</.test(html));
+  assert.ok(html.includes('data-saved-bundle="b1"') && html.includes('data-saved-bundle="b2"'));
+  assert.ok(html.includes("Reaper Tank") && html.includes("EE Caster"));
+  assert.ok(html.includes('id="wz-bundle-save"'), "the save action stays available when populated");
+  assert.ok(!/wz-bundle-empty/.test(html), "and the empty copy is gone");
+});
+
+test("U3: My bundles uses the SAME container chrome as the presets", () => {
+  // One chrome, two bodies. A second box implementation is how the shelf would
+  // come to look like two different features.
+  const mine = savedBundlesHTML([]);
+  const preset = bundleContainerHTML("tactics", "Tactics", BUNDLE_GROUPS.tactics);
+  for (const cls of ["wz-bundle-box", "wz-bundle-head", "wz-bundle-tag", "wz-bundle-count", "wz-bundle-body"]) {
+    assert.ok(mine.includes(cls) && preset.includes(cls), `both boxes carry ${cls}`);
+  }
+  assert.ok(!/<details|<summary|aria-expanded/.test(mine), "and My bundles collapses no more than the presets do");
+});
+
+test("U3: a saved-bundle name is escaped on the way into the markup", () => {
+  const html = savedBundlesHTML([{ id: "b1", name: '<img src=x onerror=1>', affixes: [] }]);
+  assert.ok(!html.includes("<img"), "a name is player input and reaches the DOM as text");
+  assert.ok(html.includes("&lt;img"), "escaped, not stripped");
+});
+
+test("U3: a one-stat bundle reads \"1 stat\", not \"1 stats\"", () => {
+  // Caught live rather than by a test — the first real save produced "1 stats".
+  // Both the chip tooltip and the save confirmation carry the count, so both had
+  // to be fixed and both are pinned here.
+  const one = savedBundlesHTML([{ id: "b1", name: "Solo", affixes: ["Constitution"] }]);
+  assert.ok(/title="1 stat"/.test(one), "the chip tooltip is singular");
+  const many = savedBundlesHTML([{ id: "b1", name: "Big", affixes: ["Constitution", "Dodge"] }]);
+  assert.ok(/title="2 stats"/.test(many), "and plural when it should be");
+  const region = srcBetween(WIZARD_SRC, "function wireSavedBundles", "wireSavedBundles();", "save wiring");
+  assert.ok(/\? "stat" : "stats"/.test(region), "the save confirmation pluralizes too");
+});
+
+test("U3: no pending bundle state is held on `state` or in a closure", () => {
+  // KTD3 asked for a reset on character load. This holds no pending state at all,
+  // which is stronger: the name lives in the DOM input until the moment of save.
+  // `state` outlives a character, and a closure variable escapes both that
+  // convention AND the tests that grep the load path for `state.*` resets — the
+  // gap a staged block-selection Set already fell through. This guard exists so a
+  // later change cannot quietly reintroduce it.
+  const region = srcBetween(WIZARD_SRC, "function wireSavedBundles", "wireSavedBundles();", "save wiring");
+  assert.ok(!/state\.bundle/i.test(region), "no per-character bundle field is written");
+  assert.ok(/nameEl\.value/.test(region), "the name is read from the DOM at save time");
+  const declares = srcBetween(WIZARD_SRC, "const bundleBox = ", "function wireSavedBundles", "save closure");
+  assert.ok(!/\blet\s+pending|\bvar\s+pending|new Set\(\)/.test(declares),
+    "no closure-scoped accumulator outlives the character it was staged for");
 });
 
 test("#509: the Set Augment summary label has ONE spelling, and it counts", () => {

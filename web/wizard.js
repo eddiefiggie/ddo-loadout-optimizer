@@ -1587,6 +1587,16 @@ const BUNDLE_GROUPS = {
   spellpower: ["Healing", "Kinetic", "Fire", "Cold", "Electric", "Acid", "Sonic", "Negative", "Light", "Repair", "Poison"],
 };
 
+/** The saved-bundle store, resolved at CALL time rather than load time.
+ *  `saved-bundles.js` loads after this file in Node's require graph and before it
+ *  in the browser, so a load-time binding would be correct in exactly one of the
+ *  two. Same shape as persist.js's `overrides.js` bridge. */
+function _savedBundles() {
+  if (typeof window !== "undefined" && window.SavedBundles) return window.SavedBundles;
+  if (typeof require !== "undefined") { try { return require("./saved-bundles.js"); } catch (e) { /* absent */ } }
+  return null;
+}
+
 /** Module-scope output encoding, for the exported renderers below.
  *
  *  The wizard's `esc` is declared inside the browser block, so a pure function
@@ -1630,20 +1640,68 @@ const BUNDLE_CONTAINERS = [
  *  Sizing is CSS: the grid fits as many columns as the width allows and each
  *  container grows to its contents, so volume and viewport drive the layout with
  *  no JavaScript measuring anything. */
-function bundleContainerHTML(group, label, keys) {
+function bundleBoxHTML(group, label, count, bodyHTML) {
   const e = _escAttr;
-  const list = Array.isArray(keys) ? keys : [];
   return `<section class="wz-bundle-box" data-group="${e(group)}">
     <header class="wz-bundle-head">
       <span class="wz-bundle-tag">${e(label)}</span>
-      <span class="wz-bundle-count" data-count="${e(group)}">${list.length}</span>
+      <span class="wz-bundle-count" data-count="${e(group)}">${Number(count) || 0}</span>
     </header>
-    <div class="wz-bundle-body">
-      <div class="wz-bundle-row">
-        ${list.map((k) => `<button type="button" class="wz-bundle" data-bundle="${e(k)}">${e(k)}</button>`).join("")}
-      </div>
-    </div>
+    <div class="wz-bundle-body">${bodyHTML}</div>
   </section>`;
+}
+
+function bundleContainerHTML(group, label, keys) {
+  const e = _escAttr;
+  const list = Array.isArray(keys) ? keys : [];
+  return bundleBoxHTML(group, label, list.length, `<div class="wz-bundle-row">
+        ${list.map((k) => `<button type="button" class="wz-bundle" data-bundle="${e(k)}">${e(k)}</button>`).join("")}
+      </div>`);
+}
+
+/** plan U3 — the player's own saved rankings, in the same container chrome as the
+ *  presets (`bundleBoxHTML`), because they belong to the same shelf. One chrome,
+ *  two bodies: a second box implementation is how the two would drift apart.
+ *
+ *  The EMPTY STATE is a requirement, not a nicety. A container that renders zero
+ *  chips and nothing else reads as broken rather than as empty, and this is the
+ *  state every player sees before they have saved anything — so it carries the
+ *  explanation and the save action rather than an apology.
+ *
+ *  The save action is always present, empty or not: it is the only way a bundle
+ *  gets created, and hiding it behind a populated container would make the
+ *  feature unreachable exactly when it is needed. */
+function savedBundlesHTML(bundles) {
+  const e = _escAttr;
+  const list = Array.isArray(bundles) ? bundles : [];
+  const chips = list.length
+    ? `<div class="wz-bundle-row">${list.map((b) =>
+      `<button type="button" class="wz-bundle wz-bundle-mine" data-saved-bundle="${e(b.id)}"
+        title="${e(b.affixes.length)} ${b.affixes.length === 1 ? "stat" : "stats"}">${e(b.name || "Untitled")}</button>`).join("")}</div>`
+    : `<p class="wz-help wz-bundle-empty">Rank the stats you want, then save that order as a bundle you can reuse on any character.</p>`;
+  return bundleBoxHTML("mine", "My bundles", list.length, `${chips}
+      <div class="wz-bundle-save">
+        <input type="text" id="wz-bundle-name" data-nodirty maxlength="60"
+          placeholder="Name this ranking…" aria-label="Name for the saved bundle">
+        <button type="button" class="btn ghost" id="wz-bundle-save">Save current ranks</button>
+      </div>
+      <p class="wz-bundle-msg" id="wz-bundle-msg" role="status" aria-live="polite"></p>`);
+}
+
+/** plan U3 — the bundle a save would produce, from the live ranking.
+ *
+ *  Pure, and it takes the ranking and the two bound maps rather than reading
+ *  `state`, so what a save captures is testable without a browser. The store's
+ *  own write boundary re-derives the same shape; this is the caller side of that
+ *  contract, not a second implementation of it — bounds for affixes that are not
+ *  ranked, and every character-level field, are dropped there. */
+function bundleFromRanking(id, name, priorities, floors, caps, savedAt) {
+  const B = _savedBundles();
+  const ranked = (Array.isArray(priorities) ? priorities : [])
+    .filter((p) => typeof p === "string" && p && p !== _utilitySentinel);
+  return B
+    ? B.makeBundle({ id, name, affixes: ranked, floors, caps, savedAt: savedAt || null })
+    : { id, name, affixes: ranked, floors: {}, caps: {}, savedAt: savedAt || null };
 }
 
 /** Resolve a bundle key to a canonicalized, migrated, dataset-filtered, deduped
@@ -1739,7 +1797,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -2403,6 +2461,7 @@ if (typeof window !== "undefined" && window.App) {
           <span class="wz-label">Start from a bundle <span class="wz-sub">· optional · adds to your list — reorder or edit after</span></span>
           <div class="wz-bundle-grid">
             ${BUNDLE_CONTAINERS.map((g) => bundleContainerHTML(g.group, g.label, BUNDLE_GROUPS[g.group] || [])).join("")}
+            ${savedBundlesHTML(_savedBundles() ? _savedBundles().listBundles() : [])}
           </div>
         </div>
         <div class="wz-addrow">
@@ -4614,13 +4673,74 @@ if (typeof window !== "undefined" && window.App) {
         // Composable bundle buttons: append the bundle's affixes to the priority
         // list (deduped); the picked selection lands in the priority order, editable
         // after. Every row is on screen from the start, so nothing reveals anything.
-        root.querySelectorAll(".wz-bundle").forEach((btn) => {
+        root.querySelectorAll(".wz-bundle[data-bundle]").forEach((btn) => {
           btn.onclick = () => {
             markDirty();
             state.priorities = addBundle(btn.dataset.bundle, state.priorities, vocab);
             renderRanked();
           };
         });
+
+        // plan U3 — saving the current ranking as a reusable bundle.
+        //
+        // NO PENDING STATE IS HELD. The name lives in the DOM input until the
+        // moment of save and nowhere else: not on `state`, not in a closure. That
+        // is deliberate rather than incidental. `state` outlives a character, so a
+        // field not reset on load stays live from the previous one — and a closure
+        // variable is worse, because it escapes both that convention and the tests
+        // that grep the load path for `state.*` resets. A staged block-selection Set
+        // already fell through exactly that gap. Loading a character re-renders this
+        // step, which clears the input, so there is nothing to reset and nothing to
+        // forget to reset.
+        const bundleBox = () => root.querySelector('.wz-bundle-box[data-group="mine"]');
+        function renderSavedBundles() {
+          // Replace the container in place rather than re-rendering the step: a
+          // full render would rebuild the ranked list and the add row the player is
+          // working in. Same reason the Set Augment panel patches itself.
+          const box = bundleBox();
+          const B = _savedBundles();
+          if (!box || !B) return;
+          const wrap = document.createElement("div");
+          wrap.innerHTML = savedBundlesHTML(B.listBundles());
+          box.replaceWith(wrap.firstElementChild);
+          wireSavedBundles();
+        }
+        function bundleMsg(text) {
+          const el = document.getElementById("wz-bundle-msg");
+          if (el) el.textContent = text || "";
+        }
+        function wireSavedBundles() {
+          const saveBtn = document.getElementById("wz-bundle-save");
+          const nameEl = document.getElementById("wz-bundle-name");
+          if (!saveBtn || !nameEl) return;
+          saveBtn.onclick = () => {
+            const B = _savedBundles();
+            if (!B) return;
+            const ranked = (state.priorities || []).filter((p) => p && p !== _utilitySentinel);
+            if (!ranked.length) { bundleMsg("Rank at least one stat before saving a bundle."); return; }
+            const name = String(nameEl.value || "").trim();
+            if (!name) { bundleMsg("Give the bundle a name so you can find it again."); return; }
+            const list = B.listBundles();
+            if (B.nameCollides(name, list)) { bundleMsg(`You already have a bundle called "${name}".`); return; }
+            const rec = bundleFromRanking(B.nextId(list), name, ranked, state.targetFloors, state.targetCaps,
+              new Date().toISOString());
+            const r = B.saveBundle(rec);
+            if (!r.ok) {
+              // A failed write must never leave a bundle on screen claiming to be
+              // saved — the player would rely on work that was never stored.
+              bundleMsg(r.full
+                ? "Your browser's storage for this site is full, so this bundle was not saved. Delete something from Your data, then try again."
+                : "That bundle could not be saved.");
+              return;
+            }
+            nameEl.value = "";
+            renderSavedBundles();
+            const n = rec.affixes.length;
+            bundleMsg(`Saved "${name}" — ${n} ${n === 1 ? "stat" : "stats"}.`);
+          };
+          nameEl.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); saveBtn.click(); } };
+        }
+        wireSavedBundles();
         document.getElementById("wz-add-btn").onclick = () => { if (addPriority(add.value)) renderRanked(); add.value = ""; add.focus(); };
         add.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); if (addPriority(add.value)) renderRanked(); add.value = ""; } };
         renderRanked();
