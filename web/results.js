@@ -1285,6 +1285,13 @@ function artifactsIncludedByPin(result, query) {
 var _offHandItemsExcluded = (typeof offHandItemsExcluded !== "undefined") ? offHandItemsExcluded
   // eslint-disable-next-line global-require
   : (typeof require !== "undefined" ? require("./model.js").offHandItemsExcluded : () => false);
+// #508 — the complement, bound the same way and for the same reason. The wizard
+// warns where the declaration is MADE; this is what lets the results page speak
+// where the consequence is DELIVERED, off one shared authority rather than two
+// re-derivations that can drift.
+var _twfDeclaredButInert = (typeof twfDeclaredButInert !== "undefined") ? twfDeclaredButInert
+  // eslint-disable-next-line global-require
+  : (typeof require !== "undefined" ? require("./model.js").twfDeclaredButInert : () => null);
 
 // U5 — honest disclosure of how the solve was bounded: the considered ML band
 // (R8), any floor that could not be met (R4), and any user cap that actually held
@@ -1315,6 +1322,13 @@ function boundNoticeEntries(query, result) {
     .filter((s) => per[s] != null && per[s] >= caps[s])
     .map((s) => ({ stat: s, cap: caps[s] }));
   let offHand = null;
+  let twfInert = null;
+  // Hoisted out of the exclusion branch: #508's notice names the off-hand item
+  // that got in, which is the whole reason it lands — a player looking straight
+  // at a tower shield needs the sentence to be about that shield.
+  const wornOff = ((result && result.chosen) || []).find((c) => c.slot === "Off Hand");
+  const wornOffItem = wornOff && wornOff.variant && wornOff.variant.category !== "weapon"
+    ? wornOff.variant : null;
   if (_offHandItemsExcluded(query || {})) {
     // Is there an off-hand ITEM in a build that excluded off-hand items? Two very
     // different causes, and the notice must not conflate them:
@@ -1325,16 +1339,30 @@ function boundNoticeEntries(query, result) {
     //    snapshot is not re-solved on load, and plan 003 U4 migrates pre-U1 saves to
     //    declared, so this is reachable, not theoretical. Inferring a pin here would
     //    put a flatly false "your pinned X" in front of a player who pinned nothing.
-    const worn = ((result && result.chosen) || []).find((c) => c.slot === "Off Hand");
-    const offItem = worn && worn.variant && worn.variant.category !== "weapon" ? worn.variant : null;
+    const offItem = wornOffItem;
     const offPins = _pinnedVariantIds(((query && query.slotConstraints) || {})["Off Hand"]);
     const pinned = !!offItem && offPins.includes(offItem.variant_id || offItem.source_item);
     offHand = {
       mode: pinned ? "pinned" : offItem ? "stale" : "none",
       name: offItem ? (offItem.source_item || offItem.variant_id) : "",
     };
+  } else {
+    // #508 — declared, but the style cannot honour it, so the feat changed
+    // nothing in EITHER direction: no off-hand item was excluded and no second
+    // weapon was offered. Until this notice existed the results page said nothing
+    // at all here, because its only off-hand entry is gated on the exclusion
+    // having actually fired.
+    const inert = _twfDeclaredButInert(query || {});
+    if (inert) {
+      twfInert = {
+        style: inert.style,
+        styleLabel: inert.styleLabel,
+        name: wornOffItem ? (wornOffItem.source_item || wornOffItem.variant_id) : "",
+      };
+    }
   }
   return Proj.boundNoticeEntries({
+    twfInert,
     mlFloor: query && query.mlFloor,
     floorReport: (result && result.floorReport) || [],
     heldCaps,
@@ -1616,6 +1644,7 @@ const NOTICE_ENTRY_SUBJECTS = {
   "bonus-type-override": "bonus type overridden",
   "re-solve-to-apply": "re-solve to apply",
   "off-hand-excluded": "off-hand excluded",
+  "twf-not-applied": "two weapon fighting not applied",
 };
 
 /** #449 U5 (KTD5, second table) — resolution routes for the cards U10 split out
@@ -1628,6 +1657,11 @@ const NOTICE_ENTRY_JUMPS = {
   "stat-filtered-out": { label: "Change character filters →", step: "character", anchor: null },
   "floor-not-reached": { label: "Edit priorities →", step: "priorities", anchor: null },
   "re-solve-to-apply": { label: "Re-solve now", step: null, anchor: "#wz-adjust-slot" },
+  // #508 — routed to the STYLE control, not to the TWF chip beside it. The
+  // declaration is already correct; the style is the thing that has to change,
+  // and landing on the chip would put the player in front of the one control
+  // that is doing what they asked.
+  "twf-not-applied": { label: "Pick a combat style →", step: "character", anchor: "#wz-style" },
 };
 
 /** Strip one wrapping `<details>` down to the parts a card needs (R35): the

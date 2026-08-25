@@ -2515,6 +2515,36 @@
     const e = esc || _asText;
     const f = facts || {};
     const entries = [];
+    // #508 — the declaration was made and the style cannot honour it, so Two Weapon
+    // Fighting changed NOTHING: no off-hand item was excluded, and no second weapon
+    // was offered either. First, because a player who declared a feat and got a
+    // shield needs to know why before they read anything else about this build.
+    //
+    // ACTIONABLE, not qualifying: unlike a declared credit or a held cap, there is a
+    // control that fixes it. And it reports a consequence rather than a mistake —
+    // declaring before choosing a style is a state the wizard supports on purpose.
+    //
+    // The two forms mirror the wizard's own inert notice (`wz-twf-inert`), which
+    // distinguishes "no style yet" from "a style that doesn't dual-wield", because
+    // the next action differs: pick one, versus switch the one you have.
+    const twf = f.twfInert;
+    if (twf) {
+      // DELIBERATELY NOT the exclusion's vocabulary. "shields, orbs, and rune arms"
+      // is reserved for the sentence that says they LEFT candidacy, and a U6/003
+      // test asserts no other notice borrows it — a build under Sword & Board would
+      // otherwise read as though something had been excluded when nothing was.
+      // This notice's job is the opposite claim, so it needs its own words.
+      const what = twf.name
+        ? `, and ${e(twf.name)} is in your off hand`
+        : " — no off-hand item was excluded, and no second weapon was offered";
+      entries.push({ id: "twf-not-applied", title: "TWO WEAPON FIGHTING NOT APPLIED",
+        class: NOTICE_ACTIONABLE,
+        sentence: (twf.style
+          ? `You declared Two Weapon Fighting, but ${e(twf.styleLabel || twf.style)} doesn't wield`
+            + ` a second weapon, so it changed nothing${what}.`
+          : `You declared Two Weapon Fighting, but no combat style is set, so it changed nothing${what}.`)
+          + " Pick One-hand / Dual-wield and re-solve to apply it." });
+    }
     const floor = Number(f.mlFloor);
     if (floor) {
       entries.push({ id: "gear-ml-floor", title: "GEAR ML FLOOR", class: NOTICE_QUALIFYING,
