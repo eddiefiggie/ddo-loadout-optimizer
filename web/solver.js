@@ -1079,8 +1079,29 @@ function buildProgram(model) {
     if (!mslot || !(mslot.pool || []).length) continue;
     const opts = [];
     const hostSets = new Set(); // one membership pick per host, even if a set repeats in the pool
+    // #337 — the sets this host ALREADY belongs to intrinsically. Its x-var is
+    // registered into setPieces for each of them above, so minting a pick var for
+    // the same set would let one item count TWICE toward that set's threshold:
+    // x_host and m are independently 1, and the single-identity constraint below
+    // binds only the picks and a hosted set-augment copy — never the intrinsic
+    // piece. A 3-piece set would then complete on two items.
+    //
+    // Skipping the pick is the whole fix: the host is already a piece of that set,
+    // so the pick can only ever re-assert an identity it holds. Nothing optimal is
+    // lost, because a pick that duplicates the intrinsic membership adds no
+    // reachable state the intrinsic piece does not already give.
+    //
+    // Guarded HERE rather than in the producers. #334's KTD3 filter closed this
+    // data-side for the Dino channel only; `attach_lost_purpose_slots` has no such
+    // filter, and the first gear batch giving a Lost Purpose host an intrinsic
+    // pool-set membership reopens the class silently (src/membership.py notes
+    // Forbidden Knowledge carries intrinsic raid members). One guard at the mint
+    // closes it for every producer and every future channel.
+    const intrinsicSets = new Set();
+    for (const sb of xv.variant.set_bonus || []) if (sb.set) intrinsicSets.add(sb.set);
     for (const setName of mslot.pool) {
       if (hostSets.has(setName)) continue;
+      if (intrinsicSets.has(setName)) continue;   // #337 — already a piece of this set
       // self-seed: register the set's tiers from the def even with no fixed member.
       if (!setTiers.has(setName)) {
         const def = membershipDefs[setName];
