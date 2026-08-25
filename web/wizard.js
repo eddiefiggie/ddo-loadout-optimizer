@@ -1324,6 +1324,16 @@ function containerSummary(list) {
   return l.length <= 3 ? shown : `${shown} +${l.length - 3} more`;
 }
 
+/** #509 — the Set Augment panel's summary label. Extracted because the string was
+ *  spelled in two places already (the markup and the change handler, which updates
+ *  it inline rather than re-rendering) and a bulk control makes it three. Two
+ *  spellings of one label is a drift waiting to happen, and this one carries a
+ *  count, so a drifted copy reads as a wrong number rather than as a typo. Pure. */
+function setAugSummaryLabel(n) {
+  const count = Number(n) || 0;
+  return `Set Augments I own${count ? ` · ${count} selected` : ""}`;
+}
+
 /** #91 (U4/KTD8) — the load-path healing rule, beside `migratePriorities` in
  *  spirit and in call site. `marked` is the save's `utility_tier_aware` flag:
  *
@@ -1630,7 +1640,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -1912,11 +1922,15 @@ if (typeof window !== "undefined" && window.App) {
             // Ticks are kept on state so they return when the player climbs back.
             const setAugInert = _rungExcludesNicheCrafting(_normalizeRung(state.craftingRung));
             return `<details class="wz-data" id="wz-setaug">
-              <summary>Set Augments I own${n ? ` · ${n} selected` : ""}</summary>
+              <summary>${esc(setAugSummaryLabel(n))}</summary>
               <div class="wz-data-body">
                 <p class="wz-help">${setAugInert
                   ? "Not applicable — the rung you chose excludes set-bonus crafting, so no Augment Set can activate. Your selections are kept for when you move back up."
                   : "Check the <strong>Set Augments</strong> you own. Only checked ones are considered — each grants its bonus once 3 pieces of its set are equipped. None are considered by default."}</p>
+                <div class="wz-setaug-bulk" id="wz-setaug-bulk">
+                  <button type="button" class="btn ghost" id="wz-setaug-all"${setAugInert ? " disabled" : ""}>Select all ${setNames.length}</button>
+                  <button type="button" class="btn ghost" id="wz-setaug-none"${setAugInert ? " disabled" : ""}>Clear all</button>
+                </div>
                 <div class="wz-seg wz-setaug-list" id="wz-setaug-list">${setNames.map((s) =>
                   `<label class="wz-check wz-check-inline"><input type="checkbox" data-setaug="${esc(s)}"${owned.has(s) ? " checked" : ""}${setAugInert ? " disabled" : ""}>
                     <span class="wz-check-body"><span class="wz-label">${esc(s)}</span></span></label>`).join("")}</div>
@@ -4342,15 +4356,57 @@ if (typeof window !== "undefined" && window.App) {
           el.onchange = (e) => { if (e.target.checked) { state.craftingRung = _normalizeRung(e.target.value); render(); } };
         }
         // U6 — set-augment availability checkboxes write into state.ownedSetAugments (a Set).
-        root.querySelectorAll("#wz-setaug-list input[data-setaug]").forEach((cb) => cb.onchange = (e) => {
+        //
+        // #509 — every write goes through ONE sync, because a full render() is not
+        // available here: `#wz-setaug` does not persist its open state, so
+        // re-rendering would close the panel under the player mid-edit. That is why
+        // the original handler patched the summary inline, and why a bulk control
+        // has to patch the boxes too. Doing it in one place keeps the three
+        // surfaces (boxes, summary, bulk buttons) from disagreeing.
+        const setAugBoxes = () => root.querySelectorAll("#wz-setaug-list input[data-setaug]");
+        const syncSetAug = () => {
+          const owned = state.ownedSetAugments;
+          for (const cb of setAugBoxes()) cb.checked = owned.has(cb.getAttribute("data-setaug"));
+          const sum = document.querySelector("#wz-setaug > summary");
+          if (sum) sum.textContent = setAugSummaryLabel(owned.size);
+          // A bulk button that cannot change anything is disabled rather than a
+          // no-op click — the same courtesy the picklists get when "All added".
+          // Inertness is re-read rather than inferred from the button's CURRENT
+          // disabled state: inferring it made "disabled because everything is
+          // already ticked" indistinguishable from "disabled because the rung
+          // excludes the family", and unticking one box would then re-enable a
+          // control the rung is supposed to hold shut.
+          const inert = _rungExcludesNicheCrafting(_normalizeRung(state.craftingRung));
+          const total = setAugBoxes().length;
+          const all = document.getElementById("wz-setaug-all");
+          const none = document.getElementById("wz-setaug-none");
+          if (all) all.disabled = inert || owned.size === total;
+          if (none) none.disabled = inert || owned.size === 0;
+        };
+        setAugBoxes().forEach((cb) => cb.onchange = (e) => {
           if (!(state.ownedSetAugments instanceof Set)) state.ownedSetAugments = new Set();
           const name = e.target.getAttribute("data-setaug");
           if (e.target.checked) state.ownedSetAugments.add(name);
           else state.ownedSetAugments.delete(name);
-          // Refresh the summary count without re-rendering the whole step.
-          const sum = document.querySelector("#wz-setaug > summary");
-          if (sum) sum.textContent = `Set Augments I own${state.ownedSetAugments.size ? ` · ${state.ownedSetAugments.size} selected` : ""}`;
+          syncSetAug();
         });
+        // #509 — the bulk pair. Both respect the inert rung by being rendered
+        // `disabled` there, and NEITHER writes state when inert: the ladder keeps a
+        // player's ticks so they return when they climb back up (#346 U2), and a
+        // Clear that fired anyway would destroy exactly what that rule preserves.
+        const setAugBulk = (fill) => () => {
+          if (_rungExcludesNicheCrafting(_normalizeRung(state.craftingRung))) return;
+          if (!(state.ownedSetAugments instanceof Set)) state.ownedSetAugments = new Set();
+          state.ownedSetAugments = fill
+            ? new Set([...setAugBoxes()].map((cb) => cb.getAttribute("data-setaug")))
+            : new Set();
+          syncSetAug();
+        };
+        const setAugAll = document.getElementById("wz-setaug-all");
+        const setAugNone = document.getElementById("wz-setaug-none");
+        if (setAugAll) setAugAll.onclick = setAugBulk(true);
+        if (setAugNone) setAugNone.onclick = setAugBulk(false);
+        if (setAugAll || setAugNone) syncSetAug();
         root.querySelectorAll("#wz-armor .wz-chip").forEach((c) => c.onclick = () => {
           if (c.disabled) return;
           state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;

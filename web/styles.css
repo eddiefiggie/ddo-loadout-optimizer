@@ -1560,6 +1560,11 @@ input.wz-ml { width: 120px; }
 .wz-data-row { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
 .wz-data-row .wz-file { flex: 1; min-width: 200px; }
 .wz-data-sep { border: none; border-top: 1px dashed var(--border-2); margin: var(--sp-3) 0; }
+/* #509 — the Set Augment bulk pair. Wraps rather than overflowing: the panel is
+   inside the character step, which is laid out down to 320px. */
+.wz-setaug-bulk { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-2); }
+.wz-setaug-bulk .btn { font-size: var(--fs-xs); padding: 4px 10px; }
+.wz-setaug-bulk .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 /* #428 U7 — the relocated "Your data" block. Rendered by two hosts: below the
    Share tab's loadout formats (where the backup-vs-share distinction is stated
    once, side by side), and in the on-demand panel that makes it reachable
