@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -661,6 +661,62 @@ test("U4/AE10: dual-pin mutex — a pinned 2H main + pinned off-hand conflicts; 
 // `.wz-actions` / `.wz-spacer` row with the ADVANCE control bottom-right (after
 // the spacer) and, where present, the BACK control bottom-left (before it).
 const WIZARD_SRC = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+
+test("#509: the Set Augment summary label has ONE spelling, and it counts", () => {
+  assert.strictEqual(setAugSummaryLabel(0), "Set Augments I own",
+    "none selected reads as a plain title, not a zero");
+  assert.strictEqual(setAugSummaryLabel(1), "Set Augments I own · 1 selected");
+  assert.strictEqual(setAugSummaryLabel(21), "Set Augments I own · 21 selected");
+  // Junk in, plain title out — never "· NaN selected" in front of a player.
+  for (const junk of [undefined, null, "", NaN, "seven"]) {
+    assert.strictEqual(setAugSummaryLabel(junk), "Set Augments I own", `junk ${String(junk)}`);
+  }
+  // The markup must RENDER the helper rather than re-spelling it. Two spellings of
+  // a label that carries a count is a wrong number waiting to happen, and the
+  // inline-update path means the string genuinely appears in more than one place.
+  const region = srcBetween(WIZARD_SRC, 'id="wz-setaug"', "</details>", "setaug panel");
+  assert.ok(/setAugSummaryLabel\(/.test(region), "the summary renders the helper");
+  assert.ok(!/Set Augments I own\$\{/.test(region), "no hand-spelled copy of the label survives");
+});
+
+test("#509: the bulk pair exists, is inert-aware, and never clears retained ticks", () => {
+  // Sliced to the bulk BLOCK, not to the panel: the checkbox list below it carries
+  // the same inert gate, so a panel-wide slice would count three and the assertion
+  // would pass for the wrong reason (or fail for one).
+  const region = srcBetween(WIZARD_SRC, 'id="wz-setaug-bulk"', "</div>", "setaug bulk");
+  assert.ok(/id="wz-setaug-all"/.test(region) && /id="wz-setaug-none"/.test(region),
+    "select-all AND clear-all — one without the other means a mis-click costs 21 unticks");
+  assert.ok(!/data-setaug=/.test(region), "the slice stops before the checkbox list");
+  // Both are rendered disabled on the rung that excludes the family, exactly like
+  // the checkboxes beside them.
+  const disabled = region.match(/setAugInert \? " disabled" : ""/g) || [];
+  assert.strictEqual(disabled.length, 2, "both bulk buttons carry the inert gate, not just one");
+
+  // The handler must ALSO refuse when inert — a disabled attribute is a UI state,
+  // not a guarantee, and #346 U2 keeps a player's ticks across the rung so they
+  // return when they climb back. A Clear that fired anyway would destroy exactly
+  // what that rule preserves.
+  const handler = srcBetween(WIZARD_SRC, "const setAugBulk =", "const setAugAll =", "setaug bulk handler");
+  assert.ok(/_rungExcludesNicheCrafting\(/.test(handler),
+    "the bulk handler re-checks the rung before writing state");
+  assert.ok(handler.indexOf("_rungExcludesNicheCrafting") < handler.indexOf("state.ownedSetAugments ="),
+    "and it checks BEFORE the write, not after");
+});
+
+test("#509: one sync drives the boxes, the summary and the buttons", () => {
+  // render() is not available here — #wz-setaug does not persist its open state,
+  // so re-rendering would close the panel under the player mid-edit. That is why
+  // everything is patched inline, and why it must be patched in ONE place.
+  const sync = srcBetween(WIZARD_SRC, "const syncSetAug =", "setAugBoxes().forEach", "syncSetAug");
+  assert.ok(/cb\.checked = owned\.has\(/.test(sync), "syncs the checkboxes");
+  assert.ok(/setAugSummaryLabel\(owned\.size\)/.test(sync), "syncs the summary off the helper");
+  assert.ok(/all\.disabled = inert \|\| owned\.size === total/.test(sync)
+    && /none\.disabled = inert \|\| owned\.size === 0/.test(sync),
+    "syncs both buttons, and inertness is re-read rather than inferred from the"
+    + " button's own disabled state — inferring it let a single untick re-enable a"
+    + " control the rung is supposed to hold shut");
+});
+
 
 // Slice a single step render function's returned <section>…</section> template.
 function stepTemplate(name) {
