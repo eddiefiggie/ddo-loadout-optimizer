@@ -2291,6 +2291,57 @@ test("U10: a build solved before the TWF declaration is actionable; the other tw
     Object.assign({}, _u10Declared, { slotConstraints: {} }), _u10OffHandResult)));
 });
 
+test("#508: TWF declared without a permitting style discloses on the RESULTS page", () => {
+  // The reported build: declared, no style, and a shield in the off hand. Before
+  // this, the results page produced NOTHING here — its only off-hand entry is
+  // gated on the exclusion having fired, and in this state it never does.
+  const inert = Object.assign({}, _u10Declared, { style: null });
+  const entries = R.boundNoticeEntries(inert, _u10OffHandResult);
+  assert.deepStrictEqual(entries.map((e) => e.id), ["twf-not-applied"]);
+  assert.strictEqual(entries[0].class, "actionable");
+  assert.ok(/Tower Shield is in your off hand/.test(entries[0].sentence),
+    "the deriver hands projection the item that actually got in");
+
+  // A style that cannot dual-wield: same entry, the other sentence, by label.
+  const thf = R.boundNoticeEntries(Object.assign({}, _u10Declared, { style: "thf" }), _u10OffHandResult);
+  assert.deepStrictEqual(thf.map((e) => e.id), ["twf-not-applied"]);
+  assert.ok(/Two Handed Fighting doesn't wield a second weapon/.test(thf[0].sentence));
+
+  // Undeclared is silent — this notice is about a declaration being ignored, and
+  // a build that never declared has nothing to disclose.
+  const undeclared = R.boundNoticeEntries(
+    Object.assign({}, _u10Declared, { style: null, twoWeaponFighting: false }), _u10OffHandResult);
+  assert.deepStrictEqual(undeclared.map((e) => e.id), [], "no declaration, no notice");
+});
+
+test("#508: the inert notice and the off-hand exclusion can never both fire", () => {
+  // They are complements over "TWF is declared", read off ONE authority in
+  // model.js. If a build could produce both, the results page would tell the
+  // player their shields were excluded AND that nothing was excluded.
+  const results = [];
+  for (const style of [null, "one-hand", "thf", "sword-board", "ranged", "crossbow", "unarmed"]) {
+    for (const twoWeaponFighting of [true, false]) {
+      const ids = R.boundNoticeEntries(
+        Object.assign({}, _u10Declared, { style, twoWeaponFighting }), _u10OffHandResult)
+        .map((e) => e.id);
+      const inert = ids.includes("twf-not-applied");
+      const excluded = ids.includes("off-hand-excluded") || ids.includes("re-solve-to-apply");
+      assert.ok(!(inert && excluded), `style=${style} declared=${twoWeaponFighting}: both fired`);
+      // Declared is exhaustive: every declared build lands in exactly one of them.
+      if (twoWeaponFighting) {
+        assert.ok(inert || excluded, `style=${style} declared: a declared build disclosed neither`);
+      } else {
+        assert.ok(!inert && !excluded, `style=${style} undeclared: disclosed something anyway`);
+      }
+      results.push([style, twoWeaponFighting, inert ? "inert" : excluded ? "excluded" : "silent"]);
+    }
+  }
+  // one-hand is the ONLY style that applies the feat — pinned here so a taxonomy
+  // change that widens or narrows it fails naming the style, not a count.
+  assert.deepStrictEqual(results.filter((r) => r[1] && r[2] === "excluded").map((r) => r[0]),
+    ["one-hand"], "exactly one style honours the declaration");
+});
+
 test("U10: artifactNotice's two branches are never one entry, and render unchanged", () => {
   const plainRing = { chosen: [{ slot: "Ring", variant: { variant_id: "Plain Ring", source_item: "Plain Ring" } }] };
   const missing = R.artifactNoticeEntries(plainRing, { includeArtifact: true });
@@ -2639,8 +2690,9 @@ test("#449 U5 (R6/KTD5): every actionable route carries a control, and outbid de
     outbidNotice: false,
   });
   assert.deepStrictEqual(Object.keys(R.NOTICE_ENTRY_JUMPS).sort(),
-    ["artifact-pinned-in", "floor-not-reached", "re-solve-to-apply", "stat-filtered-out"],
-    "and the four actionable cards U10 split out are routed by entry id");
+    ["artifact-pinned-in", "floor-not-reached", "re-solve-to-apply", "stat-filtered-out",
+      "twf-not-applied"],
+    "and the actionable cards U10 split out are routed by entry id (#508 added the fifth)");
   for (const j of [...Object.values(R.NOTICE_TABLE).map((v) => v.jump), ...Object.values(R.NOTICE_ENTRY_JUMPS)]) {
     if (!j) continue;
     assert.ok(j.label && /→|now/.test(j.label), `${j.label}: a verb plus a destination`);

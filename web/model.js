@@ -284,6 +284,35 @@ function offHandItemsExcluded(query) {
   const T = _taxonomy();
   return !!(query && query.twoWeaponFighting) && !!T && T.twfWeaponAllowedForStyle(query.style);
 }
+
+/** #508 — the declaration was made and the style cannot honour it, so the feat
+ *  changed NOTHING: no off-hand item was excluded, and no second weapon was
+ *  offered either. Returns `{ style }` (the non-permitting style id, or null when
+ *  none is set), else null.
+ *
+ *  The exact complement of `offHandItemsExcluded` over "TWF is declared", and it
+ *  lives beside it for the reason that function documents: this is advisory, two
+ *  surfaces read it, and a re-derivation at either would let them drift. The
+ *  wizard warns at the point of DECLARATION and the results notice fires at the
+ *  point the wrong answer is DELIVERED — a player who missed the first got a
+ *  shield in a build they asked to be dual-wielding, with nothing on the results
+ *  page saying the declaration had been ignored.
+ *
+ *  Deliberately NOT "did the player make a mistake". A declared-but-inert build is
+ *  a legal, reachable state the UI supports on purpose (declare first, pick the
+ *  style later), so this reports a consequence, never a scolding. */
+function twfDeclaredButInert(query) {
+  const T = _taxonomy();
+  if (!(query && query.twoWeaponFighting) || !T) return null;
+  if (T.twfWeaponAllowedForStyle(query.style)) return null;
+  const style = query.style || null;
+  // The display label comes from the taxonomy's own STYLES list rather than the
+  // raw id, so the notice says "Two Handed Fighting" and not "thf". Resolved here
+  // because this function already holds the taxonomy — projection.js owns the
+  // sentence and should not have to learn the style vocabulary to write it.
+  const row = style ? (T.STYLES || []).find((x) => x.id === style) : null;
+  return { style, styleLabel: (row && row.label) || style };
+}
 /** Can this weapon fill the Main Hand under the query's main-hand lock? Untyped
  *  hosts (Dino Bone Weapon) always can. */
 function mainHandWeaponOk(v, weaponAllow) {
@@ -1365,7 +1394,7 @@ function poolStatNames(model) {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { poolStatNames, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
-    offHandItemsExcluded, allowedOffHandWeaponTypes, pinSlotConflict,
+    offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
     UTILITY_SENTINEL,

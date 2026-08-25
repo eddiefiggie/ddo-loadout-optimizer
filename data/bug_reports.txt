@@ -193,3 +193,39 @@ Filed 2026-08-20:
   table DOES have one, so the absence is meaningful; Spell critical has a Universal section
   for crit CHANCE and none for crit DAMAGE). The gem is credited the moment `Spell Intensity`
   is ranked. Residue is a DISCLOSURE gap, filed as #404.
+
+New reports (2026-08-24):
+The "Basic" bundle still has "Resistance" as one of it's statistics - but that does
+not work. It has to be split into the 3 components.
+
+In the "Set Augments I own" - a "select all" button would be nice.
+
+I selected TWF and it returned Legendary Calamitous Bastard Sword and Legendary
+Cataclysmic Tower Shield...it should never return an orb or shield if I select TWF,
+i shouldn't need to go and declare weapon types under the One Hand/ Dual Wield or it
+should flag that it's necessary better.
+
+Filed 2026-08-24:
+- #507 Preset bundles inject expanded-away names as dead priorities. REPRODUCES, and
+  the reporter's proposed fix is correct. `Resistance` has ZERO carriers as an affix
+  name — it expands into Fortitude/Reflex/Will Save (621 instances via it). Ranked
+  alone it returns an EMPTY loadout reported as optimal (`perTarget {"Resistance": 0}`,
+  0 items) vs 26/27/27 across 9 items for the three saves. A second instance the
+  reporter did not hit: the Caster bundle injects `Spell Focus Mastery`, the exact name
+  closed #250 was written about. Root cause: of the three priority add-paths, query.js
+  refuses expanded-away names and wizard.js `resolvePriorityAdd` expands them, while
+  `resolveBundle`/`addBundle` do neither — and the comment above `PRESET_BUNDLES` claims
+  "a bundle can never inject a dead target", which is what let the gap survive.
+- #508 A declared Two Weapon Fighting is silently inert without a one-hand style.
+  REPRODUCES with BOTH named items. `twfWeaponAllowedForStyle` is true for `one-hand`
+  only and `style` defaults to null, so the declaration excludes nothing AND offers no
+  second weapon. Same query, style null -> Legendary Cataclysmic Tower Shield in the
+  off hand; style one-hand -> shield correctly excluded, Legendary Calamitous Bastard
+  Sword main hand. PARTIAL CORRECTION to the report: the wizard DOES flag it ("Declared.
+  It has no effect until you pick a combat style that wields a second weapon"), which is
+  why the reporter's "should flag that it's necessary better" is the accurate framing —
+  the notice sits where the mistake is made, not where the wrong answer is delivered.
+  The results page discloses nothing, because its off-hand notice is gated on the
+  exclusion having actually fired.
+- #509 "Set Augments I own" select-all. Confirmed: 21 individually-ticked checkboxes,
+  no bulk control anywhere in web/. Enhancement, no defect. Unrelated to #496.

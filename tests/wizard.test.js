@@ -378,8 +378,24 @@ test("U5 pickerVocabulary (wizard) delegates to the shared builder", () => {
 
 // ---- composable preset bundles (gear-planner style) ------------------------
 
-test("bundles: every UI bundle resolves to >=1 known target in the dataset", () => {
+/** #507 — how many records carry each name as an AFFIX. `vocab.known` cannot
+ *  answer this: it is built from `metadata.affix_registry`, which carries
+ *  provenance labels for enchantments that expand away, so a name with zero
+ *  carriers is "known". Counting the real population is the only way to tell a
+ *  live target from a dead one. */
+function affixCarrierCounts(data) {
+  const counts = Object.create(null);
+  for (const rec of data.items || []) {
+    for (const a of rec.affixes || []) {
+      if (a && a.name) counts[a.name] = (counts[a.name] || 0) + 1;
+    }
+  }
+  return counts;
+}
+
+test("bundles: every UI bundle resolves to >=1 target the dataset actually CARRIES", () => {
   const rv = buildPickerVocabulary(realData);
+  const carriers = affixCarrierCounts(realData);
   // Enumerate from BUNDLE_GROUPS itself rather than a hardcoded list of group
   // names: the hardcoded version silently skipped any NEW group, so plan 005's
   // `attributes` row would have shipped unguarded and a later dead target in it
@@ -392,7 +408,61 @@ test("bundles: every UI bundle resolves to >=1 known target in the dataset", () 
     const resolved = resolveBundle(key, rv);
     assert.ok(resolved.length >= 1, `bundle "${key}" resolves to at least one known affix`);
     assert.ok(resolved.every((n) => rv.known.has(n)), `bundle "${key}" resolves to all-known targets`);
+    // #507 — the assertion this test USED to stop at was `known`, and it was green
+    // for the life of the feature while `Basic` shipped `Resistance` and `Caster`
+    // shipped `Spell Focus Mastery`, both with zero carriers. Registry membership is
+    // not evidence a target can score; carriers are.
+    for (const name of resolved) {
+      assert.ok((carriers[name] || 0) > 0,
+        `bundle "${key}" resolves to "${name}", which NO record carries as an affix`
+        + " — it would rank as a silent zero. Expanded-away labels must migrate to"
+        + " the stats they stand for (see resolveBundle, #507).");
+    }
   }
+});
+
+test("#507: an expanded-away label in a bundle migrates IN PLACE to its components", () => {
+  const rv = buildPickerVocabulary(realData);
+
+  // Basic — the reported case. `Resistance` is the SOURCE of the three saves, not
+  // an affix any record carries.
+  const basic = resolveBundle("Basic", rv);
+  assert.ok(PRESET_BUNDLES.Basic.includes("Resistance"),
+    "the bundle still LISTS the engraved name — this fix resolves it, it does not edit the list");
+  assert.ok(!basic.includes("Resistance"), "Resistance does not survive as a target");
+  for (const save of ["Fortitude Save", "Reflex Save", "Will Save"]) {
+    assert.ok(basic.includes(save), `Basic resolves to ${save}`);
+  }
+  // IN PLACE, not appended: `Resistance` sat 8th, between False Life and Freedom
+  // of Movement. A bundle's order is a real recommendation ("#1 is maximized
+  // first"), so the components inherit its rank rather than landing at the end.
+  assert.strictEqual(basic.indexOf("False Life") + 1, basic.indexOf("Fortitude Save"),
+    "the expansion starts exactly where Resistance sat");
+  assert.strictEqual(basic.indexOf("Will Save") + 1, basic.indexOf("Freedom of Movement"),
+    "what followed Resistance still follows the expansion");
+
+  // Caster — the SAME defect, unreported, and the exact name #250 was written about.
+  const caster = resolveBundle("Caster", rv);
+  assert.ok(!caster.includes("Spell Focus Mastery"), "Spell Focus Mastery does not survive as a target");
+  for (const school of ["Abjuration Focus", "Conjuration Focus", "Enchantment Focus",
+    "Evocation Focus", "Illusion Focus", "Necromancy Focus", "Transmutation Focus"]) {
+    assert.ok(caster.includes(school), `Caster resolves to ${school}`);
+  }
+  assert.strictEqual(caster.indexOf("Spell Penetration") + 1, caster.indexOf("Abjuration Focus"),
+    "the school expansion starts where Spell Focus Mastery sat");
+});
+
+test("#507: resolveBundle stays idempotent and addBundle stays additive after migrating", () => {
+  const rv = buildPickerVocabulary(realData);
+  // Re-resolving an already-migrated list must not expand a second time or reorder.
+  const once = resolveBundle("Basic", rv);
+  assert.deepStrictEqual(addBundle("Basic", once, rv), once,
+    "re-adding a migrated bundle is still a no-op");
+  // A player who already ranked one component keeps their position; the rest append.
+  const seeded = addBundle("Basic", ["Reflex Save"], rv);
+  assert.strictEqual(seeded[0], "Reflex Save", "the existing priority keeps rank 1");
+  assert.strictEqual(seeded.filter((n) => n === "Reflex Save").length, 1, "no duplicate");
+  for (const save of ["Fortitude Save", "Will Save"]) assert.ok(seeded.includes(save), save);
 });
 
 test("resolveBundle canonicalizes, dedupes, and drops dataset-absent names", () => {

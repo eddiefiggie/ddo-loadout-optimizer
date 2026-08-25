@@ -1705,6 +1705,53 @@ test("U10: boundNoticeEntries emits one entry per fired branch, each with its KT
   _wellFormed(all, "bound");
 });
 
+test("#508: a declared-but-inert Two Weapon Fighting says so, and names what got in", () => {
+  // The reported case: declared, no style set, and a tower shield in the off hand.
+  const [e] = P.boundNoticeEntries({
+    twfInert: { style: null, styleLabel: null, name: "Legendary Cataclysmic Tower Shield" } });
+  assert.strictEqual(e.id, "twf-not-applied");
+  assert.strictEqual(e.title, "TWO WEAPON FIGHTING NOT APPLIED");
+  assert.strictEqual(e.class, "actionable", "there is a control that fixes it");
+  assert.ok(/no combat style is set/.test(e.sentence), "names the cause");
+  assert.ok(/Legendary Cataclysmic Tower Shield is in your off hand/.test(e.sentence),
+    "names the item the player is looking at — that is what makes the notice land");
+  assert.ok(/Pick One-hand \/ Dual-wield and re-solve/.test(e.sentence), "names the fix");
+
+  // A style that simply does not dual-wield gets the other sentence, by LABEL.
+  const [t] = P.boundNoticeEntries({
+    twfInert: { style: "thf", styleLabel: "Two Handed Fighting", name: "" } });
+  assert.ok(/Two Handed Fighting doesn't wield a second weapon/.test(t.sentence),
+    "the settled style label, not the raw id");
+  assert.ok(!/thf/.test(t.sentence), "the raw taxonomy id never reaches the player");
+  assert.ok(/no off-hand item was excluded, and no second weapon was offered/.test(t.sentence),
+    "with no off-hand item to name, it still says what did not happen");
+  // The exclusion notice's vocabulary is RESERVED. A U6/003 test asserts a build
+  // under a non-dual-wielding style never reads as though something was excluded,
+  // and this notice fires in exactly that state — so it must not borrow the phrase.
+  for (const sentence of [e.sentence, t.sentence]) {
+    assert.ok(!/shields, orbs, and rune arms/i.test(sentence),
+      "the inert notice must not speak the exclusion's words — it makes the opposite claim");
+  }
+
+  // It never fires on a build that is not in the inert state.
+  assert.deepStrictEqual(P.boundNoticeEntries({ mlFloor: 30 }).map((x) => x.id), ["gear-ml-floor"],
+    "no twfInert fact -> no entry");
+  _wellFormed([e, t], "bound");
+});
+
+test("#508: the inert notice and the exclusion notice are mutually exclusive", () => {
+  // They are complements over "TWF is declared", so a build can be in exactly one
+  // state. A build showing both would mean the authority disagreed with itself.
+  const both = P.boundNoticeEntries({
+    twfInert: { style: null, styleLabel: null, name: "" },
+    offHand: { mode: "none", name: "" },
+  }).map((x) => x.id);
+  assert.ok(both.includes("twf-not-applied") && both.includes("off-hand-excluded"),
+    "projection renders whatever facts it is handed — the mutual exclusion is upstream");
+  // ...which is why the derivation is what must guarantee it. That is asserted
+  // against the real deriver in tests/results.test.js, not here.
+});
+
 test("U10: a solve bounded only by the ML floor claims no declared credit", () => {
   const only = P.boundNoticeEntries({ mlFloor: 32 });
   assert.strictEqual(only.length, 1, "one fired branch, one entry");

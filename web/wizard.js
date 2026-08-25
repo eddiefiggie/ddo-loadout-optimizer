@@ -1524,8 +1524,17 @@ function resolvePriorityAdd(name, vocab, priorities) {
 // using for the life of the feature, and the flat layout is the chosen behavior.
 // Do not reinstate the reveal. (The `.wz-bundle-row[hidden]` CSS rule stays — it
 // is correct, and a row marked hidden in future should hide.)
-// Affix lists are the gear planner's, verbatim; resolveBundle canonicalizes +
-// drops any our dataset doesn't carry, so a bundle can never inject a dead target.
+// Affix lists are the gear planner's, verbatim; resolveBundle canonicalizes,
+// MIGRATES expanded-away labels into the stats they stand for, and drops any our
+// dataset doesn't carry.
+//
+// This comment used to end "so a bundle can never inject a dead target." That
+// sentence was false for the life of the feature and is why the gap survived
+// review: it reads as a guarantee, and the `vocab.known` filter looks like it
+// delivers one. It does not — `known` is a registry of NAMES, not a population of
+// CARRIERS. See resolveBundle's own header (#507) for what actually enforces it,
+// and `tests/wizard.test.js` for the guard that now asserts carriers rather than
+// registry membership.
 const PRESET_BUNDLES = {
   // Order within a bundle is the order it lands in the priority list, and #1 is
   // maximized first — so a bundle's lead affixes are a real recommendation, not
@@ -1578,15 +1587,46 @@ const BUNDLE_GROUPS = {
   spellpower: ["Healing", "Kinetic", "Fire", "Cold", "Electric", "Acid", "Sonic", "Negative", "Light", "Repair", "Poison"],
 };
 
-/** Resolve a bundle key to a canonicalized, dataset-filtered, deduped affix list.
- *  Each affix is canonicalized through the alias table and dropped if the dataset
- *  doesn't carry it (`vocab.known`). Unknown key -> []. Pure. */
+/** Resolve a bundle key to a canonicalized, migrated, dataset-filtered, deduped
+ *  affix list. Unknown key -> []. Pure.
+ *
+ *  #507 — THE MIGRATION IS NOT OPTIONAL. `vocab.known` is a registry of NAMES, not
+ *  a population of CARRIERS: it is built from `metadata.affix_registry`, which
+ *  includes provenance labels for enchantments that expand away. So an
+ *  expanded-away name passes the `known` filter and lands as a priority no item can
+ *  ever satisfy — a silent zero, indistinguishable from a stat that scored badly.
+ *
+ *  Two bundles shipped that way. `Basic` ranked `Resistance` (zero carriers; it is
+ *  the SOURCE of 621 Fortitude/Reflex/Will Save affixes) and `Caster` ranked
+ *  `Spell Focus Mastery` (zero carriers; the seven school focuses) — the latter
+ *  being the exact name #250 was written about. Ranked alone, `Resistance` returned
+ *  an EMPTY loadout reported as optimal.
+ *
+ *  This is the third add-a-priority path, and the other two already handled it:
+ *  `query.js addTarget` REFUSES an expanded-away name and points at its components
+ *  (#136), and `wizard.js resolvePriorityAdd` EXPANDS it. This one did neither.
+ *  Route through the same `migratePriorities` they use rather than expanding here,
+ *  so the rule stays in one place — that also picks up RETIRED labels (#381), which
+ *  a bundle could carry for the same reason and with the same silent result.
+ *
+ *  ORDER MATTERS: migrate BEFORE filtering on `known`. Filtering first would drop an
+ *  expanded-away name that is absent from the registry before it ever got the chance
+ *  to become the live stats it stands for. */
 function resolveBundle(key, vocab) {
   const affixes = PRESET_BUNDLES[key];
   if (!affixes) return [];
-  const out = [];
+  // Canonicalize first, so the migration sees the one name gear/augments carry.
+  const canon = [];
   for (const name of affixes) {
     const c = vocab && vocab.canonical ? vocab.canonical(name) : name;
+    if (c) canon.push(c);
+  }
+  const DN = _datasetNormalizer();
+  const migrated = (DN && DN.migratePriorities)
+    ? DN.migratePriorities(canon, vocab).priorities
+    : canon;
+  const out = [];
+  for (const c of migrated) {
     if (c && (!vocab || !vocab.known || vocab.known.has(c)) && !out.includes(c)) out.push(c);
   }
   return out;
