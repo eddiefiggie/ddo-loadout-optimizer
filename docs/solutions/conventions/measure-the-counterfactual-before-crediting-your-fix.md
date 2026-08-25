@@ -67,14 +67,14 @@ The causal story was false. Procs live on weapon slots and toggles on worn slots
 
 **And the corollary for the measurement half: if your harness can only measure the configuration you shipped, every comparative claim you make about it is untested by construction.**
 
-`tests/perf_utility.js` measures the Utility tier's cold-solve cost as a ratio against a pre-feature baseline, budget `median(b) <= 2 x median(a)`. Before this work it could only ever measure the *shipped* counting set — `vocab.utilityCounting`, threaded from the build stamp straight into `buildModel` as its eleventh argument (`web/query.js:160`, consumed at `web/model.js:804`). There was no way to swap in an alternative roster. So the claim "this roster is cheaper than that one" had never been tested, not because anyone declined to test it, but because the tool could not express the question. What filled the gap instead was cross-session arithmetic: a 1.96x number from a different session measuring a different tree, against a single 1.56x sample from this one. Earlier in the same session a 0.76x figure had been carried in from a reviewer's measurement during an unrelated review without running the gate at all; it did not reproduce.
+`tests/perf_utility.js` measures the Utility tier's cold-solve cost as a ratio against a pre-feature baseline. At the time of this work the budget was `median(b) <= 2 x median(a)`, medians taken across fixtures; #466 retired that statistic on 2026-08-24 (it was unpaired, cross-fixture, and blind to a regression concentrated in one fixture) in favour of a cost-weighted total plus a worst-per-fixture ceiling. **Every ratio quoted in this entry is on the retired statistic and is not comparable to a figure the gate prints today.** Before this work it could only ever measure the *shipped* counting set — `vocab.utilityCounting`, threaded from the build stamp straight into `buildModel` as its eleventh argument (`web/query.js:160`, consumed at `web/model.js:804`). There was no way to swap in an alternative roster. So the claim "this roster is cheaper than that one" had never been tested, not because anyone declined to test it, but because the tool could not express the question. What filled the gap instead was cross-session arithmetic: a 1.96x number from a different session measuring a different tree, against a single 1.56x sample from this one. Earlier in the same session a 0.76x figure had been carried in from a reviewer's measurement during an unrelated review without running the gate at all; it did not reproduce.
 
-The fix was to make the harness able to ask the question. `tests/perf_utility.js:87` now reads `ROSTER` from the environment (`shipped` by default) and builds the alternates at `tests/perf_utility.js:93-97`:
+The fix was to make the harness able to ask the question. `tests/perf_utility.js:181` now reads `ROSTER` from the environment (`shipped` by default) and builds the alternates at `tests/perf_utility.js:187-191`:
 
 - `pre343` — the shipped set minus the six named toggles, plus the admitted procs;
 - `hybrid` — the shipped set plus the admitted procs (the counterfactual).
 
-Both alternates are **derived from the build stamp**, not hardcoded: the procs come from `metadata.utility_untyped_admitted` read out of the dataset (`tests/perf_utility.js:90-91`) and the toggles from a named six-element list, so the alternates stay correct as the curated roster widens under #349. An unknown `ROSTER` value exits 2 with the valid names. Crucially, only `shipped` is asserted against the budget — an alternate prints its ratio, labels itself informational, and returns before the pass/fail line (`tests/perf_utility.js:140-145`), so an A/B measurement can never look like a regression in CI or in a reviewer's terminal.
+Both alternates are **derived from the build stamp**, not hardcoded: the procs come from `metadata.utility_untyped_admitted` read out of the dataset (`tests/perf_utility.js:184-185`) and the toggles from a named six-element list, so the alternates stay correct as the curated roster widens under #349. An unknown `ROSTER` value exits 2 with the valid names. Crucially, only `shipped` is asserted against the budget — an alternate prints its ratio, labels itself informational, and returns before the pass/fail line (`tests/perf_utility.js:293-298`), so an A/B measurement can never look like a regression in CI or in a reviewer's terminal.
 
 With that in place, the real A/B on identical fixtures and machine conditions:
 
@@ -138,7 +138,7 @@ The shared root across all three is worth naming: **asserting the outcome of an 
 build(q2, vocab.utilityCounting)
 ```
 
-No alternate roster was expressible, so no comparative claim about the roster was testable. The parameterized version derives its alternates from the stamp so they cannot rot as the roster grows (`tests/perf_utility.js:87-102`):
+No alternate roster was expressible, so no comparative claim about the roster was testable. The parameterized version derives its alternates from the stamp rather than hardcoding them, so they track the curated roster as it widens (`tests/perf_utility.js:181-196`):
 
 ```js
 const ROSTER_KEY = process.env.ROSTER || "shipped";
@@ -154,7 +154,7 @@ const ROSTERS = {
 };
 ```
 
-and refuses to fail the build on an informational run (`tests/perf_utility.js:140-145`):
+and refuses to fail the build on an informational run (`tests/perf_utility.js:293-298`):
 
 ```js
 if (ROSTER_KEY !== "shipped") {
@@ -164,6 +164,19 @@ if (ROSTER_KEY !== "shipped") {
 ```
 
 Usage: `node tests/perf_utility.js` for the gate, `ROSTER=hybrid node tests/perf_utility.js` for the counterfactual.
+
+**Correction (2026-08-24, #505) — deriving from the stamp did not make the alternates rot-proof.** This entry originally claimed the alternates "cannot rot as the roster grows". That guarded the wrong axis. They did not rot by the roster growing; they rotted because the population they draw from **emptied**: `metadata.utility_untyped_admitted` is now `[]`, so `hybrid` is name-for-name `shipped` and `pre343` is `shipped` minus the six toggles. Running `ROSTER=hybrid` today reports the same 16 counted names and the same figure as `shipped`, while labelling itself `ALTERNATE` — the harness had silently lost the ability to express the comparative question again, which is the precise failure this entry exists to prevent.
+
+The lesson generalizes: **a derived alternate is only as expressive as the population it derives from, so assert that it still differs.** Deriving instead of hardcoding removes one rot path and leaves another wide open. `tests/perf_utility.js` now compares each alternate against `shipped` name-for-name and refuses to let an identical one read as a measurement:
+
+```
+!! VACUOUS A/B: 'hybrid' is name-for-name identical to 'shipped'
+   (metadata.utility_untyped_admitted is empty, so the alternates
+    have nothing to add). Any difference below is run-to-run noise,
+    not a roster effect. Do NOT record it as an A/B.
+```
+
+That is disclosure, not repair — whether the empty stamp is intentional or a pipeline regression is open in #505.
 
 **Before / after, in the argument rather than the code.**
 

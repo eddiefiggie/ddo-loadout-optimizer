@@ -58,6 +58,13 @@ jobs:
       # counting roster widened from 20 names to 25 and the ratio drifted from
       # 1.80x to 2.35x against a 2.00x budget. A guard nobody runs is not a guard:
       # docs/solutions/conventions/a-guard-outside-the-ci-glob-is-not-a-guard.md.
-      # It exits 1 over budget, so this step blocks the build.
+      #
+      # #466 — the verdict is now two checks on PAIRED per-fixture measurements:
+      # a cost-weighted total (sum(b)/sum(a) <= 1.75) and a worst-per-fixture
+      # ratio over fixtures above a 200 ms measurement floor (<= 5.00). The old
+      # across-fixture median was a coin flip near its budget AND blind to a
+      # regression concentrated in one fixture; see the header of the gate for
+      # the measurements behind both budgets. It exits 1 over either budget, so
+      # this step blocks the build.
       - name: Run the Utility perf gate (outside the glob — invoked by path)
         run: node tests/perf_utility.js
