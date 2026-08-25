@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -661,6 +661,66 @@ test("U4/AE10: dual-pin mutex — a pinned 2H main + pinned off-hand conflicts; 
 // `.wz-actions` / `.wz-spacer` row with the ADVANCE control bottom-right (after
 // the spacer) and, where present, the BACK control bottom-left (before it).
 const WIZARD_SRC = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+
+test("U1: every bundle group renders a container, and its count matches its contents", () => {
+  const rv = buildPickerVocabulary(realData);
+  // Derived from BUNDLE_GROUPS, not a hardcoded list: a group added there and
+  // never given a container would otherwise render nowhere and go unnoticed.
+  const listed = BUNDLE_CONTAINERS.map((g) => g.group).sort();
+  assert.deepStrictEqual(listed, Object.keys(BUNDLE_GROUPS).sort(),
+    "every group has a container and every container names a real group");
+  for (const g of BUNDLE_CONTAINERS) {
+    const keys = BUNDLE_GROUPS[g.group];
+    const html = bundleContainerHTML(g.group, g.label, keys);
+    assert.ok(html.includes(`data-group="${g.group}"`), `${g.group}: the container is tagged`);
+    assert.ok(html.includes(g.label), `${g.group}: its heading is rendered`);
+    assert.ok(new RegExp(`data-count="${g.group}">${keys.length}<`).test(html),
+      `${g.group}: the count shows ${keys.length}`);
+    const chips = (html.match(/data-bundle="/g) || []).length;
+    assert.strictEqual(chips, keys.length, `${g.group}: one chip per bundle`);
+  }
+});
+
+test("U1: the packages group gets a heading it never had", () => {
+  // It shipped as an untagged row above four tagged ones, which is half of why
+  // the area read as loose chips rather than as groups.
+  const pkg = BUNDLE_CONTAINERS.find((g) => g.group === "packages");
+  assert.ok(pkg && pkg.label, "packages has a heading");
+  const html = bundleContainerHTML("packages", pkg.label, BUNDLE_GROUPS.packages);
+  assert.ok(html.includes("wz-bundle-tag"), "and renders it in the header");
+});
+
+test("U1: no container can be collapsed, and no rule hides a container body", () => {
+  // The standing decision against reinstating the reveal. Asserted on BOTH the
+  // markup and the stylesheet, because either one alone could reintroduce it:
+  // a <details> in the markup, or a `display: none` keyed to the box in CSS.
+  const html = BUNDLE_CONTAINERS
+    .map((g) => bundleContainerHTML(g.group, g.label, BUNDLE_GROUPS[g.group])).join("");
+  for (const bad of ["<details", "<summary", "aria-expanded", "data-collapse", "hidden"]) {
+    assert.ok(!html.includes(bad), `container markup must not carry ${bad}`);
+  }
+  const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+  const boxRules = css.split("\n").filter((l) => /\.wz-bundle-(box|body|head|grid)/.test(l));
+  assert.ok(boxRules.length, "the container rules exist");
+  for (const rule of boxRules) {
+    assert.ok(!/display:\s*none/.test(rule),
+      `no container rule may hide its body — found: ${rule.trim()}`);
+  }
+});
+
+test("U1: the grid sizes to volume and viewport, with no JavaScript measuring", () => {
+  const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+  const grid = srcBetween(css, ".wz-bundle-grid {", "}", "bundle grid");
+  assert.ok(/grid-template-columns:\s*repeat\(auto-fit/.test(grid),
+    "auto-fit is what fits as many columns as the width allows");
+  assert.ok(/minmax\(/.test(grid), "and minmax is what collapses it to one column when narrow");
+  // The sizing must not be computed in JS — that would drift from the CSS and
+  // reintroduce the render-vs-handler split the repo has been bitten by.
+  const region = srcBetween(WIZARD_SRC, "function bundleContainerHTML", "\n}", "container renderer");
+  for (const b of ["offsetWidth", "clientWidth", "getBoundingClientRect", "matchMedia"]) {
+    assert.ok(!region.includes(b), `the renderer must not measure the viewport (${b})`);
+  }
+});
 
 test("#509: the Set Augment summary label has ONE spelling, and it counts", () => {
   assert.strictEqual(setAugSummaryLabel(0), "Set Augments I own",
@@ -1606,18 +1666,15 @@ test("bundles: a hidden sub-row is actually hidden", () => {
   const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
   assert.ok(/\.wz-bundle-row\[hidden\]\s*\{[^}]*display:\s*none/.test(css),
     "an explicit [hidden] rule overrides the class display");
-  // The Attributes row is the one sub-row that must NOT carry hidden.
-  const step = stepTemplate("stepPriorities");
-  // #450 — the marker was located twice and the lower bound could go NEGATIVE,
-  // which `slice` reads as an offset from the END of the string: a marker within
-  // 120 chars of the start would have sliced an unrelated tail, and the negative
-  // assertion below would most likely have passed over it. Located once, clamped,
-  // and proven to contain the marker before anything is asserted about it.
-  const attrAt = step.indexOf('data-group="attributes"');
-  assert.ok(attrAt >= 0, "the Attributes row is in the template");
-  const attrRow = step.slice(Math.max(0, attrAt - 120), attrAt + 40);
-  assert.ok(attrRow.includes('data-group="attributes"'), "and the window really contains it");
-  assert.ok(!/hidden/.test(attrRow), "the Attributes row is always visible");
+  // U1 moved the rows into data-driven containers, so the group markers are no
+  // longer literals in the step template — they are produced by the renderer.
+  // The invariant is unchanged and is now asserted against the RENDER, which is
+  // stronger: it covers every group rather than only the one sub-row that used
+  // to be spelled out here.
+  const html = BUNDLE_CONTAINERS
+    .map((g) => bundleContainerHTML(g.group, g.label, BUNDLE_GROUPS[g.group])).join("");
+  assert.ok(html.includes('data-group="attributes"'), "the Attributes container renders");
+  assert.ok(!/hidden/.test(html), "no container is rendered hidden");
 });
 
 test("R1/R2: the Advanced panel is ordered after the reorder controls", () => {
@@ -1803,10 +1860,13 @@ test("U4: adding a bundle never duplicates a stat already ranked", () => {
 
 test("U4: Warlock sits on the packages row; ability scores are above Tactics", () => {
   assert.ok(BUNDLE_GROUPS.packages.includes("Warlock"));
-  const step = stepTemplate("stepPriorities");
-  const attrAt = step.indexOf('data-group="attributes"');
-  const tacticsAt = step.indexOf('data-group="tactics"');
-  assert.ok(attrAt > 0 && tacticsAt > 0 && attrAt < tacticsAt, "ability scores render before Tactics");
+  // U1 made render order explicit in BUNDLE_CONTAINERS rather than implicit in
+  // the order the rows were written out. Assert the ordering decision where it
+  // now lives; the guarantee to the player is identical.
+  const order = BUNDLE_CONTAINERS.map((g) => g.group);
+  assert.strictEqual(order[0], "packages", "the primer leads");
+  assert.ok(order.indexOf("attributes") < order.indexOf("tactics"),
+    "ability scores render before Tactics");
 });
 
 function ADVANCED_HELP_SRC() {
