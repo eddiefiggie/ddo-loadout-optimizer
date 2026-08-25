@@ -2623,6 +2623,59 @@ async function withCrossAdd(map, fn) {
     })) };
   }
 
+  await test("#337: a host intrinsically in a pool set does NOT count twice toward it", async () => {
+    // The latent class #334's review found: zero hosts hit it in today's dataset,
+    // so this fixture is synthetic ON PURPOSE — the guard exists for the first gear
+    // batch that gives a Lost Purpose host an intrinsic pool-set membership, and a
+    // test that waits for that batch is a test that ships the defect.
+    //
+    // ONE item that is both an intrinsic member of SET and offered SET in its
+    // membership pool. Its x-var is registered into setPieces by the intrinsic
+    // set_bonus; a pick var for the same set would be registered alongside it, and
+    // the single-identity constraint does not bind the intrinsic piece. So without
+    // the guard this single item satisfies a TWO-piece threshold by itself.
+    const SET = "Forbidden Knowledge";
+    const DEFS = { [SET]: memberDef([{ n: 2, affixes: [["Constitution", "Profane", 8]] }]) };
+    const host = setPiece("Dual", "Helmet", [["Intelligence", "Enhancement", 1]], SET,
+      [{ n: 2, affixes: [["Constitution", "Profane", 8]] }]);
+    host.set_membership_slot = { pool: [SET], station: "Cannith Repurposing Station" };
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      worn: [slot("Helmet", [host])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    const active = (r.setsActive || []).find((x) => x.set === SET);
+    assert.ok(!active, `one item must not complete a 2-piece set; setsActive=${JSON.stringify((r.setsActive || []).map((x) => x.set))}`);
+    assert.strictEqual(r.effective.Constitution || 0, 0,
+      "the 2-piece bonus must not be credited from a single equipped item");
+  });
+
+  await test("#337: the guard does not cost a legitimate membership pick", async () => {
+    // The guard must skip ONLY the set the host already belongs to. A pool
+    // offering a DIFFERENT set still mints its pick, or the fix would have bought
+    // correctness by removing reachable states — and an over-broad guard passes the
+    // test above for the wrong reason.
+    const OWN = "Forbidden Knowledge", OTHER = "Legendary Vol's Influence";
+    const DEFS = {
+      [OWN]: memberDef([{ n: 2, affixes: [["Strength", "Profane", 8]] }]),
+      [OTHER]: memberDef([{ n: 2, affixes: [["Constitution", "Profane", 8]] }]),
+    };
+    // Host A is intrinsically in OWN and may pick OTHER; host B is a plain OTHER picker.
+    const a = setPiece("A", "Helmet", [], OWN, [{ n: 2, affixes: [["Strength", "Profane", 8]] }]);
+    a.set_membership_slot = { pool: [OWN, OTHER], station: "Cannith Repurposing Station" };
+    const b = memberHost("B", "Cloak", [OTHER]);
+    const model = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      worn: [slot("Helmet", [a]), slot("Cloak", [b])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.ok((r.setsActive || []).some((x) => x.set === OTHER),
+      "A picks OTHER and B joins it — two distinct items, a legitimate 2-piece completion");
+    assert.strictEqual(r.effective.Constitution, 8, "the 2-piece bonus IS credited when two real items carry it");
+  });
+
   await test("MEMBERSHIP/awaken-only: 3 Lost Purpose items awaken one set to hit a 3-piece threshold (no intrinsic member)", async () => {
     // The case the joker structurally CANNOT do: complete a set with zero fixed
     // members equipped, purely from chosen-membership pieces (self-seeded threshold).
