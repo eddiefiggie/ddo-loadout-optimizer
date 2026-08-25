@@ -92,7 +92,38 @@ Two further mismatches make the spell values a poor fit for an equipped affix: t
 
 Applying the spell's `+4 morale` to the item enchantment would be **inference, not sourcing** — precisely what the standing exclude-until-verified rule and KTD5 forbid. The dataset already separates `Greater Heroism` (16 records) from `Greater Heroism clicky` (4 records), so the parser is not conflating the use-activated form; the gap is that neither form has a wiki-stated equipped magnitude.
 
-**Status:** QUARANTINED — do **not** write components in U5. `Greater Heroism` keeps its current `Bool` presence behavior, which remains targetable and correct as far as it goes. Resolving this needs either an item-effect page stating the equipped values, or in-game verification — neither is available from the wiki today.
+**Status:** QUARANTINED — do **not** write components in U5. `Greater Heroism` keeps its current `Bool` presence behavior, which remains targetable and correct as far as it goes.
+
+### Re-harvest 2026-08-25 — the magnitude question is ANSWERED; the quarantine holds on three new grounds
+
+**Read the whole of this subsection before re-investigating.** The unblock condition the 2026-08-05 ruling named above — "an item-effect page stating the equipped values" — is now **partly satisfied**, so a re-harvest that stops at the spell page will conclude the value is writable. It is not. Three separate walls sit behind it, and none of them is a sourcing problem.
+
+**What the wiki now states.** The spell page carries an items section that rules on the passive form directly:
+
+> The items that have greater heroism as a passive enchantment do not grant the temporary hitpoints and immunity to fear portion of the spell.
+
+This is a **subtraction**, not an assumption, and it is materially stronger than the "assume the spell's values" move the original ruling forbade: spell equals (+4 morale to attack rolls, saves, skill checks) plus (temporary hit points) plus (immunity to fear); the passive item form is the spell minus the last two; the remainder is the +4 morale portion.
+
+**It also vindicates this ruling's own counter-evidence.** The 2026-08-05 entry argued that Legendary Cloak of Victory listing `Immunity to Fear` as a separate enchantment signalled the item form is not simply "the spell, permanently." The wiki now says exactly that. That reasoning was correct and should not be re-litigated.
+
+**The scope is narrower than the whole affix.** The sentence governs items carrying it as a **passive enchantment** only. The carrier table also lists charged forms — Planar Gird and Draconic Necklace read `Greater Heroism — 1 Charges`, Planar Lariat `3 Charges` — which this ruling does not cover. The dataset already separates these: `Greater Heroism` 16 records, `Greater Heroism clicky` 4 (re-counted 2026-08-25, unchanged since the original entry).
+
+**Why the components still cannot be written.** Each of these is an internal modelling decision, not a missing source:
+
+1. **`Morale` is not a bonus type this dataset models.** Zero instances across the catalog; it is absent from the 29 types in use. Writing `+4 Morale` would introduce a new stacking bucket, and a bucket admitted without examining its stacking is the precise shape of the defect recorded in `a-dated-coverage-claim-cannot-notice-its-own-staleness.md` — an unexamined type there credited +24 Universal Spell Power permanently for a buff that requires being hit. This is a solver-semantics change, not a data write.
+
+2. **"Skill checks" is an unbounded fan-out.** Skills are modelled individually — Balance, Bluff, Diplomacy, Hide, Jump and the rest — alongside curated umbrella names like `Alluring Skills Bonus`. Nothing in the vocabulary means "every skill," so the phrase has no single target and expanding it by hand would invent a grouping the catalog does not carry.
+
+**The attack-roll third has a target already — do not re-derive this.** `Accuracy` is the catalog's name for a general attack bonus (249 instances), and `data/seed/compendium/affix_synonyms_registry.json` registers `Attack`, `Hit` and `Attack Bonus` as its synonyms. A search for an affix literally named "Attack Bonus" finds only the `Sneak Attack` family and reads as an absence; it is not one. (Separately, and out of scope here: `vocab.canonical` does not resolve that seed registry, so `Attack Bonus`, `AC` and `Acid Spellpower` all pass through unresolved and unknown in the picker. That is a vocabulary gap in its own right, adjacent to #229, and it has nothing to do with this affix.)
+
+**What would actually unblock it now** — in dependency order, and note both are prerequisites rather than parts of this affix:
+
+- a ruling on whether `Morale` becomes a modelled bonus type, and what it stacks with;
+- a decision on how an all-skills grant is represented, which `Alluring Skills Bonus` and its siblings may already answer.
+
+Only after those two does writing this affix's components become a data task — and the attack-roll third could then land on `Accuracy` directly. Until then the `Bool` presence behavior is the correct shipped state, and it is targetable, so a player who wants the effect can still rank it.
+
+**One thing this re-harvest could not establish.** Whether that items-section sentence is new since 2026-08-05 or was present and missed. The wiki's page history is login-gated and returned a permission error, so the provenance of the sentence is unknown. Recorded rather than guessed — if it was missed, the harvest method has a gap worth finding; if it is new, nothing was done wrong.
 
 ---
 
