@@ -29,6 +29,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # #467 — the stamp check below compares against the PR's base commit, so
+          # it needs real history. The default depth-1 checkout cannot see the base
+          # and the check would exit 2 rather than quietly passing.
+          fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -68,3 +73,15 @@ jobs:
       # this step blocks the build.
       - name: Run the Utility perf gate (outside the glob — invoked by path)
         run: node tests/perf_utility.js
+
+      # #467 — the build stamp must move FORWARD, not merely agree with itself.
+      # Outside tests/ and invoked BY PATH, same split as the perf gate above and
+      # for the same reason: it needs git history, and a unit test that reads git
+      # breaks in a shallow clone. tests/test_build_stamp.py keeps the tree-only
+      # half (the three values agree, and ?v= IS the stamp).
+      #
+      # Catches a reverted stamp AND — the variant that actually fired on
+      # 2026-08-24 — a stamp that did not move at all, which merges with NO
+      # conflict when two branches independently claim the same next value.
+      - name: Build stamp must advance (outside the suite — needs history)
+        run: python3 scripts/check_stamp_advanced.py "${{ github.event.pull_request.base.sha }}"
