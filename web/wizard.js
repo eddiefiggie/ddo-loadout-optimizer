@@ -1587,6 +1587,65 @@ const BUNDLE_GROUPS = {
   spellpower: ["Healing", "Kinetic", "Fire", "Cold", "Electric", "Acid", "Sonic", "Negative", "Light", "Repair", "Poison"],
 };
 
+/** Module-scope output encoding, for the exported renderers below.
+ *
+ *  The wizard's `esc` is declared inside the browser block, so a pure function
+ *  exported for Node tests cannot reach it — it would throw on the first render
+ *  outside a browser. Same 5-character escape as the browser one's fallback
+ *  (including the apostrophe an older local helper missed), and it prefers the
+ *  global from results.js when that has loaded, so there is one encoding in the
+ *  page and not two that could diverge. */
+const _escAttr = (s) => ((typeof window !== "undefined" && typeof window.esc === "function")
+  ? window.esc(s)
+  : String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])));
+
+/** plan 2026-08-25-001 U1 — the containers, in render order, with the heading each
+ *  one shows. Derived from BUNDLE_GROUPS rather than duplicating its keys: a group
+ *  added there and not listed here renders nowhere, which a test catches, and the
+ *  reverse cannot happen because the renderer reads the group's own contents.
+ *
+ *  `packages` gains a heading it never had. It shipped as an untagged row above
+ *  four tagged ones, so it read as loose chips rather than as a group, which is
+ *  half of why the area looked unstructured. */
+const BUNDLE_CONTAINERS = [
+  { group: "packages", label: "Starting points" },
+  { group: "attributes", label: "Ability scores" },
+  { group: "tactics", label: "Tactics" },
+  { group: "spellpower", label: "Spell power" },
+  { group: "schools", label: "Spell schools (DC)" },
+];
+
+/** One bundle container: a heading, a count, and the group's chips.
+ *
+ *  NO DISCLOSURE CONTROL, and this is deliberate rather than an omission. The
+ *  progressive disclosure that once hid these rows was removed after it took
+ *  three rows players had been using for the life of the feature, and the flat
+ *  layout is the chosen behavior — see the note above PRESET_BUNDLES. Containment
+ *  here is visual only; nothing collapses, and no rule may hide a container body.
+ *
+ *  The COUNT is load-bearing, not decoration. It is what lets a container holding
+ *  nothing read as information rather than as an empty broken box — which is the
+ *  state the player's own saved bundles will start in.
+ *
+ *  Sizing is CSS: the grid fits as many columns as the width allows and each
+ *  container grows to its contents, so volume and viewport drive the layout with
+ *  no JavaScript measuring anything. */
+function bundleContainerHTML(group, label, keys) {
+  const e = _escAttr;
+  const list = Array.isArray(keys) ? keys : [];
+  return `<section class="wz-bundle-box" data-group="${e(group)}">
+    <header class="wz-bundle-head">
+      <span class="wz-bundle-tag">${e(label)}</span>
+      <span class="wz-bundle-count" data-count="${e(group)}">${list.length}</span>
+    </header>
+    <div class="wz-bundle-body">
+      <div class="wz-bundle-row">
+        ${list.map((k) => `<button type="button" class="wz-bundle" data-bundle="${e(k)}">${e(k)}</button>`).join("")}
+      </div>
+    </div>
+  </section>`;
+}
+
 /** Resolve a bundle key to a canonicalized, migrated, dataset-filtered, deduped
  *  affix list. Unknown key -> []. Pure.
  *
@@ -1680,7 +1739,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -2342,24 +2401,8 @@ if (typeof window !== "undefined" && window.App) {
           and so on. This ordering <em>is</em> the objective the solver optimizes.</p>
         <div class="wz-bundles">
           <span class="wz-label">Start from a bundle <span class="wz-sub">· optional · adds to your list — reorder or edit after</span></span>
-          <div class="wz-bundle-row">
-            ${BUNDLE_GROUPS.packages.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
-          </div>
-          <div class="wz-bundle-row wz-bundle-sub" data-group="attributes">
-            <span class="wz-bundle-tag">Ability scores</span>
-            ${BUNDLE_GROUPS.attributes.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
-          </div>
-          <div class="wz-bundle-row wz-bundle-sub" data-group="tactics">
-            <span class="wz-bundle-tag">Tactics</span>
-            ${BUNDLE_GROUPS.tactics.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
-          </div>
-          <div class="wz-bundle-row wz-bundle-sub" data-group="spellpower">
-            <span class="wz-bundle-tag">Spell power</span>
-            ${BUNDLE_GROUPS.spellpower.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
-          </div>
-          <div class="wz-bundle-row wz-bundle-sub" data-group="schools">
-            <span class="wz-bundle-tag">Spell schools (DC)</span>
-            ${BUNDLE_GROUPS.schools.map((k) => `<button type="button" class="wz-bundle" data-bundle="${esc(k)}">${esc(k)}</button>`).join("")}
+          <div class="wz-bundle-grid">
+            ${BUNDLE_CONTAINERS.map((g) => bundleContainerHTML(g.group, g.label, BUNDLE_GROUPS[g.group] || [])).join("")}
           </div>
         </div>
         <div class="wz-addrow">

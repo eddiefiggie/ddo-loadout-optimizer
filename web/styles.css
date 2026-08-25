@@ -1019,6 +1019,27 @@ input.wz-ml { width: 120px; }
    Attributes row, which is deliberately always visible and needs no reveal. */
 .wz-bundle-row[hidden] { display: none; }
 .wz-bundle-sub { padding-left: var(--sp-2); border-left: 2px solid var(--border); margin-left: 2px; }
+/* plan 2026-08-25-001 U1 — bundle containers.
+   The grid is what makes a container size to volume AND viewport: it fits as many
+   columns as the width allows and each box grows to its contents, so nothing
+   measures anything in JavaScript. At narrow widths the min-width wins and the
+   grid collapses to one column.
+   Nothing here hides a container body. The disclosure that once did was removed
+   after it took three rows players were using; see the note above PRESET_BUNDLES
+   in web/wizard.js. */
+.wz-bundle-grid { display: grid; gap: var(--sp-2); margin-top: var(--sp-2);
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+.wz-bundle-box { border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--panel); overflow: hidden; }
+/* The packages group leads and is widest, so it spans the full grid rather than
+   sharing a row — it is the primer, not one option among five. */
+.wz-bundle-box[data-group="packages"] { grid-column: 1 / -1; }
+.wz-bundle-head { display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-2); padding: 6px var(--sp-3); background: var(--panel-2);
+  border-bottom: 1px solid var(--border); }
+.wz-bundle-count { color: var(--faint); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.wz-bundle-body { padding: var(--sp-2) var(--sp-3) var(--sp-3); }
+.wz-bundle-body .wz-bundle-row { margin-top: 0; }
 .wz-bundle-tag { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; margin-right: var(--sp-1); }
 .wz-bundle {
   min-height: auto; padding: 0.3em 0.8em; font-size: var(--fs-sm); font-weight: 600;
