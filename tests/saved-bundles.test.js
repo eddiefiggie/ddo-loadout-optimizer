@@ -182,5 +182,56 @@ test("U2: name collision is case-insensitive and never collides with itself", ()
   assert.strictEqual(B.nameCollides("   ", list), false, "an empty name is not a collision");
 });
 
+console.log("\n-- merge on restore (doc-review round 1) --");
+
+test("MERGE: a restore does not destroy bundles made since the export", () => {
+  // The shipped bug. writeAll replaced the store, so importing a backup deleted
+  // every bundle the player had made since that export — authored work that
+  // exists nowhere else, on the one path they reach because something already
+  // went wrong.
+  const st = fakeStorage();
+  B.saveBundle(B.makeBundle({ id: "b1", name: "Local", affixes: ["Constitution"] }), st);
+  B.mergeIn([{ id: "b9", name: "FromFile", affixes: ["Dodge"] }], st);
+  assert.deepStrictEqual(B.listBundles(st).map((r) => r.name).sort(), ["FromFile", "Local"],
+    "both survive — the local one is not overwritten");
+});
+
+test("MERGE: a colliding id from another browser is re-issued, not overwritten", () => {
+  // nextId is per-store monotonic, so two browsers independently produce "b1".
+  const st = fakeStorage();
+  B.saveBundle(B.makeBundle({ id: "b1", name: "Local", affixes: ["Constitution"] }), st);
+  B.mergeIn([{ id: "b1", name: "Different", affixes: ["Dodge"] }], st);
+  const list = B.listBundles(st);
+  assert.strictEqual(list.length, 2, "nothing was lost to the id clash");
+  const local = list.find((r) => r.name === "Local");
+  const incoming = list.find((r) => r.name === "Different");
+  assert.strictEqual(local.id, "b1", "the local record keeps its id");
+  assert.notStrictEqual(incoming.id, "b1", "and the incoming one is re-issued");
+});
+
+test("MERGE: re-importing the same backup is idempotent", () => {
+  // Same id AND same name is the same bundle coming home; it must not duplicate
+  // on every import.
+  const st = fakeStorage();
+  const rec = { id: "b1", name: "Same", affixes: ["Constitution"] };
+  B.mergeIn([rec], st);
+  B.mergeIn([rec], st);
+  assert.strictEqual(B.listBundles(st).length, 1, "one record, not two");
+});
+
+test("MERGE: the incoming copy still passes the write boundary", () => {
+  const st = fakeStorage();
+  B.mergeIn([{ id: "b1", name: "X", affixes: ["Constitution"], craftingRung: "everything" }], st);
+  assert.ok(!("craftingRung" in B.listBundles(st)[0]),
+    "a restore cannot smuggle a character-level key past the allowlist");
+});
+
+test("MERGE: a failed write reports failure rather than a silent loss", () => {
+  const st = fakeStorage(null, "QuotaExceededError");
+  const r = B.mergeIn([{ id: "b1", name: "X", affixes: ["Constitution"] }], st);
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.full, true);
+});
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 if (failed) process.exit(1);

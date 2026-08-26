@@ -4422,23 +4422,39 @@ if (typeof window !== "undefined" && window.App) {
             // plan U8 — the rest of the authored work. Restored only when the
             // characters landed: a half-applied import is harder to reason about
             // than one that did not happen.
+            //
+            // MERGED, not replaced. Replacing deleted every bundle and every tick
+            // the player had made since their last export — authored work that
+            // exists nowhere else — on the one path they reach precisely because
+            // something already went wrong. The character half above merges by
+            // name, so replacing here also gave one import two opposite meanings
+            // while the status line claimed only one.
             let extra = "";
+            const failed = [];
             if (w.ok) {
               const SB = _savedBundles();
               if (SB && (res.bundles || []).length) {
-                SB.writeAll(res.bundles);
-                extra += `, ${res.bundles.length} bundle${res.bundles.length === 1 ? "" : "s"}`;
+                const r = SB.mergeIn(res.bundles);
+                if (r.ok) extra += `, ${res.bundles.length} bundle${res.bundles.length === 1 ? "" : "s"}`;
+                else failed.push("saved bundles");
               }
               // eslint-disable-next-line no-undef
               if (typeof FarmingList !== "undefined" && Object.keys(res.farming || {}).length) {
-                FarmingList.writeProgress(res.farming);
-                extra += ", farming progress";
+                // eslint-disable-next-line no-undef
+                const r = FarmingList.mergeProgress(res.farming);
+                if (r.ok) extra += ", farming progress";
+                else failed.push("farming progress");
               }
             }
-            s.className = "wz-filestat" + (w.ok ? "" : " warn");
-            s.textContent = w.ok
-              ? `Imported ${n} character${n === 1 ? "" : "s"}${extra} (merged by name).`
-              : (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.");
+            s.className = "wz-filestat" + (w.ok && !failed.length ? "" : " warn");
+            // A failed dependent write must not read as a successful restore. This
+            // is the one path where the player's original data is already gone, so
+            // a false success is the failure they cannot recover from.
+            s.textContent = !w.ok
+              ? (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.")
+              : failed.length
+                ? `Imported ${n} character${n === 1 ? "" : "s"}${extra}, but ${failed.join(" and ")} could not be saved — your storage may be full.`
+                : `Imported ${n} character${n === 1 ? "" : "s"}${extra} (merged).`;
             renderRail();
             renderStored();
           };

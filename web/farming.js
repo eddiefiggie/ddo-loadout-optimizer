@@ -169,6 +169,29 @@
     catch (e) { return { ok: false }; }
   }
 
+  /** Merge an imported progress map into the store WITHOUT dropping local keys.
+   *
+   *  `writeProgress` replaces, which is right for a first restore and wrong for a
+   *  restore onto a browser that has been used since the export — it deletes every
+   *  tick recorded in between. Keys are character names, so an incoming key wins
+   *  for that build (it is the same build) while every other local key survives,
+   *  matching the by-name merge the character store already performs. */
+  function mergeProgress(incoming, storage) {
+    const st = resolveStorage(storage);
+    if (!st) return { ok: false };
+    const merged = Object.assign({}, readProgress(storage));
+    const src = (incoming && typeof incoming === "object") ? incoming : {};
+    for (const key of Object.keys(src)) {
+      const one = src[key];
+      if (!one || typeof one !== "object") continue;
+      const acquired = {};
+      for (const item of Object.keys(one)) if (one[item]) acquired[item] = true;
+      merged[key] = acquired;
+    }
+    try { st.setItem(PROGRESS_KEY, JSON.stringify(merged)); return { ok: true }; }
+    catch (e) { return { ok: false }; }
+  }
+
   /** plan 2026-08-25-001 U6 — drop one character's progress entirely.
    *
    *  Lives HERE rather than in the delete coordinator so the storage key and its
@@ -277,7 +300,7 @@
   }
 
   const api = {
-    PROGRESS_KEY, farmingPlan, equippedEntries, prescriptions, clearProgress, writeProgress,
+    PROGRESS_KEY, farmingPlan, equippedEntries, prescriptions, clearProgress, writeProgress, mergeProgress,
     loadProgress, toggleAcquired, readProgress, farmingMarkdown,
   };
 

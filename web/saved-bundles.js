@@ -175,6 +175,42 @@
 
   function clearBundles(storage) { return writeAll([], storage); }
 
+  /** Merge an imported set into the store WITHOUT destroying what is already
+   *  here. Returns the store's `{ ok, full }`.
+   *
+   *  A restore that replaced the store would delete every bundle the player made
+   *  since their last export — authored work that exists nowhere else, on the one
+   *  path they reach precisely because something already went wrong. The character
+   *  half of the same import merges by name, so replacing here also gave one
+   *  import two opposite meanings while the status line claimed only one.
+   *
+   *  Ids collide by construction: `nextId` is per-store monotonic, so two browsers
+   *  independently produce `b1`. An incoming record whose id is already taken by a
+   *  DIFFERENT bundle (different name) is re-issued a fresh id rather than
+   *  overwriting; a matching name is the same bundle coming home, and the incoming
+   *  copy wins so a re-import is idempotent rather than duplicating. */
+  function mergeIn(incoming, storage) {
+    const existing = listBundles(storage);
+    const byId = new Map(existing.map((r) => [r.id, r]));
+    const out = existing.slice();
+    let ids = existing;
+    for (const raw of Array.isArray(incoming) ? incoming : []) {
+      if (!raw || typeof raw !== "object" || !raw.id) continue;
+      const rec = makeBundle(raw);
+      const clash = byId.get(rec.id);
+      const sameBundle = clash
+        && String(clash.name || "").trim().toLowerCase() === String(rec.name || "").trim().toLowerCase();
+      if (clash && !sameBundle) {
+        rec.id = nextId(ids);
+        ids = ids.concat([rec]);
+      }
+      const at = out.findIndex((r) => r.id === rec.id);
+      if (at >= 0) out[at] = rec; else out.unshift(rec);
+      byId.set(rec.id, rec);
+    }
+    return writeAll(out, storage);
+  }
+
   /** Case-insensitive name match against a DIFFERENT bundle. Mirrors the
    *  build-name collision rule: renaming a bundle to the name it already has is
    *  not a collision, or the rename control could never be pressed twice. */
@@ -187,7 +223,7 @@
 
   const api = {
     STORE_KEY, BUNDLE_KEYS, nextId, makeBundle, cleanBounds,
-    listBundles, writeAll, saveBundle, renameBundle, deleteBundle, clearBundles,
+    listBundles, writeAll, saveBundle, renameBundle, deleteBundle, clearBundles, mergeIn,
     nameCollides,
   };
 
