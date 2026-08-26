@@ -444,8 +444,13 @@
     delete next[oldKey];
     const res = writeAll(next, storage);
     if (!res.ok) {
-      if (F && moved && !moved.missing) F.renameProgress(newKey, oldKey, storage);
-      return { ok: false, reason: res.error || "write", stage: "build", from: oldKey, to: newKey };
+      // Whether the rollback landed is the difference between "nothing was
+      // changed" and a lie. Reported rather than assumed: a rollback that fails
+      // leaves progress under a name with no build, and the player has to be
+      // told where it went.
+      const back = (F && moved && !moved.missing) ? F.renameProgress(newKey, oldKey, storage) : { ok: true };
+      return { ok: false, reason: res.error || "write", stage: "build",
+        rolledBack: !!(back && back.ok !== false), from: oldKey, to: newKey };
     }
     return { ok: true, from: oldKey, to: newKey };
   }

@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -916,7 +916,11 @@ test("U5: the rename and delete handlers accept only saved-bundle ids", () => {
 test("U5: a cancelled rename prompt is not an empty name", () => {
   // window.prompt returns null on cancel and "" when the field was cleared. Those
   // are different intents and collapsing them would rename a bundle to nothing.
-  const region = srcBetween(WIZARD_SRC, "const next = window.prompt", "renderSavedBundles", "rename handler");
+  // #518 — anchored on the BUNDLE prompt specifically. `const next = window.prompt`
+  // stopped being unique when the build rename added a second prompt earlier in
+  // the file, and indexOf takes the first: the window then closed on a
+  // renderSavedBundles call before it ever reached this handler.
+  const region = srcBetween(WIZARD_SRC, 'window.prompt("Rename this bundle:"', "renderSavedBundles", "bundle rename handler");
   assert.ok(/next == null/.test(region), "cancel is checked before the value is trimmed");
   assert.ok(/A bundle needs a name/.test(region), "and an emptied field is refused with a reason");
 });
@@ -4620,4 +4624,90 @@ test("#453 U4 (R9): the chip overflow expands in place, by delegation", () => {
   const near = WIZARD_SRC.slice(at, at + 400);
   assert.ok(/classList\.toggle\("is-expanded"\)/.test(near), "it toggles the row open");
   assert.ok(/aria-expanded/.test(near), "…and says so to assistive tech");
+});
+
+// ---- #518 U3: the rail's rename control -----------------------------------
+
+test("#518: the rail offers a rename beside every saved build, named for screen readers", () => {
+  const region = fnBody(WIZARD_SRC, "function railHTML(", 4);
+  assert.ok(/data-railrename=/.test(region), "each row carries a rename control");
+  assert.ok(/aria-label="rename /i.test(region),
+    "…identified by which build it renames, not a bare pencil");
+  assert.ok(/data-railload=/.test(region) && /data-raildel=/.test(region),
+    "and it sits with the load and delete controls that were already there");
+});
+
+test("#518: a rename routes through the coordinator, never through the primitives", () => {
+  // deleteCharacter + saveCharacter would drop the farming progress on the floor
+  // — that is the cascade U2 exists to own.
+  const region = fnBody(WIZARD_SRC, "function wireRail(", 4);
+  assert.ok(/CharacterStore\.renameBuild\(/.test(region), "the coordinator is what the row calls");
+  assert.ok(!/CharacterStore\.deleteCharacter\(/.test(region),
+    "and the rail never reaches for the delete primitive to fake a rename");
+});
+
+test("#518: renaming the build you are EDITING moves the live state with it", () => {
+  // The load-boundary discipline, at a boundary that did not exist before: any
+  // per-character field a stale value could leak through has to move.
+  const region = fnBody(WIZARD_SRC, "function wireRail(", 4);
+  assert.ok(/state\.loadedName = /.test(region), "the rail's notion of which build is open");
+  assert.ok(/state\.characterName = /.test(region), "the name the next autosave writes");
+  assert.ok(/state\.nameReconciled = /.test(region),
+    "and the warn-once flag, which would otherwise still be holding the old name");
+});
+
+test("#518: the live-state move is guarded on it BEING the loaded build", () => {
+  // Renaming some other saved build must not re-point the player at it.
+  const region = fnBody(WIZARD_SRC, "function wireRail(", 4);
+  assert.ok(/state\.loadedName === |=== state\.loadedName/.test(region),
+    "the assignments sit behind a comparison against the loaded name");
+});
+
+test("#518: a cancelled rename prompt writes nothing", () => {
+  const region = fnBody(WIZARD_SRC, "function wireRail(", 4);
+  const at = region.indexOf("railrename");
+  assert.ok(at > 0, "the rename branch exists");
+  const branch = region.slice(at);
+  assert.ok(/=== null\)\s*return|== null\)\s*return/.test(branch),
+    "a dismissed prompt returns before any store call");
+  assert.ok(branch.indexOf("return") < branch.indexOf("CharacterStore.renameBuild"),
+    "…and returns BEFORE the coordinator is reached");
+});
+
+test("#518: a rename refreshes the share picker so it cannot list a stale name", () => {
+  const region = fnBody(WIZARD_SRC, "function wireRail(", 4);
+  assert.ok(/renderSharePicker\(\)/.test(region), "the dropdown is re-rendered after the move");
+});
+
+test("#518: the collision refusal names the build already holding the name", () => {
+  const msg = renameRefusalText({ reason: "collision", from: "Aurelia", to: "Bram" });
+  assert.ok(msg.includes("Bram"), "the player is told WHICH name is taken");
+  assert.ok(/nothing was changed/i.test(msg), "and that their build is untouched");
+});
+
+test("#518: an empty name and a vanished build each get their own refusal", () => {
+  const empty = renameRefusalText({ reason: "empty", from: "Aurelia", to: "" });
+  assert.ok(/needs a name/i.test(empty));
+  assert.ok(/nothing was changed/i.test(empty));
+  const gone = renameRefusalText({ reason: "missing", from: "Aurelia", to: "X" });
+  assert.ok(gone.includes("Aurelia") && /no longer saved/i.test(gone));
+});
+
+test("#518: a failed rename that rolled back says nothing was changed", () => {
+  const msg = renameRefusalText({ reason: "quota", stage: "build", rolledBack: true,
+    from: "Aurelia", to: "Aurelia Mk2" });
+  assert.ok(/nothing was changed/i.test(msg));
+  assert.ok(!msg.includes("Aurelia Mk2") || !/farming/i.test(msg),
+    "no claim about stranded progress when there is none");
+});
+
+test("#518: a failed rename whose ROLLBACK also failed says where the ticks went", () => {
+  // The one case where "nothing was changed" would be a lie. It must not be
+  // said, and the player needs to know the entry is reachable under Your data.
+  const msg = renameRefusalText({ reason: "quota", stage: "build", rolledBack: false,
+    from: "Aurelia", to: "Aurelia Mk2" });
+  assert.ok(!/nothing was changed/i.test(msg), "the honest case does not claim a clean failure");
+  assert.ok(msg.includes("Aurelia Mk2"), "it names where the progress ended up");
+  assert.ok(/farming/i.test(msg) && /your data/i.test(msg),
+    "…and where the player can clear it");
 });

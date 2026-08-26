@@ -286,6 +286,35 @@ function deleteBuildConfirmText(name, impact, editingThis) {
   return `${head} Its ${n} farming ${n === 1 ? "tick" : "ticks"} ${n === 1 ? "goes" : "go"} with it.`;
 }
 
+/** plan 2026-08-25-002 U3 (#518) — why a rename did not happen.
+ *
+ *  Pure and beside `overwriteConfirmText` for the same stated reason: the
+ *  sentence IS the product, so it is testable without a browser.
+ *
+ *  Every branch but one ends in "Nothing was changed", because every branch but
+ *  one is a clean refusal. The exception is a failed build write whose rollback
+ *  ALSO failed: the progress has moved and the build has not, so claiming a
+ *  clean failure would be a lie about the player's data. That case names where
+ *  the ticks ended up and where they can be cleared — the entry is already
+ *  marked in "Your data" as belonging to no saved build. */
+function renameRefusalText(res) {
+  const r = res || {};
+  const from = String(r.from || "");
+  const to = String(r.to || "");
+  if (r.reason === "empty") return "A build needs a name. Nothing was changed.";
+  if (r.reason === "collision") {
+    return `Another saved build is already called \u201C${to}\u201D. Nothing was changed.`;
+  }
+  if (r.reason === "missing") {
+    return `\u201C${from}\u201D is no longer saved. Nothing was changed.`;
+  }
+  if (r.stage === "build" && r.rolledBack === false) {
+    return `\u201C${from}\u201D could not be renamed, and its farming progress is now filed `
+      + `under \u201C${to}\u201D, which has no build. You can clear it under Your data.`;
+  }
+  return `\u201C${from}\u201D could not be renamed. Nothing was changed.`;
+}
+
 function overwriteConfirmText(name, prevHasLoadout, savingSolved) {
   const nm = String(name || "");
   if (!prevHasLoadout) return `Update saved build \u201C${nm}\u201D?`;
@@ -1952,7 +1981,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -4099,6 +4128,7 @@ if (typeof window !== "undefined" && window.App) {
         : `<ul class="wz-charlist">${m.saved.map((n) => `<li${n === m.loadedName ? ` class="on"` : ""}>
             <span class="wz-charnm">${esc(n)}</span>
             <span class="wz-ctl"><button type="button" data-railload="${esc(n)}">Load →</button>
+            <button type="button" data-railrename="${esc(n)}" aria-label="rename ${esc(n)}" title="Rename">\u270e</button>
             <button type="button" data-raildel="${esc(n)}" aria-label="delete ${esc(n)}">✕</button></span></li>`).join("")}</ul>`;
       return `<aside class="wz-rail" id="wz-rail" aria-label="Your build">
         <p class="wz-rail-head">Your build</p>
@@ -4224,6 +4254,43 @@ if (typeof window !== "undefined" && window.App) {
       if (rail) rail.onclick = (e) => {
         const b = e.target.closest("button"); if (!b) return;
         if (b.dataset.railload != null) { requestLoad(b.dataset.railload); return; }
+        if (b.dataset.railrename != null) {
+          // plan 2026-08-25-002 U3 (#518) — the rename the app never had.
+          //
+          // A prompt is fine HERE and would not be on the save path: the player
+          // asked for this, which is the whole objection KTD6 records against a
+          // dialog during autosave. Same shape the bundle rename already uses.
+          const from = b.dataset.railrename;
+          const next = window.prompt("Rename this build:", from);
+          if (next === null) return;              // dismissed — nothing to do
+          const to = String(next).trim();
+          // eslint-disable-next-line no-undef
+          const res = CharacterStore.renameBuild(from, to);
+          const stat = document.getElementById("wz-savestat");
+          if (!res.ok) {
+            if (stat) stat.textContent = renameRefusalText(res);
+            return;
+          }
+          // The load-boundary discipline, at a boundary that did not exist until
+          // now: every per-character field a stale value could leak through has
+          // to move with the build. Solve attribution is NOT among them —
+          // `runBelongsTo` derives it from `loadedName` at save time rather than
+          // from a name stored on the run, so moving `loadedName` carries it.
+          if (from === state.loadedName) {
+            state.loadedName = res.to;
+            state.characterName = res.to;
+            // The warn-once overwrite flag would otherwise still be holding the
+            // OLD name, so the next genuine collision under the new one would
+            // pass unwarned.
+            state.nameReconciled = (state.nameReconciled === from) ? res.to : state.nameReconciled;
+          }
+          renderRail();
+          renderSharePicker();
+          if (stat) stat.textContent = res.unchanged
+            ? `\u201C${res.to}\u201D keeps its name.`
+            : `Renamed to \u201C${res.to}\u201D.`;
+          return;
+        }
         if (b.dataset.raildel != null) {
           // #429 review #3 — deleting the build you are EDITING removes the only
           // stored copy while the unsaved edits stay in memory with nothing left
