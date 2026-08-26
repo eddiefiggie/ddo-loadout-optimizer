@@ -23,12 +23,24 @@ def verify_variant(v: dict) -> dict:
     # like a Dinosaur Bone blank. Admit it so its slots reach the augment MILP.
     aug_slots = (v.get("augment_slots_norm") or {}).get("colors") or []
     set_member = bool(v.get("parsed_set_bonuses"))
+    # #338 — the Dinosaur Bone blanks now enter the pipeline BEFORE this gate
+    # rather than being appended pre-verified after it, so the clause the
+    # augment-slot comment above already named by analogy has to exist for real.
+    # A blank ships an empty affix list by construction: its whole value is the
+    # four typed Dino insert slots the solver fills. Seven of the eleven would
+    # scrape through on `set_member` alone; the four that carry no intrinsic set
+    # (Armor, Helmet, Cloak — the Set-Bonus hosts — and the Weapon blank) would
+    # quarantine and leave the solve entirely.
+    dino_slots = v.get("dino_slots_norm") or []
     if eligible_count > 0:
         v["verification"] = "verified"
         v["verification_reasons"] = []
     elif aug_slots:
         v["verification"] = "verified"
         v["verification_reasons"] = ["augment-slot host (no base affixes) — value is its open slots"]
+    elif dino_slots:
+        v["verification"] = "verified"
+        v["verification_reasons"] = ["Dino crafting blank (no base affixes) — value is its open insert slots"]
     elif set_member:
         v["verification"] = "verified"
         v["verification_reasons"] = ["set-bonus piece (no base affixes) — value is its set-threshold contribution"]

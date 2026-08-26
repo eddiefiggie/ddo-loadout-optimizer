@@ -135,8 +135,19 @@ _DREAD = "The Legendary Dread Isle's Curse"
 
 
 def test_blanks_carry_intrinsic_dread_isle_membership():
-    # #334 — an ELIGIBLE blank is stamped with the FULL native field chain, not a
-    # bare `sets` list (which the solver never reads).
+    # #334 — an ELIGIBLE blank is stamped with the two fields the native attach in
+    # build_dataset stamps: the membership list, and a deep copy of the catalog def
+    # (a bare `sets` list is solver-inert).
+    #
+    # #338 — and nothing beyond them. `parsed_set_bonuses` plus the umbrella and
+    # spell-focus tier expansions used to be replicated here, because the blanks
+    # joined `variants` only after the native tier passes had already run. They now
+    # join BEFORE those passes, so replicating any of it would be a second owner
+    # free to drift from the first — which is how three other passes (parrying,
+    # heightened-awareness, speed) came to be skipped on blanks entirely. The tier
+    # itself is asserted against a real native carrier in
+    # test_built_blanks_are_dread_isle_pieces_shaped_like_natives, which is the only
+    # comparison that can catch drift.
     blanks, _, _, _ = dino.build_dino(_seed())
     assert blanks, "seed produces blanks"
     carriers = [b for b in blanks if dino.carries_intrinsic_set(b)]
@@ -145,10 +156,8 @@ def test_blanks_carry_intrinsic_dread_isle_membership():
         assert b["sets"] == [_DREAD]
         assert [s["set"] for s in b["set_bonus"]] == [_DREAD]
         assert b["set_bonus"][0].get("piece_bonuses"), "catalog def carries piece bonuses"
-        tiers = b["parsed_set_bonuses"]
-        assert tiers and all(t["set"] == _DREAD for t in tiers)
-        assert any(t["pieces_required"] and t["affixes"] for t in tiers), \
-            "at least one solvable threshold tier"
+        assert "parsed_set_bonuses" not in b, \
+            f"{b['slot']}: tier parsing belongs to the pipeline, not build_dino (#338)"
 
 
 def _mixed_seed():
@@ -277,6 +286,50 @@ def test_built_blanks_are_dread_isle_pieces_shaped_like_natives():
                and _DREAD in (v.get("sets") or [])]
     assert len(natives) >= 90, "the native Dread Isle carriers are still present"
     assert all("set_membership_slot" not in v for v in natives)
+
+
+def test_built_blanks_went_through_the_pipeline_verify_gate():
+    # #338 — the blanks used to be appended AFTER `verify_mod.apply`, carrying a
+    # `verification` stamped at synthesis and an empty reason list. They now enter
+    # `variants` ahead of every native tier pass, so the real gate is what decides
+    # them and the reason is the gate's own.
+    #
+    # Non-vacuous where it matters: the four blanks carrying no intrinsic set have
+    # no affixes, no augment colors and no `parsed_set_bonuses`, so they reach the
+    # verify clause #338 added and nothing else. Before this change they could not
+    # have survived the gate at all — which is exactly why they bypassed it.
+    dataset = _built()
+    blanks = [v for v in dataset["items"] if v.get("source") == "dino_crafting_blank"]
+    assert len(blanks) == 11, f"expected the 11 blanks, got {len(blanks)}"
+    for b in blanks:
+        assert b["verification"] == "verified", \
+            f"blank {b['slot']} left the solve at the verify gate"
+        assert b["verification_reasons"], \
+            f"blank {b['slot']} carries no reason — it did not pass through the gate"
+    non_carriers = [b for b in blanks if not dino.carries_intrinsic_set(b)]
+    assert {b["slot"] for b in non_carriers} == {"Armor", "Helmet", "Cloak", "Main Hand"}
+    for b in non_carriers:
+        assert not b.get("affixes") and not b.get("scaling")
+        assert not (b.get("augment_slots_norm") or {}).get("colors")
+        assert not b.get("parsed_set_bonuses")
+        assert any("insert slots" in r for r in b["verification_reasons"]), \
+            f"blank {b['slot']} must be admitted on its insert slots, not by accident"
+
+
+def test_built_coverage_counts_every_emitted_variant():
+    # #338 — the coverage disclosure is computed inside `verify_mod.apply`, so the
+    # late append left the eleven blanks out of it: `variant_count` read 9099
+    # against 9110 emitted records, and the two weapon-side slots the blanks alone
+    # occupy had no bucket at all. A coverage model that does not count what ships
+    # is a disclosure nobody can check the dataset against.
+    dataset = _built()
+    cov = dataset["metadata"]["coverage"]
+    assert cov["variant_count"] == len(dataset["items"]), \
+        "the coverage model must count every emitted record"
+    assert cov["totals"]["verified"] + cov["totals"]["quarantined"] == len(dataset["items"])
+    for b in (v for v in dataset["items"] if v.get("source") == "dino_crafting_blank"):
+        assert b["slot"] in cov["by_slot"], \
+            f"slot {b['slot']!r} ships a record but has no coverage bucket"
 
 
 def test_built_set_bonus_hosts_offer_all_six_dino_sets():
