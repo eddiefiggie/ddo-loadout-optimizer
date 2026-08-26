@@ -2254,7 +2254,38 @@ async function probeConcession(model, program, highs, stat, targetList, perTarge
 
 async function solveLexicographic(model, highs) {
   const program = buildProgram(model);
-  if (!program.xVars.length) return { status: "infeasible", reason: "no eligible items for these constraints" };
+  // #532 — a stage that did not return Optimal is TWO different facts, and the
+  // difference is the whole advice the player gets.
+  //
+  //   Infeasible          no loadout satisfies these constraints. Loosening the
+  //                       ML cap, the filters, or the targets is the fix.
+  //   anything else       the SOLVER did not solve it — it hit a limit, or the
+  //                       program was numerically beyond it (HiGHS reports this
+  //                       as `Unknown`). Loosening constraints does nothing,
+  //                       because the constraints were never the obstacle.
+  //
+  // Everything non-Optimal used to collapse into `status: "infeasible"`, so the
+  // second case reached the player as "No set satisfies these constraints —
+  // loosen the ML cap, armor/class filters, or targets." That sends them to
+  // rework a build over a solver limit, and no amount of loosening will help.
+  // Found via #532, where a k = 71 utility objective returns `Unknown` and was
+  // reported as infeasible.
+  //
+  // `status` keeps its existing values so every caller that branches on
+  // `status === "optimal"` is untouched; `failure` is additive and is what the
+  // results view reads to choose its sentence.
+  const _stageFailure = (stat, highsStatus) => ({
+    status: "infeasible",
+    failure: String(highsStatus) === "Infeasible" ? "infeasible" : "solver",
+    highsStatus: String(highsStatus),
+    reason: String(highsStatus) === "Infeasible"
+      ? `stage ${stat}: no solution satisfies the constraints`
+      : `stage ${stat}: the solver returned ${highsStatus}`,
+  });
+
+  if (!program.xVars.length) {
+    return { status: "infeasible", failure: "infeasible", reason: "no eligible items for these constraints" };
+  }
 
   const locks = [];
   const perTarget = {};
@@ -2308,6 +2339,43 @@ async function solveLexicographic(model, highs) {
   // sentinel-ranking parity fixtures at sizes 4/8/12/16/20 by
   // tests/encoding_equivalence.js.
   const _uOrderVars = program.utilityOrderVars || [];
+  // #532 — the weighting above is only lexicographic while the arithmetic that
+  // carries it is exact, and IEEE doubles stop being exact well before the
+  // solver complains.
+  //
+  // The property the weights encode is: effect i outranks every lower-ordered
+  // effect COMBINED, i.e. 2^(k-1) > sum(2^0 .. 2^(k-2)). That sum is 2^(k-1) - 1,
+  // so it holds in exact integers for every k. In doubles it holds up to k = 54
+  // and fails from k = 55, where the sum rounds up to the top weight itself and
+  // the strict inequality becomes a tie:
+  //
+  //   k = 54   top 9.007e15   sum 9.007e15   top > sum  -> true
+  //   k = 55   top 1.801e16   sum 1.801e16   top > sum  -> FALSE
+  //
+  // Past that the objective no longer expresses the order the player arranged:
+  // the container's #1 effect can be traded for a pile of lower-ranked ones at
+  // an equal objective value, which is exactly the failure #348 introduced the
+  // per-effect locks to prevent — arriving by a different route, and silently,
+  // because HiGHS still returns Optimal.
+  //
+  // The loud failure is LATER and therefore not the dangerous one: at k = 71
+  // (top weight 2^70) HiGHS gives up and returns `Unknown`. That window,
+  // k = 55..70, is a wrong answer presented as a right one, so the refusal is
+  // placed at the correctness boundary rather than the solvability one.
+  //
+  // Not reachable by a player today — the stamped counting set is 16 names, so
+  // k = 16 — but it is precisely the wall KTD10's widening lever walks into, and
+  // an unguarded widening would cross the silent window first. Exclude-until-
+  // verified: refuse to answer rather than answer wrongly.
+  const LEX_EXACT_MAX = 54;
+  if (_uOrderVars.length > LEX_EXACT_MAX) {
+    return {
+      status: "infeasible",
+      failure: "unrepresentable",
+      reason: `the Utility container holds ${_uOrderVars.length} effects; ordering is exact only`
+        + ` up to ${LEX_EXACT_MAX} (see #532)`,
+    };
+  }
   const utilityObjTerms = _uOrderVars.map((o, i) =>
     ({ coef: Math.pow(2, _uOrderVars.length - 1 - i), name: o.u }));
   // The weighted objective spans 2^0..2^(k-1) — at k=20 that is a range of ~5.2e5,
@@ -2333,7 +2401,7 @@ async function solveLexicographic(model, highs) {
       const res = highs.solve(
         encodeStage(program, { objTerms: utilityObjTerms, sense: "max", locks, extra: utilityExtra }),
         UTILITY_STAGE_OPTS);
-      if (res.Status !== "Optimal") return { status: "infeasible", reason: `stage utility: ${res.Status}` };
+      if (res.Status !== "Optimal") return _stageFailure("utility", res.Status);
       const uprim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
       // The achieved count, read from the primal by the BACKING z vars (an
       // effect is present iff a contribution in its buckets fired) — at this
@@ -2375,7 +2443,7 @@ async function solveLexicographic(model, highs) {
       continue;
     }
     const res = highs.solve(encodeStage(program, { objectiveStat: stat, sense: "max", locks, extra: utilityExtra }));
-    if (res.Status !== "Optimal") return { status: "infeasible", reason: `stage ${stat}: ${res.Status}` };
+    if (res.Status !== "Optimal") return _stageFailure(stat, res.Status);
     // #326 — only this stage's achieved value is needed; effectiveOf reads it
     // without paying readSolution's placement-array + visibility construction.
     const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);

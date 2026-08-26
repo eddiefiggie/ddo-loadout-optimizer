@@ -4333,3 +4333,26 @@ test("#500: the tab is renamed but the store it reads is not", () => {
   assert.strictEqual(V.STORE_KEY, "ddo.versions.v1",
     "the storage key is untouched — a rename here would orphan every saved snapshot");
 });
+
+// ---- #532: a solver limit is not a build problem -----------------------------
+
+test("#532: the non-optimal panel tells the player which kind of failure this is", () => {
+  // The two cases need opposite advice. Collapsing them sent a player to loosen
+  // an ML cap over a solver limit, which no amount of loosening reaches.
+  const src = require("fs").readFileSync(
+    require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  assert.ok(/result\.failure === "solver" \|\| result\.failure === "unrepresentable"/.test(src),
+    "the panel branches on the solver's own failure kind");
+  assert.ok(/The solver could not complete this search/.test(src),
+    "the solver case says the search did not finish");
+  assert.ok(/loosening priorities or filters will not change it/.test(src),
+    "…and says plainly that the usual remedy does not apply here");
+  assert.ok(/No set satisfies these constraints/.test(src),
+    "the genuine-infeasible case keeps its original sentence");
+  // An older stored snapshot carries no `failure`, and must keep reading as the
+  // constraints case — that is what this panel always said before.
+  const constraintsIdx = src.indexOf("No set satisfies these constraints");
+  const solverIdx = src.indexOf("The solver could not complete this search");
+  assert.ok(solverIdx > 0 && constraintsIdx > solverIdx,
+    "the constraints sentence is the fall-through branch, not the guarded one");
+});
