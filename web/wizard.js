@@ -192,6 +192,25 @@ function runBelongsTo(run, name, loadedName) {
  *  An in-progress save over a solved record KEEPS that loadout (see
  *  saveCurrentCharacter); the old wording said only "Update saved build", which
  *  read as an update while the write replaced the record wholesale. Pure. */
+/** plan U6 — what deleting a build takes with it, said before it happens.
+ *
+ *  Names the farming count when there is one, because that is work the player did
+ *  by hand and nothing else holds a copy of it. Says nothing about version
+ *  snapshots: they are one global list with no owner, so deleting a build neither
+ *  removes them nor orphans them, and claiming either would be false.
+ *
+ *  Pure and beside `overwriteConfirmText` for the same reason — the sentence is
+ *  the product, so it is testable without a browser. */
+function deleteBuildConfirmText(name, impact, editingThis) {
+  const nm = String(name || "");
+  const n = (impact && Number(impact.farming)) || 0;
+  const head = editingThis
+    ? `Delete saved build \u201C${nm}\u201D? You have unsaved changes to it, and this removes the only saved copy.`
+    : `Delete saved build \u201C${nm}\u201D?`;
+  if (!n) return head;
+  return `${head} Its ${n} farming ${n === 1 ? "tick" : "ticks"} ${n === 1 ? "goes" : "go"} with it.`;
+}
+
 function overwriteConfirmText(name, prevHasLoadout, savingSolved) {
   const nm = String(name || "");
   if (!prevHasLoadout) return `Update saved build \u201C${nm}\u201D?`;
@@ -1857,7 +1876,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, deleteBuildConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -4136,12 +4155,21 @@ if (typeof window !== "undefined" && window.App) {
           // ordinary delete.
           const nm = b.dataset.raildel;
           const editingThis = state.inputsDirty && nm === state.loadedName;
-          const msg = editingThis
-            ? `Delete saved build \u201C${nm}\u201D? You have unsaved changes to it, and this removes the only saved copy.`
-            : `Delete saved build \u201C${nm}\u201D?`;
+          // plan U6 — read what goes WITH the build before asking, so the question
+          // names the loss while it is still a question. Read after the delete and
+          // it always reports zero.
+          // eslint-disable-next-line no-undef
+          const impact = CharacterStore.deletionImpact(nm);
+          const msg = deleteBuildConfirmText(nm, impact, editingThis);
           if (!window.confirm(msg)) return;
           // eslint-disable-next-line no-undef
-          CharacterStore.deleteCharacter(nm);
+          const del = CharacterStore.deleteBuildAndDependents(nm);
+          if (!del.ok) {
+            // A partial cascade is worse than none: the build is removed LAST, so
+            // a failure here means nothing was removed and the player can retry.
+            window.alert("That build could not be deleted. Nothing was removed.");
+            return;
+          }
           renderRail();
         }
       };
@@ -4184,10 +4212,12 @@ if (typeof window !== "undefined" && window.App) {
       // Share panel does not, so the block supplies one there.
       return `<div class="wz-data-block">
           ${ns === "share" ? `<p class="wz-label">Your data</p>` : ""}
-          <p class="wz-help">Back up <strong>every build you own</strong> to a file, or restore from one — this is how you
-            move your builds to another device, and the only way back if you clear your browser data. Backups stay compatible
-            across the last 3 data versions; a file older than that, or made by a newer version of the app, is declined so a bad
-            import can't corrupt your saves.</p>
+          <p class="wz-help">Back up <strong>everything you have made</strong> — your builds, your saved bundles, and your
+            farming progress — to a file, or restore from one. This is how you move your work to another device, and the only way
+            back if you clear your browser data. <strong>Version snapshots are not included:</strong> they are taken automatically
+            on every solve and would make this file far larger, so clearing your browser loses your version history and keeps
+            everything you wrote. Backups stay compatible across the last 3 data versions; a file older than that, or made by a
+            newer version of the app, is declined so a bad import can't corrupt your saves.</p>
           <div class="wz-data-row">
             <button class="btn ghost" id="wz-export-${ns}" type="button">Export all (.json)</button>
             <input id="wz-import-label-${ns}" type="text" readonly placeholder="Import a backup (.json)…" class="wz-file">
@@ -4223,7 +4253,13 @@ if (typeof window !== "undefined" && window.App) {
       const exportBtn = document.getElementById(`wz-export-${ns}`);
       if (exportBtn) exportBtn.onclick = () => {
         // eslint-disable-next-line no-undef
-        const payload = BackupIO.serializeAll(CharacterStore.allCharacters(), { buildId: currentBuildId() });
+        const SB = _savedBundles();
+        const payload = BackupIO.serializeAll(CharacterStore.allCharacters(), {
+          buildId: currentBuildId(),
+          bundles: SB ? SB.listBundles() : [],
+          // eslint-disable-next-line no-undef
+          farming: (typeof FarmingList !== "undefined") ? FarmingList.readProgress() : {},
+        });
         downloadFile(`ddo-characters-${new Date().toISOString().slice(0, 10)}.json`,
           JSON.stringify(payload, null, 2), "application/json");
       };
@@ -4247,9 +4283,25 @@ if (typeof window !== "undefined" && window.App) {
             // eslint-disable-next-line no-undef
             const w = CharacterStore.saveMany(res.characters);
             const n = Object.keys(res.characters).length;
+            // plan U8 — the rest of the authored work. Restored only when the
+            // characters landed: a half-applied import is harder to reason about
+            // than one that did not happen.
+            let extra = "";
+            if (w.ok) {
+              const SB = _savedBundles();
+              if (SB && (res.bundles || []).length) {
+                SB.writeAll(res.bundles);
+                extra += `, ${res.bundles.length} bundle${res.bundles.length === 1 ? "" : "s"}`;
+              }
+              // eslint-disable-next-line no-undef
+              if (typeof FarmingList !== "undefined" && Object.keys(res.farming || {}).length) {
+                FarmingList.writeProgress(res.farming);
+                extra += ", farming progress";
+              }
+            }
             s.className = "wz-filestat" + (w.ok ? "" : " warn");
             s.textContent = w.ok
-              ? `Imported ${n} character${n === 1 ? "" : "s"} (merged by name).`
+              ? `Imported ${n} character${n === 1 ? "" : "s"}${extra} (merged by name).`
               : (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.");
             renderRail();
           };

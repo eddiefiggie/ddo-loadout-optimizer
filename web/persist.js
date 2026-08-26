@@ -328,9 +328,67 @@
     return writeAll(all, storage);
   }
 
+  /** plan 2026-08-25-001 U6 — the Farming List, resolved at CALL time.
+   *  `farming.js` loads AFTER this file in the browser, so a load-time binding
+   *  would be null there and correct only in Node. Same shape as `_overrideLimit`
+   *  above, and the reason this coordinator can live in the module that owns
+   *  builds rather than being pushed up to the UI, where a second delete path
+   *  could bypass it. */
+  function _farming() {
+    var F = (typeof window !== "undefined" && window.FarmingList) ? window.FarmingList : null;
+    if (!F && typeof require !== "undefined") { try { F = require("./farming.js"); } catch (e) { /* absent */ } }
+    return F;
+  }
+
+  /** What deleting this build takes with it, WITHOUT deleting anything.
+   *
+   *  Read before the delete so a confirmation can name the loss while it is still
+   *  a question. Reading after would report zero, which is a confirmation that
+   *  cannot be wrong and cannot be useful.
+   *
+   *  VERSIONS ARE NOT COUNTED, and this is a correction to the plan rather than an
+   *  omission. Version snapshots are ONE GLOBAL LIST: `versions.js` holds no
+   *  character reference, `listVersions(storage)` takes no scope, and
+   *  `stampedBuildId` is the DATASET build id used for staleness, not an owner. A
+   *  version's only tie to a character is the display name of a `named` snapshot,
+   *  as prose — and `auto` snapshots, the ones that accumulate, carry nothing at
+   *  all. Deleting versions by matching that prose would be inferring a
+   *  relationship the data does not record. They are untouched, so nothing is
+   *  orphaned by this delete: they were never owned. */
+  function deletionImpact(name, storage) {
+    const key = String(name == null ? "" : name);
+    const F = _farming();
+    const progress = F ? F.loadProgress(key, storage) : {};
+    return { name: key, farming: Object.keys(progress || {}).length };
+  }
+
+  /** Delete a build and everything that belongs to it.
+   *
+   *  ONE authority. `deleteCharacter` stays the primitive; every call site uses
+   *  this, so a second path cannot quietly skip the cleanup and leave farming
+   *  progress keyed to a build that no longer exists.
+   *
+   *  A PARTIAL cascade is worse than none: the player would be left with exactly
+   *  the orphan this exists to remove and no build to reach it from. So the build
+   *  is removed LAST, and a failure to clear its dependents aborts before the
+   *  build goes. */
+  function deleteBuildAndDependents(name, storage) {
+    const key = String(name == null ? "" : name);
+    const impact = deletionImpact(key, storage);
+    const F = _farming();
+    if (F && impact.farming) {
+      const cleared = F.clearProgress(key, storage);
+      if (cleared && cleared.ok === false) {
+        return { ok: false, full: !!cleared.full, impact, stage: "farming" };
+      }
+    }
+    return Object.assign(deleteCharacter(key, storage), { impact, stage: "build" });
+  }
+
   const api = {
     STORE_KEY, INPUT_KEYS, stripResult, pickInputs, serializeCharacter,
     saveCharacter, listCharacters, loadCharacter, deleteCharacter,
+    deletionImpact, deleteBuildAndDependents,
     allCharacters, saveMany,
   };
 

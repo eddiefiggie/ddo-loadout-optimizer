@@ -150,6 +150,55 @@
     } catch (e) { return {}; }
   }
 
+  /** plan 2026-08-25-001 U8 — install a whole progress map, for a backup restore.
+   *  Sanitized here rather than trusted from the file, for the same reason
+   *  `clearProgress` lives here: this module owns the shape. */
+  function writeProgress(all, storage) {
+    const st = resolveStorage(storage);
+    if (!st) return { ok: false };
+    const clean = {};
+    const src = (all && typeof all === "object") ? all : {};
+    for (const key of Object.keys(src)) {
+      const one = src[key];
+      if (!one || typeof one !== "object") continue;
+      const acquired = {};
+      for (const item of Object.keys(one)) if (one[item]) acquired[item] = true;
+      clean[key] = acquired;
+    }
+    try { st.setItem(PROGRESS_KEY, JSON.stringify(clean)); return { ok: true }; }
+    catch (e) { return { ok: false }; }
+  }
+
+  /** plan 2026-08-25-001 U6 — drop one character's progress entirely.
+   *
+   *  Lives HERE rather than in the delete coordinator so the storage key and its
+   *  shape stay owned by one module: a caller that reached in and rewrote the
+   *  blob would be a second writer of a format only this file documents.
+   *
+   *  Returns the same `{ ok }` shape `toggleAcquired` does, because the caller has
+   *  to be able to tell a cleared build from a failed write — a cascade that
+   *  reports success on a failed clear leaves exactly the orphan it exists to
+   *  remove.
+   *
+   *  Keyed by NAME, like every other read here. That is the #518 hazard and this
+   *  function inherits it rather than introducing it: a build renamed before
+   *  deletion leaves progress under the old name. Correct under today's keying,
+   *  and correct again once #518 gives progress a stable key. */
+  function clearProgress(character, storage) {
+    const key = String(character || "");
+    const st = resolveStorage(storage);
+    if (!st) return { ok: false };
+    const all = readProgress(storage);
+    if (!Object.prototype.hasOwnProperty.call(all, key)) return { ok: true, missing: true };
+    delete all[key];
+    try {
+      st.setItem(PROGRESS_KEY, JSON.stringify(all));
+      return { ok: true };
+    } catch (e) {
+      return { ok: false };
+    }
+  }
+
   /** The acquired set for one character, as a plain object of `item -> true`. */
   function loadProgress(character, storage) {
     const all = readProgress(storage);
@@ -228,7 +277,7 @@
   }
 
   const api = {
-    PROGRESS_KEY, farmingPlan, equippedEntries, prescriptions,
+    PROGRESS_KEY, farmingPlan, equippedEntries, prescriptions, clearProgress, writeProgress,
     loadProgress, toggleAcquired, readProgress, farmingMarkdown,
   };
 
