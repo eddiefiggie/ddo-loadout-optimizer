@@ -428,3 +428,44 @@ test("U8: imported bundles and farming are sanitized, not trusted", () => {
   assert.ok(!Object.prototype.hasOwnProperty.call(res.farming, "__proto__"),
     "and a pollution key never becomes a progress entry");
 });
+
+// ---- the import handler (doc-review round 1) --------------------------------
+// The handler lives inside wizard.js's browser block and is not exported, so
+// these read the source. The bug they pin shipped: `parseBackup` did its job and
+// the handler then threw the player's local work away.
+
+const WIZ = require("fs").readFileSync(
+  require("path").join(__dirname, "..", "web", "wizard.js"), "utf8");
+
+test("import MERGES the bundle store rather than replacing it", () => {
+  assert.ok(/SB\.mergeIn\(res\.bundles\)/.test(WIZ),
+    "the handler calls mergeIn");
+  assert.ok(!/SB\.writeAll\(res\.bundles\)/.test(WIZ),
+    "and never writeAll, which deleted every bundle made since the export");
+});
+
+test("import MERGES farming progress rather than replacing it", () => {
+  assert.ok(/FarmingList\.mergeProgress\(res\.farming\)/.test(WIZ),
+    "the handler calls mergeProgress");
+  assert.ok(!/FarmingList\.writeProgress\(res\.farming\)/.test(WIZ),
+    "and never writeProgress, which wiped every tick made since the export");
+});
+
+test("a failed dependent write is reported, not swallowed under a success line", () => {
+  // Both stores return { ok } and both failures were discarded, so a quota
+  // failure on the bundle write read as a clean restore — on the one path where
+  // the player's original data is already gone.
+  assert.ok(/failed\.push\("saved bundles"\)/.test(WIZ) && /failed\.push\("farming progress"\)/.test(WIZ),
+    "each dependent write's result is checked and named");
+  assert.ok(/could not be saved/.test(WIZ),
+    "and the player is told which part did not land");
+  assert.ok(/"wz-filestat" \+ \(w\.ok && !failed\.length \? "" : " warn"\)/.test(WIZ),
+    "the status reads as a warning, not a success");
+});
+
+test("the status line no longer claims a merge-by-name it does not perform", () => {
+  // Bundles merge by id and farming by character key; only characters merge by
+  // name. The old text asserted "(merged by name)" over all three.
+  assert.ok(!/merged by name/.test(WIZ),
+    "the qualifier that was true of one payload and false of the other two is gone");
+});

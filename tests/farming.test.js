@@ -161,4 +161,44 @@ test("#501: the character name reaches the panel as its own input, not via the q
     "every renderResults call site passes it — a missed one silently stops saving ticks on that path");
 });
 
+console.log("\n-- merge on restore (doc-review round 1) --");
+
+test("MERGE: a restore keeps ticks recorded since the export", () => {
+  // The shipped bug. writeProgress replaced the whole store, so importing a
+  // backup wiped every acquisition the player had ticked since that export.
+  const st = fakeStorage();
+  F.toggleAcquired("LocalBuild", "Local Item", st);
+  F.mergeProgress({ FileBuild: { "File Item": true } }, st);
+  const got = F.readProgress(st);
+  assert.deepStrictEqual(Object.keys(got).sort(), ["FileBuild", "LocalBuild"],
+    "both characters survive the restore");
+  assert.strictEqual(got.LocalBuild["Local Item"], true, "the local tick is not lost");
+});
+
+test("MERGE: an incoming character REPLACES that character's own ticks", () => {
+  // Per-character, the backup is the record: a tick is a boolean with no
+  // timestamp, so an untick made before the export cannot be told apart from a
+  // tick made after it. Merging within one character would resurrect unticked
+  // items forever; merging BETWEEN characters is unambiguous and is what this
+  // does.
+  const st = fakeStorage();
+  F.toggleAcquired("Build", "Old Item", st);
+  F.mergeProgress({ Build: { "New Item": true } }, st);
+  assert.deepStrictEqual(F.readProgress(st).Build, { "New Item": true });
+});
+
+test("MERGE: falsy and malformed entries are sanitized at the boundary", () => {
+  const st = fakeStorage();
+  F.mergeProgress({ A: { keep: true, drop: false, gone: 0 }, B: null, C: "nope" }, st);
+  const got = F.readProgress(st);
+  assert.deepStrictEqual(got.A, { keep: true }, "only true survives");
+  assert.ok(!("B" in got) && !("C" in got), "a non-object character entry is not stored");
+});
+
+test("MERGE: a failed write reports failure rather than a silent loss", () => {
+  const st = fakeStorage(1);
+  assert.strictEqual(F.mergeProgress({ A: { x: true } }, st).ok, false,
+    "the caller must be able to tell the player the restore did not land");
+});
+
 console.log(`\n${passed} passed`);
