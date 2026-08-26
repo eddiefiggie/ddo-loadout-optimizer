@@ -385,10 +385,75 @@
     return Object.assign(deleteCharacter(key, storage), { impact, stage: "build" });
   }
 
+  /** plan 2026-08-25-002 U2 (#518) — rename a build, and everything filed under
+   *  its name.
+   *
+   *  The app has no stable build id: this store keys by name, and so does every
+   *  other store that references a build. The name IS the identity, which is why
+   *  a rename is a transaction across two storage keys rather than an edit to a
+   *  field.
+   *
+   *  THE TRAP: `pickInputs` writes the name INTO the record as well as using it
+   *  as the store key. Moving only the key leaves a record whose inputs still
+   *  name the old build — loading it restores the old name into state, and the
+   *  next autosave re-creates exactly the build the rename removed. Both are
+   *  rewritten here, and `tests/persist.test.js` pins the round-trip rather than
+   *  the key, because a key-only rename passes every other test.
+   *
+   *  Nothing else about the record moves. A rename is not a save: `savedAt`,
+   *  `snapshot`, `query` and `stampedBuildId` are carried verbatim, or a build
+   *  that has not been re-solved would re-stamp itself current and silence its
+   *  own staleness warning.
+   *
+   *  ORDER AND ROLLBACK. Progress moves first, so a failure there changes
+   *  nothing at all. If the build write then fails, the progress move is undone
+   *  — and that rollback is not futile despite writing to the storage that just
+   *  refused: the write that failed is the one that grew the store by holding
+   *  both build keys at once, while the rollback restores a same-sized entry to
+   *  a key that already existed. A rollback that fails in turn still reports
+   *  failure, leaving progress under a name with no build — which is the state
+   *  "Your data" already marks and can delete, and is strictly better than
+   *  reporting a success that did not happen.
+   *
+   *  Refusals are named rather than merged into one falsy result, because the
+   *  rail has to tell the player which one happened. */
+  function renameBuild(from, to, storage) {
+    const oldKey = String(from == null ? "" : from);
+    const newKey = String(to == null ? "" : to).trim();
+    if (!newKey) return { ok: false, reason: "empty" };
+    const all = readAll(storage);
+    if (!Object.prototype.hasOwnProperty.call(all, oldKey)) return { ok: false, reason: "missing" };
+    // Trimming to the build's own name is a no-op, not a self-collision: the
+    // record at that key IS this build.
+    if (newKey === oldKey) return { ok: true, unchanged: true, from: oldKey, to: newKey };
+    if (Object.prototype.hasOwnProperty.call(all, newKey)) {
+      return { ok: false, reason: "collision", from: oldKey, to: newKey };
+    }
+
+    const F = _farming();
+    const moved = F ? F.renameProgress(oldKey, newKey, storage) : { ok: true, missing: true };
+    if (moved && moved.ok === false) {
+      return { ok: false, reason: "write", stage: "farming", from: oldKey, to: newKey };
+    }
+
+    const rec = Object.assign({}, all[oldKey]);
+    rec.name = newKey;
+    rec.inputs = Object.assign({}, rec.inputs || {}, { characterName: newKey });
+    const next = Object.assign(Object.create(null), all);
+    next[newKey] = rec;
+    delete next[oldKey];
+    const res = writeAll(next, storage);
+    if (!res.ok) {
+      if (F && moved && !moved.missing) F.renameProgress(newKey, oldKey, storage);
+      return { ok: false, reason: res.error || "write", stage: "build", from: oldKey, to: newKey };
+    }
+    return { ok: true, from: oldKey, to: newKey };
+  }
+
   const api = {
     STORE_KEY, INPUT_KEYS, stripResult, pickInputs, serializeCharacter,
     saveCharacter, listCharacters, loadCharacter, deleteCharacter,
-    deletionImpact, deleteBuildAndDependents,
+    deletionImpact, deleteBuildAndDependents, renameBuild,
     allCharacters, saveMany,
   };
 

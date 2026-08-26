@@ -3,6 +3,7 @@ const assert = require("assert");
 const {
   serializeCharacter, stripResult, saveCharacter, listCharacters, loadCharacter, deleteCharacter,
   allCharacters, saveMany, INPUT_KEYS, pickInputs, deletionImpact, deleteBuildAndDependents,
+  renameBuild, STORE_KEY,
 } = require("../web/persist.js");
 const Farm = require("../web/farming.js");
 const { migrateLoadout } = require("../web/dataset.js");
@@ -696,4 +697,153 @@ test("U6: deleteCharacter stays the primitive and does NOT cascade on its own", 
   deleteCharacter("Tank", st);
   assert.deepStrictEqual(Object.keys(Farm.loadProgress("Tank", st)), ["A"],
     "the primitive removes the build alone — the coordinator is what cascades");
+});
+
+// ---- #518 U2: the rename coordinator --------------------------------------
+
+function solvedRecord(name) {
+  const rec = serializeCharacter(name, state, null, null);
+  rec.snapshot = { status: "optimal", chosen: [{ slot: "Head", variant: { variant_id: "X" } }] };
+  rec.query = { targets: ["Strength"] };
+  rec.stampedBuildId = "08202026.3";
+  rec.savedAt = "2026-08-20T00:00:00.000Z";
+  return rec;
+}
+
+test("#518: a rename moves the record — the new name loads it, the old loads nothing", () => {
+  const st = sharedStorage();
+  saveCharacter(solvedRecord("Aurelia"), st);
+  assert.strictEqual(renameBuild("Aurelia", "Aurelia Mk2", st).ok, true);
+  assert.ok(loadCharacter("Aurelia Mk2", st), "the build is under its new name");
+  assert.strictEqual(loadCharacter("Aurelia", st), null, "and not under the old one");
+  assert.deepStrictEqual(listCharacters(st).map((c) => c.name), ["Aurelia Mk2"]);
+});
+
+test("#518: the renamed record's inputs.characterName moves with the key", () => {
+  // The trap. pickInputs writes the name INTO the record as well as using it as
+  // the store key, so a key-only rename leaves a record whose inputs still say
+  // the old name — load it, navigate once, and autosave re-creates the build the
+  // rename was supposed to remove. Every other test in this file passes without
+  // this one.
+  const st = sharedStorage();
+  saveCharacter(solvedRecord("Aurelia"), st);
+  renameBuild("Aurelia", "Aurelia Mk2", st);
+  const back = loadCharacter("Aurelia Mk2", st);
+  assert.strictEqual(back.name, "Aurelia Mk2", "the record's own name field");
+  assert.strictEqual(back.inputs.characterName, "Aurelia Mk2",
+    "and the name carried inside its inputs, which is what a reload restores");
+});
+
+test("#518: a rename preserves the loadout, the query, the stamp and the save date", () => {
+  // A rename is not a save. Re-stamping would silence the staleness warning for
+  // a build that has not been re-solved.
+  const st = sharedStorage();
+  const before = solvedRecord("Aurelia");
+  saveCharacter(before, st);
+  renameBuild("Aurelia", "Aurelia Mk2", st);
+  const after = loadCharacter("Aurelia Mk2", st);
+  assert.deepStrictEqual(after.snapshot, before.snapshot);
+  assert.deepStrictEqual(after.query, before.query);
+  assert.strictEqual(after.stampedBuildId, "08202026.3");
+  assert.strictEqual(after.savedAt, "2026-08-20T00:00:00.000Z");
+});
+
+test("#518: a rename carries the build's farming progress with it", () => {
+  const st = sharedStorage();
+  seedBuildWithFarming(st, "Aurelia", ["Item A", "Item B"]);
+  seedBuildWithFarming(st, "Bram", ["Item C"]);
+  assert.strictEqual(renameBuild("Aurelia", "Aurelia Mk2", st).ok, true);
+  assert.deepStrictEqual(Object.keys(Farm.loadProgress("Aurelia Mk2", st)).sort(),
+    ["Item A", "Item B"]);
+  assert.deepStrictEqual(Farm.loadProgress("Aurelia", st), {}, "nothing left under the old name");
+  assert.deepStrictEqual(Object.keys(Farm.loadProgress("Bram", st)), ["Item C"],
+    "another build's progress is untouched");
+});
+
+test("#518: a rename onto an existing build's name is refused, changing nothing", () => {
+  const st = sharedStorage();
+  seedBuildWithFarming(st, "Aurelia", ["A"]);
+  seedBuildWithFarming(st, "Bram", ["B"]);
+  const r = renameBuild("Aurelia", "Bram", st);
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.reason, "collision", "the surface has to say which refusal happened");
+  assert.ok(loadCharacter("Aurelia", st) && loadCharacter("Bram", st), "both builds survive");
+  assert.deepStrictEqual(Object.keys(Farm.loadProgress("Aurelia", st)), ["A"]);
+  assert.deepStrictEqual(Object.keys(Farm.loadProgress("Bram", st)), ["B"],
+    "and neither build's ticks moved");
+});
+
+test("#518: a rename to an empty or whitespace name is refused, changing nothing", () => {
+  const st = sharedStorage();
+  seedBuildWithFarming(st, "Aurelia", ["A"]);
+  for (const bad of ["", "   ", "\t"]) {
+    const r = renameBuild("Aurelia", bad, st);
+    assert.strictEqual(r.ok, false, `refused: ${JSON.stringify(bad)}`);
+    assert.strictEqual(r.reason, "empty");
+  }
+  assert.ok(loadCharacter("Aurelia", st), "the build is untouched");
+  assert.deepStrictEqual(Object.keys(Farm.loadProgress("Aurelia", st)), ["A"]);
+});
+
+test("#518: renaming a build to the name it already has is a no-op success", () => {
+  // Not a self-collision. The build IS the record at that name.
+  const st = sharedStorage();
+  seedBuildWithFarming(st, "Aurelia", ["A"]);
+  const r = renameBuild("Aurelia", "Aurelia", st);
+  assert.strictEqual(r.ok, true);
+  assert.ok(loadCharacter("Aurelia", st));
+  assert.deepStrictEqual(Object.keys(Farm.loadProgress("Aurelia", st)), ["A"]);
+});
+
+test("#518: a rename that trims to the same name is also a no-op, not a collision", () => {
+  const st = sharedStorage();
+  saveCharacter(solvedRecord("Aurelia"), st);
+  assert.strictEqual(renameBuild("Aurelia", "  Aurelia  ", st).ok, true);
+  assert.ok(loadCharacter("Aurelia", st), "still one build, under its own name");
+  assert.strictEqual(listCharacters(st).length, 1);
+});
+
+test("#518: a failed build write rolls the progress back and reports failure", () => {
+  // The build is still loadable under its old name, so the player can retry.
+  let armed = false;
+  const st = sharedStorage((k) => armed && k === STORE_KEY);
+  seedBuildWithFarming(st, "Aurelia", ["A", "B"]);
+  armed = true;
+  const r = renameBuild("Aurelia", "Aurelia Mk2", st);
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.stage, "build", "and names where it stopped");
+  assert.ok(loadCharacter("Aurelia", st), "the build kept its old name");
+  assert.strictEqual(loadCharacter("Aurelia Mk2", st), null, "and nothing was written under the new one");
+  assert.deepStrictEqual(Object.keys(Farm.loadProgress("Aurelia", st)).sort(), ["A", "B"],
+    "the ticks are back where they were");
+  assert.deepStrictEqual(Farm.loadProgress("Aurelia Mk2", st), {},
+    "and not stranded under a name with no build");
+});
+
+test("#518: a failed progress move never writes the build record at all", () => {
+  let armed = false;
+  const st = sharedStorage((k) => armed && k === Farm.PROGRESS_KEY);
+  seedBuildWithFarming(st, "Aurelia", ["A"]);
+  armed = true;
+  const r = renameBuild("Aurelia", "Aurelia Mk2", st);
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.stage, "farming");
+  assert.strictEqual(loadCharacter("Aurelia Mk2", st), null, "no half-renamed build exists");
+  assert.ok(loadCharacter("Aurelia", st), "the original is intact");
+});
+
+test("#518: renaming a build with no farming progress succeeds and invents no entry", () => {
+  const st = sharedStorage();
+  saveCharacter(solvedRecord("Bare"), st);
+  assert.strictEqual(renameBuild("Bare", "Bare Mk2", st).ok, true);
+  assert.ok(loadCharacter("Bare Mk2", st));
+  assert.ok(!("Bare Mk2" in Farm.readProgress(st)), "no empty progress entry is created");
+});
+
+test("#518: renaming a build that does not exist is refused rather than creating one", () => {
+  const st = sharedStorage();
+  const r = renameBuild("Ghost", "Ghost Mk2", st);
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.reason, "missing");
+  assert.deepStrictEqual(listCharacters(st), [], "nothing was conjured into the store");
 });
