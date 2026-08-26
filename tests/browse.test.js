@@ -149,6 +149,23 @@ test("a Dinosaur Bone blank shows its Isle of Dread slots instead of nothing", (
     "blank should surface its typed Dino slots");
 });
 
+test("#545 a stamped native shows its Isle of Dread slots ALONGSIDE its own affixes", () => {
+  // The blank's detail line was the only place this text appeared, because the
+  // blank was the only weapon host with slots. A stamped native carries both its
+  // real affixes and its capacity, and a player browsing it must see the second
+  // — an item whose slots are invisible reads as an item that has none.
+  const cov = data.metadata.dino_coverage;
+  const names = new Set(cov.native_host_names);
+  const native = items.find(
+    (v) => names.has(v.source_item) && (v.affixes || []).length);
+  assert.ok(native, "expected a stamped native carrying affixes");
+  const texts = affixText(native);
+  assert.ok(texts.some((t) => /Isle of Dread slots:/.test(t)),
+    "the stamped native surfaces its typed Dino slots");
+  assert.ok(texts.length > 1,
+    "and still surfaces the affixes it earned — the slots are additional, not a replacement");
+});
+
 test("browsableItems appends the U81 Nearly-Complete option pool", () => {
   const list = browsableItems(data);
   const nc = list.filter((v) => v.nc_option);
