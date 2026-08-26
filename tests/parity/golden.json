@@ -1,6 +1,6 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-08-22",
+ "generated": "2026-08-26",
  "dataset": "web/data/items.json (9110 items)",
  "fixture_count": 23,
  "solves": {
@@ -348,73 +348,73 @@
    "perTarget": {
     "Universal Spell Power": 104,
     "Combustion": 439,
-    "Corrosion": 439,
-    "Devotion": 368,
-    "Glaciation": 247,
-    "Impulse": 247,
-    "Magnetism": 247,
-    "Nullification": 247,
-    "Radiance": 247,
-    "Reconstruction": 247,
-    "Resonance": 247,
-    "Wisdom": 25,
-    "Charisma": 24
+    "Corrosion": 437,
+    "Devotion": 394,
+    "Glaciation": 359,
+    "Impulse": 329,
+    "Magnetism": 359,
+    "Nullification": 329,
+    "Radiance": 329,
+    "Reconstruction": 329,
+    "Resonance": 329,
+    "Wisdom": 27,
+    "Charisma": 25
    },
    "effective": {
     "Universal Spell Power": 104,
     "Combustion": 439,
-    "Corrosion": 439,
-    "Devotion": 368,
-    "Glaciation": 247,
-    "Impulse": 247,
-    "Magnetism": 247,
-    "Nullification": 247,
-    "Radiance": 247,
-    "Reconstruction": 247,
-    "Resonance": 247,
-    "Wisdom": 25,
-    "Charisma": 24
+    "Corrosion": 437,
+    "Devotion": 394,
+    "Glaciation": 359,
+    "Impulse": 329,
+    "Magnetism": 359,
+    "Nullification": 329,
+    "Radiance": 329,
+    "Reconstruction": 329,
+    "Resonance": 329,
+    "Wisdom": 27,
+    "Charisma": 25
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Dinosaur Bone Armor"
+     "variant": "Legendary Darkmoss"
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Seaweed-woven Belt"
+     "variant": "Belt of the Burrower"
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Firestorm Greaves"
+     "variant": "Legendary Windriders"
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Bracers of the Hunter"
+     "variant": "Legendary World-Weary Wrappings"
     },
     {
      "slot": "Cloak",
-     "variant": "Dinosaur Bone Cloak"
+     "variant": "Legendary University Researcher's Cloak"
     },
     {
      "slot": "Gloves",
-     "variant": "Baron Aubrecker's Monogrammed Gloves"
+     "variant": "Legendary Absorption Gauntlet"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Black Earth Guardian's Lenses"
+     "variant": "Legendary Eyes of Enlightenment"
     },
     {
      "slot": "Helmet",
-     "variant": "Dinosaur Bone Helmet"
+     "variant": "Legendary University Mage's Hat"
     },
     {
      "slot": "Main Hand",
-     "variant": "Attuned Bone Bastard Sword"
+     "variant": "Mori's Focus"
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Pendant of Subtle Pain"
+     "variant": "Legendary Shaman's Beads"
     },
     {
      "slot": "Off Hand",
@@ -422,7 +422,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Ring of the Black Abishai"
+     "variant": "Clouded Dreams"
     },
     {
      "slot": "Ring",
@@ -430,7 +430,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Epic Dragon's Eye"
+     "variant": "Legendary Gem of Many Facets"
     }
    ]
   },
@@ -591,7 +591,7 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
+     "variant": "Dinosaur Bone Armor"
     },
     {
      "slot": "Belt",
@@ -607,7 +607,7 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Dinosaur Bone Cloak"
+     "variant": "Legendary Cloak of Autumn"
     },
     {
      "slot": "Gloves",
@@ -635,15 +635,15 @@
     },
     {
      "slot": "Ring",
-     "variant": "Clouded Dreams"
-    },
-    {
-     "slot": "Ring",
      "variant": "Epic Sacred Band"
     },
     {
+     "slot": "Ring",
+     "variant": "Legendary Signet Ring of the Earth"
+    },
+    {
      "slot": "Trinket",
-     "variant": "Legendary Red Raptor Feather"
+     "variant": "Epic Dragon's Eye"
     }
    ]
   },
@@ -662,7 +662,7 @@
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
+     "variant": "Dinosaur Bone Armor"
     },
     {
      "slot": "Belt",
@@ -678,7 +678,7 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Dinosaur Bone Cloak"
+     "variant": "Legendary Cloak of Autumn"
     },
     {
      "slot": "Gloves",
@@ -706,15 +706,15 @@
     },
     {
      "slot": "Ring",
-     "variant": "Clouded Dreams"
-    },
-    {
-     "slot": "Ring",
      "variant": "Epic Sacred Band"
     },
     {
+     "slot": "Ring",
+     "variant": "Legendary Signet Ring of the Earth"
+    },
+    {
      "slot": "Trinket",
-     "variant": "Legendary Red Raptor Feather"
+     "variant": "Epic Dragon's Eye"
     }
    ]
   },

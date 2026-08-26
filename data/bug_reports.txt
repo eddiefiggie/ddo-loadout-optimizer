@@ -254,3 +254,45 @@ Filed 2026-08-24:
    Sets tab block, all five exports, `Proj.bundleGroups`, `bundleCreditIndex`, and
    `resolved.bundles` in the ddo-loadout/v1 envelope. Closes #486, which had
    recorded the same section reading as sets under a heading that had to deny it.
+
+---
+2026-08-26 — user report batch (Isle of Dread double-dip + five follow-on questions)
+
+Verbatim: "The optimizer seems to be double dipping set bonusses from Isle of Dread
+gear. From the set bonus tab - note that both the armor and the helm are listed in
+both sets." (Legendary Dread Isle's Curse 5-piece and Defender of Tanaroa 3-piece,
+sharing Dinosaur Bone Armor + Dinosaur Bone Helmet.)
+
+- #538 REPRODUCES, and the reporter's reading of the mechanic is correct. Ruled
+  against the wiki before touching code (docs/wiki-evidence/dino-set-bonus-hosts.md):
+  a Dinosaur Bone blank carries The Legendary Dread Isle's Curse if and ONLY if it has
+  no Isle of Dread Set Bonus Slot, and no Dinosaur Bone weapon carries it at all. The
+  three Set-Bonus hosts (Armor/Helmet/Cloak) get ONE set, chosen from six — the Curse
+  among them. #334 over-generalised one sentence of the same wiki page and stamped the
+  set on all eleven blanks. Not a display bug: the ratified golden fixture
+  endgame-caster-ml32 was itself built on the double-dip (three blanks, three Tanaroa
+  picks, a free 5-piece Curse). Second defect from the same stamp: because
+  attach_dino_set_bonus_slots filters a host's intrinsic sets out of its own pool, the
+  phantom set also DELETED the Curse from the six-option pool the wiki gives it.
+
+The five follow-on questions in the same thread, triaged — none is a new defect:
+
+- "When you select individual 3 Piece Set Augments, are they supposed to show up on
+  final gear layout? ... it does not automatically include those in your layout it just
+  gives the option to the optimizer." WORKING AS DESIGNED, and the thread's own last
+  reply is the correct answer. The "Set Augments I own" picker is an AVAILABILITY
+  declaration; its help text already says "Only checked ones are considered". Forcing a
+  named set into the result is a different feature (see below).
+- "As far as I know you cannot force the optimizer to pick those sets." Correct today.
+  Filed as #539 (enhancement) — pin a named set the way a slot pin works. Distinct from
+  the weighted-sum non-goal: a pin is the player naming a constraint, not the tool
+  trading a ranked priority away behind their back.
+- "Is the first page Link pointing to the Updated version of the Optimizer?" YES — the
+  README's play link is the GitHub Pages deploy off `main`, which redeploys on every
+  push. The footer BUILD is the version signal; this batch ships 08262026.1.
+- "I wasn't able to slot identical Leg Kataras Razor Wit rings to complete set bonus."
+  ALREADY TRACKED as #442 — rings carry no Unique Equipped data, so duplicate
+  wearability cannot be decided per item and the model refuses the second copy.
+- "Was there any response to cannith/essence crafting offhand weapons to stats/effects
+  so that it doesn't have to be in gear...?" ALREADY TRACKED as #193 (essence crafting
+  unmodelled, deferred across nine plans).
