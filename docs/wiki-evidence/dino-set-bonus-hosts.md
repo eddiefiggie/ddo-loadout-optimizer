@@ -117,3 +117,15 @@ from the very pool the wiki puts it in.
 `sets` field, and every Dinosaur Bone item without that slot lists the Curse. The
 synthesized blanks bypassed that data (they are generated, not harvested), which
 is why the stamp could contradict the catalog without any gate noticing.
+
+**That bypass is closed (#541).** A blank's membership is no longer stamped from
+the rule above — it is DERIVED from the gear-planner records the blank shadows,
+joined on the worn slot the synthesis collapses on, so the stamp cannot contradict
+the catalog. The table in this ruling survives as the independent cross-check the
+build runs against that derivation: the rule reads `dino_set_bonus_slot` from the
+hand-written host layout in `src/dino_native.py`, the derivation reads the catalog,
+and a disagreement stops the build naming both sides and this file. So if you are
+here because the build sent you: **do not change either side to make it green.**
+Re-read the wiki text above first — upstream changing a Dinosaur Bone item's `sets`
+is a game-data event, and it is equally possible upstream is the one that drifted.
+See `docs/solutions/design-patterns/derive-a-synthesized-record-from-the-record-it-shadows.md`.
