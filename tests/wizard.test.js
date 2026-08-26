@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -4710,4 +4710,65 @@ test("#518: a failed rename whose ROLLBACK also failed says where the ticks went
   assert.ok(msg.includes("Aurelia Mk2"), "it names where the progress ended up");
   assert.ok(/farming/i.test(msg) && /your data/i.test(msg),
     "…and where the player can clear it");
+});
+
+// ---- #518 U4: disclosing ticks a build did not earn ------------------------
+
+test("#518: a build saved under a name that already has ticks discloses the count", () => {
+  assert.strictEqual(farmingTakeover("Kestrel", false, 6, false), 6);
+});
+
+test("#518: an ordinary update of an existing build discloses nothing", () => {
+  // The name was ALREADY a saved build, so its ticks are its own. Disclosing
+  // here would fire on every autosave of every build that has ever farmed.
+  assert.strictEqual(farmingTakeover("Kestrel", true, 6, false), 0);
+});
+
+test("#518: a name with no ticks, and an empty name, disclose nothing", () => {
+  assert.strictEqual(farmingTakeover("Kestrel", false, 0, false), 0);
+  assert.strictEqual(farmingTakeover("", false, 6, false), 0);
+  assert.strictEqual(farmingTakeover("   ", false, 6, false), 0);
+});
+
+test("#518: the disclosure fires once per name, not once per save", () => {
+  // Autosave saves on every navigation. A per-save disclosure is a
+  // per-navigation disclosure.
+  assert.strictEqual(farmingTakeover("Kestrel", false, 6, true), 0);
+});
+
+test("#518: the takeover sentence names the count and pluralizes it", () => {
+  const many = farmingTakeoverText("Kestrel", 6);
+  assert.ok(many.includes("Kestrel") && /6 farming ticks/.test(many));
+  assert.ok(/not .*this build|were not made/i.test(many),
+    "it says the ticks are not this build's work");
+  const one = farmingTakeoverText("Kestrel", 1);
+  assert.ok(/1 farming tick\b/.test(one), "singular at one");
+});
+
+test("#518: the save path consults the gate and never opens a dialog", () => {
+  // THE GUARD for the no-modal decision. A build is saved on every navigation,
+  // so a confirm here is the defect autosave removed when it narrowed
+  // nameCollides. A later change that reaches for a modal goes red.
+  const fn = fnBody(WIZARD_SRC, "function saveCurrentCharacter(", 4);
+  assert.ok(/farmingTakeover\(/.test(fn), "the gate is consulted where the write happens");
+  // Scoped to the TAKEOVER branch, not the whole save path: trySave legitimately
+  // opens the overwrite confirm, which nameCollides already narrows so it cannot
+  // fire on every autosave. This disclosure has no such narrowing — it is raised
+  // by the save itself — so it must not block at all.
+  const branch = fn.slice(fn.indexOf("farmingTakeover("));
+  assert.ok(!/window\.confirm\(/.test(branch) && !/window\.alert\(/.test(branch),
+    "nothing in the takeover branch blocks the player");
+});
+
+test("#518: the disclosure renders in the rail, with both answers", () => {
+  const region = fnBody(WIZARD_SRC, "function railHTML(", 4);
+  assert.ok(/farmingTakeoverText\(/.test(region), "the sentence is rendered where builds live");
+  assert.ok(/data-railclearfarm=/.test(region), "…with a way to clear the ticks");
+  assert.ok(/data-railkeepfarm=/.test(region), "…and a way to keep them, which is the default");
+});
+
+test("#518: clearing from the notice routes through the store that owns the key", () => {
+  const region = fnBody(WIZARD_SRC, "function wireRail(", 4);
+  assert.ok(/FarmingList\.clearProgress\(/.test(region),
+    "not a hand-rolled write of a blob only farming.js documents");
 });

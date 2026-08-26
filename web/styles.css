@@ -1623,6 +1623,18 @@ input.wz-ml { width: 120px; }
 .wz-charlist .wz-ctl button[data-raildel],
 .wz-charlist .wz-ctl button[data-railrename] { width: 32px; }
 .wz-charlist .wz-ctl button:hover { color: var(--text); border-color: var(--accent); }
+/* #518 U4 — the takeover notice. Raised by a save, so it reports rather than
+   blocks; styled as a notice rather than an error, because inheriting ticks is
+   a fact to disclose, not a failure. */
+.wz-rail-note { margin: var(--sp-2) 0 0; padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm);
+  color: var(--text); background: var(--panel-2); border: 1px solid var(--border-2);
+  border-left: 3px solid var(--accent); border-radius: var(--radius-sm); }
+.wz-rail-note .wz-ctl { margin-top: var(--sp-2); flex-wrap: wrap; }
+.wz-rail-note .wz-ctl button { background: transparent; color: var(--muted);
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 3px 9px;
+  font-size: var(--fs-xs); cursor: pointer; width: auto; height: auto; min-height: 32px;
+  white-space: nowrap; }
+.wz-rail-note .wz-ctl button:hover { color: var(--text); border-color: var(--accent); }
 .wz-savestat { font-size: var(--fs-sm); color: var(--muted); }
 .wz-data { margin-top: var(--sp-3); border: 1px dashed var(--border-2); border-radius: var(--radius); background: var(--panel-2); }
 .wz-data > summary { list-style: none; cursor: pointer; padding: var(--sp-2) var(--sp-3); font-weight: 600; font-size: var(--fs-sm);

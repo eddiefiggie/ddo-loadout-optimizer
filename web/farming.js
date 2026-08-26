@@ -203,10 +203,11 @@
    *  reports success on a failed clear leaves exactly the orphan it exists to
    *  remove.
    *
-   *  Keyed by NAME, like every other read here. That is the #518 hazard and this
-   *  function inherits it rather than introducing it: a build renamed before
-   *  deletion leaves progress under the old name. Correct under today's keying,
-   *  and correct again once #518 gives progress a stable key. */
+   *  Keyed by NAME, like every other read here. #518 settled that the name IS the
+   *  identity rather than introducing a build id, so this keying is the design
+   *  and not a hazard waiting on a fix: a rename moves the build and its progress
+   *  together through `renameProgress` above, so there is no longer a state where
+   *  a renamed build leaves its ticks behind for this function to miss. */
   function clearProgress(character, storage) {
     const key = String(character || "");
     const st = resolveStorage(storage);
