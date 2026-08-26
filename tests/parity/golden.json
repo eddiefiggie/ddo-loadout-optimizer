@@ -319,15 +319,19 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Helm of the Warblade"
+     "variant": "Legendary Helm of the Sun's Wrath"
     },
     {
      "slot": "Main Hand",
-     "variant": "Attuned Bone Quarterstaff"
+     "variant": "Attuned Bone Bastard Sword"
     },
     {
      "slot": "Necklace",
      "variant": "Shintao Cord"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Horseshoe Crab Shield (level 26)"
     },
     {
      "slot": "Ring",
@@ -335,7 +339,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Band of Acrobatics"
+     "variant": "Legendary Nocturne Ring"
     },
     {
      "slot": "Trinket",
@@ -580,12 +584,12 @@
    "status": "optimal",
    "perTarget": {
     "Devotion": 448,
-    "Wisdom": 29,
+    "Wisdom": 30,
     "Universal Spell Power": 104
    },
    "effective": {
     "Devotion": 448,
-    "Wisdom": 29,
+    "Wisdom": 30,
     "Universal Spell Power": 104
    },
    "chosen": [
@@ -651,12 +655,12 @@
    "status": "optimal",
    "perTarget": {
     "Devotion": 436,
-    "Wisdom": 29,
+    "Wisdom": 30,
     "Universal Spell Power": 104
    },
    "effective": {
     "Devotion": 436,
-    "Wisdom": 29,
+    "Wisdom": 30,
     "Universal Spell Power": 104
    },
    "chosen": [
@@ -1437,7 +1441,7 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "The Slayer of the Living"
+     "variant": "Attuned Bone Bastard Sword"
     },
     {
      "slot": "Necklace",
@@ -1449,11 +1453,11 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Duskbone Ring"
+     "variant": "Celestial Topaz Ring"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Signet Ring of the Earth"
+     "variant": "Legendary Duskbone Ring"
     },
     {
      "slot": "Trinket",
