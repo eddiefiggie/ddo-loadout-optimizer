@@ -135,11 +135,13 @@ _DREAD = "The Legendary Dread Isle's Curse"
 
 
 def test_blanks_carry_intrinsic_dread_isle_membership():
-    # #334 — every blank is stamped with the FULL native field chain, not a bare
-    # `sets` list (which the solver never reads).
+    # #334 — an ELIGIBLE blank is stamped with the FULL native field chain, not a
+    # bare `sets` list (which the solver never reads).
     blanks, _, _, _ = dino.build_dino(_seed())
     assert blanks, "seed produces blanks"
-    for b in blanks:
+    carriers = [b for b in blanks if dino.carries_intrinsic_set(b)]
+    assert carriers, "some blanks carry the set"
+    for b in carriers:
         assert b["sets"] == [_DREAD]
         assert [s["set"] for s in b["set_bonus"]] == [_DREAD]
         assert b["set_bonus"][0].get("piece_bonuses"), "catalog def carries piece bonuses"
@@ -147,6 +149,45 @@ def test_blanks_carry_intrinsic_dread_isle_membership():
         assert tiers and all(t["set"] == _DREAD for t in tiers)
         assert any(t["pieces_required"] and t["affixes"] for t in tiers), \
             "at least one solvable threshold tier"
+
+
+def _mixed_seed():
+    """A seed carrying one of each kind: a plain accessory (carrier), a Set-Bonus
+    host, and a weapon (both non-carriers)."""
+    seed = _seed()
+    seed["crafted_hosts"] = [
+        {"host_category": "Non-Minor Artifact Accessories",
+         "items": ["Dinosaur Bone Helmet"], "set_bonus_slot": True,
+         "iod_slots": [{"type": "Scale", "category": "Accessory"}]},
+        {"host_category": "Weapons", "set_bonus_slot": False,
+         "iod_slots": [{"type": "Fang", "category": "Weapon"}]},
+    ]
+    return seed
+
+
+def test_set_bonus_hosts_and_weapons_carry_no_intrinsic_set():
+    # The wiki withholds the set from the three Set-Bonus hosts (their ONE set
+    # comes from the Set Bonus augment) and from Dinosaur Bone weapons; stamping
+    # it made one host pay for one set and deliver two.
+    # docs/wiki-evidence/dino-set-bonus-hosts.md
+    blanks, _, _, _ = dino.build_dino(_mixed_seed())
+    excluded = [b for b in blanks if not dino.carries_intrinsic_set(b)]
+    assert {b["slot"] for b in excluded} == {"Helmet", "Main Hand"}, \
+        "the Set-Bonus host and the weapon blank are excluded"
+    for b in excluded:
+        assert b.get("sets") in (None, []), f"{b['slot']} must carry no sets list"
+        assert b.get("set_bonus") == [], f"{b['slot']} must carry no set def"
+        assert not b.get("parsed_set_bonuses"), f"{b['slot']} must register no tier"
+    # The carriers in the same build are untouched.
+    carriers = [b for b in blanks if dino.carries_intrinsic_set(b)]
+    assert {b["slot"] for b in carriers} == {"Boots", "Necklace"}
+    assert all(b["sets"] == [_DREAD] for b in carriers)
+    # And the split is exactly the wiki's: no Set-Bonus host, no weapon, is a carrier.
+    for b in blanks:
+        if b.get("dino_set_bonus_slot") or b.get("category") == "weapon":
+            assert not dino.carries_intrinsic_set(b)
+        else:
+            assert dino.carries_intrinsic_set(b)
 
 
 def test_blank_set_bonus_def_is_a_deep_copy():
@@ -216,12 +257,20 @@ def test_built_blanks_are_dread_isle_pieces_shaped_like_natives():
                   and _DREAD in (v.get("sets") or []))
     native_tiers = [t for t in native["parsed_set_bonuses"] if t["set"] == _DREAD]
     assert native_tiers, "the native carrier parses Dread Isle tiers"
-    for b in blanks:
+    carriers = [b for b in blanks if dino.carries_intrinsic_set(b)]
+    assert len(carriers) == 7, \
+        f"6 Minor Artifact accessories + the Rune Arm carry it, got {len(carriers)}"
+    for b in carriers:
         assert b["sets"] == [_DREAD]
         assert [s["set"] for s in b["set_bonus"]] == [_DREAD]
         tiers = [t for t in b["parsed_set_bonuses"] if t["set"] == _DREAD]
         assert tiers == native_tiers, \
             f"blank {b['slot']} tiers drift from the native carrier's"
+    for b in blanks:
+        if dino.carries_intrinsic_set(b):
+            continue
+        assert _DREAD not in (b.get("sets") or []), \
+            f"blank {b['slot']} must not carry the set it buys at its Set Bonus slot"
     # Native carriers are unchanged: still present, still intrinsic-only.
     natives = [v for v in dataset["items"]
                if v.get("source") != "dino_crafting_blank"
@@ -230,18 +279,21 @@ def test_built_blanks_are_dread_isle_pieces_shaped_like_natives():
     assert all("set_membership_slot" not in v for v in natives)
 
 
-def test_built_set_bonus_hosts_pool_excludes_the_intrinsic_set():
-    # KTD3 (#334): the Armor/Helmet/Cloak blanks' Set-Bonus pool must not offer
-    # the set they now carry intrinsically — one item can never count as two
-    # Dread Isle pieces. Other synthesis fields are untouched.
+def test_built_set_bonus_hosts_offer_all_six_dino_sets():
+    # The Armor/Helmet/Cloak blanks buy their ONE set at the Set Bonus slot, from
+    # the wiki's six-option augment table — the Curse included. They carry none
+    # intrinsically, so the KTD3 single-identity filter removes nothing.
+    # docs/wiki-evidence/dino-set-bonus-hosts.md
     dataset = _built()
     blanks = [v for v in dataset["items"] if v.get("source") == "dino_crafting_blank"]
     hosts = [b for b in blanks if b.get("set_membership_slot")]
     assert sorted(h["slot"] for h in hosts) == ["Armor", "Cloak", "Helmet"]
     for h in hosts:
         pool = h["set_membership_slot"]["pool"]
-        assert _DREAD not in pool, f"{h['slot']} pool still offers the intrinsic set"
-        assert len(pool) == 5, "the other 5 Dino sets remain choosable"
+        assert _DREAD in pool, f"{h['slot']} pool must offer the Curse as a choice"
+        assert len(pool) == 6, "all 6 Dino sets are choosable"
+        assert _DREAD not in (h.get("sets") or []), \
+            f"{h['slot']} must not also carry the set for free"
     for b in blanks:
         assert b["dino_slots_norm"], "dino slots unchanged"
         assert b["augment_slots"] == [], "augment slots unchanged"

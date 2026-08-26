@@ -2878,31 +2878,42 @@ async function withCrossAdd(map, fn) {
     assert.ok(!r4.setsActive.some((s) => s.set === DREAD_SET), "the 4 natives alone do not activate it");
   });
 
-  await test("#334/KTD3: one equipped blank never counts as two Dread Isle pieces", async () => {
-    // The Helmet blank carries the set intrinsically AND has a Set-Bonus
-    // membership slot. Its pool must no longer offer the intrinsic set, so
-    // intrinsic piece + membership pick cannot both fire from one item: the
-    // blank + 3 natives is 4 pieces, below the 5-piece threshold, and no
-    // membership pick may join the intrinsic set to fake the 5th.
+  await test("#334/KTD3: a Set-Bonus host is ONE piece — its chosen set, never a free Dread Isle piece too", async () => {
+    // The reported double-dip. The Helmet blank has a Set-Bonus slot and so
+    // carries NO intrinsic set (docs/wiki-evidence/dino-set-bonus-hosts.md); its
+    // one set is whichever augment it is crafted with. With 4 native Curse
+    // carriers equipped, the helm must NOT silently supply a 5th Curse piece
+    // while its Set Bonus slot is spent on another set.
     const data = dreadData();
     const helm = dreadBlank(data, (v) => v.slot === "Helmet");
     assert.ok(helm, "the Helmet blank is in the dataset");
-    assert.ok((helm.set_bonus || []).some((s) => s.set === DREAD_SET), "the Helmet blank carries the set intrinsically");
-    assert.ok(!((helm.set_membership_slot || {}).pool || []).includes(DREAD_SET),
-      "the intrinsic set has left the blank's Set-Bonus pool");
-    const natives = dreadNatives(data, ["Bracers", "Boots", "Gloves"]);
-    assert.strictEqual(natives.length, 3, "3 native carriers in distinct worn slots");
-    const model = {
+    assert.ok(!(helm.set_bonus || []).some((s) => s.set === DREAD_SET),
+      "the Helmet blank carries NO intrinsic Curse membership");
+    assert.ok(((helm.set_membership_slot || {}).pool || []).includes(DREAD_SET),
+      "the Curse is one of the six Set Bonus augments it may choose");
+    const natives = dreadNatives(data, ["Bracers", "Boots", "Gloves", "Belt"]);
+    assert.strictEqual(natives.length, 4, "4 native carriers in distinct worn slots");
+    // Offer the helm ONLY the rival set, so it cannot pick the Curse. 4 natives
+    // + a Tanaroa-only helm must leave the 5-piece Curse inactive.
+    const rival = "Defender of Tanaroa";
+    const forced = JSON.parse(JSON.stringify(helm));
+    forced.set_membership_slot = { pool: [rival], station: "Dinosaur Bone crafting" };
+    const mk = (vs) => ({
       targets: ["Universal Spell Power"], mlCap: 34, dodgeCap: null,
       membershipSetDefs: data.membership_set_defs,
-      worn: [...natives, helm].map((v) => ({ slot: v.slot, cardinality: 1, variants: [v] })),
-    };
-    const r = await S.solveLexicographic(model, highs);
+      worn: vs.map((v) => ({ slot: v.slot, cardinality: 1, variants: [v] })),
+    });
+    const r = await S.solveLexicographic(mk([...natives, forced]), highs);
     assert.strictEqual(r.status, "optimal");
     assert.ok(!r.setsActive.some((s) => s.set === DREAD_SET),
-      "4 pieces (3 natives + the blank's ONE intrinsic piece) stay below the 5-piece threshold");
-    assert.ok(!(r.membershipPlaced || []).some((m) => m.set === DREAD_SET),
-      "no membership pick joins the set the blank already carries");
+      "4 natives + a helm spending its Set Bonus elsewhere stay below the 5-piece threshold");
+    // And the helm CAN be the 5th piece — by spending its Set Bonus slot on it.
+    const r6 = await S.solveLexicographic(mk([...natives, helm]), highs);
+    assert.strictEqual(r6.status, "optimal");
+    assert.ok(r6.setsActive.some((s) => s.set === DREAD_SET),
+      "choosing the Curse at the Set Bonus slot completes the 5-piece set");
+    assert.ok((r6.membershipPlaced || []).some((m) => m.set === DREAD_SET),
+      "and it is reported as a crafted membership pick, not a free intrinsic piece");
   });
 
   await test("MEMBERSHIP/no over-report on tieBreak:false (alternatives path)", async () => {

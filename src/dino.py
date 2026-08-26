@@ -86,13 +86,33 @@ _ARMOR_NAMES = {"Robe", "Outfit", "Docent", "Light Armor", "Medium Armor", "Heav
 _RUNEARM_NAMES = {"Runearm", "Rune Arm"}
 _DINO_ML = 31  # Dino crafting is a Legendary (ML31) system.
 
-# #334 — every crafted Dinosaur Bone item is intrinsically a piece of this set
-# (wiki: https://ddowiki.com/page/Dinosaur_Bone_Items — every crafted item's
-# enchantment list, including the Rune Arm's, ends with it). Membership is a
-# property of every blank, so it is stamped here in the record builder — one
-# line of truth — never repeated per layout entry. The name must match the
-# gear-planner catalog / membership_set_defs byte-exactly.
+# #334 — a crafted Dinosaur Bone item is intrinsically a piece of this set, but
+# NOT every one of them: the wiki gives it to the blanks that have no
+# `Isle of Dread: Set Bonus Slot`, and withholds it from the three that do
+# (Armor / Helmet / Cloak) and from the weapons. Those three get exactly ONE
+# set, chosen from six — and this set is one of the six choices, so stamping it
+# intrinsically both invented a free piece and deleted a real option. Full
+# ruling and verbatim wiki text: docs/wiki-evidence/dino-set-bonus-hosts.md.
+# Membership is a property of the record, so it is stamped here in the record
+# builder — one line of truth — never repeated per layout entry. The name must
+# match the gear-planner catalog / membership_set_defs byte-exactly.
 INTRINSIC_SET = "The Legendary Dread Isle's Curse"
+
+
+def carries_intrinsic_set(blank) -> bool:
+    """Whether a blank host is intrinsically a piece of ``INTRINSIC_SET``.
+
+    Two exclusions, both wiki-stated (docs/wiki-evidence/dino-set-bonus-hosts.md):
+
+    * a **Set-Bonus host** (Armor / Helmet / Cloak) has no intrinsic set — its
+      one set comes from the Set Bonus augment it is crafted with;
+    * a **Dinosaur Bone weapon** has no set at all. The raid-tier *Attuned* Bone
+      weapon does, and is a separate native catalog record.
+
+    Everything else — the six Minor Artifact accessories and the Rune Arm (plus
+    the shields/orb, which have no solver Off Hand blank) — carries it.
+    """
+    return not blank.get("dino_set_bonus_slot") and blank.get("category") != "weapon"
 
 
 def _resolve_host(item_name):
@@ -156,8 +176,9 @@ def _blank_variant(layout):
 
 def _stamp_set_membership(blanks, sets_catalog=None):
     """#334 — stamp intrinsic `The Legendary Dread Isle's Curse` membership on
-    every blank, in place, with the FULL native field chain (a bare `sets` list
-    is solver-inert): `sets`, `set_bonus` = a deep copy of the gear-planner
+    the blanks the wiki gives it to (`carries_intrinsic_set` — NOT all of them),
+    in place, with the FULL native field chain (a bare `sets` list is
+    solver-inert): `sets`, `set_bonus` = a deep copy of the gear-planner
     catalog definition (set_catalog.copy_def — never share a mutable def across
     records; same helper as the native attach in build_dataset), and
     `parsed_set_bonuses` via set_parser.annotate_variant. Blanks join
@@ -166,17 +187,25 @@ def _stamp_set_membership(blanks, sets_catalog=None):
     spell_focus.expand_variants — one owner for the recipe) are applied here —
     the built-dataset test pins channel equality against a native carrier so a
     future pass cannot drift the two silently.
+
+    A Set-Bonus host (Armor/Helmet/Cloak) and a weapon blank are skipped: the
+    host buys its ONE set at the Set Bonus slot (this set among the six choices),
+    and a Dinosaur Bone weapon has no set. Stamping them made one equipped host
+    pay for one set and deliver two.
     """
     if not blanks:
         return
     cat = set_catalog.load_catalog() if sets_catalog is None else sets_catalog
     if set_catalog.canonical(INTRINSIC_SET) not in cat:
         # Strict: a catalog that does not KNOW the set must never ship set-less
-        # blanks silently — the wiki says every crafted Dinosaur Bone item
-        # carries the set.
+        # blanks silently — the wiki gives it to every non-hosting, non-weapon
+        # crafted Dinosaur Bone item.
         raise SystemExit(
             f"dino blank set stamp: no catalog definition for {INTRINSIC_SET!r}")
     d = set_catalog.definition_for(INTRINSIC_SET, {}, cat)
+    blanks = [b for b in blanks if carries_intrinsic_set(b)]
+    if not blanks:
+        return
     for b in blanks:
         b["sets"] = [INTRINSIC_SET]
         if d is None:

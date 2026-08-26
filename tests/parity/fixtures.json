@@ -83,7 +83,7 @@
  },
  {
   "name": "endgame-caster-ml32",
-  "note": "ML32 spellcaster chasing spell power + potency. #290 expanded Potency into the ten element spellpowers, so the raw target scored zero; aliasTargets routes the list through the SAME migratePriorities the picker and saved-character load use, so the fixture solves what a player who ranked Potency actually gets after migration. Re-ratified 2026-08-13 for the #291 cross-add: each element spellpower target now additionally credits the achieved Universal Spell Power (+104 per element at this fixture's solve).",
+  "note": "ML32 spellcaster chasing spell power + potency. #290 expanded Potency into the ten element spellpowers, so the raw target scored zero; aliasTargets routes the list through the SAME migratePriorities the picker and saved-character load use, so the fixture solves what a player who ranked Potency actually gets after migration. Re-ratified 2026-08-13 for the #291 cross-add: each element spellpower target now additionally credits the achieved Universal Spell Power (+104 per element at this fixture's solve). Re-ratified 2026-08-26 for the Isle of Dread double-dip fix: the previous loadout equipped the Dinosaur Bone Armor/Helmet/Cloak blanks, spent all three Set Bonus slots on Defender of Tanaroa (3 pieces) AND collected a free Legendary Dread Isle's Curse 5-piece from the same three items — a set the wiki does not give a Set-Bonus host (docs/wiki-evidence/dino-set-bonus-hosts.md). With the phantom piece gone the solve stops paying three affix-less slots for it and equips real gear instead, so every ranked stat rises (Glaciation 247->359, Devotion 368->394, Wisdom 25->27, Charisma 24->25) at an unchanged priority-1 Universal Spell Power of 104; Corrosion 439->437 is a within-tier trade the vector-not-per-stat rule allows.",
   "query": {
    "mlCap": 32,
    "armorType": null,
@@ -139,7 +139,7 @@
  },
  {
   "name": "trance-credit-additive-ml32",
-  "note": "declared stat credit (U1) — Might's Reward's Sacred Positive Spell Power. No item in the catalog carries Sacred-typed Devotion, so the credit occupies an empty bucket: the total rises by exactly the credit and the loadout is untouched. Pins AE4, the case where a credit must NOT disturb the build. Re-ratified 2026-08-13 for the #291 cross-add re-optimization: Devotion now credits Universal Spell Power sources, so the solve trades Wisdom gear for USP gear (Devotion 346->448, USP 80->104, Wisdom 34->29); the pair's +12 A/B delta and identical chosen sets are preserved (asserted by solver_golden.test.js).",
+  "note": "declared stat credit (U1) — Might's Reward's Sacred Positive Spell Power. No item in the catalog carries Sacred-typed Devotion, so the credit occupies an empty bucket: the total rises by exactly the credit and the loadout is untouched. Pins AE4, the case where a credit must NOT disturb the build. Re-ratified 2026-08-13 for the #291 cross-add re-optimization: Devotion now credits Universal Spell Power sources, so the solve trades Wisdom gear for USP gear (Devotion 346->448, USP 80->104, Wisdom 34->29); the pair's +12 A/B delta and identical chosen sets are preserved (asserted by solver_golden.test.js). Re-ratified 2026-08-26 for the Isle of Dread double-dip fix: the achieved values are UNCHANGED — only the tied loadout moved, as the Dinosaur Bone Armor/Cloak blanks stopped carrying a free Legendary Dread Isle's Curse piece (docs/wiki-evidence/dino-set-bonus-hosts.md).",
   "query": {
    "mlCap": 32,
    "targets": [
@@ -162,7 +162,7 @@
  },
  {
   "name": "trance-credit-additive-ml32-baseline",
-  "note": "A/B twin of trance-credit-additive-ml32 with NO credit declared. The additive case must raise the total by exactly the credit and leave every slot alone; that is only checkable against this baseline. Re-ratified 2026-08-13 for the #291 cross-add re-optimization: Devotion now credits Universal Spell Power sources, so the solve trades Wisdom gear for USP gear (Devotion 334->436, USP 80->104, Wisdom 34->29); the pair's +12 A/B delta and identical chosen sets are preserved (asserted by solver_golden.test.js).",
+  "note": "A/B twin of trance-credit-additive-ml32 with NO credit declared. The additive case must raise the total by exactly the credit and leave every slot alone; that is only checkable against this baseline. Re-ratified 2026-08-13 for the #291 cross-add re-optimization: Devotion now credits Universal Spell Power sources, so the solve trades Wisdom gear for USP gear (Devotion 334->436, USP 80->104, Wisdom 34->29); the pair's +12 A/B delta and identical chosen sets are preserved (asserted by solver_golden.test.js). Re-ratified 2026-08-26 for the Isle of Dread double-dip fix: the achieved values are UNCHANGED — only the tied loadout moved, as the Dinosaur Bone Armor/Cloak blanks stopped carrying a free Legendary Dread Isle's Curse piece (docs/wiki-evidence/dino-set-bonus-hosts.md).",
   "query": {
    "mlCap": 32,
    "targets": [

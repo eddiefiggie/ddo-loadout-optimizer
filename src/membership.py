@@ -229,12 +229,16 @@ def attach_dino_set_bonus_slots(variants, defs: dict = None) -> int:
     is not both a Lost Purpose item and a Dinosaur Bone blank).
 
     KTD3 (#334): a set the host already carries INTRINSICALLY (its `set_bonus` /
-    `sets` — every Dinosaur Bone blank carries The Legendary Dread Isle's Curse)
-    is filtered out of the pool. The solver's single-identity constraint covers
-    membership picks and hosted set-augment copies, not the intrinsic piece, so
-    leaving the intrinsic set in the pool would let one equipped item count as
-    two pieces of the same set. If a wiki ruling ever shows the in-game Set
-    Bonus augment double-counts on an already-cursed item, revisit deliberately."""
+    `sets`) is filtered out of the pool. The solver's single-identity constraint
+    covers membership picks and hosted set-augment copies, not the intrinsic
+    piece, so leaving an intrinsic set in the pool would let one equipped item
+    count as two pieces of the same set.
+
+    No Dinosaur Bone Set-Bonus host reaches this filter with an intrinsic set any
+    more, so all 6 Dino sets stay choosable — including The Legendary Dread
+    Isle's Curse, which the wiki lists as one of the six Set Bonus augments
+    (docs/wiki-evidence/dino-set-bonus-hosts.md). The filter is kept as the
+    standing single-identity invariant for any host that DOES arrive with one."""
     n = 0
     for v in variants:
         if not v.get("dino_set_bonus_slot") or v.get("set_membership_slot"):
