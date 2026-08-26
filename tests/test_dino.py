@@ -316,3 +316,160 @@ def test_built_dataset_carries_dino_blanks_and_inserts():
     all_keys = {k for b in blanks for k in b["dino_slots_norm"]}
     assert any(k.endswith("||Weapon") for k in all_keys)
     assert any(k.endswith("||Armor") for k in all_keys)
+
+
+# --- #541: the synthesized blank is checked against the record it shadows -----
+#
+# #334 stamped the Curse on all eleven blanks from a hand-written rule while
+# gear-planner said otherwise for four of them, and NOTHING compared the two —
+# so a Set-Bonus host counted as a Curse piece and spent its Set Bonus slot on a
+# second set for ten days, until a player noticed. Membership is now DERIVED from
+# the natives each blank collapses, so the stamp cannot contradict the catalog;
+# these prove the derivation is real and that every way of breaking it is loud.
+
+
+def _dino_natives():
+    """The gear-planner Dinosaur Bone records, deep-copied so a test may corrupt
+    one without poisoning the module cache the other tests read."""
+    import copy
+    return [copy.deepcopy(it) for it in dino._load_planner_items()
+            if (it.get("name") or "").startswith("Dinosaur Bone ")]
+
+
+def _native_seed():
+    from src import dino_native
+    return dino_native.native_dino_seed()
+
+
+def _expect_exit(fragment, **kwargs):
+    """Run the real 11-blank build with `kwargs` and require SystemExit naming
+    `fragment`. A guard nobody has watched fail is a guard nobody should trust."""
+    try:
+        dino.build_dino(_native_seed(), **kwargs)
+    except SystemExit as e:
+        assert fragment in str(e), f"expected {fragment!r} in the failure, got: {e}"
+        return str(e)
+    raise AssertionError(f"expected SystemExit mentioning {fragment!r}; the build passed")
+
+
+def test_blank_membership_is_derived_from_the_natives_it_shadows():
+    # The derivation is the SOURCE of the stamp, not a second opinion on it: what
+    # gear-planner declares for the collapsed natives is what the blank claims.
+    derived = dino.native_set_membership()
+    blanks, _, _, cov = dino.build_dino(_native_seed())
+    assert len(blanks) == 11, f"expected the 11 blanks, got {len(blanks)}"
+    for b in blanks:
+        assert b["slot"] in derived, \
+            f"the {b['slot']} blank must be shadowed by a native record"
+        assert list(b.get("sets") or []) == list(derived[b["slot"]]["sets"])
+    # And the collapse really is many-to-one, so the unanimity rule has work to
+    # do: one Armor blank stands in for the armor types, one Weapon blank for the
+    # whole weapon table.
+    assert cov["blank_set_shadow_counts"]["Armor"] >= 4
+    assert cov["blank_set_shadow_counts"]["Main Hand"] >= 20
+    carriers = [b for b in blanks if b.get("sets")]
+    assert len(carriers) == 7, \
+        f"6 Minor Artifact accessories + the Rune Arm, got {len(carriers)}"
+    assert all(b["sets"] == [_DREAD] for b in carriers)
+
+
+def test_a_derivation_that_contradicts_the_wiki_ruling_fails_the_build():
+    # #334's exact defect, in both directions. gear-planner and
+    # docs/wiki-evidence/dino-set-bonus-hosts.md are independent sources; when
+    # they disagree a human rules on it, and the build does not ship either way.
+    over = _dino_natives()          # the #334 direction: a Set-Bonus host given the set
+    for it in over:
+        if it.get("slot") == "Armor":
+            it["sets"] = [_DREAD]
+    msg = _expect_exit("disputed", planner_items=over)
+    assert "'Armor'" in msg and "dino-set-bonus-hosts.md" in msg
+
+    under = _dino_natives()         # the opposite: a real carrier stripped of it
+    for it in under:
+        if it.get("slot") == "Belt":
+            it.pop("sets", None)
+    _expect_exit("disputed", planner_items=under)
+
+
+def test_an_unratified_set_name_stops_the_build():
+    # gear-planner mirrors ddowiki, but a mirror can move ahead of the ruling. A
+    # set name nobody has checked against the wiki is an inferred game value the
+    # moment it is stamped, so the derivation is pinned to what
+    # docs/wiki-evidence/dino-set-bonus-hosts.md actually ruled on.
+    substituted = _dino_natives()          # a real carrier put in a different set
+    for it in substituted:
+        if it.get("slot") == "Belt":
+            it["sets"] = ["Dread Stalker"]
+    msg = _expect_exit("never ruled on", planner_items=substituted)
+    assert "Dread Stalker" in msg and "'Belt'" in msg
+
+    added = _dino_natives()                # ...or in one MORE set than was ruled on
+    for it in added:
+        if it.get("slot") == "Belt":
+            it["sets"] = [_DREAD, "Dread Stalker"]
+    _expect_exit("never ruled on", planner_items=added)
+
+
+def test_a_cosmetic_set_suffix_is_not_an_unratified_name():
+    # The pin compares on the canonical key, so gear-planner spelling the same set
+    # `"... Set"` is not a false alarm — only a genuinely different set is. A pin
+    # that cries wolf gets widened to shut it up, which is how it stops working.
+    suffixed = _dino_natives()
+    for it in suffixed:
+        if it.get("sets"):
+            it["sets"] = [f"{_DREAD} Set"]
+    derived = dino.native_set_membership(suffixed)
+    assert derived["Belt"]["sets"] == (f"{_DREAD} Set",)
+    assert not derived["Armor"]["sets"]
+
+
+def test_the_ratified_list_is_not_empty():
+    # A pin with nothing in it is a pin that rejects everything; a pin that has
+    # quietly grown is a ruling nobody wrote. Both are worth noticing here.
+    assert dino.RATIFIED_SET_NAMES == frozenset({_DREAD}), \
+        "widening this needs a ddowiki harvest recorded in docs/wiki-evidence/"
+
+
+def test_a_split_between_the_collapsed_natives_fails_the_build():
+    # One blank cannot honestly claim a membership its natives do not share, so a
+    # split is worth failing on rather than resolving by majority or by first-wins.
+    split = _dino_natives()
+    for it in split:
+        if it.get("name") == "Dinosaur Bone Robe":
+            it["sets"] = [_DREAD]   # its three Armor siblings still carry none
+            break
+    else:
+        raise AssertionError("the Robe native is gone — the fixture needs updating")
+    msg = _expect_exit("disagree on set membership", planner_items=split)
+    assert "Dinosaur Bone Robe" in msg
+
+
+def test_zero_native_records_refuses_to_stamp():
+    # Make it refuse to inspect nothing: a guard handed an empty population
+    # reports success forever. An explicit empty list is a caller handing over
+    # nothing, which is a failure — not an empty answer.
+    _expect_exit("no 'Dinosaur Bone' records", planner_items=[])
+    # A non-empty catalog that has lost the family reads the same way.
+    _expect_exit("no 'Dinosaur Bone' records",
+                 planner_items=[{"name": "Legendary Bracers of the Sun Soul",
+                                 "slot": "Bracers", "sets": []}])
+
+
+def test_a_blank_no_native_shadows_fails_the_build():
+    # The join drifting is the failure #541 exists to forbid: an unshadowed blank
+    # is a synthesized record nothing checks, which is where #334 lived.
+    orphaned = [it for it in _dino_natives() if it.get("slot") != "Boots"]
+    assert orphaned, "the fixture must stay non-empty so this is not the zero-record guard"
+    msg = _expect_exit("no gear-planner Dinosaur Bone record shadows", planner_items=orphaned)
+    assert "'Boots'" in msg
+
+
+def test_built_coverage_discloses_the_derivation():
+    # The population is stamped into the built dataset, so "how many blanks carry
+    # the set, on whose authority" is read off the artifact, not recounted.
+    cov = _built()["metadata"]["dino_coverage"]
+    assert cov["blank_intrinsic_sets"]["Belt"] == [_DREAD]
+    assert cov["blank_intrinsic_sets"]["Armor"] == []
+    assert sum(1 for v in cov["blank_intrinsic_sets"].values() if v) == 7
+    assert set(cov["blank_intrinsic_sets"]) == set(cov["blank_set_shadow_counts"])
+    assert all(n >= 1 for n in cov["blank_set_shadow_counts"].values())

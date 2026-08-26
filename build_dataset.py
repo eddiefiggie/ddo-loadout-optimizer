@@ -606,8 +606,12 @@ def build() -> dict:
     _legendary_fold_cov_sets = legendary_fold_mod.apply(
         [t for tiers in _sets_raw.values() for t in tiers])
     _set_catalog = set_catalog_mod.catalog_from_raw(_sets_raw)
+    # #541 — the raw dump is read ONCE here and threaded to both consumers below:
+    # build_dino derives each blank's intrinsic set membership from the native
+    # records it shadows, and the artifact carry-over reads the same list.
+    _raw_items = _raw_planner_items()
     dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(
-        dino_seed, crafting, sets_catalog=_set_catalog)
+        dino_seed, crafting, sets_catalog=_set_catalog, planner_items=_raw_items)
     _host_pipeline_names = {b.get("source_item") for b in dino_blanks}
     # #364 — the blank REPLACES the same-named gear-planner record (its name is
     # excluded from the reader just below), so it must inherit that record's
@@ -625,7 +629,7 @@ def build() -> dict:
     # to on a family resemblance. Same field-chain rule `_stamp_set_membership`
     # already enforces for `sets` — a synthesized record needs the full chain.
     _native_artifact_names = {
-        it.get("name") for it in _raw_planner_items()
+        it.get("name") for it in _raw_items
         if it.get("artifact") and it.get("name") in _host_pipeline_names
     }
     for _b in dino_blanks:

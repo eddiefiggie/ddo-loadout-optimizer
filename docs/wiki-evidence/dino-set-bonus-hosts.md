@@ -117,3 +117,29 @@ from the very pool the wiki puts it in.
 `sets` field, and every Dinosaur Bone item without that slot lists the Curse. The
 synthesized blanks bypassed that data (they are generated, not harvested), which
 is why the stamp could contradict the catalog without any gate noticing.
+
+**That bypass is closed (#541).** A blank's membership is no longer stamped from
+the rule above — it is DERIVED from the gear-planner records the blank shadows,
+joined on the worn slot the synthesis collapses on, so the stamp cannot contradict
+the catalog. The table in this ruling survives as the independent cross-check the
+build runs against that derivation: the rule reads `dino_set_bonus_slot` from the
+hand-written host layout in `src/dino_native.py`, the derivation reads the catalog,
+and a disagreement stops the build naming both sides and this file. So if you are
+here because the build sent you: **do not change either side to make it green.**
+Re-read the wiki text above first — upstream changing a Dinosaur Bone item's `sets`
+is a game-data event, and it is equally possible upstream is the one that drifted.
+See `docs/solutions/design-patterns/derive-a-synthesized-record-from-the-record-it-shadows.md`.
+
+**The derivation is pinned to the names THIS page has ruled on.** gear-planner
+mirrors ddowiki, but a mirror can move ahead of the ruling, and a set name nobody
+has checked against the wiki is an inferred game value the moment it is stamped.
+So `src/dino.py: RATIFIED_SET_NAMES` holds exactly what is ruled on above — today
+`The Legendary Dread Isle's Curse` and nothing else — and the build stops on any
+other name gear-planner puts a Dinosaur Bone item in, including the five sibling
+Dino sets, which are real sets this page has ruled are *bought at the Set Bonus
+slot* rather than carried intrinsically.
+
+Widening that list is a **harvest, in this order**: re-read the page per
+`harvest-method.md`, amend the ruling and table above with the verbatim text, then
+add the name. Adding the name first is the edit that makes a red build green while
+shipping an unsourced value — exactly what the gate exists to prevent.
