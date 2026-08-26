@@ -27,9 +27,6 @@ import json
 from src import dino_parser
 from src import crafting_catalog
 from src import set_catalog
-from src import set_parser
-from src import spell_focus
-from src import umbrella
 from src.planner_items import RAW_PATH as _PLANNER_ITEMS_PATH
 
 # The four Dino bone types and the three gear categories whose native
@@ -315,16 +312,22 @@ def _blank_variant(layout):
 
 
 def _stamp_set_membership(blanks, sets_catalog=None, planner_items=None):
-    """Stamp each blank's intrinsic set membership, in place, with the FULL native
-    field chain (a bare `sets` list is solver-inert): `sets`, `set_bonus` = a deep
-    copy of the gear-planner catalog definition (set_catalog.copy_def — never
-    share a mutable def across records; same helper as the native attach in
-    build_dataset), and `parsed_set_bonuses` via set_parser.annotate_variant.
-    Blanks join `variants` AFTER the native tier passes have run, so the SAME
-    expansion entry points the native channel uses (umbrella.expand_variants,
-    then spell_focus.expand_variants — one owner for the recipe) are applied here
-    — the built-dataset test pins channel equality against a native carrier so a
-    future pass cannot drift the two silently.
+    """Stamp each blank's intrinsic set membership, in place, with the two fields
+    the NATIVE attach in build_dataset stamps (a bare `sets` list is solver-inert):
+    `sets`, and `set_bonus` = a deep copy of the gear-planner catalog definition
+    (set_catalog.copy_def — never share a mutable def across records; the same
+    helper the native attach uses).
+
+    #338 — it stamps those two fields and STOPS. `parsed_set_bonuses` and the
+    umbrella / spell-focus tier expansions used to be replicated here, because the
+    blanks joined `variants` after the native tier passes had already run. That
+    replication was only ever as complete as somebody remembered to keep it: the
+    parrying, heightened-awareness and speed `expand_set_bonuses` passes and the
+    expanded-away-orphan and helpless-fold guards were never mirrored, so a tier
+    clause needing them would have expanded on the native carriers and survived raw
+    on the blanks. build_dataset now appends the blanks BEFORE those passes, so the
+    native derivations reach them directly and there is one owner for the recipe
+    instead of two that agree by hand.
 
     #541 — WHAT gets stamped is now DERIVED from the gear-planner records the
     blank shadows (`native_set_membership`), not asserted next to them. #334
@@ -352,7 +355,6 @@ def _stamp_set_membership(blanks, sets_catalog=None, planner_items=None):
     if not blanks:
         return derived
     cat = set_catalog.load_catalog() if sets_catalog is None else sets_catalog
-    carriers = []
     for b in blanks:
         slot = b["slot"]
         if slot not in derived:
@@ -390,12 +392,8 @@ def _stamp_set_membership(blanks, sets_catalog=None, planner_items=None):
                 continue
             defs.append(set_catalog.copy_def(d))
         b["sets"] = list(names)
-        carriers.append(b)
         if defs:
             b["set_bonus"] = defs
-            set_parser.annotate_variant(b)
-    umbrella.expand_variants(carriers)
-    spell_focus.expand_variants(carriers)
     return derived
 
 

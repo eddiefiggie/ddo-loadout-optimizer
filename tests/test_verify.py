@@ -51,6 +51,33 @@ def test_boolean_only_item_verifies_via_its_presence_affix():
     assert v["affixes"][0]["eligible"] is True
 
 
+def test_dino_blank_verifies_on_its_insert_slots_alone():
+    # #338 — the Dinosaur Bone blanks now pass THROUGH this gate (they used to be
+    # appended already-verified after it), so the gate has to admit them. A blank
+    # ships an empty affix list by construction: no affixes, no scaling, no augment
+    # colors, and — for the Set-Bonus hosts and the Weapon blank — no intrinsic set
+    # either. Its whole value is the four typed insert slots the solver fills.
+    #
+    # Non-vacuous by construction: this record hits none of the other three admit
+    # clauses, so without the Dino-slot clause it quarantines and leaves the solve.
+    v = {"affixes": [], "scaling": [], "flagged": [],
+         "dino_slots_norm": ["Scale||Accessory", "Fang||Accessory"]}
+    V.verify_variant(v)
+    assert v["verification"] == "verified"
+    assert v["eligible_affix_count"] == 0
+    assert any("insert slots" in r for r in v["verification_reasons"]), \
+        "the reason names the dimension that carried it, never a bare pass"
+
+
+def test_a_slotless_affixless_record_still_quarantines():
+    # The companion half: the Dino clause admits on OPEN SLOTS, not on emptiness.
+    # A record with nothing at all must still quarantine, or the clause above is a
+    # hole that verifies every value-less record in the catalog.
+    v = {"affixes": [], "scaling": [], "flagged": [], "dino_slots_norm": []}
+    V.verify_variant(v)
+    assert v["verification"] == "quarantined"
+
+
 def test_coverage_counts_sum_to_variant_count():
     verified, cov = V.apply(_variants())
     assert cov["totals"]["verified"] + cov["totals"]["quarantined"] == len(verified)

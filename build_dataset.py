@@ -949,6 +949,26 @@ def build() -> dict:
     _er_aug_coverage = er_split_mod.apply(aug_pool, _er_shard)
     variants = expand_dataset(enriched_items + aug_pool)  # native path (verbatim affixes)
 
+    # #338 — the Dinosaur Bone blanks join the variant list HERE, ahead of every
+    # native tier pass, so ONE pipeline covers natives and blanks alike. They used
+    # to be appended after `verify_mod.apply` below, which forced `src/dino.py` to
+    # hand-replicate three stages (set-tier parse, umbrella, spell-focus) just to
+    # keep a blank shaped like a native — and silently skipped the ones it did not
+    # replicate: the parrying / heightened-awareness / speed `expand_set_bonuses`
+    # passes and the expanded-away-orphan and helpless-fold guards further down. A
+    # catalog refresh adding such a clause to a Dread Isle tier would have expanded
+    # on the native carriers and survived RAW on the blanks, caught only when the
+    # pytest tier==native pin ran, never on a bare build. Appending here deletes the
+    # duplication rather than widening it: `src/dino.py` now stamps `sets` +
+    # `set_bonus` and nothing else, and every derivation below is the native one.
+    #
+    # The comment that used to defend the late append ("added AFTER verify so their
+    # empty affix list does not quarantine them") was stale twice over: verify.py
+    # already admitted a set-member variant, and #338 adds the Dino-slot clause that
+    # admits all eleven — including the four carrying no intrinsic set, whose value
+    # is entirely the typed insert slots the solver fills.
+    variants = variants + dino_blanks
+
     # Wildcard set pieces (Gem of Many Facets, U6): the item rolls ONE set from each of
     # two pools (rerollable; theoretical-BiS picks the best per group). The pools aren't
     # in gear-planner (0 sets for the Gem), so they come from the wiki-sourced joker seed.
@@ -1174,16 +1194,11 @@ def build() -> dict:
     membership_mod.attach_lost_purpose_slots(variants, membership_defs)
     variants, cov = verify_mod.apply(variants)          # per-affix verification gate
 
-    # U3 — Isle of Dread Dino crafting: append pre-verified blank host variants
-    # (they carry typed Dino slots, no base affixes) and expose the insert pool
-    # the solver places into those slots. Blanks are added AFTER verify so their
-    # empty affix list does not quarantine them. (Built earlier so their host names
-    # can be excluded from the gear-planner reader — see the merge above.)
-    variants = variants + dino_blanks
     # U4 — Dino Set-Bonus: activate the chosen-set-membership slot on the Dinosaur
-    # Bone Armor/Helmet/Cloak Set-Bonus hosts (added here, after verify, since the
-    # blanks carry no base affixes). Same primitive as Vecna Lost Purpose; the 6 Dino
-    # sets are self-seeded from the same catalog, crafted at the Dinosaur Bone station.
+    # Bone Armor/Helmet/Cloak Set-Bonus hosts. Same primitive as Vecna Lost Purpose;
+    # the 6 Dino sets are self-seeded from the same catalog, crafted at the Dinosaur
+    # Bone station. Mutates the blank dicts in place — they are already IN `variants`
+    # as of #338, so this reaches the emitted records without a re-append.
     membership_mod.attach_dino_set_bonus_slots(dino_blanks, membership_defs)
 
     # U2 — Augment Sets: stamp the 21 "Set Augment: X" Colorless augment variants
