@@ -2043,8 +2043,7 @@ test("#449 U2: project() carries the fraction and the once-per-document statemen
 // ---------------------------------------------------------------------------
 // #453 U1 — affixStatCoverage. collapseExpansions folds an expansion back to the
 // enchantment and deliberately drops the member stat names; this carries them in
-// a parallel shape so a collapsed entry can be classified. Same precedent as
-// bundleGroups, which exists for the same reason and says so.
+// a parallel shape so a collapsed entry can be classified.
 // ---------------------------------------------------------------------------
 
 test("#453 U1 (R7/KTD1): a uniform collapsed entry reports every member stat", () => {

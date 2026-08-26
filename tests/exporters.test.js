@@ -1062,46 +1062,41 @@ const VIK_COLLAPSED = "Slot Woeful Viktranium augment: Profane Spell Focus Maste
 // tail. A missing end marker falls back to truncation; each test's anti-vacuity
 // assertion (the tail marker must survive the excision) turns that fallback
 // into a failure rather than silently weaker coverage.
-const sansBundles = (s, start, end) => {
-  const i = s.indexOf(start);
-  if (i < 0) return s;
-  const j = s.indexOf(end, i + start.length);
-  return j < 0 ? s.slice(0, i) : s.slice(0, i) + s.slice(j);
-};
+// The bundled-enchantments block used to be excised before these assertions,
+// because it DELIBERATELY listed an expansion's members under the engraved name.
+// With that block gone the whole document must be clean, so the excision — and
+// the anti-vacuity assertion that guarded it — are no longer needed. Asserting
+// on the full output is strictly stronger than asserting on a subset of it.
 
 test("U8/R8/AE6: the Markdown export renders the collapsed worn line, not seven school lines", () => {
   const md = toMarkdown(expansionRec());
   assert.ok(md.includes(COLLAPSED), "names the enchantment engraved on the item");
-  const sans = sansBundles(md, "## Bundled enchantments", "## Stat breakdown");
-  assert.ok(sans.includes("## Stat breakdown"), "the tail survived the excision (anti-vacuity)");
-  assert.ok(!/Abjuration Focus/.test(sans), "no expanded school leaks into the share text");
+  assert.ok(md.includes("## Stat breakdown"), "the document is complete");
+  assert.ok(!/Abjuration Focus/.test(md), "no expanded school leaks anywhere in the share text");
   assert.ok(md.includes(VIK_COLLAPSED), "the crafted choice-slot option reads as the enchantment too");
 });
 
 test("U8/R8: the BBCode export renders the collapsed line", () => {
   const bb = toBBCode(expansionRec());
   assert.ok(bb.includes(COLLAPSED));
-  const sans = sansBundles(bb, "[b]Bundled enchantments[/b]", "[b]Stat breakdown[/b]");
-  assert.ok(sans.includes("[b]Stat breakdown[/b]"), "the tail survived the excision (anti-vacuity)");
-  assert.ok(!/Abjuration Focus/.test(sans));
+  assert.ok(bb.includes("[b]Stat breakdown[/b]"), "the document is complete");
+  assert.ok(!/Abjuration Focus/.test(bb));
   assert.ok(bb.includes(VIK_COLLAPSED));
 });
 
 test("U8/R8: the CSV export renders the collapsed line", () => {
   const csv = toCsv(expansionRec());
   assert.ok(csv.includes(COLLAPSED));
-  const sans = sansBundles(csv, "Bundled enchantment", "Stat,Total,Capped,Sources");
-  assert.ok(sans.includes("Stat,Total,Capped,Sources"), "the tail survived the excision (anti-vacuity)");
-  assert.ok(!/Abjuration Focus/.test(sans));
+  assert.ok(csv.includes("Stat,Total,Capped,Sources"), "the document is complete");
+  assert.ok(!/Abjuration Focus/.test(csv));
   assert.ok(csv.includes(VIK_COLLAPSED));
 });
 
 test("U8/R8: the print HTML export renders the collapsed line", () => {
   const html = toPrintHtml(expansionRec());
   assert.ok(html.includes(COLLAPSED));
-  const sans = sansBundles(html, "<h2>Bundled enchantments</h2>", "<h2>Stat breakdown</h2>");
-  assert.ok(sans.includes("<h2>Stat breakdown</h2>"), "the tail survived the excision (anti-vacuity)");
-  assert.ok(!/Abjuration Focus/.test(sans));
+  assert.ok(html.includes("<h2>Stat breakdown</h2>"), "the document is complete");
+  assert.ok(!/Abjuration Focus/.test(html));
   assert.ok(html.includes(VIK_COLLAPSED));
 });
 
@@ -1119,16 +1114,7 @@ test("U8/R8: the .gearset carries the collapse through its CRAFTING line", () =>
   // plus crafting lines — so its behavior is asserted through the crafting line.
   const gs = toGearset(expansionRec());
   assert.ok(gs.includes(VIK_COLLAPSED), `crafting line names the enchantment; got:\n${gs}`);
-  // #370 — the bundles block is excised first, exactly as the MD/BBCode/CSV/print
-  // siblings do it. That block DELIBERATELY lists an expansion's members under
-  // the engraved name, and since #370 a via-stamped Viktranium craft reaches it
-  // too, so the seven schools legitimately appear there. Everything ABOVE it must
-  // still name only the enchantment. No end marker: the bundles block is the last
-  // thing the .gearset record emits, so the helper truncates — the anti-vacuity
-  // assertion below is what stops that from silently gutting the coverage.
-  const sans = sansBundles(gs, "Bundled enchantments", " never");
-  assert.ok(sans.includes(VIK_COLLAPSED), "the crafting line survived the excision (anti-vacuity)");
-  assert.ok(!/Necromancy Focus \+2/.test(sans), "not the single ranked school the option happened to match");
+  assert.ok(!/Necromancy Focus \+2/.test(gs), "not the single ranked school the option happened to match");
 });
 
 test("U8/R8: an export of a build with no expanded affix is unchanged", () => {

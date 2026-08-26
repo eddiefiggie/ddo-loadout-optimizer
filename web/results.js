@@ -2771,48 +2771,6 @@ function utilityCard(build, rankIdx) {
 // #340 — the Sets tab's bundled-enchantments block (empty string when the
 // loadout carries none). Deliberately NOT set-shaped: these are single-source
 // enchantments, so the copy says so and no piece count or tier language appears.
-// Groups come from the shared projection primitive (`Proj.bundleGroups`), the
-// same source the exports render, so the two surfaces cannot drift; `augById`
-// is the catalog fallback for placement records saved before they carried
-// affixes (the set-like block's own precedent).
-/** #485/#488 — the block renders the credit; it no longer computes it.
- *
- *  `bundleGroups` annotates every group and member with `live` (and `null` when
- *  there is no build to judge against), so the app and every export read the same
- *  fact from one place. Computing it here was what left the exports listing a
- *  superseded bundle as though the build were getting it.
- *
- *  Nothing is hidden. A superseded bundle keeps its card and says why: the player
- *  owns that item, and "the enchantment is on it and doing nothing" is a different
- *  fact from "the enchantment is absent". */
-function bundlesBlock(build, augById) {
-  const groups = Proj.bundleGroups(build, augById);
-  if (!groups.length) return "";
-  const cards = groups.map((b) => {
-    const members = b.members || [];
-    // ONLY `superseded` is struck. `unranked` means the player never asked for that
-    // stat — nothing is competing for its bucket — and marking it dead would claim
-    // a competitor that does not exist. `null` means there was no build to judge
-    // against, so nothing is claimed either way; that also keeps the member run
-    // contiguous, which is what lets the export-parity test compare the app's line
-    // against the share's character for character.
-    const grants = members.map((m) => {
-      const label = esc(affixLabel(m));
-      return m.state === "superseded" ? `<span class="bundle-dead">${label}</span>` : label;
-    }).join(", ");
-    // The whole-bundle case gets a sentence rather than only a shade: "this item
-    // has it and you are not getting it" is not something a reader should have to
-    // infer from a colour. Wording deliberately matches the per-chip `ranked`
-    // explanation on the gear cards — one fact, said the same way twice.
-    const dead = b.state === "superseded";
-    const note = dead ? `<div class="set-via bundle-note">A larger source elsewhere in this build already fills these bonus-type buckets, so this copy adds nothing.</div>` : "";
-    return `<li class="set-card bundle${dead ? " is-incidental" : ""}"><strong>${esc(b.name)}</strong>`
-      + `<div class="set-grants">${grants}</div>`
-      + `<div class="set-via">from ${esc(b.carrier)}</div>${note}</li>`;
-  }).join("");
-  return `<h3 class="setlike-h" title="one enchantment granting several stats">Bundled enchantments (single-source, not sets)</h3><ul class="sets bundle-list">${cards}</ul>`;
-}
-
 /** #481 (U4) — the concession control: "what would less of this buy?", asked from
  *  the priority it is about.
  *
@@ -2972,10 +2930,6 @@ function buildViews(build, model, query, opts) {
   if (setLike) {
     setsPanel += `<h3 class="setlike-h" title="non-set bonuses that occupy their own channels">Other set-like bonuses (compete with sets)</h3><ul class="sets setlike-list">${setLike}</ul>`;
   }
-  // #340 — bundled enchantments (third block): each engraved multi-stat bundle
-  // on the equipped loadout, named once with its members and carrier.
-  setsPanel += bundlesBlock(build, augById);
-
   return { paperdoll: `<div class="pd-list">${rows.join("")}</div>`, weapons, cards: cardsHtml, setsPanel };
 }
 
@@ -3339,7 +3293,7 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, bundlesBlock, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,
@@ -3347,7 +3301,7 @@ if (typeof module !== "undefined" && module.exports) {
     setMembershipSection, setRowsFor,
     // #472 — exported so a test can build the same credited-set index the
     // renderers read, rather than hand-rolling its shape and drifting from it.
-    itemContribIndex, bundlesBlock,
+    itemContribIndex,
     // #481 — the concession control's render gate, exported so a test can prove
     // WHERE it appears without driving a DOM.
     concessionControl };

@@ -224,15 +224,14 @@
    *  as incidental — including one carrying the player's rank-1 stat, silently,
    *  on a card that looks fine.
    *
-   *  So this emits its OWN shape rather than widening the collapse, exactly as
-   *  `bundleGroups` above does and for the same stated reason. A Map from the
+   *  So this emits its OWN shape rather than widening the collapse. A Map from the
    *  key `collapseExpansions` uses (`via`, else the affix's own name) to the set
    *  of stat names underneath it. Callers ask "does this entry cover a ranked
    *  stat" instead of comparing labels.
    *
-   *  Unlike `bundleGroups` this keeps groups of ONE: a single-stat rename still
-   *  needs its real stat name to classify, and there is no "a one-line bundle
-   *  would be a lie" hazard here because nothing is displayed from it.
+   *  This keeps groups of ONE: a single-stat rename still needs its real stat
+   *  name to classify, and there is no "a one-line group would be a lie" hazard
+   *  here because nothing is displayed from it.
    *
    *  `presence` rides along for the same reason `stats` does. A collapsed entry
    *  carries no bonus type at all — `collapseExpansions` drops it deliberately,
@@ -264,152 +263,6 @@
     if (!entry) return null;
     const own = entry.name != null ? entry.name : entry.stat;
     return entry[PROVENANCE_KEY] || own;
-  }
-
-  /** #488 — "was this carrier credited for this?", answered ONCE per carrier and
-   *  shared by every surface that renders a bundle.
-   *
-   *  It lives here, not in the render layer, because the app and every export both
-   *  need it: #485 gave the app's block a guard while `toMarkdown` and friends kept
-   *  listing a superseded bundle exactly like a live one, which is the
-   *  never-app-visible-but-share-invisible shape #370 ruled against. A player who
-   *  reads "adds nothing" on screen and then posts the build published the opposite.
-   *
-   *  Derived from `itemContributions`, which is the same function the item cards
-   *  read — NOT a second derivation. Bucket maxima computed twice are how two
-   *  surfaces come to disagree about one build. `attributionByTarget` is built once
-   *  and the per-carrier index is memoised, because a loadout can carry a dozen
-   *  bundles across three carriers.
-   */
-  function bundleCreditIndex(result) {
-    const attr = attributionByTarget(result);
-    const cache = new Map();
-    return (carrierId) => {
-      if (!cache.has(carrierId)) {
-        const keys = new Set(), byStat = new Map();
-        for (const c of itemContributions(result, { variant_id: carrierId }, attr)) {
-          // The enchantment NAME is a key as well as the stat: #453 (KTD1) put it
-          // there so a collapsed bundle can be matched by what it is called.
-          if (c.stat != null) { keys.add(c.stat); if (!byStat.has(c.stat)) byStat.set(c.stat, c); }
-          if (c.via != null) { keys.add(c.via); if (!byStat.has(c.via)) byStat.set(c.via, c); }
-        }
-        cache.set(carrierId, { keys, byStat });
-      }
-      return cache.get(carrierId);
-    };
-  }
-
-  function bundleGroups(result, augLookup) {
-    const out = [];
-    const collect = (carrier, kind, affixes, extra) => {
-      const groups = new Map();
-      for (const a of affixes || []) {
-        const via = a && a[PROVENANCE_KEY];
-        if (!via) continue;
-        if (!groups.has(via)) groups.set(via, []);
-        groups.get(via).push(a);
-      }
-      for (const [via, ms] of groups) {
-        if (ms.length < 2) continue;
-        out.push({
-          name: via, carrier, carrierKind: kind,
-          members: ms.map((m) => ({
-            name: m.name != null ? m.name : m.stat,
-            value: m.value,
-            type: m.type != null ? m.type : m.bonus_type,
-            ...(m.unit ? { unit: m.unit } : {}),
-          })),
-          ...(extra || {}),
-        });
-      }
-    };
-    for (const c of (result && result.chosen) || []) {
-      const v = c.variant || {};
-      collect(v.variant_id, "item", v.affixes);
-    }
-    for (const a of (result && result.augmentsPlaced) || []) {
-      const affixes = (a.affixes && a.affixes.length) ? a.affixes
-        : ((augLookup && augLookup.get(a.variant_id)) || {}).affixes;
-      collect(a.variant_id, "augment", affixes);
-    }
-    // #370 — crafted bundles. `vikPlaced`/`ncPlaced` name their host outright;
-    // a Dino insert does not, so its host comes from the SAME greedy
-    // reconstruction every other Dino surface reads (never a second walk that
-    // could disagree with the chips).
-    const dinoHosts = new Map();
-    const dinoAssign = assignDinoInserts((result && result.chosen) || [], result && result.dinoPlaced);
-    for (const [i, list] of dinoAssign.byIndex) {
-      const host = ((((result.chosen || [])[i] || {}).variant) || {}).variant_id;
-      for (const ins of list) dinoHosts.set(ins, host);
-    }
-    const craftChannels = [
-      [(result && result.vikPlaced) || [], "vik", (o) => o.item],
-      [(result && result.ncPlaced) || [], "nc", (o) => o.item],
-      [(result && result.dinoPlaced) || [], "dino", (o) => dinoHosts.get(o)],
-    ];
-    for (const [list, family, hostOf] of craftChannels) {
-      for (const o of list) {
-        const host = hostOf(o) || null;
-        const source = craftBundleSource(o, family);
-        collect(host ? `${host} (${source})` : source, "craft", o.affixes,
-          { host, craftFamily: family, craftName: o.name || null });
-      }
-    }
-
-    // #488 — annotate, never filter. A superseded bundle keeps its entry on every
-    // surface: the player owns that item, and "the enchantment is on it and doing
-    // nothing" is a different fact from "the enchantment is absent". Dropping it
-    // would answer the question by deleting it.
-    //
-    // `live: null` means UNJUDGED and is not the same as dead. Without a breakdown
-    // there is nothing to ask, and claiming "a larger source elsewhere fills these
-    // buckets" about a build we cannot see would be a fabricated fact — the failure
-    // the app-side guard shipped with once and had to have taken back out.
-    const judged = !!(result && result.breakdown && Object.keys(result.breakdown).length);
-    const credit = judged ? bundleCreditIndex(result) : null;
-    // The RANKED stats, which is what `breakdown` is keyed by. Needed because
-    // "not credited" has two completely different causes and only one of them is
-    // the player's problem — see the three states below.
-    const rankedStats = new Set(judged ? Object.keys(result.breakdown) : []);
-    for (const g of out) {
-      if (!judged) {
-        g.state = null;
-        g.members = g.members.map((m) => ({ ...m, state: null }));
-        continue;
-      }
-      const idx = credit(g.host || g.carrier);
-      // THREE states, because "this carrier was not credited for it" conflates two
-      // unrelated facts, and saying the wrong one is a false claim about the build:
-      //
-      //   live       — credited; this copy is what the solver counted.
-      //   superseded — the stat IS a ranked priority, and a larger source elsewhere
-      //                won its bucket. This copy really does add nothing.
-      //   unranked   — the stat is not on the priority list at all. Nothing is
-      //                "filling its bucket"; the player simply did not ask for it.
-      //
-      // Measured on six real fixtures, the two-state version called 16 of 20
-      // bundles superseded. Almost all were merely unranked — `Parrying` on Scales
-      // of the Exile, `Speed` on Gloves of the Strong — and the export would have
-      // told the player a larger source was filling a bucket nothing was competing
-      // for.
-      //
-      // Per MEMBER as well as per bundle: one carrier can hold two copies of one
-      // enchantment at different values (Legendary Bracers of Baphomet carries
-      // Stunning/Vertigo/Shatter at BOTH 6 and 12), and a bundle-level verdict
-      // alone would light up the dead 6s beside the live 12s.
-      g.members = g.members.map((m) => {
-        const c = idx.byStat.get(m.name);
-        const state = (c && Number(c.value) === Number(m.value)) ? "live"
-          : rankedStats.has(m.name) ? "superseded" : "unranked";
-        return { ...m, state };
-      });
-      const anyLive = idx.keys.has(g.name) || g.members.some((m) => m.state === "live");
-      // No boolean twin for `state`. A `live` flag was here and its negation read
-      // as "superseded", which is the conflation this whole comment is about.
-      g.state = anyLive ? "live"
-        : g.members.some((m) => m.state === "superseded") ? "superseded" : "unranked";
-    }
-    return out;
   }
 
   // Item-level ML read native-first (`ml`), legacy `minimum_level` fallback.
@@ -1896,11 +1749,6 @@
     // carrying it through the model is necessary, not sufficient.
     const sets = satisfiedSetDetail(snap).map((s) => ({ set: s.set, pieces: s.pieces, affixes: s.affixes, members: s.members || [] }));
 
-    // #340 (R8) — the bundled enchantments ride the shared content model, so
-    // every sets-rendering export inherits them (never solve-visible but
-    // share-invisible).
-    const bundles = bundleGroups(snap);
-
     const attribution = {};
     for (const stat of priorities) {
       // #91 (U6) — the Utility sentinel is EXCLUDED from the generic per-priority
@@ -1998,7 +1846,7 @@
         // under each of eight priorities it reads as boilerplate and stops being
         // read. Null when no stat carries a ceiling row.
         ceilingStatement: ceilingStatement(snap) },
-      loadout, sets, bundles, attribution,
+      loadout, sets, attribution,
     };
   }
 
@@ -2606,7 +2454,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, utilityPriceLine, utilityUnsecuredLines, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, bundleGroups, affixStatCoverage, affixCoverageKey, craftStepLabel, craftAffixRecords, itemMl, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, affixStatCoverage, affixCoverageKey, craftStepLabel, craftAffixRecords, itemMl, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     // #449 (U2) — the achieved/ceiling fraction: numbers, state and wording from
     // one place, plus the once-per-document full statement.
