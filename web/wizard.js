@@ -1675,9 +1675,20 @@ function savedBundlesHTML(bundles) {
   const e = _escAttr;
   const list = Array.isArray(bundles) ? bundles : [];
   const chips = list.length
-    ? `<div class="wz-bundle-row">${list.map((b) =>
-      `<button type="button" class="wz-bundle wz-bundle-mine" data-saved-bundle="${e(b.id)}"
-        title="${e(b.affixes.length)} ${b.affixes.length === 1 ? "stat" : "stats"}">${e(b.name || "Untitled")}</button>`).join("")}</div>`
+    ? `<div class="wz-bundle-row">${list.map((b) => {
+      const n = (b.affixes || []).length;
+      // Rename and delete ride WITH the chip and exist only here. A preset chip
+      // renders none of them, and the handlers refuse a preset key anyway — an
+      // absent control is a UI state, not a guarantee.
+      return `<span class="wz-saved-chip">
+        <button type="button" class="wz-bundle wz-bundle-mine" data-saved-bundle="${e(b.id)}"
+          title="Apply \u2014 ${e(n)} ${n === 1 ? "stat" : "stats"}">${e(b.name || "Untitled")}</button>
+        <button type="button" class="wz-saved-act" data-rename-bundle="${e(b.id)}"
+          aria-label="Rename ${e(b.name || "Untitled")}" title="Rename">\u270e</button>
+        <button type="button" class="wz-saved-act" data-delete-bundle="${e(b.id)}"
+          aria-label="Delete ${e(b.name || "Untitled")}" title="Delete">\u2715</button>
+      </span>`;
+    }).join("")}</div>`
     : `<p class="wz-help wz-bundle-empty">Rank the stats you want, then save that order as a bundle you can reuse on any character.</p>`;
   return bundleBoxHTML("mine", "My bundles", list.length, `${chips}
       <div class="wz-bundle-save">
@@ -1686,6 +1697,55 @@ function savedBundlesHTML(bundles) {
         <button type="button" class="btn ghost" id="wz-bundle-save">Save current ranks</button>
       </div>
       <p class="wz-bundle-msg" id="wz-bundle-msg" role="status" aria-live="polite"></p>`);
+}
+
+/** plan U4 — the ranking a saved bundle restores, and what it preserves.
+ *
+ *  REPLACE, not append. A saved ranking is a complete recipe whose #1 is the
+ *  decision that mattered; appending it onto a non-empty list would demote that
+ *  #1 to rank six and hand back a build the player never saved. Presets keep
+ *  appending — they are building blocks, and `addBundle` is untouched.
+ *
+ *  THE UTILITY TIER IS NOT ONE OF THE RANKED STATS, so a bundle does not carry
+ *  one and applying a bundle must not remove one. `newPriorityList` seeds the
+ *  sentinel into every ranking, so a wholesale replace would silently delete a
+ *  tier-level setting the player never asked to change. Presence is preserved and
+ *  the tier lands at the bottom — its seeded default. Its exact former position
+ *  is deliberately NOT preserved: the player may have dragged it to rank 3 of a
+ *  ten-stat list, and rank 3 of a different list is not the same decision.
+ *
+ *  Bounds come from the bundle alone. Carrying the old ranking's floors forward
+ *  would leave bounds keyed to stats the new ranking no longer has — the orphan
+ *  the store's own write boundary refuses. */
+function applySavedBundle(bundle, ranked) {
+  const b = bundle || {};
+  const cur = Array.isArray(ranked) ? ranked : [];
+  const keepTier = cur.includes(_utilitySentinel);
+  const stats = (Array.isArray(b.affixes) ? b.affixes : [])
+    .filter((a) => typeof a === "string" && a && a !== _utilitySentinel);
+  return {
+    priorities: keepTier ? [...stats, _utilitySentinel] : stats,
+    targetFloors: Object.assign({}, b.floors || {}),
+    targetCaps: Object.assign({}, b.caps || {}),
+  };
+}
+
+/** plan U4 — what the player is asked before a replace discards their work.
+ *  Named the way `overwriteConfirmText` is, and pure for the same reason: the
+ *  sentence is the product, so it is testable without a browser. */
+function applyBundleConfirmText(name, rankedCount) {
+  const n = Number(rankedCount) || 0;
+  return `Replace your current ranking with \u201C${String(name || "")}\u201D?`
+    + ` The ${n} ${n === 1 ? "stat" : "stats"} you have ranked now, and their floors and caps, are discarded.`;
+}
+
+/** plan U5 — the delete confirmation. A bundle is authored work and nothing else
+ *  in the app holds a copy of it, so the sentence says what is lost rather than
+ *  asking a bare "are you sure". */
+function deleteBundleConfirmText(name, statCount) {
+  const n = Number(statCount) || 0;
+  return `Delete the saved bundle \u201C${String(name || "")}\u201D?`
+    + ` Its ${n} ranked ${n === 1 ? "stat" : "stats"} and their bounds are removed. Your builds are not affected.`;
 }
 
 /** plan U3 — the bundle a save would produce, from the live ranking.
@@ -1797,7 +1857,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -4739,6 +4799,67 @@ if (typeof window !== "undefined" && window.App) {
             bundleMsg(`Saved "${name}" — ${n} ${n === 1 ? "stat" : "stats"}.`);
           };
           nameEl.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); saveBtn.click(); } };
+
+          // plan U4 — apply. REPLACES, unlike a preset, and confirms first when
+          // there is work to lose. `data-saved-bundle` is the only selector these
+          // handlers accept, so a preset chip cannot reach them.
+          root.querySelectorAll("[data-saved-bundle]").forEach((chip) => {
+            chip.onclick = () => {
+              const B = _savedBundles();
+              if (!B) return;
+              const rec = B.listBundles().find((x) => x.id === chip.dataset.savedBundle);
+              if (!rec) { bundleMsg("That bundle is no longer saved."); renderSavedBundles(); return; }
+              const ranked = (state.priorities || []).filter((p) => p && p !== _utilitySentinel);
+              if (ranked.length && !window.confirm(applyBundleConfirmText(rec.name, ranked.length))) return;
+              const next = applySavedBundle(rec, state.priorities);
+              markDirty();
+              state.priorities = next.priorities;
+              state.targetFloors = next.targetFloors;
+              state.targetCaps = next.targetCaps;
+              renderRanked();
+              bundleMsg(`Applied \u201C${rec.name}\u201D.`);
+            };
+          });
+
+          // plan U5 — rename and delete, on saved bundles only.
+          root.querySelectorAll("[data-rename-bundle]").forEach((btn) => {
+            btn.onclick = () => {
+              const B = _savedBundles();
+              if (!B) return;
+              const id = btn.dataset.renameBundle;
+              const rec = B.listBundles().find((x) => x.id === id);
+              if (!rec) { bundleMsg("That bundle is no longer saved."); renderSavedBundles(); return; }
+              const next = window.prompt("Rename this bundle:", rec.name);
+              if (next == null) return;                       // cancelled, not an empty name
+              const nm = String(next).trim();
+              if (!nm) { bundleMsg("A bundle needs a name."); return; }
+              if (nm === rec.name) return;
+              // Same collision rule as saving, excepting this bundle so a rename
+              // that only changes case is not refused against itself.
+              if (B.nameCollides(nm, B.listBundles(), id)) {
+                bundleMsg(`You already have a bundle called "${nm}".`); return;
+              }
+              const r = B.renameBundle(id, nm);
+              if (!r.ok) { bundleMsg("That bundle could not be renamed."); return; }
+              renderSavedBundles();
+              bundleMsg(`Renamed to \u201C${nm}\u201D.`);
+            };
+          });
+
+          root.querySelectorAll("[data-delete-bundle]").forEach((btn) => {
+            btn.onclick = () => {
+              const B = _savedBundles();
+              if (!B) return;
+              const id = btn.dataset.deleteBundle;
+              const rec = B.listBundles().find((x) => x.id === id);
+              if (!rec) { renderSavedBundles(); return; }
+              if (!window.confirm(deleteBundleConfirmText(rec.name, (rec.affixes || []).length))) return;
+              const r = B.deleteBundle(id);
+              if (!r.ok) { bundleMsg("That bundle could not be deleted."); return; }
+              renderSavedBundles();
+              bundleMsg(`Deleted \u201C${rec.name}\u201D.`);
+            };
+          });
         }
         wireSavedBundles();
         document.getElementById("wz-add-btn").onclick = () => { if (addPriority(add.value)) renderRanked(); add.value = ""; add.focus(); };
