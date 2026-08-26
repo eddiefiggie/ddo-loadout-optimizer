@@ -3634,6 +3634,37 @@ test("#487: nothing stamps is-rank1 on a row any more", () => {
   assert.ok(hasLine(html, "is-tracked", "Melee Power"), "the top priority is still credited");
   assert.strictEqual((html.match(/is-rank1/g) || []).length, 0,
     "…and carries no rank accent");
+
+  // #515 — the guard used to render only the STAT row, which is one of the four
+  // surfaces the retired `rank1` parameter was threaded to. A reintroduction in
+  // the augment or craft section would have passed it. Cover them too.
+  const withAug = { variant_id: "Aug", augment_slots: ["Colorless"],
+    affixes: [{ name: "Constitution", value: 6, type: "Insight" }] };
+  const withCraft = { variant_id: "Craft", crafting: ["Green Augment Slot"],
+    affixes: [{ name: "Dodge", value: 3, type: "Enhancement" }] };
+  for (const variant of [withAug, withCraft, { variant_id: "Bare", affixes: [] }]) {
+    const out = R.equippedBody(variant, -1, null, null, false, false,
+      chipCtx(variant.variant_id, { Constitution: { value: 6 }, Dodge: { value: 3 } }));
+    assert.strictEqual((out.match(/is-rank1/g) || []).length, 0,
+      `${variant.variant_id}: no rank accent on any card surface`);
+  }
+});
+
+test("#515: the retired `rank1` parameter is gone, not merely unused", () => {
+  // A parameter still sitting in position 4 of statChipRow and friends is a
+  // loaded gun: the next rank-aware feature finds it already named and plumbed,
+  // wires it into stackLine's opts, and silently reintroduces exactly what #487
+  // removed. Deleting the argument is what makes that impossible rather than
+  // merely discouraged.
+  const src = require("fs").readFileSync(
+    require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  assert.ok(!/\brank1\b/.test(src),
+    "no rank1 parameter, derivation, or opts branch survives in web/results.js");
+  // The CSS comments stay: they record why the class must never come back, which
+  // outlives the parameter that used to stamp it.
+  const css = require("fs").readFileSync(
+    require("path").join(__dirname, "..", "web", "styles.css"), "utf8");
+  assert.ok(/is-rank1/.test(css), "the stylesheet still records why it must not return");
 });
 
 test("#469/#472: the crafting system is named in words, not carried by a colour", () => {
