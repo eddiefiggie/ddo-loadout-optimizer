@@ -1057,6 +1057,21 @@ input.wz-ml { width: 120px; }
   border-left: none; padding: 0 8px; font-size: var(--fs-xs); cursor: pointer; line-height: 1; }
 .wz-saved-act:last-child { border-radius: 0 999px 999px 0; }
 .wz-saved-act:hover { color: var(--text); background: var(--elev); }
+/* plan U7 — the stored-items list in Your data. */
+.wz-stored { display: grid; gap: var(--sp-3); margin-top: var(--sp-2); }
+.wz-stored-head { margin: 0 0 var(--sp-1); font-size: var(--fs-sm); color: var(--muted);
+  display: flex; align-items: center; gap: var(--sp-2); }
+.wz-stored-count { color: var(--faint); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.wz-stored-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.wz-stored-list li { display: flex; align-items: center; gap: var(--sp-2);
+  padding: 4px 8px; background: var(--panel-2); border-radius: var(--radius-sm); }
+.wz-stored-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; font-size: var(--fs-sm); }
+.wz-stored-note { color: var(--faint); font-size: var(--fs-xs); white-space: nowrap; }
+.wz-stored-del { background: none; border: none; color: var(--faint); cursor: pointer;
+  padding: 0 4px; font-size: var(--fs-sm); line-height: 1; }
+.wz-stored-del:hover { color: var(--warn); }
+.wz-stored-empty { margin: 0; }
 .wz-bundle-tag { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; margin-right: var(--sp-1); }
 .wz-bundle {
   min-height: auto; padding: 0.3em 0.8em; font-size: var(--fs-sm); font-weight: 600;

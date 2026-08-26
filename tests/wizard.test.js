@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -722,6 +722,83 @@ test("U1: the grid sizes to volume and viewport, with no JavaScript measuring", 
   }
 });
 
+test("U7: every stored kind appears, and an empty one renders as empty", () => {
+  // Omitting an empty group would make "what is stored" and "what this panel
+  // shows" two different questions, and a player sent here by the storage-full
+  // message could not tell an empty store from one the panel forgot.
+  const model = storedItemsModel({ builds: [], bundles: [], versions: [], farming: {} });
+  assert.deepStrictEqual(model.map((g) => g.kind), ["builds", "bundles", "versions", "farming"]);
+  for (const g of model) assert.strictEqual(g.items.length, 0);
+  const html = storedItemsHTML(model, "panel");
+  for (const kind of ["builds", "bundles", "versions", "farming"]) {
+    assert.ok(html.includes(`data-kind="${kind}"`), `${kind} renders even when empty`);
+  }
+  assert.strictEqual((html.match(/wz-stored-empty/g) || []).length, 4, "each says so in words");
+  assert.ok(!html.includes("data-del-kind"), "and offers nothing to delete");
+});
+
+test("U7: each stored item carries its own delete, routed by kind", () => {
+  const model = storedItemsModel({
+    builds: [{ name: "Tank", savedAt: "2026-08-25T00:00:00Z" }],
+    bundles: [{ id: "b1", name: "Reaper", affixes: ["Constitution"] }],
+    versions: [{ id: "v1", name: "snap", kind: "auto" }],
+    farming: { Tank: { "Item A": true, "Item B": true } },
+  });
+  assert.deepStrictEqual(model.map((g) => g.items.length), [1, 1, 1, 1]);
+  const html = storedItemsHTML(model, "panel");
+  for (const [kind, id] of [["builds", "Tank"], ["bundles", "b1"], ["versions", "v1"], ["farming", "Tank"]]) {
+    assert.ok(new RegExp(`data-del-kind="${kind}"[^>]*data-del-id="${id}"`).test(html),
+      `${kind}/${id} has a delete bound to its own kind`);
+  }
+});
+
+test("U7: the notes count what the row actually holds, and pluralize", () => {
+  const model = storedItemsModel({
+    bundles: [{ id: "b1", name: "One", affixes: ["Constitution"] },
+      { id: "b2", name: "Two", affixes: ["Constitution", "Dodge"] }],
+    farming: { Solo: { A: true }, Many: { A: true, B: true, C: true } },
+  });
+  const bundles = model.find((g) => g.kind === "bundles").items;
+  assert.deepStrictEqual(bundles.map((i) => i.note), ["1 stat", "2 stats"]);
+  const farm = model.find((g) => g.kind === "farming").items;
+  assert.deepStrictEqual(farm.map((i) => i.note), ["1 tick", "3 ticks"]);
+});
+
+test("U7: versions are their own group, not nested under a build", () => {
+  // They carry no owner: versions.js holds no character reference and
+  // listVersions takes no scope. Nesting them under a build would imply a
+  // relationship the data does not record, and would leave the auto snapshots —
+  // most of them — with nowhere to appear.
+  const model = storedItemsModel({
+    builds: [{ name: "Tank" }],
+    versions: [{ id: "v1", name: "Tank — named", kind: "named" }, { id: "v2", name: "s", kind: "auto" }],
+  });
+  const versions = model.find((g) => g.kind === "versions");
+  assert.strictEqual(versions.items.length, 2, "both snapshots appear at top level");
+  const builds = model.find((g) => g.kind === "builds");
+  assert.strictEqual(builds.items.length, 1);
+  assert.ok(!JSON.stringify(builds.items).includes("v1"), "and none is filed under the build");
+});
+
+test("U7: a build delete in the list routes through the cascade coordinator", () => {
+  // Not CharacterStore.deleteCharacter — that is the primitive and skips the
+  // farming cleanup, which is the orphan U6 exists to prevent.
+  const region = srcFrom(WIZARD_SRC, "function renderStored", 2600, "stored list wiring");
+  assert.ok(/deleteBuildAndDependents/.test(region), "the coordinator is what the row calls");
+  assert.ok(/deletionImpact/.test(region), "and the impact is read for the confirmation");
+  assert.ok(region.indexOf("deletionImpact") < region.indexOf("deleteBuildAndDependents"),
+    "impact BEFORE the delete — read after and it always reports zero");
+});
+
+test("#502: the version row is the caller deleteVersion never had", () => {
+  // The storage-full message has told players to delete a version since #500,
+  // while deleteVersion sat in versions.js with no caller anywhere.
+  const region = srcFrom(WIZARD_SRC, "function renderStored", 2600, "stored list wiring");
+  assert.ok(/VersionStore\.deleteVersion\(/.test(region), "this is that caller");
+  assert.ok(/backups do not carry version history/.test(region),
+    "and the confirmation says a backup cannot bring it back, because U8 leaves snapshots out");
+});
+
 test("U4: applying a bundle REPLACES the ranking, in the bundle's order", () => {
   const bundle = { id: "b1", name: "T", affixes: ["Constitution", "Dodge"],
     floors: { Constitution: 40 }, caps: { Dodge: 60 } };
@@ -816,7 +893,10 @@ test("U5: the delete confirmation names the bundle and what goes with it", () =>
   assert.ok(t.includes("Reaper Tank") && /12 ranked stats/.test(t));
   assert.ok(/builds are not affected/i.test(t),
     "a bundle is not owned by a character, and the sentence says so");
-  assert.ok(/1 ranked stat\b/.test(deleteBundleConfirmText("X", 1)), "singular at one");
+  const one = deleteBundleConfirmText("X", 1);
+  assert.ok(/1 ranked stat\b/.test(one), "singular at one");
+  assert.ok(/its bounds/.test(one) && !/their bounds/.test(one),
+    "and the pronoun agrees — caught live as \"1 ranked stat and their bounds\"");
 });
 
 test("U3: a save captures the ranking's affixes, their ORDER, and their bounds", () => {

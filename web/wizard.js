@@ -192,6 +192,67 @@ function runBelongsTo(run, name, loadedName) {
  *  An in-progress save over a solved record KEEPS that loadout (see
  *  saveCurrentCharacter); the old wording said only "Update saved build", which
  *  read as an update while the write replaced the record wholesale. Pure. */
+/** plan U7 — everything stored locally, grouped by kind.
+ *
+ *  PURE: it takes the four lists rather than reading the stores, so what the panel
+ *  claims is stored is testable without a browser and without localStorage.
+ *
+ *  A KIND WITH NOTHING IN IT STILL APPEARS. Omitting an empty group would make
+ *  "what is stored" and "what this panel shows" two different questions, and the
+ *  player would have no way to tell an empty store from one the panel forgot. It
+ *  is also the honest answer to the storage-full message that sends them here.
+ *
+ *  Versions carry no owner, so they are their own group rather than nested under a
+ *  build — see the plan's Risks. Presenting them under a build would imply a
+ *  relationship the data does not record and would leave the auto-snapshots,
+ *  which is most of them, with nowhere to appear. */
+function storedItemsModel({ builds, bundles, versions, farming } = {}) {
+  const b = Array.isArray(builds) ? builds : [];
+  const bu = Array.isArray(bundles) ? bundles : [];
+  const v = Array.isArray(versions) ? versions : [];
+  const f = (farming && typeof farming === "object") ? farming : {};
+  return [
+    { kind: "builds", label: "Builds", empty: "No saved builds.",
+      items: b.map((c) => ({ id: String(c.name || c), label: String(c.name || c),
+        note: c.savedAt ? String(c.savedAt).slice(0, 10) : "" })) },
+    { kind: "bundles", label: "Saved bundles", empty: "No saved bundles.",
+      items: bu.map((x) => {
+        const n = (x.affixes || []).length;
+        return { id: String(x.id), label: String(x.name || "Untitled"),
+          note: `${n} ${n === 1 ? "stat" : "stats"}` };
+      }) },
+    { kind: "versions", label: "Version snapshots", empty: "No version snapshots.",
+      items: v.map((x) => ({ id: String(x.id), label: String(x.name || x.id),
+        note: x.kind === "auto" ? "auto" : String(x.kind || "") })) },
+    { kind: "farming", label: "Farming progress", empty: "No farming progress.",
+      items: Object.keys(f).map((name) => {
+        const n = Object.keys(f[name] || {}).length;
+        return { id: name, label: name, note: `${n} ${n === 1 ? "tick" : "ticks"}` };
+      }) },
+  ];
+}
+
+/** plan U7 — the stored-items list. Every row carries a delete, because a list
+ *  that shows what is stored and cannot remove it is the state the storage-full
+ *  message already put the player in. */
+function storedItemsHTML(model, ns) {
+  const e = _escAttr;
+  const groups = Array.isArray(model) ? model : [];
+  return `<div class="wz-stored" id="wz-stored-${e(ns)}">
+    ${groups.map((g) => `<section class="wz-stored-group" data-kind="${e(g.kind)}">
+      <h4 class="wz-stored-head">${e(g.label)} <span class="wz-stored-count">${g.items.length}</span></h4>
+      ${g.items.length
+        ? `<ul class="wz-stored-list">${g.items.map((it) => `<li>
+            <span class="wz-stored-name">${e(it.label)}</span>
+            ${it.note ? `<span class="wz-stored-note">${e(it.note)}</span>` : ""}
+            <button type="button" class="wz-stored-del" data-del-kind="${e(g.kind)}"
+              data-del-id="${e(it.id)}" aria-label="Delete ${e(it.label)}" title="Delete">\u2715</button>
+          </li>`).join("")}</ul>`
+        : `<p class="wz-help wz-stored-empty">${e(g.empty)}</p>`}
+    </section>`).join("")}
+  </div>`;
+}
+
 /** plan U6 — what deleting a build takes with it, said before it happens.
  *
  *  Names the farming count when there is one, because that is work the player did
@@ -1764,7 +1825,8 @@ function applyBundleConfirmText(name, rankedCount) {
 function deleteBundleConfirmText(name, statCount) {
   const n = Number(statCount) || 0;
   return `Delete the saved bundle \u201C${String(name || "")}\u201D?`
-    + ` Its ${n} ranked ${n === 1 ? "stat" : "stats"} and their bounds are removed. Your builds are not affected.`;
+    + ` Its ${n} ranked ${n === 1 ? "stat" : "stats"} and ${n === 1 ? "its" : "their"} bounds are removed.`
+    + " Your builds are not affected.";
 }
 
 /** plan U3 — the bundle a save would produce, from the live ranking.
@@ -1876,7 +1938,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, deleteBuildConfirmText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -4224,6 +4286,11 @@ if (typeof window !== "undefined" && window.App) {
             <input id="wz-import-${ns}" type="file" accept=".json,application/json" class="wz-hidden">
           </div>
           <div id="wz-data-stat-${ns}" class="wz-filestat"></div>
+          <hr class="wz-data-sep">
+          <p class="wz-label">What is stored on this device</p>
+          <p class="wz-help">Everything below lives in this browser only. Remove anything you no longer need \u2014 this is
+            also where to free space when the app says storage is full.</p>
+          <div id="wz-stored-host-${ns}"></div>
         </div>`;
     }
 
@@ -4250,6 +4317,61 @@ if (typeof window !== "undefined" && window.App) {
     }
 
     function wireDataManagement(ns) {
+      // plan U7 — the stored-items list. Rendered and re-rendered here rather than
+      // in the block template, because a delete has to refresh it in place: the
+      // panel is an overlay and a full wizard render would close it.
+      function renderStored() {
+        const host = document.getElementById(`wz-stored-host-${ns}`);
+        if (!host) return;
+        const SB = _savedBundles();
+        host.innerHTML = storedItemsHTML(storedItemsModel({
+          // eslint-disable-next-line no-undef
+          builds: CharacterStore.listCharacters(),
+          bundles: SB ? SB.listBundles() : [],
+          // eslint-disable-next-line no-undef
+          versions: (typeof VersionStore !== "undefined") ? VersionStore.listVersions() : [],
+          // eslint-disable-next-line no-undef
+          farming: (typeof FarmingList !== "undefined") ? FarmingList.readProgress() : {},
+        }), ns);
+        host.querySelectorAll("[data-del-kind]").forEach((btn) => {
+          btn.onclick = () => {
+            const kind = btn.dataset.delKind;
+            const id = btn.dataset.delId;
+            if (kind === "builds") {
+              // Routed through the coordinator so the confirmation names what goes
+              // with it, and so this delete cannot skip the cascade.
+              // eslint-disable-next-line no-undef
+              const impact = CharacterStore.deletionImpact(id);
+              if (!window.confirm(deleteBuildConfirmText(id, impact, false))) return;
+              // eslint-disable-next-line no-undef
+              const r = CharacterStore.deleteBuildAndDependents(id);
+              if (!r.ok) { window.alert("That build could not be deleted. Nothing was removed."); return; }
+              renderRail();
+            } else if (kind === "bundles") {
+              const SBx = _savedBundles();
+              if (!SBx) return;
+              const rec = SBx.listBundles().find((x) => x.id === id);
+              if (!rec) { renderStored(); return; }
+              if (!window.confirm(deleteBundleConfirmText(rec.name, (rec.affixes || []).length))) return;
+              SBx.deleteBundle(id);
+            } else if (kind === "versions") {
+              // #502 — the storage-full message has always told players to delete a
+              // version. deleteVersion has existed in versions.js since #500 with no
+              // caller anywhere; this is that caller.
+              if (!window.confirm("Delete this version snapshot? It cannot be restored from a backup \u2014 backups do not carry version history.")) return;
+              // eslint-disable-next-line no-undef
+              VersionStore.deleteVersion(id);
+            } else if (kind === "farming") {
+              if (!window.confirm(`Clear the farming progress recorded for \u201C${id}\u201D?`)) return;
+              // eslint-disable-next-line no-undef
+              FarmingList.clearProgress(id);
+            }
+            renderStored();
+          };
+        });
+      }
+      renderStored();
+
       const exportBtn = document.getElementById(`wz-export-${ns}`);
       if (exportBtn) exportBtn.onclick = () => {
         // eslint-disable-next-line no-undef
@@ -4304,6 +4426,7 @@ if (typeof window !== "undefined" && window.App) {
               ? `Imported ${n} character${n === 1 ? "" : "s"}${extra} (merged by name).`
               : (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.");
             renderRail();
+            renderStored();
           };
           reader.readAsText(f);
         };
