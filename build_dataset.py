@@ -990,32 +990,43 @@ def build() -> dict:
                                  for group in spec.get("groups", [])]
         v["set_bonus"] = []
 
-    # #283 — Dino insert capacity for the two native quarterstaff hosts. They ship
-    # already (typed `Quarterstaffs`, carrying their own +15 Enhancement Bonus) and
-    # were missing only the insert slots their own crafting list grants them, so
-    # nothing is synthesized to stand in for them — the eight synthetic blanks
-    # exist because their native counterparts carry NO affixes, and replacing one
-    # of THESE would delete a real affix (the #364 trap, one channel over).
+    # #283 / #545 — Dino insert capacity for the NATIVE hosts. They ship already,
+    # correctly typed and carrying their own affixes, and were missing only the
+    # insert slots their own crafting list grants them. So nothing is synthesized
+    # to stand in for them: the eleven synthetic blanks exist because their native
+    # counterparts carry NO affixes, and replacing one of THESE would delete a
+    # real affix (the #364 trap, one channel over).
+    #
+    # Two derived populations, one seam. #283 covers the two hosts naming a
+    # `(quarterstaff)` pool; #545 covers the 122 naming a base pool. Both qualify
+    # by naming a pool themselves — never by appearing on a list — and both are
+    # stamped through `stamp_dino_capacity`, so they cannot drift into stamping
+    # the same record twice or disagreeing about what a host is.
     #
     # Stamped HERE, after expand_dataset, for the same reason the joker groups
     # above are: variants rebuild from a fixed field list, so a field stamped on
-    # the base record would be dropped. Selection is derived (a host qualifies by
-    # naming a `(quarterstaff)` pool itself), never listed.
+    # the base record would be dropped.
     _qs_hosts = dino_mod.native_quarterstaff_hosts(_raw_items, crafting)
-    _qs_hosts_stamped = 0
-    for v in variants:
-        slots = _qs_hosts.get(v.get("source_item") or "")
-        if not slots or v.get("dino_slots_norm"):
-            continue
-        v["dino_slots_norm"] = list(slots)
-        _qs_hosts_stamped += 1
-    if _qs_hosts_stamped != len(_qs_hosts):
+    _native_hosts = dino_mod.native_dino_hosts(
+        _raw_items, crafting, blank_source_items=_host_pipeline_names)
+    _overlap = set(_qs_hosts) & set(_native_hosts)
+    if _overlap:
         raise SystemExit(
-            f"dino quarterstaff hosts: {len(_qs_hosts)} record(s) name a "
-            f"quarterstaff pool but {_qs_hosts_stamped} reached a variant "
-            f"({sorted(_qs_hosts)}). The join is by `source_item` and was complete "
-            "when #283 shipped, so an unstamped host is a host silently back to "
-            "zero insert capacity — the whole defect #283 fixes.")
+            f"dino capacity stamp: {sorted(_overlap)} qualify as BOTH a #283 "
+            "quarterstaff host and a #545 base host. The two populations are "
+            "meant to partition the hosts, so an overlap means one of the two "
+            "selection rules has drifted.")
+    _dino_hosts_stamped = dino_mod.stamp_dino_capacity(
+        variants, {**_qs_hosts, **_native_hosts})
+    # #545 — the population, disclosed. "How many natives carry insert capacity,
+    # and which ones" is read off the artifact rather than recounted by hand: the
+    # count on the issue was wrong three times over because it lived in prose.
+    dino_cov["quarterstaff_hosts_stamped"] = len(_qs_hosts)
+    dino_cov["native_hosts_stamped"] = len(_native_hosts)
+    dino_cov["native_host_names"] = sorted(_native_hosts)
+    dino_cov["native_host_slot_counts"] = {
+        n: len(k) for n, k in sorted(_native_hosts.items())}
+    dino_cov["capacity_carriers_total"] = _dino_hosts_stamped + dino_cov["blank_hosts"]
 
     # Artifact item-quality flag: sourced NATIVELY — each gear-planner variant
     # already carries `artifact` (bool) from the dump, read through _make_variant.

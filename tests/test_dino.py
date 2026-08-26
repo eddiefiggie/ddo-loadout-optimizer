@@ -742,3 +742,160 @@ def test_the_guard_fixtures_are_not_vacuously_empty():
     # nothing would satisfy the guards for the wrong reason.
     hosts = dino.native_dino_hosts(_native_host_fixture(), catalog=_NATIVE_CATALOG)
     assert len(hosts) == 2
+
+
+def test_stamping_writes_the_capacity_and_counts_what_it_wrote():
+    variants = [
+        {"source_item": "Attuned Bone Longsword", "affixes": [{"stat": "Strength"}]},
+        {"source_item": "Attuned Bone Belt", "affixes": [{"stat": "Constitution"}]},
+        {"source_item": "Legendary Bracers of the Sun Soul", "affixes": []},
+    ]
+    hosts = {"Attuned Bone Longsword": ["Claw||Weapon", "Fang||Weapon"],
+             "Attuned Bone Belt": ["Scale||Accessory"]}
+    assert dino.stamp_dino_capacity(variants, hosts) == 2
+    assert variants[0]["dino_slots_norm"] == ["Claw||Weapon", "Fang||Weapon"]
+    assert variants[0]["affixes"], "the host keeps its own affixes (the #364 trap)"
+    assert variants[1]["dino_slots_norm"] == ["Scale||Accessory"]
+    assert "dino_slots_norm" not in variants[2], "a non-host is untouched"
+
+
+def test_a_host_that_never_reached_a_variant_names_that_cause():
+    # R3a, first half. #283's guard covers two hosts, where "did not ship" and
+    # "shipped unstamped" are the same failure. Across 122 they are not: an
+    # unrelated blocklist or quarantine change drops the record before this seam,
+    # and would otherwise present as this stamp's own defect.
+    variants = [{"source_item": "Attuned Bone Belt", "affixes": []}]
+    hosts = {"Attuned Bone Belt": ["Scale||Accessory"],
+             "Attuned Bone Longsword": ["Claw||Weapon"]}
+    try:
+        dino.stamp_dino_capacity(variants, hosts)
+    except SystemExit as e:
+        msg = str(e)
+        assert "never reached a variant" in msg
+        assert "Attuned Bone Longsword" in msg
+        assert "Attuned Bone Belt" not in msg, "the host that DID stamp is not blamed"
+    else:
+        raise AssertionError("expected SystemExit for a host that never shipped")
+
+
+def test_a_host_that_shipped_already_carrying_capacity_names_that_cause():
+    # R3a, second half. A host reaching this seam with capacity already on it is
+    # a double-stamp: two sources claim the same craft, and the second one wins
+    # silently. Distinct cause, distinct message.
+    variants = [{"source_item": "Attuned Bone Longsword",
+                 "dino_slots_norm": ["Scale||Weapon"], "affixes": []}]
+    hosts = {"Attuned Bone Longsword": ["Claw||Weapon"]}
+    try:
+        dino.stamp_dino_capacity(variants, hosts)
+    except SystemExit as e:
+        msg = str(e)
+        assert "already carried insert capacity" in msg
+        assert "Attuned Bone Longsword" in msg
+    else:
+        raise AssertionError("expected SystemExit for an already-stamped host")
+
+
+def test_stamping_refuses_an_empty_host_map():
+    # Make it refuse to inspect nothing: a stamp handed no hosts reports success
+    # forever while every native goes back to zero capacity.
+    try:
+        dino.stamp_dino_capacity([{"source_item": "Attuned Bone Belt"}], {})
+    except SystemExit as e:
+        assert "no hosts to stamp" in str(e)
+    else:
+        raise AssertionError("expected SystemExit for an empty host map")
+
+
+def test_built_native_hosts_carry_capacity_and_keep_everything_else():
+    # The #545 defect, end to end. All 122 ship stamped, and every one of them
+    # keeps the affixes, type and verification it earned through the native
+    # pipeline — nothing is synthesized over a record that carries real value.
+    dataset = _built()
+    cov = dataset["metadata"]["dino_coverage"]
+    assert cov["native_hosts_stamped"] == 122
+    stamped = [v for v in dataset["items"]
+               if v.get("variant_id") in cov["native_host_names"]]
+    assert len(stamped) == 122
+    for v in stamped:
+        assert v["dino_slots_norm"], f"{v['variant_id']} carries no capacity"
+        assert v["affixes"], f"{v['variant_id']} lost its own affixes (the #364 trap)"
+        assert v.get("source") != "dino_crafting_blank", "a native, not a blank"
+    # 392 slot keys across the 122, and the shape is NOT uniform: 78 weapons name
+    # all four pools while 12 named Legendary weapons name exactly one, and a
+    # shield names two Armor keys plus two Weapon keys (the mixed typing a Dino
+    # host layout carries). Asserting a flat "every weapon has four" would be a
+    # claim about a population nobody looked up.
+    assert sum(len(v["dino_slots_norm"]) for v in stamped) == 392
+    weapons = [v for v in stamped if v.get("category") == "weapon"]
+    assert len(weapons) == 90
+    assert sorted(len(v["dino_slots_norm"]) for v in weapons) == [1] * 12 + [4] * 78
+    shield = next(v for v in stamped if v.get("source_item") == "Dinosaur Bone Tower Shield")
+    assert shield["dino_slots_norm"] == [
+        "Fang||Armor", "Fang||Weapon", "Scale||Armor", "Scale||Weapon"]
+
+
+def test_built_capacity_population_is_the_whole_catalog_answer():
+    # The population is asserted, not recorded in prose: 11 blanks + 2
+    # quarterstaff hosts (#283) + 122 natives (#545) and nothing else.
+    dataset = _built()
+    cov = dataset["metadata"]["dino_coverage"]
+    carriers = [v for v in dataset["items"] if v.get("dino_slots_norm")]
+    assert len(carriers) == 135
+    assert cov["capacity_carriers_total"] == 135
+    blanks = [v for v in carriers if v.get("source") == "dino_crafting_blank"]
+    assert len(blanks) == 11 == cov["blank_hosts"]
+    assert cov["quarterstaff_hosts_stamped"] == 2
+    assert cov["native_hosts_stamped"] == 122
+    assert len(blanks) + cov["quarterstaff_hosts_stamped"] + cov["native_hosts_stamped"] \
+        == len(carriers), "the three populations partition the carriers exactly"
+
+
+def test_built_blank_source_items_are_not_stamped_twice():
+    # `Dinosaur Bone Helmet` and `Dinosaur Bone Cloak` name a Dino pool and are
+    # the records two blanks shadow. They ship ONCE, as blanks.
+    dataset = _built()
+    for name in ("Dinosaur Bone Helmet", "Dinosaur Bone Cloak"):
+        rows = [v for v in dataset["items"] if v.get("source_item") == name]
+        assert len(rows) == 1, f"{name} ships once, got {len(rows)}"
+        assert rows[0]["source"] == "dino_crafting_blank"
+        assert rows[0]["dino_slots_norm"]
+
+
+def test_built_off_hand_natives_are_stamped_like_any_other_host():
+    # KTD7: shields, orbs and rune arms all ship in the solver's Off Hand slot,
+    # so the six Off Hand hosts are stamped normally. The blank-era deferral was
+    # about materialising a BLANK for them, not about the slot existing.
+    dataset = _built()
+    cov = dataset["metadata"]["dino_coverage"]
+    off = [v for v in dataset["items"]
+           if v.get("variant_id") in cov["native_host_names"]
+           and v.get("slot") == "Off Hand"]
+    assert len(off) == 6
+    assert {v.get("type") for v in off} == {
+        "Bucklers", "Orbs", "Tower shields", "Rune Arms",
+        "Large shields", "Small shields"}
+
+
+def test_a_quarterstaff_typed_host_naming_only_base_pools_draws_the_qs_versions():
+    # A case #545 makes reachable for the first time. `Legendary Spearfisher` is
+    # typed `Quarterstaffs` and its crafting list names only the BASE
+    # `Scale (Weapon)` pool — the mirror of the host #283 guards against.
+    #
+    # It is NOT special-cased. #283's standing rule is that which pool VARIANT a
+    # host draws is a property of its weapon TYPE, resolved at solve time by
+    # `model.js dinoWeaponVariant`, never baked into the slot — which is exactly
+    # why the stamp stores the PHYSICAL key. So this host carries `Scale||Weapon`
+    # like any other and resolves to the quarterstaff versions because of what it
+    # is, not because of which key gear-planner recorded.
+    #
+    # Recorded here because it is contestable and now live: see the open question
+    # on whether gear-planner naming the base key on a quarterstaff is a
+    # shorthand or a statement. Following the ratified rule is the conservative
+    # reading; inventing an exception would be the inference.
+    dataset = _built()
+    host = next(v for v in dataset["items"]
+                if v.get("source_item") == "Legendary Spearfisher")
+    assert host["type"] == "Quarterstaffs"
+    assert host["dino_slots_norm"] == ["Scale||Weapon"], \
+        "the PHYSICAL key is stamped; the variant is resolved at solve time"
+    assert host["affixes"], "a named Legendary keeps everything it earned"

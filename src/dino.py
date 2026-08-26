@@ -443,6 +443,58 @@ def native_dino_hosts(planner_items=None, catalog=None, blank_source_items=None)
     return dict(sorted(hosts.items()))
 
 
+def stamp_dino_capacity(variants, hosts):
+    """Write each host's Dino slot keys onto the variant it shipped as, in place.
+    Returns how many variants were stamped.
+
+    ONE seam serves both derived host populations (#283's quarterstaff hosts and
+    #545's natives), so the two can never drift into stamping the same record
+    twice or disagreeing about what a host is. The join is by ``source_item``.
+
+    Refuses rather than softens, and the refusal names the CAUSE, because a
+    derived host can go unstamped two different ways:
+
+    * it **never reached a variant** — an unrelated gate (a blocklist, a
+      quarantine, an upstream rename) dropped the record before this seam. Not
+      this stamp's defect, and reporting it as one sends the next reader to the
+      wrong code. #283's guard could conflate the two because it covered two
+      hosts; across 122 the distinction is load-bearing.
+    * it **shipped already carrying capacity** — two sources claim the same
+      craft, and the second silently wins. That is the double-stamp, and it is
+      this stamp's defect.
+    """
+    if not hosts:
+        raise SystemExit(
+            "dino capacity stamp: no hosts to stamp. Both derived populations "
+            "were non-empty when #545 shipped, so an empty map is a caller "
+            "handing over nothing — every native host would go back to zero "
+            "insert capacity with nothing said.")
+    stamped, already, reached = 0, [], set()
+    for v in variants:
+        slots = hosts.get(v.get("source_item") or "")
+        if not slots:
+            continue
+        reached.add(v["source_item"])
+        if v.get("dino_slots_norm"):
+            already.append(v["source_item"])
+            continue
+        v["dino_slots_norm"] = list(slots)
+        stamped += 1
+    if already:
+        raise SystemExit(
+            f"dino capacity stamp: {sorted(set(already))} already carried insert "
+            "capacity when the stamp ran. Two sources claim the same craft and "
+            "the second wins silently, which is the double-stamp #545 forbids.")
+    missing = sorted(set(hosts) - reached)
+    if missing:
+        raise SystemExit(
+            f"dino capacity stamp: {missing} never reached a variant. The join is "
+            "by `source_item` and was complete when #545 shipped, so these hosts "
+            "were dropped upstream of this seam — look at the gate that dropped "
+            "them, not at the stamp.")
+    return stamped
+
+
 def native_set_membership(planner_items=None):
     """Worn slot -> ``{"sets": tuple, "natives": [name, ...]}`` as gear-planner
     declares it for the Dinosaur Bone records collapsing into that blank.
