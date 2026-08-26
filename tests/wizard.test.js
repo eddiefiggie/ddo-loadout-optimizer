@@ -4772,3 +4772,13 @@ test("#518: clearing from the notice routes through the store that owns the key"
   assert.ok(/FarmingList\.clearProgress\(/.test(region),
     "not a hand-rolled write of a blob only farming.js documents");
 });
+
+test("#518: loading another build clears a takeover notice raised for the last one", () => {
+  // The documented leak family: the state object outlives any one character, so
+  // a per-character field with no unconditional reset on the load path stays
+  // live from the previous build. A notice naming build A, still on screen under
+  // build B, is exactly that — and it reads as B having inherited A's ticks.
+  const region = fnBody(WIZARD_SRC, "function loadCharacter(", 4);
+  assert.ok(/state\.farmingTakeover = null;/.test(region),
+    "the notice is cleared on every load, beside the other per-character resets");
+});

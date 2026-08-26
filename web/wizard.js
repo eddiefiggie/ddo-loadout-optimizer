@@ -3948,6 +3948,11 @@ if (typeof window !== "undefined" && window.App) {
       // build's accepted overwrite forward would let the next Continue silently
       // replace a record this player never agreed to replace.
       state.nameReconciled = null;
+      // #518 U4 — the takeover notice is per-character too. `state` outlives any
+      // one build, so a notice raised when A was saved would still be on screen
+      // under B, naming A — which reads as B having inherited A's ticks. Reset
+      // unconditionally, like every field above it.
+      state.farmingTakeover = null;
       // #428 U6 (AE3) — a loaded build has not been blocked yet, so nothing is
       // marked as needing an answer. A build saved before KD6 carries no armor
       // and will be marked the moment Continue is pressed (AE3a).
