@@ -2,13 +2,11 @@
 // affixes, their order, and the floor and cap declared for each — kept so it can
 // be reused on any character.
 //
-// NAMED `SavedBundles`, NOT `Bundles`, deliberately. "Bundle" already means two
-// unrelated things in this repo and the collision is easy to walk into:
-//
-//   * BUNDLED ENCHANTMENTS (`bundleGroups`, `bundlesBlock`, `tests/bundles.test.js`)
-//     are a multi-stat engraved affix group on an item, rendered on the Sets tab.
-//   * PRESET BUNDLES (`PRESET_BUNDLES` in web/wizard.js) are the primer chips on
-//     the priority step.
+// NAMED `SavedBundles`, NOT `Bundles`, deliberately. "Bundle" also names the
+// PRESET BUNDLES (`PRESET_BUNDLES` in web/wizard.js) — the primer chips on the
+// priority step — and the collision is easy to walk into. A third meaning,
+// BUNDLED ENCHANTMENTS on the Sets tab, was retired with that section; the name
+// stays specific anyway, because it cost a rename once already.
 //
 // This store is neither. It holds what the PLAYER saved. The plan's U2 named the
 // file `bundles-store.js` and its test `bundle-store.test.js`; both are renamed

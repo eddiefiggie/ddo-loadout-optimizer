@@ -565,13 +565,7 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 /* #481 — the concession control and its answer, on a ranked stat card. Ghost
    weight at rest: it is an optional question, not an action the card is asking
    for, and a primary button here would compete with the headline number. */
-/* #485 — a bundled enchantment the build is not getting. Dimmed AND struck:
-   the shade alone would read as one more decorative tier, and the row language
-   standard here is that a class carries its meaning as a shape before a colour. */
 .utility-effect .utility-mark { color: var(--optimal); }
-.set-card.bundle.is-incidental strong { color: var(--muted); }
-.bundle-dead { color: var(--muted); text-decoration: line-through; }
-.bundle-note { color: var(--muted); font-style: italic; }
 
 .stat-card .concession-probe {
   margin-top: var(--sp-3); font-size: var(--fs-xs); padding: 2px var(--sp-2);
@@ -1054,7 +1048,12 @@ input.wz-ml { width: 120px; }
 .wz-saved-chip { display: inline-flex; align-items: stretch; }
 .wz-saved-chip .wz-bundle-mine { border-radius: 999px 0 0 999px; border-right: none; }
 .wz-saved-act { background: var(--panel-2); color: var(--muted); border: 1px solid var(--accent-2);
-  border-left: none; padding: 0 8px; font-size: var(--fs-xs); cursor: pointer; line-height: 1; }
+  border-left: none; padding: 0 8px; font-size: var(--fs-xs); cursor: pointer; line-height: 1;
+  /* Square by default. Only `:last-child` was ever given a radius, so the MIDDLE
+     control kept the generic button rule's rounded corners and drew itself as a
+     separate box wedged between the name pill and the delete cap — the chip read
+     as three overlapping controls rather than one segmented one. */
+  border-radius: 0; min-width: 2rem; }
 .wz-saved-act:last-child { border-radius: 0 999px 999px 0; }
 .wz-saved-act:hover { color: var(--text); background: var(--elev); }
 /* plan U7 — the stored-items list in Your data. */
@@ -1604,7 +1603,14 @@ input.wz-ml { width: 120px; }
 .wz-charnm { flex: 1; font-weight: 600; overflow-wrap: anywhere; }
 .wz-charlist .wz-ctl { display: flex; gap: var(--sp-1); }
 .wz-charlist .wz-ctl button { background: transparent; color: var(--muted); border: 1px solid var(--border-2);
-  border-radius: var(--radius-sm); padding: 3px 9px; font-size: var(--fs-xs); cursor: pointer; }
+  border-radius: var(--radius-sm); padding: 3px 9px; font-size: var(--fs-xs); cursor: pointer;
+  /* `.wz-ctl button` above is the SQUARE icon-button rule (width/height 32px), and
+     this override reset everything except the size. "Load →" needs 42px of text in
+     a 30px content box, so it wrapped to two lines inside a 32px square and
+     collided with the delete control beside it. Text controls size to their text;
+     the icon-only delete keeps the square. */
+  width: auto; height: auto; min-height: 32px; white-space: nowrap; }
+.wz-charlist .wz-ctl button[data-raildel] { width: 32px; }
 .wz-charlist .wz-ctl button:hover { color: var(--text); border-color: var(--accent); }
 .wz-savestat { font-size: var(--fs-sm); color: var(--muted); }
 .wz-data { margin-top: var(--sp-3); border: 1px dashed var(--border-2); border-radius: var(--radius); background: var(--panel-2); }

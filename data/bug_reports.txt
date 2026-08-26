@@ -229,3 +229,28 @@ Filed 2026-08-24:
   exclusion having actually fired.
 - #509 "Set Augments I own" select-all. Confirmed: 21 individually-ticked checkboxes,
   no bulk control anywhere in web/. Enhancement, no defect. Unrelated to #496.
+
+---
+2026-08-26 — user report (validated, both fixed in the same PR)
+
+1. "the My Bindle chip, overlaps with the edit and 'X' option."
+   CONFIRMED in the browser against 08252026.10. The saved-bundle chip is a
+   three-part segmented pill (name | rename | delete). Only `.wz-saved-act:last-child`
+   was ever given a border-radius, so the MIDDLE control kept the generic button
+   rule's 7px corners and drew itself as a separate rounded box wedged between the
+   name pill and the delete cap. Computed: name 999px/0/0/999px, edit 7px,
+   delete 0/999px/999px/0.
+   Fixed: `.wz-saved-act { border-radius: 0; min-width: 2rem; }` — issue #535.
+
+   Found alongside it and fixed in the same change: the "Saved builds" rail's
+   "Load →" button. `.wz-ctl button` is the SQUARE icon-button rule (width/height
+   32px) and `.wz-charlist .wz-ctl button` reset everything except the size, so
+   42px of text was locked in a 30px content box and wrapped to two lines against
+   the delete control.
+
+2. "Remove the Bundled enchantment section of the set tab. Just adds no value."
+   Removed everywhere on the user's explicit call (asked, because the section also
+   rendered in five export formats with tests pinning app<->export parity): the
+   Sets tab block, all five exports, `Proj.bundleGroups`, `bundleCreditIndex`, and
+   `resolved.bundles` in the ddo-loadout/v1 envelope. Closes #486, which had
+   recorded the same section reading as sets under a heading that had to deny it.
