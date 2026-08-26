@@ -67,6 +67,10 @@ const _lamordiaWeaponVariant = (typeof lamordiaWeaponVariant !== "undefined")
   ? lamordiaWeaponVariant
   // eslint-disable-next-line global-require
   : require("./model.js").lamordiaWeaponVariant;
+const _dinoWeaponVariant = (typeof dinoWeaponVariant !== "undefined")
+  ? dinoWeaponVariant
+  // eslint-disable-next-line global-require
+  : require("./model.js").dinoWeaponVariant;
 
 // U4b-i — stacking-equivalence: canonicalize an affix `type` to its stacking
 // bucket token before it forms a bucket KEY, so equivalent-but-distinct native
@@ -688,7 +692,13 @@ function buildProgram(model) {
   // of whose affixes advances a ranked target is left out; a unit whose key has no
   // open slot on any equipped item is forced to 0 by an empty-capacity constraint.
   const dinoSlotKey = (ins) => `${ins.dino_type}||${ins.category || "Accessory"}`;
-  const dinoByKey = new Map(); // "type||category" -> [placement var names]
+  const dinoByKey = new Map();     // "type||category" -> [every placement var]
+  // #283 — the variant-restricted subsets of the same keys. A record marked
+  // `quarterstaff: true` may only be placed on a quarterstaff host, `false` only
+  // on a non-quarterstaff one, and an unmarked record (identical in both pools)
+  // on either.
+  const dinoQsOnly = new Map();    // -> placement vars needing a quarterstaff host
+  const dinoBaseOnly = new Map();  // -> placement vars needing a NON-quarterstaff host
   let qc = 0;
   for (const ins of model.dinoInserts || []) {
     const affixes = (ins.affixes && ins.affixes.length)
@@ -706,6 +716,11 @@ function buildProgram(model) {
     const key = dinoSlotKey(ins);
     if (!dinoByKey.has(key)) dinoByKey.set(key, []);
     dinoByKey.get(key).push(q);
+    if (ins.quarterstaff === true || ins.quarterstaff === false) {
+      const side = ins.quarterstaff === true ? dinoQsOnly : dinoBaseOnly;
+      if (!side.has(key)) side.set(key, []);
+      side.get(key).push(q);
+    }
     // Gate ONLY the on-target affixes into buckets (off-target affixes of the same
     // unit ride along physically but add no objective terms); one shared gate [q]
     // keeps the multi-affix placement all-or-nothing.
@@ -715,17 +730,31 @@ function buildProgram(model) {
       zByBucket.get(k).push(zOf([q], a.value, a, ins.name || ins.dino_type));
     }
   }
-  // capacity: sum(q of key) - sum(open_dino_slots_of_key(item) * x_item) <= 0
-  for (const [key, qs] of dinoByKey) {
+  // capacity: sum(q of key) - sum(open_dino_slots_of_key(item) * x_item) <= 0,
+  // where the host sum is restricted to the hosts that placement is allowed on.
+  const dinoCapacity = (qs, key, hostOk) => {
     const capTerms = [];
     for (const xv of xVars) {
+      if (!hostOk(xv.variant)) continue;
       const slots = xv.variant.dino_slots_norm || [];
       const n = slots.filter((t) => t === key).length;
       if (n > 0) capTerms.push(`${n} ${xv.name}`);
     }
     const rhs = capTerms.length ? " - " + capTerms.join(" - ") : "";
     extraConstraints.push(`${qs.join(" + ")}${rhs} <= 0`);
-  }
+  };
+  const isQsHost = (v) => _dinoWeaponVariant(v) === "quarterstaff";
+  // #283 — placements now come in three kinds (quarterstaff-only, base-only, and
+  // unmarked-either) drawing on two kinds of host supply, so ONE aggregate
+  // constraint per key is no longer enough: it would let a quarterstaff-only
+  // insert consume a slot on an untyped blank. Three families express the
+  // feasibility condition for that structure exactly — total demand within total
+  // supply, and each restricted demand within the supply it is allowed to use.
+  // Anything satisfying all three can be realised as an actual assignment, so
+  // these are sufficient as well as necessary.
+  for (const [key, qs] of dinoByKey) dinoCapacity(qs, key, () => true);
+  for (const [key, qs] of dinoQsOnly) dinoCapacity(qs, key, isQsHost);
+  for (const [key, qs] of dinoBaseOnly) dinoCapacity(qs, key, (v) => !isQsHost(v));
 
   // U81 Nearly Completed — a parametric choice-slot on an item. An item carrying
   // `nearly_complete: <category>` may craft one option from that category's pool

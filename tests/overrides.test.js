@@ -446,8 +446,17 @@ test("#88 U6: every eligible pool row is addressable, and keys are unique across
   // a `via` expansion receipt: 184 viktranium, 54 dino_inserts, 40 nearly_complete.
   // 976 - 278 = 698. Re-ratified deliberately against the built pool, not accepted
   // as an incidental diff.
-  assert.strictEqual(rows, 698, "the eligible pool-row population");
-  assert.strictEqual(seen.size, 678, "distinct keys");
+  // #283 re-ratification — was 698 / 678. Deriving the `(quarterstaff)` sibling
+  // pools added exactly four dino_inserts records (the entries that DIFFER from
+  // their base twins: Iridiscent Fang; Brightscale, Iridiscent Scale,
+  // Shadowscale), and they contribute 7 eligible rows and 4 distinct keys.
+  // Measured per record rather than inferred from the totals — 2 + 2 + 1 + 2;
+  // the rest of their affixes are `via`-stamped spell-focus and spellpower
+  // expansions, which R7 excludes. Attributed by rebuilding the population with
+  // the four records removed: it returns to 698 / 678 exactly, so nothing else
+  // moved.
+  assert.strictEqual(rows, 705, "the eligible pool-row population");
+  assert.strictEqual(seen.size, 682, "distinct keys");
 });
 
 test("#88 U6: three same-stat seal entries at different bonus types get three distinct keys", () => {

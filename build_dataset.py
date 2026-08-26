@@ -990,6 +990,33 @@ def build() -> dict:
                                  for group in spec.get("groups", [])]
         v["set_bonus"] = []
 
+    # #283 — Dino insert capacity for the two native quarterstaff hosts. They ship
+    # already (typed `Quarterstaffs`, carrying their own +15 Enhancement Bonus) and
+    # were missing only the insert slots their own crafting list grants them, so
+    # nothing is synthesized to stand in for them — the eight synthetic blanks
+    # exist because their native counterparts carry NO affixes, and replacing one
+    # of THESE would delete a real affix (the #364 trap, one channel over).
+    #
+    # Stamped HERE, after expand_dataset, for the same reason the joker groups
+    # above are: variants rebuild from a fixed field list, so a field stamped on
+    # the base record would be dropped. Selection is derived (a host qualifies by
+    # naming a `(quarterstaff)` pool itself), never listed.
+    _qs_hosts = dino_mod.native_quarterstaff_hosts(_raw_items, crafting)
+    _qs_hosts_stamped = 0
+    for v in variants:
+        slots = _qs_hosts.get(v.get("source_item") or "")
+        if not slots or v.get("dino_slots_norm"):
+            continue
+        v["dino_slots_norm"] = list(slots)
+        _qs_hosts_stamped += 1
+    if _qs_hosts_stamped != len(_qs_hosts):
+        raise SystemExit(
+            f"dino quarterstaff hosts: {len(_qs_hosts)} record(s) name a "
+            f"quarterstaff pool but {_qs_hosts_stamped} reached a variant "
+            f"({sorted(_qs_hosts)}). The join is by `source_item` and was complete "
+            "when #283 shipped, so an unstamped host is a host silently back to "
+            "zero insert capacity — the whole defect #283 fixes.")
+
     # Artifact item-quality flag: sourced NATIVELY — each gear-planner variant
     # already carries `artifact` (bool) from the dump, read through _make_variant.
     # No curated seed / stamp remains (verified: the retired artifacts.json seed
@@ -1277,6 +1304,10 @@ def build() -> dict:
     _vik_pool_checked = vik_pool_mod.check(_vik_pool_relocations, crafting)
     _vik_pool_coverage = vik_pool_mod.apply(_vik_pool_relocations, crafting)
     vik = vik_mod.build_viktranium(crafting)
+    # #283 — the `(quarterstaff)` sibling pools are read softly (not every pool
+    # HAS a sibling), so a dropped upstream key would silently under-credit every
+    # quarterstaff host rather than fail. Pin the ones known to ship.
+    _vik_qs_checked = vik_mod.assert_quarterstaff_pools(vik["coverage"])
     # #205, third channel. A Viktranium option is a multi-affix record like a dino
     # insert, so the expansion goes one level IN — inside the option's own affix
     # list, never across the record list. Expanding across records turned one

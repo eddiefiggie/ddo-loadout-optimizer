@@ -332,6 +332,122 @@ def test_built_coverage_counts_every_emitted_variant():
             f"slot {b['slot']!r} ships a record but has no coverage bucket"
 
 
+def test_quarterstaff_pools_merge_only_the_entries_that_differ():
+    # #283 — gear-planner ships a `(quarterstaff)` sibling of the Fang and Scale
+    # Weapon pools. Merged on #282's model: an option identical in BOTH pools
+    # stays ONE unmarked record serving any weapon host; only an option that
+    # DIFFERS is emitted per variant. Duplicating all 14 would double-count every
+    # insert a quarterstaff can take.
+    from src import crafting_catalog
+    records, _, cov = dino._native_insert_records(crafting_catalog.load_catalog())
+    assert cov["quarterstaff_pools_sourced"] == [
+        "Fang (Weapon) (quarterstaff)", "Scale (Weapon) (quarterstaff)"], \
+        "both sibling pools are sourced (Claw and Horn ship none)"
+    assert cov["quarterstaff_options"] == 14
+    assert cov["quarterstaff_options_identical"] == 10, \
+        "10 of the 14 are identical to their base twin and dedupe to one record"
+    marked = [r for r in records if r.get("quarterstaff") is not None]
+    assert len(marked) == 8, "the 4 differing entries, emitted per variant"
+    names = sorted({r.get("name") for r in marked})
+    assert names == ["Brightscale", "Iridiscent Fang", "Iridiscent Scale",
+                     "Shadowscale"], names
+    # Every differing entry exists on BOTH sides, and the quarterstaff side is
+    # the richer one — these deltas are additive implement bonuses, so a
+    # quarterstaff is never offered LESS than the base weapon.
+    for name in names:
+        pair = {r["quarterstaff"]: r for r in marked if r.get("name") == name}
+        assert set(pair) == {True, False}, f"{name} must exist on both sides"
+        assert len(pair[True]["affixes"]) > len(pair[False]["affixes"]), \
+            f"{name}: the quarterstaff version must be the richer one"
+
+
+def test_quarterstaff_hosts_are_derived_from_the_pools_they_name():
+    # #283 — which records get insert capacity is DERIVED (a host qualifies by
+    # naming a `(quarterstaff)` pool in its own crafting list), never listed. A
+    # third host gaining the reference upstream joins without an edit.
+    hosts = dino.native_quarterstaff_hosts()
+    assert sorted(hosts) == ["Attuned Bone Quarterstaff",
+                             "Dinosaur Bone Quarterstaff"]
+    for name, slots in hosts.items():
+        # The keys are PHYSICAL — the `(quarterstaff)` tail is stripped, because
+        # which VARIANT a host draws is a property of its weapon type resolved at
+        # solve time, not something baked into the slot.
+        assert slots == ["Claw||Weapon", "Fang||Weapon", "Horn||Weapon",
+                         "Scale||Weapon"], (name, slots)
+        assert not any("quarterstaff" in k for k in slots)
+
+
+def test_a_quarterstaff_host_that_is_not_a_quarterstaff_fails_the_build():
+    # The guard that keeps the derivation honest: the pool variant is keyed on the
+    # host's declared TYPE, so a host drawing a quarterstaff pool while declaring
+    # something else would silently receive the BASE versions its own crafting
+    # list contradicts. Corrupt exactly that and confirm it goes red.
+    bad = [{"name": "Impostor Bone Quarterstaff", "type": "Longswords",
+            "crafting": {"Fang (Weapon) (quarterstaff)": {}}}]
+    try:
+        dino.native_quarterstaff_hosts(bad)
+    except SystemExit as e:
+        assert "declares type" in str(e) and "Longswords" in str(e)
+    else:
+        raise AssertionError("expected SystemExit for a non-quarterstaff host")
+
+
+def test_a_named_quarterstaff_pool_missing_from_the_catalog_fails_the_build():
+    # #283's own comment recorded the soft-read failure mode: a dropped upstream
+    # key stops the pool being sourced and NOTHING fails. Prove the hard read.
+    host = [{"name": "Dinosaur Bone Quarterstaff", "type": "Quarterstaffs",
+             "crafting": {"Fang (Weapon) (quarterstaff)": {}}}]
+    try:
+        dino.native_quarterstaff_hosts(host, catalog={})
+    except SystemExit as e:
+        assert "the crafting catalog does not define" in str(e)
+    else:
+        raise AssertionError("expected SystemExit for an undefined pool")
+
+
+def test_no_host_naming_a_quarterstaff_pool_is_drift_not_an_empty_case():
+    # Refuses to inspect zero records: the two Bone Quarterstaffs named these
+    # pools when #283 was written, so an empty result is upstream drift.
+    try:
+        dino.native_quarterstaff_hosts([{"name": "Plain Sword", "type": "Longswords",
+                                         "crafting": {"Claw (Weapon)": {}}}])
+    except SystemExit as e:
+        assert "no gear-planner record names" in str(e)
+    else:
+        raise AssertionError("expected SystemExit for an empty host population")
+
+
+def test_built_quarterstaff_hosts_carry_capacity_and_keep_their_affixes():
+    # The defect #283 reports, end to end: both hosts shipped typed
+    # `Quarterstaffs` with `dino_slots_norm` absent — zero insert capacity — while
+    # the `(quarterstaff)` pools they name went unsourced entirely.
+    #
+    # And the #364 trap they must not fall into: unlike the eight synthetic
+    # blanks, whose native counterparts carry NO affixes, these carry a real
+    # +15 Enhancement Bonus. Nothing is synthesized over them, so it survives.
+    dataset = _built()
+    hosts = [v for v in dataset["items"]
+             if v.get("variant_id") in ("Attuned Bone Quarterstaff",
+                                        "Dinosaur Bone Quarterstaff")]
+    assert len(hosts) == 2, f"both hosts still ship, got {len(hosts)}"
+    for h in hosts:
+        assert h.get("type") == "Quarterstaffs"
+        assert h.get("category") == "weapon"
+        assert h.get("dino_slots_norm") == [
+            "Claw||Weapon", "Fang||Weapon", "Horn||Weapon", "Scale||Weapon"], \
+            f"{h['variant_id']} carries no insert capacity — the #283 defect"
+        assert h.get("affixes"), \
+            f"{h['variant_id']} lost its own affixes (the #364 trap)"
+        assert h.get("verification") == "verified"
+    # The untyped blank is untouched and still there: it is how a NON-quarterstaff
+    # Dino weapon is modelled, and it must keep passing every main-hand lock.
+    blanks = [v for v in dataset["items"] if v.get("source") == "dino_crafting_blank"]
+    assert len(blanks) == 11, f"the 11 blanks are unchanged, got {len(blanks)}"
+    weapon_blank = next(b for b in blanks if b["slot"] == "Main Hand")
+    assert weapon_blank["variant_id"] == "Dinosaur Bone Weapon"
+    assert weapon_blank.get("type") is None, "the untyped blank stays untyped"
+
+
 def test_built_set_bonus_hosts_offer_all_six_dino_sets():
     # The Armor/Helmet/Cloak blanks buy their ONE set at the Set Bonus slot, from
     # the wiki's six-option augment table — the Curse included. They carry none

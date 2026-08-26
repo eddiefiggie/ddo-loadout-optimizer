@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 08262026.3 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 08262026.4 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 
 ---
@@ -50,7 +50,7 @@ You can also point it at **only the gear you actually own** by importing a Trove
 | Sealed in X (Ritual Table / Augmentation Altar) | ✅ all four pools sourced (Undeath, Fire, Gloom, Mist) |
 | Nearly Completed (Terror of Demogorgon, U81) | ✅ |
 | Viktranium / Lamordia (Chill of Ravenloft, U75) | ✅ |
-| Dinosaur Bone inserts (Isle of Dread) | ✅ 107 inserts |
+| Dinosaur Bone inserts (Isle of Dread) | ✅ 111 inserts |
 | Endgame ML 30–36 (U81 / Isle of Dread / Myth Drannor) | ✅ named + raid gear |
 | **Wildcard set pieces** (Gem of Many Facets — counts toward a set you choose) | ✅ |
 | **On/off affixes** (Ghost Touch, True Seeing, Freedom of Movement, immunities) | ✅ tracked as present, not as a number |
@@ -140,7 +140,7 @@ Run the JS suite through **`scripts/run_js_tests.sh`** rather than a bare loop. 
 
 > **ddo-loadout-optimizer** — a public DDO best-in-slot optimizer, live at eddiefiggie.github.io/ddo-loadout-optimizer. Input = ML cap + race + armor + weapon setup + a ranked affix list (optionally restricted to an imported Trove owned-inventory); output = the provably-optimal fully-upgraded loadout (item + tier + augment-in-slot + crafted options + chosen set-membership bonuses), every value wiki-sourced. **Client-side static app on GitHub Pages**; exact MILP in-browser via **HiGHS-WASM**, staged lexicographic solve, deterministic tie-break; Python generator builds `web/data/items.json` (gitignored). Core rules: strict lexicographic priority; theoretical BiS by default with an optional owned-inventory pool; strict exclude-until-verified data with per-result coverage disclosure; **never infer a value**.
 >
-> **State (2026-08-21):** 9,110 variants from 8,036 gear-planner records + the wiki-harvested ML36 augment tier, ML 1–36, on upstream snapshot `767a7f74` (2026-08-18). Live: named gear all slots, set bonuses, 1,063 augments w/ multi-fit colors, weapon handedness + TWF + off-hand + druid oath, Vecna Lost Purpose + Dino Set-Bonus crafting via a general chosen-set-membership primitive (28 membership sets, 21 augment sets), Sealed-in-Undeath, Nearly Completed (category **and** per-item `Nearly Finished`/`Almost There` pools), Viktranium, 107 Dino inserts, ML30–36 endgame band, wildcard set pieces, boolean presence affixes, Minor Artifact opt-in, declared stat credits, guided 5-step wizard, 6 result tabs, per-slot Adjust & re-solve, pre-solve pinning + blocklist, client-side save/load/backup, share exports (MD/CSV/print/DDOBuilder `.gearset`), the **Utility tier as a pinned, ordered, player-curated container**, and the **player bonus-type override** (correct one affix's bonus type where the game disagrees with the wiki; created from the results card or Browse, audited in a manager panel, labelled everywhere it counts, and emittable as a catalog-correction report). Universal stats are fully classified: same-type umbrellas (Potency, Spell Focus Mastery) **expand** into element siblings; fully-stacking universals (Universal Spell Power, Spell Lore, Universal Spell Lore) **cross-add**.
+> **State (2026-08-21):** 9,110 variants from 8,036 gear-planner records + the wiki-harvested ML36 augment tier, ML 1–36, on upstream snapshot `767a7f74` (2026-08-18). Live: named gear all slots, set bonuses, 1,063 augments w/ multi-fit colors, weapon handedness + TWF + off-hand + druid oath, Vecna Lost Purpose + Dino Set-Bonus crafting via a general chosen-set-membership primitive (28 membership sets, 21 augment sets), Sealed-in-Undeath, Nearly Completed (category **and** per-item `Nearly Finished`/`Almost There` pools), Viktranium, 111 Dino inserts, ML30–36 endgame band, wildcard set pieces, boolean presence affixes, Minor Artifact opt-in, declared stat credits, guided 5-step wizard, 6 result tabs, per-slot Adjust & re-solve, pre-solve pinning + blocklist, client-side save/load/backup, share exports (MD/CSV/print/DDOBuilder `.gearset`), the **Utility tier as a pinned, ordered, player-curated container**, and the **player bonus-type override** (correct one affix's bonus type where the game disagrees with the wiki; created from the results card or Browse, audited in a manager panel, labelled everywhere it counts, and emittable as a catalog-correction report). Universal stats are fully classified: same-type umbrellas (Potency, Spell Focus Mastery) **expand** into element siblings; fully-stacking universals (Universal Spell Power, Spell Lore, Universal Spell Lore) **cross-add**.
 
 > **Agent context lives in `AGENTS.md`** (`CLAUDE.md` is a symlink to it): the knowledge stores, the standing rules, the Open-work/Issues rule, and the Non-goals list.
 >

@@ -427,3 +427,47 @@ def build_viktranium(catalog: dict = None) -> dict:
     }
     return {"records": records, "quarantined": [], "coverage": coverage,
             "source_options": source_options}
+
+
+# #283 — the `(quarterstaff)` sibling pools this channel is KNOWN to ship.
+#
+# The read above is soft by necessity: not every (slot type, category) HAS a
+# sibling pool, so `qs_key in catalog` has to tolerate absence. But a soft read
+# cannot tell "no sibling exists" from "upstream dropped the one that did", and
+# in the second case nothing fails — the pool silently stops being sourced and
+# `quarterstaff_pools_sourced` / `quarterstaff_options` /
+# `quarterstaff_options_identical` just go to zero. Those three stamped fields
+# were the only signal, which is a disclosure nobody reads, not a guard.
+#
+# So the known pools are pinned. Adding a name here is a claim that gear-planner
+# ships it; removing one is a claim that it never did. Both are edits somebody
+# has to justify, which is the point.
+EXPECTED_QUARTERSTAFF_POOLS = (
+    "Dolorous (Weapon) (quarterstaff)",
+    "Melancholic (Weapon) (quarterstaff)",
+)
+
+
+def assert_quarterstaff_pools(coverage) -> int:
+    """Fail the build when a known `(quarterstaff)` sibling pool stops arriving.
+
+    Returns the number of pools checked, so a caller can prove the guard
+    inspected something rather than trusting a silent pass.
+    """
+    sourced = set(coverage.get("quarterstaff_pools_sourced") or ())
+    missing = [k for k in EXPECTED_QUARTERSTAFF_POOLS if k not in sourced]
+    if missing:
+        raise SystemExit(
+            "viktranium quarterstaff pools: gear-planner no longer defines "
+            f"{missing!r}. A quarterstaff host would silently receive the BASE "
+            "versions of those crafts — under-credited with nothing to show for "
+            "it. Re-harvest the crafting dump, or amend "
+            "EXPECTED_QUARTERSTAFF_POOLS with the reason the pool is gone "
+            "(#282/#283).")
+    if not coverage.get("quarterstaff_options"):
+        raise SystemExit(
+            "viktranium quarterstaff pools: every expected pool resolved but "
+            "they yielded zero options between them — the pools are present and "
+            "empty, which is the same silent under-credit one step later "
+            "(#282/#283).")
+    return len(EXPECTED_QUARTERSTAFF_POOLS)
