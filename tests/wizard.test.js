@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -722,6 +722,103 @@ test("U1: the grid sizes to volume and viewport, with no JavaScript measuring", 
   }
 });
 
+test("U4: applying a bundle REPLACES the ranking, in the bundle's order", () => {
+  const bundle = { id: "b1", name: "T", affixes: ["Constitution", "Dodge"],
+    floors: { Constitution: 40 }, caps: { Dodge: 60 } };
+  const next = applySavedBundle(bundle, ["Melee Power", "Strength", "Doublestrike"]);
+  assert.deepStrictEqual(next.priorities, ["Constitution", "Dodge"],
+    "no stat from the previous ranking survives unless the bundle carries it");
+  assert.deepStrictEqual(next.targetFloors, { Constitution: 40 });
+  assert.deepStrictEqual(next.targetCaps, { Dodge: 60 });
+});
+
+test("U4: the old ranking's bounds do not survive the replace", () => {
+  // Carrying them forward would leave bounds keyed to stats the new ranking does
+  // not have — the orphan the store's write boundary refuses on the way in.
+  const next = applySavedBundle({ affixes: ["Constitution"], floors: {}, caps: {} },
+    ["Dodge", "Melee Power"]);
+  assert.deepStrictEqual(next.targetFloors, {});
+  assert.deepStrictEqual(next.targetCaps, {});
+});
+
+test("U4: applying preserves the player's Utility tier decision", () => {
+  // A bundle carries no sentinel, and newPriorityList seeds one into every
+  // ranking — so a wholesale replace would silently remove a tier-level setting
+  // the player never asked to change.
+  const S = require("../web/model.js").UTILITY_SENTINEL;
+  const bundle = { affixes: ["Constitution", "Dodge"] };
+  const kept = applySavedBundle(bundle, ["Melee Power", S]);
+  assert.deepStrictEqual(kept.priorities, ["Constitution", "Dodge", S],
+    "the tier survives, at the bottom — its seeded default");
+  const absent = applySavedBundle(bundle, ["Melee Power"]);
+  assert.deepStrictEqual(absent.priorities, ["Constitution", "Dodge"],
+    "and a player who removed the tier does not get it back");
+  const moved = applySavedBundle(bundle, [S, "Melee Power"]);
+  assert.deepStrictEqual(moved.priorities, ["Constitution", "Dodge", S],
+    "a dragged tier keeps its presence, not its index — rank 1 of a different list is a different decision");
+});
+
+test("U4: the replace confirmation says what is discarded", () => {
+  const t = applyBundleConfirmText("Reaper Tank", 5);
+  assert.ok(t.includes("Reaper Tank"), "names the bundle");
+  assert.ok(/5 stats/.test(t) && /discarded/.test(t), "and what is lost, by count");
+  assert.ok(/1 stat\b/.test(applyBundleConfirmText("X", 1)), "singular at one");
+});
+
+test("U4: presets still APPEND — the two verbs stay separate", () => {
+  // The whole reason apply is a separate path rather than a mode flag: a preset
+  // can never take the replace branch.
+  const rv = buildPickerVocabulary(realData);
+  const base = ["Constitution"];
+  // A real bundle KEY, not a group name — "Tactics" is the container's heading,
+  // and the keys inside it are Stunning / Sundering / Vertigo.
+  const out = addBundle("Stunning", base, rv);
+  assert.strictEqual(out[0], "Constitution", "the existing ranking survives a preset");
+  assert.ok(out.length > 1, "and the preset's affixes are added to it");
+  const region = srcBetween(WIZARD_SRC, "root.querySelectorAll(\"[data-saved-bundle]\")",
+    "data-rename-bundle", "apply handler");
+  assert.ok(!/addBundle\(/.test(region), "the apply handler never calls the append path");
+});
+
+test("U5: rename and delete ride with a saved chip, and presets carry neither", () => {
+  const mine = savedBundlesHTML([{ id: "b1", name: "Mine", affixes: ["Constitution"] }]);
+  assert.ok(mine.includes('data-rename-bundle="b1"') && mine.includes('data-delete-bundle="b1"'));
+  const preset = bundleContainerHTML("tactics", "Tactics", BUNDLE_GROUPS.tactics);
+  assert.ok(!/data-rename-bundle|data-delete-bundle/.test(preset),
+    "a preset chip renders no rename or delete");
+});
+
+test("U5: the rename and delete handlers accept only saved-bundle ids", () => {
+  // An absent control is a UI state, not a guarantee. These handlers are bound
+  // by the saved-only selectors, so a preset key has no path into them.
+  // A fixed window, not a marker pair: "        }" is a SUBSTRING of every deeper
+  // indentation, so indexOf finds it inside the first nested block and the slice
+  // ends before the delete handler. This is the #450 hazard in miniature.
+  const region = srcFrom(WIZARD_SRC, "// plan U5 — rename and delete", 3000, "U5 handlers");
+  assert.ok(/\[data-rename-bundle\]/.test(region) && /\[data-delete-bundle\]/.test(region),
+    "both handlers bind on saved-only selectors");
+  assert.ok(!region.includes(".wz-bundle[data-bundle]"),
+    "the preset selector appears nowhere in the rename or delete wiring");
+  assert.ok(/listBundles\(\)\.find/.test(region),
+    "and each resolves the id against the store before acting on it");
+});
+
+test("U5: a cancelled rename prompt is not an empty name", () => {
+  // window.prompt returns null on cancel and "" when the field was cleared. Those
+  // are different intents and collapsing them would rename a bundle to nothing.
+  const region = srcBetween(WIZARD_SRC, "const next = window.prompt", "renderSavedBundles", "rename handler");
+  assert.ok(/next == null/.test(region), "cancel is checked before the value is trimmed");
+  assert.ok(/A bundle needs a name/.test(region), "and an emptied field is refused with a reason");
+});
+
+test("U5: the delete confirmation names the bundle and what goes with it", () => {
+  const t = deleteBundleConfirmText("Reaper Tank", 12);
+  assert.ok(t.includes("Reaper Tank") && /12 ranked stats/.test(t));
+  assert.ok(/builds are not affected/i.test(t),
+    "a bundle is not owned by a character, and the sentence says so");
+  assert.ok(/1 ranked stat\b/.test(deleteBundleConfirmText("X", 1)), "singular at one");
+});
+
 test("U3: a save captures the ranking's affixes, their ORDER, and their bounds", () => {
   const rec = bundleFromRanking("b1", "Reaper Tank",
     ["Constitution", "Dodge", "Melee Power"],
@@ -801,9 +898,9 @@ test("U3: a one-stat bundle reads \"1 stat\", not \"1 stats\"", () => {
   // Both the chip tooltip and the save confirmation carry the count, so both had
   // to be fixed and both are pinned here.
   const one = savedBundlesHTML([{ id: "b1", name: "Solo", affixes: ["Constitution"] }]);
-  assert.ok(/title="1 stat"/.test(one), "the chip tooltip is singular");
+  assert.ok(/1 stat"/.test(one) && !/1 stats/.test(one), "the chip tooltip is singular");
   const many = savedBundlesHTML([{ id: "b1", name: "Big", affixes: ["Constitution", "Dodge"] }]);
-  assert.ok(/title="2 stats"/.test(many), "and plural when it should be");
+  assert.ok(/2 stats"/.test(many), "and plural when it should be");
   const region = srcBetween(WIZARD_SRC, "function wireSavedBundles", "wireSavedBundles();", "save wiring");
   assert.ok(/\? "stat" : "stats"/.test(region), "the save confirmation pluralizes too");
 });

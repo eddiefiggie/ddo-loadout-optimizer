@@ -1049,6 +1049,14 @@ input.wz-ml { width: 120px; }
   border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 6px 10px; font-size: var(--fs-sm); }
 .wz-bundle-save .btn { font-size: var(--fs-xs); padding: 4px 10px; white-space: nowrap; }
 .wz-bundle-msg { margin: var(--sp-2) 0 0; color: var(--faint); font-size: var(--fs-xs); min-height: 1em; }
+/* plan U5 — a saved chip carries its own rename and delete. They sit inside the
+   chip group so the three read as one control, not three loose buttons. */
+.wz-saved-chip { display: inline-flex; align-items: stretch; }
+.wz-saved-chip .wz-bundle-mine { border-radius: 999px 0 0 999px; border-right: none; }
+.wz-saved-act { background: var(--panel-2); color: var(--muted); border: 1px solid var(--accent-2);
+  border-left: none; padding: 0 8px; font-size: var(--fs-xs); cursor: pointer; line-height: 1; }
+.wz-saved-act:last-child { border-radius: 0 999px 999px 0; }
+.wz-saved-act:hover { color: var(--text); background: var(--elev); }
 .wz-bundle-tag { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; margin-right: var(--sp-1); }
 .wz-bundle {
   min-height: auto; padding: 0.3em 0.8em; font-size: var(--fs-sm); font-weight: 600;
