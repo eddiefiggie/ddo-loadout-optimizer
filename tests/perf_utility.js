@@ -91,27 +91,53 @@
 // minting.
 //
 // ---------------------------------------------------------------------------
-// ROSTER (#343) — the gate measures the SHIPPED counting set by default, but the
-// lever KTD10 describes is the roster itself, so a roster decision needs an A/B
-// and the gate could not do one. Set ROSTER to compare alternates on identical
-// fixtures and machine conditions:
+// ROSTER (#343, rebuilt #505) — the gate measures the SHIPPED counting set by
+// default, but the lever KTD10 describes is the roster itself, so a roster
+// decision needs an A/B and the gate could not do one. Set ROSTER to compare
+// alternates on identical fixtures and machine conditions:
 //   shipped (default) — vocab.utilityCounting, whatever the build stamped
-//   pre343            — the 38-name roster: tier-1 minus the six worn defensive
-//                       toggles, plus the 24 admitted untyped procs
-//   hybrid            — the counterfactual: the six toggles added AND the procs
-//                       still counted (44 names)
+//   batch             — shipped plus the next BATCH names (default 25) off the
+//                       not-counted population, in sorted order. Prices ONE
+//                       measured widening batch before it ships.
+//   full              — shipped plus the entire presence population. The ceiling
+//                       KTD10 names as having failed the gate; re-measure rather
+//                       than assume it still does.
 // Only `shipped` is asserted against the budgets; the alternates report and
-// exit 0.
+// exit 0. An alternate that collapses into `shipped` EXITS 2 rather than
+// reporting noise as a roster effect — see the refusal at the construction site.
+//
+// #505 retired the previous alternates (`pre343`, `hybrid`). Both drew their
+// extra names from metadata.utility_untyped_admitted, which is `[]` and rightly
+// so — the 2026-08-18 re-encoding typed every untyped weapon proc `Bool` and the
+// allow channel emptied (stamped: candidates 25, allowed 0, quarantined 25).
+// The empty stamp was never a pipeline regression; the alternates were simply
+// asking a question the data can no longer answer.
 //
 // HISTORICAL FIGURES — all of these were taken with the RETIRED ratio-of-medians
-// statistic and are NOT comparable to the two numbers above. Kept because the
-// #343 roster A/B still rests on them.
+// statistic and are NOT comparable to the two numbers above. Kept as the record
+// of why #343 dropped the procs from the count; the rosters they name can no
+// longer be constructed, so they cannot be reproduced either.
 //   Measured 2026-08-16, one developer machine, ranges not points:
 //     shipped  1.50-1.75x  (many runs)   pre343  2.09x (1 run)
 //     hybrid   2.09-2.26x  (4 runs)
 //   That A/B is the real justification for #343 dropping the procs from the
 //   count: `hybrid` closes the reported bug too, but no sample of it came in
 //   under the then-2.0x budget.
+//   Measured 2026-08-26 (#505), current statistic, one developer machine,
+//   BATCH default 25:
+//     shipped  1.49x weighted, worst 3.74x  (16 counted names)  PASS
+//     batch    1.62x weighted, worst 5.03x  (41 counted names)  — worst is OVER
+//              the 5.00x budget while the weighted figure is still inside it, so
+//              the binding constraint on widening is the WORST fixture, not the
+//              aggregate. A widening batch would be rejected by a check the
+//              aggregate never trips.
+//     full     NO COST VERDICT — all 23 fixtures infeasible (see below).
+//   The feasibility wall: on `heroic-str-melee`, the roster solves at +67
+//   not-counted names (83 total) and is infeasible at +68. Infeasible solves
+//   return FASTER than feasible ones (143-211 ms vs 342-595 ms), which is why an
+//   unguarded aggregate reported `full` at 1.30x — cheaper than shipped's 1.49x.
+//   Cause unknown; tracked in #532.
+//
 //   Re-measured 2026-08-18 after the gear-planner refresh (#374, U7), shipped
 //   roster, 20 counted names both sides:
 //     pre-refresh dataset (upstream ec3e595)   1.69x (2 runs, a=466 ms)
@@ -122,7 +148,9 @@
 // Re-measure rather than cite any of these.
 //
 // Usage:  node tests/perf_utility.js
-//         ROSTER=hybrid node tests/perf_utility.js
+//         ROSTER=batch node tests/perf_utility.js
+//         ROSTER=batch BATCH=50 node tests/perf_utility.js
+//         ROSTER=full  node tests/perf_utility.js   (slow — the whole population)
 //         REPS=3 node tests/perf_utility.js   (median of N pairs per fixture;
 //              default 1 — pairing plus the floor already deliver the stability
 //              reps were meant to buy, and reps multiply a ~90 s gate)
@@ -174,20 +202,61 @@ async function main() {
     dataset.seal, dataset.membership_set_defs, dataset.thunder_forged,
     dataset.green_steel, dataset.augment_set_defs, counting);
 
-  // #343 — the ROSTER A/B (see header). `pre343` and `hybrid` are derived from
-  // the shipped stamp rather than hardcoded, so they stay correct as the roster
-  // widens: the admitted procs come from metadata.utility_untyped_admitted, and
-  // the six toggles from the named list below.
+  // #505 — the ROSTER A/B (see header), rebuilt against the population that
+  // carries the question today.
+  //
+  // The old alternates (`pre343`, `hybrid`) both drew their extra names from
+  // `metadata.utility_untyped_admitted`, which is `[]` and CORRECTLY so: the
+  // 2026-08-18 re-encoding typed every untyped weapon proc `Bool`, the candidate
+  // rule stopped seeing them, and the shard's allow list emptied — the stamped
+  // `utility_procs_coverage` reads `{candidates: 25, allowed: 0, quarantined: 25}`.
+  // #380 restated that display meaning against the new population. So the empty
+  // stamp was never a pipeline regression, and the two alternates were asking a
+  // question the data can no longer answer.
+  //
+  // What IS still live is KTD10's lever: v1 counts a curated tier-1 subset
+  // because the full presence population failed the gate, and widening happens
+  // in measured batches. That is the roster decision someone actually makes, so
+  // it is what the alternates now price:
+  //   batch — the next BATCH names off the not-counted population (default 25)
+  //   full  — the entire presence population, the ceiling KTD10 names
+  //
+  // Derived from `vocab.utilityNotCounted`, which is canonicalized through the
+  // same alias table as `utilityCounting`, is disjoint from it by construction,
+  // and already unions BOTH halves — so should the untyped channel ever re-arm,
+  // these alternates pick it up without another edit here.
   const ROSTER_KEY = process.env.ROSTER || "shipped";
-  const TOGGLES_343 = ["Ghostly", "True Seeing", "Blurry", "Freedom of Movement",
-    "Blindness Immunity", "Deathblock"];
-  const admitted = JSON.parse(fs.readFileSync(DATASET, "utf8"))
-    .metadata.utility_untyped_admitted || [];
   const shipped = vocab.utilityCounting;
+
+  // Ordered by CARRIER COUNT descending — how many item records carry the name —
+  // then by name for a deterministic tie-break. Two reasons, and neither is
+  // cosmetic:
+  //
+  //  * Determinism. A Set iterates in insertion order, so an unordered `batch`
+  //    would select different names as the data shifts and two "batch" numbers
+  //    would not be comparable. Non-comparable numbers presented as an A/B is
+  //    the exact failure this knob exists to prevent.
+  //  * Worst-first. An alphabetical slice would have opened with "+2 vs Evil",
+  //    "3rd Degree Burns", "A Mysterious Effect" — names almost nothing carries,
+  //    which would price a widening batch as nearly free and invite generalizing
+  //    that to the curated batch someone actually ships. Taking the most-carried
+  //    names first makes `batch` a conservative probe: if the top N are
+  //    affordable, a curated N of the same size almost certainly is.
+  const carriers = new Map();
+  for (const rec of dataset.items) {
+    const seen = new Set();
+    for (const a of (rec.affixes || [])) {
+      const c = vocab.canonical(a && a.name);
+      if (c && !seen.has(c)) { seen.add(c); carriers.set(c, (carriers.get(c) || 0) + 1); }
+    }
+  }
+  const notCounted = [...vocab.utilityNotCounted].sort((x, y) =>
+    ((carriers.get(y) || 0) - (carriers.get(x) || 0)) || (x < y ? -1 : x > y ? 1 : 0));
+  const BATCH = Math.max(1, parseInt(process.env.BATCH || "25", 10) || 25);
   const ROSTERS = {
     shipped,
-    pre343: new Set([...[...shipped].filter((n) => !TOGGLES_343.includes(n)), ...admitted]),
-    hybrid: new Set([...shipped, ...admitted]),
+    batch: new Set([...shipped, ...notCounted.slice(0, BATCH)]),
+    full: new Set([...shipped, ...notCounted]),
   };
   const roster = ROSTERS[ROSTER_KEY];
   if (!roster) {
@@ -199,24 +268,32 @@ async function main() {
 
   // An alternate that equals `shipped` is a VACUOUS A/B — it measures the
   // shipped roster twice and reports the difference as if it meant something.
-  // Both alternates derive their extra names from metadata.utility_untyped_admitted,
-  // which is [] on this dataset, so today `pre343` and `hybrid` both collapse
-  // into `shipped`. Say so rather than printing a confident identical number:
-  // the whole point of the ROSTER knob is that a roster claim be testable, and
-  // a silently-collapsed alternate is the harness losing that ability again.
-  // Tracked separately — this is disclosure, not the fix.
+  // That is exactly how the previous pair rotted: the population they drew from
+  // emptied, and three plausible numbers came out with no signal that all three
+  // measured one roster.
+  //
+  // REFUSE rather than warn. The old code printed a warning and carried on, and
+  // a warning at the top of a ~90 s gate scrolls past the numbers it is warning
+  // about. A vacuous alternate is not a measurement with a caveat; it is the
+  // harness having lost the ability to express the comparative question, which
+  // is a harness fault and should exit like one. `shipped` is never vacuous by
+  // definition, so this can only fire on an alternate.
   const sameAsShipped = ROSTER_KEY !== "shipped"
     && roster.size === shipped.size && [...roster].every((n) => shipped.has(n));
+  if (sameAsShipped) {
+    console.error(`VACUOUS A/B: roster '${ROSTER_KEY}' is name-for-name identical to 'shipped'.`);
+    console.error(`  The not-counted population is empty (${notCounted.length} names), so the`);
+    console.error(`  alternates have nothing to add and this run would measure the shipped`);
+    console.error(`  roster twice. Refusing rather than reporting run-to-run noise as a`);
+    console.error(`  roster effect. Check metadata.utility_presence_not_counted.`);
+    process.exit(2);
+  }
 
   console.log(`roster: ${ROSTER_KEY} (${roster.size} counted names)`
-    + (ROSTER_KEY === "shipped" ? "" : " — ALTERNATE, not asserted against the budgets")
+    + (ROSTER_KEY === "shipped" ? "" : ` — ALTERNATE, not asserted against the budgets`)
+    + (ROSTER_KEY === "batch" ? ` [BATCH=${BATCH} of ${notCounted.length} not-counted]` : "")
+    + (ROSTER_KEY === "full" ? ` [+${notCounted.length} not-counted]` : "")
     + (REPS > 1 ? `; REPS=${REPS} (per-fixture median of ${REPS} pairs)` : ""));
-  if (sameAsShipped) {
-    console.log(`  !! VACUOUS A/B: '${ROSTER_KEY}' is name-for-name identical to 'shipped'`);
-    console.log(`     (metadata.utility_untyped_admitted is empty, so the alternates`);
-    console.log(`      have nothing to add). Any difference below is run-to-run noise,`);
-    console.log(`      not a roster effect. Do NOT record it as an A/B.`);
-  }
 
   const rows = [];
   for (const fx of fixtures) {
@@ -244,12 +321,47 @@ async function main() {
       bs.push(b.ms); rb = b.r;
     }
     const ta = median(as), tb = median(bs);
-    rows.push({ name: fx.name, a: ta, b: tb, ratio: tb / ta, counted: ta >= FLOOR_MS });
+    rows.push({ name: fx.name, a: ta, b: tb, ratio: tb / ta, counted: ta >= FLOOR_MS,
+      statusA: ra.status, statusB: rb.status });
 
     console.log(`  ${fx.name}: base ${ta.toFixed(0)} ms (${ra.status})`
       + ` | +utility ${tb.toFixed(0)} ms (${rb.status}`
       + `${rb.utilityCount != null ? `, count ${rb.utilityCount}` : ""})`
       + ` | ${(tb / ta).toFixed(2)}x`);
+  }
+
+  // #505 — a ratio over a program that did not SOLVE is not a cost measurement.
+  // An infeasible arm returns whatever wall clock the solver spent proving it
+  // could not be done, which has no relationship to the cost of solving it.
+  //
+  // This is not hypothetical and it is not a corner: `ROSTER=full` puts all 23
+  // fixtures infeasible, and the first version of this rebuild happily reported
+  // `cost-weighted 1.30x` for it — LOWER than the shipped roster's 1.49x, which
+  // reads as "counting 866 names is cheaper than counting 16". One vacuous-A/B
+  // trap replaced with another, in the same file, while fixing the first.
+  //
+  // So the ratio verdict is suppressed whenever any arm is non-optimal, and what
+  // actually happened is stated instead. Infeasibility IS a real answer about a
+  // roster — a stronger one than "expensive" — it is just not a number.
+  const unsolved = rows.filter((r) => r.statusA !== "optimal" || r.statusB !== "optimal");
+  if (unsolved.length) {
+    console.log(`\n${unsolved.length} of ${rows.length} fixtures did not solve to optimal:`);
+    for (const r of unsolved.slice(0, 8)) {
+      console.log(`  ${r.name.padEnd(46)} base ${r.statusA}, +utility ${r.statusB}`);
+    }
+    if (unsolved.length > 8) console.log(`  … and ${unsolved.length - 8} more`);
+    console.log(`\nNO COST VERDICT. A ratio over an unsolved program measures how long the`);
+    console.log(`solver took to give up, not what the roster costs. Reporting one here`);
+    console.log(`would be a confident number over nothing — the failure this gate exists`);
+    console.log(`to prevent.`);
+    if (ROSTER_KEY === "shipped") {
+      console.error(`\nPERF GATE: FAIL — the SHIPPED roster must solve every fixture.`);
+      process.exitCode = 1;
+    } else {
+      console.log(`\n(informational — ROSTER=${ROSTER_KEY}. That this roster cannot be solved`);
+      console.log(` at all is the finding; it needs no ratio to be worth recording.)`);
+    }
+    return;
   }
 
   const sumA = rows.reduce((s, r) => s + r.a, 0);

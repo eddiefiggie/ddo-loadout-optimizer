@@ -141,12 +141,7 @@ build(q2, vocab.utilityCounting)
 No alternate roster was expressible, so no comparative claim about the roster was testable. The parameterized version derives its alternates from the stamp rather than hardcoding them, so they track the curated roster as it widens (`tests/perf_utility.js:181-196`):
 
 ```js
-const ROSTER_KEY = process.env.ROSTER || "shipped";
-const TOGGLES_343 = ["Ghostly", "True Seeing", "Blurry", "Freedom of Movement",
-  "Blindness Immunity", "Deathblock"];
-const admitted = JSON.parse(fs.readFileSync(DATASET, "utf8"))
-  .metadata.utility_untyped_admitted || [];
-const shipped = vocab.utilityCounting;
+// The 2026-08-16 shape — RETIRED by #505; see the correction below.
 const ROSTERS = {
   shipped,
   pre343: new Set([...[...shipped].filter((n) => !TOGGLES_343.includes(n)), ...admitted]),
@@ -163,7 +158,7 @@ if (ROSTER_KEY !== "shipped") {
 }
 ```
 
-Usage: `node tests/perf_utility.js` for the gate, `ROSTER=hybrid node tests/perf_utility.js` for the counterfactual.
+Usage: `node tests/perf_utility.js` for the gate, `ROSTER=batch node tests/perf_utility.js` for the counterfactual.
 
 **Correction (2026-08-24, #505) — deriving from the stamp did not make the alternates rot-proof.** This entry originally claimed the alternates "cannot rot as the roster grows". That guarded the wrong axis. They did not rot by the roster growing; they rotted because the population they draw from **emptied**: `metadata.utility_untyped_admitted` is now `[]`, so `hybrid` is name-for-name `shipped` and `pre343` is `shipped` minus the six toggles. Running `ROSTER=hybrid` today reports the same 16 counted names and the same figure as `shipped`, while labelling itself `ALTERNATE` — the harness had silently lost the ability to express the comparative question again, which is the precise failure this entry exists to prevent.
 
@@ -176,7 +171,23 @@ The lesson generalizes: **a derived alternate is only as expressive as the popul
     not a roster effect. Do NOT record it as an A/B.
 ```
 
-That is disclosure, not repair — whether the empty stamp is intentional or a pipeline regression is open in #505.
+**Resolved (2026-08-26, #505).** The empty stamp was **not** a pipeline regression, and that had to be settled before anything was rebuilt — it decided whether this was a harness problem or a data one. `src/utility_procs.py` documents the cause: the 2026-08-18 re-encoding typed every untyped weapon proc `Bool`, so the candidate rule stopped seeing them and the shard's allow list emptied. The build stamps the same story as a fact rather than prose — `utility_procs_coverage` reads `{candidates: 25, allowed: 0, quarantined: 25}` — and #380 had already restated the display meaning against the population that now carries these effects. The alternates were asking a question the data can no longer answer.
+
+So the repair was to ask the question that IS live. KTD10's lever is the curated tier-1 subset: v1 counts 16 names because the full presence population failed the gate, and widening happens in measured batches. The alternates now price that lever, derived from `vocab.utilityNotCounted` (canonicalized against the same alias table, disjoint from the counting set by construction, and unioning *both* halves so a re-armed untyped channel is picked up without another edit here):
+
+```js
+const ROSTERS = {
+  shipped,                                                  // 16 — the stamped roster
+  batch: new Set([...shipped, ...notCounted.slice(0, BATCH)]),  // +25 by default
+  full:  new Set([...shipped, ...notCounted]),              // +850 — the ceiling
+};
+```
+
+**Two further corrections this forced, both about how an alternate is chosen rather than whether it exists:**
+
+*Order the batch worst-first.* Sorted alphabetically, `batch` opened with `+2 vs Evil`, `3rd Degree Burns`, `A Mysterious Effect` — names almost nothing carries. That would have priced a widening batch as nearly free and invited generalizing it to the curated batch someone actually ships: a reproducible number that answers the wrong question, which is this entry's own failure mode wearing a fix. Ordering by carrier count descending makes `batch` a conservative probe — if the top N are affordable, a curated N is too. It also, unprompted, recovers the population the retired alternates were reaching for: the heaviest not-counted names are `Improved Destruction` (357 carriers), `Returning` (235), `Holy` (208), `Chilling`, `Maiming`.
+
+*Refuse, do not warn.* The first pass printed the vacuity warning and carried on. A warning at the top of a ~90 s gate scrolls past the numbers it is warning about, and a vacuous alternate is not a measurement with a caveat — it is the harness having lost the ability to express the comparative question, which is a fault and should exit like one. It now exits 2 before measuring anything. Proved by emptying both not-counted sources in a scratch copy and confirming `ROSTER=batch` and `ROSTER=full` both refuse.
 
 **Before / after, in the argument rather than the code.**
 
