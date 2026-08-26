@@ -1040,6 +1040,15 @@ input.wz-ml { width: 120px; }
 .wz-bundle-count { color: var(--faint); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
 .wz-bundle-body { padding: var(--sp-2) var(--sp-3) var(--sp-3); }
 .wz-bundle-body .wz-bundle-row { margin-top: 0; }
+/* plan U3 — the player's own bundles share the preset chrome; only the chip
+   border distinguishes them, so the shelf reads as one thing. */
+.wz-bundle.wz-bundle-mine { border-color: var(--accent-2); }
+.wz-bundle-empty { margin: 0 0 var(--sp-2); }
+.wz-bundle-save { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-top: var(--sp-2); }
+.wz-bundle-save input { flex: 1; min-width: 10rem; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 6px 10px; font-size: var(--fs-sm); }
+.wz-bundle-save .btn { font-size: var(--fs-xs); padding: 4px 10px; white-space: nowrap; }
+.wz-bundle-msg { margin: var(--sp-2) 0 0; color: var(--faint); font-size: var(--fs-xs); min-height: 1em; }
 .wz-bundle-tag { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; margin-right: var(--sp-1); }
 .wz-bundle {
   min-height: auto; padding: 0.3em 0.8em; font-size: var(--fs-sm); font-weight: 600;
