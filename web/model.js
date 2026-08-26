@@ -602,8 +602,10 @@ function dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts = null) {
   // Dino-slot multiset: A must have at least as many typed Dino slots as B, or a
   // Dinosaur Bone blank (whose value is entirely its Dino slots) would be pruned
   // by any affix-bearing item in the same slot and its insert capacity lost.
-  const da = countColors(A.dino_slots_norm || []);
-  const db = countColors(B.dino_slots_norm || []);
+  // Keyed through dinoSlotKeys so a Weapon slot carries the host's pool variant
+  // (#283) — the two Main Hand blanks are otherwise indistinguishable here.
+  const da = countColors(dinoSlotKeys(A));
+  const db = countColors(dinoSlotKeys(B));
   for (const [type, n] of db) if ((da.get(type) || 0) < n) return false;
   // Nearly-Complete choice-slot: B can craft an option A cannot unless A offers
   // the same category+tier slot, so an intrinsic win must not prune B's craft.
@@ -749,6 +751,31 @@ function lamordiaTier(v) {
  *  this, so which pool a host draws and how hosts compare cannot drift apart. */
 function lamordiaWeaponVariant(v) {
   return v && v.type === "Quarterstaffs" ? "quarterstaff" : "base";
+}
+
+/** #283 — which Dino Weapon-pool variant a host draws. gear-planner ships a
+ *  `(quarterstaff)` sibling of the Fang and Scale Weapon pools holding the
+ *  versions a quarterstaff receives in game (implement bonuses the base versions
+ *  lack), so records variant-marked by the pipeline (`quarterstaff: true/false`)
+ *  are matched against this. The same single-authority rule as
+ *  `lamordiaWeaponVariant`: the solver's capacity encoding and the dominance
+ *  slot keys both read this, so which pool a host draws and how hosts compare
+ *  cannot drift apart. */
+function dinoWeaponVariant(v) {
+  return v && v.type === "Quarterstaffs" ? "quarterstaff" : "base";
+}
+
+/** A host's typed Dino slots as a multiset key list for the dominance guard.
+ *  A WEAPON-category slot carries the host's pool variant (#283): the typed
+ *  quarterstaff blank and the untyped Weapon blank expose the same four physical
+ *  slots and the same (empty) buckets, so without the variant in the key one
+ *  would dominate the other and its richer insert options would vanish — the
+ *  same trap #282 hit on the Lamordia side. Non-Weapon slots draw no variant
+ *  pool, so their keys stay bare and compare equal across hosts. */
+function dinoSlotKeys(v) {
+  const variant = dinoWeaponVariant(v);
+  return ((v && v.dino_slots_norm) || []).map(
+    (k) => (String(k).endsWith("||Weapon") ? `${k}||${variant}` : k));
 }
 
 /** A host's typed Lamordia slots as a `type||category||tier` multiset key list,
@@ -1396,6 +1423,7 @@ if (typeof module !== "undefined" && module.exports) {
     buildModel, normalizeCredits, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
+    dinoWeaponVariant, dinoSlotKeys,
     isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
     UTILITY_SENTINEL,
     CRAFTING_RUNGS, craftingRung, craftingRungRank, normalizeRung, isSolarLunarColor,

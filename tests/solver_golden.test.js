@@ -9,6 +9,18 @@
 // If a change is intentionally accepted, regenerate the fixture:
 //   node tests/parity/capture_golden.js
 //
+// Ratifications:
+//   #283 (2026-08-26) — `endgame-dps-ml33` Main Hand: `Dinosaur Bone Weapon` ->
+//   `Attuned Bone Quarterstaff`. ONE fixture, ONE slot; `perTarget`, `effective`
+//   and `status` are byte-identical, so no ranked target moved. Cause: the two
+//   native quarterstaff hosts were the only Dino hosts whose crafting list names
+//   a `(quarterstaff)` pool, and they shipped with ZERO insert capacity. The
+//   blank (4 insert slots, no affixes) therefore beat the quarterstaff (no
+//   slots, +15 Enhancement Bonus). With the capacity stamped the quarterstaff
+//   matches the blank's slots AND keeps its affix, so it weakly dominates on
+//   this query and the tie resolves to it. The answer now names a real craftable
+//   item instead of the generic blank, for the same numbers.
+//
 // Run: node tests/solver_golden.test.js
 "use strict";
 const assert = require("assert");

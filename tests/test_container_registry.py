@@ -416,7 +416,7 @@ def _shipped_source_options():
     """
     catalog = crafting_catalog.load_catalog()
     nc = nearly_complete.build_nearly_complete(catalog)
-    _, dino_inserts_source = dino._native_insert_records(catalog)
+    _, dino_inserts_source, _ = dino._native_insert_records(catalog)
     return {
         "viktranium": viktranium.build_viktranium(catalog)["source_options"],
         "dino_inserts": dino_inserts_source,

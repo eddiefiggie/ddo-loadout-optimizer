@@ -30,17 +30,39 @@ from src import set_catalog
 from src.planner_items import RAW_PATH as _PLANNER_ITEMS_PATH
 
 # The four Dino bone types and the three gear categories whose native
-# ``<Type> (<Category>)`` menu pools feed the insert option pool (U4b-ii). The
-# ``(quarterstaff)`` / ``(artifact)`` variant pools stay out of scope here, but
-# NOT because nothing references them — the real gear-planner quarterstaff hosts
-# (Attuned/Dinosaur Bone Quarterstaff) reference the Fang/Scale quarterstaff
-# pools directly. Those hosts collapse into the ONE untyped synthetic Weapon
-# blank below, which has no declared weapon type for a variant to key on, so
-# modelling the quarterstaff insert versions needs a type choice on the blank
-# first (tracked as #283; the Lamordia channel's typed hosts got the variant
-# treatment in #282).
+# ``<Type> (<Category>)`` menu pools feed the insert option pool (U4b-ii).
+#
+# #283 — the ``(quarterstaff)`` sibling pools are now sourced too. gear-planner
+# ships a quarterstaff variant of two Weapon pools (Fang, Scale) holding the
+# versions a QUARTERSTAFF host receives; Claw and Horn have none, so a
+# quarterstaff draws those two from the base pool — which is exactly what the
+# native ``Dinosaur Bone Quarterstaff`` record's crafting list says. Merged by
+# option name on the #282 model (see ``_native_insert_records``).
+#
+# The ``(artifact)`` variant pools remain out of scope, and that half of the old
+# deferral still holds on its original grounds: no roster host references them.
 _DINO_TYPES = ("Claw", "Fang", "Horn", "Scale")
 _DINO_CATEGORIES = ("Accessory", "Armor", "Weapon")
+
+# #283 — the quarterstaff variant vocabulary. ``_QS_HOST_NAME`` is the
+# gear-planner record the synthetic blank shadows and replaces (its name is
+# excluded from the reader by ``_host_pipeline_names``, the same mechanism the
+# other blanks use); ``_QS_WEAPON_TYPE`` is the type gear-planner declares on it,
+# and the value ``model.js dinoWeaponVariant`` keys the host variant on.
+_QS_VARIANT = "quarterstaff"
+_QS_POOL_TAIL = " (quarterstaff)"
+_QS_HOST_NAME = "Dinosaur Bone Quarterstaff"
+_QS_WEAPON_TYPE = "Quarterstaffs"
+
+
+def _pool_keys(dino_type, category):
+    """The catalog keys for one (type, category): the base pool, then the
+    ``(quarterstaff)`` sibling where gear-planner ships one (Weapon only)."""
+    base = f"{dino_type} ({category})"
+    keys = [base]
+    if category == "Weapon":
+        keys.append(base + _QS_POOL_TAIL)
+    return keys
 
 
 def _native_insert_records(catalog):
@@ -57,27 +79,82 @@ def _native_insert_records(catalog):
     records <= source options."""
     records = []
     source_options = 0
+    qs_pools_sourced, qs_options, qs_options_identical = [], 0, 0
+
+    def _unit(dino_type, category, opt, affixes):
+        unit = {
+            "category": category,
+            "dino_type": dino_type,
+            "affixes": affixes,
+            "wiki_url": "",
+        }
+        if opt.get("name"):
+            unit["name"] = opt["name"]
+        return unit
+
     for dino_type in _DINO_TYPES:
         for category in _DINO_CATEGORIES:
-            key = f"{dino_type} ({category})"
+            keys = _pool_keys(dino_type, category)
+            key = keys[0]
+            qs_key = keys[1] if len(keys) > 1 else None
             if key not in catalog:
                 continue  # not every (type, category) pool exists (e.g. Claw Armor)
+            # #283 — the quarterstaff sibling pool, when gear-planner ships one.
+            # Indexed by option name for the merge below.
+            has_qs = bool(qs_key) and qs_key in catalog
+            qs_by_name = {}
+            if has_qs:
+                qs_pools_sourced.append(qs_key)
+                for opt in crafting_catalog.menu_options(qs_key, catalog):
+                    source_options += 1
+                    qs_options += 1
+                    qs_by_name[(opt.get("name") or "").strip()] = opt
             for opt in crafting_catalog.menu_options(key, catalog):
                 source_options += 1
                 affixes = [crafting_catalog.legacy_affix(a)
                            for a in crafting_catalog.iter_affixes(opt)]
                 if not affixes:
                     continue
-                unit = {
-                    "category": category,
-                    "dino_type": dino_type,
-                    "affixes": affixes,
-                    "wiki_url": "",
-                }
-                if opt.get("name"):
-                    unit["name"] = opt["name"]
+                unit = _unit(dino_type, category, opt, affixes)
+                if not has_qs:
+                    records.append(unit)
+                    continue
+                # Merge on the #282 model: an option identical in BOTH pools stays
+                # ONE unmarked record serving any Weapon host (the twin is
+                # deduplicated, not lost); an option that differs is emitted per
+                # variant, so a quarterstaff receives its richer version and every
+                # other weapon receives the base one.
+                twin = qs_by_name.pop((unit.get("name") or "").strip(), None)
+                twin_affixes = ([crafting_catalog.legacy_affix(a)
+                                 for a in crafting_catalog.iter_affixes(twin)]
+                                if twin is not None else None)
+                if twin_affixes == affixes:
+                    qs_options_identical += 1
+                    records.append(unit)
+                elif twin is None:
+                    unit[_QS_VARIANT] = False   # base-only: never on a quarterstaff
+                    records.append(unit)
+                else:
+                    unit[_QS_VARIANT] = False
+                    records.append(unit)
+                    if twin_affixes:
+                        twin_unit = _unit(dino_type, category, twin, twin_affixes)
+                        twin_unit[_QS_VARIANT] = True
+                        records.append(twin_unit)
+            # Quarterstaff-only entries (no base twin).
+            for _name, opt in sorted(qs_by_name.items()):
+                affixes = [crafting_catalog.legacy_affix(a)
+                           for a in crafting_catalog.iter_affixes(opt)]
+                if not affixes:
+                    continue
+                unit = _unit(dino_type, category, opt, affixes)
+                unit[_QS_VARIANT] = True
                 records.append(unit)
-    return records, source_options
+    return records, source_options, {
+        "quarterstaff_pools_sourced": sorted(qs_pools_sourced),
+        "quarterstaff_options": qs_options,
+        "quarterstaff_options_identical": qs_options_identical,
+    }
 
 # Dinosaur Bone accessory blanks map onto these worn slots (model.js WORN_SLOTS).
 _ACCESSORY_WORN = {"Belt", "Boots", "Bracers", "Gloves", "Necklace", "Ring",
@@ -193,6 +270,102 @@ def _blank_slot_for_native(item):
     return _NATIVE_SLOT_TO_BLANK.get(slot)
 
 
+def _parse_dino_pool_key(raw):
+    """A crafting-list key -> ``(dino_type, category, is_quarterstaff)``, or None.
+
+    A host's crafting list also names augment-slot menus and other systems; only
+    the Dino ``<Type> (<Category>)`` pools (and their ``(quarterstaff)`` siblings)
+    resolve here. Read structurally off the key, never from free text.
+    """
+    key = (raw or "").strip()
+    qs = key.endswith(_QS_POOL_TAIL)
+    if qs:
+        key = key[: -len(_QS_POOL_TAIL)].strip()
+    if not (key.endswith(")") and " (" in key):
+        return None
+    dino_type, _, category = key[:-1].partition(" (")
+    dino_type, category = dino_type.strip(), category.strip()
+    if dino_type not in _DINO_TYPES or category not in _DINO_CATEGORIES:
+        return None
+    return dino_type, category, qs
+
+
+def native_quarterstaff_hosts(planner_items=None, catalog=None):
+    """``{host name: [slot key, ...]}`` for every gear-planner record whose own
+    crafting list names a ``(quarterstaff)`` Dino pool.
+
+    These are the hosts #283 is about, and the selection is DERIVED, never listed:
+    a record qualifies by naming such a pool itself. Today that is exactly
+    ``Attuned Bone Quarterstaff`` and ``Dinosaur Bone Quarterstaff``, and a third
+    host gaining the reference upstream joins them without an edit here.
+
+    They already ship — correctly typed ``Quarterstaffs``, carrying their own
+    ``+15 Enhancement Bonus`` — and are missing exactly one thing: the Dino insert
+    capacity their crafting list grants them. That is what gets stamped, so the
+    record keeps everything else it earned through the ordinary native pipeline.
+    Nothing is synthesized to stand in for them: the eight synthetic blanks exist
+    because their native counterparts carry NO affixes, so replacing them loses
+    nothing. Replacing one of these would delete a real affix — the #364 trap.
+
+    The keys are PHYSICAL (``type||category``, ``(quarterstaff)`` tail stripped).
+    Which pool VARIANT a host draws is a property of its weapon type, resolved at
+    solve time by ``model.js dinoWeaponVariant`` — never baked into the slot, so
+    one encoding serves hosts of both variants.
+
+    The wider gap stays open and separate: 134 native records name a BASE Dino
+    pool and none of them are stamped, because the untyped synthetic Weapon blank
+    is how this model represents "craft a Dino weapon" today. Giving every native
+    Dino host its own insert capacity is a different, larger question than the one
+    #283 asks.
+
+    Fails the build loudly rather than stamping a host that cannot honour it:
+
+    * a ``(quarterstaff)`` pool a host NAMES but the crafting catalog does not
+      define — the soft-read failure mode recorded on #283, where a dropped
+      upstream key becomes a silently smaller pool instead of a red build;
+    * a qualifying host that is not declared a ``Quarterstaffs``, whose slots
+      would then draw the base versions its own crafting list contradicts.
+    """
+    items = _load_planner_items() if planner_items is None else planner_items
+    cat = crafting_catalog.load_catalog() if catalog is None else catalog
+    hosts = {}
+    for it in items or ():
+        crafting = it.get("crafting") or {}
+        raw_keys = (list(crafting.keys()) if isinstance(crafting, dict)
+                    else list(crafting or ()))
+        parsed = [(raw, _parse_dino_pool_key(raw)) for raw in raw_keys]
+        parsed = [(raw, p) for raw, p in parsed if p is not None]
+        if not any(p[2] for _raw, p in parsed):
+            continue                      # names no quarterstaff pool: not ours
+        name = (it.get("name") or "").strip()
+        declared = (it.get("type") or "").strip()
+        if declared != _QS_WEAPON_TYPE:
+            raise SystemExit(
+                f"dino quarterstaff hosts: {name!r} draws from a "
+                f"{_QS_VARIANT!r} pool but declares type {declared!r}, not "
+                f"{_QS_WEAPON_TYPE!r}. The variant is keyed on that type, so its "
+                "slots would silently draw the BASE versions its own crafting "
+                "list contradicts (#283).")
+        slots = []
+        for raw, (dino_type, category, is_qs) in parsed:
+            if is_qs and str(raw).strip() not in cat:
+                raise SystemExit(
+                    f"dino quarterstaff hosts: {name!r} draws from "
+                    f"{str(raw).strip()!r}, which the crafting catalog does not "
+                    "define. Upstream dropped the pool the host names, so the "
+                    "quarterstaff versions would silently stop being offered "
+                    "rather than fail (#283).")
+            slots.append(f"{dino_type}||{category}")
+        hosts[name] = slots
+    if not hosts:
+        raise SystemExit(
+            "dino quarterstaff hosts: no gear-planner record names a "
+            f"{_QS_VARIANT!r} Dino pool. The two Bone Quarterstaffs did when #283 "
+            "was written, so this is upstream drift, not an empty case — the "
+            "quarterstaff versions would stop being offered with nothing said.")
+    return dict(sorted(hosts.items()))
+
+
 def native_set_membership(planner_items=None):
     """Worn slot -> ``{"sets": tuple, "natives": [name, ...]}`` as gear-planner
     declares it for the Dinosaur Bone records collapsing into that blank.
@@ -293,8 +466,11 @@ def _blank_variant(layout):
         "source_item": name,
         "slot": worn_slot,
         "category": category,
-        # Pre-verified: a blank hosts Dino slots, so it is solver-eligible even
-        # with zero base affixes (verify.py would otherwise quarantine it).
+        # A blank hosts Dino slots, so it is solver-eligible even with zero base
+        # affixes. #338 moved that decision to the real gate — the blanks now
+        # enter `variants` before `verify_mod.apply`, which admits them on
+        # `dino_slots_norm` and overwrites both fields below with its own verdict.
+        # They stay as the shape a blank leaves this builder in.
         "verification": "verified",
         "eligible_affix_count": 0,
         "verification_reasons": [],
@@ -436,11 +612,14 @@ def build_dino(seed, catalog=None, sets_catalog=None, planner_items=None):
             by_slot[b["slot"]] = b
     blanks = list(by_slot.values())
     # #334/#541 — intrinsic set membership, DERIVED from the gear-planner records
-    # each blank shadows and cross-checked against the wiki ruling.
+    # each blank shadows and cross-checked against the wiki ruling. Runs FIRST:
+    # it carries the population gate (an empty or drifted Dinosaur Bone family
+    # refuses to stamp anything), so it is the guard that should speak when the
+    # dump is unusable — before anything downstream derives from the same records.
     _derived_sets = _stamp_set_membership(blanks, sets_catalog, planner_items)
 
     # Insert option pool: NATIVE (gearplanner_crafting.json), not the seed's inserts.
-    insert_records, insert_source_options = _native_insert_records(catalog)
+    insert_records, insert_source_options, _qs_pool_cov = _native_insert_records(catalog)
 
     coverage = dict(parsed["coverage"])
     # Override the seed-derived insert counts with the native pool's reality.
@@ -458,6 +637,11 @@ def build_dino(seed, catalog=None, sets_catalog=None, planner_items=None):
     coverage["by_key"] = dict(sorted(_by_key.items()))
     coverage["blank_hosts"] = len(blanks)
     coverage["blank_hosts_by_slot"] = {b["slot"]: len(b["dino_slots_norm"]) for b in blanks}
+    # #283 — the quarterstaff channel, disclosed so "which pools were merged, how
+    # many options actually differed" is read off the artifact rather than
+    # recounted by hand. `quarterstaff_options_identical` is the dedup count: an
+    # option identical in both pools stays ONE unmarked record.
+    coverage["quarterstaff"] = dict(_qs_pool_cov)
     coverage["set_bonus_hosts"] = sorted(b["slot"] for b in blanks if b["dino_set_bonus_slot"])
     # #541 — the derivation, disclosed: what gear-planner declares for each blank
     # slot and how many native records that verdict was collapsed from. A reader

@@ -1643,6 +1643,107 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.effective.Constitution, 14, "Scale(Weapon) insert fills a Scale(Weapon) slot");
   });
 
+  // ---- #283: the (quarterstaff) Dino pool variant ----
+  // A quarterstaff host and an ordinary weapon host expose the SAME physical
+  // slot; which pool VARIANT each may draw from is decided by its declared type.
+  function qsHost(id, dinoTypes) {
+    const v = dinoHost(id, "Main Hand", dinoTypes);
+    v.type = "Quarterstaffs";
+    v.category = "weapon";
+    return v;
+  }
+  function markedIns(dino_type, stat, value, quarterstaff) {
+    const r = dinoIns(dino_type, stat, "Enhancement", value, "Weapon");
+    if (quarterstaff !== undefined) r.quarterstaff = quarterstaff;
+    return r;
+  }
+
+  await test("#283: a quarterstaff-only insert counts only on a quarterstaff host", async () => {
+    const on = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Main Hand", [qsHost("Q", ["Fang||Weapon"])])],
+      dinoInserts: [markedIns("Fang", "Constitution", 14, true)],
+    };
+    assert.strictEqual((await S.solveLexicographic(on, highs)).effective.Constitution, 14,
+      "the quarterstaff receives its own richer version");
+    const off = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Main Hand", [dinoHost("W", "Main Hand", ["Fang||Weapon"])])],
+      dinoInserts: [markedIns("Fang", "Constitution", 14, true)],
+    };
+    assert.strictEqual((await S.solveLexicographic(off, highs)).effective.Constitution, 0,
+      "an untyped host must NOT receive it — that is the over-credit #283 avoids");
+  });
+
+  await test("#283: a base-only insert is refused to a quarterstaff host", async () => {
+    const q = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Main Hand", [qsHost("Q", ["Fang||Weapon"])])],
+      dinoInserts: [markedIns("Fang", "Constitution", 14, false)],
+    };
+    assert.strictEqual((await S.solveLexicographic(q, highs)).effective.Constitution, 0,
+      "in game the quarterstaff gets the quarterstaff version INSTEAD of this one");
+  });
+
+  await test("#283: an unmarked insert serves either host", async () => {
+    for (const [label, host] of [["quarterstaff", qsHost("Q", ["Fang||Weapon"])],
+                                 ["untyped", dinoHost("W", "Main Hand", ["Fang||Weapon"])]]) {
+      const q = {
+        targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+        worn: [slot("Main Hand", [host])],
+        dinoInserts: [markedIns("Fang", "Constitution", 14, undefined)],
+      };
+      assert.strictEqual((await S.solveLexicographic(q, highs)).effective.Constitution, 14,
+        `an option identical in both pools is placeable on the ${label} host`);
+    }
+  });
+
+  await test("#283: variant capacity cannot exceed the host's PHYSICAL slots", async () => {
+    // The encoding's real risk. Dino capacity is AGGREGATE, not per-host, so a
+    // naive "one constraint per key" would give the quarterstaff-only insert its
+    // own constraint and let it fill the same single slot the unmarked insert is
+    // already using — two placements, one physical slot, both credited.
+    // The two inserts must grant DIFFERENT stats, both ranked: same-stat/same-type
+    // inserts collapse into one max bucket, so a second placement would win the
+    // solver nothing and it declines to make one — hiding the very bug this
+    // guards. With distinct targets an over-placement is strictly rewarded, so a
+    // naive encoding takes it (verified: dropping the aggregate constraint turns
+    // this red, and only this one of the five).
+    const q = {
+      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Main Hand", [qsHost("Q", ["Fang||Weapon"])])],  // exactly ONE slot
+      dinoInserts: [markedIns("Fang", "Constitution", 14, true),
+                    markedIns("Fang", "Strength", 9, undefined)],
+    };
+    const r = await S.solveLexicographic(q, highs);
+    assert.strictEqual(r.dinoPlaced.length, 1, "exactly one placement into one slot");
+    assert.strictEqual(r.effective.Constitution, 14, "the slot goes to the top target");
+    assert.strictEqual(r.effective.Strength, 0,
+      "the second insert has no slot left — never both from one opening");
+  });
+
+  await test("#283: two hosts of different variants each keep their own supply", async () => {
+    // A quarterstaff host and a rune-arm host (untyped) each expose one Fang
+    // Weapon slot. The quarterstaff-only insert may use ONLY the quarterstaff's,
+    // and the base-only insert ONLY the rune arm's — so both place, once each.
+    // Distinct STATS, so the two placements are visible independently rather than
+    // collapsing into one max-bucket.
+    const runeArm = dinoHost("R", "Rune Arm", ["Fang||Weapon"]);
+    const q = {
+      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Main Hand", [qsHost("Q", ["Fang||Weapon"])]),
+             slot("Rune Arm", [runeArm])],
+      dinoInserts: [markedIns("Fang", "Constitution", 14, true),
+                    markedIns("Fang", "Strength", 9, false)],
+    };
+    const r = await S.solveLexicographic(q, highs);
+    assert.strictEqual(r.effective.Constitution, 14,
+      "the quarterstaff-only insert draws on the quarterstaff's slot");
+    assert.strictEqual(r.effective.Strength, 9,
+      "the base-only insert draws on the non-quarterstaff host's slot");
+    assert.strictEqual(r.dinoPlaced.length, 2, "one placement per host slot");
+  });
+
   // ---- U81 Nearly Complete (parametric choice-slot) ----
   // a worn item carrying a Nearly-Complete slot of a category at a tier
   function ncHost(id, slotName, category, tier, affixes) {
