@@ -106,6 +106,23 @@ _DINO_ML = 31  # Dino crafting is a Legendary (ML31) system.
 # for the error messages and the tests to anchor on.
 INTRINSIC_SET = "The Legendary Dread Isle's Curse"
 
+# The set names ddowiki has actually been harvested and ruled on for this family
+# — docs/wiki-evidence/dino-set-bonus-hosts.md, harvested 2026-08-26, checked two
+# ways: the rendered per-category enchantment lists, and per-item wikitext
+# (`{{Named item sets|...}}` present on Belt / Large Shield / Runearm, absent from
+# Helmet / Cloak / Robe / Longsword).
+#
+# #541 — the derivation below reads gear-planner, which mirrors ddowiki. A mirror
+# can move ahead of the ruling, and a set name nobody has checked against the wiki
+# is an INFERRED value the moment it is stamped — the one thing this repo never
+# does. So the derivation is PINNED to what has been ruled on: a name outside this
+# set stops the build until somebody harvests it. Compared on the canonical key so
+# a cosmetic `" Set"` suffix is not a false alarm, but a different set is.
+#
+# Widening this is a wiki task — harvest the page, record the ruling, then add the
+# name. It is never the edit that makes a red build green.
+RATIFIED_SET_NAMES = frozenset({INTRINSIC_SET})
+
 
 def carries_intrinsic_set(blank) -> bool:
     """The WIKI RULE for whether a blank host is intrinsically a set piece.
@@ -224,6 +241,16 @@ def native_set_membership(planner_items=None):
                 f"blank disagree on set membership ({detail}). One blank collapses "
                 "them all, so it cannot claim a membership they do not share (#541).")
         sets = next(iter(entry["seen"]))
+        ratified = {set_catalog.canonical(n) for n in RATIFIED_SET_NAMES}
+        unratified = [n for n in sets if set_catalog.canonical(n) not in ratified]
+        if unratified:
+            raise SystemExit(
+                f"dino blank set stamp: gear-planner puts the {slot!r} blank in "
+                f"{unratified}, which docs/wiki-evidence/dino-set-bonus-hosts.md has "
+                f"never ruled on (from {', '.join(sorted(entry['natives']))}). "
+                "Stamping it would ship a game value no ddowiki source states. "
+                "Harvest the page, record the ruling, then add the name to "
+                "RATIFIED_SET_NAMES — in that order (#541).")
         out[slot] = {"sets": sets, "natives": sorted(entry["natives"])}
     return out
 

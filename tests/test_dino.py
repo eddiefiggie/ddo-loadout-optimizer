@@ -391,6 +391,45 @@ def test_a_derivation_that_contradicts_the_wiki_ruling_fails_the_build():
     _expect_exit("disputed", planner_items=under)
 
 
+def test_an_unratified_set_name_stops_the_build():
+    # gear-planner mirrors ddowiki, but a mirror can move ahead of the ruling. A
+    # set name nobody has checked against the wiki is an inferred game value the
+    # moment it is stamped, so the derivation is pinned to what
+    # docs/wiki-evidence/dino-set-bonus-hosts.md actually ruled on.
+    substituted = _dino_natives()          # a real carrier put in a different set
+    for it in substituted:
+        if it.get("slot") == "Belt":
+            it["sets"] = ["Dread Stalker"]
+    msg = _expect_exit("never ruled on", planner_items=substituted)
+    assert "Dread Stalker" in msg and "'Belt'" in msg
+
+    added = _dino_natives()                # ...or in one MORE set than was ruled on
+    for it in added:
+        if it.get("slot") == "Belt":
+            it["sets"] = [_DREAD, "Dread Stalker"]
+    _expect_exit("never ruled on", planner_items=added)
+
+
+def test_a_cosmetic_set_suffix_is_not_an_unratified_name():
+    # The pin compares on the canonical key, so gear-planner spelling the same set
+    # `"... Set"` is not a false alarm — only a genuinely different set is. A pin
+    # that cries wolf gets widened to shut it up, which is how it stops working.
+    suffixed = _dino_natives()
+    for it in suffixed:
+        if it.get("sets"):
+            it["sets"] = [f"{_DREAD} Set"]
+    derived = dino.native_set_membership(suffixed)
+    assert derived["Belt"]["sets"] == (f"{_DREAD} Set",)
+    assert not derived["Armor"]["sets"]
+
+
+def test_the_ratified_list_is_not_empty():
+    # A pin with nothing in it is a pin that rejects everything; a pin that has
+    # quietly grown is a ruling nobody wrote. Both are worth noticing here.
+    assert dino.RATIFIED_SET_NAMES == frozenset({_DREAD}), \
+        "widening this needs a ddowiki harvest recorded in docs/wiki-evidence/"
+
+
 def test_a_split_between_the_collapsed_natives_fails_the_build():
     # One blank cannot honestly claim a membership its natives do not share, so a
     # split is worth failing on rather than resolving by majority or by first-wins.

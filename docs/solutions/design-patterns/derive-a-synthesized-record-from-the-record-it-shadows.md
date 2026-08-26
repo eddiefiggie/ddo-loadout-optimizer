@@ -83,6 +83,18 @@ as its inputs:
 - **an unshadowed blank** — the join drifted, and an unshadowed synthesized record is
   precisely the unchecked thing this pattern forbids.
 
+**Pin the derived VALUES to what has actually been ruled on, not just their shape.**
+Deriving moves the authority to the mirror, and a mirror can move ahead of the
+ruling. The first cross-check written here compared only "set or no set" against the
+wiki rule — so a refresh that put a Dinosaur Bone Belt in a *different* set would
+have sailed through and stamped a name no ddowiki source states. `RATIFIED_SET_NAMES`
+closes that: the derivation refuses any name outside what `docs/wiki-evidence/` has
+ruled on, compared on the canonical key so a cosmetic `" Set"` suffix is not a false
+alarm. A genuinely new set then costs one wiki harvest instead of arriving silently.
+
+That the rejected names in the test are *real* sibling sets, not nonsense, is the
+point: the plausible unratified value is the one that gets stamped.
+
 Keep the old rule as an **independent cross-check**, not as the source. The two really
 are independent here: the rule reads `dino_set_bonus_slot`, which comes from the
 hand-written host layout in `src/dino_native.py`; the derivation reads the catalog.
@@ -110,6 +122,9 @@ always the real rule.
   collapsed group — a split is a finding, not a tie to break.
 - Make the guard refuse an empty population, and prove it fails: corrupt each input the
   gate exists to reject and watch the real build go red, then restore.
+- Deriving from a mirror is not the same as sourcing from the authority. Pin the
+  derived values to what the authority has actually been read to say, and make
+  widening the pin a harvest — never the edit that turns a red build green.
 - Disclose the derivation in build coverage (`blank_intrinsic_sets`,
   `blank_set_shadow_counts`), so "how many carry it, on whose authority" is read off the
   artifact instead of recounted against a rule in someone's head.
