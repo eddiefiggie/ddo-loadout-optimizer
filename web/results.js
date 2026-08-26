@@ -549,7 +549,7 @@ function chipQualifiers(contrib) {
  *  class: the three classes answer "did I ask for this", the tag answers "where
  *  does it come from", and collapsing two orthogonal questions into one visual
  *  axis is what made the card unreadable in the first place. */
-function statChipRow(entries, cover, idx, rank1, ranked) {
+function statChipRow(entries, cover, idx, ranked) {
   const rows = entries.map((e) => ({
     a: e.affix, source: e.source || null,
     cls: affixChipClass(e.affix, cover, idx.keys, ranked),
@@ -581,7 +581,7 @@ function statChipRow(entries, cover, idx, rank1, ranked) {
     const where = source || "item";
     return stackLine(cls, where,
       `${esc(affixLabel(a, { mark: false }))}${chipQualifiers(contrib)}`,
-      // No `rank1`: a row's appearance must not depend on how high its stat sits
+      // A row's appearance must not depend on how high its stat sits (#487)
       // in the list. The #1 priority used to take a glow (and, before that, a
       // hue) on its marker.
       { overflow: over, title: why });
@@ -638,7 +638,7 @@ const LINE_MARK = { tracked: "◆", ranked: "◇", utility: "◆", incidental: "
  *  uses the Sun/Moon symbols there). `title` is optional and rides the row. */
 function stackLine(cls, where, what, opts) {
   opts = opts || {};
-  const extra = `${opts.rank1 ? " is-rank1" : ""}${opts.overflow ? " is-overflow" : ""}${opts.cls ? " " + opts.cls : ""}`;
+  const extra = `${opts.overflow ? " is-overflow" : ""}${opts.cls ? " " + opts.cls : ""}`;
   const mark = opts.mark != null ? opts.mark : (LINE_MARK[cls] || LINE_MARK.incidental);
   const markCls = opts.markCls ? ` ${opts.markCls}` : "";
   return `<li class="pd-line is-${cls}${extra}"${opts.title ? ` title="${esc(opts.title)}"` : ""}>`
@@ -660,7 +660,7 @@ function grantClass(affixes, contribIdx, ranked) {
  *  NOT collapsed: augment affixes are never collapsed
  *  anywhere in the app, because the collapse changes what the player compares
  *  against the in-game tooltip. */
-function subLines(affixes, contribIdx, rank1, ranked) {
+function subLines(affixes, contribIdx, ranked) {
   const list = affixes || [];
   if (!list.length) return "";
   const cover = Proj.affixStatCoverage(list);
@@ -803,7 +803,6 @@ function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) 
   // The collapse is what makes the card readable and is also what destroys the
   // stat names classification needs, so the two run side by side (KTD1).
   const cover = Proj.affixStatCoverage(raw);
-  const rank1 = (prioCtx && prioCtx.targets && prioCtx.targets.length) ? prioCtx.targets[0] : null;
   // #469 — the priority list itself, for the `ranked` chip class.
   const ranked = rankedStatSet(prioCtx);
   // #469 — the stats block is now a NAMED section like the two below it, so the
@@ -811,10 +810,10 @@ function equippedBody(v, idx, maps, augById, ownedMode, ownedAugments, prioCtx) 
   // run of chips with two labelled rows hanging off the bottom.
   const stats = entries.length
     ? `<div class="pd-sec pd-sec-stats"><span class="pd-slabel">Stats</span>`
-      + `<ul class="pd-lines">${statChipRow(entries, cover, contribIdx, rank1, ranked)}</ul></div>` : "";
+      + `<ul class="pd-lines">${statChipRow(entries, cover, contribIdx, ranked)}</ul></div>` : "";
 
-  const augs = augmentSection(v, idx, maps, augById, contribIdx, rank1, ranked);
-  const crafts = craftSection(v, idx, maps, contribIdx, rank1, ranked);
+  const augs = augmentSection(v, idx, maps, augById, contribIdx, ranked);
+  const crafts = craftSection(v, idx, maps, contribIdx, ranked);
 
   if (!stats && !augs && !crafts) return "";
   return `<div class="pd-rbody">${stats}${augs}${crafts}</div>`;
@@ -861,7 +860,7 @@ const SUN_MOON_GLYPH = { sun: "☀\uFE0F", moon: "🌙" };
  *  your ranked stats" is a full clause, and an item with four open colours spent
  *  eight wrapped lines saying nothing happened four times. The sentence rides
  *  the row's `title`; the row says "empty". */
-function augmentSection(v, idx, maps, augById, contribIdx, rank1, ranked) {
+function augmentSection(v, idx, maps, augById, contribIdx, ranked) {
   if (!(maps && maps.augAssign && idx != null && idx >= 0)) return "";
   // `freeByIndex` is optional: a caller that never computed the OPEN slots still
   // has placements to show. Pure-test callers have carried that shape since long
@@ -882,7 +881,7 @@ function augmentSection(v, idx, maps, augById, contribIdx, rank1, ranked) {
     // #469 — the gem row inherits the strongest class its affixes earn, so the
     // one to go slot is findable without reading every nested line.
     return stackLine(grantClass(augAffixes, contribIdx, ranked), p.color || "—",
-      `<span class="aug-name">${esc(p.variant_id)}</span>${subLines(augAffixes, contribIdx, rank1, ranked)}`,
+      `<span class="aug-name">${esc(p.variant_id)}</span>${subLines(augAffixes, contribIdx, ranked)}`,
       // A slotted augment is filled like every other live thing on the card, in
       // the one filled colour. The augment's own colour is NOT carried by the
       // marker any more: it is already the row's WHERE column, in words, and a
@@ -1029,7 +1028,7 @@ function hasAugmentSlots(idx, maps) {
  *  one — which is the overwhelmingly common case, and it is what tells the
  *  player which station to walk to. A mixed-family item says just "Craft":
  *  naming one of two systems above rows from both would be false. */
-function craftSection(v, idx, maps, contribIdx, rank1, ranked) {
+function craftSection(v, idx, maps, contribIdx, ranked) {
   const rows = craftRowsFor(v, idx, maps);
   if (!rows.length) return "";
   const parted = rows.map((r) => ({ r, parts: Proj.craftRowLabel(r.o, r.family) }));
