@@ -6209,5 +6209,65 @@ async function withCrossAdd(map, fn) {
       "…and the one remaining occurrence is zOf's own body");
   });
 
+  // ---- #532: the lexicographic weighting's exactness boundary ---------------
+  // The Utility container is ordered by a single weighted objective: effect i
+  // gets 2^(k-1-i), so it outranks every lower-ordered effect COMBINED. That is
+  // the property that turns one linear objective into strict lexicographic
+  // order — and it is an arithmetic claim, so it is testable without a solver.
+
+  // CHARACTERIZATION, not a regression test: this one passes against any tree,
+  // because it asserts a property of IEEE doubles rather than of this repo. It
+  // is here as the EVIDENCE for the constant below — anyone moving
+  // LEX_EXACT_MAX should have to move this first and see why 54 is the number.
+  await test("#532: the weighting's lex property holds through k=54 and fails at k=55", () => {
+    // sum(2^0 .. 2^(k-2)) is 2^(k-1) - 1, so in exact integers the top weight
+    // always wins. In IEEE doubles the sum rounds UP to the top weight itself,
+    // and strict > becomes a tie.
+    const holds = (k) => {
+      const top = Math.pow(2, k - 1);
+      let sum = 0;
+      for (let j = 0; j <= k - 2; j++) sum += Math.pow(2, j);
+      return top > sum;
+    };
+    for (const k of [2, 16, 40, 53, 54]) {
+      assert.strictEqual(holds(k), true, `k=${k} must keep the lex guarantee`);
+    }
+    for (const k of [55, 60, 70, 80]) {
+      assert.strictEqual(holds(k), false,
+        `k=${k} silently loses it — this is the fact the guard is placed on`);
+    }
+  });
+
+  await test("#532: the solver REFUSES a container past the exact boundary", () => {
+    // Source-read: the refusal sits at the objective's construction site, and the
+    // constant must be the last k the arithmetic above proves safe. A guard set
+    // at the SOLVABILITY wall instead (k=71, where HiGHS returns Unknown) would
+    // leave k=55..70 answering wrongly while looking fine.
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "..", "web", "solver.js"), "utf8");
+    assert.ok(/const LEX_EXACT_MAX = 54;/.test(src),
+      "the boundary is 54 — the last k for which the lex property holds in doubles");
+    assert.ok(/_uOrderVars\.length > LEX_EXACT_MAX/.test(src),
+      "and it is checked against the container size");
+    const guardAt = src.indexOf("LEX_EXACT_MAX");
+    const objAt = src.indexOf("const utilityObjTerms");
+    assert.ok(guardAt > 0 && objAt > guardAt,
+      "the refusal must come BEFORE the objective is built, not after it is solved");
+  });
+
+  await test("#532: a solver that gave up is not reported as an infeasible build", () => {
+    // Every non-Optimal HiGHS status used to collapse into `infeasible`, so a
+    // numeric give-up ("Unknown") reached the player as "No set satisfies these
+    // constraints — loosen the ML cap". That is advice about a build, for a
+    // failure the build never caused.
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "..", "web", "solver.js"), "utf8");
+    assert.ok(/_stageFailure/.test(src), "stage failures route through one helper");
+    assert.ok(/String\(highsStatus\) === "Infeasible" \? "infeasible" : "solver"/.test(src),
+      "and only a real Infeasible is labelled infeasible");
+    assert.ok(!/return \{ status: "infeasible", reason: `stage /.test(src),
+      "the old collapse-everything-into-infeasible returns are gone");
+  });
+
   console.log(`\n${passed} passed`);
 })();

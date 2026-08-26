@@ -2076,7 +2076,19 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     // is exactly when the user needs to loosen priorities/constraints in place.
     // Emit its slot and run the post-render callback so fillAdjustSlot repopulates
     // it (fillSharePanel no-ops here — no #rp-sharepanel, nothing to share).
-    container.innerHTML = `<div class="empty">No set satisfies these constraints${result.reason ? ` — ${esc(result.reason)}` : ""}.<br><span class="muted">Loosen the ML cap, armor/class filters, or targets.</span></div>
+    // #532 — a solve that did not finish is not a solve that found nothing, and
+    // the advice differs completely. Telling a player to loosen their build when
+    // the SOLVER hit a limit sends them to rework something that was never the
+    // obstacle. `failure` comes from the solver; absent (an older snapshot) it
+    // reads as the constraints case, which is what this always said before.
+    const solverGaveUp = result.failure === "solver" || result.failure === "unrepresentable";
+    container.innerHTML = `<div class="empty">${solverGaveUp
+      ? `The solver could not complete this search${result.reason ? ` — ${esc(result.reason)}` : ""}.`
+        + `<br><span class="muted">This is a limit of the solver, not of your build —`
+        + ` loosening priorities or filters will not change it. Reducing how many`
+        + ` Utility effects are ranked is the one thing that can.</span>`
+      : `No set satisfies these constraints${result.reason ? ` — ${esc(result.reason)}` : ""}.`
+        + `<br><span class="muted">Loosen the ML cap, armor/class filters, or targets.</span>`}</div>
     <div class="wz-adjust-slot" id="wz-adjust-slot"></div>`;
     if (typeof onAfterRender === "function") onAfterRender(container);
     return;
