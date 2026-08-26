@@ -7,7 +7,11 @@
 (function () {
   "use strict";
 
-  const CURRENT_SCHEMA = 1;   // v1 baseline — the window holds only v1 today
+  // plan 2026-08-25-001 U8 — v2 adds the player's OTHER authored work to the
+  // payload. v1 files still import: `migrate` fills the new keys with empties, so
+  // an older backup restores its builds and simply carries no bundles or farming
+  // progress. Refusing them would break the promise this panel makes.
+  const CURRENT_SCHEMA = 2;
   const WINDOW = 3;           // migrate the last 3 schema versions up to current
   const MAX_CHARS = 5000000;  // ~5MB, matched to the localStorage budget
 
@@ -96,6 +100,17 @@
     };
   }
 
+  /** plan U8 — the backup carries AUTHORED work, and not auto-captured
+   *  byproducts.
+   *
+   *  Builds, saved bundles and farming progress are things a player made: losing
+   *  them loses work that exists nowhere else. Version snapshots are taken on
+   *  every solve without being asked for, they are the largest thing in storage,
+   *  and they are the store with the known growth problem (#502) — copying them
+   *  into a file meant to move between devices would make that file the same
+   *  problem. A player who clears their browser loses version history and keeps
+   *  everything they wrote; the panel says so rather than leaving them to find
+   *  out. */
   function serializeAll(characters, opts) {
     const o = opts || {};
     return {
@@ -103,8 +118,20 @@
       exported_at: new Date().toISOString(),
       app_build_id: o.buildId || null,
       characters: characters || {},
+      bundles: Array.isArray(o.bundles) ? o.bundles : [],
+      farming: (o.farming && typeof o.farming === "object") ? o.farming : {},
     };
   }
+
+  /** Step migrations, keyed by the version they produce. v2 adds two keys, so the
+   *  step supplies empties — a v1 backup is not missing data, it is a file from
+   *  before those things could be saved. */
+  const MIGRATIONS = {
+    2: (data) => Object.assign({}, data, {
+      bundles: Array.isArray(data.bundles) ? data.bundles : [],
+      farming: (data.farming && typeof data.farming === "object") ? data.farming : {},
+    }),
+  };
 
   // Apply step migrations from `from` up to `to`. At the v1 baseline there are
   // no migrations, so this is identity; the machinery exists so future versions
@@ -120,6 +147,14 @@
 
   // Parse + validate a backup file. Returns { ok:true, characters, schemaVersion }
   // or { ok:false, error, message } — never throws.
+  /** The saved-bundle store, resolved at call time — `saved-bundles.js` loads
+   *  after this file in the browser. Same bridge shape used elsewhere. */
+  function _savedBundles() {
+    if (typeof window !== "undefined" && window.SavedBundles) return window.SavedBundles;
+    if (typeof require !== "undefined") { try { return require("./saved-bundles.js"); } catch (e) { /* absent */ } }
+    return null;
+  }
+
   function parseBackup(text, opts) {
     const o = opts || {};
     const current = o.current != null ? o.current : CURRENT_SCHEMA;
@@ -158,7 +193,7 @@
         message: "The app could not read its saved-input list, so nothing was imported." };
     }
 
-    const migrated = migrate(data, v, current, o.migrations);
+    const migrated = migrate(data, v, current, o.migrations || MIGRATIONS);
     const clean = Object.create(null);
     for (const name of Object.keys(migrated.characters)) {
       if (isPollutionKey(name)) continue;   // never a real character key
@@ -168,7 +203,26 @@
       }
       clean[name] = c;
     }
-    return { ok: true, characters: clean, schemaVersion: current };
+    // The new payload is sanitized through the stores that own each shape rather
+    // than trusted from the file: a hand-edited backup can carry anything, and
+    // these two are the newest and least-guarded surfaces in it.
+    const SB = _savedBundles();
+    const bundles = SB
+      ? (Array.isArray(migrated.bundles) ? migrated.bundles : [])
+        .filter((b) => b && typeof b === "object" && b.id)
+        .map((b) => SB.makeBundle(b))
+      : [];
+    const farming = Object.create(null);
+    const rawFarm = (migrated.farming && typeof migrated.farming === "object") ? migrated.farming : {};
+    for (const key of Object.keys(rawFarm)) {
+      if (isPollutionKey(key)) continue;
+      const one = rawFarm[key];
+      if (!one || typeof one !== "object") continue;
+      const acquired = Object.create(null);
+      for (const item of Object.keys(one)) if (one[item]) acquired[item] = true;
+      farming[key] = acquired;
+    }
+    return { ok: true, characters: clean, bundles, farming, schemaVersion: current };
   }
 
   // Per-name merge (default): colliding names update, new names add, others stay.
@@ -181,7 +235,7 @@
   }
 
   const api = {
-    CURRENT_SCHEMA, WINDOW, MAX_CHARS,
+    CURRENT_SCHEMA, WINDOW, MAX_CHARS, MIGRATIONS,
     serializeAll, parseBackup, mergeInto, migrate, sanitizeCharacter,
   };
 

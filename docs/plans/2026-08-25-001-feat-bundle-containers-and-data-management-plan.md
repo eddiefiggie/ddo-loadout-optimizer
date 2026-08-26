@@ -40,7 +40,7 @@ Saved rankings do not exist at all. A player who tunes twelve priorities with fl
 
 "Your data" is backup and restore only. `serializeAll` in `web/backup.js` writes four keys — `schema_version`, `exported_at`, `app_build_id`, `characters` — and the panel offers export-all and import. There is no way to see or remove a single item. Three stores exist (`ddo.characters.v1`, `ddo.versions.v1`, `ddo.farming.v1`), and the version store already tells players *"Delete a version you no longer need"* — advice naming a capability the app does not have. `deleteVersion` is implemented in `web/versions.js` and has no caller anywhere.
 
-The cost compounds. `deleteCharacter` removes the character key alone, so a deleted build leaves its versions and its farming progress behind, unreachable and still consuming the quota that fills up.
+The cost compounds. `deleteCharacter` removes the character key alone, so a deleted build leaves its farming progress behind, unreachable and still consuming the quota that fills up. Version snapshots are a separate problem rather than the same one: they are a single global list with no owner, so nothing orphans them and nothing prunes them either.
 
 ### Key Decisions
 
@@ -104,9 +104,9 @@ flowchart TB
 
 - R15. "Your data" lists the stored items a player holds, grouped by kind: builds, bundles, versions, and farming progress.
 - R16. A player can delete an individual item from that list.
-- R17. Deleting a build also deletes its version snapshots and its farming progress.
-- R18. The confirmation for deleting a build names how many versions and how many farming entries go with it.
-- R19. Deleting a build does not delete any bundle.
+- R17. Deleting a build also deletes its farming progress.
+- R18. The confirmation for deleting a build names how many farming entries go with it.
+- R19. Deleting a build does not delete any bundle or any version snapshot.
 - R20. The backup file preserves builds, bundles, and farming progress.
 - R21. The backup file does not carry version snapshots, and "Your data" says which stored items a backup restores and which it does not.
 
@@ -132,9 +132,9 @@ flowchart TB
 
 - AE4. Deleting a build with history
   - **Covers R17, R18, R19.**
-  - **Given:** a saved build with four version snapshots and eleven farming entries, and three saved bundles.
+  - **Given:** a saved build with eleven farming entries, three saved bundles, and four version snapshots.
   - **When:** the player deletes the build from "Your data".
-  - **Then:** the confirmation names the four versions and eleven farming entries, deleting removes all of them, and the three bundles remain.
+  - **Then:** the confirmation names the eleven farming entries, deleting removes them with the build, and the bundles and version snapshots remain.
 
 - AE5. Restoring onto a cleared browser
   - **Covers R20, R21.**
@@ -226,7 +226,9 @@ The delete coordinator and the backup payload are the two places where the four 
 
 ### Risks and dependencies
 
-- **This work introduces an irreversible deletion path that does not exist today, and the backup does not cover the thing it destroys.** Deleting a build currently orphans its versions and farming progress — unreachable, but still on disk. After U6 they are gone. Because version snapshots are deliberately excluded from the backup, a player who deletes a build has no route back to its history even with a current backup file. That combination is the sharpest risk here, and it is a direct consequence of two decisions that are each correct alone. Mitigation is disclosure, not retention: the confirmation names the counts before deleting, and the panel states that backups do not carry version snapshots. Revisit only if play shows people losing history they expected to keep.
+- **Version snapshots have no owner, so nothing can prune them per build.** `web/versions.js` holds no character reference, `listVersions` takes no scope, and `stampedBuildId` is the dataset build id used for staleness. A version's only tie to a character is the display name of a `named` snapshot, as prose; `auto` snapshots — the ones that accumulate — carry nothing. Deleting them by matching that prose would infer a relationship the data does not record. The consequence is that the per-item list in U7 becomes the only way a player ever prunes the store #502 says only grows, which makes U7 load-bearing rather than convenient.
+
+- **Deleting a build destroys its farming progress irreversibly, and that is new.** Today those ticks survive the delete as orphans. Mitigation is disclosure rather than retention: the confirmation names the count before deleting, and the backup carries farming progress so a player with a current backup can restore it.
 
 - **A partial cascade is worse than no cascade.** If the build is deleted and the dependent deletes fail, the player is left with exactly the orphans this work exists to remove, and no build to reach them from. The coordinator should not report success when a dependent delete failed.
 
@@ -329,12 +331,13 @@ U1 and U2 are independent — either can start first, and they can run in parall
 - **Requirements:** R17, R18, R19.
 - **Dependencies:** U2.
 - **Files:** `web/persist.js`, `tests/persist.test.js`, `tests/wizard.test.js`.
-- **Approach:** A coordinator in `web/persist.js` that deletes a build and its dependents, resolving `VersionStore` and `FarmingList` lazily at call time per KTD2. Expose a count of what would be removed so the confirmation can name it before deleting. The primitive delete stays as it is; the coordinator is what call sites use.
+- **Approach:** A coordinator in `web/persist.js` that deletes a build and its farming progress, resolving `FarmingList` lazily at call time per KTD2. Expose a count of what would be removed so the confirmation can name it before deleting. The primitive delete stays as it is; the coordinator is what call sites use. Version snapshots are not touched — they have no owner (see Risks), so a build's deletion neither removes nor orphans them.
 - **Execution note:** Prove the counts are read before the delete, not after — a confirmation naming zero because the delete already ran is the failure this unit exists to prevent.
 - **Patterns to follow:** the lazy `window.X`-then-`require` resolution already used in `web/persist.js`.
 - **Test scenarios:**
-  - Deleting a build removes its version snapshots and its farming progress along with the build.
-  - The reported counts match what is actually removed, and are available before the deletion runs.
+  - Deleting a build removes its farming progress along with the build.
+  - Deleting a build leaves every version snapshot in place.
+  - The reported count matches what is actually removed, and is available before the deletion runs.
   - Deleting a build removes no saved bundle.
   - Deleting a build with no versions and no farming progress reports zero for each and still deletes the build.
   - A build whose farming progress is stored under a name it no longer uses is unaffected — the coordinator deletes by the key it is given and does not guess.

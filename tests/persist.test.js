@@ -2,8 +2,9 @@
 const assert = require("assert");
 const {
   serializeCharacter, stripResult, saveCharacter, listCharacters, loadCharacter, deleteCharacter,
-  allCharacters, saveMany, INPUT_KEYS, pickInputs,
+  allCharacters, saveMany, INPUT_KEYS, pickInputs, deletionImpact, deleteBuildAndDependents,
 } = require("../web/persist.js");
+const Farm = require("../web/farming.js");
 const { migrateLoadout } = require("../web/dataset.js");
 
 let passed = 0;
@@ -595,4 +596,104 @@ test("#88 review #9: the save boundary applies the same override ceiling", () =>
   const kept = pickInputs(Object.assign({}, state, { overrides: huge }), "Big").overrides;
   assert.strictEqual(kept.length, OVERRIDE_LIMIT,
     "an over-long list cannot re-persist — otherwise the load-path cap is undone on every save");
+});
+
+
+// ---------------------------------------------------------------------------
+// plan 2026-08-25-001 U6 — deleting a build takes its dependents with it.
+
+/** A storage stand-in shared by the character store AND the farming store, so a
+ *  cascade is observed across both the way it happens in a browser. */
+function sharedStorage(failOnSet) {
+  const m = {};
+  return {
+    getItem: (k) => (k in m ? m[k] : null),
+    setItem: (k, v) => {
+      if (failOnSet && failOnSet(k)) { const e = new Error("full"); e.name = "QuotaExceededError"; throw e; }
+      m[k] = String(v);
+    },
+    removeItem: (k) => { delete m[k]; },
+    _keys: () => Object.keys(m),
+  };
+}
+
+function seedBuildWithFarming(st, name, items) {
+  saveCharacter(serializeCharacter(name, state, null, null), st);
+  for (const it of items) Farm.toggleAcquired(name, it, st);
+}
+
+test("U6: deleting a build removes its farming progress with it", () => {
+  const st = sharedStorage();
+  seedBuildWithFarming(st, "Tank", ["Item A", "Item B"]);
+  seedBuildWithFarming(st, "Caster", ["Item C"]);
+  const r = deleteBuildAndDependents("Tank", st);
+  assert.strictEqual(r.ok, true);
+  assert.deepStrictEqual(listCharacters(st).map((c) => c.name || c), ["Caster"]);
+  assert.deepStrictEqual(Farm.loadProgress("Tank", st), {}, "its ticks are gone");
+  assert.deepStrictEqual(Object.keys(Farm.loadProgress("Caster", st)), ["Item C"],
+    "and another build's progress is untouched");
+});
+
+test("U6: the impact is readable BEFORE the delete, and matches what goes", () => {
+  // Read after the delete and it always reports zero — a confirmation that cannot
+  // be wrong and cannot be useful.
+  const st = sharedStorage();
+  seedBuildWithFarming(st, "Tank", ["A", "B", "C"]);
+  const before = deletionImpact("Tank", st);
+  assert.strictEqual(before.farming, 3, "counted while it is still a question");
+  const r = deleteBuildAndDependents("Tank", st);
+  assert.strictEqual(r.impact.farming, 3, "and the delete reports the same count it acted on");
+  assert.strictEqual(deletionImpact("Tank", st).farming, 0, "nothing left afterwards");
+});
+
+test("U6: a build with no farming progress reports zero and still deletes", () => {
+  const st = sharedStorage();
+  saveCharacter(serializeCharacter("Bare", state, null, null), st);
+  assert.strictEqual(deletionImpact("Bare", st).farming, 0);
+  assert.strictEqual(deleteBuildAndDependents("Bare", st).ok, true);
+  assert.deepStrictEqual(listCharacters(st), []);
+});
+
+test("U6: version snapshots are NOT counted and NOT deleted", () => {
+  // Corrects the plan. Versions are ONE GLOBAL LIST: versions.js holds no
+  // character reference, listVersions takes no scope, and stampedBuildId is the
+  // DATASET build id used for staleness. A version's only tie to a character is
+  // the display name of a `named` snapshot, as prose — and `auto` snapshots carry
+  // nothing. Deleting them by matching that prose would infer a relationship the
+  // data does not record.
+  const V = require("../web/versions.js");
+  const st = sharedStorage();
+  seedBuildWithFarming(st, "Tank", ["A"]);
+  V.saveVersion(V.makeVersion({ id: "v1", name: "Tank — something", kind: "named" }), st);
+  V.saveVersion(V.makeVersion({ id: "v2", name: "auto", kind: "auto" }), st);
+  const impact = deletionImpact("Tank", st);
+  assert.ok(!("versions" in impact), "the impact does not claim to count versions");
+  deleteBuildAndDependents("Tank", st);
+  assert.deepStrictEqual(V.listVersions(st).map((v) => v.id).sort(), ["v1", "v2"],
+    "both snapshots survive — they were never owned by the build");
+});
+
+test("U6: a failed dependent clear aborts BEFORE the build is removed", () => {
+  // A partial cascade is worse than none: the player would be left with exactly
+  // the orphan this exists to remove and no build to reach it from.
+  // Seed with writes ALLOWED, then arm the failure — seeding through a storage
+  // that already rejects the farming key throws before the case under test runs.
+  let armed = false;
+  const st = sharedStorage((k) => armed && k === Farm.PROGRESS_KEY);
+  seedBuildWithFarming(st, "Tank", ["A"]);
+  armed = true;
+  const r = deleteBuildAndDependents("Tank", st);
+  assert.strictEqual(r.ok, false, "the cascade reports failure");
+  assert.strictEqual(r.stage, "farming", "and names where it stopped");
+  assert.ok(listCharacters(st).length, "the build is still there, so the player can retry");
+});
+
+test("U6: deleteCharacter stays the primitive and does NOT cascade on its own", () => {
+  // One authority. The primitive is still used by the coordinator; if it cascaded
+  // too the cleanup would run twice and the count would be read after the fact.
+  const st = sharedStorage();
+  seedBuildWithFarming(st, "Tank", ["A"]);
+  deleteCharacter("Tank", st);
+  assert.deepStrictEqual(Object.keys(Farm.loadProgress("Tank", st)), ["A"],
+    "the primitive removes the build alone — the coordinator is what cascades");
 });

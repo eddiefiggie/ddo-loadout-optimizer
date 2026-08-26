@@ -355,3 +355,76 @@ test("#335 U5: a backup file carrying a doubled loadout imports intact", () => {
   assert.strictEqual(r.characters.Dup.snapshot.chosen.length, 2,
     "the twin entry is not quietly stripped by the allowlist");
 });
+
+// ---------------------------------------------------------------------------
+// plan 2026-08-25-001 U8 — the backup carries authored work, not byproducts.
+
+test("U8: a backup carries builds, bundles and farming progress", () => {
+  const p = serializeAll({ Tank: {} }, {
+    bundles: [{ id: "b1", name: "Reaper", affixes: ["Constitution"] }],
+    farming: { Tank: { "Item A": true } },
+  });
+  assert.strictEqual(p.schema_version, 2, "the payload widened, so the version moved");
+  assert.deepStrictEqual(Object.keys(p.characters), ["Tank"]);
+  assert.strictEqual(p.bundles.length, 1);
+  assert.deepStrictEqual(p.farming, { Tank: { "Item A": true } });
+});
+
+test("U8: a backup carries NO version snapshots", () => {
+  // They are taken on every solve without being asked for, they are the largest
+  // thing in storage, and they are the store with the known growth problem — a
+  // file meant to move between devices must not become that problem.
+  const p = serializeAll({ Tank: {} }, { bundles: [], farming: {} });
+  assert.ok(!("versions" in p), "no versions key at all");
+  assert.ok(!JSON.stringify(p).includes("snapshot"), "and nothing snapshot-shaped rides along");
+});
+
+test("U8: a v1 backup still imports, with the new keys empty", () => {
+  // The compatibility window is the promise this panel makes. A widening that
+  // refuses old files breaks it, and a v1 file is not missing data — it is from
+  // before those things could be saved.
+  const v1 = JSON.stringify({
+    schema_version: 1, exported_at: "2026-01-01T00:00:00Z", app_build_id: null,
+    characters: { Tank: rec("Tank", 34) },
+  });
+  const res = parseBackup(v1);
+  assert.strictEqual(res.ok, true, res.message || "a v1 file must still import");
+  assert.deepStrictEqual(Object.keys(res.characters), ["Tank"]);
+  assert.deepStrictEqual(res.bundles, [], "no bundles, rather than a refusal");
+  // Spread before comparing: the restored maps use Object.create(null) on
+  // purpose (pollution-safe, the same shape `characters` is built with), and
+  // deepStrictEqual compares prototypes.
+  assert.deepStrictEqual({ ...res.farming }, {}, "and no farming progress");
+});
+
+test("U8: a newer-schema file is still declined", () => {
+  const future = JSON.stringify({ schema_version: 99, characters: {} });
+  const res = parseBackup(future);
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(res.error, "newer", "unchanged from before the widening");
+});
+
+test("U8: imported bundles and farming are sanitized, not trusted", () => {
+  // A hand-edited backup can carry anything, and these two are the newest and
+  // least-guarded surfaces in the file.
+  const v2 = JSON.stringify({
+    schema_version: 2, characters: { Tank: rec("Tank", 34) },
+    bundles: [
+      { id: "b1", name: "Ok", affixes: ["Constitution"], craftingRung: "everything", race: "Dwarf" },
+      { name: "no id — dropped", affixes: [] },
+      null,
+    ],
+    farming: { Tank: { "Item A": true, "Item B": false }, __proto__: { bad: true }, Bad: "not an object" },
+  });
+  const res = parseBackup(v2);
+  assert.strictEqual(res.ok, true, res.message);
+  assert.strictEqual(res.bundles.length, 1, "only the well-formed bundle survives");
+  assert.ok(!("craftingRung" in res.bundles[0]) && !("race" in res.bundles[0]),
+    "character-level keys do not enter through a backup either");
+  assert.deepStrictEqual({ ...res.farming.Tank }, { "Item A": true }, "falsy ticks are dropped");
+  assert.strictEqual(Object.getPrototypeOf(res.farming), null,
+    "and the map itself carries no prototype, so a crafted key cannot reach Object.prototype");
+  assert.ok(!("Bad" in res.farming), "a non-object progress entry is not installed");
+  assert.ok(!Object.prototype.hasOwnProperty.call(res.farming, "__proto__"),
+    "and a pollution key never becomes a progress entry");
+});
