@@ -760,8 +760,41 @@ test("U7: the notes count what the row actually holds, and pluralize", () => {
   });
   const bundles = model.find((g) => g.kind === "bundles").items;
   assert.deepStrictEqual(bundles.map((i) => i.note), ["1 stat", "2 stats"]);
-  const farm = model.find((g) => g.kind === "farming").items;
+  // Farming notes carry the #518 marker when the key names no saved build, so
+  // this model passes the builds it should be reconciled against.
+  const withBuilds = storedItemsModel({
+    builds: [{ name: "Solo" }, { name: "Many" }],
+    farming: { Solo: { A: true }, Many: { A: true, B: true, C: true } },
+  });
+  const farm = withBuilds.find((g) => g.kind === "farming").items;
   assert.deepStrictEqual(farm.map((i) => i.note), ["1 tick", "3 ticks"]);
+  assert.deepStrictEqual(farm.map((i) => i.orphan), [false, false]);
+});
+
+test("#518: a farming entry with no saved build is marked, not hidden", () => {
+  // Progress is filed under whatever was in the build-name field at tick time,
+  // and that field does not have to name a saved build — so entries accrue under
+  // names that were typed and never saved. Deleting a build cascades its own
+  // progress; an entry that was never a build has no delete to ride on.
+  const model = storedItemsModel({
+    builds: [{ name: "Tank" }],
+    farming: { Tank: { A: true }, "Tank v2": { B: true } },
+  });
+  const farm = model.find((g) => g.kind === "farming").items;
+  const real = farm.find((i) => i.id === "Tank");
+  const orphan = farm.find((i) => i.id === "Tank v2");
+  assert.strictEqual(real.orphan, false, "a key naming a saved build is not an orphan");
+  assert.ok(!/no saved build/.test(real.note));
+  assert.strictEqual(orphan.orphan, true);
+  assert.ok(/no saved build/.test(orphan.note), "and the row says why it is flagged");
+
+  // Marked, not removed. The ticks are real work, and the player is the one who
+  // knows whether that name still means something to them.
+  assert.strictEqual(farm.length, 2, "an orphan is still listed");
+  const html = storedItemsHTML(model, "panel");
+  assert.ok(html.includes('data-del-kind="farming"') && html.includes('data-del-id="Tank v2"'),
+    "and still deletable, which is what makes the marking actionable");
+  assert.ok(/is-orphan/.test(html), "the marker reaches the render, not just the model");
 });
 
 test("U7: versions are their own group, not nested under a build", () => {

@@ -1072,6 +1072,10 @@ input.wz-ml { width: 120px; }
   padding: 0 4px; font-size: var(--fs-sm); line-height: 1; }
 .wz-stored-del:hover { color: var(--warn); }
 .wz-stored-empty { margin: 0; }
+/* #518 — a farming entry filed under a name that is not a saved build. Marked
+   rather than hidden or auto-removed: the ticks are real work, and the player
+   is the one who knows whether that name still means something to them. */
+.wz-stored-note.is-orphan { color: var(--warn); }
 .wz-bundle-tag { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; margin-right: var(--sp-1); }
 .wz-bundle {
   min-height: auto; padding: 0.3em 0.8em; font-size: var(--fs-sm); font-weight: 600;

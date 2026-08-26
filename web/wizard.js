@@ -224,10 +224,24 @@ function storedItemsModel({ builds, bundles, versions, farming } = {}) {
     { kind: "versions", label: "Version snapshots", empty: "No version snapshots.",
       items: v.map((x) => ({ id: String(x.id), label: String(x.name || x.id),
         note: x.kind === "auto" ? "auto" : String(x.kind || "") })) },
+    // #518 — farming progress is filed under whatever name was in the build-name
+    // field when the tick was made, and that field is live: it does not have to
+    // name a SAVED build. So entries accrue under names that were typed and never
+    // saved, and nothing else ever collects them — deleting a build cascades its
+    // own progress, but an entry that was never a build has no delete to ride on.
+    //
+    // Marking them is the fix that fits what the data actually supports. A saved
+    // build has no id: `persist.js` keys the store by name, so the name IS the
+    // identity, and inventing a second one is a data-model change with reach past
+    // this list. What a player needs here is to tell the two apart, which this
+    // does without pretending an ownership link exists.
     { kind: "farming", label: "Farming progress", empty: "No farming progress.",
       items: Object.keys(f).map((name) => {
         const n = Object.keys(f[name] || {}).length;
-        return { id: name, label: name, note: `${n} ${n === 1 ? "tick" : "ticks"}` };
+        const known = b.some((c) => String(c.name || c) === name);
+        return { id: name, label: name,
+          note: `${n} ${n === 1 ? "tick" : "ticks"}${known ? "" : " · no saved build"}`,
+          orphan: !known };
       }) },
   ];
 }
@@ -244,7 +258,7 @@ function storedItemsHTML(model, ns) {
       ${g.items.length
         ? `<ul class="wz-stored-list">${g.items.map((it) => `<li>
             <span class="wz-stored-name">${e(it.label)}</span>
-            ${it.note ? `<span class="wz-stored-note">${e(it.note)}</span>` : ""}
+            ${it.note ? `<span class="wz-stored-note${it.orphan ? " is-orphan" : ""}">${e(it.note)}</span>` : ""}
             <button type="button" class="wz-stored-del" data-del-kind="${e(g.kind)}"
               data-del-id="${e(it.id)}" aria-label="Delete ${e(it.label)}" title="Delete">\u2715</button>
           </li>`).join("")}</ul>`
