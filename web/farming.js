@@ -222,6 +222,44 @@
     }
   }
 
+  /** plan 2026-08-25-002 U1 (#518) — move one character's progress to a new name.
+   *
+   *  Lives HERE for the same reason `clearProgress` above does: this module owns
+   *  the storage key and its shape, so the rename coordinator in `persist.js`
+   *  never writes the blob itself.
+   *
+   *  An ABSENT source entry is a success with nothing to do. A build with no
+   *  ticks is renamed like any other, and reporting failure for the commonest
+   *  case would abort the whole rename over a character who had simply never
+   *  ticked anything. `missing` distinguishes it for a caller that cares.
+   *
+   *  An OCCUPIED destination is replaced, not merged — and that is not this
+   *  function's judgement call to make. `renameBuild` refuses a collision before
+   *  it ever calls here, so the only way to reach a replace is a caller that
+   *  skipped the refusal. Merging would silently invent a build's ticks out of
+   *  two builds' work; replacing at least matches what the caller asked for.
+   *
+   *  Returns the `{ ok }` shape its siblings do, because a rename that reports
+   *  success on a failed write leaves the coordinator committing a build move
+   *  whose progress never followed. */
+  function renameProgress(from, to, storage) {
+    const oldKey = String(from || "");
+    const newKey = String(to || "");
+    const st = resolveStorage(storage);
+    if (!st) return { ok: false };
+    if (oldKey === newKey) return { ok: true };
+    const all = readProgress(storage);
+    if (!Object.prototype.hasOwnProperty.call(all, oldKey)) return { ok: true, missing: true };
+    all[newKey] = all[oldKey];
+    delete all[oldKey];
+    try {
+      st.setItem(PROGRESS_KEY, JSON.stringify(all));
+      return { ok: true };
+    } catch (e) {
+      return { ok: false };
+    }
+  }
+
   /** The acquired set for one character, as a plain object of `item -> true`. */
   function loadProgress(character, storage) {
     const all = readProgress(storage);
@@ -300,7 +338,8 @@
   }
 
   const api = {
-    PROGRESS_KEY, farmingPlan, equippedEntries, prescriptions, clearProgress, writeProgress, mergeProgress,
+    PROGRESS_KEY, farmingPlan, equippedEntries, prescriptions, clearProgress, renameProgress,
+    writeProgress, mergeProgress,
     loadProgress, toggleAcquired, readProgress, farmingMarkdown,
   };
 
