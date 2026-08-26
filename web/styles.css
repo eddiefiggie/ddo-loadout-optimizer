@@ -1599,8 +1599,18 @@ input.wz-ml { width: 120px; }
    surfaces the rail replaced. */
 .wz-charlist { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
 .wz-charlist li { display: flex; align-items: center; gap: var(--sp-2); background: var(--panel-2);
-  border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: var(--sp-2) var(--sp-3); }
-.wz-charnm { flex: 1; font-weight: 600; overflow-wrap: anywhere; }
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: var(--sp-2) var(--sp-3);
+  /* #518 — the row carries THREE controls now (load, rename, delete), and the
+     rail is the narrowest column in the layout. Without wrapping, "Load →" plus
+     two 32px squares squeezes the name to a character-per-line column at small
+     widths; #204 already reports header controls failing to stack. Wrapping puts
+     the controls on their own line instead of crushing the name. */
+  flex-wrap: wrap; }
+/* #518 — `flex: 1` alone lets the name shrink indefinitely, so the row's
+   flex-wrap never engages and a long build name shreds into a
+   character-per-line column beside the controls instead. The basis floor makes
+   the controls wrap to their own line first, which is the readable failure. */
+.wz-charnm { flex: 1 1 8rem; min-width: 8rem; font-weight: 600; overflow-wrap: anywhere; }
 .wz-charlist .wz-ctl { display: flex; gap: var(--sp-1); }
 .wz-charlist .wz-ctl button { background: transparent; color: var(--muted); border: 1px solid var(--border-2);
   border-radius: var(--radius-sm); padding: 3px 9px; font-size: var(--fs-xs); cursor: pointer;
@@ -1610,8 +1620,21 @@ input.wz-ml { width: 120px; }
      collided with the delete control beside it. Text controls size to their text;
      the icon-only delete keeps the square. */
   width: auto; height: auto; min-height: 32px; white-space: nowrap; }
-.wz-charlist .wz-ctl button[data-raildel] { width: 32px; }
+.wz-charlist .wz-ctl button[data-raildel],
+.wz-charlist .wz-ctl button[data-railrename] { width: 32px; }
 .wz-charlist .wz-ctl button:hover { color: var(--text); border-color: var(--accent); }
+/* #518 U4 — the takeover notice. Raised by a save, so it reports rather than
+   blocks; styled as a notice rather than an error, because inheriting ticks is
+   a fact to disclose, not a failure. */
+.wz-rail-note { margin: var(--sp-2) 0 0; padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm);
+  color: var(--text); background: var(--panel-2); border: 1px solid var(--border-2);
+  border-left: 3px solid var(--accent); border-radius: var(--radius-sm); }
+.wz-rail-note .wz-ctl { margin-top: var(--sp-2); flex-wrap: wrap; }
+.wz-rail-note .wz-ctl button { background: transparent; color: var(--muted);
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 3px 9px;
+  font-size: var(--fs-xs); cursor: pointer; width: auto; height: auto; min-height: 32px;
+  white-space: nowrap; }
+.wz-rail-note .wz-ctl button:hover { color: var(--text); border-color: var(--accent); }
 .wz-savestat { font-size: var(--fs-sm); color: var(--muted); }
 .wz-data { margin-top: var(--sp-3); border: 1px dashed var(--border-2); border-radius: var(--radius); background: var(--panel-2); }
 .wz-data > summary { list-style: none; cursor: pointer; padding: var(--sp-2) var(--sp-3); font-weight: 600; font-size: var(--fs-sm);

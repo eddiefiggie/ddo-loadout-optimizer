@@ -232,9 +232,15 @@ function storedItemsModel({ builds, bundles, versions, farming } = {}) {
     //
     // Marking them is the fix that fits what the data actually supports. A saved
     // build has no id: `persist.js` keys the store by name, so the name IS the
-    // identity, and inventing a second one is a data-model change with reach past
-    // this list. What a player needs here is to tell the two apart, which this
-    // does without pretending an ownership link exists.
+    // identity — settled by #518 rather than deferred by it, because every store
+    // already keys that way and the rename it shipped moves a build and its
+    // progress together. What a player needs HERE is to tell the two apart, which
+    // this does without pretending an ownership link exists.
+    //
+    // These rows are no longer the only thing standing between an orphan and a
+    // build that inherits it: saving a build under a name that already carries
+    // ticks discloses the count and offers to clear them (`farmingTakeover`).
+    // This list stays the place they can be found and removed at any other time.
     { kind: "farming", label: "Farming progress", empty: "No farming progress.",
       items: Object.keys(f).map((name) => {
         const n = Object.keys(f[name] || {}).length;
@@ -284,6 +290,75 @@ function deleteBuildConfirmText(name, impact, editingThis) {
     : `Delete saved build \u201C${nm}\u201D?`;
   if (!n) return head;
   return `${head} Its ${n} farming ${n === 1 ? "tick" : "ticks"} ${n === 1 ? "goes" : "go"} with it.`;
+}
+
+/** plan 2026-08-25-002 U3 (#518) — why a rename did not happen.
+ *
+ *  Pure and beside `overwriteConfirmText` for the same stated reason: the
+ *  sentence IS the product, so it is testable without a browser.
+ *
+ *  Every branch but one ends in "Nothing was changed", because every branch but
+ *  one is a clean refusal. The exception is a failed build write whose rollback
+ *  ALSO failed: the progress has moved and the build has not, so claiming a
+ *  clean failure would be a lie about the player's data. That case names where
+ *  the ticks ended up and where they can be cleared — the entry is already
+ *  marked in "Your data" as belonging to no saved build. */
+function renameRefusalText(res) {
+  const r = res || {};
+  const from = String(r.from || "");
+  const to = String(r.to || "");
+  if (r.reason === "empty") return "A build needs a name. Nothing was changed.";
+  if (r.reason === "collision") {
+    return `Another saved build is already called \u201C${to}\u201D. Nothing was changed.`;
+  }
+  if (r.reason === "missing") {
+    return `\u201C${from}\u201D is no longer saved. Nothing was changed.`;
+  }
+  if (r.stage === "build" && r.rolledBack === false) {
+    return `\u201C${from}\u201D could not be renamed, and its farming progress is now filed `
+      + `under \u201C${to}\u201D, which has no build. You can clear it under Your data.`;
+  }
+  return `\u201C${from}\u201D could not be renamed. Nothing was changed.`;
+}
+
+/** plan 2026-08-25-002 U4 (#518) — how many ticks this save is taking over.
+ *
+ *  Farming progress is keyed by the LIVE build-name field, which does not have
+ *  to name a saved build. So a name can carry ticks before any build is saved
+ *  under it, and the build that lands there inherits them looking exactly like
+ *  its own work. Three paths produce that: a backup restore, whose farming map
+ *  is keyed independently of the characters in the same file; a save that failed
+ *  on quota after a tick succeeded; and progress recorded before delete began
+ *  cascading. Delete-then-recreate is NOT among them — the cascade clears.
+ *
+ *  Takes the facts rather than looking them up, the `overwriteConfirmText`
+ *  precedent, so the number the player reads and the entry that gets cleared
+ *  cannot disagree.
+ *
+ *  `prevExisted` is what separates a takeover from an ordinary update: a name
+ *  that was already a saved build owns its ticks. Without that clause this would
+ *  fire on every autosave of every build that has ever farmed anything.
+ *
+ *  `disclosed` is warn-once. A build is saved on every navigation, so a
+ *  per-save disclosure is a per-navigation disclosure. */
+function farmingTakeover(name, prevExisted, tickCount, disclosed) {
+  const nm = String(name || "").trim();
+  if (!nm || prevExisted || disclosed) return 0;
+  const n = Number(tickCount) || 0;
+  return n > 0 ? n : 0;
+}
+
+/** The sentence for the above. Pure, for the same reason its siblings are.
+ *
+ *  It states what is true and stops: these ticks were not made on this build.
+ *  It does NOT tell the player they are wrong — the entry may well be their own
+ *  work from a build that failed to save — so clearing is offered, never urged,
+ *  and keeping them is the default that needs no action. */
+function farmingTakeoverText(name, count) {
+  const n = Number(count) || 0;
+  return `\u201C${String(name || "")}\u201D already had ${n} farming `
+    + `${n === 1 ? "tick" : "ticks"} recorded under that name, which were not made on `
+    + `this saved build.`;
 }
 
 function overwriteConfirmText(name, prevHasLoadout, savingSolved) {
@@ -1952,7 +2027,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -3829,6 +3904,23 @@ if (typeof window !== "undefined" && window.App) {
       }
       // eslint-disable-next-line no-undef
       const res = CharacterStore.saveCharacter(rec);
+      // plan 2026-08-25-002 U4 (#518) — did this save just adopt ticks recorded
+      // under this name before any build held it? Read AFTER the write and only
+      // when `prev` was absent, which is what makes it a takeover rather than an
+      // ordinary update. Reported through the rail on the next render; nothing
+      // here blocks, because this runs on the autosave path and a dialog during
+      // a step change is the defect autosave removed.
+      if (res && res.ok && !prev) {
+        // eslint-disable-next-line no-undef
+        const F = (typeof FarmingList !== "undefined") ? FarmingList : null;
+        const ticks = F ? Object.keys(F.loadProgress(nm) || {}).length : 0;
+        const seen = (state.farmingDisclosed || []).indexOf(nm) >= 0;
+        const n = farmingTakeover(nm, false, ticks, seen);
+        if (n) {
+          state.farmingTakeover = { name: nm, count: n };
+          state.farmingDisclosed = (state.farmingDisclosed || []).concat(nm);
+        }
+      }
       // #428 U5 (KTD3) — a save is the point of the flag. Cleared only on
       // SUCCESS: a quota failure leaves the work unsaved and still at risk.
       if (res && res.ok) state.inputsDirty = false;
@@ -3856,6 +3948,11 @@ if (typeof window !== "undefined" && window.App) {
       // build's accepted overwrite forward would let the next Continue silently
       // replace a record this player never agreed to replace.
       state.nameReconciled = null;
+      // #518 U4 — the takeover notice is per-character too. `state` outlives any
+      // one build, so a notice raised when A was saved would still be on screen
+      // under B, naming A — which reads as B having inherited A's ticks. Reset
+      // unconditionally, like every field above it.
+      state.farmingTakeover = null;
       // #428 U6 (AE3) — a loaded build has not been blocked yet, so nothing is
       // marked as needing an answer. A build saved before KD6 carries no armor
       // and will be marked the moment Continue is pressed (AE3a).
@@ -4099,9 +4196,19 @@ if (typeof window !== "undefined" && window.App) {
         : `<ul class="wz-charlist">${m.saved.map((n) => `<li${n === m.loadedName ? ` class="on"` : ""}>
             <span class="wz-charnm">${esc(n)}</span>
             <span class="wz-ctl"><button type="button" data-railload="${esc(n)}">Load →</button>
+            <button type="button" data-railrename="${esc(n)}" aria-label="rename ${esc(n)}" title="Rename">\u270e</button>
             <button type="button" data-raildel="${esc(n)}" aria-label="delete ${esc(n)}">✕</button></span></li>`).join("")}</ul>`;
+      // #518 U4 — the takeover notice. Rendered here rather than as a dialog: it
+      // is raised by a save, and saves happen on every navigation.
+      const take = state.farmingTakeover;
+      const takeNote = take
+        ? `<p class="wz-rail-note" role="status">${esc(farmingTakeoverText(take.name, take.count))}
+            <span class="wz-ctl"><button type="button" data-railkeepfarm="${esc(take.name)}">Keep them</button>
+            <button type="button" data-railclearfarm="${esc(take.name)}">Clear them</button></span></p>`
+        : "";
       return `<aside class="wz-rail" id="wz-rail" aria-label="Your build">
         <p class="wz-rail-head">Your build</p>
+        ${takeNote}
         <p class="wz-rail-loaded">${m.loaded
           ? `Editing <strong>${esc(m.loadedName)}</strong>`
           : `<span class="wz-sub">Unsaved build</span>`}</p>
@@ -4224,6 +4331,67 @@ if (typeof window !== "undefined" && window.App) {
       if (rail) rail.onclick = (e) => {
         const b = e.target.closest("button"); if (!b) return;
         if (b.dataset.railload != null) { requestLoad(b.dataset.railload); return; }
+        if (b.dataset.railkeepfarm != null) {
+          // Keeping is doing nothing. The entry may well be the player's own work
+          // from a build that failed to save, so this is the default answer and
+          // it only dismisses the notice.
+          state.farmingTakeover = null;
+          renderRail();
+          return;
+        }
+        if (b.dataset.railclearfarm != null) {
+          // Through the module that owns the key, never a hand-rolled write of a
+          // blob only farming.js documents.
+          // eslint-disable-next-line no-undef
+          const cleared = (typeof FarmingList !== "undefined")
+            ? FarmingList.clearProgress(b.dataset.railclearfarm) : { ok: false };
+          state.farmingTakeover = null;
+          renderRail();
+          const st2 = document.getElementById("wz-savestat");
+          if (st2) {
+            st2.textContent = (cleared && cleared.ok)
+              ? "Those farming ticks were cleared."
+              : "Those ticks could not be cleared \u2014 your browser's storage for this site may be full.";
+          }
+          return;
+        }
+        if (b.dataset.railrename != null) {
+          // plan 2026-08-25-002 U3 (#518) — the rename the app never had.
+          //
+          // A prompt is fine HERE and would not be on the save path: the player
+          // asked for this, which is the whole objection KTD6 records against a
+          // dialog during autosave. Same shape the bundle rename already uses.
+          const from = b.dataset.railrename;
+          const next = window.prompt("Rename this build:", from);
+          if (next === null) return;              // dismissed — nothing to do
+          const to = String(next).trim();
+          // eslint-disable-next-line no-undef
+          const res = CharacterStore.renameBuild(from, to);
+          const stat = document.getElementById("wz-savestat");
+          if (!res.ok) {
+            if (stat) stat.textContent = renameRefusalText(res);
+            return;
+          }
+          // The load-boundary discipline, at a boundary that did not exist until
+          // now: every per-character field a stale value could leak through has
+          // to move with the build. Solve attribution is NOT among them —
+          // `runBelongsTo` derives it from `loadedName` at save time rather than
+          // from a name stored on the run, so moving `loadedName` carries it.
+          if (from === state.loadedName) {
+            state.loadedName = res.to;
+            state.characterName = res.to;
+            // The warn-once overwrite flag would otherwise still be holding the
+            // OLD name, so the next genuine collision under the new one would
+            // pass unwarned.
+            state.nameReconciled = (state.nameReconciled === from) ? res.to : state.nameReconciled;
+          }
+          renderRail();
+          renderSharePicker();
+          if (stat) stat.textContent = res.unchanged
+            ? `\u201C${res.to}\u201D keeps its name.`
+            : `Renamed to \u201C${res.to}\u201D.`;
+          return;
+        }
         if (b.dataset.raildel != null) {
           // #429 review #3 — deleting the build you are EDITING removes the only
           // stored copy while the unsaved edits stay in memory with nothing left

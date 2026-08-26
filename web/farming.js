@@ -203,10 +203,11 @@
    *  reports success on a failed clear leaves exactly the orphan it exists to
    *  remove.
    *
-   *  Keyed by NAME, like every other read here. That is the #518 hazard and this
-   *  function inherits it rather than introducing it: a build renamed before
-   *  deletion leaves progress under the old name. Correct under today's keying,
-   *  and correct again once #518 gives progress a stable key. */
+   *  Keyed by NAME, like every other read here. #518 settled that the name IS the
+   *  identity rather than introducing a build id, so this keying is the design
+   *  and not a hazard waiting on a fix: a rename moves the build and its progress
+   *  together through `renameProgress` above, so there is no longer a state where
+   *  a renamed build leaves its ticks behind for this function to miss. */
   function clearProgress(character, storage) {
     const key = String(character || "");
     const st = resolveStorage(storage);
@@ -214,6 +215,44 @@
     const all = readProgress(storage);
     if (!Object.prototype.hasOwnProperty.call(all, key)) return { ok: true, missing: true };
     delete all[key];
+    try {
+      st.setItem(PROGRESS_KEY, JSON.stringify(all));
+      return { ok: true };
+    } catch (e) {
+      return { ok: false };
+    }
+  }
+
+  /** plan 2026-08-25-002 U1 (#518) — move one character's progress to a new name.
+   *
+   *  Lives HERE for the same reason `clearProgress` above does: this module owns
+   *  the storage key and its shape, so the rename coordinator in `persist.js`
+   *  never writes the blob itself.
+   *
+   *  An ABSENT source entry is a success with nothing to do. A build with no
+   *  ticks is renamed like any other, and reporting failure for the commonest
+   *  case would abort the whole rename over a character who had simply never
+   *  ticked anything. `missing` distinguishes it for a caller that cares.
+   *
+   *  An OCCUPIED destination is replaced, not merged — and that is not this
+   *  function's judgement call to make. `renameBuild` refuses a collision before
+   *  it ever calls here, so the only way to reach a replace is a caller that
+   *  skipped the refusal. Merging would silently invent a build's ticks out of
+   *  two builds' work; replacing at least matches what the caller asked for.
+   *
+   *  Returns the `{ ok }` shape its siblings do, because a rename that reports
+   *  success on a failed write leaves the coordinator committing a build move
+   *  whose progress never followed. */
+  function renameProgress(from, to, storage) {
+    const oldKey = String(from || "");
+    const newKey = String(to || "");
+    const st = resolveStorage(storage);
+    if (!st) return { ok: false };
+    if (oldKey === newKey) return { ok: true };
+    const all = readProgress(storage);
+    if (!Object.prototype.hasOwnProperty.call(all, oldKey)) return { ok: true, missing: true };
+    all[newKey] = all[oldKey];
+    delete all[oldKey];
     try {
       st.setItem(PROGRESS_KEY, JSON.stringify(all));
       return { ok: true };
@@ -300,7 +339,8 @@
   }
 
   const api = {
-    PROGRESS_KEY, farmingPlan, equippedEntries, prescriptions, clearProgress, writeProgress, mergeProgress,
+    PROGRESS_KEY, farmingPlan, equippedEntries, prescriptions, clearProgress, renameProgress,
+    writeProgress, mergeProgress,
     loadProgress, toggleAcquired, readProgress, farmingMarkdown,
   };
 

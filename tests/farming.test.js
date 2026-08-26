@@ -201,4 +201,73 @@ test("MERGE: a failed write reports failure rather than a silent loss", () => {
     "the caller must be able to tell the player the restore did not land");
 });
 
+// ---- #518: moving a character's progress to a new name --------------------
+
+test("#518: renameProgress moves every tick to the new key and leaves nothing behind", () => {
+  const st = fakeStorage();
+  F.toggleAcquired("Aurelia", "Bloodrage Crystal", st);
+  F.toggleAcquired("Aurelia", "Legendary Ring", st);
+  F.toggleAcquired("Aurelia", "Epic Cloak", st);
+  assert.strictEqual(F.renameProgress("Aurelia", "Aurelia Mk2", st).ok, true);
+  const got = F.readProgress(st);
+  assert.deepStrictEqual(got["Aurelia Mk2"],
+    { "Bloodrage Crystal": true, "Legendary Ring": true, "Epic Cloak": true });
+  assert.ok(!("Aurelia" in got), "the old key is gone, not merely emptied");
+});
+
+test("#518: renaming a character with no progress succeeds with nothing to do", () => {
+  // A build with no ticks is renamed like any other. Reporting failure here
+  // would abort the rename for the commonest case.
+  const st = fakeStorage();
+  F.toggleAcquired("Someone Else", "Item", st);
+  const r = F.renameProgress("Bare", "Bare Mk2", st);
+  assert.strictEqual(r.ok, true);
+  assert.strictEqual(r.missing, true, "the caller can still tell nothing moved");
+  assert.ok(!("Bare Mk2" in F.readProgress(st)), "and no empty entry is invented");
+});
+
+test("#518: every other character's progress is untouched by a move", () => {
+  const st = fakeStorage();
+  F.toggleAcquired("Aurelia", "A", st);
+  F.toggleAcquired("Bram", "B", st);
+  F.toggleAcquired("Kestrel", "C", st);
+  F.renameProgress("Aurelia", "Aurelia Mk2", st);
+  const got = F.readProgress(st);
+  assert.deepStrictEqual(got.Bram, { B: true });
+  assert.deepStrictEqual(got.Kestrel, { C: true });
+});
+
+test("#518: a failed write reports failure and leaves the stored blob as it was", () => {
+  const st = fakeStorage();
+  F.toggleAcquired("Aurelia", "A", st);
+  const before = st.getItem(F.PROGRESS_KEY);
+  const tiny = {
+    getItem: st.getItem,
+    setItem: () => { const e = new Error("quota"); e.name = "QuotaExceededError"; throw e; },
+    removeItem: st.removeItem,
+  };
+  assert.strictEqual(F.renameProgress("Aurelia", "Aurelia Mk2", tiny).ok, false);
+  assert.strictEqual(st.getItem(F.PROGRESS_KEY), before,
+    "a failed rename must not half-move the entry");
+});
+
+test("#518: a move onto an occupied key REPLACES rather than merges", () => {
+  // Pinned so the coordinator's collision refusal stays the only thing standing
+  // between the two entries. A later caller must not assume a merge that does
+  // not happen here.
+  const st = fakeStorage();
+  F.toggleAcquired("Aurelia", "From Aurelia", st);
+  F.toggleAcquired("Bram", "From Bram", st);
+  F.renameProgress("Aurelia", "Bram", st);
+  assert.deepStrictEqual(F.readProgress(st).Bram, { "From Aurelia": true },
+    "the destination's own ticks do not survive a move onto it");
+});
+
+test("#518: renaming a character to its own name is a no-op success", () => {
+  const st = fakeStorage();
+  F.toggleAcquired("Aurelia", "A", st);
+  assert.strictEqual(F.renameProgress("Aurelia", "Aurelia", st).ok, true);
+  assert.deepStrictEqual(F.readProgress(st).Aurelia, { A: true });
+});
+
 console.log(`\n${passed} passed`);
