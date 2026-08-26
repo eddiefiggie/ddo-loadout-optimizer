@@ -642,3 +642,103 @@ def test_built_coverage_discloses_the_derivation():
     assert sum(1 for v in cov["blank_intrinsic_sets"].values() if v) == 7
     assert set(cov["blank_intrinsic_sets"]) == set(cov["blank_set_shadow_counts"])
     assert all(n >= 1 for n in cov["blank_set_shadow_counts"].values())
+
+
+# --- #545: every native Dino host carries the capacity its crafting list names --
+#
+# #283 stamped the two hosts naming a `(quarterstaff)` pool and deliberately left
+# the wider case alone. The wider case is 122 native records that name a BASE
+# `<Type> (<Category>)` pool, ship carrying their own affixes, and expose no Dino
+# insert capacity at all — so the solver can place nothing into them.
+#
+# Selection is DERIVED exactly as #283's is: a record qualifies by naming a pool
+# itself. Nothing is synthesized over these records (all 122 carry affixes, so
+# replacing one would delete real value — the #364 trap).
+
+
+def _native_host_fixture():
+    """Three records: a four-pool weapon, a one-pool accessory, and a non-host."""
+    return [
+        {"name": "Attuned Bone Longsword", "slot": "Weapon", "type": "Longswords",
+         "crafting": {"Scale (Weapon)": {}, "Fang (Weapon)": {},
+                      "Claw (Weapon)": {}, "Horn (Weapon)": {}}},
+        {"name": "Attuned Bone Belt", "slot": "Belt",
+         "crafting": {"Scale (Accessory)": {}}},
+        {"name": "Legendary Bracers of the Sun Soul", "slot": "Bracers",
+         "crafting": {"Colorless Augment": {}}},
+    ]
+
+
+_NATIVE_CATALOG = {k: {} for k in (
+    "Scale (Weapon)", "Fang (Weapon)", "Claw (Weapon)", "Horn (Weapon)",
+    "Scale (Accessory)", "Fang (Weapon) (quarterstaff)")}
+
+
+def test_native_hosts_carry_the_physical_keys_their_crafting_list_names():
+    hosts = dino.native_dino_hosts(_native_host_fixture(), catalog=_NATIVE_CATALOG)
+    # Sorted, so the encoding does not depend on gear-planner's key order. The
+    # list is a multiset for capacity purposes; order carries no meaning.
+    assert hosts["Attuned Bone Longsword"] == [
+        "Claw||Weapon", "Fang||Weapon", "Horn||Weapon", "Scale||Weapon"]
+    assert hosts["Attuned Bone Belt"] == ["Scale||Accessory"]
+    assert "Legendary Bracers of the Sun Soul" not in hosts, \
+        "a record naming no Dino pool is not a host"
+
+
+def test_a_quarterstaff_host_belongs_to_283_not_here():
+    # The two populations must not overlap: #283 already stamps these, and
+    # stamping them twice would be the double-stamp R5 forbids.
+    items = _native_host_fixture() + [
+        {"name": "Dinosaur Bone Quarterstaff", "slot": "Weapon", "type": "Quarterstaffs",
+         "crafting": {"Fang (Weapon) (quarterstaff)": {}, "Claw (Weapon)": {}}}]
+    hosts = dino.native_dino_hosts(items, catalog=_NATIVE_CATALOG)
+    assert "Dinosaur Bone Quarterstaff" not in hosts
+
+
+def test_a_blank_source_item_is_excluded_from_the_native_population():
+    # `Dinosaur Bone Helmet` and `Dinosaur Bone Cloak` name a Dino pool AND are
+    # the records the synthetic blanks shadow — they ship as blanks, already
+    # carrying capacity. Offering them for stamping would make the count
+    # assertion lie about a host that was never eligible.
+    items = _native_host_fixture() + [
+        {"name": "Dinosaur Bone Helmet", "slot": "Helm",
+         "crafting": {"Scale (Accessory)": {}}}]
+    hosts = dino.native_dino_hosts(items, catalog=_NATIVE_CATALOG,
+                                   blank_source_items={"Dinosaur Bone Helmet"})
+    assert "Dinosaur Bone Helmet" not in hosts
+    assert "Attuned Bone Belt" in hosts, "the rest of the population is unaffected"
+
+
+def test_a_named_base_pool_missing_from_the_catalog_fails_the_build():
+    # The same soft-read failure mode #283 recorded, on the base pools: a dropped
+    # upstream key leaves the host carrying a slot key nothing can fill, and
+    # NOTHING fails. Prove the hard read.
+    try:
+        dino.native_dino_hosts(_native_host_fixture(),
+                               catalog={"Scale (Weapon)": {}})
+    except SystemExit as e:
+        assert "the crafting catalog does not define" in str(e)
+        assert "Attuned Bone Longsword" in str(e)
+    else:
+        raise AssertionError("expected SystemExit for an undefined base pool")
+
+
+def test_no_native_host_is_drift_not_an_empty_case():
+    # Refuses to inspect zero records: 122 records named these pools when #545
+    # was written, so an empty result is upstream drift, not an empty answer.
+    try:
+        dino.native_dino_hosts([{"name": "Plain Sword", "slot": "Weapon",
+                                 "type": "Longswords", "crafting": {}}],
+                               catalog=_NATIVE_CATALOG)
+    except SystemExit as e:
+        assert "no gear-planner record names a base" in str(e)
+    else:
+        raise AssertionError("expected SystemExit for an empty host population")
+
+
+def test_the_guard_fixtures_are_not_vacuously_empty():
+    # Non-vacuity for both guards above: with the trigger removed, the same
+    # fixture yields a real population. Without this, a fixture that produced
+    # nothing would satisfy the guards for the wrong reason.
+    hosts = dino.native_dino_hosts(_native_host_fixture(), catalog=_NATIVE_CATALOG)
+    assert len(hosts) == 2
