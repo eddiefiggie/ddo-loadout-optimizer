@@ -1744,6 +1744,93 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.dinoPlaced.length, 2, "one placement per host slot");
   });
 
+  // ---- #545: the same encoding, with supply from MANY native hosts ----
+  // #283 proved the Hall's-condition triple against 13 capacity carriers. #545
+  // stamps 122 more, so total supply per key now comes from a wide set of
+  // affix-bearing native hosts rather than a handful of affix-less blanks. No
+  // new constraint family: these prove the existing three still bound it.
+
+  // a stamped NATIVE host: a real typed weapon carrying its own affixes AND the
+  // Dino slots its crafting list names.
+  function nativeHost(id, type, dinoTypes, affixes) {
+    const v = dinoHost(id, "Main Hand", dinoTypes, affixes);
+    v.type = type;
+    v.category = "weapon";
+    return v;
+  }
+
+  await test("#545: aggregate capacity bounds placements across many native hosts", async () => {
+    // Three equipped hosts, one Scale Weapon slot each, four ranked inserts
+    // competing. Total supply is 3, so exactly 3 place — the fourth has no
+    // opening anywhere. Distinct stats so each placement is visible rather than
+    // collapsing into one max bucket.
+    const q = {
+      targets: ["Constitution", "Strength", "Dexterity", "Wisdom"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Main Hand", [nativeHost("A", "Long Swords", ["Scale||Weapon"])]),
+             slot("Rune Arm", [dinoHost("B", "Rune Arm", ["Scale||Weapon"])]),
+             slot("Armor", [dinoHost("C", "Armor", ["Scale||Weapon"])])],
+      dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14, "Weapon"),
+                    dinoIns("Scale", "Strength", "Enhancement", 13, "Weapon"),
+                    dinoIns("Scale", "Dexterity", "Enhancement", 12, "Weapon"),
+                    dinoIns("Scale", "Wisdom", "Enhancement", 11, "Weapon")],
+    };
+    const r = await S.solveLexicographic(q, highs);
+    assert.strictEqual(r.dinoPlaced.length, 3, "three physical slots, three placements");
+    assert.strictEqual(r.effective.Wisdom, 0, "the fourth insert has no opening");
+  });
+
+  await test("#545: a stamped native's own affixes and its insert both count, once each", async () => {
+    // The #364 shape, checked at the solver rather than the pipeline: a native
+    // keeps the affixes it earned AND gains insert capacity, and neither is
+    // credited twice.
+    const q = {
+      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Main Hand", [nativeHost("N", "Long Swords", ["Fang||Weapon"],
+        [["Strength", "Enhancement", 15]])])],
+      dinoInserts: [dinoIns("Fang", "Constitution", "Enhancement", 14, "Weapon")],
+    };
+    const r = await S.solveLexicographic(q, highs);
+    assert.strictEqual(r.effective.Strength, 15, "the host's own affix still scores");
+    assert.strictEqual(r.effective.Constitution, 14, "the placed insert scores too");
+    assert.strictEqual(r.dinoPlaced.length, 1, "one slot, one placement");
+  });
+
+  await test("#545: a quarterstaff-only insert finds no supply among base natives", async () => {
+    // The restricted-demand family, at scale: several base-typed natives expose
+    // Fang Weapon slots and none of them may serve a quarterstaff-only insert.
+    const q = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Main Hand", [nativeHost("A", "Long Swords", ["Fang||Weapon"])]),
+             slot("Rune Arm", [dinoHost("B", "Rune Arm", ["Fang||Weapon"])])],
+      dinoInserts: [markedIns("Fang", "Constitution", 14, true)],
+    };
+    assert.strictEqual((await S.solveLexicographic(q, highs)).effective.Constitution, 0,
+      "no quarterstaff is equipped, so its exclusive pool is unreachable");
+  });
+
+  await test("#545: an insert whose key no equipped native exposes is forced to zero", async () => {
+    const q = {
+      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Main Hand", [nativeHost("A", "Long Swords", ["Fang||Weapon"])])],
+      dinoInserts: [dinoIns("Horn", "Constitution", "Enhancement", 14, "Weapon")],
+    };
+    assert.strictEqual((await S.solveLexicographic(q, highs)).effective.Constitution, 0,
+      "a Horn insert cannot enter a host exposing only Fang");
+  });
+
+  await test("#545: a multi-affix insert stays all-or-nothing on a stamped native", async () => {
+    const q = {
+      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Main Hand", [nativeHost("N", "Long Swords", ["Scale||Weapon"])])],
+      dinoInserts: [dinoMulti("Scale", [["Constitution", "Enhancement", 14],
+                                        ["Strength", "Enhancement", 9]], "Weapon")],
+    };
+    const r = await S.solveLexicographic(q, highs);
+    assert.strictEqual(r.effective.Constitution, 14);
+    assert.strictEqual(r.effective.Strength, 9, "one placement carries both affixes");
+    assert.strictEqual(r.dinoPlaced.length, 1);
+  });
+
   // ---- U81 Nearly Complete (parametric choice-slot) ----
   // a worn item carrying a Nearly-Complete slot of a category at a tier
   function ncHost(id, slotName, category, tier, affixes) {
@@ -2383,8 +2470,17 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(unit.category, "Armor", "the placed insert is Armor-category (two-key routing held)");
     assert.ok(unit.affixes.length >= 2, "the placed unit is a multi-affix Armor insert");
     assert.ok(res.effective[target] > 0, "the crafted armor insert advances the target");
-    const armorBlank = res.chosen.find((c) => c.variant.source === "dino_crafting_blank" && c.slot === "Armor");
-    assert.ok(armorBlank, "the real Dinosaur Bone Armor blank was equipped to host the insert");
+    // #545 — this used to assert the synthetic `Dinosaur Bone Armor` BLANK was
+    // equipped. It no longer is, and that is the intended improvement rather
+    // than a regression: `Dinosaur Bone Docent` is a real, farmable, named
+    // record that now carries the same Armor-typed capacity AND an affix of its
+    // own, so it dominates the affix-less blank. The test's intent — two-key
+    // (category) routing and multi-affix placement end-to-end on real data — is
+    // unchanged; only the incidental fact of WHICH host carries it was pinned.
+    const armorHost = res.chosen.find((c) => c.slot === "Armor");
+    assert.ok(armorHost, "an Armor host was equipped to carry the insert");
+    assert.ok((armorHost.variant.dino_slots_norm || []).some((k) => k.endsWith("||Armor")),
+      "the equipped Armor host exposes an Armor-typed Dino slot");
   });
 
   // ---- Seal ("Sealed in X") single-pick choice-slot ----

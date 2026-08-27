@@ -366,6 +366,140 @@ def native_quarterstaff_hosts(planner_items=None, catalog=None):
     return dict(sorted(hosts.items()))
 
 
+def native_dino_hosts(planner_items=None, catalog=None, blank_source_items=None):
+    """``{host name: [slot key, ...]}`` for every gear-planner record whose own
+    crafting list names a BASE ``<Type> (<Category>)`` Dino pool.
+
+    These are the hosts #545 is about: the wider case #283 deliberately left
+    alone once it had fixed the two that name a ``(quarterstaff)`` pool. They ship
+    already — real, farmable, named items carrying their own affixes — and are
+    missing exactly one thing: the Dino insert capacity their crafting list
+    grants them. That is what gets stamped, so each record keeps everything else
+    it earned through the ordinary native pipeline. Nothing is synthesized over
+    them; all of them carry affixes, so replacing one would delete real value
+    (the #364 trap).
+
+    Selection is DERIVED, never listed, exactly as ``native_quarterstaff_hosts``
+    does it: a record qualifies by naming such a pool itself, so a host gaining
+    or losing the reference upstream joins or leaves without an edit here.
+
+    Two populations are held out, and they are held out for different reasons:
+
+    * a record naming a ``(quarterstaff)`` pool belongs to #283, which stamps it
+      at the same seam — stamping it here as well is the double-stamp;
+    * a ``blank_source_items`` name is a record a synthetic blank SHADOWS and
+      replaces. It never reaches the planner reader at all, so it can never be
+      stamped; leaving it in the population would make the count assertion in
+      build_dataset fail over a host that was never eligible. Today that is
+      ``Dinosaur Bone Helmet`` and ``Dinosaur Bone Cloak``.
+
+    The keys are PHYSICAL (``type||category``), sorted. Which pool VARIANT a host
+    draws is a property of its weapon type, resolved at solve time by
+    ``model.js dinoWeaponVariant`` — never baked into the slot (KTD5 of the #545
+    plan, and #283's single-authority rule). Sorting keeps the encoding
+    independent of gear-planner's key order; the list is a multiset for capacity
+    purposes, so order carries no meaning.
+
+    Fails the build loudly rather than stamping a host that cannot honour it:
+
+    * a base pool a host NAMES but the crafting catalog does not define — the
+      same soft-read failure mode #283 recorded, which would otherwise leave the
+      host carrying a slot key nothing can ever fill;
+    * an empty population, which is upstream drift rather than an empty answer.
+    """
+    items = _load_planner_items() if planner_items is None else planner_items
+    cat = crafting_catalog.load_catalog() if catalog is None else catalog
+    held_out = set(blank_source_items or ())
+    hosts = {}
+    for it in items or ():
+        name = (it.get("name") or "").strip()
+        if name in held_out:
+            continue
+        crafting = it.get("crafting") or {}
+        raw_keys = (list(crafting.keys()) if isinstance(crafting, dict)
+                    else list(crafting or ()))
+        parsed = [(raw, _parse_dino_pool_key(raw)) for raw in raw_keys]
+        parsed = [(raw, p) for raw, p in parsed if p is not None]
+        if not parsed:
+            continue                      # names no Dino pool: not ours
+        if any(p[2] for _raw, p in parsed):
+            continue                      # names a quarterstaff pool: #283's
+        slots = []
+        for raw, (dino_type, category, _qs) in parsed:
+            if str(raw).strip() not in cat:
+                raise SystemExit(
+                    f"dino native hosts: {name!r} draws from {str(raw).strip()!r}, "
+                    "which the crafting catalog does not define. Upstream dropped "
+                    "the pool the host names, so the host would carry a slot key "
+                    "nothing can fill rather than fail (#545).")
+            slots.append(f"{dino_type}||{category}")
+        # Sorted, NOT deduplicated. The list is a capacity MULTISET — the solver
+        # counts how many of a key a host exposes — so collapsing a repeated key
+        # would silently delete a slot. `native_quarterstaff_hosts` keeps
+        # duplicates for the same reason, and the two must not diverge. Sorting
+        # only removes the dependence on gear-planner's key order.
+        hosts[name] = sorted(slots)
+    if not hosts:
+        raise SystemExit(
+            "dino native hosts: no gear-planner record names a base Dino pool. "
+            "122 records did when #545 was written, so this is upstream drift, "
+            "not an empty case — every native host would silently go back to "
+            "zero insert capacity, which is the whole defect #545 fixes.")
+    return dict(sorted(hosts.items()))
+
+
+def stamp_dino_capacity(variants, hosts):
+    """Write each host's Dino slot keys onto the variant it shipped as, in place.
+    Returns how many variants were stamped.
+
+    ONE seam serves both derived host populations (#283's quarterstaff hosts and
+    #545's natives), so the two can never drift into stamping the same record
+    twice or disagreeing about what a host is. The join is by ``source_item``.
+
+    Refuses rather than softens, and the refusal names the CAUSE, because a
+    derived host can go unstamped two different ways:
+
+    * it **never reached a variant** — an unrelated gate (a blocklist, a
+      quarantine, an upstream rename) dropped the record before this seam. Not
+      this stamp's defect, and reporting it as one sends the next reader to the
+      wrong code. #283's guard could conflate the two because it covered two
+      hosts; across 122 the distinction is load-bearing.
+    * it **shipped already carrying capacity** — two sources claim the same
+      craft, and the second silently wins. That is the double-stamp, and it is
+      this stamp's defect.
+    """
+    if not hosts:
+        raise SystemExit(
+            "dino capacity stamp: no hosts to stamp. Both derived populations "
+            "were non-empty when #545 shipped, so an empty map is a caller "
+            "handing over nothing — every native host would go back to zero "
+            "insert capacity with nothing said.")
+    stamped, already, reached = 0, [], set()
+    for v in variants:
+        slots = hosts.get(v.get("source_item") or "")
+        if not slots:
+            continue
+        reached.add(v["source_item"])
+        if v.get("dino_slots_norm"):
+            already.append(v["source_item"])
+            continue
+        v["dino_slots_norm"] = list(slots)
+        stamped += 1
+    if already:
+        raise SystemExit(
+            f"dino capacity stamp: {sorted(set(already))} already carried insert "
+            "capacity when the stamp ran. Two sources claim the same craft and "
+            "the second wins silently, which is the double-stamp #545 forbids.")
+    missing = sorted(set(hosts) - reached)
+    if missing:
+        raise SystemExit(
+            f"dino capacity stamp: {missing} never reached a variant. The join is "
+            "by `source_item` and was complete when #545 shipped, so these hosts "
+            "were dropped upstream of this seam — look at the gate that dropped "
+            "them, not at the stamp.")
+    return stamped
+
+
 def native_set_membership(planner_items=None):
     """Worn slot -> ``{"sets": tuple, "natives": [name, ...]}`` as gear-planner
     declares it for the Dinosaur Bone records collapsing into that blank.

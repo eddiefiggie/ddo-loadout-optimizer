@@ -10,6 +10,22 @@
 //   node tests/parity/capture_golden.js
 //
 // Ratifications:
+//   #545 (2026-08-26) — THREE fixtures, each attributed separately. Cause: 122
+//   native Dinosaur Bone records that shipped with zero insert capacity now
+//   carry the slots their own crafting lists name, so the solver has options it
+//   never had.
+//     * `endgame-dps-ml33` Main Hand: `Attuned Bone Quarterstaff` -> `Attuned
+//       Bone Bastard Sword`. `perTarget` is byte-identical, so no ranked target
+//       moved — this is a TIE broken differently. It is a better answer for a
+//       reason the numbers do not show: the quarterstaff occupies both hands
+//       while the bastard sword does not, so the Off Hand (previously forced
+//       empty) now takes `Horseshoe Crab Shield`, and the Helmet and Ring shift
+//       with it. A one-handed Dino weapon simply did not exist before.
+//     * `trance-credit-additive-ml32` and its `-baseline` twin — Wisdom 29 -> 30.
+//       A strict gain on a ranked target: a stamped native now hosts an insert
+//       that had nowhere to go.
+//   No fixture lost a point on any ranked target, and no fixture changed status.
+//
 //   #283 (2026-08-26) — `endgame-dps-ml33` Main Hand: `Dinosaur Bone Weapon` ->
 //   `Attuned Bone Quarterstaff`. ONE fixture, ONE slot; `perTarget`, `effective`
 //   and `status` are byte-identical, so no ranked target moved. Cause: the two
