@@ -79,10 +79,13 @@ test("#500: newest first, and re-saving an id replaces rather than duplicates", 
 });
 
 test("#500: a full store reports `full`, and does NOT report it for other failures", () => {
-  // The whole retention policy is this return value. The interview settled
-  // retention as "grow until storage complains, then warn and let the player
-  // prune" — so a swallowed quota error would stop recording history while the
-  // tab kept implying every solve was being snapshotted.
+  // A swallowed quota error would stop recording history while the tab kept
+  // implying every solve was being snapshotted, so the failure must reach the
+  // caller. #548 changed what happens BEFORE this point — a full store now
+  // reclaims its own auto snapshots and retries — but this case has nothing
+  // reclaimable (one record, and it is the one being written), so it still
+  // arrives here. What this return value no longer is, is the whole retention
+  // policy; see the #548 block below.
   const tiny = fakeStorage(10);
   const res = V.saveVersion({ id: "v1", name: "x".repeat(100) }, tiny);
   assert.strictEqual(res.ok, false);
@@ -175,3 +178,89 @@ test("#500: the ranked and unranked deltas are rendered as separate claims", () 
 });
 
 console.log(`\n${passed} passed`);
+
+// ---------------------------------------------------------------------------
+// #548 — auto snapshots grow unbidden and share one origin budget with the three
+// stores that hold deliberate work. A full store now reclaims its OWN history
+// and retries, instead of failing and having the player told to delete builds.
+
+const auto = (id, pad) => ({ id, kind: "auto", name: id, pad: "x".repeat(pad || 200) });
+const named = (id, pad) => ({ id, kind: "named", name: id, pad: "x".repeat(pad || 200) });
+
+test("#548: pruning keeps the newest autos and never touches named or import", () => {
+  const list = [auto("v9"), named("v8"), auto("v7"), { id: "v6", kind: "import" }, auto("v5")];
+  assert.deepStrictEqual(V.pruneAutoList(list, 2).map((r) => r.id), ["v9", "v8", "v7", "v6"]);
+  assert.deepStrictEqual(V.pruneAutoList(list, 1).map((r) => r.id), ["v9", "v8", "v6"]);
+  // Even at zero — the rung that gives up ALL history — authored work survives.
+  assert.deepStrictEqual(V.pruneAutoList(list, 0).map((r) => r.id), ["v8", "v6"],
+    "named and import are authored work; #530 is the standing reminder");
+  // A record with no kind is treated as auto (the default `makeVersion` applies),
+  // never as unreclaimable — otherwise a legacy store could never be reclaimed.
+  assert.deepStrictEqual(V.pruneAutoList([{ id: "x" }], 0), []);
+});
+
+test("#548: a full store reclaims its own autos and the save succeeds", () => {
+  // A limit that admits ten records but not the eleventh.
+  const ten = JSON.stringify(Array.from({ length: 10 }, (_, i) => auto("v" + i)));
+  const st = fakeStorage(ten.length);
+  for (let i = 0; i < 10; i++) {
+    assert.strictEqual(V.saveVersion(auto("v" + i), st).ok, true, "seeding must fit");
+  }
+  const res = V.saveVersion(auto("v10"), st);
+  assert.strictEqual(res.ok, true, "the eleventh save must succeed by making room");
+  assert.ok(res.reclaimed > 0, "and must report what it cost");
+  const kept = V.listVersions(st);
+  assert.strictEqual(kept[0].id, "v10", "the record being written survives");
+  assert.ok(kept.length < 11, "history really was shortened");
+});
+
+test("#548: reclaim never deletes named versions to make room", () => {
+  const four = JSON.stringify(Array.from({ length: 4 }, (_, i) => named("n" + i)));
+  const st = fakeStorage(four.length);
+  for (let i = 0; i < 4; i++) {
+    assert.strictEqual(V.saveVersion(named("n" + i), st).ok, true, "seeding must fit");
+  }
+  const before = V.listVersions(st).map((r) => r.id);
+  const res = V.saveVersion(auto("a1"), st);
+  assert.strictEqual(res.ok, false, "a store full of authored work cannot be reclaimed");
+  assert.strictEqual(res.full, true, "and says so, so the player can prune deliberately");
+  assert.strictEqual(res.reclaimed, 0);
+  assert.deepStrictEqual(V.listVersions(st).map((r) => r.id), before,
+    "every named version is still there — the store must not eat authored work");
+});
+
+test("#548: a successful save reports zero reclaimed, not undefined", () => {
+  const st = fakeStorage();
+  const res = V.saveVersion(auto("v1"), st);
+  assert.strictEqual(res.ok, true);
+  assert.strictEqual(res.reclaimed, 0, "callers branch on this; undefined would read as falsy by luck");
+});
+
+test("#548: usage is billed in UTF-16 code units, as browsers bill it", () => {
+  const st = fakeStorage();
+  assert.strictEqual(V.usageBytes(st), 0, "an empty store is zero, not a throw");
+  V.saveVersion(auto("v1", 100), st);
+  const raw = st.getItem(V.STORE_KEY);
+  assert.strictEqual(V.usageBytes(st), raw.length * 2,
+    "reporting `length` would understate the store by half, and the whole point " +
+    "of the number is to say what filled the budget");
+  assert.strictEqual(V.usageBytes(null), 0);
+});
+
+test("#548: countByKind separates the reclaimable from the authored", () => {
+  const st = fakeStorage();
+  V.saveVersion(auto("v1"), st);
+  V.saveVersion(named("v2"), st);
+  V.saveVersion({ id: "v3", kind: "import" }, st);
+  V.saveVersion({ id: "v4" }, st);   // no kind -> auto
+  assert.deepStrictEqual(V.countByKind(st), { auto: 2, named: 1, import: 1 });
+});
+
+test("#548: the reclaim ladder ends at one, never at zero", () => {
+  // Zero would drop the record being written, so the save would "succeed" having
+  // stored nothing. One is the floor for that reason, not by accident.
+  assert.ok(V.RECLAIM_LADDER.length > 0);
+  assert.strictEqual(V.RECLAIM_LADDER[V.RECLAIM_LADDER.length - 1], 1);
+  const desc = V.RECLAIM_LADDER.slice().sort((a, b) => b - a);
+  assert.deepStrictEqual(V.RECLAIM_LADDER, desc, "each rung gives up strictly more");
+});

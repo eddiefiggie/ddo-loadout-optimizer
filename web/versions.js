@@ -119,10 +119,98 @@
     }
   }
 
+  /** Bytes this store occupies. ITS OWN KEY ONLY — each store accounts for
+   *  itself and the orchestrator composes them, because no store should have to
+   *  know the others exist to report its own size. */
+  function usageBytes(storage) {
+    const st = resolveStorage(storage);
+    if (!st) return 0;
+    let raw = "";
+    try { raw = st.getItem(STORE_KEY) || ""; } catch (e) { return 0; }
+    // Browsers bill localStorage in UTF-16 code units, so a character is 2
+    // bytes. Reporting `length` would understate the store by half and make a
+    // "this is what filled your storage" claim quietly wrong.
+    return raw.length * 2;
+  }
+
+  function countByKind(storage) {
+    const out = { auto: 0, named: 0, import: 0 };
+    for (const r of listVersions(storage)) {
+      const k = KINDS.includes(r && r.kind) ? r.kind : "auto";
+      out[k] += 1;
+    }
+    return out;
+  }
+
+  /** Keep the newest `keep` AUTO records; drop the rest. Pure, so the policy is
+   *  testable without a storage stub.
+   *
+   *  `named` and `import` are never dropped, at any rung. They are authored work
+   *  — someone pressed save and typed a name, or carried a file in — and #530 is
+   *  the standing reminder that treating them as reclaimable loses exactly what a
+   *  player cannot reproduce. Autos are the only kind that accumulates unbidden,
+   *  which is what makes them the only kind safe to reclaim.
+   *
+   *  The list is newest-first (`saveVersion` prepends), so "oldest" is the tail.
+   */
+  function pruneAutoList(list, keep) {
+    let seen = 0;
+    return (list || []).filter((r) => {
+      const kind = KINDS.includes(r && r.kind) ? r.kind : "auto";
+      if (kind !== "auto") return true;
+      seen += 1;
+      return seen <= keep;
+    });
+  }
+
+  function pruneAuto(keep, storage) {
+    const list = listVersions(storage);
+    const kept = pruneAutoList(list, keep);
+    const dropped = list.length - kept.length;
+    if (!dropped) return { ok: true, dropped: 0 };
+    return Object.assign(writeAll(kept, storage), { dropped });
+  }
+
+  /** How far to fall back when the store will not take another record. Each rung
+   *  gives up more history for the same reason: an unsaved build is worse than a
+   *  shortened one. The last rung keeps ONE auto — the build being written — so
+   *  the write can still succeed when nothing else will let it.
+   *
+   *  Stopping at 2 rather than 1 would preserve the Adjustment Studio's default
+   *  comparison, and deliberately is not the last rung: at that point the choice
+   *  is between losing a diff and losing the build, and the build wins.
+   */
+  const RECLAIM_LADDER = [10, 3, 1];
+
+  /** #548 — `auto` snapshots are taken on EVERY solve, carry full item bodies
+   *  (~38 KB each), and had no cap: the documented policy was "grow until storage
+   *  complains, then warn and let the player prune". The warning half worked. What
+   *  it did not anticipate is that this store shares one origin budget with the
+   *  saved characters, the bundles and the farming progress — so the store that
+   *  grows unbidden evicts the three that hold deliberate work, and the failure
+   *  surfaces on whichever of them happens to be written next.
+   *
+   *  So the policy still grows freely, but a full store now reclaims its OWN
+   *  unbidden history and retries instead of failing. `reclaimed` reports how many
+   *  records that cost, so the caller can say so rather than silently shortening
+   *  the player's history.
+   */
   function saveVersion(rec, storage) {
     const list = listVersions(storage);
     const next = [rec, ...list.filter((r) => r.id !== rec.id)];
-    return Object.assign(writeAll(next, storage), { id: rec.id });
+    let res = writeAll(next, storage);
+    if (res.ok || !res.full) return Object.assign(res, { id: rec.id, reclaimed: 0 });
+    for (const keep of RECLAIM_LADDER) {
+      const kept = pruneAutoList(next, keep);
+      if (kept.length === next.length) continue;   // nothing left to give at this rung
+      res = writeAll(kept, storage);
+      if (res.ok) {
+        return Object.assign(res, { id: rec.id, reclaimed: next.length - kept.length });
+      }
+    }
+    // Still full with one auto left: what remains is named and imported work, and
+    // dropping that is the player's call, not this function's.
+    return Object.assign(res, { id: rec.id, reclaimed: 0 });
   }
 
   function deleteVersion(id, storage) {
@@ -244,6 +332,7 @@
   const api = {
     STORE_KEY, KINDS, nextId, makeVersion,
     listVersions, saveVersion, deleteVersion, clearVersions, writeAll,
+    usageBytes, countByKind, pruneAuto, pruneAutoList, RECLAIM_LADDER,
     diffVersions, projectSide, craftStrings, indexLoadout,
   };
 
