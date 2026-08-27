@@ -4274,6 +4274,54 @@ async function withCrossAdd(map, fn) {
       "max(2, 6) — the wiki says these do not stack; 8 would be the double-count");
   });
 
+  // --- #546: the SAME cross-affix rule, now three-way, against SHIPPED data -----
+  // The Riposte page states: "Same effect as Parrying, therefore bonuses does not
+  // stack." Nothing implements that either, and nothing needs to — Riposte now
+  // emits Armor Class and the three saves typed Insight, so it lands in the same
+  // buckets Parrying and Heightened Awareness already share and the bucket-max
+  // core does the work. Pinned because the rule is invisible in the code: it holds
+  // only while all three keep emitting the same stats under the same bonus type,
+  // and retyping any one of them would silently restore double-counting.
+  //
+  // The saves half is pinned too, which the #169 test above could not: Parrying
+  // and Heightened Awareness are an AC-only pair, so before #546 no test covered
+  // an Insight SAVE bucket at all.
+  await test("#546: Riposte and Parrying Insight AC and saves take the max, not the sum", async () => {
+    const fs = require("fs");
+    const dsPath = path.join(__dirname, "..", "web", "data", "items.json");
+    if (!fs.existsSync(dsPath)) return console.log("    (skipped — dataset not built)");
+    const data = normalizeDataset(JSON.parse(fs.readFileSync(dsPath, "utf8")));
+
+    const pick = (name) => {
+      const v = data.items.find((i) => i.source_item === name);
+      assert.ok(v, `${name} must be in the built dataset`);
+      const at = (n) => (v.affixes || []).find((a) => a.name === n && a.type === "Insight");
+      return { v, ac: at("Armor Class"), fort: at("Fortitude Save") };
+    };
+    // Epic Ethereal Bracers carries Riposte IX -> +5 Insight AC, +4 Insight saves.
+    // The asymmetry is the point: a fix that copied Parrying's equal-halves config
+    // would put 5 in both, and this test would still pass on the AC assertion alone.
+    const rip = pick("Epic Ethereal Bracers");
+    assert.strictEqual(Number(rip.ac.value), 5, "Roman IX rounds the AC UP");
+    assert.strictEqual(Number(rip.fort.value), 4, "Roman IX rounds the saves DOWN");
+
+    // Admiral's Cummerbund carries Parrying +2 -> +2 Insight AC and +2 Insight saves.
+    const parry = pick("Admiral's Cummerbund");
+    assert.strictEqual(Number(parry.ac.value), 2);
+    assert.strictEqual(Number(parry.fort.value), 2);
+
+    const model = {
+      targets: ["Armor Class", "Fortitude Save"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Bracers", [rip.v]), slot("Belt", [parry.v])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective["Armor Class"], 5,
+      "max(5, 2) — the wiki says these do not stack; 7 would be the double-count");
+    assert.strictEqual(r.effective["Fortitude Save"], 4,
+      "max(4, 2) — and 4, not 5: the saves half of Riposte IX is the rounded-DOWN one");
+  });
+
   await test("#169: Insight AC still stacks with a differently-typed Armor Class", async () => {
     // The other half. Suppressing on stat name alone would collapse these too,
     // withholding the fix from the 86 Parrying items carrying an Armor-typed AC.

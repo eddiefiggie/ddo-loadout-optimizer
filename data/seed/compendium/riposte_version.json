@@ -1,0 +1,436 @@
+{
+  "_meta": {
+    "field": "riposte_version",
+    "note": "Wiki-harvested seed shard. Values are verbatim from the DDO wiki; `provenance` records whether the wiki stated the value, fell back to a template default, or is silent. Only `stated` is solver-eligible.",
+    "snapshots_note": "Rendered-tooltip snapshots keyed by case-normalized template invocation. The tooltip is a pure function of the invocation, so this is keyed by invocation rather than by item. Riposte renders TWO dialects: Arabic `{{Riposte|N}}` grants +N to both halves, while Roman `{{Riposte|R}}` grants R/2 rounded UP to Armor Class and R/2 rounded DOWN to the saves — so the two halves differ on every odd numeral.",
+    "source": "https://ddowiki.com/page/Riposte",
+    "evidence": "docs/wiki-evidence/riposte-versions.md",
+    "harvested": "2026-08-27"
+  },
+  "snapshots": {
+    "{{riposte|1}}": {
+      "tooltip": "Riposte +1: This item enchants its user with incredible awareness and speed, granting a +1 Insight bonus to AC and to Saves.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|2}}": {
+      "tooltip": "Riposte +2: This item enchants its user with incredible awareness and speed, granting a +2 Insight bonus to AC and to Saves.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|3}}": {
+      "tooltip": "Riposte +3: This item enchants its user with incredible awareness and speed, granting a +3 Insight bonus to AC and to Saves.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|4}}": {
+      "tooltip": "Riposte +4: This item enchants its user with incredible awareness and speed, granting a +4 Insight bonus to AC and to Saves.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|5}}": {
+      "tooltip": "Riposte +5: This item enchants its user with incredible awareness and speed, granting a +5 Insight bonus to AC and to Saves.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|6}}": {
+      "tooltip": "Riposte +6: This item enchants its user with incredible awareness and speed, granting a +6 Insight bonus to AC and to Saves.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|7}}": {
+      "tooltip": "Riposte +7: This item enchants its user with incredible awareness and speed, granting a +7 Insight bonus to AC and to Saves.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|ii}}": {
+      "tooltip": "Riposte II: When Missed by an attack: Deals 2 to 8 damage to your attacker. Passive: +1 Insight bonus to Armor Class, +1 Insight bonus to Fortitude, Reflex, and Will Saving Throws.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|iii}}": {
+      "tooltip": "Riposte III: When Missed by an attack: Deals 3 to 12 damage to your attacker. Passive: +2 Insight bonus to Armor Class, +1 Insight bonus to Fortitude, Reflex, and Will Saving Throws.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|iv}}": {
+      "tooltip": "Riposte IV: When Missed by an attack: Deals 4 to 16 damage to your attacker. Passive: +2 Insight bonus to Armor Class, +2 Insight bonus to Fortitude, Reflex, and Will Saving Throws.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|v}}": {
+      "tooltip": "Riposte V: When Missed by an attack: Deals 5 to 20 damage to your attacker. Passive: +3 Insight bonus to Armor Class, +2 Insight bonus to Fortitude, Reflex, and Will Saving Throws.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|vi}}": {
+      "tooltip": "Riposte VI: When Missed by an attack: Deals 6 to 24 damage to your attacker. Passive: +3 Insight bonus to Armor Class, +3 Insight bonus to Fortitude, Reflex, and Will Saving Throws.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|vii}}": {
+      "tooltip": "Riposte VII: When Missed by an attack: Deals 7 to 28 damage to your attacker. Passive: +4 Insight bonus to Armor Class, +3 Insight bonus to Fortitude, Reflex, and Will Saving Throws.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|viii}}": {
+      "tooltip": "Riposte VIII: When Missed by an attack: Deals 8 to 32 damage to your attacker. Passive: +4 Insight bonus to Armor Class, +4 Insight bonus to Fortitude, Reflex, and Will Saving Throws.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|ix}}": {
+      "tooltip": "Riposte IX: When Missed by an attack: Deals 9 to 36 damage to your attacker. Passive: +5 Insight bonus to Armor Class, +4 Insight bonus to Fortitude, Reflex, and Will Saving Throws.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|x}}": {
+      "tooltip": "Riposte X: When Missed by an attack: Deals 10 to 40 damage to your attacker. Passive: +5 Insight bonus to Armor Class, +5 Insight bonus to Fortitude, Reflex, and Will Saving Throws.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|xi}}": {
+      "tooltip": "Riposte XI: When Missed by an attack: Deals 11 to 44 damage to your attacker. Passive: +6 Insight bonus to Armor Class, +5 Insight bonus to Fortitude, Reflex, and Will Saving Throws.",
+      "harvested": "2026-08-27"
+    },
+    "{{riposte|xii}}": {
+      "tooltip": "Riposte XII: When Missed by an attack: Deals 12 to 48 damage to your attacker. Passive: +6 Insight bonus to Armor Class, +6 Insight bonus to Fortitude, Reflex, and Will Saving Throws.",
+      "harvested": "2026-08-27"
+    }
+  },
+  "harvested": {
+    "Aegis of the Deep": {
+      "value": {
+        "version": "IV",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|IV}}",
+      "harvested": "2026-08-27"
+    },
+    "Azure Guard": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|6}}",
+      "harvested": "2026-08-27"
+    },
+    "Barnacled Buckler": {
+      "value": {
+        "version": "VIII",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|VIII}}",
+      "harvested": "2026-08-27"
+    },
+    "Blackfeather Boots": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|4}}",
+      "harvested": "2026-08-27"
+    },
+    "Blockade": {
+      "value": {
+        "version": "IV",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|IV}}",
+      "harvested": "2026-08-27"
+    },
+    "Breaker of Bodies": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|2}}",
+      "harvested": "2026-08-27"
+    },
+    "Commodore Alaina's Cutlass": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|2}}",
+      "harvested": "2026-08-27"
+    },
+    "Emerald Twilight": {
+      "value": {
+        "version": "VII",
+        "armor_class": 4,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|VII}}",
+      "harvested": "2026-08-27"
+    },
+    "Epic Ethereal Bracers": {
+      "value": {
+        "version": "IX",
+        "armor_class": 5,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|IX}}",
+      "harvested": "2026-08-27"
+    },
+    "Epic Ship Kickers": {
+      "value": {
+        "version": "X",
+        "armor_class": 5,
+        "saves": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|X}}",
+      "harvested": "2026-08-27"
+    },
+    "Epic Smash 'n Grabber": {
+      "value": {
+        "version": "4",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|4}}",
+      "harvested": "2026-08-27"
+    },
+    "Fortified Fiddle": {
+      "value": {
+        "version": "IV",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|IV}}",
+      "harvested": "2026-08-27"
+    },
+    "Guardian's Bracers (level 15)": {
+      "value": {
+        "version": "VIII",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|VIII}}",
+      "harvested": "2026-08-27"
+    },
+    "Guardian's Bracers (level 26)": {
+      "value": {
+        "version": "IX",
+        "armor_class": 5,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|IX}}",
+      "harvested": "2026-08-27"
+    },
+    "Legendary Breaker of Bodies": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|6}}",
+      "harvested": "2026-08-27"
+    },
+    "Legendary Commodore Alaina's Cutlass": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|6}}",
+      "harvested": "2026-08-27"
+    },
+    "Legendary Omniscience": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|6}}",
+      "harvested": "2026-08-27"
+    },
+    "Legendary Pearl of Uncanny Prediction": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|6}}",
+      "harvested": "2026-08-27"
+    },
+    "Legendary Planar Lariat": {
+      "value": {
+        "version": "7",
+        "armor_class": 7,
+        "saves": 7
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|7}}",
+      "harvested": "2026-08-27"
+    },
+    "Legendary Sapphire of Riposte": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|6}}",
+      "harvested": "2026-08-27"
+    },
+    "Legendary Smash 'n Grabber": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|6}}",
+      "harvested": "2026-08-27"
+    },
+    "Legendary Warsword Shield": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|6}}",
+      "harvested": "2026-08-27"
+    },
+    "Master's Riposte (level 17)": {
+      "value": {
+        "version": "VI",
+        "armor_class": 3,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|VI}}",
+      "harvested": "2026-08-27"
+    },
+    "Master's Riposte (level 18)": {
+      "value": {
+        "version": "VII",
+        "armor_class": 4,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|VII}}",
+      "harvested": "2026-08-27"
+    },
+    "Master's Riposte (level 19)": {
+      "value": {
+        "version": "VIII",
+        "armor_class": 4,
+        "saves": 4
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|VIII}}",
+      "harvested": "2026-08-27"
+    },
+    "Master's Riposte (level 26)": {
+      "value": {
+        "version": "X",
+        "armor_class": 5,
+        "saves": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|X}}",
+      "harvested": "2026-08-27"
+    },
+    "Master's Riposte (level 27)": {
+      "value": {
+        "version": "XI",
+        "armor_class": 6,
+        "saves": 5
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|XI}}",
+      "harvested": "2026-08-27"
+    },
+    "Master's Riposte (level 28)": {
+      "value": {
+        "version": "XII",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|XII}}",
+      "harvested": "2026-08-27"
+    },
+    "Planar Lariat": {
+      "value": {
+        "version": "3",
+        "armor_class": 3,
+        "saves": 3
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|3}}",
+      "harvested": "2026-08-27"
+    },
+    "Sapphire of Riposte": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|2}}",
+      "harvested": "2026-08-27"
+    },
+    "Ship Kickers": {
+      "value": {
+        "version": "V",
+        "armor_class": 3,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|V}}",
+      "harvested": "2026-08-27"
+    },
+    "Spare Hand (level 3)": {
+      "value": {
+        "version": "1",
+        "armor_class": 1,
+        "saves": 1
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|1}}",
+      "harvested": "2026-08-27"
+    },
+    "Van Richten's Cane": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|2}}",
+      "harvested": "2026-08-27"
+    },
+    "Van Richten's Legendary Cane": {
+      "value": {
+        "version": "6",
+        "armor_class": 6,
+        "saves": 6
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|6}}",
+      "harvested": "2026-08-27"
+    },
+    "Warsword Shield": {
+      "value": {
+        "version": "2",
+        "armor_class": 2,
+        "saves": 2
+      },
+      "provenance": "stated",
+      "raw": "{{Riposte|2}}",
+      "harvested": "2026-08-27"
+    }
+  }
+}

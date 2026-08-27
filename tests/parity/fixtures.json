@@ -407,5 +407,23 @@
    "weaponSetup": null,
    "classRace": null
   }
+ },
+ {
+  "name": "riposte-split-ac-saves-ml34",
+  "note": "#546 — AC and all three saves ranked, the only query shape that reaches the Riposte split. No other fixture ranks Armor Class or a save, so without this one the golden covers none of that change.",
+  "query": {
+   "mlCap": 34,
+   "targets": [
+    "Armor Class",
+    "Reflex Save",
+    "Will Save",
+    "Fortitude Save",
+    "Physical Sheltering",
+    "Utility effects"
+   ],
+   "armorType": null,
+   "weaponSetup": null,
+   "classRace": null
+  }
  }
 ]
