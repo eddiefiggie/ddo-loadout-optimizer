@@ -69,6 +69,7 @@ from src import crafting_catalog as crafting_catalog_mod
 from src import dino_native as dino_native_mod
 from src import container_registry as container_registry_mod
 from src import crafting_coverage as crafting_coverage_mod
+from src import crafted_twins as crafted_twins_mod
 import re as _re
 
 import collections
@@ -1761,6 +1762,25 @@ def build() -> dict:
     # longer justifies. Stamped as metadata (`labels_validated` is the validated
     # universe, not the walked one) so nobody hand-recounts a different predicate.
     out["metadata"]["crafting_slot_coverage"] = crafting_coverage_mod.check(out)
+
+    # #547 — the `[Crafted]` twin identity. One game item the catalog carries as
+    # two records (as it drops, and after its Essence Crafting slots are used),
+    # which let a block on one silently deliver the other. Derived and ASSERTED
+    # here rather than matched on the name suffix in the solver: a bare string
+    # test would keep passing after the relationship it assumes stops holding.
+    #
+    # Runs AFTER `crafting_slot_coverage` because it reads that module's
+    # definition of an unserved label — the folding is only correct while the
+    # crafted state's extra slots are inert. Nothing is suppressed; only the
+    # identity a player means when they block one of these is published.
+    _twins = crafted_twins_mod.derive(out["items"], crafting_coverage_mod.UNSERVED_ALLOWLIST)
+    if _twins["problems"]:
+        raise SystemExit(
+            "crafted-twin identity failed (#547) — a pair stopped being one item:\n  "
+            + "\n  ".join(_twins["problems"]))
+    out["metadata"]["crafted_twin_identity"] = _twins["identity"]
+    out["metadata"]["crafted_twin_coverage"] = {
+        "inspected": _twins["inspected"], "pairs": len(_twins["pairs"])}
 
     # build_id hashes the full assembled dataset (everything except metadata) so
     # drift in sets, augments, or crafting inputs — not just base variants —
