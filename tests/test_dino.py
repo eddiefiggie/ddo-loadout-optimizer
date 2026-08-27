@@ -642,3 +642,288 @@ def test_built_coverage_discloses_the_derivation():
     assert sum(1 for v in cov["blank_intrinsic_sets"].values() if v) == 7
     assert set(cov["blank_intrinsic_sets"]) == set(cov["blank_set_shadow_counts"])
     assert all(n >= 1 for n in cov["blank_set_shadow_counts"].values())
+
+
+# --- #545: every native Dino host carries the capacity its crafting list names --
+#
+# #283 stamped the two hosts naming a `(quarterstaff)` pool and deliberately left
+# the wider case alone. The wider case is 122 native records that name a BASE
+# `<Type> (<Category>)` pool, ship carrying their own affixes, and expose no Dino
+# insert capacity at all — so the solver can place nothing into them.
+#
+# Selection is DERIVED exactly as #283's is: a record qualifies by naming a pool
+# itself. Nothing is synthesized over these records (all 122 carry affixes, so
+# replacing one would delete real value — the #364 trap).
+
+
+def _native_host_fixture():
+    """Three records: a four-pool weapon, a one-pool accessory, and a non-host.
+
+    `crafting` is a LIST here because that is the shape the real gear-planner
+    dump uses on every record that has one — 6447 lists and zero dicts. The
+    reader accepts a dict too, and one test below covers that branch, but a
+    fixture that only exercised the dict path would be testing a shape the
+    pipeline never sees.
+    """
+    return [
+        {"name": "Attuned Bone Longsword", "slot": "Weapon", "type": "Longswords",
+         "crafting": ["Scale (Weapon)", "Fang (Weapon)",
+                      "Claw (Weapon)", "Horn (Weapon)"]},
+        {"name": "Attuned Bone Belt", "slot": "Belt",
+         "crafting": ["Scale (Accessory)"]},
+        {"name": "Legendary Bracers of the Sun Soul", "slot": "Bracers",
+         "crafting": ["Colorless Augment"]},
+    ]
+
+
+_NATIVE_CATALOG = {k: {} for k in (
+    "Scale (Weapon)", "Fang (Weapon)", "Claw (Weapon)", "Horn (Weapon)",
+    "Scale (Accessory)", "Fang (Weapon) (quarterstaff)")}
+
+
+def test_native_hosts_carry_the_physical_keys_their_crafting_list_names():
+    hosts = dino.native_dino_hosts(_native_host_fixture(), catalog=_NATIVE_CATALOG)
+    # Sorted, so the encoding does not depend on gear-planner's key order. The
+    # list is a multiset for capacity purposes; order carries no meaning.
+    assert hosts["Attuned Bone Longsword"] == [
+        "Claw||Weapon", "Fang||Weapon", "Horn||Weapon", "Scale||Weapon"]
+    assert hosts["Attuned Bone Belt"] == ["Scale||Accessory"]
+    assert "Legendary Bracers of the Sun Soul" not in hosts, \
+        "a record naming no Dino pool is not a host"
+
+
+def test_a_quarterstaff_host_belongs_to_283_not_here():
+    # The two populations must not overlap: #283 already stamps these, and
+    # stamping them twice would be the double-stamp R5 forbids.
+    items = _native_host_fixture() + [
+        {"name": "Dinosaur Bone Quarterstaff", "slot": "Weapon", "type": "Quarterstaffs",
+         "crafting": ["Fang (Weapon) (quarterstaff)", "Claw (Weapon)"]}]
+    hosts = dino.native_dino_hosts(items, catalog=_NATIVE_CATALOG)
+    assert "Dinosaur Bone Quarterstaff" not in hosts
+
+
+def test_a_blank_source_item_is_excluded_from_the_native_population():
+    # `Dinosaur Bone Helmet` and `Dinosaur Bone Cloak` name a Dino pool AND are
+    # the records the synthetic blanks shadow — they ship as blanks, already
+    # carrying capacity. Offering them for stamping would make the count
+    # assertion lie about a host that was never eligible.
+    items = _native_host_fixture() + [
+        {"name": "Dinosaur Bone Helmet", "slot": "Helm",
+         "crafting": ["Scale (Accessory)"]}]
+    hosts = dino.native_dino_hosts(items, catalog=_NATIVE_CATALOG,
+                                   blank_source_items={"Dinosaur Bone Helmet"})
+    assert "Dinosaur Bone Helmet" not in hosts
+    assert "Attuned Bone Belt" in hosts, "the rest of the population is unaffected"
+
+
+def test_a_named_base_pool_missing_from_the_catalog_fails_the_build():
+    # The same soft-read failure mode #283 recorded, on the base pools: a dropped
+    # upstream key leaves the host carrying a slot key nothing can fill, and
+    # NOTHING fails. Prove the hard read.
+    try:
+        dino.native_dino_hosts(_native_host_fixture(),
+                               catalog={"Scale (Weapon)": {}})
+    except SystemExit as e:
+        assert "the crafting catalog does not define" in str(e)
+        assert "Attuned Bone Longsword" in str(e)
+    else:
+        raise AssertionError("expected SystemExit for an undefined base pool")
+
+
+def test_no_native_host_is_drift_not_an_empty_case():
+    # Refuses to inspect zero records: 122 records named these pools when #545
+    # was written, so an empty result is upstream drift, not an empty answer.
+    try:
+        dino.native_dino_hosts([{"name": "Plain Sword", "slot": "Weapon",
+                                 "type": "Longswords", "crafting": []}],
+                               catalog=_NATIVE_CATALOG)
+    except SystemExit as e:
+        assert "no gear-planner record names a base" in str(e)
+    else:
+        raise AssertionError("expected SystemExit for an empty host population")
+
+
+def test_the_guard_fixtures_are_not_vacuously_empty():
+    # Non-vacuity for both guards above: with the trigger removed, the same
+    # fixture yields a real population. Without this, a fixture that produced
+    # nothing would satisfy the guards for the wrong reason.
+    hosts = dino.native_dino_hosts(_native_host_fixture(), catalog=_NATIVE_CATALOG)
+    assert len(hosts) == 2
+
+
+def test_stamping_writes_the_capacity_and_counts_what_it_wrote():
+    variants = [
+        {"source_item": "Attuned Bone Longsword", "affixes": [{"stat": "Strength"}]},
+        {"source_item": "Attuned Bone Belt", "affixes": [{"stat": "Constitution"}]},
+        {"source_item": "Legendary Bracers of the Sun Soul", "affixes": []},
+    ]
+    hosts = {"Attuned Bone Longsword": ["Claw||Weapon", "Fang||Weapon"],
+             "Attuned Bone Belt": ["Scale||Accessory"]}
+    assert dino.stamp_dino_capacity(variants, hosts) == 2
+    assert variants[0]["dino_slots_norm"] == ["Claw||Weapon", "Fang||Weapon"]
+    assert variants[0]["affixes"], "the host keeps its own affixes (the #364 trap)"
+    assert variants[1]["dino_slots_norm"] == ["Scale||Accessory"]
+    assert "dino_slots_norm" not in variants[2], "a non-host is untouched"
+
+
+def test_a_host_that_never_reached_a_variant_names_that_cause():
+    # R3a, first half. #283's guard covers two hosts, where "did not ship" and
+    # "shipped unstamped" are the same failure. Across 122 they are not: an
+    # unrelated blocklist or quarantine change drops the record before this seam,
+    # and would otherwise present as this stamp's own defect.
+    variants = [{"source_item": "Attuned Bone Belt", "affixes": []}]
+    hosts = {"Attuned Bone Belt": ["Scale||Accessory"],
+             "Attuned Bone Longsword": ["Claw||Weapon"]}
+    try:
+        dino.stamp_dino_capacity(variants, hosts)
+    except SystemExit as e:
+        msg = str(e)
+        assert "never reached a variant" in msg
+        assert "Attuned Bone Longsword" in msg
+        assert "Attuned Bone Belt" not in msg, "the host that DID stamp is not blamed"
+    else:
+        raise AssertionError("expected SystemExit for a host that never shipped")
+
+
+def test_a_host_that_shipped_already_carrying_capacity_names_that_cause():
+    # R3a, second half. A host reaching this seam with capacity already on it is
+    # a double-stamp: two sources claim the same craft, and the second one wins
+    # silently. Distinct cause, distinct message.
+    variants = [{"source_item": "Attuned Bone Longsword",
+                 "dino_slots_norm": ["Scale||Weapon"], "affixes": []}]
+    hosts = {"Attuned Bone Longsword": ["Claw||Weapon"]}
+    try:
+        dino.stamp_dino_capacity(variants, hosts)
+    except SystemExit as e:
+        msg = str(e)
+        assert "already carried insert capacity" in msg
+        assert "Attuned Bone Longsword" in msg
+    else:
+        raise AssertionError("expected SystemExit for an already-stamped host")
+
+
+def test_stamping_refuses_an_empty_host_map():
+    # Make it refuse to inspect nothing: a stamp handed no hosts reports success
+    # forever while every native goes back to zero capacity.
+    try:
+        dino.stamp_dino_capacity([{"source_item": "Attuned Bone Belt"}], {})
+    except SystemExit as e:
+        assert "no hosts to stamp" in str(e)
+    else:
+        raise AssertionError("expected SystemExit for an empty host map")
+
+
+def test_built_native_hosts_carry_capacity_and_keep_everything_else():
+    # The #545 defect, end to end. All 122 ship stamped, and every one of them
+    # keeps the affixes, type and verification it earned through the native
+    # pipeline — nothing is synthesized over a record that carries real value.
+    dataset = _built()
+    cov = dataset["metadata"]["dino_coverage"]
+    assert cov["native_hosts_stamped"] == 122
+    stamped = [v for v in dataset["items"]
+               if v.get("variant_id") in cov["native_host_names"]]
+    assert len(stamped) == 122
+    for v in stamped:
+        assert v["dino_slots_norm"], f"{v['variant_id']} carries no capacity"
+        assert v["affixes"], f"{v['variant_id']} lost its own affixes (the #364 trap)"
+        assert v.get("source") != "dino_crafting_blank", "a native, not a blank"
+    # 392 slot keys across the 122, and the shape is NOT uniform: 78 weapons name
+    # all four pools while 12 named Legendary weapons name exactly one, and a
+    # shield names two Armor keys plus two Weapon keys (the mixed typing a Dino
+    # host layout carries). Asserting a flat "every weapon has four" would be a
+    # claim about a population nobody looked up.
+    assert sum(len(v["dino_slots_norm"]) for v in stamped) == 392
+    weapons = [v for v in stamped if v.get("category") == "weapon"]
+    assert len(weapons) == 90
+    assert sorted(len(v["dino_slots_norm"]) for v in weapons) == [1] * 12 + [4] * 78
+    shield = next(v for v in stamped if v.get("source_item") == "Dinosaur Bone Tower Shield")
+    assert shield["dino_slots_norm"] == [
+        "Fang||Armor", "Fang||Weapon", "Scale||Armor", "Scale||Weapon"]
+
+
+def test_built_capacity_population_is_the_whole_catalog_answer():
+    # The population is asserted, not recorded in prose: 11 blanks + 2
+    # quarterstaff hosts (#283) + 122 natives (#545) and nothing else.
+    dataset = _built()
+    cov = dataset["metadata"]["dino_coverage"]
+    carriers = [v for v in dataset["items"] if v.get("dino_slots_norm")]
+    assert len(carriers) == 135
+    assert cov["capacity_carriers_total"] == 135
+    blanks = [v for v in carriers if v.get("source") == "dino_crafting_blank"]
+    assert len(blanks) == 11 == cov["blank_hosts"]
+    assert cov["quarterstaff_hosts_stamped"] == 2
+    assert cov["native_hosts_stamped"] == 122
+    assert len(blanks) + cov["quarterstaff_hosts_stamped"] + cov["native_hosts_stamped"] \
+        == len(carriers), "the three populations partition the carriers exactly"
+
+
+def test_built_blank_source_items_are_not_stamped_twice():
+    # `Dinosaur Bone Helmet` and `Dinosaur Bone Cloak` name a Dino pool and are
+    # the records two blanks shadow. They ship ONCE, as blanks.
+    dataset = _built()
+    for name in ("Dinosaur Bone Helmet", "Dinosaur Bone Cloak"):
+        rows = [v for v in dataset["items"] if v.get("source_item") == name]
+        assert len(rows) == 1, f"{name} ships once, got {len(rows)}"
+        assert rows[0]["source"] == "dino_crafting_blank"
+        assert rows[0]["dino_slots_norm"]
+
+
+def test_built_off_hand_natives_are_stamped_like_any_other_host():
+    # KTD7: shields, orbs and rune arms all ship in the solver's Off Hand slot,
+    # so the six Off Hand hosts are stamped normally. The blank-era deferral was
+    # about materialising a BLANK for them, not about the slot existing.
+    dataset = _built()
+    cov = dataset["metadata"]["dino_coverage"]
+    off = [v for v in dataset["items"]
+           if v.get("variant_id") in cov["native_host_names"]
+           and v.get("slot") == "Off Hand"]
+    assert len(off) == 6
+    assert {v.get("type") for v in off} == {
+        "Bucklers", "Orbs", "Tower shields", "Rune Arms",
+        "Large shields", "Small shields"}
+
+
+def test_a_quarterstaff_typed_host_naming_only_base_pools_draws_the_qs_versions():
+    # A case #545 makes reachable for the first time. `Legendary Spearfisher` is
+    # typed `Quarterstaffs` and its crafting list names only the BASE
+    # `Scale (Weapon)` pool — the mirror of the host #283 guards against.
+    #
+    # It is NOT special-cased. #283's standing rule is that which pool VARIANT a
+    # host draws is a property of its weapon TYPE, resolved at solve time by
+    # `model.js dinoWeaponVariant`, never baked into the slot — which is exactly
+    # why the stamp stores the PHYSICAL key. So this host carries `Scale||Weapon`
+    # like any other and resolves to the quarterstaff versions because of what it
+    # is, not because of which key gear-planner recorded.
+    #
+    # Recorded here because it is contestable and now live: see the open question
+    # on whether gear-planner naming the base key on a quarterstaff is a
+    # shorthand or a statement. Following the ratified rule is the conservative
+    # reading; inventing an exception would be the inference.
+    dataset = _built()
+    host = next(v for v in dataset["items"]
+                if v.get("source_item") == "Legendary Spearfisher")
+    assert host["type"] == "Quarterstaffs"
+    assert host["dino_slots_norm"] == ["Scale||Weapon"], \
+        "the PHYSICAL key is stamped; the variant is resolved at solve time"
+    assert host["affixes"], "a named Legendary keeps everything it earned"
+
+
+def test_a_repeated_pool_key_is_capacity_not_a_duplicate_to_collapse():
+    # The slot list is a capacity MULTISET — the solver counts how many of a key
+    # a host exposes — so a record naming the same pool twice exposes TWO slots.
+    # Deduplicating would silently delete one, and `native_quarterstaff_hosts`
+    # keeps duplicates for the same reason. The real dump carries `crafting` as a
+    # LIST, so a repeat is expressible even though none exists today.
+    items = [{"name": "Twin Scale Blade", "slot": "Weapon", "type": "Longswords",
+              "crafting": ["Scale (Weapon)", "Scale (Weapon)"]}]
+    hosts = dino.native_dino_hosts(items, catalog=_NATIVE_CATALOG)
+    assert hosts["Twin Scale Blade"] == ["Scale||Weapon", "Scale||Weapon"]
+
+
+def test_the_dict_shaped_crafting_field_still_reads():
+    # The reader accepts a dict as well as a list. Real gear-planner records are
+    # lists today; this covers the other branch so it cannot rot unnoticed.
+    items = [{"name": "Dict Shaped Blade", "slot": "Weapon", "type": "Longswords",
+              "crafting": {"Scale (Weapon)": {}, "Fang (Weapon)": {}}}]
+    hosts = dino.native_dino_hosts(items, catalog=_NATIVE_CATALOG)
+    assert hosts["Dict Shaped Blade"] == ["Fang||Weapon", "Scale||Weapon"]

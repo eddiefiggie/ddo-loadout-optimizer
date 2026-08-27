@@ -1019,9 +1019,32 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const blocked = [];
   let elig = eligAll;
   if (blockedIds.size) {
+    // #547 — a block names an ITEM, not a catalog record. 45 items are carried as
+    // two records, `X` and `X [Crafted]` (the same thing after its Essence
+    // Crafting slots are used), and blocking one used to hand the player the
+    // other: identical slot, identical numbers, and a disclosure truthfully
+    // reporting an exclusion, so the block read as ignored.
+    //
+    // The gate is NOT wrong and does not move. What widens is what a blocked id
+    // resolves to: `block_identity` (stamped in dataset.js from a build-time
+    // DERIVED and asserted pairing, never a name-suffix test here). A first pass
+    // collects the identity of every record the player actually named; the second
+    // blocks anything sharing one.
+    //
+    // Deliberately still upstream of dominanceFilter, and this does not soften
+    // that: blocking a winner must still leave the genuine runner-up standing.
+    // The twin was never a runner-up — it is the same offer.
+    const blockedIdentities = new Set();
+    for (const cand of eligAll) {
+      if (blockedIds.has(variantKey(cand)) && cand.block_identity) {
+        blockedIdentities.add(cand.block_identity);
+      }
+    }
     elig = [];
     for (const cand of eligAll) {
-      (blockedIds.has(variantKey(cand)) ? blocked : elig).push(cand);
+      const hit = blockedIds.has(variantKey(cand))
+        || (cand.block_identity && blockedIdentities.has(cand.block_identity));
+      (hit ? blocked : elig).push(cand);
     }
   }
 

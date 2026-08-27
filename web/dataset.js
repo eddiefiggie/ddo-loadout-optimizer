@@ -398,9 +398,23 @@ function normalizeDataset(dataset) {
   // material the map does not classify, gets NO class — and every consumer fails
   // open on that, rather than treating unknown as non-metal.
   const materialClass = meta.material_classification || {};
+  // #547 — the `[Crafted]` twin identity, stamped per item at the same seam and
+  // for the same reason as `material_class` above: the derived map lives in
+  // metadata, the per-item field is stamped here, and the block gate in model.js
+  // reads ONE field instead of carrying a name-suffix heuristic.
+  //
+  // Two records, one game item: `X` as it drops and `X [Crafted]` after its
+  // Essence Crafting slots are used. Both stamp the same identity, so a block on
+  // either covers the item rather than handing the player its twin. The pairing
+  // is derived and asserted in `src/crafted_twins.py`, never inferred from the
+  // name here. An item in no pair gets NO field, and the gate falls back to its
+  // own key — which is the correct reading for the other 9,020.
+  const twinIdentity = meta.crafted_twin_identity || {};
   for (const it of dataset.items) {
     const cls = it.material ? materialClass[it.material] : undefined;
     if (cls) it.material_class = cls;
+    const twin = twinIdentity[it.source_item] || twinIdentity[it.variant_id];
+    if (twin) it.block_identity = twin;
     normalizeItem(it);
   }
   // #253 — the set-definition channels carry the same legacy-shaped tier affixes

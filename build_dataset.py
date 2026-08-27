@@ -41,6 +41,7 @@ from src import harvest as harvest_mod
 from src import material as material_mod
 from src import speed_split as speed_split_mod
 from src import parrying_split as parrying_split_mod
+from src import riposte_split as riposte_split_mod
 from src import heightened_awareness as heightened_awareness_mod
 from src import absorption_split as absorption_split_mod
 from src import elemental_resistance_split as er_split_mod
@@ -69,6 +70,7 @@ from src import crafting_catalog as crafting_catalog_mod
 from src import dino_native as dino_native_mod
 from src import container_registry as container_registry_mod
 from src import crafting_coverage as crafting_coverage_mod
+from src import crafted_twins as crafted_twins_mod
 import re as _re
 
 import collections
@@ -319,6 +321,7 @@ UTILITY_PROCS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "utility_procs.json")
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
 PARRYING_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "parrying_version.json")
+RIPOSTE_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "riposte_version.json")
 HEIGHTENED_AWARENESS_SHARD_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "heightened_awareness.json")
 SPEED_AUGMENT_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_augment.json")
@@ -763,6 +766,27 @@ def build() -> dict:
                          "\n  ".join(_parrying_guard["problems"]))
     _parrying_coverage = parrying_split_mod.apply(planner_records, _parrying_shard)
 
+    # #546 — Parrying's sibling. `Riposte` folds the same four stats under one
+    # name, reported by a player who had to rank the literal name to score
+    # anything from the 35 records carrying it. Same seam and same reasons as the
+    # Parrying split above.
+    #
+    # The one structural difference: Riposte's two halves are NOT equal. The wiki
+    # grants X/2 rounded UP to Armor Class and X/2 rounded DOWN to the saves, so
+    # every odd Roman numeral splits asymmetrically (IX is +5 AC and +4 saves).
+    # The shard carries both numbers per item; nothing here derives either.
+    #
+    # The augment channel runs separately, down with the other augment-pool
+    # applies — two augments carry this affix and neither is a planner item.
+    _riposte_shard = harvest_mod.load_shard(RIPOSTE_SHARD_PATH, "riposte_version")
+    _riposte_audit = riposte_split_mod.audit_shard(_riposte_shard)
+    _riposte_snapshots = riposte_split_mod.audit_snapshots(_riposte_shard)
+    _riposte_guard = riposte_split_mod.check_against_snapshots(_riposte_shard)
+    if _riposte_guard["problems"]:
+        raise SystemExit("riposte snapshot guard failed:\n  " +
+                         "\n  ".join(_riposte_guard["problems"]))
+    _riposte_coverage = riposte_split_mod.apply(planner_records, _riposte_shard)
+
     # U3 (#169) — the other half of the same defect. `Heightened Awareness` grants
     # one thing, an Insight bonus to AC, and stored as an enchantment name it
     # scored nothing. No version branch: the wiki lists Arabic ranks only, and the
@@ -947,6 +971,14 @@ def build() -> dict:
     # carrier left unexpanded would ship an affix no player can rank, because
     # the compound's picker removal above is global by name.
     _er_aug_coverage = er_split_mod.apply(aug_pool, _er_shard)
+    # #546 — the augment channel of the Riposte split. `Sapphire of Riposte` and
+    # `Legendary Sapphire of Riposte` carry the folded affix and live in the
+    # `<Color> Augment Slot` pools, NOT the planner item roster, so the item-side
+    # apply above never reaches them. The Legendary one is the item the reporter
+    # actually named, so leaving this out would ship a "fix" that misses the
+    # motivating case — coverage of the item channel is not coverage of this one
+    # (#293's lesson again). Same shard: both are Arabic and share its snapshots.
+    _riposte_aug_coverage = riposte_split_mod.apply_to_augments(aug_pool, _riposte_shard)
     variants = expand_dataset(enriched_items + aug_pool)  # native path (verbatim affixes)
 
     # #338 — the Dinosaur Bone blanks join the variant list HERE, ahead of every
@@ -990,32 +1022,43 @@ def build() -> dict:
                                  for group in spec.get("groups", [])]
         v["set_bonus"] = []
 
-    # #283 — Dino insert capacity for the two native quarterstaff hosts. They ship
-    # already (typed `Quarterstaffs`, carrying their own +15 Enhancement Bonus) and
-    # were missing only the insert slots their own crafting list grants them, so
-    # nothing is synthesized to stand in for them — the eight synthetic blanks
-    # exist because their native counterparts carry NO affixes, and replacing one
-    # of THESE would delete a real affix (the #364 trap, one channel over).
+    # #283 / #545 — Dino insert capacity for the NATIVE hosts. They ship already,
+    # correctly typed and carrying their own affixes, and were missing only the
+    # insert slots their own crafting list grants them. So nothing is synthesized
+    # to stand in for them: the eleven synthetic blanks exist because their native
+    # counterparts carry NO affixes, and replacing one of THESE would delete a
+    # real affix (the #364 trap, one channel over).
+    #
+    # Two derived populations, one seam. #283 covers the two hosts naming a
+    # `(quarterstaff)` pool; #545 covers the 122 naming a base pool. Both qualify
+    # by naming a pool themselves — never by appearing on a list — and both are
+    # stamped through `stamp_dino_capacity`, so they cannot drift into stamping
+    # the same record twice or disagreeing about what a host is.
     #
     # Stamped HERE, after expand_dataset, for the same reason the joker groups
     # above are: variants rebuild from a fixed field list, so a field stamped on
-    # the base record would be dropped. Selection is derived (a host qualifies by
-    # naming a `(quarterstaff)` pool itself), never listed.
+    # the base record would be dropped.
     _qs_hosts = dino_mod.native_quarterstaff_hosts(_raw_items, crafting)
-    _qs_hosts_stamped = 0
-    for v in variants:
-        slots = _qs_hosts.get(v.get("source_item") or "")
-        if not slots or v.get("dino_slots_norm"):
-            continue
-        v["dino_slots_norm"] = list(slots)
-        _qs_hosts_stamped += 1
-    if _qs_hosts_stamped != len(_qs_hosts):
+    _native_hosts = dino_mod.native_dino_hosts(
+        _raw_items, crafting, blank_source_items=_host_pipeline_names)
+    _overlap = set(_qs_hosts) & set(_native_hosts)
+    if _overlap:
         raise SystemExit(
-            f"dino quarterstaff hosts: {len(_qs_hosts)} record(s) name a "
-            f"quarterstaff pool but {_qs_hosts_stamped} reached a variant "
-            f"({sorted(_qs_hosts)}). The join is by `source_item` and was complete "
-            "when #283 shipped, so an unstamped host is a host silently back to "
-            "zero insert capacity — the whole defect #283 fixes.")
+            f"dino capacity stamp: {sorted(_overlap)} qualify as BOTH a #283 "
+            "quarterstaff host and a #545 base host. The two populations are "
+            "meant to partition the hosts, so an overlap means one of the two "
+            "selection rules has drifted.")
+    _dino_hosts_stamped = dino_mod.stamp_dino_capacity(
+        variants, {**_qs_hosts, **_native_hosts})
+    # #545 — the population, disclosed. "How many natives carry insert capacity,
+    # and which ones" is read off the artifact rather than recounted by hand: the
+    # count on the issue was wrong three times over because it lived in prose.
+    dino_cov["quarterstaff_hosts_stamped"] = len(_qs_hosts)
+    dino_cov["native_hosts_stamped"] = len(_native_hosts)
+    dino_cov["native_host_names"] = sorted(_native_hosts)
+    dino_cov["native_host_slot_counts"] = {
+        n: len(k) for n, k in sorted(_native_hosts.items())}
+    dino_cov["capacity_carriers_total"] = _dino_hosts_stamped + dino_cov["blank_hosts"]
 
     # Artifact item-quality flag: sourced NATIVELY — each gear-planner variant
     # already carries `artifact` (bool) from the dump, read through _make_variant.
@@ -1135,6 +1178,7 @@ def build() -> dict:
         **spell_focus_mod.expanded_away(),
         **speed_split_mod.EXPANDED_AWAY,
         **parrying_split_mod.EXPANDED_AWAY,
+        **riposte_split_mod.EXPANDED_AWAY,
         **heightened_awareness_mod.EXPANDED_AWAY,
         # #249 — no set-bonus tier names a compound absorption stat today, so
         # this registration is a standing gate rather than a live expansion: a
@@ -1555,6 +1599,16 @@ def build() -> dict:
                                         "tooltip_snapshots": _parrying_snapshots,
                                         "tooltip_guard_checked": _parrying_guard["checked"],
                                         "tooltip_guard_compared": _parrying_guard["compared"]},
+            # #546 — Parrying's sibling, reported separately per channel. The
+            # augment counters are their own entry rather than summed into the
+            # item ones: two augments carry this affix and a regression that
+            # silently stopped covering them would be invisible in a total.
+            "riposte_split_coverage": {**_riposte_coverage,
+                                       "augment_channel": _riposte_aug_coverage,
+                                       "shard_audit": _riposte_audit,
+                                       "tooltip_snapshots": _riposte_snapshots,
+                                       "tooltip_guard_checked": _riposte_guard["checked"],
+                                       "tooltip_guard_compared": _riposte_guard["compared"]},
             # The Heightened Awareness half (#169). One output stat, no version
             # branch. `compared` counts values actually matched against a parsed
             # tooltip, which `checked` alone would overstate.
@@ -1672,6 +1726,7 @@ def build() -> dict:
                                     **spell_focus_mod.expanded_away(),
                                     **speed_split_mod.EXPANDED_AWAY,
                                     **parrying_split_mod.EXPANDED_AWAY,
+                                    **riposte_split_mod.EXPANDED_AWAY,
                                     **heightened_awareness_mod.EXPANDED_AWAY,
                                     **absorption_split_mod.EXPANDED_AWAY,
                                     **er_split_mod.EXPANDED_AWAY},
@@ -1761,6 +1816,25 @@ def build() -> dict:
     # longer justifies. Stamped as metadata (`labels_validated` is the validated
     # universe, not the walked one) so nobody hand-recounts a different predicate.
     out["metadata"]["crafting_slot_coverage"] = crafting_coverage_mod.check(out)
+
+    # #547 — the `[Crafted]` twin identity. One game item the catalog carries as
+    # two records (as it drops, and after its Essence Crafting slots are used),
+    # which let a block on one silently deliver the other. Derived and ASSERTED
+    # here rather than matched on the name suffix in the solver: a bare string
+    # test would keep passing after the relationship it assumes stops holding.
+    #
+    # Runs AFTER `crafting_slot_coverage` because it reads that module's
+    # definition of an unserved label — the folding is only correct while the
+    # crafted state's extra slots are inert. Nothing is suppressed; only the
+    # identity a player means when they block one of these is published.
+    _twins = crafted_twins_mod.derive(out["items"], crafting_coverage_mod.UNSERVED_ALLOWLIST)
+    if _twins["problems"]:
+        raise SystemExit(
+            "crafted-twin identity failed (#547) — a pair stopped being one item:\n  "
+            + "\n  ".join(_twins["problems"]))
+    out["metadata"]["crafted_twin_identity"] = _twins["identity"]
+    out["metadata"]["crafted_twin_coverage"] = {
+        "inspected": _twins["inspected"], "pairs": len(_twins["pairs"])}
 
     # build_id hashes the full assembled dataset (everything except metadata) so
     # drift in sets, augments, or crafting inputs — not just base variants —

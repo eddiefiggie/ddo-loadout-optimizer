@@ -1815,6 +1815,75 @@ test("U7/#110: blockReport asserts bestAvailable only when the block dominates A
   assert.strictEqual(rep["Blocked Middling"], false);
 });
 
+// ---------------------------------------------------------------------------
+// #547 — a block names an ITEM, not a catalog record. 45 items are carried as
+// two records (`X` as it drops, `X [Crafted]` after its Essence Crafting slots
+// are used), and blocking one used to hand the player the other with identical
+// numbers, so the block read as ignored.
+
+test("#547: blocking either half of a crafted pair blocks the item", () => {
+  // The stamp is what dataset.js writes from the build-derived pairing. Both
+  // records carry the SAME identity; the base's is itself.
+  const base = v("Twin Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  base.block_identity = "Twin Ring";
+  const twin = v("Twin Ring [Crafted]", "Ring", [["Intelligence", "Enhancement", 10]]);
+  twin.block_identity = "Twin Ring";
+  const other = v("Other Ring", "Ring", [["Intelligence", "Enhancement", 8]]);
+  const q = { mlCap: 34, targets: ["Intelligence"] };
+  const poolOf = (blocklist) => M.buildModel([base, twin, other], { ...q, blocklist })
+    .worn.find((s) => s.slot === "Ring").variants.map((x) => x.variant_id);
+
+  assert.deepStrictEqual(poolOf(["Twin Ring"]), ["Other Ring"],
+    "blocking the base must not leave its crafted twin as the runner-up");
+  assert.deepStrictEqual(poolOf(["Twin Ring [Crafted]"]), ["Other Ring"],
+    "and the fold is symmetric — blocking the twin covers the base");
+  // With nothing blocked the block gate must remove NOTHING. Asserted on its own
+  // report rather than on the surviving pool, because the pool is also shaped by
+  // dominance — which prunes the identical twin, and prunes `Other Ring` too.
+  // That pruning is the pre-existing behaviour this change does not touch, and it
+  // is exactly why the twin stays invisible until the base is blocked.
+  const free = M.buildModel([base, twin, other], { ...q, blocklist: [] });
+  assert.deepStrictEqual(free.blockReport, [],
+    "with nothing blocked, the block gate removes neither half");
+});
+
+test("#547: an unstamped record is only ever itself", () => {
+  // The other 9,020 carry no `block_identity`, and the widened gate must fall
+  // back to the record's own key for them. A truthiness slip here would collapse
+  // every unstamped candidate into one identity and empty the pool.
+  const A = v("Plain Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = v("Second Ring", "Ring", [["Intelligence", "Enhancement", 8]]);
+  const m = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"], blocklist: ["Plain Ring"] });
+  assert.deepStrictEqual(
+    m.worn.find((s) => s.slot === "Ring").variants.map((x) => x.variant_id), ["Second Ring"]);
+});
+
+test("#547: the fold does not reach a DIFFERENT item sharing no identity", () => {
+  // The widening keys on the stamped identity, never on the name. Two records
+  // whose names merely look related must not block together.
+  const a = v("Alpha Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  a.block_identity = "Alpha Ring";
+  const b = v("Alpha Ring of Something Else", "Ring", [["Intelligence", "Enhancement", 9]]);
+  b.block_identity = "Alpha Ring of Something Else";
+  const m = M.buildModel([a, b], { mlCap: 34, targets: ["Intelligence"], blocklist: ["Alpha Ring"] });
+  assert.deepStrictEqual(
+    m.worn.find((s) => s.slot === "Ring").variants.map((x) => x.variant_id),
+    ["Alpha Ring of Something Else"]);
+});
+
+test("#547: both halves reach the disclosure, so the block is not silent", () => {
+  const base = v("Twin Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  base.block_identity = "Twin Ring";
+  const twin = v("Twin Ring [Crafted]", "Ring", [["Intelligence", "Enhancement", 10]]);
+  twin.block_identity = "Twin Ring";
+  const other = v("Other Ring", "Ring", [["Intelligence", "Enhancement", 8]]);
+  const m = M.buildModel([base, twin, other],
+    { mlCap: 34, targets: ["Intelligence"], blocklist: ["Twin Ring"] });
+  assert.deepStrictEqual(m.blockReport.map((e) => e.id).sort(),
+    ["Twin Ring", "Twin Ring [Crafted]"],
+    "the player named one; the disclosure must account for both records removed");
+});
+
 test("U7/#110: a blocked augment's report compares against its colour pool", () => {
   const aug = (name, val) => ({ ...v(name, "Yellow", [["Intelligence", "Enhancement", val]], { category: "augment" }),
     aug_color: { color: "Yellow" } });
@@ -2091,4 +2160,137 @@ test("#335 U1 (KTD2): the twin id round-trips back to its original", () => {
   assert.strictEqual(M.originalIdOf(id), id, "an ordinary id is returned unchanged");
   assert.strictEqual(M.isTwinId(twin), true);
   assert.strictEqual(M.isTwinId(id), false);
+});
+
+// --- #545: a stamped native and the untyped blank now meet in the same pool ---
+//
+// Before #545 only the 11 blanks and the 2 quarterstaff hosts carried Dino
+// slots, so the dino clause in `dominates` almost never fired against a real
+// item. With 122 natives stamped it fires constantly, and three comparisons
+// that were previously unreachable become load-bearing.
+
+function dinoWeapon(name, affixes, opts = {}) {
+  const w = v(name, opts.slot || "Weapon", affixes, { category: "weapon" });
+  w.type = opts.type ?? null;
+  w.dino_slots_norm = opts.slots
+    || ["Claw||Weapon", "Fang||Weapon", "Horn||Weapon", "Scale||Weapon"];
+  return w;
+}
+
+test("#545 a stamped native dominates the untyped blank, never the reverse", () => {
+  // R7. The blank's whole value is its slots; a native offering the same slot
+  // multiset AND real affixes is strictly better, so pruning the blank is the
+  // correct outcome rather than a loss. The reverse must stay false: an
+  // affix-less host can never dominate one carrying affixes.
+  const native = dinoWeapon("Attuned Bone Longsword",
+    [["Strength", "Enhancement", 10]], { type: "Long Swords" });
+  const blank = dinoWeapon("Dinosaur Bone Weapon", []);
+  const targets = new Set(["Strength"]);
+  assert.strictEqual(M.dominates(native, blank, targets, 34), true,
+    "affixes + the same slot multiset dominates the affix-less blank");
+  assert.strictEqual(M.dominates(blank, native, targets, 34), false,
+    "the blank carries no affixes, so it can never dominate");
+});
+
+test("#545 a quarterstaff host and a base native never prune each other", () => {
+  // The variant suffix #283 added to the Weapon keys is what keeps these apart.
+  // Without it the two would compare as equal-slotted and the richer
+  // quarterstaff insert options would vanish.
+  const qs = dinoWeapon("Attuned Bone Quarterstaff",
+    [["Strength", "Enhancement", 10]], { type: "Quarterstaffs" });
+  const base = dinoWeapon("Attuned Bone Longsword",
+    [["Strength", "Enhancement", 10]], { type: "Long Swords" });
+  const targets = new Set(["Strength"]);
+  assert.strictEqual(M.dominates(qs, base, targets, 34), false);
+  assert.strictEqual(M.dominates(base, qs, targets, 34), false);
+  assert.strictEqual(M.dominanceFilter([qs, base], targets, 34, 1).length, 2);
+});
+
+test("#545 the hand mutex still spares a one-handed native from a both-hands peer", () => {
+  // R9. The untyped blank classifies as a both-hands weapon (`styleOfType` is
+  // undefined for a typeless record), so it is forced off whenever an off-hand
+  // is equipped. It must therefore never prune a one-handed native: once the
+  // blank is off, that native may be the true best available main hand.
+  const blank = dinoWeapon("Dinosaur Bone Weapon",
+    [["Strength", "Enhancement", 20]]);
+  const oneHanded = dinoWeapon("Attuned Bone Longsword",
+    [["Strength", "Enhancement", 10]], { type: "Long Swords" });
+  const targets = new Set(["Strength"]);
+  assert.strictEqual(M.isBothHandsWeapon(blank), true,
+    "an untyped Dino weapon host occupies both hands");
+  assert.strictEqual(M.isBothHandsWeapon(oneHanded), false);
+  const withMutex = M.dominanceFilter(
+    [blank, oneHanded], targets, 34, 1, null, false, true);
+  assert.strictEqual(withMutex.length, 2,
+    "under the hand mutex the one-handed native survives the stronger blank");
+});
+
+test("#545 stamped natives with equal slots resolve on buckets alone", () => {
+  const strong = dinoWeapon("Strong", [["Strength", "Enhancement", 20]], { type: "Long Swords" });
+  const weak = dinoWeapon("Weak", [["Strength", "Enhancement", 5]], { type: "Long Swords" });
+  const targets = new Set(["Strength"]);
+  assert.strictEqual(M.dominates(strong, weak, targets, 34), true);
+  assert.strictEqual(M.dominates(weak, strong, targets, 34), false);
+});
+
+test("#545 a native offering FEWER dino slots is not dominated on buckets alone", () => {
+  // The 12 named Legendary weapons carry one pool where the Bone weapons carry
+  // four. A four-slot host must not prune a one-slot host it does not beat on
+  // buckets — and a one-slot host must never prune a four-slot one.
+  const four = dinoWeapon("Attuned Bone Longsword",
+    [["Strength", "Enhancement", 5]], { type: "Long Swords" });
+  const one = dinoWeapon("Legendary Firesplitter",
+    [["Strength", "Enhancement", 20]], { type: "Long Swords", slots: ["Scale||Weapon"] });
+  const targets = new Set(["Strength"]);
+  assert.strictEqual(M.dominates(one, four, targets, 34), false,
+    "one slot cannot cover four, whatever the buckets say");
+  assert.strictEqual(M.dominates(four, one, targets, 34), false,
+    "four slots do not help when the buckets are worse");
+  assert.strictEqual(M.dominanceFilter([four, one], targets, 34, 1).length, 2);
+});
+
+test("#545 the shipped catalog carries the stamped natives into the weapon pool", () => {
+  // The two shapes really do meet: the blank sits at slot `Main Hand` and the
+  // natives at slot `Weapon`, but the main-hand pool is assembled by
+  // `category === "weapon"`, so both land in one dominance pool. Reading the
+  // slot mismatch as "they never compare" is the trap.
+  const carriers = data.items.filter((x) => (x.dino_slots_norm || []).length);
+  assert.strictEqual(carriers.length, 135, "11 blanks + 2 #283 hosts + 122 natives");
+  const weaponCarriers = carriers.filter((x) => x.category === "weapon");
+  assert.strictEqual(weaponCarriers.length, 93,
+    "90 stamped native weapons + the 2 #283 quarterstaff hosts + the untyped blank");
+  const blank = weaponCarriers.find((x) => x.variant_id === "Dinosaur Bone Weapon");
+  assert.ok(blank, "the untyped blank still ships");
+  assert.strictEqual(blank.slot, "Main Hand");
+  assert.ok(weaponCarriers.some((x) => x.slot === "Weapon" && x.affixes.length),
+    "stamped natives carry affixes and sit at slot Weapon");
+});
+
+test("#545 every weapon type now has a stamped native at the blank's own ML", () => {
+  // The OQ1 finding, pinned. The untyped blank exists to answer "I have not
+  // picked a weapon type yet" — it passes every main-hand lock because it has no
+  // type. After #545 all 40 weapon types carry a stamped Dino native, and every
+  // one of those natives sits at ML 31, the blank's own ML.
+  //
+  // So for the two gates the blank's type-agnosticism was meant to clear — the
+  // weapon-type lock and the ML cap — it is never the unique carrier of Dino
+  // capacity. It is retained deliberately (the plan's KTD1), and this test is
+  // the evidence behind the follow-up asking whether it still earns its place.
+  // The claim is bounded to those two gates on purpose: other eligibility gates
+  // are not measured here, so this must not be read as "never unique".
+  const cov = data.metadata.dino_coverage;
+  const names = new Set(cov.native_host_names);
+  const natives = data.items.filter(
+    (x) => names.has(x.source_item) && x.category === "weapon");
+  const blank = data.items.find((x) => x.variant_id === "Dinosaur Bone Weapon");
+  assert.ok(blank && !blank.type, "the untyped blank still ships, still untyped");
+
+  const allTypes = new Set(
+    data.items.filter((x) => x.category === "weapon" && x.type).map((x) => x.type));
+  const covered = new Set(natives.map((x) => x.type));
+  assert.strictEqual(allTypes.size, 40);
+  const uncovered = [...allTypes].filter((t) => !covered.has(t));
+  assert.deepStrictEqual(uncovered, [], "every weapon type has a stamped Dino native");
+  assert.ok(natives.every((x) => x.minimum_level <= blank.minimum_level),
+    "no type's Dino native costs more ML than the blank");
 });

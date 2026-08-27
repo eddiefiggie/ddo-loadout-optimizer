@@ -10,6 +10,35 @@
 //   node tests/parity/capture_golden.js
 //
 // Ratifications:
+//   #546 (2026-08-27) — ONE fixture ADDED, zero existing fixtures moved. The
+//   `Riposte` split expands a folded enchantment into Insight Armor Class and
+//   the three Insight saves. Re-capturing left all 23 prior entries
+//   byte-identical, which is the honest report: no previously-ratified loadout
+//   ranked Armor Class or any save, so none of them could see the change.
+//     * `riposte-split-ac-saves-ml34` is NEW, and exists because of that gap —
+//       a green golden that covers none of a data change is the trap
+//       docs/solutions/conventions/prove-a-test-fails-against-the-pre-change-tree.md
+//       is about. Measured A/B against a build with the split disabled, the
+//       fixture gains Fortitude Save 24 -> 25 and places `Legendary Sapphire of
+//       Riposte` — the augment the #546 reporter named — which was previously
+//       unplaceable because its only affix scored against nothing.
+//
+//   #545 (2026-08-26) — THREE fixtures, each attributed separately. Cause: 122
+//   native Dinosaur Bone records that shipped with zero insert capacity now
+//   carry the slots their own crafting lists name, so the solver has options it
+//   never had.
+//     * `endgame-dps-ml33` Main Hand: `Attuned Bone Quarterstaff` -> `Attuned
+//       Bone Bastard Sword`. `perTarget` is byte-identical, so no ranked target
+//       moved — this is a TIE broken differently. It is a better answer for a
+//       reason the numbers do not show: the quarterstaff occupies both hands
+//       while the bastard sword does not, so the Off Hand (previously forced
+//       empty) now takes `Horseshoe Crab Shield`, and the Helmet and Ring shift
+//       with it. A one-handed Dino weapon simply did not exist before.
+//     * `trance-credit-additive-ml32` and its `-baseline` twin — Wisdom 29 -> 30.
+//       A strict gain on a ranked target: a stamped native now hosts an insert
+//       that had nowhere to go.
+//   No fixture lost a point on any ranked target, and no fixture changed status.
+//
 //   #283 (2026-08-26) — `endgame-dps-ml33` Main Hand: `Dinosaur Bone Weapon` ->
 //   `Attuned Bone Quarterstaff`. ONE fixture, ONE slot; `perTarget`, `effective`
 //   and `status` are byte-identical, so no ranked target moved. Cause: the two
@@ -52,7 +81,7 @@ function test(name, fn) {
     path.join(__dirname, "parity", "fixtures.json"), "utf8"));
   const fixtureByName = Object.fromEntries(fixtures.map((f) => [f.name, f]));
 
-  test("golden guard pins exactly 23 fixtures", () => {
+  test("golden guard pins exactly 24 fixtures", () => {
     // 23 = 15 + the #110 blocklist A/B pair (re-ratified 2026-08-12)
     //        + the #254 per-item Sonic-flag fixture
     //        + the #291 cross-add A/B fixture (re-ratified 2026-08-13)
@@ -67,9 +96,9 @@ function test(name, fn) {
     //          single-priority baseline).
     //        + the #339 augment-ML-ceiling fixture (2026-08-16: cap 36 with
     //          augCeiling 32 — pins the augment-only gate end to end).
-    assert.strictEqual(count, 23, "23 fixtures run against the live solver");
-    assert.strictEqual(golden.fixture_count, 23, "golden.json records 23 fixtures");
-    assert.strictEqual(goldenNames.length, 23, "golden.json carries 23 fixture solves");
+    assert.strictEqual(count, 24, "24 fixtures run against the live solver");
+    assert.strictEqual(golden.fixture_count, 24, "golden.json records 24 fixtures");
+    assert.strictEqual(goldenNames.length, 24, "golden.json carries 24 fixture solves");
     assert.deepStrictEqual(Object.keys(solves).sort(), goldenNames.slice().sort(),
       "the same fixture names are solved and pinned");
   });
@@ -357,6 +386,34 @@ function test(name, fn) {
   // placed, and every one sits at/below the ceiling. The per-augment ML is
   // resolved against the built dataset because placed-augment records don't
   // carry `ml`.
+  // #546 — the Riposte fixture's load-bearing guard. The ratified snapshot pins
+  // `Fortitude Save: 25`, but a number alone cannot say WHY it is 25, and the
+  // augment that makes it 25 rides a side channel (`augmentsPlaced`) that is
+  // deliberately not part of golden.json. So the fixture could keep matching while
+  // quietly ceasing to exercise the split at all — the fixture-that-covers-nothing
+  // shape this repo keeps re-finding.
+  //
+  // Two things are asserted, and both are about the fixture rather than the answer:
+  // it must still RANK the stats the split emits (drop `Fortitude Save` and the
+  // coverage is gone with the golden still green), and the solve must still PLACE
+  // `Legendary Sapphire of Riposte` — the augment #546 was reported about, whose
+  // only affix was unrankable before the split.
+  test("the riposte fixture actually exercises the split", () => {
+    const fixtures = JSON.parse(fs.readFileSync(path.join(__dirname, "parity", "fixtures.json"), "utf-8"));
+    const fx = fixtures.find((f) => f.name === "riposte-split-ac-saves-ml34");
+    assert.ok(fx, "the riposte fixture exists");
+    for (const stat of ["Armor Class", "Fortitude Save", "Reflex Save", "Will Save"]) {
+      assert.ok(fx.query.targets.includes(stat),
+        `the fixture must rank ${stat} — it is one of the four stats Riposte splits into, ` +
+        "and it is the ONLY fixture that ranks any of them");
+    }
+    const placed = (details["riposte-split-ac-saves-ml34"] || {}).augmentsPlaced || [];
+    assert.ok(placed.includes("Legendary Sapphire of Riposte"),
+      "the solve must still place the augment #546 was reported about; without the " +
+      "split its lone `Riposte` affix scores against nothing and it is never chosen. " +
+      `placed: ${JSON.stringify(placed)}`);
+  });
+
   const CEILING_FIXTURE = "aug-ceiling-32-int-caster-ml36";
   test("#339 — the ceiling fixture carries its ceiling and no placed augment exceeds it", () => {
     const q = fixtureByName[CEILING_FIXTURE].query;
