@@ -585,6 +585,111 @@ function eligible(variants, query) {
   return variants.filter((v) => variantConflict(v, query, gates) === null);
 }
 
+// ---------------------------------------------------------------------------
+// #539 — the SET PIN. "Deliver this set, or tell me you cannot."
+//
+// The nearest thing a player had was ranking the stats a set grants, which does
+// not bind: the solver takes those stats from wherever they are cheapest, which
+// is usually a Sun/Moon augment. A pin is the player naming a constraint, which
+// is why it is not the weighted-sum non-goal — the cost is theirs to see and the
+// lexicographic guarantee still holds underneath it.
+//
+// Classified HERE rather than left to the solver. A pin the pool cannot satisfy
+// would otherwise surface as a bare INFEASIBLE, which says nothing about which
+// input caused it. Every suppressed pin is REPORTED, never erased: a set that is
+// unreachable under an ML 30 cap is reachable at 34, and the pin must survive
+// that round trip (suppress-dont-erase-user-constraints-on-transient-invalidity).
+
+/** The lowest piece threshold a set has anywhere in this dataset, or null. */
+function lowestSetTier(setName, elig, augmentSetDefs, membershipSetDefs) {
+  let low = null;
+  const take = (n) => { if (n != null && (low == null || n < low)) low = n; };
+  for (const defs of [augmentSetDefs || {}, membershipSetDefs || {}]) {
+    const def = defs[setName];
+    for (const t of (def && def.tiers) || []) take(t.pieces_required);
+  }
+  for (const v of elig || []) {
+    for (const t of v.parsed_set_bonuses || []) {
+      if (t.set === setName && (t.affixes || []).length) take(t.pieces_required);
+    }
+  }
+  return low;
+}
+
+/** Distinct worn slots in the eligible pool that can supply an intrinsic piece. */
+function intrinsicPieceSlots(setName, elig) {
+  const slots = new Set();
+  for (const v of elig || []) {
+    for (const sb of v.set_bonus || []) {
+      if (sb && sb.set === setName) slots.add(v.slot || v.category || "?");
+    }
+  }
+  return slots.size;
+}
+
+/** Classify each requested set pin against what this query can actually reach.
+ *
+ *  Returns `{ pinned: [names], report: [{ set, verdict, ... }] }`. Only `pinned`
+ *  reaches the solver; everything else is suppressed with a stated reason.
+ *
+ *  The reachability test is deliberately CONSERVATIVE and cheap. It catches the
+ *  two cases a player can hit by accident — a set this dataset does not have, and
+ *  a Set Augment they have not marked owned — plus an intrinsic set whose carriers
+ *  cannot fill enough distinct slots. It does NOT try to prove joint feasibility
+ *  across several pins; four 3-piece augment sets needing twelve colour slots is a
+ *  question about the whole program, and the solver answers it (see the
+ *  drop-the-pins retry in solveLexicographic).
+ */
+function classifySetPins(query, elig, augmentSetDefs, membershipSetDefs) {
+  const want = Array.isArray(query.pinnedSets) ? query.pinnedSets : [];
+  if (!want.length) return { pinned: [], report: [] };
+
+  const owned = query.ownedSetAugments;
+  const isOwned = (k) => owned && (typeof owned.has === "function" ? owned.has(k)
+    : Array.isArray(owned) ? owned.includes(k) : false);
+
+  const pinned = [];
+  const report = [];
+  const seen = new Set();
+  for (const raw of want) {
+    const set = typeof raw === "string" ? raw : "";
+    if (!set || seen.has(set)) continue;
+    seen.add(set);
+
+    const isAugmentSet = !!(augmentSetDefs && augmentSetDefs[set]);
+    const tier = lowestSetTier(set, elig, augmentSetDefs, membershipSetDefs);
+
+    if (tier == null) {
+      report.push({ set, verdict: "unknown", pieces_required: null,
+        why: "no set by that name carries a piece threshold in this dataset" });
+      continue;
+    }
+    // A Set Augment the player has not ticked as owned. Suppressed rather than
+    // implicitly widened: widening would silently assume they own an augment they
+    // said nothing about, and not assuming that is what the ownership picker is for.
+    if (isAugmentSet && !isOwned(set)) {
+      report.push({ set, verdict: "not-owned", pieces_required: tier,
+        why: "this is a Set Augment you have not marked as owned" });
+      continue;
+    }
+    // Membership and augment sets are supplied by crafting slots rather than by
+    // distinct worn carriers, so the slot count below does not describe them.
+    const craftSupplied = isAugmentSet || !!(membershipSetDefs && membershipSetDefs[set]);
+    if (!craftSupplied) {
+      const slots = intrinsicPieceSlots(set, elig);
+      if (slots < tier) {
+        report.push({ set, verdict: "unreachable", pieces_required: tier, available: slots,
+          why: `only ${slots} slot${slots === 1 ? "" : "s"} in this pool can carry a piece, `
+            + `and the set needs ${tier}` });
+        continue;
+      }
+    }
+    pinned.push(set);
+    report.push({ set, verdict: "pinned", pieces_required: tier });
+  }
+  return { pinned, report };
+}
+
 /** Does A dominate B in the same slot? A must be >= on every bucket, superset
  *  of sets, and >= augment colors. Dominated variants are never optimal. */
 function dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts = null) {
@@ -1248,6 +1353,11 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const tfPool = (thunderForged || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
   const gsPool = (greenSteel || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
 
+  // #539 — classify the set pins against the ELIGIBLE pool. Done here, with the
+  // pool and both def dicts in scope, so a pin the query cannot satisfy is named
+  // as such instead of reaching the solver and coming back as a bare INFEASIBLE.
+  const _setPins = classifySetPins(query, elig, augmentSetDefs, membershipSetDefs);
+
   return {
     query, targets: query.targets, worn, augments,
     // #110 (U2) — eligible-but-blocked variants, retained for the disclosure's
@@ -1306,6 +1416,14 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
       for (const [name, def] of Object.entries(augmentSetDefs || {})) if (has(name)) out[name] = def;
       return out;
     })(),
+    // #539 — the set pins that SURVIVED classification, and the full verdict
+    // list. `pinnedSets` is what the solver constrains; `setPinReport` is what
+    // the results page discloses, including suppressed pins and why. Classified
+    // against the eligible pool (post-block, pre-dominance): dominance never
+    // prunes a variant carrying a set its dominator lacks, so a piece counted
+    // here survives into the program.
+    pinnedSets: _setPins.pinned,
+    setPinReport: _setPins.report,
     dodgeCap, mlCap,
     // #91 (U3, KTD3) — the counting set rides the MODEL, never the persisted
     // query: buildProgram reads it from here to widen its own targetSet and
@@ -1443,7 +1561,8 @@ function poolStatNames(model) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { poolStatNames, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
-    buildModel, normalizeCredits, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
+    buildModel, normalizeCredits, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
+    classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     dinoWeaponVariant, dinoSlotKeys,
