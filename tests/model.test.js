@@ -1815,6 +1815,75 @@ test("U7/#110: blockReport asserts bestAvailable only when the block dominates A
   assert.strictEqual(rep["Blocked Middling"], false);
 });
 
+// ---------------------------------------------------------------------------
+// #547 — a block names an ITEM, not a catalog record. 45 items are carried as
+// two records (`X` as it drops, `X [Crafted]` after its Essence Crafting slots
+// are used), and blocking one used to hand the player the other with identical
+// numbers, so the block read as ignored.
+
+test("#547: blocking either half of a crafted pair blocks the item", () => {
+  // The stamp is what dataset.js writes from the build-derived pairing. Both
+  // records carry the SAME identity; the base's is itself.
+  const base = v("Twin Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  base.block_identity = "Twin Ring";
+  const twin = v("Twin Ring [Crafted]", "Ring", [["Intelligence", "Enhancement", 10]]);
+  twin.block_identity = "Twin Ring";
+  const other = v("Other Ring", "Ring", [["Intelligence", "Enhancement", 8]]);
+  const q = { mlCap: 34, targets: ["Intelligence"] };
+  const poolOf = (blocklist) => M.buildModel([base, twin, other], { ...q, blocklist })
+    .worn.find((s) => s.slot === "Ring").variants.map((x) => x.variant_id);
+
+  assert.deepStrictEqual(poolOf(["Twin Ring"]), ["Other Ring"],
+    "blocking the base must not leave its crafted twin as the runner-up");
+  assert.deepStrictEqual(poolOf(["Twin Ring [Crafted]"]), ["Other Ring"],
+    "and the fold is symmetric — blocking the twin covers the base");
+  // With nothing blocked the block gate must remove NOTHING. Asserted on its own
+  // report rather than on the surviving pool, because the pool is also shaped by
+  // dominance — which prunes the identical twin, and prunes `Other Ring` too.
+  // That pruning is the pre-existing behaviour this change does not touch, and it
+  // is exactly why the twin stays invisible until the base is blocked.
+  const free = M.buildModel([base, twin, other], { ...q, blocklist: [] });
+  assert.deepStrictEqual(free.blockReport, [],
+    "with nothing blocked, the block gate removes neither half");
+});
+
+test("#547: an unstamped record is only ever itself", () => {
+  // The other 9,020 carry no `block_identity`, and the widened gate must fall
+  // back to the record's own key for them. A truthiness slip here would collapse
+  // every unstamped candidate into one identity and empty the pool.
+  const A = v("Plain Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  const B = v("Second Ring", "Ring", [["Intelligence", "Enhancement", 8]]);
+  const m = M.buildModel([A, B], { mlCap: 34, targets: ["Intelligence"], blocklist: ["Plain Ring"] });
+  assert.deepStrictEqual(
+    m.worn.find((s) => s.slot === "Ring").variants.map((x) => x.variant_id), ["Second Ring"]);
+});
+
+test("#547: the fold does not reach a DIFFERENT item sharing no identity", () => {
+  // The widening keys on the stamped identity, never on the name. Two records
+  // whose names merely look related must not block together.
+  const a = v("Alpha Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  a.block_identity = "Alpha Ring";
+  const b = v("Alpha Ring of Something Else", "Ring", [["Intelligence", "Enhancement", 9]]);
+  b.block_identity = "Alpha Ring of Something Else";
+  const m = M.buildModel([a, b], { mlCap: 34, targets: ["Intelligence"], blocklist: ["Alpha Ring"] });
+  assert.deepStrictEqual(
+    m.worn.find((s) => s.slot === "Ring").variants.map((x) => x.variant_id),
+    ["Alpha Ring of Something Else"]);
+});
+
+test("#547: both halves reach the disclosure, so the block is not silent", () => {
+  const base = v("Twin Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
+  base.block_identity = "Twin Ring";
+  const twin = v("Twin Ring [Crafted]", "Ring", [["Intelligence", "Enhancement", 10]]);
+  twin.block_identity = "Twin Ring";
+  const other = v("Other Ring", "Ring", [["Intelligence", "Enhancement", 8]]);
+  const m = M.buildModel([base, twin, other],
+    { mlCap: 34, targets: ["Intelligence"], blocklist: ["Twin Ring"] });
+  assert.deepStrictEqual(m.blockReport.map((e) => e.id).sort(),
+    ["Twin Ring", "Twin Ring [Crafted]"],
+    "the player named one; the disclosure must account for both records removed");
+});
+
 test("U7/#110: a blocked augment's report compares against its colour pool", () => {
   const aug = (name, val) => ({ ...v(name, "Yellow", [["Intelligence", "Enhancement", val]], { category: "augment" }),
     aug_color: { color: "Yellow" } });
