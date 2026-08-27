@@ -72,6 +72,45 @@ function missingRequired(state) {
   return out;
 }
 
+/** #431 U4 — "no-name" is reachable from the character step's own save
+ *  button, where the field it names is on screen beside it. The guard no
+ *  longer produces this error at all: it omits Save instead. */
+function saveErrorText(error) {
+  if (error === "no-name") return "Name this build first.";
+  // #548 — the old wording was "Storage full — remove some saves." It named
+  // the wrong thing: a player with four saved builds is holding ~150 KB of a
+  // ~5 MB budget, about 3% of it, while the version store had grown without a
+  // cap. Following that instruction deleted deliberate work and freed almost
+  // nothing, and the player hit the wall again immediately.
+  //
+  // By the time this text is reached the auto snapshots have ALREADY been
+  // reclaimed and the save retried, so what remains really is deliberate:
+  // saved builds, named versions, imported ones, bundles. Point at the place
+  // that can show all of them rather than guessing which is largest.
+  if (error === "quota") {
+    return "Storage is full, even after clearing unsaved version history. "
+      + "Open Your data to see what is stored and remove something.";
+  }
+  return "Could not save.";
+}
+
+/** #548 — what a successful save says. Normally just the name; when the save
+ *  only succeeded because auto snapshots were reclaimed, it says so.
+ *
+ *  Silently shortening the player's history would be the same class of defect
+ *  as the message this change replaced: something happened to their data and
+ *  nothing told them. Pure and exported so the wording is testable without a
+ *  storage stub or a DOM.
+ */
+function saveOkText(name, reclaimed) {
+  const n = Number(reclaimed) || 0;
+  if (n <= 0) return `Saved \u201C${name}\u201D.`;
+  return `Saved \u201C${name}\u201D \u2014 storage was full, so ${n} `
+    + `automatic version snapshot${n === 1 ? "" : "s"} `
+    + `${n === 1 ? "was" : "were"} cleared to make room. `
+    + "Named versions were kept.";
+}
+
 /** #431 U3 (KTD5) — ONE renderer owns the save control everywhere it appears.
  *  Hand-writing the button into each bar invites drift, so each bar interpolates
  *  this instead and a guard pins the call-site count. The status line is part of
@@ -2027,7 +2066,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -4235,6 +4274,9 @@ if (typeof window !== "undefined" && window.App) {
      *  Returns the store's result, or null when the player declined the
      *  overwrite. */
     function trySave(nm) {
+      // #548 — cleared per attempt. The flag says "THIS save cost history"; left
+      // standing it would attach an earlier save's reclaim to a later message.
+      state.storageReclaimed = 0;
       // eslint-disable-next-line no-undef
       const prev = nm ? CharacterStore.loadCharacter(nm) : null;
       // #452 U2 (KTD1) — `prev` alone is NOT the gate. It is true for the build
@@ -4248,7 +4290,22 @@ if (typeof window !== "undefined" && window.App) {
         // R6 — remembered for this build, so a second Continue is silent.
         state.nameReconciled = nm;
       }
-      const res = saveCurrentCharacter(nm);
+      let res = saveCurrentCharacter(nm);
+      // #548 — a quota failure here is almost never THIS build's fault. Four
+      // stores share one origin budget and only the version store grows unbidden
+      // (an `auto` snapshot per solve, ~38 KB each, no cap), so the save that
+      // fails is usually just the next write after that store filled the space.
+      // Reclaim its own unbidden history and try once more before telling the
+      // player anything: a build they deliberately saved must not be lost to
+      // history they never asked to keep. Named and imported versions are never
+      // touched — `pruneAuto` cannot reach them.
+      if (res && res.error === "quota") {
+        const freed = reclaimAutoVersions();
+        if (freed > 0) {
+          res = saveCurrentCharacter(nm);
+          if (res.ok) state.storageReclaimed = freed;
+        }
+      }
       // #452 R-d — autosave depends on this. Without it the next Continue sees a
       // name that is not `loadedName`, `nameCollides` returns true again, and the
       // confirm comes back on the build we just wrote.
@@ -4256,13 +4313,19 @@ if (typeof window !== "undefined" && window.App) {
       return res;
     }
 
-    /** #431 U4 — "no-name" is reachable from the character step's own save
-     *  button, where the field it names is on screen beside it. The guard no
-     *  longer produces this error at all: it omits Save instead. */
-    function saveErrorText(error) {
-      if (error === "no-name") return "Name this build first.";
-      if (error === "quota") return "Storage full — remove some saves.";
-      return "Could not save.";
+    /** #548 — give back the space the version store took without being asked.
+     *  Returns how many auto snapshots were dropped (0 when the store is absent
+     *  or had nothing reclaimable). */
+    function reclaimAutoVersions() {
+      const V = (typeof VersionStore !== "undefined") ? VersionStore : null;
+      if (!V || typeof V.pruneAuto !== "function") return 0;
+      let dropped = 0;
+      for (const keep of (V.RECLAIM_LADDER || [10, 3, 1])) {
+        const r = V.pruneAuto(keep) || {};
+        dropped += r.dropped || 0;
+        if (dropped > 0) break;   // one rung is enough to retry on
+      }
+      return dropped;
     }
 
     /** #431 U3 (R5/R7) — the one save handler, for the one rendered button. Only
@@ -4279,7 +4342,13 @@ if (typeof window !== "undefined" && window.App) {
         // render() must NOT be used here: on results it would blank #wz-results.
         renderRail();
         const stat = document.getElementById("wz-savestat");
-        if (stat) stat.textContent = res.ok ? `Saved “${nm}”.` : saveErrorText(res.error);
+        if (stat) {
+          stat.textContent = res.ok
+            ? saveOkText(nm, state.storageReclaimed)
+            : saveErrorText(res.error);
+        }
+        // Reported once, on the save it belongs to.
+        state.storageReclaimed = 0;
       };
     }
 
@@ -4787,6 +4856,14 @@ if (typeof window !== "undefined" && window.App) {
         // span lives in.
         const stat = document.getElementById("wz-savestat");
         if (stat) stat.textContent = saveErrorText(res.error);
+      } else if (state.storageReclaimed) {
+        // #548 — an autosave normally says nothing, and still says nothing here
+        // unless storage was full and history was dropped to fit. That is a
+        // change to the player's stored data, so it is reported where it
+        // happened rather than left to surface on some later explicit save.
+        const stat = document.getElementById("wz-savestat");
+        if (stat) stat.textContent = saveOkText(nm, state.storageReclaimed);
+        state.storageReclaimed = 0;
       }
     }
 

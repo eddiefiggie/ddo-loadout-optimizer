@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -4781,4 +4781,43 @@ test("#518: loading another build clears a takeover notice raised for the last o
   const region = fnBody(WIZARD_SRC, "function loadCharacter(", 4);
   assert.ok(/state\.farmingTakeover = null;/.test(region),
     "the notice is cleared on every load, beside the other per-character resets");
+});
+
+// ---------------------------------------------------------------------------
+// #548 — the quota wording. The old text was "Storage full — remove some saves."
+// It named the wrong thing: four saved builds are ~150 KB of a ~5 MB budget,
+// about 3%, while the version store had grown without a cap. Following that
+// instruction deleted deliberate work and freed almost nothing.
+
+test("#548: the quota message no longer tells the player to delete their builds", () => {
+  const msg = saveErrorText("quota");
+  assert.ok(!/remove some saves/i.test(msg),
+    "the old wording pointed at the smallest consumer of the budget");
+  assert.ok(/version history/i.test(msg),
+    "it must say the reclaim already happened, or the advice reads as untried");
+  assert.ok(/Your data/i.test(msg),
+    "and point at the surface that can actually show what is stored");
+  // The other branches are untouched.
+  assert.strictEqual(saveErrorText("no-name"), "Name this build first.");
+  assert.strictEqual(saveErrorText("whatever"), "Could not save.");
+});
+
+test("#548: a save that cost history says so, and a normal one stays quiet", () => {
+  assert.strictEqual(saveOkText("Tank", 0), "Saved \u201CTank\u201D.",
+    "the ordinary case must not grow a caveat it did not earn");
+  assert.strictEqual(saveOkText("Tank", undefined), "Saved \u201CTank\u201D.",
+    "an absent count is not a reclaim");
+
+  const one = saveOkText("Tank", 1);
+  assert.ok(/1 automatic version snapshot was cleared/.test(one), one);
+  const many = saveOkText("Tank", 37);
+  assert.ok(/37 automatic version snapshots were cleared/.test(many), many);
+  for (const m of [one, many]) {
+    assert.ok(/Named versions were kept/.test(m),
+      "silently shortening history is the same defect class as the message this replaced");
+    // Not `.indexOf("\u2026")`: the source-slice guard above scans this file for that
+    // shape and requires the literal to resolve in a web/ source. This is a
+    // prefix check on a rendered message, not a slice marker.
+    assert.ok(/^Saved \u201CTank\u201D/.test(m), "it is still a success message");
+  }
 });
