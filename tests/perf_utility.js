@@ -145,6 +145,24 @@
 //   Both arms move with the data, so the refresh's own cost is the change in the
 //   ABSOLUTE (a) medians (-0.6% to -1.3%: the refresh did not raise solve cost).
 //   docs/reports/2026-08-18-gear-planner-canon-migration.md §18.
+//
+//   Re-measured 2026-08-26 for #545 (122 native Dino hosts gain insert
+//   capacity), shipped roster, one machine, same session both arms:
+//                              weighted   worst    (a) total
+//     pre-change                 1.64x    3.59x    19121 ms
+//     post-change                1.48x    3.25x    20879 ms   (+9.2%)
+//   BOTH RATIOS IMPROVED WHILE THE SITE GOT SLOWER. That is the trap this
+//   header already names one entry up: the ratio divides two arms that both grow
+//   with solve size, so it cannot see a data change that makes every solve
+//   bigger. Read the ABSOLUTE (a) column for that.
+//   The +9.2% is not spread — it is one fixture. `endgame-caster-ml32` went
+//   8083 -> 9896 ms (+22.4%), which is more than the whole delta; every other
+//   fixture is flat or slightly faster. Cause: dominance cannot prune a host
+//   offering typed Dino slots a rival lacks, so the weapon pool's Pareto set
+//   grew by up to 90 newly un-prunable variants, and the fixture ranking the
+//   most targets keeps the most of them.
+//   Accepted under the standing budgets rather than silently: both verdicts pass
+//   with more headroom than before.
 // Re-measure rather than cite any of these.
 //
 // Usage:  node tests/perf_utility.js

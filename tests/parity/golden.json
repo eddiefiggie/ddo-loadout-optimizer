@@ -1,8 +1,8 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-08-26",
+ "generated": "2026-08-27",
  "dataset": "web/data/items.json (9110 items)",
- "fixture_count": 23,
+ "fixture_count": 24,
  "solves": {
   "heroic-str-melee": {
    "status": "optimal",
@@ -319,15 +319,19 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Helm of the Warblade"
+     "variant": "Legendary Helm of the Sun's Wrath"
     },
     {
      "slot": "Main Hand",
-     "variant": "Attuned Bone Quarterstaff"
+     "variant": "Attuned Bone Bastard Sword"
     },
     {
      "slot": "Necklace",
      "variant": "Shintao Cord"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Horseshoe Crab Shield (level 26)"
     },
     {
      "slot": "Ring",
@@ -335,7 +339,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Band of Acrobatics"
+     "variant": "Legendary Nocturne Ring"
     },
     {
      "slot": "Trinket",
@@ -580,12 +584,12 @@
    "status": "optimal",
    "perTarget": {
     "Devotion": 448,
-    "Wisdom": 29,
+    "Wisdom": 30,
     "Universal Spell Power": 104
    },
    "effective": {
     "Devotion": 448,
-    "Wisdom": 29,
+    "Wisdom": 30,
     "Universal Spell Power": 104
    },
    "chosen": [
@@ -651,12 +655,12 @@
    "status": "optimal",
    "perTarget": {
     "Devotion": 436,
-    "Wisdom": 29,
+    "Wisdom": 30,
     "Universal Spell Power": 104
    },
    "effective": {
     "Devotion": 436,
-    "Wisdom": 29,
+    "Wisdom": 30,
     "Universal Spell Power": 104
    },
    "chosen": [
@@ -1437,7 +1441,7 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "The Slayer of the Living"
+     "variant": "Attuned Bone Bastard Sword"
     },
     {
      "slot": "Necklace",
@@ -1449,15 +1453,90 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Duskbone Ring"
+     "variant": "Celestial Topaz Ring"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Signet Ring of the Earth"
+     "variant": "Legendary Duskbone Ring"
     },
     {
      "slot": "Trinket",
      "variant": "Legendary Red Raptor Feather"
+    }
+   ]
+  },
+  "riposte-split-ac-saves-ml34": {
+   "status": "optimal",
+   "perTarget": {
+    "Armor Class": 171,
+    "Reflex Save": 25,
+    "Will Save": 25,
+    "Fortitude Save": 25,
+    "Physical Sheltering": 124
+   },
+   "effective": {
+    "Armor Class": 171,
+    "Reflex Save": 25,
+    "Will Save": 25,
+    "Fortitude Save": 25,
+    "Physical Sheltering": 124
+   },
+   "chosen": [
+    {
+     "slot": "Armor",
+     "variant": "Heavy Armor of the Artblade's Reflection"
+    },
+    {
+     "slot": "Belt",
+     "variant": "Planar Lariat"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Legendary Doctor Gustav's Rubber Boots"
+    },
+    {
+     "slot": "Bracers",
+     "variant": "Legendary Surreptitious Shackles"
+    },
+    {
+     "slot": "Cloak",
+     "variant": "Legendary Mantle of the Dwarven Commander"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Legendary Gloves of the Resilient"
+    },
+    {
+     "slot": "Goggles",
+     "variant": "Legendary Mining Lenses"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Legendary Helm of the Crownblade"
+    },
+    {
+     "slot": "Main Hand",
+     "variant": "Epic Zephyr"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Legendary Siren's Charm"
+    },
+    {
+     "slot": "Off Hand",
+     "variant": "Legendary Tower Shield of the Fallen Age"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Frost Worm Tooth Ring"
+    },
+    {
+     "slot": "Ring",
+     "variant": "Legendary Trapmaker's Mark"
+    },
+    {
+     "slot": "Trinket",
+     "variant": "Legendary Gem of Many Facets"
     }
    ]
   }
