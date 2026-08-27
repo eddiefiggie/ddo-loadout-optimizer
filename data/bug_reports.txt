@@ -320,7 +320,7 @@ Verbatim, the genuinely new items:
    SECOND defect the reporter did not hit: two tooltip dialects flatten to one stored
    number, exactly the Parrying trap. `Emerald Twilight` (Roman VII) and `Legendary
    Planar Lariat` (Arabic +7) both store 7; one grants +4 AC/+3 saves, the other +7/+7.
-   15 of 35 records are Roman and overstate their grant ~2x. Rendered tooltips confirm
+   16 of 35 records are Roman and overstate their grant ~2x. Rendered tooltips confirm
    the AC and saves halves DIFFER on odd numerals (IX -> +5 AC, +4 saves), so Parrying's
    "one magnitude to four stats" config must NOT be copied across.
 
