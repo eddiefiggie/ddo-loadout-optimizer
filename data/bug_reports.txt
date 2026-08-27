@@ -296,3 +296,73 @@ The five follow-on questions in the same thread, triaged — none is a new defec
 - "Was there any response to cannith/essence crafting offhand weapons to stats/effects
   so that it doesn't have to be in gear...?" ALREADY TRACKED as #193 (essence crafting
   unmodelled, deferred across nine plans).
+
+---
+2026-08-27 — user report batch (re-raise of the 2026-08-26 thread, plus four new items)
+
+Four of the items in this thread are the SAME reports triaged on 2026-08-26 above
+(set-augment availability vs forcing, the Razor Wit duplicate rings, cannith/essence
+offhand crafting, the Isle of Dread double-dip). Their triage stands unchanged and is
+not repeated here. The Isle of Dread fix has since shipped (#538/#540/#542).
+
+Verbatim, the genuinely new items:
+
+1. "It seems the Riposte effect from Legendary Sapphire of Riposte does not split up
+   into its components the way it should, Thus I had to add Riposte to my priorities
+   despite already having the 3 resistances."
+
+   REPRODUCES, and the wiki makes it bigger than the report. Filed #546. `Riposte` is a
+   live rankable affix on 35 records stored as a flat Insight magnitude — Parrying's
+   sibling, and #169's defect for the affix #169 did not cover. Harvested
+   ddowiki.com/page/Riposte 2026-08-27 same-origin: "+X/2 (round up) Insight bonus to
+   Armor Class, +X/2 (round down) Insight bonus to Fortitude, Reflex, and Will Saving
+   Throws" and "Same effect as Parrying, therefore bonuses does not stack."
+   SECOND defect the reporter did not hit: two tooltip dialects flatten to one stored
+   number, exactly the Parrying trap. `Emerald Twilight` (Roman VII) and `Legendary
+   Planar Lariat` (Arabic +7) both store 7; one grants +4 AC/+3 saves, the other +7/+7.
+   16 of 35 records are Roman and overstate their grant ~2x. Rendered tooltips confirm
+   the AC and saves halves DIFFER on odd numerals (IX -> +5 AC, +4 saves), so Parrying's
+   "one magnitude to four stats" config must NOT be copied across.
+
+2. "I always get Legendary Gem of Many Facets [Crafted] as trinket, even though I block
+   it. Why? I refuse to do that lottery. :)"
+
+   REPRODUCES. Filed #547. The blocklist gate is correct; the catalog carries one game
+   item as two records. Blocking `Legendary Gem of Many Facets` promotes `Legendary Gem
+   of Many Facets [Crafted]` into the same slot with a BYTE-IDENTICAL perTarget — same
+   name, same numbers, block disclosure truthfully reporting an exclusion. The twin is
+   the same item modelled as an Essence Crafting host: identical augment colours,
+   identical joker_set_groups, and inert while #193 is open. 45 `[Crafted]` records
+   exist and ALL 45 have a same-name base twin, so every one is reachable this way.
+   NOT #270 — these records do have variant ids and are individually blockable.
+
+3. "Storage full — remove some saves. I only have 4 builds saved but I am getting
+   storage full?"
+
+   REPRODUCES, and the message names the wrong culprit. Filed #548. `autoSnapshot()`
+   takes an `auto` version on EVERY solve with no cap — the documented retention policy
+   is "grow until storage complains". Measured across five parity fixtures: 38.4 KB
+   average per snapshot, i.e. ~133 solves to exhaust a ~5 MB budget. The player's 4
+   builds are ~150 KB, about 3% of it. `wizard.js:4264` tells them to delete the 3%.
+
+4. "I have 2 builds saved that compete for the same character - how do I get the app to
+   compare those builds and list pros and cons?"
+
+   NOT A DEFECT — the feature exists and the reporter did not find it. The Adjustment
+   Studio tab on the results page has a "Compare against" picker whose candidates are
+   "stored versions and saved characters alike", and `diffVersions` reports every
+   differing stat INCLUDING unranked ones. Findability, plausibly caused by the
+   deliberate naming split (#500 named the surface for what a player does there, not
+   "Compare"). No issue filed; #357 already tracks the broader loadout library.
+
+Stress-tested while validating, and NOT defects:
+
+- "I only see one of the sets in the final gear usually." Real observation, correct
+  behavior. A/B against the shipped dataset, all 21 set augments owned, five targets
+  each served by a different set augment: exactly one set placed (Subtle Blade x3),
+  advancing priority 2 from 0 to 3. The counterfactual is the proof there is no phantom
+  crediting — with NO set augments owned, priority 1 "Damage to helpless enemies" is
+  STILL 15, so that 15 comes from gear and Cruel Cut was correctly declined as
+  redundant rather than silently credited. A set augment is placed exactly when it
+  advances a ranked priority against the alternative use of its three augment slots.
+  What the reporter wants is #539 (pin a named set), not a fix here.
