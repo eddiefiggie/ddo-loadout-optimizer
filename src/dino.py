@@ -433,7 +433,12 @@ def native_dino_hosts(planner_items=None, catalog=None, blank_source_items=None)
                     "the pool the host names, so the host would carry a slot key "
                     "nothing can fill rather than fail (#545).")
             slots.append(f"{dino_type}||{category}")
-        hosts[name] = sorted(set(slots))
+        # Sorted, NOT deduplicated. The list is a capacity MULTISET — the solver
+        # counts how many of a key a host exposes — so collapsing a repeated key
+        # would silently delete a slot. `native_quarterstaff_hosts` keeps
+        # duplicates for the same reason, and the two must not diverge. Sorting
+        # only removes the dependence on gear-planner's key order.
+        hosts[name] = sorted(slots)
     if not hosts:
         raise SystemExit(
             "dino native hosts: no gear-planner record names a base Dino pool. "

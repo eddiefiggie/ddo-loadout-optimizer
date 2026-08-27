@@ -657,15 +657,22 @@ def test_built_coverage_discloses_the_derivation():
 
 
 def _native_host_fixture():
-    """Three records: a four-pool weapon, a one-pool accessory, and a non-host."""
+    """Three records: a four-pool weapon, a one-pool accessory, and a non-host.
+
+    `crafting` is a LIST here because that is the shape the real gear-planner
+    dump uses on every record that has one — 6447 lists and zero dicts. The
+    reader accepts a dict too, and one test below covers that branch, but a
+    fixture that only exercised the dict path would be testing a shape the
+    pipeline never sees.
+    """
     return [
         {"name": "Attuned Bone Longsword", "slot": "Weapon", "type": "Longswords",
-         "crafting": {"Scale (Weapon)": {}, "Fang (Weapon)": {},
-                      "Claw (Weapon)": {}, "Horn (Weapon)": {}}},
+         "crafting": ["Scale (Weapon)", "Fang (Weapon)",
+                      "Claw (Weapon)", "Horn (Weapon)"]},
         {"name": "Attuned Bone Belt", "slot": "Belt",
-         "crafting": {"Scale (Accessory)": {}}},
+         "crafting": ["Scale (Accessory)"]},
         {"name": "Legendary Bracers of the Sun Soul", "slot": "Bracers",
-         "crafting": {"Colorless Augment": {}}},
+         "crafting": ["Colorless Augment"]},
     ]
 
 
@@ -690,7 +697,7 @@ def test_a_quarterstaff_host_belongs_to_283_not_here():
     # stamping them twice would be the double-stamp R5 forbids.
     items = _native_host_fixture() + [
         {"name": "Dinosaur Bone Quarterstaff", "slot": "Weapon", "type": "Quarterstaffs",
-         "crafting": {"Fang (Weapon) (quarterstaff)": {}, "Claw (Weapon)": {}}}]
+         "crafting": ["Fang (Weapon) (quarterstaff)", "Claw (Weapon)"]}]
     hosts = dino.native_dino_hosts(items, catalog=_NATIVE_CATALOG)
     assert "Dinosaur Bone Quarterstaff" not in hosts
 
@@ -702,7 +709,7 @@ def test_a_blank_source_item_is_excluded_from_the_native_population():
     # assertion lie about a host that was never eligible.
     items = _native_host_fixture() + [
         {"name": "Dinosaur Bone Helmet", "slot": "Helm",
-         "crafting": {"Scale (Accessory)": {}}}]
+         "crafting": ["Scale (Accessory)"]}]
     hosts = dino.native_dino_hosts(items, catalog=_NATIVE_CATALOG,
                                    blank_source_items={"Dinosaur Bone Helmet"})
     assert "Dinosaur Bone Helmet" not in hosts
@@ -728,7 +735,7 @@ def test_no_native_host_is_drift_not_an_empty_case():
     # was written, so an empty result is upstream drift, not an empty answer.
     try:
         dino.native_dino_hosts([{"name": "Plain Sword", "slot": "Weapon",
-                                 "type": "Longswords", "crafting": {}}],
+                                 "type": "Longswords", "crafting": []}],
                                catalog=_NATIVE_CATALOG)
     except SystemExit as e:
         assert "no gear-planner record names a base" in str(e)
@@ -899,3 +906,24 @@ def test_a_quarterstaff_typed_host_naming_only_base_pools_draws_the_qs_versions(
     assert host["dino_slots_norm"] == ["Scale||Weapon"], \
         "the PHYSICAL key is stamped; the variant is resolved at solve time"
     assert host["affixes"], "a named Legendary keeps everything it earned"
+
+
+def test_a_repeated_pool_key_is_capacity_not_a_duplicate_to_collapse():
+    # The slot list is a capacity MULTISET — the solver counts how many of a key
+    # a host exposes — so a record naming the same pool twice exposes TWO slots.
+    # Deduplicating would silently delete one, and `native_quarterstaff_hosts`
+    # keeps duplicates for the same reason. The real dump carries `crafting` as a
+    # LIST, so a repeat is expressible even though none exists today.
+    items = [{"name": "Twin Scale Blade", "slot": "Weapon", "type": "Longswords",
+              "crafting": ["Scale (Weapon)", "Scale (Weapon)"]}]
+    hosts = dino.native_dino_hosts(items, catalog=_NATIVE_CATALOG)
+    assert hosts["Twin Scale Blade"] == ["Scale||Weapon", "Scale||Weapon"]
+
+
+def test_the_dict_shaped_crafting_field_still_reads():
+    # The reader accepts a dict as well as a list. Real gear-planner records are
+    # lists today; this covers the other branch so it cannot rot unnoticed.
+    items = [{"name": "Dict Shaped Blade", "slot": "Weapon", "type": "Longswords",
+              "crafting": {"Scale (Weapon)": {}, "Fang (Weapon)": {}}}]
+    hosts = dino.native_dino_hosts(items, catalog=_NATIVE_CATALOG)
+    assert hosts["Dict Shaped Blade"] == ["Fang||Weapon", "Scale||Weapon"]
