@@ -1,0 +1,4372 @@
+{
+  "_meta": {
+    "field": "ring_exclusivity",
+    "note": "Wiki-harvested seed shard. Which rings may be worn twice, read as a BLOCKLIST: a ring is duplicable unless it is Exclusive or a Minor Artifact. This inverts the duplicable_rings.json allowlist it is intended to replace (#566). Coverage is total over the ring population, so no ring falls through to a fail-closed default here — but the consuming code must still refuse any Ring absent from `harvested`.",
+    "source": "ddowiki maintained categories, computed by Template:Bind and the Minor Artifact categories: Category:Exclusive, Category:Finger items, Category:{1,3,4,5} Slot Minor Artifacts",
+    "mechanic": "Exclusive: 'A character is only allowed to have a single version of an Exclusive item in their inventory.' Minor Artifact: 'A character may only equip a single Minor Artifact, regardless of slot.'",
+    "evidence": "docs/wiki-evidence/ring-exclusivity.md",
+    "harvested": "2026-08-28",
+    "population": "All 435 pages in Category:Finger items were read. 435/435 carry the Named-item infobox and an affirmative `bind` parameter; 0 pages missing, 0 with an empty bind. This is what licenses reading category-absence as a stated negative rather than as silence — see the evidence doc.",
+    "warning": "Do NOT re-derive these values by text-matching the bind wikitext. Template:Bind accepts the exclusive flag as a bare positional argument, so only 2 of the 45 Exclusive rings spell the word: a text-match finds 2 and misses 43. The template-computed category is the only correct read.",
+    "consumed_by": "src/ring_exclusivity.py, via build_dataset.py - stamps `duplicable_ring` per item"
+  },
+  "counts": {
+    "population": 435,
+    "exclusive": 45,
+    "minor_artifact": 19,
+    "both": 1,
+    "duplicable": 372
+  },
+  "harvested": {
+    "A Memento of Mori": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Acrobat's Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Adversion": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Amara's Band": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Anathema": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ancient Band (historic)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ancient Band (level 12)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ancient Band (level 13)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ancient Band (level 14)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ancient Band (level 23)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ancient Band (level 24)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ancient Band (level 25)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ann Velsing's Band": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Argonnessen Eye Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Arlyn's Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Arraetrikos' Bane (level 15)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Arraetrikos' Bane (level 29)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Band of Acrobatics": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Band of Faith and Fortress": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Band of Insightful Commands": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Band of Light": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Band of Manifest Magic": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Band of Mental Magic": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Band of Seasons' Warding": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Band of Siberys": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Band of the Holy Way": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Band of the Imprisoned One": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Baphomet's Reign": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "Black Pearl Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive + Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "Bladed Steel Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Bound Elemental Ring of Acid": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Bound Elemental Ring of Flames": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Bound Elemental Ring of Frost": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Bound Elemental Ring of Lightning": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Brass Beaver": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Brazenband": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Calitomes' Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Celestial Amethyst Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Celestial Emerald Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Celestial Ruby Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Celestial Sapphire Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Celestial Topaz Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Chaos Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Chattering Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Cherished Wedding Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Chieftain": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Chillring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Cinder's Band": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Cinder's Dance": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Circle of Hatred": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Circle of Malevolence": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Claw-Carved Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Clouded Dreams": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Connor's Band": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Consuming Darkness (level 17)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Consuming Darkness (level 18)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Consuming Darkness (level 19)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Consuming Darkness (level 26)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Consuming Darkness (level 27)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Consuming Darkness (level 28)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Contraption Keyring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Copper Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Cursebane Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Deadmonger Gang's Signet": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Deathwarden": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Diabolist's Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Dinosaur Bone Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "Discarded Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Draconic Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Dragonmarked Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Duskbone Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Encrusted Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Engraved Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Diabolist's Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ethereal Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Eye of the Beholder": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ivy Helix": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Laurel Helix": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of Baphomet": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of Elemental Essence": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of Master Artifice": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of Spell Storing": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of Unknown Origins": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of Venom": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Archbishop": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Black Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Blue Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Buccaneer (legacy) (level 20)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Buccaneer (legacy) (level 24)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Buccaneer (level 20)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Buccaneer (level 24)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Buccaneer (level 28)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Green Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Mire": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Red Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Silver Concord": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the Stalker": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Ring of the White Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Sacred Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Salt-Pearl Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Seal of the Earth": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Shaman's Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Epic Sigil of Stormreach": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ethereal Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Eye of the Beholder": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Five Rings": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Flamering": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Forged Golden Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Forged Silver Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Frost Worm Tooth Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Gilvaenor's Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Glorious Dawn (level 14)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Glorious Dawn (level 15)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Glorious Dawn (level 16)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Glorious Dawn (level 25)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Glorious Dawn (level 26)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Glorious Dawn (level 27)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Gnawed Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Gravnok's Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Guardian's Ring (level 19)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Guardian's Ring (level 27)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Hunter's Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ik'thanor's Signet Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Iron Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Iron Loop": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ivy Helix": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Jade Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Katra's Razor Wit": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Katra's Wit": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Keylock Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Kilau's Band": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Kormor's Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Kwan's Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Kyosho's Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Kyrian's Band": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Lantern Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Lantern of the Abyss": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Laurel Helix": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Adversion": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Argonnessen Eye Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Band of Acrobatics": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Band of Faith and Fortress": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Band of Insightful Commands": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Band of Manifest Magic": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Band of Mental Magic": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Band of Seasons' Warding": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Band of the Holy Way": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Band of the Imprisoned One": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Brazenband": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Celestial Amethyst Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Celestial Emerald Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Celestial Ruby Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Celestial Sapphire Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Celestial Topaz Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Cherished Wedding Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Chieftain": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Contraption Keyring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Cursebane Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Deadmonger Gang's Signet": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Deathwarden": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Diabolist's Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Duskbone Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ethereal Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Five Rings": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Frost Worm Tooth Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ik'thanor's Signet Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Illithid Hunter's Signet": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Katra's Razor Wit": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Katra's Wit": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Keylock Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Lantern of the Abyss": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Lionheart Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ludendorf Class Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Neglected Wedding Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Nocturne Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Omniscience": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Perfect Pinnacle": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Baphomet": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Changes": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Elemental Essence": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Fall's Decay": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Flickering Steel": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Mystic Charisma": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Mystic Constitution": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Mystic Dexterity": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Mystic Intelligence": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Mystic Strength": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Mystic Wisdom": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Nightfall": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Power": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Prowess": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Spell Storing": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Spring's Storms": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Summer's Heat": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Thelis": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Unbridled Might": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Unnatural Accuracy": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Venom": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of Winter's Chill": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the Altered Soul": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the Black Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the Blue Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the Buccaneer (level 32)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the Dread Seas": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the Green Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the Mire": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the Red Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the Silver Concord": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the Transformed Voice": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the Unlocked Mind": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the White Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Rockslide Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Ruler of Ruin": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Sacred Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Salt-Pearl Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Seal of the Earth": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Shaman's Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Signet Ring of the Earth": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Signet Ring of the Sea": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Signet Ring of the Sky": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Signet of Daanvi": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Signet of Dolurrh": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Signet of Lamannia": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Signet of Risia": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Signet of Shavarath": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Signet of Thelanis": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Signet of the Prince of Pleasure": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Skulled Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Socket Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Spinneret": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Storm Signet": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary The Earth and the Sky": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary The Flame and the Frost": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Trapmaker's Mark": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Tumbleweed": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Vishral's Signet": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Vizeran's Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Legendary Wormwrithe Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Lionheart Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Livewood Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Lorinthor's Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Ludendorf Class Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Morah's Band": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Morgana's Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Mysterious Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Neglected Wedding Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Nocturne Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Nyoko's Band": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Oathring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Omniscience": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Oremi's Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Pactbearer's Boon": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Pactbearer's Debt": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Perfect Pinnacle": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Perfected Ring of Elemental Essence": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "Perfected Salt-Pearl Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "Peridot Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Phiarlan's Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Poison Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Pomura's Memento": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Radiant Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Radiant Ring of Taer Valaestas": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "Rahkir's Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Reaver's Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Reinforced Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Alertness": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Balance": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Baphomet": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Blind Devotion": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Brutal Force": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Changes": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Crystalline Vanity": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Deceit": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Deftness": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Dragon's Breath": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Elemental Essence": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Fall's Decay": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Feathers": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Flickering Steel": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Lies": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Magical Attunement": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Master Artifice (level 11)": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Master Artifice (level 15)": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Master Artifice (level 3)": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Master Artifice (level 7)": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Mystic Charisma": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Mystic Constitution": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Mystic Dexterity": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Mystic Intelligence": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Mystic Strength": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Mystic Wisdom": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Nightfall": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Power": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Prowess": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Rage": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Resonance": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Shadows (historic)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Shadows (level 12)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Shadows (level 13)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Shadows (level 14)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Shadows (level 23)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Shadows (level 24)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Shadows (level 25)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Spell Storing": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Spellcasting": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Spring's Storms": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Subtle Villainy": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Summer's Heat": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Thelis": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Time": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Troll's Regeneration": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Unknown Origins": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Venom": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Waterbreathing": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Wicked Insanity": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of Winter's Chill": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Ancestors": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Archbishop": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Black Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Blue Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Buccaneer (legacy) (level 12)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Buccaneer (legacy) (level 16)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Buccaneer (legacy) (level 4)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Buccaneer (legacy) (level 8)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Buccaneer (level 12)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Buccaneer (level 16)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Buccaneer (level 4)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Buccaneer (level 8)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Djinn (level 12)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Djinn (level 13)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Djinn (level 14)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Djinn (level 23)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Djinn (level 24)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Djinn (level 25)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Dread Seas": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Green Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the High Priest": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Kraken": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Mire": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Ravager": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Red Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Runaway": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Silver Concord": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Silver Tongue": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Stalker (level 11)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Stalker (level 15)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Stalker (level 3)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Stalker (level 7)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Stormreaver Prophecy (historic)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Stormreaver Prophecy (level 12)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Stormreaver Prophecy (level 13)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Stormreaver Prophecy (level 14)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Stormreaver Prophecy (level 23)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Stormreaver Prophecy (level 24)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the Stormreaver Prophecy (level 25)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ring of the White Abishai": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Rockslide Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Rough-Forged Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Rulebreaker": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Ruler of Ruin": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Sacred Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Sage's Ring (level 19)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Sage's Ring (level 27)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Salt-Pearl Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Sanura's Band": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Scoundrel's Bangle": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Scoundrel's Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Seal of House Avithoul": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Seal of House Dun'Robar": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Seal of House Szind": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Seal of the Earth": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Seal of the Purple Dragon": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Shaman's Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Shiona's Seal": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Sigil of Stormreach": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Sigil of the Triumvirate": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "Signet Ring of the Earth": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet Ring of the Sea": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet Ring of the Sky": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet of Amaunator": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet of Caustic Persuasion": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet of Daanvi": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet of Dolurrh": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet of Lamannia": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet of Risia": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet of Shavarath": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet of Thelanis": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet of the Prince of Pleasure": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet of the Shining Sun": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Signet of the Silver Flame": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Skirmisher's Ring (level 19)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Skirmisher's Ring (level 27)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Skulled Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Smedgar's Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Socket Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Sparkring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Spinneret": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Splinterskull Acolyte Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Spontaneity": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Stolen Signet of ir'Wynarn": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "Stonering": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Storm Signet": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Strange Tidings": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Telvi's Touch": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Thamor's Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "The Autumn Equinox": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "The Band Immaterial": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "The Band of Binding": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "The Bloodsigil Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "The Earth and the Sky": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "The Epic Band Immaterial": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "The Flame and the Frost": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "The Legendary Shattered Onyx": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "The Shattered Onyx": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "The Spring Equinox": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "The Summer Solstice": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "The Theurgy of Autumn": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "The Theurgy of Spring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "The Theurgy of Summer": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "The Theurgy of Winter": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "The Time Taken": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "The Winter Solstice": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": true,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Minor Artifacts",
+      "harvested": "2026-08-28"
+    },
+    "Tracker's Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Trapmaker's Mark": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Tumbleweed": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Verik's Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Vineweave Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Vishral's Signet": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Vizeran's Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Warchanter's Band": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Ward Token": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Whisper Ring": {
+      "value": {
+        "exclusive": true,
+        "minor_artifact": false,
+        "duplicable": false
+      },
+      "provenance": "stated",
+      "raw": "Category:Exclusive",
+      "harvested": "2026-08-28"
+    },
+    "Whispering Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Wormwrithe Ring": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    },
+    "Yaaryar's Magnificent Band": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
+      "harvested": "2026-08-28"
+    }
+  }
+}

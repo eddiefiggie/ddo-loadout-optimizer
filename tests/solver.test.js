@@ -112,6 +112,52 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(neck.name, "x2", "a later slot's index does not move when a twin exists");
   });
 
+  // -------------------------------------------------------------------------
+  // #566 — these two pin the machinery the data-only widening RIDES ON, and both
+  // pass against the pre-change tree by design. That is the honest status: #566
+  // changed no JS at all. `isTwinEligible` already preferred the build stamp
+  // over the fallback allowlist, so widening the gate from 2 rings to 97 was
+  // entirely a matter of the build stamping more records.
+  //
+  // The behavioral test therefore CANNOT live here — a hand-built fixture sets
+  // its own stamp and would pass either way. It reads the built catalog instead,
+  // in dataset.test.js, where 2-vs-97 is a real difference.
+  //
+  // These stay because the widening's correctness depends on them: if the stamp
+  // path ever stopped minting twins, or the fallback stopped refusing, the data
+  // would be right and the behavior wrong.
+  // -------------------------------------------------------------------------
+
+  await test("#566: the stamp path alone mints a twin (pre-existing; the widening rides on it)", async () => {
+    const M = require("../web/model.js");
+    const name = "Katra's Wit";   // heroic: duplicable per #566, absent from the fallback
+    assert.ok(!M.DUPLICABLE_RINGS.has(name),
+      "this test is only meaningful while the name is NOT in the fallback set");
+    const dup = item(name, "Ring", [["Intelligence", "Enhancement", 10]]);
+    dup.duplicable_ring = true;
+    dup.set_bonus = [{ set: "Katra's Edge", pieces_required: 2, pieces_label: "2 pieces", affixes: [] }];
+    const model = {
+      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [dup], 2)],
+    };
+    const prog = S.buildProgram(model);
+    assert.strictEqual(prog.xVars.filter((xv) => M.isTwinId(xv.variant.variant_id)).length, 1,
+      "the build stamp alone must mint the twin");
+  });
+
+  await test("#566: an unstamped Exclusive or Artifact ring is refused (fail-closed fallback)", async () => {
+    // The two disqualifiers, asserted through the gate rather than the shard. An
+    // unstamped ring falls to the fallback and is refused — this is the
+    // fail-closed direction surviving the polarity flip.
+    const M = require("../web/model.js");
+    for (const name of ["Amara's Band", "Ring of the Kraken"]) {
+      const r = item(name, "Ring", [["Intelligence", "Enhancement", 10]]);
+      r.set_bonus = [{ set: "Whatever", pieces_required: 2, pieces_label: "2 pieces", affixes: [] }];
+      assert.strictEqual(M.isTwinEligible(r), false,
+        `${name} is blocked by #566 and must never be doubled`);
+    }
+  });
+
   await test("#335 U1: no allowlisted ring means no twin and no index change at all", async () => {
     const M = require("../web/model.js");
     const plain = item("Ordinary Ring", "Ring", [["Intelligence", "Enhancement", 10]]);

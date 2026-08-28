@@ -1,18 +1,43 @@
 # Duplicable rings — which rings may be worn twice
 
+> **SUPERSEDED by `ring-exclusivity.md` (2026-08-28, #566).** The ruling below —
+> an allowlist of two rings — is no longer what ships. It is kept as the record
+> of how the question was answered before the disqualifiers were found, and
+> because its two citations are now the *corroboration* the replacement is
+> checked against on every build.
+>
+> **The negative result below is correct and was misread — including by this
+> document.** No ddowiki ring page carries a `Unique Equipped` parameter, and
+> that is not the wiki declining to answer. Duplicability is not a per-item
+> property at all: it is the absence of two others, **Exclusive** and **Minor
+> Artifact**, both of which *are* recorded per item as maintained categories.
+> The sweep looked for a field that was never going to exist.
+>
+> **Do not re-run the `Unique Equipped` sweep.** That specific search is closed
+> and will stay empty. The live question was answered in `ring-exclusivity.md`.
+>
+> The caveat at the end of this document — that the heroic/Legendary Katra split
+> was far more likely an unwritten page than a real difference — turned out to be
+> right. All four Katra rings record a binding with no exclusive flag, and all
+> four are now duplicable. The caveat is the most load-bearing paragraph here,
+> and it is last; read it first.
+
 **Harvested 2026-08-27** from ddowiki, same-origin from a ddowiki tab (the only
 transport that works — see `harvest-method.md`). Every ring item page in the
 set-member population was read; nothing here is derived.
 
 Shard: `data/seed/compendium/duplicable_rings.json` (2 items, both `stated`).
 
-This is the evidence behind `src/duplicable_rings.py` and the `#442` widening of
-the `#335` twin gate.
+This was the evidence behind `src/duplicable_rings.py` and the `#442` widening of
+the `#335` twin gate. That module was retired by #566; the shard survives it, now
+read by `src/ring_exclusivity.load_corroboration` as a cross-check rather than as
+the gate's input.
 
 ## The ruling
 
-**Two rings are wiki-confirmed duplicable. Every other ring is not, and the wiki
-does not say otherwise about any of them.**
+**Two rings are wiki-confirmed duplicable** *(by this document's method — the
+`tips` prose. Ninety-five more are confirmed by `ring-exclusivity.md`, which
+reads the disqualifiers instead.)*
 
 | Ring | Verbatim `tips` |
 |---|---|
@@ -52,9 +77,15 @@ other 21 concern minor-artifact filigree counts, quest routing, set-stacking
 notes, bug reports, and image placeholders — none touches wearing two copies.
 
 **So the widening this evidence produced is one ring.** That is the whole of what
-the wiki states, and re-running the harvest will not find more until someone
-edits a wiki page. This document exists so that the next person to ask "surely
-more rings than that?" reads a result instead of repeating the sweep.
+the wiki states *in this field*, and re-reading `tips` will not find more until
+someone edits a wiki page.
+
+The sentence that used to close this paragraph — that the document exists so the
+next person asking "surely more rings than that?" reads a result instead of
+repeating the sweep — was doing real harm, because the honest answer to that
+question turned out to be "yes, ninety-five more". What is settled is the
+`Unique Equipped` sweep. What was open, and is now answered elsewhere, is the
+question itself.
 
 ## Why fail-closed, and why that direction
 
@@ -90,16 +121,22 @@ the shard should be rebuilt from it.
 
 ## Guards
 
-`src/duplicable_rings.check` runs on every build and fails it when a named ring
-is no longer in the catalog, no longer a Ring, or no longer carries a
-`set_bonus`. The last one matters because a second copy of a set-less ring buys
-nothing: duplicate affixes at the same name and bonus type collapse to a max
-rather than summing, so an entry that lost its set membership is a stale claim.
+`src/duplicable_rings.check` ran on every build and failed it when a named ring
+left the catalog, stopped being a Ring, or lost its `set_bonus`. It was retired
+with the module in #566; `src/ring_exclusivity.check` carries the same shape plus
+a coverage assertion, an artifact cross-check, and a corroboration clause.
 
-The stamp is `duplicable_ring: true`, written only in the true case. The absent
-field IS the fail-closed default; writing `false` on nine thousand records would
-carry no more information while inviting a reader to treat the flag as harvested
-for all of them.
+**This shard is still read on every build** — by
+`src/ring_exclusivity.load_corroboration`, which requires both rings below to come
+out duplicable under the replacement rule. Their evidence is a different field
+entirely, so a blocklist that contradicted them would be contradicting something
+it was not derived from. That makes these two citations more useful now than they
+were as the gate itself.
+
+The stamp is still `duplicable_ring: true`, written only in the true case. The
+absent field IS the fail-closed default; writing `false` on nine thousand records
+would carry no more information while inviting a reader to treat the flag as
+harvested for all of them.
 
 ## Related
 

@@ -2131,3 +2131,53 @@ test("#404 guard: every stat a player can only reach by name is DECLARED", () =>
     + `${orphans.join(", ")}. Either declare a companion entry (with the wiki reason) or `
     + `establish a crediting rule — do not leave a player to guess the name.`);
 });
+
+// ---------------------------------------------------------------------------
+// #566 — the ring-duplication widening, asserted against the BUILT catalog.
+//
+// This is the only place the widening can be tested. `isTwinEligible` did not
+// change; the build stamping 97 rings instead of 2 is the whole of it, so a
+// hand-built fixture would set its own stamp and pass either way. Reading the
+// real dataset is what makes 2-vs-97 a difference a test can see.
+// ---------------------------------------------------------------------------
+const _M566 = require("../web/model.js");
+const _RE566 = JSON.parse(fs.readFileSync(
+  path.join(__dirname, "..", "data", "seed", "compendium", "ring_exclusivity.json"), "utf-8"));
+
+test("#566: the built catalog widens the twin gate well past the fallback allowlist", () => {
+  const rings = realData.items.filter((i) => i.slot === "Ring");
+  const eligible = rings.filter((r) => _M566.isTwinEligible(r));
+  assert.strictEqual(eligible.length, 97,
+    "the shipped stamp count — see tests/test_ring_exclusivity.py for why 97 and not 100");
+  const viaFallback = rings.filter((r) => _M566.DUPLICABLE_RINGS.has(r.source_item)
+    && (r.set_bonus || []).length);
+  assert.strictEqual(viaFallback.length, 2,
+    "the fallback allowlist is unchanged — it is the path for records with no stamp");
+  assert.ok(eligible.length > viaFallback.length * 10, "the widening actually reached the gate");
+});
+
+test("#566: all four Katra rings are duplicable, heroic included", () => {
+  const katras = realData.items.filter((i) => i.slot === "Ring"
+    && /Katra's (Razor )?Wit$/.test(i.source_item || ""));
+  assert.strictEqual(katras.length, 4, "all four Katra rings are in the catalog");
+  for (const k of katras) {
+    assert.strictEqual(_M566.isTwinEligible(k), true,
+      `${k.source_item} — #442 refused the heroic pair for want of evidence, #566 harvested it`);
+  }
+});
+
+test("#566: no Exclusive or Minor Artifact ring is ever twin-eligible", () => {
+  const blocked = new Set(Object.entries(_RE566.harvested)
+    .filter(([, e]) => e.provenance === "stated"
+      && (e.value.exclusive === true || e.value.minor_artifact === true))
+    .map(([n]) => n));
+  assert.ok(blocked.size >= 60, `the blocklist must be populated, saw ${blocked.size}`);
+  let seen = 0;
+  for (const r of realData.items) {
+    if (r.slot !== "Ring" || !blocked.has(r.source_item)) continue;
+    assert.strictEqual(_M566.isTwinEligible(r), false,
+      `${r.source_item} is Exclusive or a Minor Artifact and can never be worn twice`);
+    seen++;
+  }
+  assert.ok(seen >= 60, `the loop must actually inspect blocked rings, saw ${seen}`);
+});

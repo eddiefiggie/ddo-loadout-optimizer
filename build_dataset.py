@@ -71,7 +71,7 @@ from src import dino_native as dino_native_mod
 from src import container_registry as container_registry_mod
 from src import crafting_coverage as crafting_coverage_mod
 from src import crafted_twins as crafted_twins_mod
-from src import duplicable_rings as duplicable_rings_mod
+from src import ring_exclusivity as ring_exclusivity_mod
 import re as _re
 
 import collections
@@ -323,7 +323,11 @@ UTILITY_PROCS_PATH = os.path.join(
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
 PARRYING_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "parrying_version.json")
 RIPOSTE_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "riposte_version.json")
-DUPLICABLE_RINGS_SHARD_PATH = os.path.join(
+RING_EXCLUSIVITY_SHARD_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "ring_exclusivity.json")
+#: #442's retired allowlist, read ONLY as corroboration for the blocklist that
+#: replaced it — never to decide duplicability. See src/ring_exclusivity.check.
+DUPLICABLE_RINGS_CORROBORATION_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "duplicable_rings.json")
 HEIGHTENED_AWARENESS_SHARD_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "heightened_awareness.json")
@@ -1835,23 +1839,37 @@ def build() -> dict:
         raise SystemExit(
             "crafted-twin identity failed (#547) — a pair stopped being one item:\n  "
             + "\n  ".join(_twins["problems"]))
-    # #442 — which rings the wiki STATES may be worn twice, stamped per item.
-    # Replaces the hard-coded name list in web/model.js: same gate, but now a
-    # dated shard carrying each item's verbatim citation. Fail-closed — a ring
-    # absent from the shard is not duplicable, because reading silence as
-    # permission would hand a player a loadout they cannot equip.
+    # #566 — which rings may be worn twice, stamped per item. A ring is
+    # duplicable unless the wiki records it as Exclusive or a Minor Artifact;
+    # both are maintained categories, so this is a read, not an inference.
+    # Replaces #442's allowlist, which asked whether any page STATED that two
+    # copies work and found only two that did — the absence was structural, not
+    # a gap. See docs/wiki-evidence/ring-exclusivity.md.
+    #
+    # Fail-closed survives the flip: a ring absent from the shard is refused.
+    # Coverage is total today, so that refusal fires on nothing — and `check`
+    # fails the build if it ever stops being total, rather than letting a new
+    # ring inherit a default.
     #
     # Runs on `out["items"]`, after every pass that could change a ring's slot or
     # set membership, so the validation below judges the records that actually
     # ship rather than an earlier draft of them.
-    _dupring_shard = duplicable_rings_mod.load(DUPLICABLE_RINGS_SHARD_PATH)
-    _dupring_check = duplicable_rings_mod.check(_dupring_shard, out["items"])
-    if _dupring_check["problems"]:
+    _ring_excl_shard = ring_exclusivity_mod.load(RING_EXCLUSIVITY_SHARD_PATH)
+    # #442's two rings were confirmed from unrelated evidence (verbatim wiki
+    # `tips`), so requiring the blocklist to reproduce them turns the harvest's
+    # predictive test into a standing build assertion.
+    _ring_excl_corrob = ring_exclusivity_mod.load_corroboration(
+        DUPLICABLE_RINGS_CORROBORATION_PATH)
+    _ring_excl_check = ring_exclusivity_mod.check(
+        _ring_excl_shard, out["items"], corroboration=_ring_excl_corrob,
+        identity=_twins["identity"])
+    if _ring_excl_check["problems"]:
         raise SystemExit(
-            "duplicable-ring shard failed (#442) — a wiki claim no longer describes "
-            "the catalog:\n  " + "\n  ".join(_dupring_check["problems"]))
-    _dupring_cov = duplicable_rings_mod.apply(out["items"], _dupring_shard)
-    out["metadata"]["duplicable_ring_coverage"] = {**_dupring_cov, **_dupring_check}
+            "ring-exclusivity shard failed (#566) — the harvest no longer describes "
+            "the catalog:\n  " + "\n  ".join(_ring_excl_check["problems"]))
+    _ring_excl_cov = ring_exclusivity_mod.apply(
+        out["items"], _ring_excl_shard, identity=_twins["identity"])
+    out["metadata"]["duplicable_ring_coverage"] = {**_ring_excl_cov, **_ring_excl_check}
 
     out["metadata"]["crafted_twin_identity"] = _twins["identity"]
     out["metadata"]["crafted_twin_coverage"] = {
