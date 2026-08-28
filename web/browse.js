@@ -84,6 +84,23 @@ function filterVariants(items, c) {
   });
 }
 
+/** #564 — how many rows Browse will actually build.
+ *
+ *  `render()` is bound to `input`, so it runs on EVERY keystroke, and it builds a
+ *  `<tr>` per matching row. Measured against the shipped catalog before this cap:
+ *  typing `L` blocked the main thread for 702 ms across 8,950 rows, an empty
+ *  query for 852 ms across 9,586, and the full table was 7.9 MB of HTML across
+ *  142,730 DOM nodes. The cost tracks the result count, so it was worst exactly
+ *  where a player starts — the first character of any search matches most of the
+ *  catalog.
+ *
+ *  500 rows renders in roughly 45 ms, which is imperceptible, and is still far
+ *  more than anyone scans before narrowing. The same shape as the block picker's
+ *  `BLOCK_CAP`, including the part that matters: the truncation is STATED. An
+ *  unstated cap reads as "that is all there is", which is worse than being slow.
+ */
+const BROWSE_ROW_CAP = 500;
+
 /** #562 — the crafting-slot labels a variant declares. Player-visible: every
  *  share export prints them (`web/exporters.js`), and they show in the compendium.
  *  Until this they appeared in NO search index, so a player could read
@@ -583,7 +600,8 @@ function initBrowse(dataset, vocab, hooks) {
     // esc()/safeUrl() are globals from results.js (loaded first); this render runs
     // only in the browser. Every dataset-derived field is escaped — the item data
     // is wiki-harvested and not fully trusted, matching the results-panel hardening.
-    const body = rows.map((v) => {
+    const shown = rows.length > BROWSE_ROW_CAP ? rows.slice(0, BROWSE_ROW_CAP) : rows;
+    const body = shown.map((v) => {
       // #262 (U4) — the no-drop-source badge rides the same status cell; the row
       // struct carries the flag because browsableItems passes real variants through.
       const badge = `<span class="badge ${esc(v.verification)}">${esc(v.verification)}</span>` + noDropBadge(v);
@@ -629,7 +647,13 @@ function initBrowse(dataset, vocab, hooks) {
     }).join("");
     // .items.cards turns rows into stacked cards under the phone breakpoint (R11);
     // .table-wrap contains any residual overflow so the page never scrolls sideways.
-    results.innerHTML = `<div class="table-wrap"><table class="items cards">
+    // Never silent: a capped list that does not say so is a wrong answer wearing
+    // the shape of a complete one.
+    const more = rows.length > shown.length
+      ? `<p class="browse-hint">Showing the first ${shown.length.toLocaleString()} of `
+        + `${rows.length.toLocaleString()} matches — narrow the filters to see the rest.</p>`
+      : "";
+    results.innerHTML = more + `<div class="table-wrap"><table class="items cards">
       <thead><tr><th>Item</th><th>Slot</th><th class="num">ML</th><th>Status</th><th>Affixes &amp; set bonuses</th><th>Source</th></tr></thead>
       <tbody>${body}</tbody></table></div>`;
     if (hooks && hooks.onOverride) {
@@ -656,7 +680,15 @@ function initBrowse(dataset, vocab, hooks) {
     render();
   }
 
-  controls.addEventListener("input", render);
+  // #564 — debounce the keystroke path. `input` fires per character, and each one
+  // was a full re-render. The delay is short enough to feel immediate on the
+  // result and long enough that a burst of typing renders once, not once per key.
+  // `clearAll` and the initial paint call `render` directly, so both stay instant.
+  let _renderTimer = null;
+  controls.addEventListener("input", () => {
+    if (_renderTimer) clearTimeout(_renderTimer);
+    _renderTimer = setTimeout(() => { _renderTimer = null; render(); }, 160);
+  });
   document.getElementById("f-clear").addEventListener("click", clearAll);
   render();
 }
@@ -669,5 +701,6 @@ if (typeof window !== "undefined") {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { filterVariants, variantStats, variantSetStats,
-    variantCraftingSlots, craftingSlotNames, craftingSearchHint, CRAFTING_OLD_NAMES, affixText, affixEntries, presenceMarker, setChipText, collectSetDefs, resolveSetGranted, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems, noDropBadge };
+    variantCraftingSlots, craftingSlotNames, craftingSearchHint, CRAFTING_OLD_NAMES,
+    BROWSE_ROW_CAP, affixText, affixEntries, presenceMarker, setChipText, collectSetDefs, resolveSetGranted, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems, noDropBadge };
 }
