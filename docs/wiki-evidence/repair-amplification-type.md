@@ -1,9 +1,24 @@
 # Wiki evidence — Repair Amplification's bonus type on crafted options (issue #440)
 
-**Status:** UNRULED — the wiki check that would settle it has not been run.
+**Status:** RULED 2026-08-28 — **`Enhancement` is correct. The catalog is right; no retype.**
 **Investigated:** 2026-08-23 (measurement against the built dataset only)
-**Source needed:** https://ddowiki.com/page/Repair_Amplification, and the
-Nearly Completed Healing Amplification option tooltips.
+**Harvested:** 2026-08-28 (local session, same-origin per `harvest-method.md`)
+**Sources:** the option tooltips on
+https://ddowiki.com/page/Item:Sporesphere ·
+https://ddowiki.com/page/Item:Legendary_Sporesphere ·
+https://ddowiki.com/page/Item:Cowl_of_the_Drow_Devotee ·
+and https://ddowiki.com/page/Repair_Amplification
+
+## The ruling
+
+The three options each state their own bonus type in the **tooltip**, and the
+three genuinely differ. `Repair Amplification` is an **Enhancement bonus**, as the
+catalog already carries it. #440 is closed as already-correct: no data change, no
+retype, and the phantom-points trap below was never entered.
+
+**Read this before "correcting" the asymmetry.** It looks like two-fixed-one-missed
+and it is not — it is three stats with three conventional types, each stated
+outright.
 
 ## The question
 
@@ -72,12 +87,54 @@ no item grants, and both are strictly worse than leaving the catalog alone.
 
 `tests/test_amplification_bonus_types.py` fails the build on the middle two.
 
-## What would settle it
+## The harvest that settled it (2026-08-28)
 
-A wiki read of the Nearly Completed Healing Amplification option tooltips for the
-Repair line, per `harvest-method.md`. If the tooltip names a type, that is the
-ruling — and if it rules `Competence`, the fix must move the 48 worn rows in the
-same commit, not only the crafted ones.
+The visible cell is what made this look like a defect, and reading it alone would
+have got the answer wrong in the other direction. On every carrier the two
+siblings render **with** a bonus-type prefix and Repair renders **without** one:
+
+```
+Nearly Complete: Healing Amplification
+This item can be upgraded with one of the following:
+Competence Healing Amplification +24
+Profane Negative Amplification +24
+Repair Amplification +24
+```
+
+That bare third line states no type at all. The type is in the **tooltip layer**,
+exactly as `bundled-template-values-live-in-the-tooltip-not-the-cell.md` warns —
+here hiding a bonus type rather than a magnitude. Verbatim, from
+`span.popup.tooltip` on Item:Sporesphere:
+
+> **Healing Amplification**: This effect amplifies all incoming positive energy healing by +24 (Competence bonus). Includes spells, potions, and other effects.
+
+> **Negative Amplification**: This effect amplifies all incoming negative energy healing by +24 (Profane bonus). Includes spells, potions, and other effects.
+
+> **Repair Amplification**: This effect amplifies all incoming repair healing by +24 (Enhancement bonus). Includes spells, potions, and other effects.
+
+**Checked at both tiers and across three carriers**, not one page: Sporesphere and
+Cowl of the Drow Devotee at +24, Legendary Sporesphere at +62. All three read
+identically, with only the magnitude changing. The remaining carriers
+(Legendary Cowl of the Drow Devotee, Wormwrithe Ring, Legendary Wormwrithe Ring)
+were not read — the seed carries byte-identical option lists for all seven pools,
+and three independent confirmations at two tiers is where the marginal page stops
+telling us anything new. Recorded so the coverage is a known quantity rather than
+an implied one.
+
+## Why three different types is ordinary, not a defect
+
+https://ddowiki.com/page/Repair_Amplification lists its own sources carrying
+several different types:
+
+> Essence Crafting - enhancement bonus
+> Shadowscale Docent upgraded with Shadow Construct - +20 profane
+> Adherents of the Mists set: +10 heroic / +20 legendary (Profane)
+> Renegade Champion set: +10 heroic / +20 legendary (Artifact)
+
+So Repair Amplification is not a stat with one canonical type that the crafted
+rows might have strayed from. Per-source typing is the norm for it, which is why
+the sibling-symmetry argument was never evidence — as the measurement section
+above independently concluded from the catalog side.
 
 **Note on harvesting this from a cloud session: you cannot.** Claude Code's
 remote execution environment denies the whole open web at the egress proxy —
@@ -85,5 +142,20 @@ remote execution environment denies the whole open web at the egress proxy —
 `example.com`; only GitHub, package registries and the Anthropic APIs are
 reachable. Real Chromium fails the same way (`ERR_TUNNEL_CONNECTION_FAILED`), so
 this is not the Cloudflare block described in `AGENTS.md` and no browser
-automation routes around it. This harvest needs a local Claude-in-Chrome session,
-which is what the method has always assumed.
+automation routes around it. This harvest needs a local session, which is what
+the method has always assumed.
+
+**Method note — the in-app Browser pane works too.** `harvest-method.md` says
+"Only Claude-in-Chrome works". This harvest was run from Claude Code's built-in
+Browser pane (`mcp__Claude_Browser__`) and behaved identically: a real navigation
+to a `ddowiki.com` page cleared Cloudflare, and `javascript_tool` read
+`#mw-content-text` same-origin without trouble. The constraint is *a real browser
+on the local machine, same-origin from a ddowiki tab* — not that one specific
+tool. Recorded because the narrower wording could send someone looking for an
+extension they do not need.
+
+**And the tooltip is in the DOM, not behind a hover.** No mouse simulation was
+needed: each option is a `span.popup.has_tooltip` whose last child is a
+`span.popup.tooltip` already carrying the full text. Query it directly —
+`el.querySelector('span.tooltip').innerText` — rather than trying to hover the
+icon and screenshot the result.
