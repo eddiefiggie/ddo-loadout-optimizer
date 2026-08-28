@@ -65,6 +65,15 @@ function filterVariants(items, c) {
     if (c.setStat) {
       if (!variantSetStats(v).includes(c.setStat)) return false;
     }
+    // #562 — crafting-slot labels get their OWN match mode, for the reason `stat`
+    // and `setStat` are separate above. Folding them into `query` was measured
+    // against the shipped catalog and is not close: `Blue` goes 43 -> 1279 rows
+    // (29.7x) and `Green` 129 -> 1776 (13.8x), because 1,236 items carry a Blue
+    // Augment Slot. That is the same regression of browse's main job the
+    // stat/setStat split exists to avoid.
+    if (c.craftingSlot) {
+      if (!variantCraftingSlots(v).includes(c.craftingSlot)) return false;
+    }
     if (q) {
       const setNames = (v._setGranted || []).map((e) => e.set);
       const hay = [v.variant_id, v.source_item, ...variantStats(v), ...variantSetStats(v), ...setNames]
@@ -73,6 +82,78 @@ function filterVariants(items, c) {
     }
     return true;
   });
+}
+
+/** #562 — the crafting-slot labels a variant declares. Player-visible: every
+ *  share export prints them (`web/exporters.js`), and they show in the compendium.
+ *  Until this they appeared in NO search index, so a player could read
+ *  `Essence Crafting: Rune Arm - Prefix` on their own exported build, type it in,
+ *  and get nothing back. */
+function variantCraftingSlots(v) {
+  return (v && v.crafting) || [];
+}
+
+/** Every distinct crafting-slot label in the catalog, sorted — the filter's option
+ *  list. Derived, never curated: a new label from an upstream refresh appears
+ *  here the moment it appears on an item. */
+function craftingSlotNames(items) {
+  const out = new Set();
+  for (const v of items || []) for (const c of variantCraftingSlots(v)) if (c) out.add(c);
+  return [...out].sort((a, b) => a.localeCompare(b));
+}
+
+/** #562 — the old-name bridge, and the only place it lives.
+ *
+ *  Update 79 renamed Cannith Crafting to Essence Crafting and we adopted the
+ *  rename (#374, KTD1: match what the player reads). The wiki still notes the
+ *  system is "still better known as" Cannith Crafting, so the old term is what a
+ *  player is likeliest to type — and today it returns 8 ITEMS whose names happen
+ *  to contain "Cannith" (the Cannith Challenge gear), which is worse than zero: a
+ *  confident wrong answer rather than an empty one.
+ *
+ *  Deliberately NOT an alias in the frozen crafting registry. `check_crafting_
+ *  integrity` is exact-match set membership over that registry, so a second
+ *  spelling there would be a real second label the build would have to serve.
+ *  This is a SEARCH-time hint instead: it changes what the player is told, never
+ *  what the catalog contains.
+ */
+const CRAFTING_OLD_NAMES = { cannith: "Essence Crafting" };
+
+/** What to tell a player whose search found nothing. Returns "" when there is
+ *  nothing useful to say — a hint that fires on every empty search is noise.
+ *
+ *  Pure, so the wording is testable without a DOM. */
+function craftingSearchHint(query, items, opts) {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return "";
+  const hadResults = !!(opts && opts.hadResults);
+  const labels = craftingSlotNames(items);
+
+  // The RENAME hint fires whether or not the search found anything, and that is
+  // the whole point: `Cannith` currently returns 8 items whose NAMES contain the
+  // word (the Cannith Challenge gear), so the player gets a confident wrong
+  // answer rather than an empty one. Gating this on a dead end would silence it
+  // in exactly the case it exists for. Worded to stay true either way — it says
+  // what the system is called now, never that nothing matched.
+  for (const [oldName, current] of Object.entries(CRAFTING_OLD_NAMES)) {
+    if (!q.includes(oldName)) continue;
+    const now = labels.filter((l) => l.startsWith(current));
+    if (now.length) {
+      return `Looking for ${oldName.charAt(0).toUpperCase() + oldName.slice(1)} Crafting? `
+        + `Update 79 renamed it to ${current}. Filter by crafting slot to find its `
+        + `${now.length} slots.`;
+    }
+  }
+
+  // The DEAD-END hint only makes sense when nothing matched: with results on
+  // screen, "that is not an item name" is both wrong and confusing.
+  if (hadResults) return "";
+  const hit = labels.filter((l) => l.toLowerCase().includes(q));
+  if (!hit.length) return "";
+  return `${hit.length === 1 ? "That is a crafting slot" : "Those are crafting slots"}, not an `
+    + `item name — items declare it rather than being called it. `
+    + `Filter by crafting slot to find ${hit.length === 1 ? "it" : "them"}: ${hit.slice(0, 4).join(", ")}`
+    + `${hit.length > 4 ? `, and ${hit.length - 4} more` : ""}.`;
 }
 
 /** All distinct stat names a variant carries (affixes + scaling). */
@@ -427,7 +508,12 @@ function initBrowse(dataset, vocab, hooks) {
       <option value="quarantined">Quarantined only</option>
       <option value="indexed">Indexed (not yet sourced)</option>
     </select>
-    <button id="f-clear" type="button">Clear</button>`;
+    <select id="f-craft" aria-label="Filter by crafting slot">
+      <option value="">Any crafting slot</option>
+      ${craftingSlotNames(items).map((c) => `<option>${esc(c)}</option>`).join("")}
+    </select>
+    <button id="f-clear" type="button">Clear</button>
+    <p id="f-craft-hint" class="browse-hint" role="status" hidden></p>`;
 
   const read = () => {
     // U4 — the option value carries which mode it is: `affix:` (item carries it)
@@ -443,12 +529,31 @@ function initBrowse(dataset, vocab, hooks) {
       slot: document.getElementById("f-slot").value,
       maxMl: document.getElementById("f-ml").value,
       verification: document.getElementById("f-verif").value,
+      // #562 — its own mode, never folded into `query`; see filterVariants.
+      craftingSlot: document.getElementById("f-craft").value,
     };
   };
 
   function render() {
-    const rows = filterVariants(items, read());
+    const cond = read();
+    const rows = filterVariants(items, cond);
     status.textContent = `${rows.length} of ${items.length} items`;
+    // #562 — when a search finds nothing, say whether the thing typed was a
+    // CRAFTING SLOT rather than an item name. Those labels are printed in every
+    // share export and shown in the compendium, so a player can read one on their
+    // own build, type it here, and get an empty list with no explanation.
+    //
+    // Only on zero rows, and only when there is something to say: a hint on every
+    // empty search is noise, and the point is to convert a dead end into a route.
+    // The Cannith -> Essence Crafting rename is carried here too, because the old
+    // name currently returns 8 unrelated items whose NAMES contain "Cannith" —
+    // worse than nothing, since it looks like an answer.
+    const hintBox = document.getElementById("f-craft-hint");
+    if (hintBox) {
+      const hint = craftingSearchHint(cond.query, items, { hadResults: rows.length > 0 });
+      hintBox.textContent = hint;
+      hintBox.hidden = !hint;
+    }
     // #332 — a glyph nobody can decode is worse than no glyph. The legend renders
     // only when a vocabulary was supplied (so the markers are actually present)
     // and only once, appended after the count.
@@ -543,7 +648,7 @@ function initBrowse(dataset, vocab, hooks) {
   }
 
   function clearAll() {
-    ["f-query", "f-stat", "f-slot", "f-ml", "f-verif"].forEach((id) => {
+    ["f-query", "f-stat", "f-slot", "f-ml", "f-verif", "f-craft"].forEach((id) => {
       const el = document.getElementById(id);
       if (el.tagName === "SELECT") el.selectedIndex = 0;
       else el.value = "";
@@ -563,5 +668,6 @@ if (typeof window !== "undefined") {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { filterVariants, variantStats, variantSetStats, affixText, affixEntries, presenceMarker, setChipText, collectSetDefs, resolveSetGranted, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems, noDropBadge };
+  module.exports = { filterVariants, variantStats, variantSetStats,
+    variantCraftingSlots, craftingSlotNames, craftingSearchHint, CRAFTING_OLD_NAMES, affixText, affixEntries, presenceMarker, setChipText, collectSetDefs, resolveSetGranted, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems, noDropBadge };
 }

@@ -586,3 +586,90 @@ test("#426: the stamp is additive — existing row readers are untouched", () =>
     assert.ok(k in row, `${k} still present`);
   }
 });
+
+// ---------------------------------------------------------------------------
+// #562 — crafting slot labels are player-visible (every share export prints them)
+// but were in no search index. A player could read `Essence Crafting: Rune Arm -
+// Prefix` on their own exported build, type it into Browse, and get nothing.
+
+test("#562: crafting slots are a match mode of their own, not part of `query`", () => {
+  const v = (id, crafting) => ({ variant_id: id, source_item: id, slot: "Ring",
+    affixes: [], crafting });
+  const items = [v("A", ["Blue Augment Slot"]), v("B", ["Essence Crafting: Ring - Prefix"]), v("C", [])];
+
+  assert.deepStrictEqual(
+    B.filterVariants(items, { craftingSlot: "Essence Crafting: Ring - Prefix" }).map((x) => x.variant_id),
+    ["B"]);
+  // …and the free-text query does NOT reach them, which is the whole design.
+  assert.deepStrictEqual(B.filterVariants(items, { query: "Essence Crafting" }), []);
+  assert.strictEqual(B.filterVariants(items, { craftingSlot: "" }).length, 3,
+    "an empty filter matches everything, like every other mode here");
+});
+
+test("#562: folding crafting labels into `query` would wreck name search", () => {
+  // The measurement that decided the design, pinned so nobody re-merges them.
+  // Against the shipped catalog: `Blue` goes 43 -> 1279 rows because 1,236 items
+  // carry a Blue Augment Slot. Same shape as the stat/setStat split's rationale.
+  const nameHits = B.filterVariants(items, { query: "Blue" }).length;
+  const wouldMatch = items.filter((v) =>
+    [v.variant_id, v.source_item, ...(v.crafting || [])].join(" ").toLowerCase().includes("blue")).length;
+  assert.ok(nameHits > 0, "non-vacuity: the name search must actually find something");
+  assert.ok(wouldMatch > nameHits * 10,
+    `merging would take Blue from ${nameHits} to ${wouldMatch} rows — keep the modes separate`);
+});
+
+test("#562: the label list is derived from the catalog, never curated", () => {
+  const items = [{ crafting: ["Zeta Slot", "Alpha Slot"] }, { crafting: ["Alpha Slot"] }, {}];
+  assert.deepStrictEqual(B.craftingSlotNames(items), ["Alpha Slot", "Zeta Slot"],
+    "sorted, deduped, and blind to how many items carry each");
+  assert.deepStrictEqual(B.craftingSlotNames([]), []);
+  assert.deepStrictEqual(B.craftingSlotNames(null), []);
+});
+
+test("#562: a dead-end search says the thing typed was a crafting slot", () => {
+  const items = [{ crafting: ["Essence Crafting: Ring - Prefix", "Essence Crafting: Ring - Suffix"] }];
+  const hint = B.craftingSearchHint("Essence Crafting", items, { hadResults: false });
+  assert.ok(/crafting slots, not an item name/.test(hint), hint);
+  assert.ok(/Essence Crafting: Ring - Prefix/.test(hint), "it names what to look for");
+
+  const one = B.craftingSearchHint("Ring - Suffix", items, { hadResults: false });
+  assert.ok(/That is a crafting slot/.test(one), "singular reads as singular");
+});
+
+test("#562: the Cannith rename is bridged at SEARCH time, not in the registry", () => {
+  // Update 79 renamed it and we adopted the rename (#374). The old name currently
+  // returns 8 items whose NAMES contain "Cannith" — worse than zero, because it
+  // looks like an answer. `check_crafting_integrity` is exact-match set membership
+  // over a frozen registry, so a second spelling there would be a real second
+  // label the build would have to serve. The hint changes what the player is
+  // told, never what the catalog contains.
+  const items = [{ crafting: ["Essence Crafting: Ring - Prefix"] }];
+  const hint = B.craftingSearchHint("cannith", items, { hadResults: false });
+  assert.ok(/renamed it to Essence Crafting/.test(hint), hint);
+  assert.ok(/Update 79/.test(hint), "the player is told WHEN, so the change is placeable");
+  assert.deepStrictEqual(B.CRAFTING_OLD_NAMES, { cannith: "Essence Crafting" },
+    "one entry today; adding one is a deliberate edit");
+
+  // THE case this issue is about: `Cannith` returns 8 items whose NAMES contain
+  // the word, so the player gets a confident WRONG answer, not an empty one.
+  // Gating the rename hint on a dead end would silence it exactly there.
+  const withResults = B.craftingSearchHint("cannith", items, { hadResults: true });
+  assert.ok(/renamed it to Essence Crafting/.test(withResults),
+    "the rename hint must fire even when the search found (the wrong) things");
+  assert.ok(!/not an item name/.test(withResults),
+    "and must not claim nothing matched, because things did");
+});
+
+test("#562: no hint when there is nothing useful to say", () => {
+  const items = [{ crafting: ["Essence Crafting: Ring - Prefix"] }];
+  assert.strictEqual(B.craftingSearchHint("", items), "", "an empty query is not a dead end");
+  assert.strictEqual(B.craftingSearchHint("   ", items), "");
+  assert.strictEqual(B.craftingSearchHint("Hydra's Heart", items, { hadResults: false }), "",
+    "a real miss stays a plain miss — a hint on every empty search is noise");
+  assert.strictEqual(B.craftingSearchHint("cannith", [{ crafting: [] }], { hadResults: false }), "",
+    "and the rename bridge stays quiet when the new labels are not present either");
+  // The dead-end hint is suppressed once results exist: "that is not an item
+  // name" is wrong and confusing with rows on screen.
+  assert.strictEqual(B.craftingSearchHint("Essence Crafting", items, { hadResults: true }), "",
+    "a dead-end explanation has no place when the search found something");
+});
