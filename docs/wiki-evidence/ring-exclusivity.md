@@ -4,13 +4,9 @@
 transport that works — see `harvest-method.md`). Every page in the ring
 population was read; nothing here is derived.
 
-Shard: `docs/wiki-evidence/ring-exclusivity.json` (435 entries, all `stated`).
-
-It sits here rather than under `data/seed/` on purpose: nothing seeds from it yet.
-An inert file under that prefix misrepresents itself as pipeline input, and the
-stamp guard reads the prefix as player-facing — correctly, since a data-only
-merge changes every solve. #566 moves it into `data/seed/compendium/` at the
-moment it starts driving the gate, and owes the stamp bump then.
+Shard: `data/seed/compendium/ring_exclusivity.json` (435 entries, all `stated`),
+read by `src/ring_exclusivity.py` and stamped onto each item as
+`duplicable_ring`.
 
 This supersedes the ruling in `duplicable-rings.md`, which is left in place as
 the record of how the question was previously answered. See *What this
@@ -39,7 +35,20 @@ set bonus, since a second copy of a set-less ring adds nothing:
 | Minor Artifact | 3 |
 | Total | 139 |
 
-So the widening is from **2 rings to 100**. Note this is materially *lower* than
+**The build stamps 97 of those 100, and the difference is not a defect.** Three
+Deadly Diabolist rings (heroic, Epic, Legendary) are duplicable and do carry a
+set upstream, but that set's only affix buffs summons, charmed monsters and
+hirelings — which the optimizer does not model. The built records therefore
+carry no `set_bonus` at all, so a second copy could never pay for itself and
+stamping one would add a solver variable that can never be worth taking.
+
+The two numbers describe different populations: 100 is the raw seed's `sets`
+field, 97 is the built catalog. **97 is the one that ships**, and it is the one
+`tests/test_ring_exclusivity.py` pins. This document originally reported 100 as
+the widening, which was counting the wrong population — the same error this
+repo's standing rule about counts exists to catch.
+
+So the widening is from **2 rings to 97**, and it is also materially lower than
 the 135 estimated when #566 was filed: that estimate subtracted only the
 artifacts, because the Exclusive population was not yet known. 36 set-member
 rings really are blocked, and the harvest is what distinguished them.
@@ -180,23 +189,46 @@ kinds of evidence and the second has not been collected.
 
 ## Status
 
-The shard is **inert**. Nothing reads it yet — `duplicable_rings.json` still
-drives `isTwinEligible`, so solver behavior is unchanged by this harvest. Wiring
-it in, flipping the gate to a blocklist, and re-ratifying the golden diff is
-#566.
+**Wired in.** `src/ring_exclusivity.py` reads the shard and stamps
+`duplicable_ring` on the 97 rings the rule leaves duplicable and that carry a
+modelled set bonus. `web/model.js`'s `isTwinEligible` is unchanged — it already
+preferred the build stamp over the retired name list, so the widening was
+entirely a matter of the build stamping more records.
 
-Guards that need to exist when it is wired in (none of which exist yet):
+The `DUPLICABLE_RINGS` fallback in `model.js` also stays, still holding the two
+#442 names. It is the path for a record carrying no stamp — a hand-built test
+fixture, a legacy saved snapshot — and it remains fail-closed.
 
-- Every `Ring` in the built catalog appears in the shard's `harvested` map —
-  a coverage assertion, so the 426/426 claim above cannot go stale silently.
-  This is the `a-dated-coverage-claim-cannot-notice-its-own-staleness` rule: the
-  numbers in this document are readable at build time, so assert them.
-- Every shard entry still resolves to a `Ring` in the catalog (the existing
-  `duplicable_rings.check` shape).
-- The artifact agreement holds — the shard's `minor_artifact` set equals the set
-  of catalog rings flagged `artifact`. It agrees exactly today, and a future
-  drift between the two sources is a review event, not something to reconcile
-  automatically.
+**Cost.** The golden suite's 42 fixtures went from 50.7s to 55.1s, about 8.6%,
+for the 95 extra binaries the wider twin population puts in each model. All 42
+optima are unchanged: none of those fixtures wanted a doubled ring, which is a
+real result rather than a sign the feature is inert — `dataset.test.js` asserts
+the widened gate against the built catalog precisely because a green golden suite
+could not tell those two apart.
+
+### The guards, all live
+
+- **Coverage** — every Ring in the built catalog has a shard entry. This is what
+  keeps the "426 of 426" above from going stale: a new ring from an upstream
+  refresh fails the build instead of inheriting a default. It has already fired
+  once for real, on `Mysterious Ring [Crafted]`.
+- **Artifact agreement** — the shard's Minor Artifact set must equal the catalog
+  rings flagged `artifact`. Two independent sources; drift is a review event.
+- **Corroboration** — #442's two rings must still come out duplicable. Their
+  evidence was a different field entirely, so this makes the harvest's predictive
+  test a standing build assertion rather than something checked once by hand.
+- **Shape** — a shard entry that stops resolving to a Ring is a stale claim.
+
+Each was proven by corrupting the shipped shard and confirming the build went
+red, then restoring it.
+
+### On crafted twins
+
+A `X [Crafted]` record is one game item's second state and has no wiki page, so
+its exclusivity is its base's. Resolution goes through the identity map
+`crafted_twins.derive` already builds — never a ` [Crafted]` suffix test, which
+that module refuses for the reason it would keep passing after the relationship
+it assumes stops holding.
 
 ## Related
 

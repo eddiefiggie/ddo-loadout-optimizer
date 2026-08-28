@@ -8,8 +8,7 @@
     "harvested": "2026-08-28",
     "population": "All 435 pages in Category:Finger items were read. 435/435 carry the Named-item infobox and an affirmative `bind` parameter; 0 pages missing, 0 with an empty bind. This is what licenses reading category-absence as a stated negative rather than as silence — see the evidence doc.",
     "warning": "Do NOT re-derive these values by text-matching the bind wikitext. Template:Bind accepts the exclusive flag as a bare positional argument, so only 2 of the 45 Exclusive rings spell the word: a text-match finds 2 and misses 43. The template-computed category is the only correct read.",
-    "consumed_by": "nothing yet - inert pending #566; duplicable_rings.json still drives the solver",
-    "location": "Lives beside its evidence doc, NOT under data/seed/, because nothing seeds from it yet. An inert file under data/seed/ misrepresents itself as pipeline input and trips the stamp guard, which classifies that prefix as player-facing (correctly - a data-only merge changes every solve). #566 relocates this into data/seed/compendium/ at the moment it starts driving the gate, and that PR owes the stamp bump this one does not."
+    "consumed_by": "src/ring_exclusivity.py, via build_dataset.py - stamps `duplicable_ring` per item"
   },
   "counts": {
     "population": 435,
