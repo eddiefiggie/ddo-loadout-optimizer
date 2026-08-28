@@ -85,22 +85,39 @@ premise-checks for the additive-credit case, not a prohibition** — when #140
 writes a Morale-typed component they will need re-ratifying against the new
 premise, deliberately, not blanket-accepted.
 
-## 5. What this obliges when a Morale-typed affix first ships
+## 5. Writing it exposed a hole in the disposition guard — now closed
 
-`data/seed/compendium/bonus_type_dispositions.json` records a disposition for
-every type the built dataset produces, and `tests/test_bonus_type_coverage.py`
-fails the build on a type with none. `Morale` is absent today because the
-dataset produces zero instances — correctly.
+This section originally said that writing the first Morale-typed affix "must add
+`"Morale": "legitimate"` to `bonus_type_dispositions.json` in the same change, or
+the build goes red." **That was wrong, and the way it was wrong is the
+interesting part.**
 
-**Writing the first Morale-typed affix must add `"Morale": "legitimate"` to that
-shard in the same change, or the build goes red.** That is the guard working, not
-an obstacle. It belongs to #140's write, not here.
+`tests/test_bonus_type_coverage.py` derived its live population from
+`web/data/items.json` alone. But `Greater Heroism` decomposes at the
+**`web/dataset.js` normalize seam**, in the browser at load time — so the type it
+mints never reaches the built JSON. The guard would not have gone red. It would
+have said nothing at all, which is the precise failure mode it was created to
+prevent, reappearing one layer down.
+
+Worse, the shard's *other* test — "a disposition for a type the dataset no longer
+produces" — would have **rejected** the correct entry, because `Morale` is
+invisible on that side too.
+
+The hole was real but unoccupied before now: every composite that shipped earlier
+emitted `Enhancement`, which the dataset already carried.
+
+**Closed in #140.** `web/dataset.js` declares `COMPOSITE_COMPONENT_TYPES` as a
+flat literal, the Python guard reads it without needing a JS runtime, and
+`tests/dataset.test.js` pins that literal against the live table so the mirror
+cannot drift. A first attempt scraped the types out of `COMPOSITE_COMPONENTS`
+itself and silently missed `Morale`, because a component built through a helper
+keeps its type literal outside the table — recorded because it is cheap to repeat.
 
 ## Scope
 
-Ruling only; no code and no data changes with it. The dataset still produces
-zero `Morale` affixes. The `Greater Heroism` write that consumes this ruling is
-#140, and its other prerequisite is `all-skills-grants.md` (#570).
+Ruling only; no code and no data changes with it. `Morale` reached the model in
+**#140**, which wrote `Greater Heroism`'s components — see `boolean-composites.md`
+§4. The ruling's other half is `all-skills-grants.md` (#570).
 
 ## Harvest record
 

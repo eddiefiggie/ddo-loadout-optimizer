@@ -10,6 +10,24 @@
 //   node tests/parity/capture_golden.js
 //
 // Ratifications:
+//   #140 (2026-08-28) — FIVE fixtures, every delta exactly +4, every `chosen`
+//   loadout BYTE-IDENTICAL. `Greater Heroism` left quarantine and now writes +4
+//   Morale to attack rolls, the three saves, and all 21 skills.
+//     * `endgame-dps-ml33` Accuracy 55 -> 59; `blocklist-topaz-ml36`, its
+//       `-baseline`, and `utility-removed-complex-...` each Balance 55 -> 59;
+//       `riposte-split-ac-saves-ml34` all three saves 25 -> 29.
+//     * The identical loadouts are the whole story, and they are why this is a
+//       FIX rather than a re-balance. No item swapped and no slot changed, so
+//       the solver was ALREADY choosing these Greater Heroism carriers on their
+//       other affixes and simply not counting this one. The +4 was sitting on
+//       gear the player had already been told to wear. That is the defect #140
+//       reported — magnitude flattened to a boolean — observed from the outside.
+//     * Nothing decreased and no stat outside the component list moved, which is
+//       the expected shape of a purely ADDITIVE contribution in a bucket
+//       (`Morale`) that no other affix in the catalog occupies.
+//     * The 19 unmoved fixtures are the honest half: none of them ranks a stat
+//       Greater Heroism grants, so none could see the change.
+//
 //   #442 (2026-08-27) — ONE fixture, THREE slots, `perTarget` byte-identical.
 //   `aug-ceiling-32-int-caster-ml36`: Belt, Necklace and Ring each swap for an
 //   equally-valued item. No ranked target moved and status is unchanged, so this

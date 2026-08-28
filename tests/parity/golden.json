@@ -1,6 +1,6 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-08-27",
+ "generated": "2026-08-28",
  "dataset": "web/data/items.json (9110 items)",
  "fixture_count": 24,
  "solves": {
@@ -280,13 +280,13 @@
     "Strength": 37,
     "Deadly": 31,
     "Seeker": 33,
-    "Accuracy": 55
+    "Accuracy": 59
    },
    "effective": {
     "Strength": 37,
     "Deadly": 31,
     "Seeker": 33,
-    "Accuracy": 55
+    "Accuracy": 59
    },
    "chosen": [
     {
@@ -1075,11 +1075,11 @@
    "status": "optimal",
    "perTarget": {
     "Melee Power": 44,
-    "Balance": 55
+    "Balance": 59
    },
    "effective": {
     "Melee Power": 44,
-    "Balance": 55
+    "Balance": 59
    },
    "chosen": [
     {
@@ -1124,11 +1124,11 @@
    "status": "optimal",
    "perTarget": {
     "Melee Power": 42,
-    "Balance": 55
+    "Balance": 59
    },
    "effective": {
     "Melee Power": 42,
-    "Balance": 55
+    "Balance": 59
    },
    "chosen": [
     {
@@ -1361,11 +1361,11 @@
    "status": "optimal",
    "perTarget": {
     "Melee Power": 42,
-    "Balance": 55
+    "Balance": 59
    },
    "effective": {
     "Melee Power": 42,
-    "Balance": 55
+    "Balance": 59
    },
    "chosen": [
     {
@@ -1469,16 +1469,16 @@
    "status": "optimal",
    "perTarget": {
     "Armor Class": 171,
-    "Reflex Save": 25,
-    "Will Save": 25,
-    "Fortitude Save": 25,
+    "Reflex Save": 29,
+    "Will Save": 29,
+    "Fortitude Save": 29,
     "Physical Sheltering": 124
    },
    "effective": {
     "Armor Class": 171,
-    "Reflex Save": 25,
-    "Will Save": 25,
-    "Fortitude Save": 25,
+    "Reflex Save": 29,
+    "Will Save": 29,
+    "Fortitude Save": 29,
     "Physical Sheltering": 124
    },
    "chosen": [
