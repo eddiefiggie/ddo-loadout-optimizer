@@ -21,19 +21,19 @@ applies_when:
 
 ## Context
 
-PR #557 delivered the Essence Crafting harvest for #193 but deliberately left the
+PR 557 delivered the Essence Crafting harvest for issue 193 but deliberately left the
 issue open: the harvest succeeded, and the modelling remained blocked on a
 dimension no source records. To make that unmistakable, the commit body said:
 
-> This does NOT close #193.
+> This does NOT close [issue 193].
 
-The merge closed #193.
+The merge closed issue 193.
 
 GitHub's issue-closing parser is **purely lexical**. It scans for
 `close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved` followed by an
 issue reference, anywhere in the commit message or PR body. It has no notion of
-negation, quoting, or sentence structure. `does NOT close #193` contains
-`close #193`, so the issue closed — the sentence written to prevent it is what
+negation, quoting, or sentence structure. `does NOT close` followed by a live
+issue reference still contains the keyword and the reference, so the issue closed — the sentence written to prevent it is what
 caused it.
 
 ## Guidance
@@ -63,12 +63,23 @@ being lexical rather than semantic.
 A wrongly-closed issue is worse than a wrongly-open one. An open issue that is
 actually done gets rediscovered and closed by the next sweep. A closed issue that
 is **not** done disappears from every backlog view — and here it would have taken
-with it the finding that #193's remaining work is a bounded type-sourcing problem
+with it the finding that issue 193's remaining work is a bounded type-sourcing problem
 rather than the large harvest the issue described. That finding only exists in the
 issue thread; nobody greps closed issues before choosing what to work on.
 
 The failure is also silent at the moment it happens. The merge succeeds, CI is
 green, and the close shows up only if someone re-checks the issue afterwards.
+
+## This document deliberately carries no live issue reference
+
+Every example above writes `issue 193` rather than a live `#` reference, and the
+quoted sentence is defused with brackets. That is not fussiness — it is the entry
+earning its own advice.
+
+The first version of this file quoted the offending sentence verbatim, and the
+commit message that added it quoted the sentence too. **Merging the document that
+warns about the trap sprang the trap**, closing the issue a second time. A
+solutions entry about a lexical parser must not itself contain the lexeme.
 
 ## When to Apply
 
@@ -78,6 +89,7 @@ green, and the close shows up only if someone re-checks the issue afterwards.
 
 ## Examples
 
-- **#557 / #193** (this entry). Body: *"This does NOT close #193."* Result: closed.
+- **PR 557 / issue 193** (this entry). Body: *"This does NOT close [issue 193]."*
+  Result: closed.
   Recovered by reopening and recording the cause in the issue thread, so the
   reopen does not read as a status change.
