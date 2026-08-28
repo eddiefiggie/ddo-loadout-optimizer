@@ -99,4 +99,35 @@ per pin and the player already knows which pins they set.
 
 - Surfacing what a pin COST, priced the way the concession probe prices a
   priority — a player who pins four sets should be able to see what it cost them.
-  Filed as its own issue rather than left in prose.
+  **Filed as #554.**
+
+## The perf posture, decided from a measurement
+
+Pinning is slow, and the cost is opt-in. Measured against the shipped catalog at
+ML 34:
+
+| Query | Solve |
+|---|---|
+| no pins | 6.5 s |
+| one pinned GEAR set | 6.5 s |
+| four pinned SET AUGMENTS | ~41 s |
+
+Unpinned solves are byte-identical — all 24 golden fixtures unchanged — so a
+player who pins nothing pays nothing.
+
+The cost is inherent to the encoding: each pinned Set Augment mints a placement
+binary per compatible host, and the pin then forces three of them on. Diagnosed
+rather than guessed — one tie-break minimize call was 46.5 s of a 62 s solve,
+because minimizing over pinned copies asks which of ~500 hosts should carry them,
+a question with no meaningful answer when the set is delivered either way.
+Excluding the copies of a pinned set that grants nothing ranked took it to ~41 s.
+
+**Two other attempts were measured and did NOT help, recorded so they are not
+retried blindly:** a symmetry cap on copies beyond the threshold (no change), and
+widening the tie-break exclusion to pinned sets that DO advance a target (45 s,
+worse — there the minimization is still doing useful work).
+
+Shipped with the cost **disclosed before the player pays it**: the control warns
+from two pinned Set Augments upward, naming the count and saying the solve has not
+stalled. The warning is keyed on augment sets specifically, because a pinned gear
+set is free and warning about it would be crying wolf.

@@ -1506,6 +1506,16 @@ function blockNotice(result) {
     : "";
 }
 
+/** #539 — what the player's set pins did. Reads the SHARED sentences from
+ *  projection.js, like every other notice, so the page and the exports cannot
+ *  disagree about whether a pin landed. */
+function setPinNotice(result) {
+  const lines = (Proj && Proj.setPinNoticeLines) ? Proj.setPinNoticeLines(result) : [];
+  return lines.length
+    ? `<p class="scope-note block-note" role="status">${lines.map(esc).join(" ")}</p>`
+    : "";
+}
+
 /** #499 — the upgrades notice: the surface that replaced the Alternatives tab.
  *
  *  The tab generated candidates on five axes and showed the best five whatever
@@ -1605,6 +1615,10 @@ const NOTICE_TABLE = {
     jump: { label: "Change crafting opt-out →", step: "character", anchor: 'input[name="wz-crafting-rung"]' } },
   blockNotice: { id: "blocked-gear", title: "BLOCKED GEAR", subject: "blocked gear", cls: NOTICE_ACTIONABLE,
     jump: { label: "Review block list →", step: "pool", anchor: null } },
+  // #539 — actionable, not qualifying: every line it can print names something
+  // the player can change (remove a pin, tick an augment as owned, raise the cap).
+  setPinNotice: { id: "required-sets", title: "REQUIRED SETS", subject: "required sets", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Review required sets →", step: "pool", anchor: "#wz-setpin-search" } },
   augCeilingNotice: { id: "augment-ceiling", title: "AUGMENT POOL NARROWED", subject: "augment ceiling", cls: NOTICE_ACTIONABLE,
     jump: { label: "Change augment ceiling →", step: "character", anchor: "#wz-augceiling" } },
   // Fires only when the player set the ceiling themselves — the same shape as
@@ -1716,6 +1730,7 @@ function noticeDescriptors(ctx) {
   push("craftingExcludedNotice", craftingExcludedNotice(query, result));
   push("augCeilingNotice", augCeilingNotice(query, result));
   push("blockNotice", blockNotice(result));
+  push("setPinNotice", setPinNotice(result));
   push("upgradeNotice", upgradeNotice(ctx.canUpgrade, ctx.upgradeBar));
 
   const rank = (d) => {
@@ -3293,7 +3308,7 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,

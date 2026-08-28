@@ -4322,6 +4322,53 @@ async function withCrossAdd(map, fn) {
       "max(4, 2) — and 4, not 5: the saves half of Riposte IX is the rounded-DOWN one");
   });
 
+  // --- #539: the set pin binds even when the set advances no ranked target -----
+  // This is the case the whole feature exists for. Ranking the stats a set grants
+  // does not force it; and a set granting nothing you ranked was previously not
+  // even ENCODED, so a pin on it would have been a silent no-op.
+  await test("#539: pinning forces a set the solver would otherwise decline", async () => {
+    // A 2-piece set granting Constitution, which is NOT ranked. Each set piece is
+    // strictly worse on the ranked stat than the alternative in its own slot, so
+    // an unpinned solve declines the set outright.
+    const tiers = [{ n: 2, affixes: [["Constitution", "Artifact", 10]] }];
+    const pieceR = setPiece("Set Ring", "Ring", [["Intelligence", "Enhancement", 1]], "Bond", tiers);
+    // Distinct bonus types per slot so the two contributions ADD — same-bucket
+    // sources take the max, which would cap the comparison at one item.
+    const pieceN = setPiece("Set Neck", "Necklace", [["Intelligence", "Insight", 1]], "Bond", tiers);
+    const betterR = item("Plain Ring", "Ring", [["Intelligence", "Enhancement", 9]]);
+    const betterN = item("Plain Neck", "Necklace", [["Intelligence", "Insight", 9]]);
+    const worn = [slot("Ring", [pieceR, betterR]), slot("Necklace", [pieceN, betterN])];
+
+    const free = await S.solveLexicographic(
+      { targets: ["Intelligence"], mlCap: 34, dodgeCap: null, worn }, highs);
+    assert.strictEqual(free.status, "optimal");
+    assert.strictEqual(free.effective.Intelligence, 18, "unpinned takes the two better items");
+    assert.deepStrictEqual((free.setsActive || []).map((m) => m.set), [],
+      "and declines the set, which buys it nothing it ranked");
+
+    const pinned = await S.solveLexicographic(
+      { targets: ["Intelligence"], mlCap: 34, dodgeCap: null, worn,
+        pinnedSets: ["Bond"] }, highs);
+    assert.strictEqual(pinned.status, "optimal");
+    assert.deepStrictEqual((pinned.setsActive || []).map((m) => m.set), ["Bond"],
+      "pinned, the set MUST be delivered");
+    assert.strictEqual(pinned.effective.Intelligence, 2,
+      "and the cost is real and visible: 18 -> 2, paid in the ranked stat");
+  });
+
+  await test("#539: an impossible pin is reported, not returned as a bare infeasible", async () => {
+    // One slot cannot supply a 2-piece set. The solve must still answer.
+    const tiers = [{ n: 2, affixes: [["Constitution", "Artifact", 10]] }];
+    const only = setPiece("Set Ring", "Ring", [["Intelligence", "Enhancement", 1]], "Bond", tiers);
+    const other = item("Plain Ring", "Ring", [["Intelligence", "Enhancement", 9]]);
+    const r = await S.solveLexicographic(
+      { targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+        worn: [slot("Ring", [only, other])], pinnedSets: ["Bond"] }, highs);
+    assert.strictEqual(r.status, "optimal",
+      "an unsatisfiable pin must not cost the player their whole answer");
+    assert.strictEqual(r.effective.Intelligence, 9, "the build is the unpinned optimum");
+  });
+
   await test("#169: Insight AC still stacks with a differently-typed Armor Class", async () => {
     // The other half. Suppressing on stat name alone would collapse these too,
     // withholding the fix from the 86 Parrying items carrying an Armor-typed AC.

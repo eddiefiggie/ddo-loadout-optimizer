@@ -2491,6 +2491,9 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       emptySlotNotice: ["EMPTY SLOT", "actionable"],
       craftingExcludedNotice: ["EXCLUDED BY CRAFTING OPT-OUT", "actionable"],
       blockNotice: ["BLOCKED GEAR", "actionable"],
+      // #539 — actionable: every line it can print names something the player can
+      // change (remove a pin, tick an augment as owned, raise the level cap).
+      setPinNotice: ["REQUIRED SETS", "actionable"],
       augCeilingNotice: ["AUGMENT POOL NARROWED", "actionable"],
       outbidNotice: ["PRIORITY SCORED 0", "actionable"],
       absorptionQuarantineNotice: ["AFFIX WITHHELD", "qualifying"],
@@ -2507,14 +2510,14 @@ test("#449 U5 (KTD5): every notice the builder renders has a table entry", () =>
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
   const build = srcBetween(src, "function noticeDescriptors(", "function noticePanel(", "noticeDescriptors");
   const pushed = [...build.matchAll(/push\("(\w+)"/g)].map((m) => m[1]);
-  assert.strictEqual(pushed.length, 9, "the nine single-fact notices");
+  assert.strictEqual(pushed.length, 10, "the ten single-fact notices (#539 added REQUIRED SETS)");
   for (const name of pushed) {
     assert.ok(R.NOTICE_TABLE[name], `${name} is rendered but has no KTD5 table entry`);
   }
   const split = [...build.matchAll(/split\("(\w+)"/g)].map((m) => m[1]);
   assert.deepStrictEqual(split.sort(), ["artifactNotice", "boundNotice", "zeroSourceNotice"],
     "and the three multi-fact notices come through their U10 entry functions");
-  assert.strictEqual(pushed.length + split.length, 12, "twelve notices, all reached");
+  assert.strictEqual(pushed.length + split.length, 13, "thirteen notices, all reached");
 });
 
 test("#449 U5 (KTD5): a notice absent from the table renders unclassified, and does not throw", () => {
@@ -2560,7 +2563,7 @@ test("#449 U5 (R6/KTD5): every actionable route carries a control, and outbid de
     .filter(([, v]) => v.cls === "actionable").map(([k, v]) => [k, !!v.jump]);
   assert.deepStrictEqual(Object.fromEntries(routed), {
     staleSnapshotNotice: true, emptySlotNotice: true, craftingExcludedNotice: true,
-    blockNotice: true, augCeilingNotice: true,
+    blockNotice: true, augCeilingNotice: true, setPinNotice: true,
     // R6's amendment: it already renders Require and price buttons in-card.
     outbidNotice: false,
   });

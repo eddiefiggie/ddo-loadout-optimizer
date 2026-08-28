@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -4820,4 +4820,61 @@ test("#548: a save that cost history says so, and a normal one stays quiet", () 
     // prefix check on a rendered message, not a slice marker.
     assert.ok(/^Saved \u201CTank\u201D/.test(m), "it is still a success message");
   }
+});
+
+// ---------------------------------------------------------------------------
+// #539 — the set pin's control surface. Ranking the stats a set grants does not
+// force it; pinning the set does.
+
+const _ds539 = {
+  augment_set_defs: { "Cruel Cut": {}, Quickblade: {}, "Dusk Raider": {} },
+  membership_set_defs: { "Dread Stalker": {} },
+  items: [{ parsed_set_bonuses: [{ set: "Legendary Shaman's Fury", pieces_required: 2, affixes: [{ stat: "X" }] }] },
+          { parsed_set_bonuses: [{ set: "No Tier", pieces_required: null, affixes: [] }] }],
+};
+
+test("#539: the pinnable list spans all three ways a set reaches the solve", () => {
+  assert.deepStrictEqual(pinnableSets(_ds539),
+    ["Cruel Cut", "Dread Stalker", "Dusk Raider", "Legendary Shaman's Fury", "Quickblade"],
+    "Set Augments, craftable memberships, and gear sets carrying a real tier");
+  assert.ok(!pinnableSets(_ds539).includes("No Tier"),
+    "a set with no piece threshold cannot be required — there is nothing to satisfy");
+  assert.deepStrictEqual(pinnableSets(null), [], "no dataset is an empty list, not a throw");
+});
+
+test("#539: add is idempotent and reports what it actually added", () => {
+  assert.deepStrictEqual(addSetPins([], ["Cruel Cut"]), { list: ["Cruel Cut"], added: ["Cruel Cut"] });
+  assert.deepStrictEqual(addSetPins(["Cruel Cut"], ["Cruel Cut"]),
+    { list: ["Cruel Cut"], added: [] }, "a duplicate changes nothing and says so");
+  assert.deepStrictEqual(addSetPins(["Cruel Cut"], ["Quickblade", ""]).list, ["Cruel Cut", "Quickblade"]);
+  assert.deepStrictEqual(addSetPins(null, null), { list: [], added: [] });
+});
+
+test("#539: remove takes one pin and leaves the rest", () => {
+  assert.deepStrictEqual(removeSetPin(["A", "B", "C"], "B"), ["A", "C"]);
+  assert.deepStrictEqual(removeSetPin(["A"], "Z"), ["A"], "removing an absent pin is a no-op");
+});
+
+test("#539: a pin naming a vanished set is LABELLED, never dropped", () => {
+  // Same contract blockStale has: an upstream rename must not silently delete a
+  // constraint the player set, because the rename may be reverted.
+  assert.deepStrictEqual(setPinStale(["Cruel Cut", "Renamed Away"], _ds539), ["Renamed Away"]);
+  assert.deepStrictEqual(setPinStale([], _ds539), []);
+});
+
+test("#539: the slow warning fires on Set Augments, and only from two", () => {
+  // Measured: ~41s for four pinned Set Augments against a ~6.5s baseline. A gear
+  // set is nearly free, because its pieces are items the pool already carries
+  // rather than copies minted per host — so it must NOT trigger the warning.
+  assert.strictEqual(setPinSlowNotice([], _ds539), "");
+  assert.strictEqual(setPinSlowNotice(["Cruel Cut"], _ds539), "", "one is not slow enough to warn about");
+  assert.strictEqual(setPinSlowNotice(["Legendary Shaman's Fury", "Dread Stalker"], _ds539), "",
+    "gear sets and memberships are cheap; warning about them would be crying wolf");
+
+  const two = setPinSlowNotice(["Cruel Cut", "Quickblade"], _ds539);
+  assert.ok(/2 pinned Set Augments/.test(two), two);
+  assert.ok(/has not stalled/.test(two),
+    "the point of the warning is that a long solve is not a hang");
+  assert.ok(/3 pinned Set Augments/.test(
+    setPinSlowNotice(["Cruel Cut", "Quickblade", "Dusk Raider"], _ds539)));
 });
