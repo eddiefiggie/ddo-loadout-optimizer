@@ -99,7 +99,11 @@ per pin and the player already knows which pins they set.
 
 - Surfacing what a pin COST, priced the way the concession probe prices a
   priority — a player who pins four sets should be able to see what it cost them.
-  **Filed as #554.**
+  Filed as #554, and **shipped**: the notice carries a "What did these sets cost?"
+  control that re-solves without the pins on request and reports every ranked stat
+  that moved. Measured on shipped data, the two answers it separates are stark —
+  pinning `The Dread Isle's Curse` costs 80 Magical Sheltering and 2 Intelligence,
+  while four pinned Set Augments on a melee query cost nothing at all.
 
 ## The perf posture, decided from a measurement
 
