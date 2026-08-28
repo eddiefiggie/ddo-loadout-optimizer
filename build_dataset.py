@@ -332,6 +332,14 @@ DUPLICABLE_RINGS_CORROBORATION_PATH = os.path.join(
 HEIGHTENED_AWARENESS_SHARD_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "heightened_awareness.json")
 SPEED_AUGMENT_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_augment.json")
+# #199 — wiki-sourced intrinsic in-game stat ceilings (Doublestrike 100). Emitted
+# to metadata so the solver can merge them into cappedStats as a third source
+# beside the armor dodge cap and the player's own caps, tighter-of-the-three.
+# The shard also records the stats whose ceiling the wiki REFUSES to state, which
+# is most of them; see docs/wiki-evidence/intrinsic-stat-caps.md for why that half
+# matters as much as the confirmed one.
+INTRINSIC_STAT_CAPS_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "intrinsic_stat_caps.json")
 # #249 — per-item Sonic flag for `Elemental Absorption`, which names four elements
 # on some carriers and five on others behind an identical visible cell.
 ABSORPTION_SHARD_PATH = os.path.join(
@@ -1870,6 +1878,26 @@ def build() -> dict:
     _ring_excl_cov = ring_exclusivity_mod.apply(
         out["items"], _ring_excl_shard, identity=_twins["identity"])
     out["metadata"]["duplicable_ring_coverage"] = {**_ring_excl_cov, **_ring_excl_check}
+
+    # #199 — intrinsic caps, emitted as {stat: cap}. Exclude-until-verified: only
+    # the `caps` list ships; a stat in `refused` deliberately gets NO cap, so a
+    # missing key means "the wiki states no ceiling", never "nobody looked".
+    _caps_shard = json.load(open(INTRINSIC_STAT_CAPS_PATH, encoding="utf-8"))
+    _intrinsic_caps = {}
+    for _entry in _caps_shard.get("caps") or []:
+        _stat, _cap = _entry.get("stat"), _entry.get("cap")
+        if not _stat or not isinstance(_cap, (int, float)):
+            raise ValueError(
+                f"intrinsic_stat_caps.json: entry {_entry!r} has no usable stat/cap. "
+                "Every entry must carry both, plus the verbatim wiki quote that states it.")
+        if not _entry.get("quote") or not _entry.get("wiki_url"):
+            raise ValueError(
+                f"intrinsic_stat_caps.json: {_stat} carries no quote/wiki_url. A cap that "
+                "traces to nothing silently truncates a real stat — see the evidence_rule.")
+        _intrinsic_caps[_stat] = _cap
+    out["metadata"]["intrinsic_stat_caps"] = _intrinsic_caps
+    out["metadata"]["intrinsic_stat_caps_refused"] = sorted(
+        r["stat"] for r in (_caps_shard.get("refused") or []) if r.get("stat"))
 
     out["metadata"]["crafted_twin_identity"] = _twins["identity"]
     out["metadata"]["crafted_twin_coverage"] = {

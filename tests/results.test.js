@@ -2384,6 +2384,46 @@ test("#449 U3 (R30): a zero ceiling renders no meter, no green, and claims only 
     "and does NOT defer to zeroSourceNotice, which may not be on screen at all");
 });
 
+// ---- #199: the cap chip must name WHICH cap bound -------------------------
+// A player who set no cap and watches their top priority stop accruing reads it
+// as the solver ignoring their ranking. Saying "the game caps this" is the whole
+// reason #199 surfaces intrinsic caps rather than just applying them.
+
+function _capBuild(opts) {
+  return { status: "optimal", chosen: [], setsActive: [], augmentsPlaced: [],
+    breakdown: { Doublestrike: [{ item: "Ring", value: 103 }] },
+    effective: { Doublestrike: 100 },
+    capped: { Doublestrike: 100 },
+    ...opts };
+}
+
+test("#199: an intrinsic cap renders as a GAME cap, not as the player's own", () => {
+  const cards = R.buildViews(_capBuild({ intrinsicCaps: { Doublestrike: 100 } }),
+    _reachModel, { targets: ["Doublestrike"] }).cards;
+  assert.ok(/game cap 100 · raw 103/.test(cards),
+    "the chip names the game as the source of the ceiling");
+  assert.ok(/no gear can raise it/.test(cards),
+    "and the tooltip tells the player why more gear will not help");
+  assert.ok(!/>capped at 100/.test(cards),
+    "the neutral wording is NOT used when the ceiling is the game's");
+});
+
+test("#199: a user cap still renders as the player's own cap", () => {
+  const cards = R.buildViews(_capBuild({ capped: { Doublestrike: 60 },
+    effective: { Doublestrike: 60 }, intrinsicCaps: { Doublestrike: 100 } }),
+    _reachModel, { targets: ["Doublestrike"] }).cards;
+  assert.ok(/capped at 60 · raw 103/.test(cards),
+    "a hand-set cap tighter than the game's is the player's own, and reads that way");
+  assert.ok(!/game cap/.test(cards),
+    "naming the game here would blame the game for a limit the player chose");
+});
+
+test("#199: a build with no intrinsic table renders exactly as before", () => {
+  const cards = R.buildViews(_capBuild({}), _reachModel, { targets: ["Doublestrike"] }).cards;
+  assert.ok(/capped at 100 · raw 103/.test(cards), "the pre-#199 wording is untouched");
+  assert.ok(!/game cap/.test(cards));
+});
+
 test("#449 U3 (R33): a capped stat's fraction numerator equals the card's headline number", () => {
   const b = _reachBuild([{ stat: "Dodge", achieved: 20, ceiling: 20 }],
     { effective: { Dodge: 20 }, capped: { Dodge: 20 } });

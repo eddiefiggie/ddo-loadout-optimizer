@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "title": "wiki-sourced intrinsic in-game stat caps (#199)",
+    "note": "A stat whose in-game value stops counting past a fixed ceiling. Applied as a THIRD source of truth into the solver's cappedStats, alongside the armor dodge cap and the player's own per-stat caps; the tighter of the three wins, per the Stat cap clause in CONCEPTS.md.",
+    "evidence_rule": "Every entry carries the verbatim wiki sentence stating the ceiling, and the page it was read from. A stat whose ceiling the wiki does not state outright gets NO entry — see `refused` below, which exists so the same four stats are not re-guessed.",
+    "why_refusals_are_recorded": "Four of the five stats harvested for #199 have no ceiling, and three of those four look like they should. Doubleshot in particular is Doublestrike's documented sibling and behaves in the OPPOSITE way past 100%. Recording only the confirmation would leave the next reader to re-derive the refusals, and the cheap wrong answer is one analogy away.",
+    "evidence": "docs/wiki-evidence/intrinsic-stat-caps.md"
+  },
+  "caps": [
+    {
+      "stat": "Doublestrike",
+      "cap": 100,
+      "unit": "percent",
+      "quote": "Doublestrike above 100% has no effect on main-hand weapons.",
+      "wiki_url": "https://ddowiki.com/page/Doublestrike",
+      "verified": "2026-08-28",
+      "note": "Main-hand reading only. The same page states a separate off-hand ceiling (50%, 65% with Perfect Two Weapon Fighting) which is deliberately NOT modelled: keying a cap on wielding two weapons is the Two Weapon Fighting penalty, an AGENTS.md non-goal that is disclosed to the player rather than modelled numerically."
+    }
+  ],
+  "refused": [
+    {
+      "stat": "Doubleshot",
+      "reason": "No ceiling — it wraps past 100% into extra shots.",
+      "quote": "If your Doubleshot is greater than 100%, then a second shot is guaranteed, and the remainder is the chance at additional shots.",
+      "wiki_url": "https://ddowiki.com/page/Doubleshot",
+      "verified": "2026-08-28",
+      "note": "Do NOT add this by analogy with Doublestrike. The two are named as siblings on each other's pages, described in parallel language, and behave in opposite ways past 100%. Capping it deletes every point a ranged build earned above 100."
+    },
+    {
+      "stat": "Fortification",
+      "reason": "No ceiling — 300% is a normal target for a durable build, because bosses bypass a portion.",
+      "quote": "In DDO, most players strive for roughly +10% fortification per level, with the most durable characters achieving +300% at level 30.",
+      "wiki_url": "https://ddowiki.com/page/Fortification",
+      "verified": "2026-08-28"
+    },
+    {
+      "stat": "Dodge",
+      "reason": "The cap is player-built, not a constant: Maximum Dodge Bonus BEGINS at 25% and an entire section of the page lists ways to raise it. The one true constant (a 95% hard cap) is unreachable from gear.",
+      "quote": "The Maximum Dodge Bonus begins at 25%. This Maximum Dodge Bonus amount can be increased through various means (see Increasing Maximum Dodge).",
+      "wiki_url": "https://ddowiki.com/page/Dodge_bonus",
+      "verified": "2026-08-28",
+      "note": "The armor-type reduction is modelled separately and approximately by ARMOR_DODGE_CAP in web/model.js; that constant's own unsourced numbers are #573."
+    },
+    {
+      "stat": "Concealment",
+      "reason": "No numeric cap stated. The page rules on stacking (highest of a type applies), which the solver's max-within-bucket semantics already reproduce.",
+      "quote": "Generally, multiple concealment bonuses of the same type do not stack, whether beneficial or offensive in nature, only the greatest concealment number applies.",
+      "wiki_url": "https://ddowiki.com/page/Concealment",
+      "verified": "2026-08-28",
+      "note": "Checked because #140's U5 made Concealment a credited stat for the first time."
+    }
+  ]
+}
