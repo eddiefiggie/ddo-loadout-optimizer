@@ -4220,12 +4220,29 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.effective.Constitution, 8, "the Constitution answer is untouched by U5");
   });
 
-  await test("U5: Greater Heroism stays QUARANTINED — no components written", async () => {
+  // #140 — this asserted the QUARANTINE until 2026-08-28. It now asserts the write,
+  // and at the solver level rather than the normalizer's (dataset.test.js already
+  // pins the 25 components), because the two things worth proving here are that the
+  // magnitude reaches a real HiGHS solve at all, and that it does so ADDITIVELY
+  // across buckets. `Morale` keys its own bucket (#569), so the carrier's own
+  // Enhancement 5 and the derived Morale 4 must SUM to 9 and beat a plain 7 — under
+  // the old name-only shadow rule the derived affix would have been suppressed
+  // outright and the plain cloak would win.
+  await test("U5/#140: Greater Heroism's +4 Morale reaches the solve and stacks", async () => {
     const { normalizeItem } = require("../web/dataset.js");
-    const it = { affixes: [{ name: "Greater Heroism", type: "Bool", value: 1 }] };
-    normalizeItem(it);
-    assert.deepStrictEqual(it.affixes.map((a) => a.name), ["Greater Heroism"],
-      "the wiki states a magnitude for the SPELL, not the item enchantment");
+    const mk = () => {
+      const a = item("HEROISM", "Cloak", [["Balance", "Enhancement", 5]]);
+      a.affixes.push({ name: "Greater Heroism", type: "Bool", value: 1 });
+      const b = item("PLAIN", "Cloak", [["Balance", "Enhancement", 7]]);
+      return [a, b];
+    };
+    const pool = mk(); pool.forEach(normalizeItem);
+    const r = await S.solveLexicographic({
+      targets: ["Balance"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Cloak", pool)],
+    }, highs);
+    assert.strictEqual(r.effective.Balance, 9,
+      "Enhancement 5 + Morale 4 stack; the plain cloak's 7 loses");
   });
 
   // ---- plan 003 U2 — the reported bug, end to end on the real HiGHS engine ----

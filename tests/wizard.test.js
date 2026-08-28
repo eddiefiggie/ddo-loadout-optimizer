@@ -1523,15 +1523,40 @@ test("#169: the disclosure banner escapes its message", () => {
       "a numeric string is coerced, not refused");
   });
 
-  test("U2: Morale is declarable — the additive-only case must be reachable", () => {
-    // No item in the catalog carries Morale, so a vocabulary derived from the data
-    // would make the Spell Song Trance credit undeclarable. AE4 depends on this.
+  // #140 — this test's premise USED to be "no shipped item carries a Morale-typed
+  // affix", which made Morale the live example of AE4's additive-only credit. That
+  // premise went false by design on 2026-08-28, when `Greater Heroism` began writing
+  // +4 Morale onto 16 carriers. Re-ratified rather than deleted, because BOTH halves
+  // still need covering and the vocabulary rule under test never changed: the list is
+  // CURATED, not derived from the dataset.
+  //
+  // The transition itself was predicted in
+  // docs/plans/2026-08-08-004-feat-declared-stat-credits-plan.md — "if either is
+  // added, the credits that target those buckets become displacing rather than
+  // additive with no change to this feature" — and that is exactly what happened.
+  test("U2: Morale is declarable, and is now the DISPLACING case", () => {
     assert.ok(M.CREDIT_BONUS_TYPES.includes("Morale"));
     const out = cleanCreditMap({ k: { stat: "Spell DC", bonus_type: "Morale", value: 1 } });
-    assert.strictEqual(Object.keys(out).length, 1);
-    const names = new Set(realData.items.flatMap((i) => (i.affixes || [])
-      .filter((a) => a.type === "Morale").map((a) => a.name)));
-    assert.strictEqual(names.size, 0, "premise: no shipped item carries a Morale-typed affix");
+    assert.strictEqual(Object.keys(out).length, 1, "still declarable");
+    const carried = realData.items.filter((i) => (i.affixes || []).some((a) => a.type === "Morale"));
+    assert.strictEqual(carried.length, 16,
+      "Greater Heroism's 16 carriers — a Morale credit now competes with gear rather than only adding");
+  });
+
+  test("U2/AE4: a bonus type NO gear carries is still declarable", () => {
+    // AE4's additive-only case, which Morale used to carry. Held now by the credit
+    // types the catalog still does not occupy; asserted dynamically so that the day
+    // gear arrives for the last of them, this fails LOUDLY rather than silently
+    // covering nothing — the shape a-dated-coverage-claim-cannot-notice-its-own-
+    // staleness.md is about.
+    const live = new Set(realData.items.flatMap((i) => (i.affixes || []).map((a) => a.type)));
+    const unoccupied = M.CREDIT_BONUS_TYPES.filter((t) => !live.has(t));
+    assert.ok(unoccupied.length,
+      "every declarable bonus type now has gear, so AE4's additive-only case has no live example left");
+    for (const t of unoccupied) {
+      assert.strictEqual(Object.keys(cleanCreditMap({ k: { stat: "Spell DC", bonus_type: t, value: 1 } })).length, 1,
+        `${t} carries no gear and must still be declarable`);
+    }
   });
 
   test("U2: two bonus types on one stat both survive; the same type collapses", () => {
