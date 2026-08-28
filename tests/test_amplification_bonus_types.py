@@ -8,11 +8,16 @@ channels — `nearly_complete`, `viktranium` (Melancholic Converter) and
     Repair Amplification    Enhancement
     Negative Amplification  Profane
 
-#440 asks whether `Repair Amplification` should be `Competence` like its Healing
+#440 asked whether `Repair Amplification` should be `Competence` like its Healing
 sibling rather than `Enhancement` — whether it is "the third member of the same
-set, left behind because nobody reported it". Settling that needs a wiki tooltip
-(see `docs/wiki-evidence/repair-amplification-type.md`); this guard does not rule
-on it. It exists because of what an edit to that type would do.
+set, left behind because nobody reported it". **That is now RULED: it is not.**
+The 2026-08-28 harvest read the option tooltips on three carriers at both tiers
+and each states its own type outright — "(Competence bonus)", "(Profane bonus)",
+"(Enhancement bonus)". The catalog was already right. See
+`docs/wiki-evidence/repair-amplification-type.md`.
+
+Two arms below predate the ruling and still earn their place: they protect the
+solver bucket against a *partial* edit. The third arm pins the ruling itself.
 
 ## The phantom
 
@@ -176,6 +181,43 @@ def test_crafted_amplification_sits_in_the_same_bucket_as_its_worn_siblings():
             "own worn siblings occupy, so a player taking both is credited the SUM rather than the "
             f"higher of the two. Retyping the crafted rows alone does not correct a bonus type — it "
             "invents points. Move the worn rows too, or leave both alone (#440).")
+
+
+# The bonus types the wiki states in the option tooltips, harvested 2026-08-28 from
+# Item:Sporesphere, Item:Legendary_Sporesphere and Item:Cowl_of_the_Drow_Devotee.
+# Verbatim: "amplifies all incoming repair healing by +24 (Enhancement bonus)".
+RULED_TYPES = {
+    "Healing Amplification": "Competence",
+    "Repair Amplification": "Enhancement",
+    "Negative Amplification": "Profane",
+}
+
+
+def test_crafted_amplification_matches_the_wiki_ruled_bonus_type():
+    """Pin the #440 ruling itself, which the two arms above cannot see.
+
+    Those arms are *relative*: arm 1 asks the crafted channels to agree with each
+    other, arm 2 asks them to agree with their own worn siblings. An upstream
+    refresh that retyped the crafted AND worn rows together would satisfy both
+    while quietly contradicting the wiki — which is precisely the "corrected into
+    line" outcome #440 was filed to prevent, since the asymmetry reads as a defect
+    to anyone who has not read the tooltip.
+
+    This arm is absolute: it compares against the harvested value. A failure here
+    is not automatically a bug in the catalog — upstream may be tracking a real
+    game change — but it IS a review event that must be settled by re-reading the
+    tooltip, not by following upstream.
+    """
+    crafted = _crafted_rows()
+    for stat, expected in RULED_TYPES.items():
+        types = sorted(str(t) for t in crafted[stat])
+        assert types == [expected], (
+            f"{stat}: the crafted channels now grant it as {types}, but the DDO Wiki option "
+            f"tooltip states {expected!r} (harvested 2026-08-28, three carriers, both tiers). "
+            "Do not follow upstream here without re-reading the tooltip: the visible cell "
+            "renders Repair Amplification with NO type prefix while its two siblings show "
+            "theirs, so the asymmetry looks like a defect and has been 'corrected' by "
+            "inference before. See docs/wiki-evidence/repair-amplification-type.md.")
 
 
 def test_the_triple_is_actually_present_to_inspect():
