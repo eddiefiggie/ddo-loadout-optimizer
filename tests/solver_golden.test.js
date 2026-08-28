@@ -10,6 +10,19 @@
 //   node tests/parity/capture_golden.js
 //
 // Ratifications:
+//   #442 (2026-08-27) — ONE fixture, THREE slots, `perTarget` byte-identical.
+//   `aug-ceiling-32-int-caster-ml36`: Belt, Necklace and Ring each swap for an
+//   equally-valued item. No ranked target moved and status is unchanged, so this
+//   is a TIE broken differently, not a better or worse answer.
+//     Cause, identified rather than assumed: the harvest widened the duplicable
+//     ring list from one name to two, so this fixture's program now mints a
+//     SECOND twin x-var (`Legendary Katra's Wit::twin` beside the Razor Wit one).
+//     Twins are appended so no existing x-var's coefficient shifts — but the
+//     tie-break's minVar coefficients are `n + 1 + i` where n is the x-var COUNT,
+//     so one more twin shifts all 161 of them by one and equal-value loadouts
+//     resolve differently. Neither Katra ring appears in the result; the fixture
+//     never wanted one.
+//
 //   #546 (2026-08-27) — ONE fixture ADDED, zero existing fixtures moved. The
 //   `Riposte` split expands a folded enchantment into Insight Armor Class and
 //   the three Insight saves. Re-capturing left all 23 prior entries

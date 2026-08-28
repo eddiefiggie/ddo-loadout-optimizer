@@ -26,10 +26,23 @@ const SLOT_CARDINALITY = { Ring: 2 }; // one of every other worn slot
  *
  *  Widening this to the whole set-member population needs the Unique Equipped
  *  harvest in #442, fail-closed where the wiki is silent. */
+// #442 — the hard-coded name list this replaced held ONE ring, because #335 had
+// no per-item evidence to widen it with. The evidence now lives in
+// `data/seed/compendium/duplicable_rings.json`, is stamped onto the item as
+// `duplicable_ring` at build time, and carries each ring's verbatim wiki citation.
+//
+// Kept as a name set purely so a caller holding a bare variant WITHOUT the stamp
+// (a hand-built test fixture, a legacy saved snapshot) still resolves the two
+// confirmed rings rather than silently losing them. The stamp is the source of
+// truth; this is the fallback, and it is deliberately not somewhere new names get
+// added — a new name belongs in the shard, with its citation.
 const DUPLICABLE_RINGS = new Set([
-  // https://ddowiki.com/page/Item:Legendary_Katra%27s_Razor_Wit — Tips section:
+  // https://ddowiki.com/page/Item:Legendary_Katra%27s_Razor_Wit — tips:
   // "2 rings, identical or not, can be used for the set bonus."
   "Legendary Katra's Razor Wit",
+  // https://ddowiki.com/page/Item:Legendary_Katra%27s_Wit — tips:
+  // "2 rings, identically or not, can be used for set bonus."
+  "Legendary Katra's Wit",
 ]);
 
 /** #335 (KTD2) — the twin's model-side identity. Distinct so the solver can give
@@ -52,6 +65,12 @@ function originalIdOf(id) {
 function isTwinEligible(variant) {
   if (!variant || variant.slot !== "Ring") return false;
   if (!((variant.set_bonus || []).length)) return false;
+  // #442 — the build-stamped field first. FAIL-CLOSED in both branches: an
+  // unstamped ring falls back to the two confirmed names and is otherwise
+  // refused, never allowed. Reading silence as permission would hand the player
+  // a loadout with two rings they cannot equip, which is indistinguishable from
+  // a correct one until they try to wear it.
+  if (variant.duplicable_ring === true) return true;
   return DUPLICABLE_RINGS.has(variantKey(variant));
 }
 

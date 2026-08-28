@@ -71,6 +71,7 @@ from src import dino_native as dino_native_mod
 from src import container_registry as container_registry_mod
 from src import crafting_coverage as crafting_coverage_mod
 from src import crafted_twins as crafted_twins_mod
+from src import duplicable_rings as duplicable_rings_mod
 import re as _re
 
 import collections
@@ -322,6 +323,8 @@ UTILITY_PROCS_PATH = os.path.join(
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
 PARRYING_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "parrying_version.json")
 RIPOSTE_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "riposte_version.json")
+DUPLICABLE_RINGS_SHARD_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "duplicable_rings.json")
 HEIGHTENED_AWARENESS_SHARD_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "heightened_awareness.json")
 SPEED_AUGMENT_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_augment.json")
@@ -1832,6 +1835,24 @@ def build() -> dict:
         raise SystemExit(
             "crafted-twin identity failed (#547) — a pair stopped being one item:\n  "
             + "\n  ".join(_twins["problems"]))
+    # #442 — which rings the wiki STATES may be worn twice, stamped per item.
+    # Replaces the hard-coded name list in web/model.js: same gate, but now a
+    # dated shard carrying each item's verbatim citation. Fail-closed — a ring
+    # absent from the shard is not duplicable, because reading silence as
+    # permission would hand a player a loadout they cannot equip.
+    #
+    # Runs on `out["items"]`, after every pass that could change a ring's slot or
+    # set membership, so the validation below judges the records that actually
+    # ship rather than an earlier draft of them.
+    _dupring_shard = duplicable_rings_mod.load(DUPLICABLE_RINGS_SHARD_PATH)
+    _dupring_check = duplicable_rings_mod.check(_dupring_shard, out["items"])
+    if _dupring_check["problems"]:
+        raise SystemExit(
+            "duplicable-ring shard failed (#442) — a wiki claim no longer describes "
+            "the catalog:\n  " + "\n  ".join(_dupring_check["problems"]))
+    _dupring_cov = duplicable_rings_mod.apply(out["items"], _dupring_shard)
+    out["metadata"]["duplicable_ring_coverage"] = {**_dupring_cov, **_dupring_check}
+
     out["metadata"]["crafted_twin_identity"] = _twins["identity"]
     out["metadata"]["crafted_twin_coverage"] = {
         "inspected": _twins["inspected"], "pairs": len(_twins["pairs"])}
