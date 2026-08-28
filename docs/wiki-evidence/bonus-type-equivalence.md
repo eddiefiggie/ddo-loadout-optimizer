@@ -56,6 +56,15 @@ rules out, and it would wrongly suppress a bonus that genuinely stacks.
   `{{Save Reflex 2 Determination}}` — the same `<template> <N> <Type>` shape as
   `{{Stat DEX 3 Insightful}}` and `{{Save Fort 1 Insight}}` on the same item. No concept page
   exists for it, but the item template states the type. Leave it in its own bucket.
+- **`Morale` is a real bonus type this dataset does not yet produce — ruled 2026-08-28.**
+  It is one of the 36 pages in the wiki's `Category:Bonus types`, and `Morale bonus`
+  states the ordinary same-type rule ("Multiple morale bonuses ... do not stack. Only
+  the highest morale bonus applies"). It therefore takes its **own bucket with no
+  equivalence entry**, which is what `equivType()` already does with an unmapped type.
+  Zero affixes carry it today, so it is deliberately absent from the coverage table
+  below and from `bonus_type_dispositions.json`; the first `Morale` affix written must
+  add its disposition in the same change. Full ruling: `morale-bonus-type.md` (#569).
+  Note it is *already* shipped in `CREDIT_BONUS_TYPES`, on purpose — see that file §4.
 - **`Insight` vs `Insightful` does not need an equivalence entry.** The built dataset carries
   **zero** affixes typed `Insightful`; gear-planner emits `Insight` only. `"Insightful Spell
   Focus Mastery"` appears solely in `affixes[].via`, the source-enchantment receipt from
