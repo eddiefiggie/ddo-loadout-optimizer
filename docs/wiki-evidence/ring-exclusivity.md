@@ -4,7 +4,13 @@
 transport that works — see `harvest-method.md`). Every page in the ring
 population was read; nothing here is derived.
 
-Shard: `data/seed/compendium/ring_exclusivity.json` (435 entries, all `stated`).
+Shard: `docs/wiki-evidence/ring-exclusivity.json` (435 entries, all `stated`).
+
+It sits here rather than under `data/seed/` on purpose: nothing seeds from it yet.
+An inert file under that prefix misrepresents itself as pipeline input, and the
+stamp guard reads the prefix as player-facing — correctly, since a data-only
+merge changes every solve. #566 moves it into `data/seed/compendium/` at the
+moment it starts driving the gate, and owes the stamp bump then.
 
 This supersedes the ruling in `duplicable-rings.md`, which is left in place as
 the record of how the question was previously answered. See *What this
