@@ -4234,3 +4234,43 @@ test("#532: the non-optimal panel tells the player which kind of failure this is
   assert.ok(solverIdx > 0 && constraintsIdx > solverIdx,
     "the constraints sentence is the fall-through branch, not the guarded one");
 });
+
+// ---------------------------------------------------------------------------
+// #554 — the set-pin price control. The pin says the requirement was kept; this
+// says what it cost. Offered on request, because a pinned solve is already the
+// slow arm and pricing must never ride it.
+
+test("#554: the price control is offered only when a pin actually landed", () => {
+  const withPin = { setPinReport: [{ set: "Cruel Cut", verdict: "pinned" }] };
+  assert.ok(/setpin-probe/.test(R.setPinNotice(withPin, { canPrice: true })),
+    "a delivered pin can be priced");
+  assert.ok(!/setpin-probe/.test(R.setPinNotice(withPin, { canPrice: false })),
+    "no solver, no control — never a button that cannot work");
+
+  // Nothing landed: suppressed pins have no cost to report, because they were
+  // never applied.
+  const suppressed = { setPinReport: [{ set: "Cruel Cut", verdict: "not-owned" }] };
+  assert.ok(!/setpin-probe/.test(R.setPinNotice(suppressed, { canPrice: true })),
+    "a suppressed pin changed nothing, so there is nothing to price");
+  const conflict = { setPinReport: [{ set: "A", verdict: "conflict" }] };
+  assert.ok(!/setpin-probe/.test(R.setPinNotice(conflict, { canPrice: true })));
+});
+
+test("#554: the control pluralises, and the notice still renders without it", () => {
+  const one = R.setPinNotice({ setPinReport: [{ set: "A", verdict: "pinned" }] }, { canPrice: true });
+  assert.ok(/What did this set cost\?/.test(one), one);
+  const two = R.setPinNotice({ setPinReport: [
+    { set: "A", verdict: "pinned" }, { set: "B", verdict: "pinned" }] }, { canPrice: true });
+  assert.ok(/What did these sets cost\?/.test(two), two);
+
+  // The sentences survive with the control absent — the notice is honest without
+  // the price, which is why #539 could ship before #554.
+  const bare = R.setPinNotice({ setPinReport: [{ set: "A", verdict: "pinned" }] }, {});
+  assert.ok(/delivered it: A/.test(bare));
+  assert.ok(!/button/.test(bare));
+});
+
+test("#554: no pins at all renders nothing, control or otherwise", () => {
+  assert.strictEqual(R.setPinNotice({}, { canPrice: true }), "");
+  assert.strictEqual(R.setPinNotice({ setPinReport: [] }, { canPrice: true }), "");
+});

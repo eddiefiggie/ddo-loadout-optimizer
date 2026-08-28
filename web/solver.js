@@ -2293,6 +2293,57 @@ function concessionWindow(value) { return Math.max(3, Math.round(0.25 * Math.abs
  *  beneath moved", which the caller must keep distinct from "the probe could not
  *  run at all".
  */
+/** #554 — what did the set pins COST?
+ *
+ *  #539 delivers a pinned set and says so, but a player cannot see the trade. In a
+ *  synthetic case the cost was Intelligence 18 -> 2; in a real ML 34 query with
+ *  four Set Augments pinned it was ZERO. Those two are indistinguishable today,
+ *  and the difference is exactly what a player wants before accepting the pin.
+ *
+ *  The answer is one re-solve without the pins, diffing the ranked targets. Same
+ *  shape as `probeConcession` above and the outbid pricing: the model is COPIED,
+ *  never mutated, and this runs ON REQUEST rather than on the solve path — a
+ *  pinned solve is already the slow arm (~41s for four Set Augments against a
+ *  ~6.5s baseline), so pricing must never ride it.
+ *
+ *  Returns null when there is nothing to price (no pins bound). Otherwise
+ *  `{ pins, deltas, free, sol }`, where `deltas` carries EVERY ranked target
+ *  whose value moved and `free` says the pins cost nothing measurable. `free` is
+ *  a real and common answer, not a failure — reporting it is the point.
+ */
+async function probeSetPinCost(model, highs, perTarget, opts = {}) {
+  const pins = (model.pinnedSets || []).slice();
+  if (!pins.length) return null;
+
+  // Drop the pins and re-solve. `setPinReport` goes with them so the relaxed
+  // solve carries no stale verdicts, and the escape-hatch retry in
+  // solveLexicographic has nothing to fire on.
+  const relaxed = await solveLexicographic(
+    Object.assign({}, model, { pinnedSets: [], setPinReport: [] }), highs);
+  if (!relaxed || relaxed.status !== "optimal") return { pins, deltas: [], free: false, sol: null,
+    unavailable: "the build does not solve without the pins, so there is nothing to compare against" };
+
+  const list = (model.targets || []).slice();
+  const baseUtility = (opts.utilityCount != null) ? opts.utilityCount : null;
+  const valueOf = (sol, s) => (s === _UTILITY_SENTINEL
+    ? ((sol.utilityReport && sol.utilityReport.count) != null ? sol.utilityReport.count : null)
+    : (sol.effective[s] ?? 0));
+
+  const deltas = [];
+  for (const stat of list) {
+    const withPins = stat === _UTILITY_SENTINEL
+      ? (baseUtility != null ? baseUtility : null)
+      : Number(perTarget[stat] ?? 0);
+    const without = valueOf(relaxed, stat);
+    if (withPins == null || without == null) continue;
+    if (Number(without) !== Number(withPins)) {
+      deltas.push({ stat, withPins: Number(withPins), without: Number(without),
+                    delta: Number(withPins) - Number(without) });
+    }
+  }
+  return { pins, deltas, free: deltas.length === 0, sol: relaxed };
+}
+
 async function probeConcession(model, program, highs, stat, targetList, perTarget, opts = {}) {
   const list = targetList || [];
   const at = list.indexOf(stat);
@@ -3379,5 +3430,5 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 if (typeof module !== "undefined" && module.exports) {
   // readSolution is exported for TESTS ONLY — the deterministic guard tests
   // inject a synthetic primal (#319); app code goes through the solve entry points.
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport, buildOverrideReport, outbidReportFor, attributeOutbid, probeConcession, concessionWindow };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport, buildOverrideReport, outbidReportFor, attributeOutbid, probeConcession, probeSetPinCost, concessionWindow };
 }

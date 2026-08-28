@@ -4356,6 +4356,57 @@ async function withCrossAdd(map, fn) {
       "and the cost is real and visible: 18 -> 2, paid in the ranked stat");
   });
 
+  // --- #554: what did the pin COST? ------------------------------------------
+  // #539 says the requirement was kept. This says what was paid for it. Verified
+  // against the shipped catalog too: pinning `The Dread Isle's Curse` costs 80
+  // Magical Sheltering and 2 Intelligence, while four pinned Set Augments on a
+  // melee query cost nothing at all — and those two are indistinguishable to a
+  // player without this.
+  await test("#554: pricing a pin reports every ranked stat it moved", async () => {
+    const tiers = [{ n: 2, affixes: [["Constitution", "Artifact", 10]] }];
+    const pieceR = setPiece("Set Ring", "Ring", [["Intelligence", "Enhancement", 1]], "Bond", tiers);
+    const pieceN = setPiece("Set Neck", "Necklace", [["Intelligence", "Insight", 1]], "Bond", tiers);
+    const betterR = item("Plain Ring", "Ring", [["Intelligence", "Enhancement", 9]]);
+    const betterN = item("Plain Neck", "Necklace", [["Intelligence", "Insight", 9]]);
+    const model = { targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [pieceR, betterR]), slot("Necklace", [pieceN, betterN])],
+      pinnedSets: ["Bond"] };
+
+    const pinned = await S.solveLexicographic(model, highs);
+    assert.strictEqual(pinned.effective.Intelligence, 2);
+
+    const price = await S.probeSetPinCost(model, highs, pinned.perTarget || {});
+    assert.deepStrictEqual(price.pins, ["Bond"]);
+    assert.strictEqual(price.free, false, "this pin cost something and must say so");
+    assert.deepStrictEqual(price.deltas,
+      [{ stat: "Intelligence", withPins: 2, without: 18, delta: -16 }],
+      "the player gave up 16 Intelligence for the set");
+  });
+
+  await test("#554: a pin the solver wanted anyway prices as free", async () => {
+    // The common real case, and NOT a failure to report. Measured on shipped data:
+    // four pinned Set Augments on a melee query moved no ranked target at all.
+    const tiers = [{ n: 2, affixes: [["Intelligence", "Artifact", 10]] }];
+    const a = setPiece("Good Ring", "Ring", [["Intelligence", "Enhancement", 9]], "Bond", tiers);
+    const b = setPiece("Good Neck", "Necklace", [["Intelligence", "Insight", 9]], "Bond", tiers);
+    const model = { targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [a]), slot("Necklace", [b])], pinnedSets: ["Bond"] };
+    const pinned = await S.solveLexicographic(model, highs);
+    const price = await S.probeSetPinCost(model, highs, pinned.perTarget || {});
+    assert.strictEqual(price.free, true);
+    assert.deepStrictEqual(price.deltas, []);
+  });
+
+  await test("#554: nothing pinned prices to null, not to a false 'free'", async () => {
+    // "free" asserts the pins were checked and cost nothing. With no pins there is
+    // nothing to assert, and conflating the two would let the UI claim a check it
+    // never ran.
+    const a = item("Ring A", "Ring", [["Intelligence", "Enhancement", 9]]);
+    const model = { targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      worn: [slot("Ring", [a])] };
+    assert.strictEqual(await S.probeSetPinCost(model, highs, {}), null);
+  });
+
   await test("#539: an impossible pin is reported, not returned as a bare infeasible", async () => {
     // One slot cannot supply a 2-piece set. The solve must still answer.
     const tiers = [{ n: 2, affixes: [["Constitution", "Artifact", 10]] }];

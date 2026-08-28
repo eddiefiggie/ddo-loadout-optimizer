@@ -1509,11 +1509,18 @@ function blockNotice(result) {
 /** #539 — what the player's set pins did. Reads the SHARED sentences from
  *  projection.js, like every other notice, so the page and the exports cannot
  *  disagree about whether a pin landed. */
-function setPinNotice(result) {
+function setPinNotice(result, opts) {
   const lines = (Proj && Proj.setPinNoticeLines) ? Proj.setPinNoticeLines(result) : [];
-  return lines.length
-    ? `<p class="scope-note block-note" role="status">${lines.map(esc).join(" ")}</p>`
-    : "";
+  if (!lines.length) return "";
+  const body = `<p class="scope-note block-note" role="status">${lines.map(esc).join(" ")}</p>`;
+  // #554 — the price control, offered ONLY when a pin actually landed (there is
+  // nothing to price otherwise) and only when the probe can run. One extra solve,
+  // on request: a pinned solve is already the slow arm, so pricing must never
+  // ride it. Same shape as the outbid price and the concession probe.
+  const delivered = ((result && result.setPinReport) || []).filter((e) => e.verdict === "pinned");
+  if (!delivered.length || !(opts && opts.canPrice)) return body;
+  return body + `<button class="btn ghost setpin-probe" type="button">`
+    + `What did ${delivered.length === 1 ? "this set" : "these sets"} cost?</button>`;
 }
 
 /** #499 — the upgrades notice: the surface that replaced the Alternatives tab.
@@ -1730,7 +1737,7 @@ function noticeDescriptors(ctx) {
   push("craftingExcludedNotice", craftingExcludedNotice(query, result));
   push("augCeilingNotice", augCeilingNotice(query, result));
   push("blockNotice", blockNotice(result));
-  push("setPinNotice", setPinNotice(result));
+  push("setPinNotice", setPinNotice(result, { canPrice: !!ctx.canPriceSetPin }));
   push("upgradeNotice", upgradeNotice(ctx.canUpgrade, ctx.upgradeBar));
 
   const rank = (d) => {
@@ -2166,6 +2173,9 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // rather than three independent recomputations of "what fired".
   const notices = noticeDescriptors({ result, query, model, dataset,
     canPrice: canPriceOutbid(), canRequire: typeof onRequire === "function",
+    // #554 — the set-pin price needs the same two things the concession probe
+    // needs: a live solver and the optimum's program to re-solve from.
+    canPriceSetPin: canPriceSetPin(),
     canUpgrade: canFindUpgrades(), upgradeBar: barPct });
   container.innerHTML = `
     ${banner}
@@ -2275,6 +2285,47 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     });
   }
 
+  // #554 — price what the set pins cost, on request. One probe per click, and
+  // never on the solve path: the pinned solve is already the slow arm.
+  for (const btn of container.querySelectorAll(".setpin-probe")) {
+    btn.addEventListener("click", () => {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.textContent = "Pricing…";
+      // Defer so the label paints before the probe's solve, which is synchronous
+      // inside however many `await`s it is written with.
+      setTimeout(() => {
+        Promise.resolve()
+          .then(() => probeSetPinCost(model, highs, optimum.perTarget || optimum.effective || {},
+            { utilityCount: optimum.utilityReport ? optimum.utilityReport.count : null }))
+          .then((res) => showSetPinCost(btn, res))
+          .catch((err) => {
+            // Never silently. A swallowed failure reads identically to "the pins
+            // were free", and those two must not blur — one means the trade does
+            // not exist, the other means we did not look.
+            console.error("set pin price failed", err);
+            replaceControl(btn, "Could not price the set pins — the probe did not run.");
+          });
+      }, 0);
+    });
+  }
+
+  /** The three terminal states, kept distinct for the same reason the concession
+   *  probe keeps its three: "free" is a real answer, not a non-answer. */
+  function showSetPinCost(btn, res) {
+    if (!res) return replaceControl(btn, "Nothing is pinned, so there is nothing to price.");
+    if (res.unavailable) return replaceControl(btn, esc(res.unavailable));
+    const names = res.pins.join(", ");
+    if (res.free) {
+      return replaceControl(btn,
+        `Requiring ${esc(names)} cost nothing — every ranked stat is exactly what it `
+        + "would have been without the requirement.");
+    }
+    const rows = res.deltas.map((d) => `${esc(d.stat)} ${d.without} \u2192 ${d.withPins}`).join(", ");
+    replaceControl(btn,
+      `Requiring ${esc(names)} cost you: ${rows}. Everything else is unchanged.`);
+  }
+
   for (const btn of container.querySelectorAll(".outbid-require")) {
     btn.addEventListener("click", () => {
       btn.disabled = true;
@@ -2340,6 +2391,14 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // and no program, so the control is WITHHELD rather than offered and then failing.
   function canProbeConcession() {
     return typeof probeConcession === "function" && !!highs && !!(optimum && optimum.program);
+  }
+
+  /** #554 — can the set-pin price run? The probe re-solves the model WITHOUT the
+   *  pins, so it needs a live solver and a model, and there must be a pin bound
+   *  to price in the first place. */
+  function canPriceSetPin() {
+    return typeof probeSetPinCost === "function" && !!highs && !!model
+      && !!((model.pinnedSets || []).length);
   }
   // #499 — same shape again. The notice does not render at all without this, so a
   // restored character never sees a button that cannot work.
