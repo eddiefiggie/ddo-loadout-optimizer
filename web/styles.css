@@ -958,6 +958,9 @@ input.wz-ml { width: 120px; }
 .wz-pinbox .wz-addrow { margin-top: var(--sp-2); }
 .wz-pin-search, #wz-pin-search { width: 100%; }
 .wz-pin-hint, .wz-pin-empty, .wz-pin-more { font-size: var(--fs-sm); color: var(--faint); margin: var(--sp-2) 0 0; }
+/* #562 — the browse zero-result hint. Full-width so it breaks the control row
+   rather than squeezing between two selects, and muted like every other hint. */
+.browse-hint { flex-basis: 100%; font-size: var(--fs-sm); color: var(--faint); margin: var(--sp-2) 0 0; }
 .wz-pin-results { display: flex; flex-direction: column; gap: 2px; margin-top: var(--sp-2); max-height: 15rem; overflow-y: auto; }
 .wz-pin-results:empty { display: none; }
 .wz-pin-hit { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3);
