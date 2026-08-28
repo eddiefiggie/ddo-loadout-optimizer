@@ -6669,5 +6669,75 @@ async function withCrossAdd(map, fn) {
       "the old collapse-everything-into-infeasible returns are gone");
   });
 
+  // --- #199: wiki-sourced intrinsic in-game stat caps ---------------------------
+  // The table ships one entry: Doublestrike 100 ("Doublestrike above 100% has no
+  // effect on main-hand weapons"). Evidence and the four refusals are in
+  // docs/wiki-evidence/intrinsic-stat-caps.md.
+
+  await test("#199: an intrinsic cap clamps the credited total, and is reported", async () => {
+    // Gear alone tops out around 45 in the real catalog, so the cap can only bind
+    // alongside a declared credit — which is exactly the reported player's state:
+    // "doublestrike might be my highest priority until i hit 100% then its irrelevant".
+    const model = {
+      targets: ["Doublestrike"], mlCap: 34, dodgeCap: null,
+      intrinsicCaps: { Doublestrike: 100 },
+      credits: [{ stat: "Doublestrike", bonus_type: "Profane", value: 85 }],
+      worn: [slot("Ring", [item("ds", "Ring", [["Doublestrike", "Enhancement", 18]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.Doublestrike, 100,
+      "85 declared + 18 worn = 103 raw, credited at the game ceiling of 100");
+    assert.strictEqual(r.capped.Doublestrike, 100, "and the cap is reported for disclosure");
+    assert.strictEqual(r.intrinsicCaps.Doublestrike, 100,
+      "as INTRINSIC, so results.js can say 'game cap' rather than blaming the player");
+  });
+
+  await test("#199: a stat with no intrinsic cap is not clamped", async () => {
+    // The refusal half of the table, and the one that would be got wrong by
+    // analogy: Doubleshot WRAPS past 100% into extra shots. A cap here would
+    // delete real points from every ranged build.
+    const model = {
+      targets: ["Doubleshot"], mlCap: 34, dodgeCap: null,
+      intrinsicCaps: { Doublestrike: 100 },   // the shipped table, verbatim
+      credits: [{ stat: "Doubleshot", bonus_type: "Profane", value: 85 }],
+      worn: [slot("Ring", [item("dsh", "Ring", [["Doubleshot", "Enhancement", 18]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.Doubleshot, 103,
+      "no ceiling: the full 103 is credited, because the wiki states Doubleshot wraps");
+    assert.strictEqual(r.capped.Doubleshot, undefined, "and no cap is reported");
+  });
+
+  await test("#199: a TIGHTER user cap wins, a LOOSER one does not", async () => {
+    const base = {
+      targets: ["Doublestrike"], mlCap: 34, dodgeCap: null,
+      intrinsicCaps: { Doublestrike: 100 },
+      credits: [{ stat: "Doublestrike", bonus_type: "Profane", value: 85 }],
+      worn: [slot("Ring", [item("ds", "Ring", [["Doublestrike", "Enhancement", 18]])])],
+    };
+    const tighter = await S.solveLexicographic(
+      { ...base, userCaps: { Doublestrike: 60 } }, highs);
+    assert.strictEqual(tighter.effective.Doublestrike, 60,
+      "the player may ask for less than the game allows");
+    const looser = await S.solveLexicographic(
+      { ...base, userCaps: { Doublestrike: 250 } }, highs);
+    assert.strictEqual(looser.effective.Doublestrike, 100,
+      "but may NOT raise the game's ceiling — a preference cannot change the game");
+  });
+
+  await test("#199: no intrinsic caps at all reproduces pre-#199 behavior exactly", async () => {
+    // The stale-cached-dataset path: `metadata.intrinsic_stat_caps` is absent, so
+    // dataset.js installs {} and every solve must be byte-identical to before.
+    const worn = [slot("Ring", [item("ds", "Ring", [["Doublestrike", "Enhancement", 18]])])];
+    const q = { targets: ["Doublestrike"], mlCap: 34, dodgeCap: null,
+      credits: [{ stat: "Doublestrike", bonus_type: "Profane", value: 85 }], worn };
+    const withNone = await S.solveLexicographic({ ...q }, highs);
+    const withEmpty = await S.solveLexicographic({ ...q, intrinsicCaps: {} }, highs);
+    assert.strictEqual(withNone.effective.Doublestrike, 103);
+    assert.strictEqual(withEmpty.effective.Doublestrike, 103);
+    assert.deepStrictEqual(withNone.capped, withEmpty.capped);
+  });
+
   console.log(`\n${passed} passed`);
 })();

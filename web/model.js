@@ -182,6 +182,31 @@ function setStackEquiv(map) {
     for (const k of Object.keys(map)) _STACK_EQUIV[k] = map[k];
   }
 }
+// #199 — wiki-sourced intrinsic in-game stat ceilings, emitted into items.json as
+// `metadata.intrinsic_stat_caps` and installed here (dataset.js calls
+// setIntrinsicCaps on load), same two-runtime bridge as the stacking table above.
+// buildProgram merges these into cappedStats as a THIRD source beside the armor
+// dodge cap and the player's own caps; the tighter of the three wins, which is the
+// rule CONCEPTS.md "Stat cap" already states for the first two.
+//
+// EXCLUDE-UNTIL-VERIFIED, and here the ABSENCE half is the load-bearing half: a
+// stat missing from this table has NO ceiling in the game, not an unknown one.
+// Four of the five stats harvested for #199 are absent deliberately — Doubleshot
+// most sharply, which WRAPS past 100% into extra shots where its Doublestrike
+// sibling stops dead, so capping it by analogy deletes real points. Never add a
+// stat here without the verbatim wiki sentence stating its ceiling; the refusals
+// and their quotes are in data/seed/compendium/intrinsic_stat_caps.json and
+// docs/wiki-evidence/intrinsic-stat-caps.md.
+let _INTRINSIC_CAPS = Object.create(null);
+function setIntrinsicCaps(map) {
+  _INTRINSIC_CAPS = Object.create(null);
+  if (map && typeof map === "object") {
+    for (const k of Object.keys(map)) {
+      if (typeof map[k] === "number") _INTRINSIC_CAPS[k] = map[k];
+    }
+  }
+}
+
 /** Canonicalize an affix `type` to its stacking bucket token (identity unless the
  *  curated equivalence table remaps it). Used ONLY to form bucket keys. */
 function equivType(type) {
@@ -1323,6 +1348,13 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const dodgeCap = query.armorType && targetSet.has("Dodge")
     ? (ARMOR_DODGE_CAP[query.armorType] ?? null) : null;
 
+  // #199 — the wiki-sourced intrinsic ceilings, narrowed to the stats this solve
+  // actually tracks so the program does not mint buckets for stats nobody ranked.
+  const intrinsicCaps = {};
+  for (const stat of Object.keys(_INTRINSIC_CAPS)) {
+    if (targetSet.has(stat)) intrinsicCaps[stat] = _INTRINSIC_CAPS[stat];
+  }
+
   // Dino insert pool: each record is an insert UNIT keyed by (dino_type,
   // category) carrying one or more affixes (KTD4). Keep a unit when ANY of its
   // affixes advances a ranked target — the rest add solver vars with no benefit.
@@ -1443,7 +1475,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // here survives into the program.
     pinnedSets: _setPins.pinned,
     setPinReport: _setPins.report,
-    dodgeCap, mlCap,
+    dodgeCap, intrinsicCaps, mlCap,
     // #91 (U3, KTD3) — the counting set rides the MODEL, never the persisted
     // query: buildProgram reads it from here to widen its own targetSet and
     // mint the per-effect indicator binaries. `utilityEnabled` mirrors the
@@ -1579,7 +1611,7 @@ function poolStatNames(model) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { poolStatNames, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
+  module.exports = { poolStatNames, setIntrinsicCaps, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,

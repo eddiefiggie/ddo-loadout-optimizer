@@ -2896,8 +2896,19 @@ function buildViews(build, model, query, opts) {
     const contribs = attr[stat] || [];
     const cap = build.capped ? build.capped[stat] : null;
     const rawSum = contribs.reduce((s, p) => s + p.value, 0);
+    // #199 — name WHICH cap bound. A player who set no cap and sees their top
+    // priority stop accruing reads it as the solver ignoring them; saying "the
+    // game caps this" is the whole point of surfacing intrinsic caps at all.
+    // The intrinsic ceiling is the source only when it IS the effective cap —
+    // a tighter hand-set cap wins the min() in buildProgram and owns the note.
+    const gameCap = (build.intrinsicCaps || {})[stat];
+    const byGame = gameCap != null && cap != null && cap === gameCap;
     const capNote = (cap != null && rawSum > total)
-      ? `<span class="stat-cap" title="raw ${esc(rawSum)} exceeds the cap for this stat">capped at ${esc(total)} · raw ${esc(rawSum)}</span>` : "";
+      ? `<span class="stat-cap" title="${byGame
+          ? `${esc(stat)} stops counting past ${esc(gameCap)} in game, so raw ${esc(rawSum)} is not all credited — this is not your cap and no gear can raise it`
+          : `raw ${esc(rawSum)} exceeds the cap for this stat`}">${byGame
+          ? `game cap ${esc(total)} · raw ${esc(rawSum)}`
+          : `capped at ${esc(total)} · raw ${esc(rawSum)}`}</span>` : "";
     // #449 U3 (R17b) — one ceiling signal per card, chosen by which data the
     // build actually carries: the fraction when `ceilingReport` has a row for
     // this stat, the legacy chip only when it does not.

@@ -359,6 +359,14 @@ function installStackEquiv(map) {
   }
 }
 
+// #199 — same two-runtime bridge for the intrinsic stat-cap table.
+function installIntrinsicCaps(map) {
+  if (typeof setIntrinsicCaps !== "undefined") { setIntrinsicCaps(map); return; }
+  if (typeof require !== "undefined") {
+    try { require("./model.js").setIntrinsicCaps(map); } catch (e) { /* model.js absent: no-op */ }
+  }
+}
+
 // U1 (#290/#291) — same two-runtime bridge for the cross-add map
 // {target_stat: [source_stats]} (metadata.cross_add): stats whose bucket totals
 // flat-ADD into the target across buckets. Solver crediting reads
@@ -383,6 +391,10 @@ function normalizeDataset(dataset) {
   const equiv = meta.stacking_equivalence || {};
   dataset._stackEquiv = equiv;
   installStackEquiv(equiv);
+  // #199 — install the intrinsic ceilings. An older cached dataset has no such key;
+  // installing `{}` is correct there, because the table's absence means "no stat has
+  // a verified ceiling", which is exactly the pre-#199 behavior.
+  installIntrinsicCaps(meta.intrinsic_stat_caps || {});
   const crossAdd = meta.cross_add || {};
   dataset._crossAdd = crossAdd;
   installCrossAdd(crossAdd);

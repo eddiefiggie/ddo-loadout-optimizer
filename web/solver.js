@@ -222,6 +222,14 @@ function buildProgram(model) {
   // stat is clamped in encodeStage (d <= raw, d <= cap) and read back as min(cap, raw).
   const cappedStats = {};
   if (model.dodgeCap != null) cappedStats.Dodge = model.dodgeCap;
+  // #199 — the wiki-sourced intrinsic ceilings join as a THIRD source, under the
+  // same tighter-of-the-set rule. Merged BEFORE the user's own caps so a player who
+  // sets a tighter cap by hand still wins; a player who sets a LOOSER one does not,
+  // because the game's ceiling is not something a preference can raise.
+  for (const [stat, cap] of Object.entries(model.intrinsicCaps || {})) {
+    if (cap == null) continue;
+    cappedStats[stat] = cappedStats[stat] != null ? Math.min(cappedStats[stat], cap) : cap;
+  }
   for (const [stat, cap] of Object.entries(model.userCaps || {})) {
     if (cap == null) continue;
     cappedStats[stat] = cappedStats[stat] != null ? Math.min(cappedStats[stat], cap) : cap;
@@ -1397,7 +1405,8 @@ function buildProgram(model) {
   return {
     // creditBuckets (bucket key -> declared-credit floor) rides out for the
     // #322 visibility guard (visibleGateSet) rather than being re-derived.
-    xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta, creditBuckets, overrideMeta,
+    xVars, zByBucket, cappedStats, intrinsicCaps: { ...(model.intrinsicCaps || {}) },
+    targetList: model.targets, model, creditMeta, creditBuckets, overrideMeta,
     // #539 — the set pins this program actually bound, so a solve can report what
     // it was holding rather than the caller re-deriving it from the query.
     setPinsBound,
@@ -2754,7 +2763,7 @@ async function solveLexicographic(model, highs) {
     tfPlaced: sol.tfPlaced, gsPlaced: sol.gsPlaced,
     membershipPlaced: sol.membershipPlaced, setAugmentsPlaced: sol.setAugmentsPlaced,
     breakdown: breakdownByTarget(program, prim, visible), computeScale: computeScale(program),
-    capped: { ...program.cappedStats }, floorReport, program,
+    capped: { ...program.cappedStats }, intrinsicCaps: { ...(program.intrinsicCaps || {}) }, floorReport, program,
     // #539 — every set pin's verdict, including the suppressed and conflicting
     // ones. Plain JSON so persist.js can keep it under RESULT_KEEP: a restored
     // character must still be able to say why a pin did not land, without
@@ -3182,7 +3191,7 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
   if (!tieBreak) {
     const primG = (name) => (rGain.Columns[name] ? rGain.Columns[name].Primal : 0);
     const visibleG = visibleGateSet(program, primG);
-    return { status: "optimal", ...readSolution(rGain, program, visibleG), breakdown: breakdownByTarget(program, primG, visibleG), capped: { ...program.cappedStats } };
+    return { status: "optimal", ...readSolution(rGain, program, visibleG), breakdown: breakdownByTarget(program, primG, visibleG), capped: { ...program.cappedStats }, intrinsicCaps: { ...(program.intrinsicCaps || {}) } };
   }
   const prim1 = (name) => (rGain.Columns[name] ? rGain.Columns[name].Primal : 0);
   // Pin the achieved gain, then tie-break so the item set (not just the objective
@@ -3205,7 +3214,7 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
   const visible = visibleGateSet(program, prim);
   const sol = readSolution(res, program, visible);
-  return { status: "optimal", ...sol, breakdown: breakdownByTarget(program, prim, visible), capped: { ...program.cappedStats } };
+  return { status: "optimal", ...sol, breakdown: breakdownByTarget(program, prim, visible), capped: { ...program.cappedStats }, intrinsicCaps: { ...(program.intrinsicCaps || {}) } };
 }
 
 // The bounded give allowed on a priority for an alternative: 10% or at least 2, so
