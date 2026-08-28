@@ -118,10 +118,38 @@ This is a **subtraction**, not an assumption, and it is materially stronger than
 
 **What would actually unblock it now** — in dependency order, and note both are prerequisites rather than parts of this affix:
 
-- a ruling on whether `Morale` becomes a modelled bonus type, and what it stacks with — **tracked as #569**;
-- a decision on how an all-skills grant is represented, which `Alluring Skills Bonus` and its siblings may already answer — **tracked as #570**.
+- a ruling on whether `Morale` becomes a modelled bonus type, and what it stacks with — **#569, RULED 2026-08-28**;
+- a decision on how an all-skills grant is represented, which `Alluring Skills Bonus` and its siblings may already answer — **#570, RULED 2026-08-28**.
 
 Only after those two does writing this affix's components become a data task — and the attack-roll third could then land on `Accuracy` directly. Until then the `Bool` presence behavior is the correct shipped state, and it is targetable, so a player who wants the effect can still rank it.
+
+### Both prerequisites are RULED as of 2026-08-28 — this affix is now a data task
+
+Neither ruling changed the shipped dataset; both are recorded with their wiki
+sources, and the write itself is **#140**.
+
+| Third of the grant | Target | Ruling |
+|---|---|---|
+| `+4 morale` (the bonus type) | `Morale`, its own stacking bucket, no equivalence entry | `morale-bonus-type.md` (#569) |
+| attack rolls | `Accuracy` | already settled above — do not re-derive |
+| saves | `SAVES` | already an expansion target |
+| skill checks | expands into the wiki's **21** skills | `all-skills-grants.md` (#570) |
+
+Two things #140 must carry that are easy to miss, and neither is a data value:
+
+1. **`bonus_type_dispositions.json` needs `"Morale": "legitimate"` in the same
+   change.** `tests/test_bonus_type_coverage.py` fails the build on a type with
+   no disposition, and this write produces the dataset's first `Morale` affix.
+2. **Two premise-assertions go stale by design.** `tests/wizard.test.js:1526`
+   and `tests/model.test.js:1507` assert "no shipped item carries a Morale-typed
+   affix" — the premise for the additive declared-credit case. They must be
+   re-ratified deliberately against the new premise, not blanket-accepted. The
+   credits feature itself needs no change; the declared-credits plan predicted
+   this transition and said so.
+
+Registering `all skills` in `src/spell_focus.py`'s allowlist also belongs to
+#140, not to #570 — no affix in the catalog carries the phrase today, so the
+registration has no carrier until this write gives it one.
 
 **One thing this re-harvest could not establish.** Whether that items-section sentence is new since 2026-08-05 or was present and missed. The wiki's page history is login-gated and returned a permission error, so the provenance of the sentence is unknown. Recorded rather than guessed — if it was missed, the harvest method has a gap worth finding; if it is new, nothing was done wrong.
 
