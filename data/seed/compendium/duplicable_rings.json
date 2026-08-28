@@ -1,0 +1,24 @@
+{
+  "_meta": {
+    "field": "duplicable_ring",
+    "note": "Wiki-harvested seed shard. A ring listed here has a ddowiki item page STATING that two copies may be worn toward a set bonus. Absent means NOT duplicable — this list is fail-closed, and silence is never read as permission.",
+    "source": "https://ddowiki.com/page/Item:<name>, the `tips` parameter of the Named item Jewelry template",
+    "evidence": "docs/wiki-evidence/duplicable-rings.md",
+    "harvested": "2026-08-27",
+    "population": "All 131 set-member ring item pages in the catalog were read (see the evidence doc). ZERO carry a Unique Equipped parameter, or the word `unique` at all; 23 carry a `tips` field, and exactly the two below say anything about wearing a second copy."
+  },
+  "harvested": {
+    "Legendary Katra's Razor Wit": {
+      "value": { "duplicable": true },
+      "provenance": "stated",
+      "raw": "2 rings, identical or not, can be used for the set bonus.",
+      "harvested": "2026-08-27"
+    },
+    "Legendary Katra's Wit": {
+      "value": { "duplicable": true },
+      "provenance": "stated",
+      "raw": "2 rings, identically or not, can be used for set bonus.",
+      "harvested": "2026-08-27"
+    }
+  }
+}

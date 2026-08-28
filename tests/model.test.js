@@ -2365,3 +2365,48 @@ test("#539: the model carries the pins and the report to the solver", () => {
   assert.deepStrictEqual(m.pinnedSets, [], "an unknown set never reaches the solver");
   assert.strictEqual(m.setPinReport[0].verdict, "unknown", "but it IS reported");
 });
+
+// ---------------------------------------------------------------------------
+// #442 — the twin gate reads a build-stamped field instead of a hard-coded name.
+// FAIL-CLOSED in every branch: the two errors are not symmetric, because wrongly
+// allowing a duplicate hands the player a loadout they cannot equip.
+
+const _dupRing = (name, over) => Object.assign(
+  { source_item: name, variant_id: name, slot: "Ring", set_bonus: [{ set: "S" }] }, over || {});
+
+test("#442: a build-stamped ring is twin-eligible whatever its name", () => {
+  assert.strictEqual(M.isTwinEligible(_dupRing("Any Ring", { duplicable_ring: true })), true);
+});
+
+test("#442: an unstamped ring falls back to the two confirmed names, and no further", () => {
+  // The fallback exists for callers holding a bare variant — a hand-built fixture
+  // or a legacy saved snapshot — not as a second place to add names.
+  assert.strictEqual(M.isTwinEligible(_dupRing("Legendary Katra's Razor Wit")), true);
+  assert.strictEqual(M.isTwinEligible(_dupRing("Legendary Katra's Wit")), true,
+    "#442 widened the confirmed pair; the harvest found no third");
+  assert.strictEqual(M.isTwinEligible(_dupRing("Some Other Ring")), false);
+});
+
+test("#442: the heroic Katra rings are refused, because the wiki is silent on them", () => {
+  // Inferring from an absence in the PERMISSIVE direction is the error that
+  // produces an unequippable answer.
+  assert.strictEqual(M.isTwinEligible(_dupRing("Katra's Wit")), false);
+  assert.strictEqual(M.isTwinEligible(_dupRing("Katra's Razor Wit")), false);
+});
+
+test("#442: the stamp never overrides the slot and set preconditions", () => {
+  assert.strictEqual(M.isTwinEligible(
+    { source_item: "X", slot: "Belt", set_bonus: [{ set: "S" }], duplicable_ring: true }), false,
+    "the duplicate-wear rule is specific to the two-Ring slot");
+  assert.strictEqual(M.isTwinEligible(
+    { source_item: "X", slot: "Ring", set_bonus: [], duplicable_ring: true }), false,
+    "a second copy of a set-less ring buys nothing — duplicate affixes take a max");
+});
+
+test("#442: only boolean true grants it, never a truthy value", () => {
+  for (const v of ["yes", 1, {}, "true"]) {
+    assert.strictEqual(M.isTwinEligible(_dupRing("Any Ring", { duplicable_ring: v })), false,
+      `duplicable_ring=${JSON.stringify(v)} must not pass — the field is harvested, not inferred`);
+  }
+  assert.strictEqual(M.isTwinEligible(_dupRing("Any Ring", { duplicable_ring: false })), false);
+});
