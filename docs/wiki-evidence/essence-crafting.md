@@ -13,6 +13,10 @@ across nine plans, and the system a player asked about directly:
 **This document exists because the harvest succeeded and the modelling still
 cannot proceed.** Read the blocker before writing any code against the shard.
 
+**Status: the issue is CLOSED as not-planned** — declined on the measured evidence
+below rather than deferred a tenth time. What would reopen it is listed at the
+end.
+
 ## What was harvested
 
 | Table | What it gives | Result |
@@ -82,6 +86,67 @@ In rough order of how much they would settle:
 
 Absent one of those, the honest position is the current one: the system is
 disclosed to the player as an unserved slot rather than modelled wrongly.
+
+## The value question, measured
+
+The nine deferrals all rested on one asserted claim: *generic Enhancement affixes
+rarely beat named best-in-slot*. With the ML curves in hand it is checkable, and
+it holds — more strongly than the phrasing suggests.
+
+Each craftable effect's ML 34 magnitude against the best value any catalog item
+carries for the same affix at ML <= 34, restricted to the **84 effects whose name
+maps unambiguously onto a name the catalog actually uses**:
+
+| Outcome | Count |
+|---|---:|
+| crafted beats named | 23 |
+| tie | 16 |
+| crafted loses | 45 |
+
+**Every one of the 23 wins is by +1 or +2.** The largest is Incite 137 vs 135;
+twenty are skills at 22 vs 21. No crafted effect is meaningfully stronger than
+named gear anywhere.
+
+The ties are exact, which is the more useful signal:
+
+| | crafted ML 34 | best named ML <= 34 |
+|---|---:|---:|
+| every ability score | 15 | 15 |
+| Wizardry | 310 | 310 |
+| Physical Sheltering | 38 | 38 |
+| Fortification | 159 | 162 |
+| element spellpower | 159 | 168 |
+
+So crafting is a way to **reach** named-BiS numbers on a slot you could not
+otherwise fill, never a way to exceed them.
+
+### What this measurement does NOT settle
+
+It compares magnitude, and magnitude is half of what a contribution is worth.
+Whether a crafted effect **adds** to named gear (a different bonus type) or
+**competes** with it (the same bucket) is decided by the bonus type — the exact
+dimension nothing records. If crafted effects stack, a 22 crafted skill on top of
+a 21 named one is worth 22, not 1.
+
+The value case therefore rests entirely on **stacking**, not on raw power. The
+cheap measurement bounds the upside and relocates the question; it does not
+escape the blocker.
+
+### A correction worth keeping
+
+The first run of this comparison reported 51 wins, including "Spell Power +159
+against 0" and "Potency +111 against 0". Those were artifacts: craftable effects
+were mapped onto **wiki** names and compared against a catalog that uses different
+ones, so the baseline was zero wherever the name does not exist here. Named
+element spellpower actually reaches 168 (Combustion, Corrosion, Glaciation,
+Magnetism), so crafted spellpower **loses**.
+
+The tell was that nearly every "win" sat against exactly zero. A comparison whose
+baseline is empty is not a result, and this one looked like one.
+
+73 of the 157 craftable effects still have no confident name mapping and are
+excluded from the table above — which is itself the strongest evidence that the
+vocabulary mapping, not the harvest, is the real work in this system.
 
 ## What the harvest is still worth
 
