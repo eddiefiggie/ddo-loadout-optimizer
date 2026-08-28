@@ -673,3 +673,27 @@ test("#562: no hint when there is nothing useful to say", () => {
   assert.strictEqual(B.craftingSearchHint("Essence Crafting", items, { hadResults: true }), "",
     "a dead-end explanation has no place when the search found something");
 });
+
+// ---------------------------------------------------------------------------
+// #564 — Browse rendered every matching row on every keystroke. Measured against
+// the shipped catalog before the fix: typing `L` blocked the main thread for
+// 702ms across 8,950 rows; an empty query for 852ms across 9,586; the table was
+// 7.9 MB of HTML and 142,730 DOM nodes.
+
+test("#564: the row cap is generous enough to browse and small enough to be instant", () => {
+  // 500 rows renders in ~45ms against ~0.089ms/row measured at 9,586 rows. The
+  // number is a judgement, but it is a judgement with an arithmetic floor: it has
+  // to stay well inside a frame budget on the widest possible result.
+  assert.strictEqual(B.BROWSE_ROW_CAP, 500);
+  assert.ok(B.BROWSE_ROW_CAP * 0.089 < 100,
+    "the cap must render inside 100ms at the measured per-row cost");
+  assert.ok(B.BROWSE_ROW_CAP >= 100,
+    "and stay large enough that browsing is still browsing, not a top-N list");
+});
+
+test("#564: the catalog is far larger than the cap, so the notice is load-bearing", () => {
+  // Non-vacuity: if the catalog ever shrank below the cap, the truncation notice
+  // would never render and the tests above would be guarding nothing.
+  assert.ok(items.length > B.BROWSE_ROW_CAP * 4,
+    `${items.length} items against a ${B.BROWSE_ROW_CAP} cap — truncation is the normal case`);
+});
