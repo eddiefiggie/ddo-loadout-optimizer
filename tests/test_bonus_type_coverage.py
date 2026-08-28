@@ -10,6 +10,7 @@ with a date.
 """
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -17,6 +18,12 @@ sys.path.insert(0, ROOT)
 
 SEED = os.path.join(ROOT, "data", "seed", "compendium", "bonus_type_dispositions.json")
 DATASET = os.path.join(ROOT, "web", "data", "items.json")
+#: #140 — the OTHER place a bonus type can enter the model. `COMPOSITE_COMPONENTS`
+#: decomposes boolean composites at load time in the browser, so the types it mints
+#: never appear in the built JSON and were invisible to this guard. `Morale` is the
+#: first type to arrive that way; before it, every composite emitted `Enhancement`,
+#: which the dataset already carried, so the hole was real but unoccupied.
+NORMALIZER = os.path.join(ROOT, "web", "dataset.js")
 POOLS = ("dino_inserts", "nearly_complete", "viktranium", "seal",
          "thunder_forged", "green_steel")
 
@@ -33,6 +40,27 @@ def _live_types(d):
                 t = a.get("bonus_type", a.get("type"))
                 out.add(t if t is not None else "(null)")
     return out
+
+
+def _composite_types():
+    """Bonus types minted by web/dataset.js's COMPOSITE_COMPONENTS.
+
+    Read from the flat `COMPOSITE_COMPONENT_TYPES` literal rather than executed:
+    this suite is stdlib-only and must not depend on a node runtime. Scraping the
+    table itself does not work — a component built through a helper keeps its type
+    literal outside the declaration, which is exactly how `Morale` was missed on the
+    first attempt at this guard. tests/dataset.test.js pins the mirror against the
+    live table so it cannot drift.
+    """
+    with open(NORMALIZER, encoding="utf-8") as fh:
+        src = fh.read()
+    m = re.search(r"var COMPOSITE_COMPONENT_TYPES = \[([^\]]*)\];", src)
+    found = set(re.findall(r'"([^"]+)"', m.group(1))) if m else set()
+    assert found, (
+        "no bonus types were read out of COMPOSITE_COMPONENT_TYPES — the declaration "
+        "in web/dataset.js moved or changed shape, so this guard is inspecting "
+        "nothing. tests/dataset.test.js pins that literal against the live table.")
+    return found
 
 
 def _dispositions():
@@ -52,7 +80,7 @@ def test_every_live_bonus_type_is_dispositioned():
         return
     with open(DATASET, encoding="utf-8") as fh:
         d = json.load(fh)
-    live = _live_types(d)
+    live = _live_types(d) | _composite_types()
     known = set(_dispositions())
     assert len(live) > 20, "the guard inspects a real population, not an empty one"
     undispositioned = sorted(live - known)
@@ -72,7 +100,7 @@ def test_the_seed_does_not_disposition_types_that_no_longer_exist():
         return
     with open(DATASET, encoding="utf-8") as fh:
         d = json.load(fh)
-    stale = sorted(set(_dispositions()) - _live_types(d))
+    stale = sorted(set(_dispositions()) - (_live_types(d) | _composite_types()))
     assert not stale, (
         f"disposition(s) for type(s) the dataset no longer produces: {stale}. "
         "Retire them deliberately so the coverage count means what it says.")

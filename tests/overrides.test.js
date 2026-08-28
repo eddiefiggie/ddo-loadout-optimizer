@@ -101,8 +101,11 @@ test("the 161 unstamped boolean-composite components are ineligible", () => {
     if (n > 0) { before.set(k, n - 1); continue; }
     if (!a.via) derived.push(a);
   }
-  assert.strictEqual(derived.length, 161,
-    "normalizeDataset generates 161 composite components carrying no provenance stamp");
+  // 561 not 161 since #140: `Greater Heroism` joined COMPOSITE_COMPONENTS, adding
+  // exactly 16 carriers x 25 components = 400. The predicate's behavior is
+  // unchanged — every one of the 400 is still refused below.
+  assert.strictEqual(derived.length, 561,
+    "normalizeDataset generates 561 composite components carrying no provenance stamp");
   assert.ok(derived.every((a) => !O.isEligible(a)),
     "and the predicate refuses every one of them, so it cannot be a `via` presence test");
 });
@@ -310,9 +313,13 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   //   byCat    item -25, weapon -8, augment -2. The 35 carriers by category,
   //     which is the independent cross-check: the categories of the records
   //     carrying `Riposte` before the split were 25 item, 8 weapon, 2 augment.
-  assert.strictEqual(total, 42185, "post-normalize pool size");
+  // 42,585 not 42,185 since #140: +400 Greater Heroism components (16 x 25).
+  // `eligible` and `byCat` are deliberately UNCHANGED — generated composite
+  // components are never engraved, so they enter the total and nothing else.
+  // That asymmetry is the check that the write stayed inside its lane.
+  assert.strictEqual(total, 42585, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
-  // which counts the 161 unstamped composite components as engraved. Applying all
+  // which counts the unstamped composite components (161 then, 561 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
   assert.strictEqual(eligible, 20578, "engraved, eligible affixes");
   assert.deepStrictEqual(byCat, { item: 13548, weapon: 6113, augment: 917 });
@@ -394,7 +401,7 @@ test("the generator marks composite components, so provenance is read not inferr
   for (const v of pool.items) for (const a of v.affixes || []) {
     if (a._compositeOf) { marked++; assert.strictEqual(O.isEligible(a), false); }
   }
-  assert.strictEqual(marked, 161, "every generated composite component carries the mark");
+  assert.strictEqual(marked, 561, "every generated composite component carries the mark");
   const one = pool.items.flatMap((v) => v.affixes || []).find((a) => a._compositeOf);
   assert.ok(!Object.keys(one).includes("_compositeOf"), "and the mark is non-enumerable");
 });

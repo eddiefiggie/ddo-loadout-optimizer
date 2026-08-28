@@ -3,7 +3,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const { normalizeItem, buildPickerVocabulary, expandedAwayFor, expandedAwayMessage, normalizeDataset,
-        COMPANION_STATS, companionHintFor } = require("../web/dataset.js");
+        COMPANION_STATS, companionHintFor, COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES } = require("../web/dataset.js");
 const P = require("../web/projection.js");
 // The built catalog, for the whole-vocabulary invariants at the bottom of this file.
 const realData = normalizeDataset(JSON.parse(
@@ -435,16 +435,73 @@ test("U5: two composites contributing one stat write it once, at the higher valu
   assert.strictEqual(conceal[0].value, 25, "the higher wins (the solver would max anyway)");
 });
 
-test("U5: an explicitly stated component is never shadowed by a derived one", () => {
+// #140 — the shadow key is (name, BONUS TYPE), not the name. These two tests are
+// the pair: suppression happens within one bucket, and never across two.
+//
+// It was name-only until Greater Heroism, whose components are Morale on common
+// stats. A carrier stating `Accuracy Competence 10` was dropping a Morale +4 that
+// genuinely stacks — five component instances across three of its 16 carriers,
+// each reading as a correct loadout. Measured: the pair key changes ZERO
+// components for the three composites that shipped before it.
+test("U5: a stated component in the SAME bucket suppresses the derived one", () => {
+  const it = { affixes: [
+    { name: "Blurry", type: "Bool", value: 1 },
+    { name: "Concealment", type: "Enhancement", value: 7 },
+  ] };
+  normalizeItem(it);
+  const conceal = it.affixes.filter((a) => a.name === "Concealment");
+  assert.strictEqual(conceal.length, 1, "one bucket, one line");
+  assert.strictEqual(conceal[0].type, "Enhancement", "the item's own affix is preserved");
+  assert.strictEqual(conceal[0].value, 7, "its own value wins, not the derived 20");
+});
+
+test("U5: a stated component in a DIFFERENT bucket does not suppress — they stack", () => {
   const it = { affixes: [
     { name: "Blurry", type: "Bool", value: 1 },
     { name: "Concealment", type: "Insight", value: 7 },
   ] };
   normalizeItem(it);
   const conceal = it.affixes.filter((a) => a.name === "Concealment");
-  assert.strictEqual(conceal.length, 1, "no duplicate line");
-  assert.strictEqual(conceal[0].type, "Insight", "the item's own affix is preserved");
-  assert.strictEqual(conceal[0].value, 7);
+  assert.strictEqual(conceal.length, 2, "Insight and Enhancement are two buckets");
+  const own = conceal.find((a) => a.type === "Insight");
+  const derived = conceal.find((a) => a.type === "Enhancement");
+  assert.strictEqual(own.value, 7, "the item's own affix is untouched");
+  assert.strictEqual(derived.value, 20, "the composite's own bucket still contributes");
+});
+
+// #140 — COMPOSITE_COMPONENT_TYPES is a mirror that tests/test_bonus_type_coverage.py
+// reads without a JS runtime, to decide whether a composite has minted a bonus type
+// nobody has ruled on. A mirror that drifts silently would reopen exactly the hole it
+// was added to close, so it is pinned against the live table here.
+test("U5: COMPOSITE_COMPONENT_TYPES mirrors the types the table actually mints", () => {
+  const live = new Set();
+  for (const comps of Object.values(COMPOSITE_COMPONENTS)) {
+    for (const c of comps) live.add(c.type);
+  }
+  assert.ok(live.size, "no composite component types were inspected");
+  assert.deepStrictEqual([...live].sort(), [...COMPOSITE_COMPONENT_TYPES].sort(),
+    "web/dataset.js's COMPOSITE_COMPONENT_TYPES no longer matches COMPOSITE_COMPONENTS. "
+    + "Update the literal, and give the new type a disposition in "
+    + "data/seed/compendium/bonus_type_dispositions.json.");
+});
+
+// The pair key is the raw `type` rather than equivType(type), which is only sound
+// while no composite component type is equivalence-mapped. Pinned, so the day one
+// is, this goes red instead of quietly under-suppressing.
+test("U5: no composite component type participates in the stacking-equivalence table", () => {
+  const equiv = (realData.metadata || {}).stacking_equivalence || {};
+  assert.ok(Object.keys(equiv).length, "the equivalence table was empty — nothing was inspected");
+  const mapped = new Set(Object.keys(equiv).concat(Object.values(equiv)));
+  const types = new Set();
+  for (const comps of Object.values(COMPOSITE_COMPONENTS)) {
+    for (const c of comps) types.add(c.type);
+  }
+  assert.ok(types.size, "no composite component types were inspected");
+  const clash = [...types].filter((t) => mapped.has(t));
+  assert.deepStrictEqual(clash, [],
+    `${JSON.stringify(clash)} is both a composite component type and an entry in the `
+    + "stacking-equivalence table, so the raw type is no longer its bucket. The "
+    + "shadow key in web/dataset.js must switch to equivType(type).");
 });
 
 // R12 — a derived component names the composite it was derived from. The
@@ -505,11 +562,35 @@ test("U5: expansion is idempotent", () => {
   assert.deepStrictEqual(names(it).sort(), after1, "second pass adds nothing");
 });
 
-test("U5: Greater Heroism is QUARANTINED — the spell's numbers are not borrowed", () => {
+// #140 — Greater Heroism was QUARANTINED here until 2026-08-28, when the spell
+// page's items section made the passive form a SUBTRACTION rather than the
+// inference the old assertion correctly guarded: "The items that have greater
+// heroism as a passive enchantment do not grant the temporary hitpoints and
+// immunity to fear portion of the spell." Its two modelling blockers were then
+// ruled — #569 (Morale keys its own bucket) and #570 (all-skills expands to 21).
+test("U5: Greater Heroism writes +4 Morale to attack rolls, saves and every skill", () => {
   const it = { affixes: [{ name: "Greater Heroism", type: "Bool", value: 1 }] };
   normalizeItem(it);
-  assert.deepStrictEqual(names(it), ["Greater Heroism"],
-    "the wiki states a magnitude for the SPELL, not the item enchantment (KTD5)");
+  const morale = it.affixes.filter((a) => a.type === "Morale");
+  assert.strictEqual(morale.length, 25, "1 attack roll + 3 saves + 21 skills");
+  assert.ok(morale.every((a) => a.value === 4), "the wiki's +4, on every component");
+  assert.ok(names(it).includes("Greater Heroism"),
+    "ADDITIVE — the boolean stays, so the effect is still targetable as presence");
+  for (const n of ["Accuracy", "Fortitude Save", "Reflex Save", "Will Save", "Swim"]) {
+    assert.ok(morale.some((a) => a.name === n), `${n} is a component`);
+  }
+});
+
+// The sentence governs the PASSIVE enchantment, and the other Heroism spells have
+// their own magnitudes. Neither may be reached by analogy — that is the inference
+// KTD5 forbids, and the dataset separates them already.
+test("U5: the charged and lesser Heroism forms stay Bool", () => {
+  for (const n of ["Greater Heroism clicky", "Heroism", "Improved Heroism",
+    "Superior Heroism", "Lesser Heroism", "Attuned to Heroism"]) {
+    const it = { affixes: [{ name: n, type: "Bool", value: 1 }] };
+    normalizeItem(it);
+    assert.deepStrictEqual(names(it), [n], `${n} must not borrow Greater Heroism's numbers`);
+  }
 });
 
 test("U5: composites remain presence-flagged after decomposition", () => {

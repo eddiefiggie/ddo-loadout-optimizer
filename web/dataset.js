@@ -126,6 +126,27 @@ var EXPANDED_AWAY_FALLBACK = {
 var _SPELL_SCHOOLS = ["Abjuration Focus", "Conjuration Focus", "Enchantment Focus",
   "Evocation Focus", "Illusion Focus", "Necromancy Focus", "Transmutation Focus"];
 var _ABILITIES = ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"];
+// #570 — every skill in DDO, from the wiki's own all-skills enumeration: the `Skill`
+// page's "List of Skills" table, prefaced "This table describes all the skills
+// present in DDO". 21 of them, all already rankable. Ruling: all-skills-grants.md.
+//
+// Do NOT rebuild this list by unioning src/spell_focus.py's six ability umbrellas.
+// They union to 20 and drop `Swim`, because each quotes a {{Skills|<ability>|N}}
+// tooltip describing what that ENCHANTMENT grants, not what skills exist — and the
+// fix is not to edit SKILLS_STR, which quotes its tooltip correctly.
+// tests/test_all_skills.py pins both halves of that relationship.
+var _ALL_SKILLS = ["Balance", "Bluff", "Concentration", "Diplomacy", "Disable Device",
+  "Haggle", "Heal", "Hide", "Intimidate", "Jump", "Listen", "Move Silently",
+  "Open Lock", "Perform", "Repair", "Search", "Spellcraft", "Spot", "Swim",
+  "Tumble", "Use Magic Device"];
+/** Build `+4 Morale` components for a list of stat names. The magnitude and the
+ *  type are the wiki's, stated once here so 25 components cannot drift apart. */
+function _morale4(names) {
+  return names.map(function (n) {
+    return { name: n, type: "Morale", value: 4, unit: "flat" };
+  });
+}
+
 var PROVENANCE_LABEL_FALLBACK = {
   "Spell Focus": _SPELL_SCHOOLS.slice(),
   "Spell Focus Mastery": _SPELL_SCHOOLS.slice(),
@@ -153,9 +174,31 @@ var PROVENANCE_LABEL_FALLBACK = {
 // is inferred. Percentages store as bare numbers with unit "flat", matching Dodge
 // and Fortification.
 //
-// `Greater Heroism` is deliberately ABSENT: the wiki states a magnitude for the
-// SPELL but not for the item enchantment, so it stays QUARANTINED per KTD5. Do not
-// add it from the spell page — that would be inference (see the evidence doc).
+// `Greater Heroism` (#140) was QUARANTINED here until 2026-08-28 on the grounds that
+// the wiki stated a magnitude for the SPELL but not for the item enchantment. That
+// is no longer the case, and the write below is a SUBTRACTION rather than the
+// inference the old note correctly forbade. The spell page now rules on the passive
+// item form directly: "The items that have greater heroism as a passive enchantment
+// do not grant the temporary hitpoints and immunity to fear portion of the spell."
+// So spell = (+4 morale to attack rolls, saves, skill checks) + (temp HP) + (fear
+// immunity), the item form is the spell minus the last two, and the remainder is
+// sourced. Its two modelling blockers were ruled separately — `Morale` takes its own
+// stacking bucket (#569, morale-bonus-type.md) and an all-skills grant expands into
+// the wiki's 21 skills (#570, all-skills-grants.md).
+//
+// THREE THINGS NOT TO "FIX" HERE:
+//   * The other Heroism affixes stay Bool. `Heroism` (15 records), `Improved`,
+//     `Superior`, `Lesser` and `Attuned to Heroism` (40) are different spells with
+//     different magnitudes, and the quoted sentence is on the Greater Heroism page
+//     only. Extending this entry to them by analogy is exactly the inference KTD5
+//     forbids.
+//   * `Greater Heroism clicky` (4 records) stays Bool too. The sentence governs the
+//     PASSIVE enchantment; charged carriers are outside it. Keying on the exact name
+//     excludes them already — do not loosen this to a prefix match.
+//   * `Morale` is not mapped to any other bonus type. `Morale bonus` states only the
+//     ordinary same-type rule, so it keys its own bucket, which is what equivType()
+//     does with an unmapped type. Collapsing it onto Competence or Enhancement would
+//     turn a legitimate sum into a max.
 var COMPOSITE_COMPONENTS = {
   "Blurry": [{ name: "Concealment", type: "Enhancement", value: 20, unit: "flat" }],
   "Lesser Displacement": [{ name: "Concealment", type: "Enhancement", value: 25, unit: "flat" }],
@@ -164,7 +207,31 @@ var COMPOSITE_COMPONENTS = {
     { name: "Melee Power", type: "Enhancement", value: 10, unit: "flat" },
     { name: "Ranged Power", type: "Enhancement", value: 5, unit: "flat" },
   ],
+  "Greater Heroism": _morale4([
+    // "attack rolls" -> Accuracy, the catalog's general attack bonus (249
+    // instances; affix_synonyms_registry.json registers `Attack`, `Hit` and
+    // `Attack Bonus` under it). Searching for a literal "Attack Bonus" affix
+    // reads as an absence and is NOT one — do not re-derive this.
+    "Accuracy",
+    // "saves" -> the three concrete saves, the same targets the SAVES umbrella
+    // expands to elsewhere in the pipeline.
+    "Fortitude Save", "Reflex Save", "Will Save",
+    // "skill checks" -> every skill. See _ALL_SKILLS.
+  ].concat(_ALL_SKILLS)),
 };
+
+// #140 — the bonus types COMPOSITE_COMPONENTS mints, declared as a flat literal so
+// `tests/test_bonus_type_coverage.py` can read them WITHOUT a JS runtime (that suite
+// is stdlib-only). It exists because these types never reach the built items.json:
+// decomposition happens here, at load time, so a composite could introduce an unruled
+// stacking bucket that the disposition guard — which reads only the dataset — could
+// not see. `Morale` is the first type to arrive this way; before it every composite
+// emitted `Enhancement`, which the dataset already carried, so the hole was real but
+// unoccupied.
+//
+// It is a mirror, and mirrors drift — `tests/dataset.test.js` pins it against the
+// live table, so a component type added without updating this goes red.
+var COMPOSITE_COMPONENT_TYPES = ["Enhancement", "Morale"];
 
 // R12 — every expansion family stamps the ORIGINATING enchantment name onto each
 // affix it emits, under the key `src/spell_focus.py` writes (PROVENANCE_KEY).
@@ -283,14 +350,37 @@ function normalizeItem(it) {
       // Never shadow a component the item states explicitly (its own value wins), and
       // when two composites contribute the same stat keep the HIGHEST — the solver
       // maxes per bucket anyway, so this only avoids a redundant browse line.
-      var stated = new Set(affixes.map(function (a) { return a && a.name; }));
+      //
+      // #140 — BOTH keys are (name, bonus type), not name alone. Suppressing on the
+      // name is only safe while a component's stat can collide with the item's own
+      // affix in the SAME bucket, where the solver takes a max and the suppression
+      // is mere tidiness. `Greater Heroism` broke that: its components are Morale,
+      // its stats are common ones, and Morale keys its own bucket — so a carrier
+      // stating `Accuracy Competence 10` or a Resistance save was silently dropping
+      // a +4 that genuinely STACKS. Five component instances across three of the 16
+      // carriers, and each would have read as a correct loadout.
+      //
+      // This is the same trap `src/enchantment_split.py` documents for its
+      // `shadow_key` knob: "An affix whose output collides with a common stat needs
+      // (name, stacking bucket) instead". The JS path had kept name-only because the
+      // three composites that shipped before this one collide with nothing —
+      // measured: keying on the pair changes ZERO components for Blurry, Lesser
+      // Displacement and Crown of Summer.
+      //
+      // The raw `type` IS the bucket here rather than equivType(type), because no
+      // composite component type participates in the stacking-equivalence table.
+      // `tests/dataset.test.js` pins that, so the day one does, this goes red
+      // instead of quietly under-suppressing.
+      var bucketKey = function (name, type) { return name + "||" + (type == null ? "" : type); };
+      var stated = new Set(affixes.map(function (a) { return a && bucketKey(a.name, a.type); }));
       var derived = new Map();
       for (const a of affixes) {
         var comps = a && COMPOSITE_COMPONENTS[a.name];
         if (!comps) continue;
         for (const c of comps) {
-          if (stated.has(c.name)) continue;
-          var prev = derived.get(c.name);
+          var ck = bucketKey(c.name, c.type);
+          if (stated.has(ck)) continue;
+          var prev = derived.get(ck);
           // Deliberately NOT stamped with the provenance key, unlike every other
           // expansion family. Those REPLACE the affix they expand, so the engraved
           // name would be lost without the stamp and R8's collapse restores it.
@@ -300,10 +390,11 @@ function normalizeItem(it) {
           // `Blurry +20` beside the item's own `Blurry +1 Bool`: the same name twice
           // with two unrelated numbers, the component's stat gone, and a magnitude
           // attached to an enchantment whose in-game cell states none.
-          if (!prev || c.value > prev.value) derived.set(c.name, c);
+          if (!prev || c.value > prev.value) derived.set(ck, c);
         }
       }
-      // Idempotent: a second pass sees the derived names in `stated` and adds nothing.
+      // Idempotent: a second pass sees the derived (name, type) pairs in `stated`
+      // and adds nothing.
       if (derived.size) {
         var added = [];
         derived.forEach(function (c) {
@@ -1399,10 +1490,10 @@ function migrateCredits(credits, vocab) {
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { COMPOSITE_COMPONENTS, companionHintFor, COMPANION_STATS, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
+  window.DatasetNormalizer = { COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES, companionHintFor, COMPANION_STATS, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { UTILITY_CONTAINER_DEFAULT_ORDER, defaultUtilityOrder,
     COMPANION_STATS, companionHintFor,
-    COMPOSITE_COMPONENTS, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
+    COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
 }

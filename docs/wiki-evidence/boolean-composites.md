@@ -92,7 +92,9 @@ Two further mismatches make the spell values a poor fit for an equipped affix: t
 
 Applying the spell's `+4 morale` to the item enchantment would be **inference, not sourcing** — precisely what the standing exclude-until-verified rule and KTD5 forbid. The dataset already separates `Greater Heroism` (16 records) from `Greater Heroism clicky` (4 records), so the parser is not conflating the use-activated form; the gap is that neither form has a wiki-stated equipped magnitude.
 
-**Status:** QUARANTINED — do **not** write components in U5. `Greater Heroism` keeps its current `Bool` presence behavior, which remains targetable and correct as far as it goes.
+**Status:** ~~QUARANTINED~~ **WRITTEN 2026-08-28 (#140)** — see the resolution at the end of this section. The quarantine reasoning below is kept because it was correct while it stood, and its counter-evidence was later confirmed by the wiki.
+
+**Superseded status line:** QUARANTINED — do **not** write components in U5. `Greater Heroism` keeps its current `Bool` presence behavior, which remains targetable and correct as far as it goes.
 
 ### Re-harvest 2026-08-25 — the magnitude question is ANSWERED; the quarantine holds on three new grounds
 
@@ -123,10 +125,10 @@ This is a **subtraction**, not an assumption, and it is materially stronger than
 
 Only after those two does writing this affix's components become a data task — and the attack-roll third could then land on `Accuracy` directly. Until then the `Bool` presence behavior is the correct shipped state, and it is targetable, so a player who wants the effect can still rank it.
 
-### Both prerequisites are RULED as of 2026-08-28 — this affix is now a data task
+### RESOLVED 2026-08-28 (#140) — both prerequisites ruled, components written
 
-Neither ruling changed the shipped dataset; both are recorded with their wiki
-sources, and the write itself is **#140**.
+Both rulings are recorded with their wiki sources, and the write shipped in the
+same day's build (`08282026.3`).
 
 | Third of the grant | Target | Ruling |
 |---|---|---|
@@ -135,21 +137,47 @@ sources, and the write itself is **#140**.
 | saves | `SAVES` | already an expansion target |
 | skill checks | expands into the wiki's **21** skills | `all-skills-grants.md` (#570) |
 
-Two things #140 must carry that are easy to miss, and neither is a data value:
+**What the write actually turned out to involve** — recorded because two of the
+three things forecast above were wrong in instructive ways:
 
-1. **`bonus_type_dispositions.json` needs `"Morale": "legitimate"` in the same
-   change.** `tests/test_bonus_type_coverage.py` fails the build on a type with
-   no disposition, and this write produces the dataset's first `Morale` affix.
-2. **Two premise-assertions go stale by design.** `tests/wizard.test.js:1526`
-   and `tests/model.test.js:1507` assert "no shipped item carries a Morale-typed
-   affix" — the premise for the additive declared-credit case. They must be
-   re-ratified deliberately against the new premise, not blanket-accepted. The
-   credits feature itself needs no change; the declared-credits plan predicted
-   this transition and said so.
+1. **The disposition guard could not see the type at all.** Forecast: adding
+   `Morale` to `bonus_type_dispositions.json` would be *required* or the build
+   goes red. Reality: this affix decomposes at the `web/dataset.js` normalize
+   seam, so its type never reaches `web/data/items.json`, and the guard reads
+   only that. It would have stayed silent — and its staleness arm would have
+   *rejected* the correct entry. Both are fixed: `COMPOSITE_COMPONENT_TYPES` is
+   now a flat literal the Python guard reads, pinned against the live table by
+   `tests/dataset.test.js`. Full account in `morale-bonus-type.md` §5.
 
-Registering `all skills` in `src/spell_focus.py`'s allowlist also belongs to
-#140, not to #570 — no affix in the catalog carries the phrase today, so the
-registration has no carrier until this write gives it one.
+2. **One premise-assertion went stale, not two.** `tests/wizard.test.js` reads
+   `normalizeDataset(...)`, so its "no shipped item carries a Morale-typed affix"
+   premise broke exactly as predicted; `tests/model.test.js` never touched the
+   dataset and was unaffected. The wizard test now covers **both** halves — Morale
+   as the *displacing* case, and a separate test holding AE4's additive-only case
+   on the credit types that still carry no gear (`Alchemical`, `Primal`), asserted
+   dynamically so it fails loudly rather than silently covering nothing.
+
+3. **The shadow rule was wrong for this affix, and had to be fixed first.**
+   Not forecast at all. `COMPOSITE_COMPONENTS` suppressed a derived component
+   whenever the item stated that *name*, regardless of bonus type. That is safe
+   only while a component collides within one bucket. Greater Heroism's
+   components are `Morale` on common stats, so a carrier stating
+   `Accuracy Competence 10` or a Resistance save was silently dropping a +4 that
+   genuinely stacks — five component instances across three of the 16 carriers.
+   The key is now `(name, bonus type)`, which `src/enchantment_split.py` already
+   documents as the right shape for its Python-side equivalent. Measured: the
+   change moves **zero** components for the three composites that shipped before
+   this one.
+
+**`all skills` was NOT registered in `src/spell_focus.py`.** The roster lives in
+`web/dataset.js` as `_ALL_SKILLS`, because this affix decomposes at the
+normalizer, not in the build pipeline. The allowlist registration stays unclaimed
+until a build-time carrier for the phrase exists.
+
+**Golden ratification.** Five of 24 fixtures moved, every delta exactly +4, and
+**every `chosen` loadout byte-identical** — the solver was already picking these
+carriers on their other affixes and simply not counting this one. Details in the
+`#140` entry in `tests/solver_golden.test.js`.
 
 **One thing this re-harvest could not establish.** Whether that items-section sentence is new since 2026-08-05 or was present and missed. The wiki's page history is login-gated and returned a permission error, so the provenance of the sentence is unknown. Recorded rather than guessed — if it was missed, the harvest method has a gap worth finding; if it is new, nothing was done wrong.
 
