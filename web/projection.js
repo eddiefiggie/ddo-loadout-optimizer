@@ -766,6 +766,46 @@
     return lines;
   }
 
+  /** #539 — what the player's set pins did, as plain sentences.
+   *
+   *  Every verdict is said out loud, including the ones that landed. A pin that
+   *  WORKED is worth a line because the whole point of a pin is that the player
+   *  is trading something for it — silence would leave them unable to tell a
+   *  delivered pin from one the solver happened to want anyway.
+   */
+  function setPinNoticeLines(result) {
+    const report = (result && result.setPinReport) || [];
+    if (!report.length) return [];
+    const by = (v) => report.filter((e) => e.verdict === v).map((e) => e.set);
+    const lines = [];
+    const listOf = (a) => a.join(", ");
+
+    const delivered = by("pinned");
+    if (delivered.length) {
+      lines.push(`You required ${delivered.length === 1 ? "this set" : "these sets"}, and the `
+        + `solve delivered ${delivered.length === 1 ? "it" : "them"}: ${listOf(delivered)}. `
+        + "Everything below is the best build that keeps that requirement.");
+    }
+    const conflict = by("conflict");
+    if (conflict.length) {
+      lines.push(`These sets cannot all be delivered together — there are not enough slots `
+        + `for every piece: ${listOf(conflict)}. They were dropped so a build could still be `
+        + "solved. Remove one and solve again.");
+    }
+    for (const e of report) {
+      if (e.verdict === "not-owned") {
+        lines.push(`${e.set} was not required: it is a Set Augment you have not marked as owned. `
+          + "Tick it under Set Augments I own, or remove the requirement.");
+      } else if (e.verdict === "unreachable") {
+        lines.push(`${e.set} was not required: ${e.why}. Raising the level cap or widening the `
+          + "pool may bring it back.");
+      } else if (e.verdict === "unknown") {
+        lines.push(`${e.set} was not required: ${e.why}.`);
+      }
+    }
+    return lines;
+  }
+
   /** #245 — the niche-crafting opt-out, as a plain sentence for the notice
    *  surface and every export. Reads the solved query's flag off the snapshot
    *  (and the saved inputs as the restore-path fallback), never the live
@@ -1841,6 +1881,7 @@
         // touched the solve. A shared build asserting optimality with silent
         // exclusions is the solve-visible-but-share-invisible failure.
         blockNotice: blockNoticeLines(snap),
+        setPinNotice: setPinNoticeLines(snap),
         // #449 (U2, R15) — the ONE full statement that qualifies every fraction
         // in the document. Rendered once per export, never per stat: repeated
         // under each of eight priorities it reads as boilerplate and stops being
@@ -2474,7 +2515,7 @@
     // and every exporter read it from here; never respell it)
     NO_DROP_SOURCE_WORDING,
     // #110 — the blocklist disclosure sentences
-    blockNoticeLines,
+    blockNoticeLines, setPinNoticeLines,
     // U10 — the three multi-fact notices, one addressable entry per fired branch
     artifactNoticeEntries, zeroSourceNoticeEntries, boundNoticeEntries,
     NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMATIONAL,

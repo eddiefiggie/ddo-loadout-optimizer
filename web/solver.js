@@ -547,6 +547,18 @@ function buildProgram(model) {
   // pieces. Only for the ~21 set augments (bounded), so the placement-var blowup
   // that forced the aggregate model for ordinary augments does not apply here.
   const augSetDefs = model.augment_set_defs || {};
+  // #539 — read once here because two gates consult it: this set-augment mint and
+  // the tier encoding further down. A pin that reached the program is one the
+  // model already proved the eligible pool can supply.
+  const pinnedSetsForMint = new Set(model.pinnedSets || []);
+  // #539 — copy vars belonging to a PINNED set. The tie-break minimizes
+  // set-augment copies so one is placed only when its tier is genuinely won; for
+  // a pinned set the tier is won BY FIAT, so that rationale does not apply and
+  // the minimization instead asks an expensive question with no meaningful
+  // answer — which of ~500 eligible hosts should carry the copies, when the set
+  // is delivered either way. The `<= pieces_required` cap below is what stops
+  // them being placed gratuitously instead.
+  const pinnedSetAugVars = new Set();
   const setAugToSeed = new Map();   // set name -> { tier, ys:[y names] } for the Part-B threshold self-seed
   const setAugMeta = new Map();     // y var -> { set, host, wiki_url } — U7 reads placed hosts from the solve
   const setAugColorMeta = new Map();// c var -> { y, slot_color } — #316 consumed-color extraction; NOT in setAugVars
@@ -559,7 +571,14 @@ function buildProgram(model) {
       // placement vars would be free vars buying nothing (strict: never fabricate).
       const tier = (def.tiers || []).find((t) => t.pieces_required != null && (t.affixes || []).length);
       if (!tier) continue;
-      if (!(tier.affixes || []).some((a) => targetSet.has(a.stat) && a.value > 0)) continue;
+      // #539 — a PINNED set is minted whatever it grants. Without this a pin on a
+      // set whose stats the player has not ranked mints no copies at all, so the
+      // set has no pieces, the threshold has nothing to count, and the pin is
+      // silently inert — the exact complaint the pin exists to answer. The copies
+      // still buy nothing when the tier advances no target; they exist so the
+      // player can be given the set they asked for.
+      const advancesTarget = (tier.affixes || []).some((a) => targetSet.has(a.stat) && a.value > 0);
+      if (!advancesTarget && !pinnedSetsForMint.has(setName)) continue;
       // #316 fail-closed: no baked matrix on the def -> the set hosts no copies.
       const defFits = (def.fits_slots || []).filter((c) => presentColors.has(c));
       if (!defFits.length) continue;
@@ -590,7 +609,7 @@ function buildProgram(model) {
       }
       if (!ys.length) continue;                                 // no compatible host anywhere -> unplaceable
       extraConstraints.push(`${ys.join(" + ")} <= 3`);          // own at most three copies of this set augment
-      setAugToSeed.set(setName, { tier, ys });
+      setAugToSeed.set(setName, { tier, ys, advancesTarget });
     }
     // U4 — suppression flag hosts_i = "item i hosts at least one set-augment copy".
     // hosts_i >= y for each copy y on i (written y - hosts_i <= 0); hosts_i is Binary
@@ -1174,15 +1193,58 @@ function buildProgram(model) {
   // an awaken-only set — no intrinsic member exists — so the tier is reachable purely
   // from these copies; self-seeding is idempotent if a same-named set were ever
   // already registered.
-  for (const [setName, { tier, ys }] of setAugToSeed) {
+  for (const [setName, { tier, ys, advancesTarget }] of setAugToSeed) {
     if (!setTiers.has(setName)) setTiers.set(setName, new Map());
     const byLabel = setTiers.get(setName);
     if (!byLabel.has(tier.pieces_label)) byLabel.set(tier.pieces_label, tier);
     if (!setPieces.has(setName)) setPieces.set(setName, []);
     for (const y of ys) setPieces.get(setName).push(y);
+    // #539 — a symmetry cut, and it is why pinning stayed usable. A set minted
+    // ONLY because it was pinned grants nothing the player ranked, so a copy
+    // beyond the threshold can never improve the objective — it can only consume
+    // a colour slot a real augment wanted. Capping the copies at exactly the
+    // threshold removes an entire dimension of equivalent assignments from the
+    // branch-and-bound.
+    //
+    // Sound precisely BECAUSE the set advances no target: for a set that does
+    // advance one, extra copies can be load-bearing (a higher tier), so the cap
+    // is not applied there.
+    // A PINNED set augment has exactly one tier, and the pin already forces it, so
+    // a copy beyond the threshold can never improve anything — it can only consume
+    // a colour slot a real augment wanted. Capping at the threshold removes a
+    // whole dimension of equivalent assignments. Applies to every pinned set, not
+    // just one granting nothing ranked: the extra copies are worthless either way.
+    if (pinnedSetsForMint.has(setName) && ys.length > tier.pieces_required) {
+      extraConstraints.push(`${ys.join(" + ")} <= ${tier.pieces_required}`);
+    }
+    // …and a pinned set that grants nothing ranked has its copies kept OUT of the
+    // tie-break minimization (see `pinnedSetAugVars` where it is consumed).
+    //
+    // MEASURED, on the reporter's own four-set case against a 6.5s unpinned
+    // baseline: 62s with them in, 40s with them out. Widening the exclusion to
+    // pinned sets that DO advance a target was tried and measured WORSE (45s) —
+    // there the minimization is still doing useful work, so it stays.
+    if (!advancesTarget) for (const y of ys) pinnedSetAugVars.add(y);
   }
 
   let sc = 0;
+  // #539 — the sets the player pinned, already classified by the model (a pin that
+  // reached here is one the eligible pool can supply). Two things change below:
+  // the pinned set's LOWEST tier is encoded even when it advances no ranked
+  // target, and that tier is forced to 1.
+  const pinnedSetNames = pinnedSetsForMint;
+  const pinnedTierOf = new Map();   // set name -> the lowest pieces_required it has
+  for (const setName of pinnedSetNames) {
+    const byLabel = setTiers.get(setName);
+    if (!byLabel) continue;
+    let low = null;
+    for (const [, t] of byLabel) {
+      if (t.pieces_required != null && (low == null || t.pieces_required < low)) low = t.pieces_required;
+    }
+    if (low != null) pinnedTierOf.set(setName, low);
+  }
+  const setPinsBound = [];   // {set, pieces_required, var} — what actually got forced
+
   for (const [setName, byLabel] of setTiers) {
     const pieceVars = setPieces.get(setName) || [];
     if (!pieceVars.length) continue;
@@ -1192,7 +1254,13 @@ function buildProgram(model) {
         const k = `${a.stat}||${_equivType(a.bonus_type)}`;
         if (targetSet.has(a.stat) && a.value > 0 && (!best.has(k) || best.get(k) < a.value)) best.set(k, a.value);
       }
-      if (!best.size) continue; // this tier advances no target
+      // #539 — a PINNED set's lowest tier is encoded whatever it grants. Without
+      // this, pinning a set whose stats you have not ranked would silently do
+      // nothing, which is the exact complaint the pin exists to answer. The tier
+      // still contributes no `z` when it advances no target; it exists so the
+      // `= 1` below has something to bind to.
+      const isPinnedTier = pinnedTierOf.get(setName) === tier.pieces_required;
+      if (!best.size && !isPinnedTier) continue; // this tier advances no target
       const sa = "s" + sc++;
       extraVars.push(sa);
       setMeta.set(sa, {
@@ -1216,6 +1284,13 @@ function buildProgram(model) {
         lhs += hostsVar.has(p) ? ` - ${p} + ${hostsVar.get(p)}` : ` - ${p}`;
       }
       extraConstraints.push(`${lhs} <= 0`);
+      // #539 — the pin itself. `sa = 1` plus the indicator above forces
+      // `Σ pieces >= pieces_required`: the set must be delivered, or the program
+      // is infeasible and `solveLexicographic` names the pins as the cause.
+      if (isPinnedTier) {
+        extraConstraints.push(`${sa} = 1`);
+        setPinsBound.push({ set: setName, pieces_required: tier.pieces_required, var: sa });
+      }
       for (const [k, val] of best) {
         if (!zByBucket.has(k)) zByBucket.set(k, []);
         // No override marker: a set tier's bonus type is a catalog-level claim
@@ -1323,6 +1398,11 @@ function buildProgram(model) {
     // creditBuckets (bucket key -> declared-credit floor) rides out for the
     // #322 visibility guard (visibleGateSet) rather than being re-derived.
     xVars, zByBucket, cappedStats, targetList: model.targets, model, creditMeta, creditBuckets, overrideMeta,
+    // #539 — the set pins this program actually bound, so a solve can report what
+    // it was holding rather than the caller re-deriving it from the query.
+    setPinsBound,
+    // #539 — excluded from the tie-break's minimization; see its declaration.
+    pinnedSetAugVars,
     // #325 — floored stats (targets or not) join visibleGateSet's stat universe:
     // a contribution supporting a floored stat is load-bearing even when every
     // tracked stat it also feeds is capped and slack.
@@ -1410,7 +1490,14 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
     // Set-augment copy vars (y) join jokers/members in the tie-break minimization so a copy
     // is placed ONLY when its 3-piece tier is genuinely won (a locked stat forces it) — never
     // gratuitously, which would suppress a host's own set (U4) for nothing.
-    const minVars = [...(program.jokerVars || []), ...(program.memberVars || []), ...(program.setAugVars || [])];
+    // #539 — a PINNED set's copies are excluded here. They
+    // are load-bearing by construction (the pin forces the tier), so the
+    // "placed only when genuinely won" rationale above does not apply to them,
+    // and minimizing over them turns the tie-break into a 500-choose-3 assignment
+    // problem per pinned set. Measured at 46.5s of a 62s solve before this.
+    const _pinned = program.pinnedSetAugVars || new Set();
+    const minVars = [...(program.jokerVars || []), ...(program.memberVars || []),
+      ...(program.setAugVars || []).filter((v) => !_pinned.has(v))];
     const terms = program.xVars.map((xv, i) => `+ ${i + 1} ${xv.name}`)
       .concat(minVars.map((v, i) => `+ ${n + 1 + i} ${v}`));
     L.push(" obj: " + terms.join(" "));
@@ -2282,7 +2369,7 @@ async function probeConcession(model, program, highs, stat, targetList, perTarge
 }
 
 async function solveLexicographic(model, highs) {
-  const program = buildProgram(model);
+  let program = buildProgram(model);
   // #532 — a stage that did not return Optimal is TWO different facts, and the
   // difference is the whole advice the player gets.
   //
@@ -2314,6 +2401,38 @@ async function solveLexicographic(model, highs) {
 
   if (!program.xVars.length) {
     return { status: "infeasible", failure: "infeasible", reason: "no eligible items for these constraints" };
+  }
+
+  // #539 — the set-pin escape hatch. The model already refused pins the pool
+  // cannot supply, but individually-reachable pins can still be JOINTLY
+  // impossible: four 3-piece Set Augments need twelve colour slots, and no
+  // per-pin check sees that. Left alone it surfaces as a bare INFEASIBLE, which
+  // tells the player nothing about which of their inputs to change — the shape
+  // `auto-legality-constraints-need-a-pin-conflict-escape-hatch.md` is about.
+  //
+  // So: probe once with the pins, and if that fails, rebuild WITHOUT them and
+  // probe again. If dropping the pins fixes it, the pins were the cause and are
+  // named. If it is still infeasible the constraints were over-tight anyway, and
+  // the pins are NOT blamed for someone else's problem — they are re-applied so
+  // the real infeasibility is what gets reported.
+  //
+  // One extra solve, on the failure path only.
+  let setPinReport = (model.setPinReport || []).slice();
+  if (program.setPinsBound.length) {
+    const probeStat = program.targetList.find((t) => t !== _UTILITY_SENTINEL) || program.targetList[0];
+    const solves = (p) => highs.solve(encodeStage(p, { objectiveStat: probeStat, sense: "max", locks: [] })).Status === "Optimal";
+    if (!solves(program)) {
+      const relaxed = buildProgram(Object.assign({}, model, { pinnedSets: [], setPinReport: [] }));
+      if (relaxed.xVars.length && solves(relaxed)) {
+        const conflicted = new Set(program.setPinsBound.map((b) => b.set));
+        setPinReport = setPinReport.map((e) => (conflicted.has(e.set) && e.verdict === "pinned"
+          ? Object.assign({}, e, { verdict: "conflict",
+            why: "these pinned sets cannot all be delivered together — there are not "
+              + "enough slots for every piece. Remove one and solve again." })
+          : e));
+        program = relaxed;
+      }
+    }
   }
 
   const locks = [];
@@ -2585,6 +2704,11 @@ async function solveLexicographic(model, highs) {
     membershipPlaced: sol.membershipPlaced, setAugmentsPlaced: sol.setAugmentsPlaced,
     breakdown: breakdownByTarget(program, prim, visible), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, floorReport, program,
+    // #539 — every set pin's verdict, including the suppressed and conflicting
+    // ones. Plain JSON so persist.js can keep it under RESULT_KEEP: a restored
+    // character must still be able to say why a pin did not land, without
+    // re-solving. Empty array when the player pinned nothing.
+    setPinReport,
     creditReport: buildCreditReport(program, prim, model, floorReport, visible),
     // #88 U8 (R13/R14/R30) — what the player's bonus-type overrides did. Plain
     // JSON by construction so persist.js can keep it under RESULT_KEEP: a restored

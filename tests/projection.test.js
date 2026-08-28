@@ -2128,3 +2128,42 @@ test("#453 U1: collapseExpansions is untouched — regression guard", () => {
   // coverage map instead of being read off the entry.
   assert.strictEqual(P.affixLabel(out[0]), "Sacred Spell Focus Mastery +3");
 });
+
+// ---------------------------------------------------------------------------
+// #539 — the set-pin disclosure. One source of sentences, so the results page
+// and every export say the same thing about whether a pin landed.
+
+test("#539: a delivered pin is stated, not left for the player to infer", () => {
+  const lines = P.setPinNoticeLines({ setPinReport: [{ set: "Cruel Cut", verdict: "pinned" }] });
+  assert.strictEqual(lines.length, 1);
+  assert.ok(/delivered it: Cruel Cut/.test(lines[0]), lines[0]);
+  assert.ok(/best build that keeps that requirement/.test(lines[0]),
+    "a pin costs something, so the optimality claim must be qualified by it");
+});
+
+test("#539: each suppression names the set AND what to do about it", () => {
+  const lines = P.setPinNoticeLines({ setPinReport: [
+    { set: "Quickblade", verdict: "not-owned" },
+    { set: "Old Set", verdict: "unreachable", why: "only 1 slot in this pool can carry a piece, and the set needs 2" },
+    { set: "Ghost", verdict: "unknown", why: "no set by that name carries a piece threshold in this dataset" },
+  ] });
+  assert.strictEqual(lines.length, 3, "every suppressed pin gets its own sentence");
+  assert.ok(/Set Augments I own/.test(lines[0]), "the unowned case names the control that fixes it");
+  assert.ok(/only 1 slot/.test(lines[1]) && /level cap/.test(lines[1]));
+  assert.ok(/Ghost/.test(lines[2]));
+});
+
+test("#539: a conflict says the pins were dropped and the build still solved", () => {
+  const lines = P.setPinNoticeLines({ setPinReport: [
+    { set: "A", verdict: "conflict" }, { set: "B", verdict: "conflict" }] });
+  assert.strictEqual(lines.length, 1, "one sentence for the whole conflicting group");
+  assert.ok(/cannot all be delivered together/.test(lines[0]));
+  assert.ok(/dropped so a build could still be solved/.test(lines[0]),
+    "the player must know they got an answer, not a refusal");
+  assert.ok(/Remove one/.test(lines[0]));
+});
+
+test("#539: no pins says nothing at all", () => {
+  assert.deepStrictEqual(P.setPinNoticeLines({}), []);
+  assert.deepStrictEqual(P.setPinNoticeLines({ setPinReport: [] }), []);
+});

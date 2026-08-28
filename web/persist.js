@@ -31,6 +31,11 @@
     "computeScale", "capped", "augmentsPlaced", "dinoPlaced", "ncPlaced",
     "rollPlaced", "vikPlaced", "sealPlaced", "jokerPlaced", "tfPlaced",
     "gsPlaced", "membershipPlaced", "setAugmentsPlaced",
+    // #539 — what the player's set pins did. Kept for the same reason blockReport
+    // is: `program` is dropped on save and KTD6 forbids re-solving on load, so a
+    // restored build could not otherwise say whether a pin landed, was suppressed,
+    // or conflicted. Plain JSON by construction (see classifySetPins).
+    "setPinReport",
     // U4/U5 — the declared-credit disclosure. Two allowlists, not one: the INPUT
     // list below carries the declaration, this one carries what it DID. Without
     // it the credit still solves correctly on load while the honesty line R9
@@ -118,6 +123,10 @@
     // absent/false -> top rung, true -> no-niche-crafting). pickInputs no longer
     // writes it, so it ages out of the corpus on the next save of each character.
     "includeArtifact", "craftingRung", "excludeCraftingSystems", "blocklist", "ownedSetAugments", "pool", "ownedNames", "priorities", "slotConstraints",
+    // #539 — the set pins. A plain string array, like `blocklist`: a saved
+    // build that was solved under a pin must come back holding it, or a reload
+    // silently drops a constraint the player set.
+    "pinnedSets",
     "targetCaps", "targetFloors",
     // U2/U5 — declared stat credits, keyed `stat||bonusType`. Plain JSON, so it
     // needs no special serialization the way the two Sets above do.

@@ -2294,3 +2294,74 @@ test("#545 every weapon type now has a stamped native at the blank's own ML", ()
   assert.ok(natives.every((x) => x.minimum_level <= blank.minimum_level),
     "no type's Dino native costs more ML than the blank");
 });
+
+// ---------------------------------------------------------------------------
+// #539 — the set pin. Classified in the MODEL, before the program is built, so a
+// pin the pool cannot satisfy is named rather than arriving as a bare INFEASIBLE.
+
+const _augDefs = { "Cruel Cut": { tiers: [{ pieces_required: 3, affixes: [{ stat: "Z" }] }] } };
+const _memDefs = { "Dread Stalker": { tiers: [{ pieces_required: 3, affixes: [{ stat: "Z" }] }] } };
+const _gear = (slot) => ({ slot, set_bonus: [{ set: "Gear Set" }],
+  parsed_set_bonuses: [{ set: "Gear Set", pieces_required: 2, affixes: [{ stat: "Z" }] }] });
+const _classify = (q, elig) => M.classifySetPins(q, elig || [], _augDefs, _memDefs);
+
+test("#539: no pins classifies to nothing, and never invents a report", () => {
+  assert.deepStrictEqual(_classify({}), { pinned: [], report: [] });
+  assert.deepStrictEqual(_classify({ pinnedSets: [] }), { pinned: [], report: [] });
+});
+
+test("#539: a set this dataset does not define is suppressed, not silently kept", () => {
+  const r = _classify({ pinnedSets: ["No Such Set"] });
+  assert.deepStrictEqual(r.pinned, []);
+  assert.strictEqual(r.report[0].verdict, "unknown");
+  assert.ok(r.report[0].why, "a suppressed pin always states why");
+});
+
+test("#539: an unowned Set Augment is suppressed, never implicitly widened", () => {
+  // Widening would assume the player owns an augment they said nothing about,
+  // which is exactly what the ownership picker exists to avoid.
+  const off = _classify({ pinnedSets: ["Cruel Cut"] });
+  assert.deepStrictEqual(off.pinned, []);
+  assert.strictEqual(off.report[0].verdict, "not-owned");
+
+  const on = _classify({ pinnedSets: ["Cruel Cut"], ownedSetAugments: new Set(["Cruel Cut"]) });
+  assert.deepStrictEqual(on.pinned, ["Cruel Cut"]);
+  assert.strictEqual(on.report[0].pieces_required, 3);
+});
+
+test("#539: ownership is read from a Set or an Array, like every other consumer", () => {
+  const asArray = _classify({ pinnedSets: ["Cruel Cut"], ownedSetAugments: ["Cruel Cut"] });
+  assert.deepStrictEqual(asArray.pinned, ["Cruel Cut"]);
+});
+
+test("#539: an intrinsic set needs enough distinct slots to carry its pieces", () => {
+  // One slot cannot supply a 2-piece set, however many carriers sit in it.
+  const thin = _classify({ pinnedSets: ["Gear Set"] }, [_gear("Ring"), _gear("Ring")]);
+  assert.deepStrictEqual(thin.pinned, []);
+  assert.strictEqual(thin.report[0].verdict, "unreachable");
+  assert.strictEqual(thin.report[0].available, 1);
+  assert.strictEqual(thin.report[0].pieces_required, 2);
+
+  const wide = _classify({ pinnedSets: ["Gear Set"] }, [_gear("Ring"), _gear("Neck")]);
+  assert.deepStrictEqual(wide.pinned, ["Gear Set"]);
+});
+
+test("#539: a craft-supplied set is not judged by worn-slot supply", () => {
+  // A membership or augment set's pieces come from crafting slots, so counting
+  // distinct worn carriers would wrongly call every one of them unreachable.
+  const r = _classify({ pinnedSets: ["Dread Stalker"] }, []);
+  assert.deepStrictEqual(r.pinned, ["Dread Stalker"]);
+});
+
+test("#539: a repeated pin is classified once", () => {
+  const r = _classify({ pinnedSets: ["Dread Stalker", "Dread Stalker"] }, []);
+  assert.deepStrictEqual(r.pinned, ["Dread Stalker"]);
+  assert.strictEqual(r.report.length, 1);
+});
+
+test("#539: the model carries the pins and the report to the solver", () => {
+  const A = v("Ring A", "Ring", [["Intelligence", "Enhancement", 5]]);
+  const m = M.buildModel([A], { mlCap: 34, targets: ["Intelligence"], pinnedSets: ["Nope"] });
+  assert.deepStrictEqual(m.pinnedSets, [], "an unknown set never reaches the solver");
+  assert.strictEqual(m.setPinReport[0].verdict, "unknown", "but it IS reported");
+});

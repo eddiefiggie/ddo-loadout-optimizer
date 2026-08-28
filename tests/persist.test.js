@@ -389,6 +389,23 @@ test("U7/#110: blockReport survives stripResult", () => {
   assert.deepStrictEqual(s.blockReport, [{ id: "X", name: "X", pool: "Ring", bestAvailable: false }]);
 });
 
+// #539 — the set pins persist like any other collection input, and the report
+// they produced survives so a restored build can still say what happened.
+test("#539: pinnedSets round-trips through pickInputs and stays an array", () => {
+  const s = pickInputs(Object.assign({}, state, { pinnedSets: ["Cruel Cut", "Quickblade"] }), "Pinner");
+  assert.deepStrictEqual(s.pinnedSets, ["Cruel Cut", "Quickblade"]);
+  assert.ok(INPUT_KEYS.includes("pinnedSets"),
+    "the allowlist carries the field — a saved build solved under a pin must come back holding it");
+});
+
+test("#539: setPinReport survives stripResult", () => {
+  const rep = [{ set: "Cruel Cut", verdict: "pinned", pieces_required: 3 },
+    { set: "Quickblade", verdict: "not-owned", pieces_required: 3, why: "…" }];
+  const s = stripResult(Object.assign({}, lastRun.result, { setPinReport: rep }));
+  assert.deepStrictEqual(s.setPinReport, rep,
+    "program is dropped on save, so a restored build cannot re-derive why a pin did not land");
+});
+
 // ---------------------------------------------------------------------------
 // U3 (#290/#291) — the cross-add marker survives a save/load round-trip.
 // `breakdown` is on RESULT_KEEP and parts are stored whole, so the field rides

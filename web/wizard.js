@@ -993,6 +993,9 @@ function buildQuery(state, vocab) {
     // #110 (U1) — the blocklist, copied so the solve reads a snapshot rather
     // than the live state array. Absent (pre-feature state) reads as empty.
     blocklist: Array.isArray(state.blocklist) ? state.blocklist.slice() : [],
+    // #539 — the set pins, copied so the solve reads a snapshot rather than live
+    // state, exactly as the blocklist above does.
+    pinnedSets: Array.isArray(state.pinnedSets) ? state.pinnedSets.slice() : [],
     // U6 — set-augment ownership gate. A Set of owned set-augment `set` names;
     // empty => none of the 21 set augments are considered (default off).
     ownedSetAugments: state.ownedSetAugments instanceof Set
@@ -1150,6 +1153,73 @@ function removePinFrom(slotConstraints, slot, id, cardOf) {
   else if (card > 1) slotConstraints[slot] = { type: "pin", variant_ids: remaining };
   else slotConstraints[slot] = { type: "pin", variant_id: remaining[0] };
   return slotConstraints;
+}
+
+/** #539 — every set a player could pin, from the dataset's own definitions.
+ *
+ *  Three sources, because a set reaches the solve three ways: Set Augments
+ *  (`augment_set_defs`), craftable memberships (`membership_set_defs`), and
+ *  ordinary gear sets, which are only discoverable from the items that carry a
+ *  parsed tier. Deduped and sorted; the picker filters it by typed text.
+ */
+function pinnableSets(dataset) {
+  const out = new Set();
+  for (const k of Object.keys((dataset && dataset.augment_set_defs) || {})) out.add(k);
+  for (const k of Object.keys((dataset && dataset.membership_set_defs) || {})) out.add(k);
+  for (const it of (dataset && dataset.items) || []) {
+    for (const t of it.parsed_set_bonuses || []) {
+      if (t && t.set && t.pieces_required != null && (t.affixes || []).length) out.add(t.set);
+    }
+  }
+  return [...out].sort((a, b) => a.localeCompare(b));
+}
+
+// #539 (U3/U4) — the set-pin mutation core. Pure and exported for the same reason
+// the blocklist's is: the add and remove paths are the whole contract, and testing
+// them through the DOM would test the renderer instead.
+
+/** Add set names to the pin list, ignoring duplicates. Returns the new list plus
+ *  what was actually added, so the caller can report rather than re-derive. */
+function addSetPins(pinnedSets, names) {
+  const have = new Set(pinnedSets || []);
+  const added = [];
+  for (const n of names || []) {
+    if (typeof n !== "string" || !n || have.has(n)) continue;
+    have.add(n);
+    added.push(n);
+  }
+  return { list: (pinnedSets || []).concat(added), added };
+}
+
+function removeSetPin(pinnedSets, name) {
+  return (pinnedSets || []).filter((x) => x !== name);
+}
+
+/** #539 — pins naming a set this dataset no longer defines. Labelled rather than
+ *  dropped, the same contract `blockStale` has: an upstream rename must not
+ *  silently delete a constraint the player set. */
+function setPinStale(pinnedSets, dataset) {
+  if (!Array.isArray(pinnedSets) || !pinnedSets.length) return [];
+  const known = new Set(pinnableSets(dataset));
+  return pinnedSets.filter((n) => !known.has(n));
+}
+
+/** #539 — the solve-time warning. Pinning Set Augments makes the program much
+ *  harder: measured at ~41s for four against a ~6.5s unpinned baseline, because
+ *  each pinned set adds a few hundred placement binaries. A player who is about
+ *  to wait that long should be told BEFORE they press Solve, not left wondering
+ *  whether the tab has hung.
+ *
+ *  Keyed on the count of pinned AUGMENT sets, which is what actually drives the
+ *  cost — a pinned gear set is nearly free (6.5s measured), because its pieces
+ *  are items the pool already carries rather than copies minted per host. */
+function setPinSlowNotice(pinnedSets, dataset) {
+  const augs = new Set(Object.keys((dataset && dataset.augment_set_defs) || {}));
+  const n = (pinnedSets || []).filter((x) => augs.has(x)).length;
+  if (n < 2) return "";
+  return `Solving with ${n} pinned Set Augments takes noticeably longer — `
+    + "each one adds hundreds of placements for the solver to consider. "
+    + "Expect the solve to run for a while; it has not stalled.";
 }
 
 // #110 (U3/U4/U5) — the blocklist mutation core. Pure and exported: the add and
@@ -2066,7 +2136,8 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict,
+    pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
 }
@@ -2147,6 +2218,7 @@ if (typeof window !== "undefined" && window.App) {
       // surface the backup reviver guards (a priority named `constructor` once
       // made a character permanently unloadable).
       blocklist: [],
+      pinnedSets: [],
       // #428 U3 (R20) — the name of the saved build currently being edited, or
       // "" for an unsaved one. Transient by design: it is NOT on INPUT_KEYS,
       // because which record you loaded is a fact about this session, not about
@@ -2491,6 +2563,17 @@ if (typeof window !== "undefined" && window.App) {
           <div id="wz-block-stage" class="wz-block-stage"></div>
           <div id="wz-block-list" class="wz-pin-list"></div>
         </div>
+        <div class="wz-pinbox wz-setpinbox">
+          <span class="wz-label">Require a set <span class="wz-sub">· optional · the solve must deliver these, or say why it cannot</span></span>
+          <p class="wz-adv-note">Ranking the stats a set grants does not force it — the solver takes those
+            stats from wherever they are cheapest. Pin the set instead and it has to appear.</p>
+          <div class="wz-addrow">
+            <input id="wz-setpin-search" data-nodirty type="text" placeholder="Search a set by name — e.g. Cruel Cut, Legendary Shaman's Fury…" autocomplete="off">
+          </div>
+          <div id="wz-setpin-results" class="wz-pin-results"></div>
+          <div id="wz-setpin-list" class="wz-pin-list"></div>
+          <p id="wz-setpin-slow" class="wz-pin-mutexwarn" hidden></p>
+        </div>
         <div class="wz-pinbox wz-overridebox">
           <span class="wz-label">Bonus types you have corrected <span class="wz-sub">· optional · when the game disagrees with the wiki</span></span>
           <p class="wz-adv-note">Add these from an item's card in the results, or from Browse. They are your
@@ -2694,6 +2777,82 @@ if (typeof window !== "undefined" && window.App) {
         renderBlockStage();
       });
       renderBlockStage();
+    }
+
+    // #539 — the set-pin picker. Same three-part shape as the block picker above
+    // (search -> results -> list), and deliberately so: a player who has used one
+    // already knows how this one behaves. No staging step, because the list here
+    // is short and one click is enough.
+    const SETPIN_CAP = 25;
+
+    function renderSetPinResults() {
+      const box = document.getElementById("wz-setpin-results");
+      const input = document.getElementById("wz-setpin-search");
+      if (!box || !input) return;
+      const q = (input.value || "").trim();
+      if (!q) {
+        box.innerHTML = `<p class="wz-pin-hint">Type a set name — Set Augments, craftable memberships and ordinary gear sets are all pinnable.</p>`;
+        return;
+      }
+      const ql = q.toLowerCase();
+      const all = pinnableSets(dataset);
+      const have = new Set(state.pinnedSets || []);
+      const owned = state.ownedSetAugments instanceof Set ? state.ownedSetAugments : new Set();
+      const augs = new Set(Object.keys(dataset.augment_set_defs || {}));
+      const matches = all.filter((n) => n.toLowerCase().includes(ql))
+        .sort((a, b) => {
+          const rank = (n) => (n.toLowerCase() === ql ? 0 : n.toLowerCase().startsWith(ql) ? 1 : 2);
+          return rank(a) - rank(b) || a.localeCompare(b);
+        });
+      if (!matches.length) { box.innerHTML = `<p class="wz-pin-hint">No set matches “${esc(q)}”.</p>`; return; }
+      box.innerHTML = matches.slice(0, SETPIN_CAP).map((n) => {
+        const already = have.has(n);
+        // A Set Augment the player has not marked owned is offered but labelled:
+        // the solve will suppress the pin and say so, and telling them here is
+        // cheaper than letting them find out after a 40-second solve.
+        const notOwned = augs.has(n) && !owned.has(n);
+        const note = already ? " · required" : notOwned ? " · you have not marked this owned" : "";
+        const kind = augs.has(n) ? "Set Augment"
+          : (dataset.membership_set_defs || {})[n] ? "craftable membership" : "gear set";
+        return `<button type="button" class="wz-pin-hit${already ? " wz-block-hit-off" : ""}" data-setpin="${esc(n)}"${already ? " disabled" : ""}>
+          <span class="wz-pin-hit-name">${esc(n)}</span>
+          <span class="wz-pin-hit-slot">${esc(kind)}${esc(note)}</span></button>`;
+      }).join("")
+        + (matches.length > SETPIN_CAP ? `<p class="wz-pin-more">Showing top ${SETPIN_CAP} of ${matches.length} — refine your search.</p>` : "");
+      box.querySelectorAll("button[data-setpin]").forEach((b) => b.onclick = () => {
+        state.pinnedSets = addSetPins(state.pinnedSets, [b.dataset.setpin]).list;
+        state.constraintsDirty = true; markDirty();
+        renderSetPinList(); renderSetPinResults();
+      });
+    }
+
+    function renderSetPinList() {
+      const box = document.getElementById("wz-setpin-list");
+      if (!box) return;
+      const entries = state.pinnedSets || [];
+      if (!entries.length) {
+        box.innerHTML = `<p class="wz-pin-empty">No set required — the solver will use a set only when it wins on your priorities.</p>`;
+      } else {
+        const staleSet = new Set(setPinStale(entries, dataset));
+        box.innerHTML = entries.map((n) => {
+          const stale = staleSet.has(n)
+            ? `<span class="wz-pin-flag" title="No set by that name is defined in the current data — it may have been renamed upstream. The pin still saves; it just matches nothing right now.">no longer matches anything</span>`
+            : "";
+          return `<div class="wz-pin-row"><span class="wz-pin-name">${esc(n)}</span>${stale}<button type="button" class="wz-pin-x" data-unsetpin="${esc(n)}" aria-label="Stop requiring ${esc(n)}">×</button></div>`;
+        }).join("");
+        box.querySelectorAll(".wz-pin-x[data-unsetpin]").forEach((b) => b.onclick = () => {
+          state.pinnedSets = removeSetPin(state.pinnedSets, b.dataset.unsetpin);
+          state.constraintsDirty = true; markDirty();
+          renderSetPinList(); renderSetPinResults();
+        });
+      }
+      // The solve-time cost, said BEFORE the player presses Solve.
+      const warn = document.getElementById("wz-setpin-slow");
+      if (warn) {
+        const msg = setPinSlowNotice(state.pinnedSets, dataset);
+        warn.textContent = msg ? `⏱ ${msg}` : "";
+        warn.hidden = !msg;
+      }
     }
 
     function renderBlockList() {
@@ -4033,6 +4192,8 @@ if (typeof window !== "undefined" && window.App) {
       // review fix — sanitize elements at the load boundary: a hand-edited backup
       // can carry non-strings, which render as ghost rows removeBlock's strict
       // string comparison could never remove and every save would re-persist.
+      state.pinnedSets = Array.isArray(i.pinnedSets)
+        ? i.pinnedSets.filter((x) => typeof x === "string" && x) : [];
       state.blocklist = Array.isArray(i.blocklist)
         ? i.blocklist.filter((x) => typeof x === "string" && x)
         : [];
@@ -5172,6 +5333,13 @@ if (typeof window !== "undefined" && window.App) {
           bsearch.oninput = () => renderBlockResults();
           renderBlockResults();
           renderBlockList();
+        }
+        // #539 — the set-pin picker, wired the same way.
+        const spsearch = document.getElementById("wz-setpin-search");
+        if (spsearch) {
+          spsearch.oninput = () => renderSetPinResults();
+          renderSetPinResults();
+          renderSetPinList();
         }
         // #88 U11 — the override manager renders from state alone; there is no
         // search box, because corrections are created where the player notices
