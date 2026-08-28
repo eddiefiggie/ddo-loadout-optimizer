@@ -118,8 +118,8 @@ This is a **subtraction**, not an assumption, and it is materially stronger than
 
 **What would actually unblock it now** — in dependency order, and note both are prerequisites rather than parts of this affix:
 
-- a ruling on whether `Morale` becomes a modelled bonus type, and what it stacks with;
-- a decision on how an all-skills grant is represented, which `Alluring Skills Bonus` and its siblings may already answer.
+- a ruling on whether `Morale` becomes a modelled bonus type, and what it stacks with — **tracked as #569**;
+- a decision on how an all-skills grant is represented, which `Alluring Skills Bonus` and its siblings may already answer — **tracked as #570**.
 
 Only after those two does writing this affix's components become a data task — and the attack-roll third could then land on `Accuracy` directly. Until then the `Bool` presence behavior is the correct shipped state, and it is targetable, so a player who wants the effect can still rank it.
 
