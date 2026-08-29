@@ -728,6 +728,106 @@ test("U8/R8: a collapsed typed enchantment does NOT repeat its bonus type as a s
   assert.strictEqual(line, "Sacred Spell Focus Mastery +3");
 });
 
+// ---- #252 — the SET-centric surfaces collapse too ----
+//
+// R8 scoped the #250 collapse to item-centric surfaces, so a set engraved with one
+// enchantment still rendered as its expanded parts everywhere a SET was read: the Set
+// Bonuses panel, the alternatives cards, and every export. `Forbidden Knowledge` grants
+// `Profane Well Rounded +1` and printed six ability lines for it.
+
+// A set tier in the shape the dataset actually stores: legacy `{stat,bonus_type}` keys,
+// six umbrella members under one `via`, plus two native affixes with none.
+const WELL_ROUNDED_TIER = [
+  ...["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"]
+    .map((s) => ({ stat: s, bonus_type: "Profane", value: 1, via: "Profane Well Rounded" })),
+  { stat: "Accuracy", bonus_type: "Profane", value: 1 },
+  { stat: "Deadly", bonus_type: "Profane", value: 1 },
+];
+
+function wellRoundedBuild() {
+  const v = { variant_id: "A", set_bonus: [{ set: "FK" }],
+    parsed_set_bonuses: [{ set: "FK", pieces_required: 1, affixes: WELL_ROUNDED_TIER }] };
+  return { chosen: [{ slot: "Ring 1", variant: v }], jokerPlaced: [], membershipPlaced: [],
+    setAugmentsPlaced: [], setsActive: [] };
+}
+
+test("#252: satisfiedSetDetail names the engraved enchantment, not its expansion", () => {
+  const d = P.satisfiedSetDetail(wellRoundedBuild()).find((x) => x.set === "FK");
+  assert.strictEqual(d.affixes.length, 3,
+    "eight stored affixes read as three lines: the enchantment plus the two native grants");
+  assert.deepStrictEqual(d.affixes.map(P.affixLabel),
+    ["Profane Well Rounded +1", "Accuracy +1 Profane", "Deadly +1 Profane"]);
+});
+
+test("#252: a native set affix passes through BY IDENTITY, untouched", () => {
+  // The collapse must not rewrite an affix that was never expanded — an effect
+  // already engraved under its own name is its own line.
+  const d = P.satisfiedSetDetail(wellRoundedBuild()).find((x) => x.set === "FK");
+  assert.strictEqual(d.affixes[1], WELL_ROUNDED_TIER[6], "same object, not a copy");
+  assert.strictEqual(d.affixes[2], WELL_ROUNDED_TIER[7]);
+});
+
+test("#252: activeSetDetail collapses on the alternatives path too", () => {
+  // altGainSection reads this one. An alternative that offers a set was listing the
+  // same six ability lines as its reason to switch.
+  const out = P.activeSetDetail({ chosen: [], setsActive: [
+    { set: "FK", pieces_required: 4, affixes: WELL_ROUNDED_TIER }] });
+  assert.deepStrictEqual(out[0].affixes.map(P.affixLabel),
+    ["Profane Well Rounded +1", "Accuracy +1 Profane", "Deadly +1 Profane"]);
+});
+
+test("#252: a heterogeneous set grant lists its members rather than inventing a number", () => {
+  // The `parts` shape has to survive the set surface as it does the item one: a
+  // Parrying-style grant has no single magnitude and must never be reduced to one.
+  const tier = PARRYING.map((a) => ({ stat: a.name, bonus_type: a.type, value: a.value, via: a.via }));
+  const build = { chosen: [{ slot: "Ring 1", variant: { variant_id: "A", set_bonus: [{ set: "P" }],
+      parsed_set_bonuses: [{ set: "P", pieces_required: 1, affixes: tier }] } }],
+    jokerPlaced: [], membershipPlaced: [], setAugmentsPlaced: [], setsActive: [] };
+  const d = P.satisfiedSetDetail(build).find((x) => x.set === "P");
+  assert.strictEqual(d.affixes.length, 1);
+  const line = P.affixLabel(d.affixes[0]);
+  assert.ok(line.startsWith("Parrying: "), `names the enchantment: ${line}`);
+  assert.ok(/Armor Class \+5/.test(line) && /Fortitude Save \+2/.test(line),
+    `and lists the members it could not reduce: ${line}`);
+});
+
+test("#252: the projected content model carries the collapsed form, so no export can disagree", () => {
+  // The solve-visible-but-share-invisible invariant, in its other direction: the app
+  // and a shared build must not describe one set two ways.
+  const rec = { snapshot: wellRoundedBuild(), inputs: {} };
+  const view = P.project(rec);
+  const fk = (view.sets || []).find((s) => s.set === "FK");
+  assert.ok(fk, "the set reaches the content model");
+  assert.deepStrictEqual(fk.affixes.map(P.affixLabel),
+    ["Profane Well Rounded +1", "Accuracy +1 Profane", "Deadly +1 Profane"]);
+});
+
+test("#252: classification must read the RAW tier, never the collapsed output", () => {
+  // The boundary R11 draws, restated for the set surface, and the trap a future
+  // reader is most likely to walk into — adding stat chips to the Set Bonuses panel
+  // by classifying the list `satisfiedSetDetail` now hands back.
+  //
+  // A collapsed entry's `stat` is an ENCHANTMENT name. #453 records what happens if
+  // you match that against ranked targets: every collapsed bundle files as incidental,
+  // "including one carrying the player's rank-1 stat, silently, on a card that looks
+  // fine". Both halves are pinned so the difference is impossible to miss.
+  const raw = P.affixStatCoverage(WELL_ROUNDED_TIER);
+  assert.deepStrictEqual(raw.get("Profane Well Rounded").stats.slice().sort(),
+    ["Charisma", "Constitution", "Dexterity", "Intelligence", "Strength", "Wisdom"],
+    "on the raw tier the six abilities underneath are reachable");
+
+  const d = P.satisfiedSetDetail(wellRoundedBuild()).find((x) => x.set === "FK");
+  assert.deepStrictEqual(P.affixStatCoverage(d.affixes).get("Profane Well Rounded").stats,
+    ["Profane Well Rounded"],
+    "on the collapsed output they are NOT — which is why no set surface classifies it");
+});
+
+// This change is safe because all four consumers of these two producers only ever
+// label-and-join: the Set Bonuses panel, altGainSection, `project()`'s content model,
+// and exporters' setBonusDetail. None classifies, none does arithmetic. A consumer that
+// needs to classify must reach for the raw `parsed_set_bonuses` tier and
+// `affixStatCoverage`, per the test above.
+
 test("U8/R8: a heterogeneous family lists its member values, inventing no single number", () => {
   const out = P.collapseExpansions(PARRYING);
   assert.strictEqual(out.length, 1, "still one line");

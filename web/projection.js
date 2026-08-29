@@ -1044,7 +1044,11 @@
     return ((result && result.setsActive) || []).map((s) => ({
       set: s.set, pieces: s.pieces_required,
       slots: yields.get(s.set) || [],
-      affixes: tierAffixes.get(`${s.set}||${s.pieces_required}`) || s.affixes || [],
+      // #252 — collapsed HERE, at the producer, so all four reading surfaces get the
+      // engraved name from one call: the Set Bonuses panel, the alternatives cards,
+      // the projected content model, and every export that reads it.
+      affixes: collapseExpansions(
+        tierAffixes.get(`${s.set}||${s.pieces_required}`) || s.affixes || []),
     }));
   }
 
@@ -1116,11 +1120,11 @@
       const have = counts.get(set) || 0;
       let best = null;
       for (const [n, affixes] of byN) if (n <= have && (best == null || n > best.pieces)) best = { pieces: n, affixes };
-      if (best) bySet.set(set, { set, pieces: best.pieces, affixes: best.affixes, members: members.get(set) || [] });
+      if (best) bySet.set(set, { set, pieces: best.pieces, affixes: collapseExpansions(best.affixes), members: members.get(set) || [] });
     }
     for (const s of activeSetDetail(build)) {
       if (bySet.has(s.set)) continue;
-      bySet.set(s.set, { set: s.set, pieces: s.pieces, affixes: s.affixes, members: members.get(s.set) || [] });
+      bySet.set(s.set, { set: s.set, pieces: s.pieces, affixes: collapseExpansions(s.affixes || []), members: members.get(s.set) || [] });
     }
     return [...bySet.values()];
   }
