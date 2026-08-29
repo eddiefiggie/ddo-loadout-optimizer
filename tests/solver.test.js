@@ -6756,5 +6756,71 @@ async function withCrossAdd(map, fn) {
     assert.deepStrictEqual(withNone.capped, withEmpty.capped);
   });
 
+  // -------------------------------------------------------------------------
+  // #582 — abandon-after-stage.
+  //
+  // The seam is OPT-IN, and the first test below is the one that matters most:
+  // omitting `opts.abandon` must leave the solve byte-identical, because every
+  // other caller in the repo omits it — the golden guard, the perf gate,
+  // alternatives, and the concession probe among them.
+  // -------------------------------------------------------------------------
+
+  const abandonModel = () => ({
+    targets: ["Intelligence", "Wisdom"], mlCap: 34, dodgeCap: null,
+    worn: [slot("Helmet", [item("h1", "Helmet", [["Intelligence", "Enhancement", 10], ["Wisdom", "Insight", 4]])]),
+      slot("Ring", [item("r1", "Ring", [["Wisdom", "Enhancement", 8]])])],
+  });
+
+  await test("#582: no abandon predicate leaves the result identical", async () => {
+    const bare = await S.solveLexicographic(abandonModel(), highs);
+    const opted = await S.solveLexicographic(abandonModel(), highs, { abandon: () => false });
+    assert.strictEqual(bare.status, "optimal");
+    assert.strictEqual(opted.status, "optimal");
+    assert.deepStrictEqual(opted.effective, bare.effective,
+      "supplying a never-firing abandon predicate changed the optimum");
+    assert.deepStrictEqual(opted.perTarget, bare.perTarget, "per-target values drifted");
+    // Also pin the shape callers branch on: nothing new appears on a normal solve.
+    assert.strictEqual(bare.failure, undefined, "a clean solve carries no failure kind");
+    assert.strictEqual(bare.abandonedAt, undefined, "a clean solve carries no abandon marker");
+  });
+
+  await test("#582: a predicate that is already true stops before any ranked pass", async () => {
+    const r = await S.solveLexicographic(abandonModel(), highs, { abandon: () => true });
+    assert.strictEqual(r.status, "abandoned");
+    assert.strictEqual(r.failure, "abandoned");
+    assert.ok(/pre-stage/.test(r.abandonedAt || ""),
+      `expected the earliest boundary, got ${JSON.stringify(r.abandonedAt)}`);
+    // The load-bearing distinction: NOT "infeasible". #532 established that
+    // collapsing a non-optimal result into that status sends the player off to
+    // loosen constraints that were never the obstacle, and a stop the player
+    // asked for implies nothing whatsoever about the constraints.
+    assert.notStrictEqual(r.status, "infeasible");
+    assert.notStrictEqual(r.failure, "infeasible");
+    assert.strictEqual(r.chosen, undefined, "an abandoned run must not report a loadout");
+  });
+
+  await test("#582: a stop mid-run halts at a stage boundary, not at the end", async () => {
+    // Flips true after the first boundary, which is what a player pressing Stop
+    // while the first pass is in flight actually produces.
+    let asked = 0;
+    const r = await S.solveLexicographic(abandonModel(), highs, { abandon: () => (++asked > 1) });
+    assert.strictEqual(r.status, "abandoned");
+    assert.ok(/priority pass/.test(r.abandonedAt || ""),
+      `expected a ranked-pass boundary, got ${JSON.stringify(r.abandonedAt)}`);
+    assert.ok(asked >= 2, "the predicate was not re-consulted at later boundaries");
+  });
+
+  await test("#582: the predicate is never consulted when it is not supplied", async () => {
+    // The other half of opt-in: not asking must cost nothing, including the
+    // per-stage macrotask yields. A solve that never awaits cannot be interrupted
+    // — that is the pre-#582 behaviour, and it is what every other caller keeps.
+    let consulted = 0;
+    const spy = () => { consulted++; return false; };
+    await S.solveLexicographic(abandonModel(), highs);
+    assert.strictEqual(consulted, 0, "sanity: the spy is not wired into the bare call");
+    await S.solveLexicographic(abandonModel(), highs, { abandon: spy });
+    assert.ok(consulted > 0, "the supplied predicate was never consulted at all");
+  });
+
   console.log(`\n${passed} passed`);
 })();

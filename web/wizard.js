@@ -3787,16 +3787,46 @@ if (typeof window !== "undefined" && window.App) {
       let el = document.getElementById("wz-solve-overlay");
       if (!el && on) {
         el = document.createElement("div"); el.id = "wz-solve-overlay"; el.className = "wz-overlay";
-        el.innerHTML = `<div class="wz-overlay-box"><div class="wz-ring"></div><h3 id="wz-ov-title"></h3><p id="wz-ov-sub" class="wz-ov-sub"></p><p class="wz-ov-foot">Exact optimization — the provably best answer, not a guess.</p></div>`;
+        // #582 — the Stop control. Built once with the overlay and shown per-run,
+        // because a solve is the only thing this overlay ever covers.
+        el.innerHTML = `<div class="wz-overlay-box"><div class="wz-ring"></div><h3 id="wz-ov-title"></h3><p id="wz-ov-sub" class="wz-ov-sub"></p>`
+          + `<button type="button" id="wz-ov-stop" class="btn wz-ov-stop">Stop</button>`
+          + `<p class="wz-ov-foot">Exact optimization — the provably best answer, not a guess.</p></div>`;
         document.body.appendChild(el);
+        el.querySelector("#wz-ov-stop").addEventListener("click", requestAbandon);
       }
       if (el) {
-        if (on) { el.querySelector("#wz-ov-title").textContent = title; el.querySelector("#wz-ov-sub").textContent = sub || ""; el.classList.add("on"); }
-        else el.classList.remove("on");
+        if (on) {
+          el.querySelector("#wz-ov-title").textContent = title;
+          el.querySelector("#wz-ov-sub").textContent = sub || "";
+          // Re-arm for this run: the button is only meaningful while a solve is
+          // actually in flight, and a previous run may have left it pressed.
+          const stop = el.querySelector("#wz-ov-stop");
+          if (stop) { stop.disabled = false; stop.textContent = "Stop"; stop.hidden = false; }
+          el.classList.add("on");
+        } else el.classList.remove("on");
       }
     }
 
     let solving = false;
+    // #582 — the abandon latch. Set by the overlay's Stop control, read by the
+    // solver at each stage boundary, and cleared at the START of every solve so a
+    // stop can never leak into the next run. Deliberately NOT on `state`: it is
+    // in-flight control, not something a saved character should carry.
+    let abandonRequested = false;
+    function requestAbandon() {
+      if (!solving || abandonRequested) return;
+      abandonRequested = true;
+      // Say what the promise actually is. A HiGHS call already in flight cannot be
+      // preempted, so "stopping" is honest and "stopped" would not be.
+      const el = document.getElementById("wz-solve-overlay");
+      if (el) {
+        const sub = el.querySelector("#wz-ov-sub");
+        if (sub) sub.textContent = "stopping after the current pass…";
+        const stop = el.querySelector("#wz-ov-stop");
+        if (stop) { stop.disabled = true; stop.textContent = "Stopping…"; }
+      }
+    }
     // #449 U6 (KTD3) — the notices-panel latch: pulse the attention pill until
     // the player first opens the panel, then never again this session. Session-
     // scoped on purpose, and deliberately NOT on `state`: it is a presentation
@@ -3955,6 +3985,7 @@ if (typeof window !== "undefined" && window.App) {
       if (solving) return;
       if (!canAdvance("priorities", state)) return;
       solving = true;
+      abandonRequested = false;   // #582 — a stop never leaks into the next run
       const n = candidateItems().length;
       overlay(true, "Solving your loadout…", firstRun ? `searching ${n.toLocaleString()} eligible items · exact MILP` : "re-solving…");
       try {
@@ -4017,9 +4048,17 @@ if (typeof window !== "undefined" && window.App) {
           // own `nc_per_item_slots` marker.
           dataset.nearly_complete_per_item);
         const t0 = performance.now();
+        // #582 — the abandon predicate. Supplying it is what turns on the solver's
+        // stage-boundary yields; every other caller omits it and runs unchanged.
         // eslint-disable-next-line no-undef
-        const result = await solveLexicographic(model, h);
+        const result = await solveLexicographic(model, h, { abandon: () => abandonRequested });
         if (result.status === "optimal") result.solveMs = Math.round(performance.now() - t0);
+        // #582 — an abandoned run is not a result. Return to where the player was
+        // with NOTHING touched: no `lastRun`, no auto-snapshot, no step change, no
+        // pin pruning (the pin-invalidation pass below reads `result.chosen`, which
+        // an abandoned run does not have, and would read every pin as stale).
+        // Leaving the previous build intact is the whole point of "abandon".
+        if (result.status === "abandoned") return;
         // R17 pin-invalidation: prune a pin that didn't land ONLY when its item is
         // genuinely gone from the catalog (itemByPinId === null) — a stale reference
         // whose badge would otherwise lie. A pin merely illegal for the current config
