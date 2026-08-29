@@ -7,3 +7,6 @@ web/data/
 
 # Local dev fixtures — real Trove exports contain personal data (SubscriptionHash); never ship/commit.
 data/samples/
+
+# Local-only project metadata (category, local path) — never ship machine details to a public repo.
+GARAGE.md
