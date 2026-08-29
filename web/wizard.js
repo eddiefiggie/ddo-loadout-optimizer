@@ -2119,6 +2119,13 @@ function addBundle(key, current, vocab) {
  *
  *  `web/results.js` defers the upgrades-search spinner for the same reason,
  *  though with a timer rather than frames. */
+// #578 — how long the nested-frame path may stall before the timer takes over.
+// Only ever reached when frames stop arriving to a tab that still reports itself
+// visible (heavy throttling, or an occlusion the page has not been told about), so
+// it costs nothing on the ordinary path and is deliberately generous: two frames
+// are ~33 ms at 60 Hz, so 2 s is ~60x headroom and cannot pre-empt a slow paint.
+var PAINT_STALL_FALLBACK_MS = 2000;
+
 function yieldToPaint() {
   return new Promise((resolve) => {
     // Two nested frames, not a bare `setTimeout(0)`. A timer yields the task queue
@@ -2127,16 +2134,46 @@ function yieldToPaint() {
     // through it. Nested frames are the actual guarantee — the first callback runs
     // before a paint, the second only after that frame has been rendered — so by
     // the time this resolves the overlay is on screen, not merely in the DOM.
-    if (typeof requestAnimationFrame === "function") {
-      requestAnimationFrame(() => requestAnimationFrame(resolve));
-    } else {
-      setTimeout(resolve, 0);   // Node has no frames; the macrotask contract is what the tests pin
+    //
+    // #578 — but a frame is a PREFERENCE, never a precondition. Browsers stop
+    // delivering rAF to a hidden, minimized, or occluded tab, so the nested-frame
+    // contract above simply never completes there and every caller awaiting it
+    // parks forever. That is the whole of the reported hang: `solve()` had already
+    // raised the overlay, `overlay(false)` lives in the `finally` it never reaches,
+    // and the player got an unbounded spinner with no cancel — on a main thread
+    // that was IDLE, not busy. Nothing about the solve was slow; HiGHS was never
+    // even instantiated. It was reported as a solver defect specific to ranking a
+    // stat with no reachable source, and it is neither: ranking `Melee Power`
+    // alone — the issue's own passing control — hangs identically in a hidden tab,
+    // and the same ranking that "never returns" completes in ~1.1 s once frames
+    // are delivered. The stat was a coincidence of which run happened to be
+    // backgrounded.
+    //
+    // `animateCounters` in web/results.js already carries this exact lesson
+    // ("rAF pauses entirely in a backgrounded/throttled tab and can fire once then
+    // stall") for a cosmetic count-up. The solve gate — where the cost is the
+    // entire result rather than an animation — never got it.
+    //
+    // So: skip the frames outright when the tab already reports itself hidden
+    // (there is no paint to wait for), and otherwise race them against a timer so
+    // a stall degrades to "solve without the paint guarantee" instead of "never
+    // solve". Resolution is latched, so whichever arrives first wins exactly once.
+    let settled = false;
+    const done = () => { if (settled) return; settled = true; resolve(); };
+    const hidden = typeof document !== "undefined" && document.visibilityState === "hidden";
+    if (typeof requestAnimationFrame !== "function" || hidden) {
+      // Node has no frames; the macrotask contract is what the tests pin. A hidden
+      // tab has none either, and waiting on one is how the hang happened.
+      setTimeout(done, 0);
+      return;
     }
+    requestAnimationFrame(() => requestAnimationFrame(done));
+    setTimeout(done, PAINT_STALL_FALLBACK_MS);
   });
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
