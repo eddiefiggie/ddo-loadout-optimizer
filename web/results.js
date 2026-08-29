@@ -3305,10 +3305,27 @@ function farmingPanel(plan, acquired, opts) {
       ${i.noDropSource ? `<span class="farm-nodrop">${esc(Proj.NO_DROP_SOURCE_WORDING)}</span>` : ""}
     </li>`;
   };
+  /** #495 — what to say when a source has no adventure pack.
+   *
+   *  The wordings differ because the FACTS differ, and collapsing them would be the
+   *  guess this whole mapping exists to avoid. A vendor has no pack because a vendor
+   *  is not pack content; an unknown value has none because the wiki states nothing
+   *  we could source. Saying "not recorded" for a crafting station would imply a
+   *  missing datum where there is nothing to miss. */
+  const PACK_GAP_WORDING = {
+    vendor: "Bought from a vendor — not pack content",
+    crafting: "Crafted — not pack content",
+    event: "Seasonal event — not pack content",
+    store: "DDO Store — not pack content",
+    unknown: "Adventure pack not recorded",
+  };
+
   const sourceBlock = (s) => `<section class="farm-source">
     <h4 class="farm-source-name">${esc(s.name)}
       <span class="farm-source-count">${esc(s.itemCount)} item${s.itemCount === 1 ? "" : "s"}</span></h4>
-    <p class="farm-pack muted">Adventure pack not recorded</p>
+    ${s.adventurePack
+      ? `<p class="farm-pack">${esc(s.adventurePack)}</p>`
+      : `<p class="farm-pack muted">${esc(PACK_GAP_WORDING[s.kind] || PACK_GAP_WORDING.unknown)}</p>`}
     <ul class="farm-items">${s.items.map(tick).join("")}</ul>
   </section>`;
 

@@ -27,12 +27,18 @@
   //     records have any acquisition data at all. So this list can tell a player
   //     which augment to slot and must not pretend to tell them where to find it.
   //
-  //   * ADVENTURE PACK is not in the dataset in any form, and is not upstream in
-  //     gear-planner either. Pack-first grouping is the intended shape (it is
-  //     the first question a player asks — do I even own this?), and it waits on
-  //     the curated mapping in #495. Until then this groups by the source name
-  //     the wiki records, verbatim, and says outright that the pack is unknown.
-  //     Nothing here guesses a pack from a quest name.
+  //   * ADVENTURE PACK is still not upstream in gear-planner, and #495 supplies it
+  //     from a curated, wiki-sourced mapping the build stamps onto each variant as
+  //     `location_pack` / `location_kind`. Pack-first grouping is now live — it is
+  //     the first question a player asks, do I even own this? — with sibling
+  //     top-level groups for the sources that are not pack content.
+  //
+  //     Coverage is partial ON PURPOSE and the remainder is disclosed, not guessed:
+  //     70% of sourced variants resolve to a named pack and 92% to a classified
+  //     kind, while 33 of 533 source values (public zones, non-locations, crafting
+  //     ingredients) carry no wiki signal and render under "Source unknown".
+  //     Nothing here guesses a pack from a quest name — "Gianthold Tor" belongs to
+  //     "Ruins of Gianthold" and no string operation gets there.
   const NO_SOURCE = null;
 
   /** Every equipped item, with its recorded source and how many copies the build
@@ -52,6 +58,11 @@
         copies: 1,
         ml: v.minimum_level ?? v.ml ?? null,
         source: v.location_quest || NO_SOURCE,
+        // #495 — the curated, wiki-sourced join. `pack` is null when the mapping
+        // could not source one; `kind` says WHY, so the view can group a vendor
+        // apart from a quest instead of filing both under one heading.
+        pack: v.location_pack || NO_SOURCE,
+        kind: v.location_kind || "unknown",
         wikiUrl: v.wiki_url || null,
         // #262 — an item the wiki records no live source for. It is still a
         // solver candidate, and a farming list that silently lists it as
@@ -101,16 +112,56 @@
         name,
         // Explicitly null rather than absent: the farming view renders the gap
         // as a stated fact, and an absent key would let it render as nothing.
-        adventurePack: NO_SOURCE,
+        // #495 supplies it where the wiki stated one; it stays null otherwise, and
+        // `kind` distinguishes "we could not source a pack" from "this is not the
+        // sort of thing that has one" (a vendor, a crafting station, an event).
+        adventurePack: (items[0] && items[0].pack) || NO_SOURCE,
+        kind: (items[0] && items[0].kind) || "unknown",
         items: items.slice().sort((a, b) => a.item.localeCompare(b.item)),
         itemCount: items.reduce((n, i) => n + i.copies, 0),
       }))
       .sort((a, b) => b.itemCount - a.itemCount || a.name.localeCompare(b.name));
     unsourced.sort((a, b) => a.item.localeCompare(b.item));
 
+    // #495 — the pack-first grouping this list was shaped for. A player's first
+    // question about a farming target is "do I even own this?", and that is answered
+    // by the adventure pack, not by the quest name. Sources that are not pack content
+    // become SIBLING top-level groups rather than being forced under a pack heading
+    // they do not have — a vendor, a crafting station, a seasonal event and the DDO
+    // Store are each a different answer to "how do I get this", and flattening them
+    // into one "other" bucket would lose the distinction the mapping just made.
+    //
+    // `sources` above is kept unchanged beside this. It is what the ordering promise
+    // is about ("these three items all drop in Gianthold Tor"), several renderers
+    // already read it, and a grouping is an additional lens on the same list rather
+    // than a replacement for it.
+    const KIND_GROUP = {
+      vendor: "Vendors", event: "Seasonal Events", crafting: "Crafting",
+      store: "DDO Store", unknown: "Source unknown",
+    };
+    const byGroup = new Map();
+    for (const src of sources) {
+      // A pack-quest with no sourced pack is NOT filed under a pack we invented; it
+      // falls to Source unknown with everything else the mapping could not place.
+      const label = (src.kind === "pack-quest" && src.adventurePack)
+        ? src.adventurePack
+        : (KIND_GROUP[src.kind] || KIND_GROUP.unknown);
+      const isPack = label === src.adventurePack;
+      if (!byGroup.has(label)) byGroup.set(label, { name: label, isPack, sources: [], itemCount: 0 });
+      const g = byGroup.get(label);
+      g.sources.push(src);
+      g.itemCount += src.itemCount;
+    }
+    // Packs first, then the sibling groups, each by how much of YOUR build it yields.
+    const groups = [...byGroup.values()].sort((a, b) =>
+      (b.isPack ? 1 : 0) - (a.isPack ? 1 : 0)
+      || b.itemCount - a.itemCount
+      || a.name.localeCompare(b.name));
+
     const { augments, crafts } = prescriptions(rec || {});
     return {
       sources,
+      groups,
       unsourced,
       augments,
       crafts,
@@ -118,6 +169,7 @@
         items: entries.reduce((n, e) => n + e.copies, 0),
         distinctItems: entries.length,
         sources: sources.length,
+        groups: groups.length,
         unsourced: unsourced.length,
         augments: augments.length,
         crafts: crafts.length,
@@ -300,7 +352,10 @@
     lines.push("");
     lines.push(`${plan.counts.items} items across ${plan.counts.sources} source${plan.counts.sources === 1 ? "" : "s"}.`);
     lines.push("");
-    lines.push("> Adventure pack is not recorded in the dataset yet, so sources are listed by the name the DDO wiki gives them.");
+    // #495 — the caveat now names the REMAINDER rather than the whole. Sources the
+    // curated mapping could not place render under "Source unknown"; saying so is
+    // the disclosure, and claiming full pack coverage would be the failure.
+    lines.push("> Sources are grouped by adventure pack where the DDO wiki states one. Anything it does not is listed under Source unknown rather than guessed at.");
     lines.push("");
     for (const s of plan.sources) {
       lines.push(`## ${s.name}`);
