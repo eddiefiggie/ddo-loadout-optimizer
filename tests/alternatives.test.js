@@ -39,7 +39,7 @@ function setHost(id, slotName, affixes, setName, tiers) {
 // (+10 base + 3 set = 13). Forcing the set active is a trade (costs 7 Constitution).
 const tier = [{ n: 2, affixes: [["Constitution", "Insightful", 3]] }];
 const tradeModel = () => ({
-  targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+  targets: ["Constitution"], mlCap: 34,
   worn: [
     slot("Ring", [
       setHost("Ring Alpha", "Ring", [["Constitution", "Enhancement", 10]], "Alpha", tier),
@@ -109,7 +109,7 @@ const tradeModel = () => ({
 
   await test("rebalance generator trades a higher priority for a lower one", async () => {
     const model = {
-      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength", "Constitution"], mlCap: 34,
       worn: [slot("Gloves", [
         item("Glove A", "Gloves", [["Strength", "Enhancement", 20]]),
         item("Glove B", "Gloves", [["Strength", "Enhancement", 18], ["Constitution", "Enhancement", 12]]),
@@ -132,7 +132,7 @@ const tradeModel = () => ({
   // incidental vertex and the card overstates the price. Ring Y1 and Ring Y2 deliver
   // the IDENTICAL +50 Doublestrike; only Y2 keeps Strength at 19.
   const minimalModel = () => ({
-    targets: ["Strength", "Doublestrike"], mlCap: 34, dodgeCap: null,
+    targets: ["Strength", "Doublestrike"], mlCap: 34,
     worn: [slot("Ring", [
       item("Ring X", "Ring", [["Strength", "Enhancement", 20]]),
       item("Ring Y1", "Ring", [["Strength", "Enhancement", 18], ["Doublestrike", "Enhancement", 50]]),
@@ -167,7 +167,7 @@ const tradeModel = () => ({
   await test("#480: a pair with no slack is unchanged by the re-tighten stage", async () => {
     // Only one build attains the Constitution gain, so there is nothing to tighten.
     const model = {
-      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength", "Constitution"], mlCap: 34,
       worn: [slot("Gloves", [
         item("Glove A", "Gloves", [["Strength", "Enhancement", 20]]),
         item("Glove B", "Gloves", [["Strength", "Enhancement", 18], ["Constitution", "Enhancement", 12]]),
@@ -183,7 +183,7 @@ const tradeModel = () => ({
 
   await test("unranked-stat generator finds a zero-cost strict improvement", async () => {
     const model = {
-      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength"], mlCap: 34,
       worn: [slot("Boots", [
         item("Boots Low", "Boots", [["Strength", "Enhancement", 10], ["Fortitude", "Enhancement", 5]]),
         item("Boots High", "Boots", [["Strength", "Enhancement", 10], ["Fortitude", "Enhancement", 15]]),
@@ -206,7 +206,7 @@ const tradeModel = () => ({
   // is the only slot that changes. This is the common shape of a small concession and
   // the exact shape the shared K=2 distinctness filter would throw away.
   const oneSlotModel = () => ({
-    targets: ["Strength", "Doublestrike"], mlCap: 34, dodgeCap: null,
+    targets: ["Strength", "Doublestrike"], mlCap: 34,
     worn: [slot("Ring", [
       item("Ring X", "Ring", [["Strength", "Enhancement", 20]]),
       item("Ring Y", "Ring", [["Strength", "Enhancement", 17], ["Doublestrike", "Enhancement", 30]]),
@@ -252,7 +252,7 @@ const tradeModel = () => ({
     // Doublestrike that outranks the Necklace's, flipping the Necklace to the
     // Enhancement source and taking its Deadly with it.
     const lossy = () => ({
-      targets: ["Strength", "Doublestrike", "Deadly"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength", "Doublestrike", "Deadly"], mlCap: 34,
       worn: [
         slot("Ring", [
           item("Ring X", "Ring", [["Strength", "Enhancement", 20]]),
@@ -376,7 +376,7 @@ const tradeModel = () => ({
   // counted effects. Tier at the bottom -> the optimum keeps the ranked winner
   // (count 0) and the utility family surfaces the proc-richer weapon.
   const echoModel = () => ({
-    targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+    targets: ["A", SENT], mlCap: 34,
     utilityCountingSet: new Set(["Ghost Touch", "Feather Falling"]),
     worn: [slot("Weapon", [
       item("Calamitous", "Weapon", [["A", "Enhancement", 10]]),
@@ -419,7 +419,7 @@ const tradeModel = () => ({
     // a set var is only minted when its tier touches a tracked stat.)
     const alphaTier = [{ n: 2, affixes: [["Constitution", "Profane", 1]] }];
     const mk = () => ({
-      targets: [SENT, "Constitution"], mlCap: 34, dodgeCap: null,
+      targets: [SENT, "Constitution"], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [
         slot("Ring", [
@@ -459,7 +459,7 @@ const tradeModel = () => ({
   const shedModel = (targets, pieces, order) => {
     const t = [{ n: pieces, affixes: [["Constitution", "Profane", 1]] }];
     return {
-      targets, mlCap: 34, dodgeCap: null,
+      targets, mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch", "Feather Falling", "Water Breathing"]),
       // Stated explicitly so these tests turn on the ORDER rather than on the
       // alphabetical accident of the effect names.

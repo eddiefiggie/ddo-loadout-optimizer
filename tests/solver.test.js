@@ -91,7 +91,7 @@ async function withCrossAdd(map, fn) {
     const dup = item(allow, "Ring", [["Intelligence", "Enhancement", 10]]);
     dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: 3, pieces_label: "3 pieces", affixes: [] }];
     const model = {
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [dup, item("R2", "Ring", [["Intelligence", "Enhancement", 4]])], 2),
              slot("Necklace", [item("N", "Necklace", [["Intelligence", "Enhancement", 6]])])],
     };
@@ -137,7 +137,7 @@ async function withCrossAdd(map, fn) {
     dup.duplicable_ring = true;
     dup.set_bonus = [{ set: "Katra's Edge", pieces_required: 2, pieces_label: "2 pieces", affixes: [] }];
     const model = {
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [dup], 2)],
     };
     const prog = S.buildProgram(model);
@@ -163,7 +163,7 @@ async function withCrossAdd(map, fn) {
     const plain = item("Ordinary Ring", "Ring", [["Intelligence", "Enhancement", 10]]);
     plain.set_bonus = [{ set: "Perfected Wrath", pieces_required: 3, pieces_label: "3 pieces", affixes: [] }];
     const model = {
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [plain], 2), slot("Necklace", [item("N", "Necklace", [["Intelligence", "Enhancement", 6]])])],
     };
     const prog = S.buildProgram(model);
@@ -188,7 +188,7 @@ async function withCrossAdd(map, fn) {
     dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: piecesRequired,
                        pieces_label: piecesRequired + " pieces", affixes: [] }];
     return {
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [dup, item("R2", "Ring", [["Intelligence", "Enhancement", 4]])], 2),
              slot("Necklace", [item("N", "Necklace", [["Intelligence", "Enhancement", 6]])])],
     };
@@ -254,7 +254,7 @@ async function withCrossAdd(map, fn) {
     dup.parsed_set_bonuses = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces",
                                 affixes: [{ stat: "Intelligence", bonus_type: "Profane", value: 7, unit: "flat" }] }];
     const model = {
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [dup], 2)],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -273,7 +273,7 @@ async function withCrossAdd(map, fn) {
     dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces", affixes: [] }];
     dup.parsed_set_bonuses = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces",
                                 affixes: [{ stat: "Intelligence", bonus_type: "Profane", value: 7, unit: "flat" }] }];
-    const model = { targets: ["Intelligence"], mlCap: 34, dodgeCap: null, worn: [slot("Ring", [dup], 2)] };
+    const model = { targets: ["Intelligence"], mlCap: 34, worn: [slot("Ring", [dup], 2)] };
     const r = await S.solveLexicographic(model, highs);
     // 10 Enhancement counted ONCE (same name+type collapses to max), plus the
     // 7 Profane set tier the second copy unlocked. 27 would mean the affix
@@ -288,7 +288,7 @@ async function withCrossAdd(map, fn) {
     const dup = host(allow, "Ring", [["Intelligence", "Enhancement", 10]], ["Blue"]);
     dup.set_bonus = [{ set: "Perfected Wrath", pieces_required: 2, pieces_label: "2 pieces", affixes: [] }];
     const prog = S.buildProgram({
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [dup], 2)],
       augments: [{ name: "Sapphire", color: "Blue", fits_slots: AUG_FITS_SLOTS.Blue,
                    affixes: [{ stat: "Intelligence", bonus_type: "Insight", value: 3, unit: "flat" }] }],
@@ -305,7 +305,7 @@ async function withCrossAdd(map, fn) {
 
   await test("AE2: same bonus-type does NOT stack (only highest counts)", async () => {
     const model = {
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Enhancement", 10]])]),
              slot("Necklace", [item("N", "Necklace", [["Intelligence", "Enhancement", 6]])])],
     };
@@ -316,7 +316,7 @@ async function withCrossAdd(map, fn) {
 
   await test("different bonus-types DO stack (sum)", async () => {
     const model = {
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Enhancement", 10]])]),
              slot("Necklace", [item("N", "Necklace", [["Intelligence", "Insightful", 6]])])],
     };
@@ -332,7 +332,7 @@ async function withCrossAdd(map, fn) {
     M.setStackEquiv({ "Insight Natural": "Insight", "Primal Natural": "Primal" });
     try {
       const collapse = {
-        targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+        targets: ["Intelligence"], mlCap: 34,
         worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Insight Natural", 10]])]),
                slot("Necklace", [item("N", "Necklace", [["Intelligence", "Insight", 6]])])],
       };
@@ -342,7 +342,7 @@ async function withCrossAdd(map, fn) {
 
       // Non-equivalent types (Insight + Enhancement) still stack (sum), unaffected.
       const stackModel = {
-        targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+        targets: ["Intelligence"], mlCap: 34,
         worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Insight", 10]])]),
                slot("Necklace", [item("N", "Necklace", [["Intelligence", "Enhancement", 6]])])],
       };
@@ -361,7 +361,7 @@ async function withCrossAdd(map, fn) {
     // Σz<=1 constraint, so they collapse. (The spurious 'Enhancement' neg-amp of #109
     // is already gone from the data, so the two real sources are both Profane.)
     const collapse = {
-      targets: ["Negative Amplification"], mlCap: 34, dodgeCap: null,
+      targets: ["Negative Amplification"], mlCap: 34,
       worn: [slot("Trinket", [host("Hooves", "Trinket", [["Negative Amplification", "Profane", 61]], ["Colorless"])])],
       augments: [augment("ProfaneNegAmpGem", "Colorless", [["Negative Amplification", "Profane", 61]])],
     };
@@ -371,7 +371,7 @@ async function withCrossAdd(map, fn) {
 
     // Control: genuinely different types (Profane worn + Insight augment) DO stack, per DDO rules.
     const stackModel = {
-      targets: ["Negative Amplification"], mlCap: 34, dodgeCap: null,
+      targets: ["Negative Amplification"], mlCap: 34,
       worn: [slot("Trinket", [host("Hooves", "Trinket", [["Negative Amplification", "Profane", 61]], ["Colorless"])])],
       augments: [augment("InsightNegAmpGem", "Colorless", [["Negative Amplification", "Insight", 20]])],
     };
@@ -381,7 +381,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U2/AE1: boolean feature is presence — two sources do NOT stack", async () => {
     const model = {
-      targets: ["Salt"], mlCap: 34, dodgeCap: null,
+      targets: ["Salt"], mlCap: 34,
       worn: [slot("Ring", [item("R", "Ring", [["Salt", "boolean", 1]])]),
              slot("Necklace", [item("N", "Necklace", [["Salt", "boolean", 1]])])],
     };
@@ -394,7 +394,7 @@ async function withCrossAdd(map, fn) {
     // One Trinket slot; only one variant grants Salt. With Salt ranked, the
     // solver must equip the Salt-bearing variant.
     const model = {
-      targets: ["Salt"], mlCap: 34, dodgeCap: null,
+      targets: ["Salt"], mlCap: 34,
       worn: [slot("Trinket", [
         item("noSalt", "Trinket", [["Accuracy", "Enhancement", 10]]),
         item("hasSalt", "Trinket", [["Salt", "boolean", 1]]),
@@ -409,7 +409,7 @@ async function withCrossAdd(map, fn) {
     // Salt is NOT a target; a Salt source must not change which item wins the
     // slot on the real (Accuracy) target.
     const model = {
-      targets: ["Accuracy"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy"], mlCap: 34,
       worn: [slot("Trinket", [
         item("hiAcc", "Trinket", [["Accuracy", "Enhancement", 10]]),
         item("saltLowAcc", "Trinket", [["Accuracy", "Enhancement", 6], ["Salt", "boolean", 1]]),
@@ -432,7 +432,7 @@ async function withCrossAdd(map, fn) {
     // 'A' saturates on the Ring alone; the Necklace and Trinket carry only
     // presence effects. Tier-absent they'd stay empty; tier-present they fill.
     const mk = (targets) => ({
-      targets, mlCap: 34, dodgeCap: null,
+      targets, mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch", "Feather Falling"]),
       worn: [
         slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
@@ -457,7 +457,7 @@ async function withCrossAdd(map, fn) {
     // The lexicographic guarantee: a stat ranked ABOVE the tier never loses a
     // point to utility. hiA (A 10) must beat utilA (A 6 + Ghost Touch).
     const mk = (targets) => ({
-      targets, mlCap: 34, dodgeCap: null,
+      targets, mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [slot("Trinket", [
         item("hiA", "Trinket", [["A", "Enhancement", 10]]),
@@ -475,7 +475,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#91 U3/AE2: tier dragged above a low stat — utility wins the slot, stats above unchanged", async () => {
     const mk = (targets) => ({
-      targets, mlCap: 34, dodgeCap: null,
+      targets, mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [
         slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
@@ -499,7 +499,7 @@ async function withCrossAdd(map, fn) {
     // A locks both items in (Enhancement + Insight stack), so Ghost Touch is
     // present twice; the binary ceiling counts it once (R3).
     const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [
         slot("Ring", [item("rGT", "Ring", [["A", "Enhancement", 10], ["Ghost Touch", "Bool", 1]])]),
@@ -514,7 +514,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#91 U3: an effect reachable only via an AUGMENT still counts (every-channel gate)", async () => {
     const model = {
-      targets: [SENT], mlCap: 34, dodgeCap: null,
+      targets: [SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [slot("Trinket", [host("H", "Trinket", [], ["Colorless"])])],
       augments: [augment("GTgem", "Colorless", [["Ghost Touch", "Bool", 1]])],
@@ -527,7 +527,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#91 U3: an effect granted only by a SET TIER still counts (every-channel gate)", async () => {
     const model = {
-      targets: [SENT], mlCap: 34, dodgeCap: null,
+      targets: [SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [
         slot("Ring", [setPiece("p1", "Ring", [], "Spectral Pair", [{ n: 2, affixes: [["Ghost Touch", "Bool", 1]] }])]),
@@ -541,7 +541,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#91 U3: a counting-set name absent from every variant mints no indicator, breaks nothing", async () => {
     const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(["Utterly Absent Effect"]),
       worn: [slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])])],
     };
@@ -567,7 +567,7 @@ async function withCrossAdd(map, fn) {
     // U3's; this unit only forbids the substitution ordering would be defenceless
     // against.
     const model = {
-      targets: [SENT], mlCap: 34, dodgeCap: null,
+      targets: [SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch", "Feather Falling", "Blunt Trauma"]),
       worn: [
         slot("Necklace", [
@@ -625,7 +625,7 @@ async function withCrossAdd(map, fn) {
     // the order is reversed is what proves the choice is the ORDER's doing rather
     // than an artifact of the model.
     const mk = (order) => ({
-      targets: [SENT], mlCap: 34, dodgeCap: null,
+      targets: [SENT], mlCap: 34,
       utilityCountingSet: new Set(["A-eff", "B-eff", "C-eff"]), utilityOrder: order,
       worn: [slot("Trinket", [
         item("tA", "Trinket", [["A-eff", "Bool", 1]]),
@@ -651,7 +651,7 @@ async function withCrossAdd(map, fn) {
     // at all (there is nothing to farm). Collapsing them into one "not secured" line
     // would send a player hunting for gear that does not exist in their band.
     const r = await S.solveLexicographic({
-      targets: [SENT], mlCap: 34, dodgeCap: null,
+      targets: [SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch", "Feather Falling", "Nonexistent Effect"]),
       utilityOrder: ["Ghost Touch", "Nonexistent Effect", "Feather Falling"],
       worn: [slot("Trinket", [
@@ -669,7 +669,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#348 U3/R10: the same query and container return the same loadout", async () => {
     const mk = () => ({
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch", "Feather Falling"]),
       utilityOrder: ["Feather Falling", "Ghost Touch"],
       worn: [
@@ -693,7 +693,7 @@ async function withCrossAdd(map, fn) {
     // outbid and priceable. "Nonexistent Effect" has no carrier at all, so there is
     // no price to find and the probe must not spend a solve looking for one.
     const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(["Blurry", "Ghost Touch", "Nonexistent Effect"]),
       utilityOrder: ["Blurry", "Ghost Touch", "Nonexistent Effect"],
       worn: [
@@ -717,7 +717,7 @@ async function withCrossAdd(map, fn) {
     // The budget is one MILP. Counted directly rather than inferred from wall time:
     // a probe-per-miss would scale with the container and is the thing KTD5 forbids.
     const mk = (names, order) => ({
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(names), utilityOrder: order,
       worn: [
         slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
@@ -745,7 +745,7 @@ async function withCrossAdd(map, fn) {
   await test("#348 U5: a container that secured everything runs no probe and prices nothing", async () => {
     const counting = (h) => { let n = 0; return { proxy: { solve: (...a) => { n++; return h.solve(...a); } }, count: () => n }; };
     const mk = (order) => ({
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(order), utilityOrder: order,
       worn: [
         slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
@@ -785,7 +785,7 @@ async function withCrossAdd(map, fn) {
     // would have made the copy a lie: an effect blocked only by a higher-ordered
     // container effect must route to the INFEASIBLE sentence, not to a zero.
     const mk = (targets, order, worn) => ({
-      targets, mlCap: 34, dodgeCap: null,
+      targets, mlCap: 34,
       utilityCountingSet: new Set(order), utilityOrder: order, worn,
     });
 
@@ -834,7 +834,7 @@ async function withCrossAdd(map, fn) {
     // Keen is a real Bool presence effect excluded from the v1 tier-1 curation:
     // its carrier is equipped, but no u_e exists for it and it never counts.
     const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [slot("Ring", [item("rK", "Ring", [["A", "Enhancement", 10], ["Keen", "Bool", 1], ["Ghost Touch", "Bool", 1]])])],
     };
@@ -854,10 +854,10 @@ async function withCrossAdd(map, fn) {
       item("gt", "Trinket", [["Ghost Touch", "Bool", 1]]),
     ])];
     const withSet = {
-      targets: ["A"], mlCap: 34, dodgeCap: null,
+      targets: ["A"], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]), worn: worn(),
     };
-    const preFeature = { targets: ["A"], mlCap: 34, dodgeCap: null, worn: worn() };
+    const preFeature = { targets: ["A"], mlCap: 34, worn: worn() };
     const enc = (m) => S.encodeStage(S.buildProgram(m), { objectiveStat: "A", sense: "max", locks: [] });
     assert.strictEqual(enc(withSet), enc(preFeature), "byte-identical program with the tier removed");
     const a = await S.solveLexicographic(withSet, highs);
@@ -899,7 +899,7 @@ async function withCrossAdd(map, fn) {
     // is the only thing keeping the placement. The host carries nothing at all,
     // so the tie-break would likewise shed it without the lock.
     const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [
         slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
@@ -924,7 +924,7 @@ async function withCrossAdd(map, fn) {
   // -------------------------------------------------------------------------
   await test("#91 U5/KTD6: utilityReport carries count + credited items on the solve result", async () => {
     const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch", "Feather Falling"]),
       worn: [
         slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
@@ -946,7 +946,7 @@ async function withCrossAdd(map, fn) {
     // slot is built before the Necklace slot, so rGT holds the lower x-index
     // and takes the credit — deterministically, on every run.
     const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [
         slot("Ring", [item("rGT", "Ring", [["A", "Enhancement", 10], ["Ghost Touch", "Bool", 1]])]),
@@ -963,7 +963,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#91 U5: augment-carried credits the placement's own label; set-carried credits the set", async () => {
     const augModel = {
-      targets: [SENT], mlCap: 34, dodgeCap: null,
+      targets: [SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [slot("Trinket", [host("H", "Trinket", [], ["Colorless"])])],
       augments: [augment("GTgem", "Colorless", [["Ghost Touch", "Bool", 1]])],
@@ -972,7 +972,7 @@ async function withCrossAdd(map, fn) {
     assert.deepStrictEqual(ra.utilityReport.effects, [{ name: "Ghost Touch", item: "GTgem" }],
       "no solver-side host for an augment placement -> its own variant_id");
     const setModel = {
-      targets: [SENT], mlCap: 34, dodgeCap: null,
+      targets: [SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [
         slot("Ring", [setPiece("p1", "Ring", [], "Spectral Pair", [{ n: 2, affixes: [["Ghost Touch", "Bool", 1]] }])]),
@@ -990,7 +990,7 @@ async function withCrossAdd(map, fn) {
     const hostV = item("ROLL-H", "Boots", [["A", "Enhancement", 5]]);
     hostV.roll_groups = [{ options: [{ stat: "Ghost Touch", bonus_type: "Bool", value: 1, unit: "flat" }] }];
     const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [slot("Boots", [hostV])],
     };
@@ -1008,7 +1008,7 @@ async function withCrossAdd(map, fn) {
     // an arbitrary count-sized subset of u's up; reading u would under-report
     // genuinely present effects nondeterministically).
     const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [slot("Necklace", [item("nGT", "Necklace", [["A", "Enhancement", 2], ["Ghost Touch", "Bool", 1]])])],
     };
@@ -1044,7 +1044,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#91 U5: the tieBreak:false path (alternatives shape) carries the same guarded report", async () => {
     const model = {
-      targets: ["A", SENT], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [
         slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
@@ -1066,7 +1066,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#91 U5/R12: slots the Utility stage fills are NOT reported as empty", async () => {
     const mk = (targets) => ({
-      targets, mlCap: 34, dodgeCap: null,
+      targets, mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch", "Feather Falling"]),
       worn: [
         slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
@@ -1081,9 +1081,33 @@ async function withCrossAdd(map, fn) {
     assert.deepStrictEqual(r.emptySlots.slots, []);
   });
 
-  await test("AE3: dodge cap clamps (item still equipped)", async () => {
+  await test("#573: heavy armor no longer clamps a ranked Dodge stat", async () => {
+    // The behavioural half of the removal, end-to-end through buildModel so the query
+    // field that used to mint the clamp (`armorType`) is the one actually supplied.
+    // Under ARMOR_DODGE_CAP this solve reported Dodge 4 — the `heavy` row of four
+    // numbers that traced to nothing. It now reports the gear sum, and the un-modelled
+    // armor reduction is DISCLOSED rather than guessed (`dodgeMaxDexLine`), per the
+    // #199 ruling that refused a Dodge cap outright.
+    const M = require("../web/model.js");
+    const ring = {
+      source_item: "R", variant_id: "R", slot: "Ring", category: "item",
+      minimum_level: 30, ml: 30, verification: "verified",
+      affixes: [{ stat: "Dodge", bonus_type: "Enhancement", name: "Dodge", type: "Enhancement", value: 20, unit: "flat" }],
+      scaling: [], set_bonus: [], augment_slots: [], restrictions: "unknown", armor_type: null,
+    };
+    const model = M.buildModel([ring], { mlCap: 34, targets: ["Dodge"], armorType: "heavy", targetCaps: {}, targetFloors: {} });
+    assert.strictEqual(model.dodgeCap, undefined, "no clamp is minted at model-build time");
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.Dodge, 20, "the full gear sum, not the old hardcoded 4");
+    assert.strictEqual(r.capped.Dodge, undefined, "and no Dodge cap reached the program");
+  });
+
+  await test("AE3: a cap clamps Dodge (item still equipped)", async () => {
+    // #573 — was `dodgeCap: 4`, the unsourced per-armor-category clamp. That source is
+    // gone; the assertion is about the CLAMP, which the two surviving sources still do.
     const model = {
-      targets: ["Dodge"], mlCap: 34, dodgeCap: 4,
+      targets: ["Dodge"], mlCap: 34, userCaps: { Dodge: 4 },
       worn: [slot("Ring", [item("R", "Ring", [["Dodge", "Enhancement", 20]])])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -1093,7 +1117,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1: user cap clamps a stat (item still equipped)", async () => {
     const model = {
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null, userCaps: { Intelligence: 5 },
+      targets: ["Intelligence"], mlCap: 34, userCaps: { Intelligence: 5 },
       worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Enhancement", 20]])])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -1107,20 +1131,23 @@ async function withCrossAdd(map, fn) {
       slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]]), item("rB", "Ring", [["B", "Enhancement", 10]])]),
       slot("Necklace", [item("nA", "Necklace", [["A", "Insight", 10]]), item("nB", "Necklace", [["B", "Insight", 10]])]),
     ];
-    const uncapped = await S.solveLexicographic({ targets: ["A", "B"], mlCap: 34, dodgeCap: null, worn: worn() }, highs);
+    const uncapped = await S.solveLexicographic({ targets: ["A", "B"], mlCap: 34, worn: worn() }, highs);
     assert.strictEqual(uncapped.effective.A, 20, "uncapped: A stacks across both slots");
     assert.strictEqual(uncapped.effective.B, 0, "uncapped: both slots spent maximizing A");
-    const capped = await S.solveLexicographic({ targets: ["A", "B"], mlCap: 34, dodgeCap: null, userCaps: { A: 10 }, worn: worn() }, highs);
+    const capped = await S.solveLexicographic({ targets: ["A", "B"], mlCap: 34, userCaps: { A: 10 }, worn: worn() }, highs);
     assert.strictEqual(capped.effective.A, 10, "capped: A saturates at the cap");
     assert.strictEqual(capped.effective.B, 10, "capped: the freed slot now serves B");
   });
 
-  await test("U1: user Dodge cap and armor dodge cap take the min", async () => {
+  await test("U1: an intrinsic cap and a user cap take the min, either way round", async () => {
+    // #573 — this used to pit the armor dodge cap against the user cap. With the armor
+    // clamp removed, the two remaining sources are the #199 intrinsic ceilings and the
+    // player's own Max, and the tighter-of-the-set rule they merge under is unchanged.
     const worn = () => [slot("Ring", [item("R", "Ring", [["Dodge", "Enhancement", 20]])])];
-    const a = await S.solveLexicographic({ targets: ["Dodge"], mlCap: 34, dodgeCap: 10, userCaps: { Dodge: 4 }, worn: worn() }, highs);
-    assert.strictEqual(a.effective.Dodge, 4, "user cap 4 < armor cap 10 wins");
-    const b = await S.solveLexicographic({ targets: ["Dodge"], mlCap: 34, dodgeCap: 4, userCaps: { Dodge: 10 }, worn: worn() }, highs);
-    assert.strictEqual(b.effective.Dodge, 4, "armor cap 4 < user cap 10 wins");
+    const a = await S.solveLexicographic({ targets: ["Dodge"], mlCap: 34, intrinsicCaps: { Dodge: 10 }, userCaps: { Dodge: 4 }, worn: worn() }, highs);
+    assert.strictEqual(a.effective.Dodge, 4, "user cap 4 < intrinsic cap 10 wins");
+    const b = await S.solveLexicographic({ targets: ["Dodge"], mlCap: 34, intrinsicCaps: { Dodge: 4 }, userCaps: { Dodge: 10 }, worn: worn() }, highs);
+    assert.strictEqual(b.effective.Dodge, 4, "intrinsic cap 4 < user cap 10 wins");
   });
 
   await test("U1: query.targetCaps flows through buildModel into a clamped solve", async () => {
@@ -1141,7 +1168,7 @@ async function withCrossAdd(map, fn) {
   await test("U2: reachable floor is met, then the rest is maximized", async () => {
     // Floor B >= 10 forces the B item; A is then maximized in the other slot.
     const model = {
-      targets: ["A"], mlCap: 34, dodgeCap: null, floors: { B: 10 },
+      targets: ["A"], mlCap: 34, floors: { B: 10 },
       worn: [
         slot("Ring", [item("rB", "Ring", [["B", "Enhancement", 10]])]),
         slot("Necklace", [item("nA", "Necklace", [["A", "Enhancement", 10]])]),
@@ -1156,7 +1183,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U2: unreachable floor is best-effort, never infeasible", async () => {
     const model = {
-      targets: ["A"], mlCap: 34, dodgeCap: null, floors: { B: 100 },
+      targets: ["A"], mlCap: 34, floors: { B: 100 },
       worn: [
         slot("Ring", [item("rB", "Ring", [["B", "Enhancement", 10]]), item("rA", "Ring", [["A", "Enhancement", 10]])]),
       ],
@@ -1173,7 +1200,7 @@ async function withCrossAdd(map, fn) {
     // One slot can hold only PRR or MRR. Both floors are individually reachable (10)
     // but not together. PRR is the higher priority, so MRR's floor is relaxed.
     const model = {
-      targets: ["PRR", "MRR"], mlCap: 34, dodgeCap: null, floors: { PRR: 10, MRR: 10 },
+      targets: ["PRR", "MRR"], mlCap: 34, floors: { PRR: 10, MRR: 10 },
       worn: [slot("Trinket", [
         item("tP", "Trinket", [["PRR", "Enhancement", 10]]),
         item("tM", "Trinket", [["MRR", "Enhancement", 10]]),
@@ -1193,7 +1220,7 @@ async function withCrossAdd(map, fn) {
   // lexicographic, and a per-stat cap (U1) is the intended lever to free slots.
   await test("U6: a zero-marginal same-type duplicate is dropped for the next priority", async () => {
     const model = {
-      targets: ["KL", "KI"], mlCap: 34, dodgeCap: null,
+      targets: ["KL", "KI"], mlCap: 34,
       worn: [
         slot("Ring", [item("klA", "Ring", [["KL", "Enhancement", 10]])]),
         slot("Necklace", [item("klDup", "Necklace", [["KL", "Enhancement", 10]]), item("kiX", "Necklace", [["KI", "Enhancement", 10]])]),
@@ -1215,7 +1242,7 @@ async function withCrossAdd(map, fn) {
       set_membership_slot: { pool: ["MySet"], station: "Cannith Repurposing Station" },
     };
     const model = {
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Armor", [host])],
       membershipSetDefs: { MySet: { tiers: [
         { pieces_required: 1, pieces_label: "1 Piece", affixes: [
@@ -1236,10 +1263,10 @@ async function withCrossAdd(map, fn) {
       slot("Ring", [item("klE", "Ring", [["KL", "Enhancement", 10]])]),
       slot("Necklace", [item("klI", "Necklace", [["KL", "Insight", 10]]), item("kiX", "Necklace", [["KI", "Enhancement", 10]])]),
     ];
-    const nocap = await S.solveLexicographic({ targets: ["KL", "KI"], mlCap: 34, dodgeCap: null, worn: worn() }, highs);
+    const nocap = await S.solveLexicographic({ targets: ["KL", "KI"], mlCap: 34, worn: worn() }, highs);
     assert.strictEqual(nocap.effective.KL, 20, "distinct types stack — KL legitimately uses both slots");
     assert.strictEqual(nocap.effective.KI, 0, "KI unserved: correct strict-lexicographic output, not a bug");
-    const capped = await S.solveLexicographic({ targets: ["KL", "KI"], mlCap: 34, dodgeCap: null, userCaps: { KL: 10 }, worn: worn() }, highs);
+    const capped = await S.solveLexicographic({ targets: ["KL", "KI"], mlCap: 34, userCaps: { KL: 10 }, worn: worn() }, highs);
     assert.strictEqual(capped.effective.KL, 10, "cap saturates KL");
     assert.strictEqual(capped.effective.KI, 10, "the freed slot now serves KI");
   });
@@ -1247,7 +1274,7 @@ async function withCrossAdd(map, fn) {
   await test("AE1: lexicographic — priority 1 maxed even at cost of priority 2", async () => {
     // one slot, must choose: v1 gives A=10/B=0, v2 gives A=0/B=10. A has priority.
     const model = {
-      targets: ["Accuracy", "Deadly"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy", "Deadly"], mlCap: 34,
       worn: [slot("Trinket", [
         item("hiA", "Trinket", [["Accuracy", "Enhancement", 10]]),
         item("hiB", "Trinket", [["Deadly", "Enhancement", 10]]),
@@ -1261,7 +1288,7 @@ async function withCrossAdd(map, fn) {
 
   await test("reversing priority flips the choice", async () => {
     const model = {
-      targets: ["Deadly", "Accuracy"], mlCap: 34, dodgeCap: null,
+      targets: ["Deadly", "Accuracy"], mlCap: 34,
       worn: [slot("Trinket", [
         item("hiA", "Trinket", [["Accuracy", "Enhancement", 10]]),
         item("hiB", "Trinket", [["Deadly", "Enhancement", 10]]),
@@ -1274,7 +1301,7 @@ async function withCrossAdd(map, fn) {
 
   await test("capped target with NO source reports 0, not the cap", async () => {
     const model = {
-      targets: ["Dodge"], mlCap: 34, dodgeCap: 4,
+      targets: ["Dodge"], mlCap: 34, userCaps: { Dodge: 4 },
       worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Enhancement", 10]])])], // no Dodge anywhere
     };
     const r = await S.solveLexicographic(model, highs);
@@ -1284,7 +1311,7 @@ async function withCrossAdd(map, fn) {
 
   await test("solve is deterministic across runs (tie-break)", async () => {
     const mk = () => ({
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [item("R1", "Ring", [["Intelligence", "Enhancement", 5]]),
                            item("R2", "Ring", [["Intelligence", "Enhancement", 5]])], 1)],
     });
@@ -1314,7 +1341,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U3/AE2: augment counts only with a matching open slot", async () => {
     const withSlot = {
-      targets: ["Resistance"], mlCap: 34, dodgeCap: null,
+      targets: ["Resistance"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [], ["Blue"])])],
       augments: [augment("SapphireRes5", "Blue", [["Resistance", "Enhancement", 5]])],
     };
@@ -1322,7 +1349,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(a.effective.Resistance, 5, "placed into the open Blue slot");
 
     const wrongColor = {
-      targets: ["Resistance"], mlCap: 34, dodgeCap: null,
+      targets: ["Resistance"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [], ["Red"])])], // no Blue slot
       augments: [augment("SapphireRes5", "Blue", [["Resistance", "Enhancement", 5]])],
     };
@@ -1332,7 +1359,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U3/AE4: augment obeys bonus-type stacking with worn", async () => {
     const sameType = {
-      targets: ["Resistance"], mlCap: 34, dodgeCap: null,
+      targets: ["Resistance"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [["Resistance", "Enhancement", 4]], ["Blue"])])],
       augments: [augment("A", "Blue", [["Resistance", "Enhancement", 5]])],
     };
@@ -1340,7 +1367,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(s.effective.Resistance, 5, "same type -> max(4,5), not 9");
 
     const diffType = {
-      targets: ["Resistance"], mlCap: 34, dodgeCap: null,
+      targets: ["Resistance"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [["Resistance", "Enhancement", 4]], ["Blue"])])],
       augments: [augment("A", "Blue", [["Resistance", "Insightful", 5]])],
     };
@@ -1350,7 +1377,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U3: per-color capacity bounds placements (one slot -> one augment)", async () => {
     const oneSlot = {
-      targets: ["Resistance", "Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Resistance", "Intelligence"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [], ["Blue"])])], // exactly one Blue slot
       augments: [
         augment("Res", "Blue", [["Resistance", "Enhancement", 5]]),
@@ -1362,7 +1389,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.effective.Intelligence, 0, "only one Blue slot -> second augment cannot fit");
 
     const twoSlots = {
-      targets: ["Resistance", "Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Resistance", "Intelligence"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [], ["Blue", "Blue"])])], // two Blue slots
       augments: [
         augment("Res", "Blue", [["Resistance", "Enhancement", 5]]),
@@ -1375,14 +1402,14 @@ async function withCrossAdd(map, fn) {
 
   await test("U3: Lunar/Solar augments only fill Moon/Sun slots", async () => {
     const moonSlot = {
-      targets: ["Resistance"], mlCap: 34, dodgeCap: null,
+      targets: ["Resistance"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [], ["Moon"])])],
       augments: [augment("Lunar", "Moon", [["Resistance", "Enhancement", 5]])],
     };
     assert.strictEqual((await S.solveLexicographic(moonSlot, highs)).effective.Resistance, 5);
 
     const blueSlot = {
-      targets: ["Resistance"], mlCap: 34, dodgeCap: null,
+      targets: ["Resistance"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [], ["Blue"])])],
       augments: [augment("Lunar", "Moon", [["Resistance", "Enhancement", 5]])],
     };
@@ -1392,7 +1419,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U3/AE1: a Red augment fits an Orange slot (multi-fit)", async () => {
     const m = {
-      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [], ["Orange"])])], // only an Orange slot
       augments: [augment("RedStr", "Red", [["Strength", "Enhancement", 15]])], // a Red augment
     };
@@ -1402,7 +1429,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U3/AE2: a Colorless augment fits a colored (Blue) slot", async () => {
     const m = {
-      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [], ["Blue"])])],
       augments: [augment("DiamondStr", "Colorless", [["Strength", "Enhancement", 15]])],
     };
@@ -1412,7 +1439,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U3/AE3: two slots take two different bonus types (stack), not two same-type", async () => {
     const m = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [], ["Orange", "Orange"])])], // two Orange slots
       augments: [
         augment("EnhCon", "Red", [["Constitution", "Enhancement", 15]]),   // Red fits Orange
@@ -1427,7 +1454,7 @@ async function withCrossAdd(map, fn) {
     const uniq = augment("UniqStr", "Red", [["Strength", "Enhancement", 15]]);
     uniq.unique_equipped = true;
     const m = {
-      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [], ["Orange", "Orange"])])], // two compatible slots
       augments: [uniq],
     };
@@ -1442,7 +1469,7 @@ async function withCrossAdd(map, fn) {
     // a reloaded build has no way back to them. Dropping this field is exactly
     // how the Set Bonuses set-like list and the text exports went name-only.
     const m = {
-      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [], ["Orange"])])],
       augments: [augment("SolarStr", "Red", [["Strength", "Enhancement", 15]])],
     };
@@ -1459,7 +1486,7 @@ async function withCrossAdd(map, fn) {
     // Enhancement) bucket, so bucket-max keeps only the highest — the invariant the
     // no-used-once design rests on. A regression that summed slots would give 25.
     const m = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Ring", [host("R", "Ring", [], ["Orange", "Orange"])])],
       augments: [
         augment("EnhCon15", "Red", [["Constitution", "Enhancement", 15]]),
@@ -1476,7 +1503,7 @@ async function withCrossAdd(map, fn) {
     // augment fits only A's Blue slot, so once B is equipped its supply is 0 and
     // the augment cannot count. A broken host->capacity gate would leak Int = 5.
     const m = {
-      targets: ["Strength", "Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength", "Intelligence"], mlCap: 34,
       worn: [slot("Ring", [
         host("A", "Ring", [["Strength", "Enhancement", 10]], ["Blue"]),
         item("B", "Ring", [["Strength", "Enhancement", 20]]),
@@ -1492,7 +1519,7 @@ async function withCrossAdd(map, fn) {
   await test("U5/AE1: set stat counts only at the piece threshold", async () => {
     const tier = [{ n: 2, affixes: [["Strength", "Enhancement", 10]] }];
     const twoPieces = {
-      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength"], mlCap: 34,
       worn: [
         slot("Ring", [setPiece("R", "Ring", [], "TestSet", tier)]),
         slot("Necklace", [setPiece("N", "Necklace", [], "TestSet", tier)]),
@@ -1503,7 +1530,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(a.chosen.length, 2, "both set pieces equipped");
 
     const onePiece = {
-      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength"], mlCap: 34,
       worn: [slot("Ring", [setPiece("R", "Ring", [], "TestSet", tier)])],
     };
     const b = await S.solveLexicographic(onePiece, highs);
@@ -1512,7 +1539,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U5: set bonus obeys bonus-type stacking with worn", async () => {
     const sameType = {
-      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength"], mlCap: 34,
       worn: [
         slot("Ring", [setPiece("R", "Ring", [["Strength", "Enhancement", 6]], "TestSet",
           [{ n: 2, affixes: [["Strength", "Enhancement", 10]] }])]),
@@ -1524,7 +1551,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(s.effective.Strength, 10, "same type -> max(worn 6, set 10)");
 
     const diffType = {
-      targets: ["Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength"], mlCap: 34,
       worn: [
         slot("Ring", [setPiece("R", "Ring", [["Strength", "Enhancement", 6]], "TestSet",
           [{ n: 2, affixes: [["Strength", "Insightful", 10]] }])]),
@@ -1563,7 +1590,7 @@ async function withCrossAdd(map, fn) {
 
   await test("Dino/AE1: insert counts only when its host is equipped + placed", async () => {
     const withHost = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Boots", [dinoHost("B", "Boots", ["Scale"])])],
       dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14)],
     };
@@ -1572,7 +1599,7 @@ async function withCrossAdd(map, fn) {
     assert.ok(a.dinoPlaced.some((d) => d.affixes.some((x) => x.stat === "Constitution")), "reported as placed");
 
     const noHost = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Boots", [item("B", "Boots", [])])], // host has no Dino slots
       dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14)],
     };
@@ -1582,7 +1609,7 @@ async function withCrossAdd(map, fn) {
 
   await test("Dino/AE2: an insert fills only a matching-type slot", async () => {
     const wrongType = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Boots", [dinoHost("B", "Boots", ["Fang"])])], // Fang slot, not Scale
       dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14)],
     };
@@ -1592,7 +1619,7 @@ async function withCrossAdd(map, fn) {
 
   await test("Dino/AE3: per-type capacity bounds placements (one Scale slot -> one insert)", async () => {
     const oneSlot = {
-      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 34,
       worn: [slot("Boots", [dinoHost("B", "Boots", ["Scale"])])], // one Scale slot
       dinoInserts: [
         dinoIns("Scale", "Constitution", "Enhancement", 14),
@@ -1604,7 +1631,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.effective.Strength, 0, "only one Scale slot -> second insert cannot fit");
 
     const twoSlots = {
-      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 34,
       worn: [
         slot("Boots", [dinoHost("B", "Boots", ["Scale"])]),
         slot("Belt", [dinoHost("W", "Belt", ["Scale"])]),
@@ -1620,7 +1647,7 @@ async function withCrossAdd(map, fn) {
 
   await test("Dino/AE4: insert obeys bonus-type stacking with worn", async () => {
     const sameType = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Boots", [dinoHost("B", "Boots", ["Scale"], [["Constitution", "Enhancement", 10]])])],
       dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14)],
     };
@@ -1628,7 +1655,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(s.effective.Constitution, 14, "same type -> max(worn 10, dino 14), not 24");
 
     const diffType = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Boots", [dinoHost("B", "Boots", ["Scale"], [["Constitution", "Enhancement", 10]])])],
       dinoInserts: [dinoIns("Scale", "Constitution", "Insightful", 7)],
     };
@@ -1638,7 +1665,7 @@ async function withCrossAdd(map, fn) {
 
   await test("Dino/KTD4: a multi-affix insert applies ALL affixes from one placement", async () => {
     const m = {
-      targets: ["Sneak Attacks", "Sneak Attack Damage"], mlCap: 34, dodgeCap: null,
+      targets: ["Sneak Attacks", "Sneak Attack Damage"], mlCap: 34,
       worn: [slot("Boots", [dinoHost("B", "Boots", ["Fang"])])], // one Fang slot
       dinoInserts: [dinoMulti("Fang", [
         ["Sneak Attacks", "Enhancement", 11],
@@ -1656,7 +1683,7 @@ async function withCrossAdd(map, fn) {
     // same on the priority target, the multi-affix unit is not preferred, but if
     // placed it brings both — verify it never contributes only one affix.
     const m = {
-      targets: ["Sneak Attacks"], mlCap: 34, dodgeCap: null,
+      targets: ["Sneak Attacks"], mlCap: 34,
       worn: [slot("Boots", [dinoHost("B", "Boots", ["Fang"])])],
       dinoInserts: [dinoMulti("Fang", [
         ["Sneak Attacks", "Enhancement", 11],
@@ -1671,7 +1698,7 @@ async function withCrossAdd(map, fn) {
 
   await test("Dino/KTD1: a Weapon-typed insert cannot fill an Accessory slot", async () => {
     const q = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Boots", [dinoHost("B", "Boots", ["Scale||Accessory"])])],
       dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14, "Weapon")],
     };
@@ -1681,7 +1708,7 @@ async function withCrossAdd(map, fn) {
 
   await test("Dino/KTD1: a Weapon-typed insert fills a matching Weapon slot", async () => {
     const q = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Main Hand", [dinoHost("W", "Main Hand", ["Scale||Weapon"])])],
       dinoInserts: [dinoIns("Scale", "Constitution", "Enhancement", 14, "Weapon")],
     };
@@ -1706,14 +1733,14 @@ async function withCrossAdd(map, fn) {
 
   await test("#283: a quarterstaff-only insert counts only on a quarterstaff host", async () => {
     const on = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Main Hand", [qsHost("Q", ["Fang||Weapon"])])],
       dinoInserts: [markedIns("Fang", "Constitution", 14, true)],
     };
     assert.strictEqual((await S.solveLexicographic(on, highs)).effective.Constitution, 14,
       "the quarterstaff receives its own richer version");
     const off = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Main Hand", [dinoHost("W", "Main Hand", ["Fang||Weapon"])])],
       dinoInserts: [markedIns("Fang", "Constitution", 14, true)],
     };
@@ -1723,7 +1750,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#283: a base-only insert is refused to a quarterstaff host", async () => {
     const q = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Main Hand", [qsHost("Q", ["Fang||Weapon"])])],
       dinoInserts: [markedIns("Fang", "Constitution", 14, false)],
     };
@@ -1735,7 +1762,7 @@ async function withCrossAdd(map, fn) {
     for (const [label, host] of [["quarterstaff", qsHost("Q", ["Fang||Weapon"])],
                                  ["untyped", dinoHost("W", "Main Hand", ["Fang||Weapon"])]]) {
       const q = {
-        targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+        targets: ["Constitution"], mlCap: 34,
         worn: [slot("Main Hand", [host])],
         dinoInserts: [markedIns("Fang", "Constitution", 14, undefined)],
       };
@@ -1756,7 +1783,7 @@ async function withCrossAdd(map, fn) {
     // naive encoding takes it (verified: dropping the aggregate constraint turns
     // this red, and only this one of the five).
     const q = {
-      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 34,
       worn: [slot("Main Hand", [qsHost("Q", ["Fang||Weapon"])])],  // exactly ONE slot
       dinoInserts: [markedIns("Fang", "Constitution", 14, true),
                     markedIns("Fang", "Strength", 9, undefined)],
@@ -1776,7 +1803,7 @@ async function withCrossAdd(map, fn) {
     // collapsing into one max-bucket.
     const runeArm = dinoHost("R", "Rune Arm", ["Fang||Weapon"]);
     const q = {
-      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 34,
       worn: [slot("Main Hand", [qsHost("Q", ["Fang||Weapon"])]),
              slot("Rune Arm", [runeArm])],
       dinoInserts: [markedIns("Fang", "Constitution", 14, true),
@@ -1811,7 +1838,7 @@ async function withCrossAdd(map, fn) {
     // opening anywhere. Distinct stats so each placement is visible rather than
     // collapsing into one max bucket.
     const q = {
-      targets: ["Constitution", "Strength", "Dexterity", "Wisdom"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength", "Dexterity", "Wisdom"], mlCap: 34,
       worn: [slot("Main Hand", [nativeHost("A", "Long Swords", ["Scale||Weapon"])]),
              slot("Rune Arm", [dinoHost("B", "Rune Arm", ["Scale||Weapon"])]),
              slot("Armor", [dinoHost("C", "Armor", ["Scale||Weapon"])])],
@@ -1830,7 +1857,7 @@ async function withCrossAdd(map, fn) {
     // keeps the affixes it earned AND gains insert capacity, and neither is
     // credited twice.
     const q = {
-      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength", "Constitution"], mlCap: 34,
       worn: [slot("Main Hand", [nativeHost("N", "Long Swords", ["Fang||Weapon"],
         [["Strength", "Enhancement", 15]])])],
       dinoInserts: [dinoIns("Fang", "Constitution", "Enhancement", 14, "Weapon")],
@@ -1845,7 +1872,7 @@ async function withCrossAdd(map, fn) {
     // The restricted-demand family, at scale: several base-typed natives expose
     // Fang Weapon slots and none of them may serve a quarterstaff-only insert.
     const q = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Main Hand", [nativeHost("A", "Long Swords", ["Fang||Weapon"])]),
              slot("Rune Arm", [dinoHost("B", "Rune Arm", ["Fang||Weapon"])])],
       dinoInserts: [markedIns("Fang", "Constitution", 14, true)],
@@ -1856,7 +1883,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#545: an insert whose key no equipped native exposes is forced to zero", async () => {
     const q = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Main Hand", [nativeHost("A", "Long Swords", ["Fang||Weapon"])])],
       dinoInserts: [dinoIns("Horn", "Constitution", "Enhancement", 14, "Weapon")],
     };
@@ -1866,7 +1893,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#545: a multi-affix insert stays all-or-nothing on a stamped native", async () => {
     const q = {
-      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 34,
       worn: [slot("Main Hand", [nativeHost("N", "Long Swords", ["Scale||Weapon"])])],
       dinoInserts: [dinoMulti("Scale", [["Constitution", "Enhancement", 14],
                                         ["Strength", "Enhancement", 9]], "Weapon")],
@@ -1905,7 +1932,7 @@ async function withCrossAdd(map, fn) {
     const skills = ["Bluff", "Diplomacy", "Haggle"];
     const pool = [ncMulti("Skill", skills.map((s) => [s, "Exceptional", 11]))];
     const q = {
-      targets: ["Bluff", "Haggle"], mlCap: 36, dodgeCap: null,
+      targets: ["Bluff", "Haggle"], mlCap: 36,
       worn: [slot("Boots", [ncHost("B", "Boots", "Skill", "legendary")])],
       nearlyComplete: pool,
     };
@@ -1924,7 +1951,7 @@ async function withCrossAdd(map, fn) {
 
   await test("NC/AE1: solver crafts the option that best advances the ranked targets", async () => {
     const conFirst = {
-      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 34,
       worn: [slot("Boots", [ncHost("B", "Boots", "Ability Score", "legendary")])],
       nearlyComplete: ABIL_POOL,
     };
@@ -1939,7 +1966,7 @@ async function withCrossAdd(map, fn) {
 
   await test("NC/AE2: at most one option per slot (single irreversible choice)", async () => {
     const oneSlot = {
-      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 34,
       worn: [slot("Boots", [ncHost("B", "Boots", "Ability Score", "legendary")])],
       nearlyComplete: ABIL_POOL,
     };
@@ -1951,7 +1978,7 @@ async function withCrossAdd(map, fn) {
 
   await test("NC/AE3: crafted option obeys bonus-type stacking with worn", async () => {
     const sameType = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Boots", [ncHost("B", "Boots", "Ability Score", "legendary", [["Constitution", "Enhancement", 10]])])],
       nearlyComplete: [ncOpt("Ability Score", "Constitution", "Enhancement", 15)],
     };
@@ -1959,7 +1986,7 @@ async function withCrossAdd(map, fn) {
       "same type -> max(worn 10, nc 15), not 25");
 
     const diffType = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Boots", [ncHost("B", "Boots", "Insightful Ability Score", "legendary", [["Constitution", "Enhancement", 10]])])],
       nearlyComplete: [ncOpt("Insightful Ability Score", "Constitution", "Insight", 7)],
     };
@@ -1972,7 +1999,7 @@ async function withCrossAdd(map, fn) {
     // rival with a strictly better target stat is equipped instead, so the host's
     // craft must NOT apply. This is the constraint that dominates() must also not prune.
     const m = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Ring", [
         ncHost("H", "Ring", "Ability Score", "legendary"),          // craftable +15 Con, no base
         item("R", "Ring", [["Constitution", "Enhancement", 30]]),   // strictly better intrinsically
@@ -1986,7 +2013,7 @@ async function withCrossAdd(map, fn) {
 
   await test("NC/cross-item: Σn<=1 is per host item, not global", async () => {
     const m = {
-      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 34,
       worn: [
         slot("Boots", [ncHost("B", "Boots", "Ability Score", "legendary")]),
         slot("Gloves", [ncHost("G", "Gloves", "Ability Score", "legendary")]),
@@ -2005,7 +2032,7 @@ async function withCrossAdd(map, fn) {
       ncOpt("Ability Score", "Constitution", "Enhancement", 15, "legendary"),
     ];
     const m = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Boots", [ncHost("B", "Boots", "Ability Score", "heroic")])],
       nearlyComplete: pool,
     };
@@ -2015,7 +2042,7 @@ async function withCrossAdd(map, fn) {
 
   await test("NC: tier + ML36 — a legendary slot applies at mlCap 36", async () => {
     const m36 = {
-      targets: ["Constitution"], mlCap: 36, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 36,
       worn: [slot("Boots", [ncHost("B", "Boots", "Ability Score", "legendary")])],
       nearlyComplete: ABIL_POOL,
     };
@@ -2023,7 +2050,7 @@ async function withCrossAdd(map, fn) {
 
     // an item with no nearly_complete field contributes nothing new
     const none = {
-      targets: ["Constitution"], mlCap: 36, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 36,
       worn: [slot("Boots", [item("B", "Boots", [])])],
       nearlyComplete: ABIL_POOL,
     };
@@ -2074,13 +2101,13 @@ async function withCrossAdd(map, fn) {
       { stat: "Constitution", bonus_type: "Enhancement", value: 13, unit: "flat" },
       { stat: "Strength", bonus_type: "Enhancement", value: 13, unit: "flat" },
     ] }];
-    const con = { targets: ["Constitution"], mlCap: 34, dodgeCap: null, worn: [slot("Ring", [rg])] };
+    const con = { targets: ["Constitution"], mlCap: 34, worn: [slot("Ring", [rg])] };
     const r = await S.solveLexicographic(con, highs);
     assert.strictEqual(r.effective.Constitution, 13, "crafts the Con option for a Con target");
     assert.strictEqual((r.rollPlaced || []).length, 1, "exactly one option placed (Sum<=1 per group)");
     assert.strictEqual(r.rollPlaced[0].stat, "Constitution");
     // the same item pivots to Strength when that is the target
-    const str = { targets: ["Strength"], mlCap: 34, dodgeCap: null, worn: [slot("Ring", [rg])] };
+    const str = { targets: ["Strength"], mlCap: 34, worn: [slot("Ring", [rg])] };
     assert.strictEqual((await S.solveLexicographic(str, highs)).effective.Strength, 13);
   });
 
@@ -2122,7 +2149,7 @@ async function withCrossAdd(map, fn) {
 
   await test("VIK/AE1: crafts the option that best advances the ranked targets", async () => {
     const conFirst = {
-      targets: ["Constitution", "Strength"], mlCap: 36, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 36,
       worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }])])],
       viktranium: VIK_POOL,
     };
@@ -2135,7 +2162,7 @@ async function withCrossAdd(map, fn) {
 
   await test("VIK/AE2: at most one option per slot (single irreversible choice)", async () => {
     const m = {
-      targets: ["Constitution", "Strength"], mlCap: 36, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 36,
       worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }])])],
       viktranium: VIK_POOL,
     };
@@ -2148,7 +2175,7 @@ async function withCrossAdd(map, fn) {
   await test("VIK/two-slots: two Lamordia slots on one item craft independently", async () => {
     // Σn<=1 is PER SLOT, so an item with two slots gets two independent choices.
     const m = {
-      targets: ["Constitution", "Strength"], mlCap: 36, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 36,
       worn: [slot("Neck", [vikHost("H", "Neck", [
         { type: "Melancholic", category: "Accessory" },
         { type: "Melancholic", category: "Accessory" },
@@ -2182,7 +2209,7 @@ async function withCrossAdd(map, fn) {
       return v;
     };
     const solveFor = async (weaponType, targets) => S.solveLexicographic({
-      targets, mlCap: 34, dodgeCap: null,
+      targets, mlCap: 34,
       worn: [slot("Main Hand", [host(weaponType)])], viktranium: qsPool,
     }, highs);
 
@@ -2205,7 +2232,7 @@ async function withCrossAdd(map, fn) {
 
   await test("VIK/AE3: crafted option obeys bonus-type stacking with worn", async () => {
     const sameType = {
-      targets: ["Constitution"], mlCap: 36, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 36,
       worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }], 35,
         [["Constitution", "Enhancement", 10]])])],
       viktranium: [vikOpt("Melancholic", "Accessory", "Constitution", "Enhancement", 15, "legendary")],
@@ -2213,7 +2240,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual((await S.solveLexicographic(sameType, highs)).effective.Constitution, 15,
       "same type -> max(worn 10, craft 15), not 25");
     const diffType = {
-      targets: ["Constitution"], mlCap: 36, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 36,
       worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }], 35,
         [["Constitution", "Enhancement", 10]])])],
       viktranium: [vikOpt("Melancholic", "Accessory", "Constitution", "Quality", 7, "legendary")],
@@ -2226,7 +2253,7 @@ async function withCrossAdd(map, fn) {
     // Regression guard for the tier-boundary bug: EVERY real Lamordia host is
     // ML34 (a Legendary item), so an ML34 host must pull the LEGENDARY magnitude.
     const legendary = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }], 34)])],
       viktranium: VIK_POOL,
     };
@@ -2234,7 +2261,7 @@ async function withCrossAdd(map, fn) {
       "ML34 legendary host -> +15 (legendary), not the heroic +5");
     // A genuinely heroic host (Viktranium heroic recipes are ML8/11) pulls +5.
     const heroic = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }], 11)])],
       viktranium: VIK_POOL,
     };
@@ -2246,7 +2273,7 @@ async function withCrossAdd(map, fn) {
     // The intrinsically weaker Lamordia host loses its slot to a stronger rival, so
     // its craft must NOT apply — the constraint dominates() must also not prune.
     const m = {
-      targets: ["Constitution"], mlCap: 36, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 36,
       worn: [slot("Ring", [
         vikHost("H", "Ring", [{ type: "Melancholic", category: "Accessory" }]),   // craftable +15, no base
         item("R", "Ring", [["Constitution", "Enhancement", 30]]),                  // strictly better intrinsically
@@ -2261,7 +2288,7 @@ async function withCrossAdd(map, fn) {
   await test("VIK/pool-key: an option is placed only into a slot of its (type, category)", async () => {
     // The host's slot is Dolorous/Weapon; a Melancholic/Accessory option must not fit.
     const m = {
-      targets: ["Constitution"], mlCap: 36, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 36,
       worn: [slot("Main Hand", [vikHost("W", "Main Hand", [{ type: "Dolorous", category: "Weapon" }])])],
       viktranium: [vikOpt("Melancholic", "Accessory", "Constitution", "Enhancement", 15, "legendary")],
     };
@@ -2278,7 +2305,7 @@ async function withCrossAdd(map, fn) {
 
   await test("VIK/atomic R1: one craft of a universal option grants ALL seven schools", async () => {
     const m = {
-      targets: ["Necromancy Focus", "Evocation Focus"], mlCap: 36, dodgeCap: null,
+      targets: ["Necromancy Focus", "Evocation Focus"], mlCap: 36,
       worn: [slot("Armor", [vikHost("H", "Armor", [{ type: "Dolorous", category: "Armor" }])])],
       viktranium: [VIK_UNIVERSAL],
     };
@@ -2296,7 +2323,7 @@ async function withCrossAdd(map, fn) {
     // ranked schools, so the second slot is free for something else — the
     // reported bug (AE1) was a caster forced to burn a slot per school.
     const m = {
-      targets: ["Necromancy Focus", "Evocation Focus", "Constitution"], mlCap: 36, dodgeCap: null,
+      targets: ["Necromancy Focus", "Evocation Focus", "Constitution"], mlCap: 36,
       worn: [
         slot("Armor", [vikHost("A", "Armor", [{ type: "Dolorous", category: "Armor" }])]),
         slot("Neck", [vikHost("B", "Neck", [{ type: "Dolorous", category: "Armor" }])]),
@@ -2315,7 +2342,7 @@ async function withCrossAdd(map, fn) {
 
   await test("VIK/atomic: ONE binary gates every on-target affix of an option", async () => {
     const model = {
-      targets: ["Necromancy Focus", "Evocation Focus"], mlCap: 36, dodgeCap: null,
+      targets: ["Necromancy Focus", "Evocation Focus"], mlCap: 36,
       worn: [slot("Armor", [vikHost("H", "Armor", [{ type: "Dolorous", category: "Armor" }])])],
       viktranium: [VIK_UNIVERSAL],
     };
@@ -2333,7 +2360,7 @@ async function withCrossAdd(map, fn) {
 
   await test("VIK/atomic: an OFF-target affix of a selected option adds no objective term", async () => {
     const model = {
-      targets: ["Necromancy Focus"], mlCap: 36, dodgeCap: null,
+      targets: ["Necromancy Focus"], mlCap: 36,
       worn: [slot("Armor", [vikHost("H", "Armor", [{ type: "Dolorous", category: "Armor" }])])],
       viktranium: [vikMulti("Dolorous", "Armor", [
         ["Necromancy Focus", "Profane", 1],
@@ -2354,7 +2381,7 @@ async function withCrossAdd(map, fn) {
       vikMulti("Melancholic", "Accessory", [["Strength", "Enhancement", 15]]),
     ];
     const one = {
-      targets: ["Constitution", "Strength"], mlCap: 36, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 36,
       worn: [slot("Neck", [vikHost("H", "Neck", [{ type: "Melancholic", category: "Accessory" }])])],
       viktranium: pool,
     };
@@ -2547,7 +2574,7 @@ async function withCrossAdd(map, fn) {
 
   await test("SEAL/AE1: unseals the option that best advances the ranked targets", async () => {
     const conFirst = {
-      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 34,
       worn: [slot("Trinket", [sealHost("H", "Trinket", [{ seal_type: "Undeath", category: "Trinket" }])])],
       seal: SEAL_POOL,
     };
@@ -2560,7 +2587,7 @@ async function withCrossAdd(map, fn) {
 
   await test("SEAL/single-pick: one option per seal slot, mutually exclusive", async () => {
     const m = {
-      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 34,
       worn: [slot("Trinket", [sealHost("H", "Trinket", [{ seal_type: "Undeath", category: "Trinket" }])])],
       seal: SEAL_POOL,
     };
@@ -2574,7 +2601,7 @@ async function withCrossAdd(map, fn) {
     // Con Enhancement is already capped by a worn affix; the seal's best move for a
     // Con-first ranking is the Insightful tier (a different bonus type -> it stacks).
     const m = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Trinket", [sealHost("H", "Trinket", [{ seal_type: "Undeath", category: "Trinket" }],
         [["Constitution", "Enhancement", 15]])])],
       seal: SEAL_POOL,
@@ -2749,7 +2776,7 @@ async function withCrossAdd(map, fn) {
     // A Fire-sealed host with an Undeath-only pool unseals nothing — the solver's
     // opt.seal_type !== slot.seal_type filter excludes the mismatched pool.
     const program = S.buildProgram({
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Trinket", [sealHost("H", "Trinket", [{ seal_type: "Fire", category: "Trinket" }])])],
       seal: SEAL_POOL, // Undeath options only
     });
@@ -2769,7 +2796,7 @@ async function withCrossAdd(map, fn) {
     const corrType = corr.type != null ? corr.type : corr.bonus_type;
     const weak = item("WeakRing", r4.slot, [["Corrosion", corrType, Math.max(1, corr.value - 50)]]);
     const model = {
-      targets: ["Corrosion"], mlCap: 34, dodgeCap: null,
+      targets: ["Corrosion"], mlCap: 34,
       worn: [slot(r4.slot, [r4, weak])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -2793,7 +2820,7 @@ async function withCrossAdd(map, fn) {
       .filter(v => ["Bracers", "Boots", "Gloves", "Belt", "Necklace", "Trinket", "Goggles", "Cloak", "Helmet"].includes(v.slot))
       .slice(0, 5);
     assert.ok(pieces.length === 5, "need 5 enriched Dread Isle members in distinct slots");
-    const mk = vs => ({ targets: ["Universal Spell Power"], mlCap: 34, dodgeCap: null,
+    const mk = vs => ({ targets: ["Universal Spell Power"], mlCap: 34,
       worn: vs.map(v => ({ slot: v.slot, cardinality: 1, variants: [v] })) });
     const r5 = await S.solveLexicographic(mk(pieces), highs);
     const r4 = await S.solveLexicographic(mk(pieces.slice(0, 4)), highs);
@@ -2819,7 +2846,7 @@ async function withCrossAdd(map, fn) {
     const gem = item("GEM", "Trinket", []);
     gem.joker_set_groups = [[A, "Marshwalker"], [B, "Oasis of Morality"]];
     const model = {
-      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength", "Constitution"], mlCap: 34,
       worn: [
         slot("Ring", [setPiece("RA", "Ring", [["Strength", "Enhancement", 1]], A, tiersA)]),
         slot("Necklace", [setPiece("NB", "Necklace", [["Constitution", "Enhancement", 1]], B, tiersB)]),
@@ -2841,7 +2868,7 @@ async function withCrossAdd(map, fn) {
     const gem = item("GEM", "Trinket", []);
     gem.joker_set_groups = [[A, B]];   // one group holding both
     const model = {
-      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength", "Constitution"], mlCap: 34,
       worn: [
         slot("Ring", [setPiece("RA", "Ring", [["Strength", "Enhancement", 1]], A, t("Strength"))]),
         slot("Necklace", [setPiece("NB", "Necklace", [["Constitution", "Enhancement", 1]], B, t("Constitution"))]),
@@ -2883,7 +2910,7 @@ async function withCrossAdd(map, fn) {
       [{ n: 2, affixes: [["Constitution", "Profane", 8]] }]);
     host.set_membership_slot = { pool: [SET], station: "Cannith Repurposing Station" };
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      targets: ["Constitution"], mlCap: 34, membershipSetDefs: DEFS,
       worn: [slot("Helmet", [host])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -2909,7 +2936,7 @@ async function withCrossAdd(map, fn) {
     a.set_membership_slot = { pool: [OWN, OTHER], station: "Cannith Repurposing Station" };
     const b = memberHost("B", "Cloak", [OTHER]);
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      targets: ["Constitution"], mlCap: 34, membershipSetDefs: DEFS,
       worn: [slot("Helmet", [a]), slot("Cloak", [b])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -2926,7 +2953,7 @@ async function withCrossAdd(map, fn) {
     const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Constitution", "Profane", 8]] }]) };
     const pool = [SET];
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      targets: ["Constitution"], mlCap: 34, membershipSetDefs: DEFS,
       worn: [
         slot("Helmet", [memberHost("H1", "Helmet", pool)]),
         slot("Cloak", [memberHost("H2", "Cloak", pool)]),
@@ -2947,7 +2974,7 @@ async function withCrossAdd(map, fn) {
     const SET = "Legendary Vol's Influence";
     const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Constitution", "Profane", 8]] }]) };
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      targets: ["Constitution"], mlCap: 34, membershipSetDefs: DEFS,
       worn: [slot("Helmet", [memberHost("H1", "Helmet", [SET])]),
              slot("Cloak", [memberHost("H2", "Cloak", [SET])])],
     };
@@ -2961,7 +2988,7 @@ async function withCrossAdd(map, fn) {
       SetB: memberDef([{ n: 1, affixes: [["Constitution", "Profane", 5]] }]),
     };
     const model = {
-      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      targets: ["Strength", "Constitution"], mlCap: 34, membershipSetDefs: DEFS,
       worn: [slot("Helmet", [memberHost("H1", "Helmet", ["SetA", "SetB"])])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -2977,7 +3004,7 @@ async function withCrossAdd(map, fn) {
     const weapon = setPiece("FKWeapon", "Main Hand", [["Constitution", "Enhancement", 1]], SET,
       [{ n: 2, affixes: [["Constitution", "Profane", 10]] }]);
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      targets: ["Constitution"], mlCap: 34, membershipSetDefs: DEFS,
       worn: [slot("Main Hand", [weapon]),
              slot("Helmet", [memberHost("LP", "Helmet", [SET])])],
     };
@@ -2991,7 +3018,7 @@ async function withCrossAdd(map, fn) {
     const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Constitution", "Profane", 8]] }]) };
     // only one host -> a 3-piece set can never complete -> no membership pick fired
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      targets: ["Constitution"], mlCap: 34, membershipSetDefs: DEFS,
       worn: [slot("Helmet", [memberHost("H1", "Helmet", [SET])])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -3040,7 +3067,7 @@ async function withCrossAdd(map, fn) {
     const CANON = "Damage to helpless enemies";
     const tier = [{ n: 2, affixes: [[CANON, "Artifact", 15]] }];
     const model = {
-      targets: [CANON], mlCap: 34, dodgeCap: null,
+      targets: [CANON], mlCap: 34,
       worn: [slot("Ring", [setPiece("R", "Ring", [], "Cruelty Set", tier)]),
              slot("Necklace", [setPiece("N", "Necklace", [], "Cruelty Set", tier)])],
     };
@@ -3062,7 +3089,7 @@ async function withCrossAdd(map, fn) {
       return v;
     };
     const model = {
-      targets: ["Melee Power"], mlCap: 32, dodgeCap: null, membershipSetDefs: DEFS,
+      targets: ["Melee Power"], mlCap: 32, membershipSetDefs: DEFS,
       worn: [slot("Armor", [dinoHost("DA", "Armor")]), slot("Helmet", [dinoHost("DH", "Helmet")]),
              slot("Cloak", [dinoHost("DC", "Cloak")])],
     };
@@ -3108,7 +3135,7 @@ async function withCrossAdd(map, fn) {
     const natives = dreadNatives(data, ["Bracers", "Boots", "Gloves", "Belt"]);
     assert.strictEqual(natives.length, 4, "4 native carriers in distinct worn slots");
     const mk = (vs) => ({
-      targets: ["Universal Spell Power"], mlCap: 34, dodgeCap: null,
+      targets: ["Universal Spell Power"], mlCap: 34,
       membershipSetDefs: data.membership_set_defs,
       worn: vs.map((v) => ({ slot: v.slot, cardinality: 1, variants: [v] })),
     });
@@ -3142,7 +3169,7 @@ async function withCrossAdd(map, fn) {
     const forced = JSON.parse(JSON.stringify(helm));
     forced.set_membership_slot = { pool: [rival], station: "Dinosaur Bone crafting" };
     const mk = (vs) => ({
-      targets: ["Universal Spell Power"], mlCap: 34, dodgeCap: null,
+      targets: ["Universal Spell Power"], mlCap: 34,
       membershipSetDefs: data.membership_set_defs,
       worn: vs.map((v) => ({ slot: v.slot, cardinality: 1, variants: [v] })),
     });
@@ -3168,7 +3195,7 @@ async function withCrossAdd(map, fn) {
     const DEFS = { [SET]: memberDef([{ n: 3, affixes: [["Universal Spell Power", "Artifact", 25]] }]) };
     const host = memberHost("LP", "Helmet", [SET], [["Constitution", "Enhancement", 12]]);
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null, membershipSetDefs: DEFS,
+      targets: ["Constitution"], mlCap: 34, membershipSetDefs: DEFS,
       worn: [slot("Helmet", [host])],
     };
     const program = S.buildProgram(model);
@@ -3189,7 +3216,7 @@ async function withCrossAdd(map, fn) {
     assert.ok(defs[SET], "the real Legendary Vol's Influence def is present");
     const lp = (slotName) => memberHost(`LP-${slotName}`, slotName, [SET]);
     const model = {
-      targets: ["Universal Spell Power"], mlCap: 34, dodgeCap: null,
+      targets: ["Universal Spell Power"], mlCap: 34,
       membershipSetDefs: defs,
       worn: [slot("Helmet", [lp("Helmet")]), slot("Cloak", [lp("Cloak")]), slot("Gloves", [lp("Gloves")])],
     };
@@ -3217,7 +3244,7 @@ async function withCrossAdd(map, fn) {
       tfOpt(3, "Strength", "Profane", 2),
     ];
     const model = {
-      targets: ["Strength", "Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength", "Constitution"], mlCap: 34,
       thunderForged: POOL,
       worn: [slot("Main Hand", [tfHost("W", "Main Hand", [1, 2, 3])])],
     };
@@ -3232,7 +3259,7 @@ async function withCrossAdd(map, fn) {
   await test("TF/tier-keyed: an option for the wrong tier is not craftable in that tier", () => {
     // Pool only has a Tier-2 option; a host with only Tier 1 crafts nothing.
     const program = S.buildProgram({
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       thunderForged: [tfOpt(2, "Constitution", "Insightful", 3)],
       worn: [slot("Main Hand", [tfHost("W", "Main Hand", [1])])],
     });
@@ -3255,7 +3282,7 @@ async function withCrossAdd(map, fn) {
       gsOpt("Str item", "Strength", "Insightful", 8),
     ];
     const model = {
-      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 34,
       greenSteel: POOL,
       worn: [slot("Trinket", [gsHost("H", "Trinket")])],
     };
@@ -3270,7 +3297,7 @@ async function withCrossAdd(map, fn) {
     // ranking is a different bonus type (Quality) so it stacks.
     const POOL = [gsOpt("Con insight", "Constitution", "Insightful", 8), gsOpt("Con quality", "Constitution", "Quality", 4)];
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       greenSteel: POOL,
       worn: [slot("Trinket", [gsHost("H", "Trinket", [["Constitution", "Insightful", 10]])])],
     };
@@ -3283,7 +3310,7 @@ async function withCrossAdd(map, fn) {
   // U6 — AE4 end-to-end: slot constraints honored through the real HiGHS solve
   await test("AE4: a pinned (weaker) variant is force-equipped over the optimum", async () => {
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Trinket", [
         item("TrinkStrong", "Trinket", [["Constitution", "Enhancement", 20]]),
         item("TrinkWeak", "Trinket", [["Constitution", "Enhancement", 5]]),
@@ -3298,7 +3325,7 @@ async function withCrossAdd(map, fn) {
 
   await test("AE4: lock-empty leaves the slot empty (and stays feasible)", async () => {
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Trinket", [item("T", "Trinket", [["Constitution", "Enhancement", 20]])])],
       query: { slotConstraints: { Trinket: { type: "empty" } } },
     };
@@ -3316,7 +3343,7 @@ async function withCrossAdd(map, fn) {
     // Two Artifacts in different slots; same bonus type so equipping both would
     // not out-score one. Exactly-one must pick the higher (Acc 10 over Acc 5).
     const model = {
-      targets: ["Accuracy"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy"], mlCap: 34,
       worn: [slot("Trinket", [artItem("artHi", "Trinket", [["Accuracy", "Enhancement", 10]])]),
              slot("Ring", [artItem("artLo", "Ring", [["Accuracy", "Enhancement", 5]])])],
       query: { includeArtifact: true },
@@ -3333,7 +3360,7 @@ async function withCrossAdd(map, fn) {
     // Each Artifact maxes a different target; without the constraint the solver
     // would equip both. Exactly-one forces a single pick.
     const model = {
-      targets: ["Accuracy", "Deadly"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy", "Deadly"], mlCap: 34,
       worn: [slot("Trinket", [artItem("artAcc", "Trinket", [["Accuracy", "Enhancement", 10]])]),
              slot("Ring", [artItem("artDead", "Ring", [["Deadly", "Enhancement", 10]])])],
       query: { includeArtifact: true },
@@ -3346,7 +3373,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U3/R6: box on but no Artifact flagged -> feasible non-Artifact build", async () => {
     const model = {
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [item("R", "Ring", [["Intelligence", "Enhancement", 10]])])], // none flagged
       query: { includeArtifact: true },
     };
@@ -3360,7 +3387,7 @@ async function withCrossAdd(map, fn) {
     // The sole Artifact sits in the Trinket slot, which the user locks empty.
     // The =1 constraint must NOT be added (else infeasible); R6 fallback fires.
     const model = {
-      targets: ["Accuracy", "Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy", "Intelligence"], mlCap: 34,
       worn: [slot("Trinket", [artItem("artT", "Trinket", [["Accuracy", "Enhancement", 10]])]),
              slot("Ring", [item("R", "Ring", [["Intelligence", "Enhancement", 8]])])],
       query: { includeArtifact: true, slotConstraints: { Trinket: { type: "empty" } } },
@@ -3374,7 +3401,7 @@ async function withCrossAdd(map, fn) {
   await test("U3: a non-conflicting pin coexists with the equipped Artifact", async () => {
     // Artifact in a free Trinket slot; a pin on a different slot (Ring -> ring2).
     const model = {
-      targets: ["Accuracy", "Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy", "Constitution"], mlCap: 34,
       worn: [slot("Trinket", [artItem("artT", "Trinket", [["Accuracy", "Enhancement", 10]])]),
              slot("Ring", [item("ring1", "Ring", [["Constitution", "Enhancement", 5]]),
                            item("ring2", "Ring", [["Constitution", "Enhancement", 3]])])],
@@ -3390,7 +3417,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U3: Artifact pinned to its OWN slot -> equipped, exactly one, no false R6", async () => {
     const model = {
-      targets: ["Accuracy"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy"], mlCap: 34,
       worn: [slot("Trinket", [artItem("artT", "Trinket", [["Accuracy", "Enhancement", 10]])]),
              slot("Ring", [item("R", "Ring", [["Accuracy", "Enhancement", 3]])])],
       query: { includeArtifact: true, slotConstraints: { Trinket: { type: "pin", variant_id: "artT" } } },
@@ -3405,7 +3432,7 @@ async function withCrossAdd(map, fn) {
     // Trinket holds the only Artifact but is pinned to a different (non-artifact)
     // Trinket item, so the Artifact cannot be placed -> exactly-one must drop.
     const model = {
-      targets: ["Accuracy", "Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy", "Intelligence"], mlCap: 34,
       worn: [slot("Trinket", [artItem("artT", "Trinket", [["Accuracy", "Enhancement", 10]]),
                               item("plainT", "Trinket", [["Intelligence", "Enhancement", 6]])])],
       query: { includeArtifact: true, slotConstraints: { Trinket: { type: "pin", variant_id: "plainT" } } },
@@ -3418,7 +3445,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U3: Artifact Ring coexists with a foreign-pinned Ring (cardinality 2)", async () => {
     const model = {
-      targets: ["Accuracy", "Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy", "Constitution"], mlCap: 34,
       worn: [slot("Ring", [artItem("artRing", "Ring", [["Accuracy", "Enhancement", 10]]),
                            item("ring2", "Ring", [["Constitution", "Enhancement", 5]]),
                            item("ring3", "Ring", [["Constitution", "Enhancement", 3]])], 2)],
@@ -3437,7 +3464,7 @@ async function withCrossAdd(map, fn) {
     // sum(artifacts)=1 would be infeasible (2=1). The guard drops the constraint
     // so the pins stand and the solve does not collapse to the generic error.
     const model = {
-      targets: ["Accuracy", "Deadly"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy", "Deadly"], mlCap: 34,
       worn: [slot("Trinket", [artItem("artT", "Trinket", [["Accuracy", "Enhancement", 10]])]),
              slot("Necklace", [artItem("artN", "Necklace", [["Deadly", "Enhancement", 10]])])],
       query: { includeArtifact: true,
@@ -3453,7 +3480,7 @@ async function withCrossAdd(map, fn) {
     // The pin references a variant not present in the slot (ghost). It resolves
     // to nothing, so the slot is actually free and the Artifact must be required.
     const model = {
-      targets: ["Accuracy"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy"], mlCap: 34,
       worn: [slot("Trinket", [artItem("artT", "Trinket", [["Accuracy", "Enhancement", 10]])])],
       query: { includeArtifact: true, slotConstraints: { Trinket: { type: "pin", variant_id: "ghost" } } },
     };
@@ -3469,7 +3496,7 @@ async function withCrossAdd(map, fn) {
     // then equips non-artifact A in Trinket for Deadly 8 — which is only reachable
     // if A survived pruning (it would be wrongly pruned by B without the fix).
     const model = {
-      targets: ["Accuracy", "Deadly"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy", "Deadly"], mlCap: 34,
       worn: [slot("Trinket", [artItem("B", "Trinket", [["Accuracy", "Enhancement", 10], ["Deadly", "Enhancement", 10]]),
                               item("A", "Trinket", [["Accuracy", "Enhancement", 8], ["Deadly", "Enhancement", 8]])]),
              slot("Necklace", [artItem("C", "Necklace", [["Accuracy", "Enhancement", 12]])])],
@@ -3484,7 +3511,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U3: exactly-one solve is deterministic across runs", async () => {
     const mk = () => ({
-      targets: ["Accuracy"], mlCap: 34, dodgeCap: null,
+      targets: ["Accuracy"], mlCap: 34,
       worn: [slot("Trinket", [artItem("artHi", "Trinket", [["Accuracy", "Enhancement", 10]])]),
              slot("Ring", [artItem("artLo", "Ring", [["Accuracy", "Enhancement", 10]])])],
       query: { includeArtifact: true },
@@ -3524,7 +3551,7 @@ async function withCrossAdd(map, fn) {
     const R2 = item("R2", "Ring", [["Intelligence", "Enhancement", 4]]);
     const R3 = item("R3", "Ring", [["Intelligence", "Enhancement", 10]]);
     const model = {
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       query: { slotConstraints: { Ring: { type: "pin", variant_ids: ["R1", "R2"] } } },
       worn: [slot("Ring", [R1, R2, R3], 2)],
     };
@@ -3544,7 +3571,7 @@ async function withCrossAdd(map, fn) {
     const R2 = item("R2", "Ring", [["Intelligence", "Enhancement", 3]]);
     const R3 = item("R3", "Ring", [["Intelligence", "Enhancement", 4]]);
     const model = {
-      targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      targets: ["Intelligence"], mlCap: 34,
       query: { includeArtifact: true, slotConstraints: { Ring: { type: "pin", variant_ids: ["R2", "R3"] } } },
       worn: [slot("Ring", [artRing, R2, R3], 2)],
     };
@@ -3633,7 +3660,7 @@ async function withCrossAdd(map, fn) {
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     // 2 colorless-slot hosts -> at most 2 copies -> below the 3-piece threshold.
     const two = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])])],
     };
@@ -3643,7 +3670,7 @@ async function withCrossAdd(map, fn) {
 
     // 3 colorless-slot hosts -> exactly 3 copies -> the 3-piece bonus fires ONCE.
     const three = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])]),
              slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])])],
@@ -3656,7 +3683,7 @@ async function withCrossAdd(map, fn) {
   await test("U3 set-augment: Σ_i y ≤ 3 — never more than 3 copies even with 4 hosts", async () => {
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     const model = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])]),
              slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])]),
@@ -3675,7 +3702,7 @@ async function withCrossAdd(map, fn) {
     // fabricate a 3rd piece and wrongly activate the set.
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     const model = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Colorless"]),
                                host("H3", "Necklace", [], ["Colorless"])], 1)],
@@ -3694,7 +3721,7 @@ async function withCrossAdd(map, fn) {
     // supply, the ordinary augment would slot "for free" and StatB would be 7.
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     const model = {
-      targets: ["StatA", "StatB"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA", "StatB"], mlCap: 34, augment_set_defs: def,
       augments: [augment("ord", "Colorless", [["StatB", "Enhancement", 7]])],
       worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])]),
@@ -3714,7 +3741,7 @@ async function withCrossAdd(map, fn) {
     // Deletion test target: revert eligibility to literal Colorless and this red-lines.
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     const model = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [host("H1", "Ring", [], ["Green", "Yellow"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Green"])]),
              slot("Trinket", [host("H3", "Trinket", [], ["Yellow"])])],
@@ -3737,7 +3764,7 @@ async function withCrossAdd(map, fn) {
     // directly rather than relying on the Colorless bucket's existing coverage.
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     const model = {
-      targets: ["StatA", "StatB"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA", "StatB"], mlCap: 34, augment_set_defs: def,
       augments: [augment("ordY", "Yellow", [["StatB", "Enhancement", 7]])],
       worn: [slot("Ring", [host("H1", "Ring", [], ["Yellow"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Yellow"])]),
@@ -3756,7 +3783,7 @@ async function withCrossAdd(map, fn) {
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     const hostColors = { H1: ["Colorless"], H2: ["Yellow"], H3: ["Green"] };
     const model = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [host("H1", "Ring", [], hostColors.H1)]),
              slot("Necklace", [host("H2", "Necklace", [], hostColors.H2)]),
              slot("Trinket", [host("H3", "Trinket", [], hostColors.H3)])],
@@ -3776,7 +3803,7 @@ async function withCrossAdd(map, fn) {
     // most 2 copies -> the 3-piece bonus cannot fire.
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     const two = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [host("H1", "Ring", [], ["Green", "Yellow"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Yellow"])])],
     };
@@ -3788,7 +3815,7 @@ async function withCrossAdd(map, fn) {
     // hosts carry nothing): a third host lets the set fire with exactly one
     // copy per DISTINCT host — the double-slot host never contributes two.
     const three = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [host("H1", "Ring", [], ["Green", "Yellow"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Yellow"])]),
              slot("Trinket", [host("H3", "Trinket", [], ["Green"])])],
@@ -3806,7 +3833,7 @@ async function withCrossAdd(map, fn) {
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]], 3, []) };
     delete def.AugSet.fits_slots;
     const model = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])]),
              slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])])],
@@ -3822,7 +3849,7 @@ async function withCrossAdd(map, fn) {
     // identical either way, so the final stage must land every copy Colorless.
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     const model = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless", "Yellow"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Colorless", "Yellow"])]),
              slot("Trinket", [host("H3", "Trinket", [], ["Colorless", "Yellow"])])],
@@ -3843,7 +3870,7 @@ async function withCrossAdd(map, fn) {
     // copies MUST keep their colored slots while H1's takes the Colorless.
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     const model = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Yellow"])]),
              slot("Trinket", [host("H3", "Trinket", [], ["Green"])])],
@@ -3862,7 +3889,7 @@ async function withCrossAdd(map, fn) {
     // ordinary-placement pins guarantee StatB cannot be traded away.
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     const model = {
-      targets: ["StatA", "StatB"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA", "StatB"], mlCap: 34, augment_set_defs: def,
       augments: [augment("ordY", "Yellow", [["StatB", "Enhancement", 7]])],
       worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless", "Yellow"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Colorless", "Yellow"])]),
@@ -3887,14 +3914,14 @@ async function withCrossAdd(map, fn) {
     // Same bucket (StatA||Artifact): a worn Artifact +6 must NOT stack with the set's
     // Artifact +10 — only the highest counts.
     const collapse = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [...hosts(), slot("Gloves", [item("W", "Gloves", [["StatA", "Artifact", 6]])])],
     };
     const rc = await S.solveLexicographic(collapse, highs);
     assert.strictEqual(rc.effective.StatA, 10, "same bucket: max(10 set, 6 worn) = 10, not 16");
     // Distinct type (Enhancement) still stacks with the set's Artifact bonus.
     const stack = {
-      targets: ["StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA"], mlCap: 34, augment_set_defs: def,
       worn: [...hosts(), slot("Gloves", [item("W", "Gloves", [["StatA", "Enhancement", 6]])])],
     };
     const rs = await S.solveLexicographic(stack, highs);
@@ -3915,7 +3942,7 @@ async function withCrossAdd(map, fn) {
     // Maximizing StatA (ranked first) forces 3 copies onto P1,P2,H3 -> P1 & P2 each
     // host a copy -> their intrinsic SetS membership is suppressed -> SetS drops out.
     const model = {
-      targets: ["StatA", "StatS"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA", "StatS"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [setHost("P1", "Ring", [], "SetS", S2, ["Colorless"])]),
              slot("Necklace", [setHost("P2", "Necklace", [], "SetS", S2, ["Colorless"])]),
              slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])])],
@@ -3933,7 +3960,7 @@ async function withCrossAdd(map, fn) {
     // The 3 copies ride on set-less hosts; SetS members expose no Colorless slot, so
     // they host no copy and their bonus must remain fully intact.
     const model = {
-      targets: ["StatA", "StatS"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA", "StatS"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [host("H1", "Ring", [], ["Colorless"])]),
              slot("Necklace", [host("H2", "Necklace", [], ["Colorless"])]),
              slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])]),
@@ -3954,7 +3981,7 @@ async function withCrossAdd(map, fn) {
     // ABOVE StatA, the staged lexicographic solve must keep SetS and forgo the augment
     // set entirely — no special rule, it emerges from suppression + priority ordering.
     const model = {
-      targets: ["StatS", "StatA"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatS", "StatA"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [setHost("P1", "Ring", [], "SetS", S2, ["Colorless"])]),
              slot("Necklace", [setHost("P2", "Necklace", [], "SetS", S2, ["Colorless"])]),
              slot("Trinket", [host("H3", "Trinket", [], ["Colorless"])])],
@@ -3977,7 +4004,7 @@ async function withCrossAdd(map, fn) {
                   "AugB": augSetDef([["StatB", "Artifact", 10]]) };
     const S2 = [{ n: 2, affixes: [["StatS", "Set", 50]] }];
     const model = {
-      targets: ["StatA", "StatB", "StatS"], mlCap: 34, dodgeCap: null, augment_set_defs: def,
+      targets: ["StatA", "StatB", "StatS"], mlCap: 34, augment_set_defs: def,
       worn: [slot("Ring", [setHost("i", "Ring", [], "SetS", S2, ["Colorless", "Colorless"])]),
              // AugA's other two hosts
              slot("Necklace", [host("A1", "Necklace", [], ["Colorless"])]),
@@ -4013,7 +4040,7 @@ async function withCrossAdd(map, fn) {
     const def = { "AugSet": augSetDef([["StatA", "Artifact", 10]]) };
     const memDefs = { "MemSet": memberDef([{ n: 2, affixes: [["StatM", "Artifact", 50]] }]) };
     const model = {
-      targets: ["StatM", "StatA"], mlCap: 34, dodgeCap: null,
+      targets: ["StatM", "StatA"], mlCap: 34,
       augment_set_defs: def, membershipSetDefs: memDefs,
       worn: [
         // M: the only awaken host for MemSet AND one of only three Colorless hosts.
@@ -4162,7 +4189,7 @@ async function withCrossAdd(map, fn) {
     carrier.affixes = [{ name: "Blurry", type: "Bool", value: 1 }];
     normalizeItem(carrier);
     const model = {
-      targets: ["Concealment"], mlCap: 34, dodgeCap: null,
+      targets: ["Concealment"], mlCap: 34,
       worn: [slot("Cloak", [carrier])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -4178,7 +4205,7 @@ async function withCrossAdd(map, fn) {
     b.affixes = [{ name: "Lesser Displacement", type: "Bool", value: 1 }];
     normalizeItem(a); normalizeItem(b);
     const model = {
-      targets: ["Concealment"], mlCap: 34, dodgeCap: null,
+      targets: ["Concealment"], mlCap: 34,
       worn: [slot("Cloak", [a]), slot("Goggles", [b])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -4191,7 +4218,7 @@ async function withCrossAdd(map, fn) {
     helm.affixes = [{ name: "Crown of Summer", type: "Bool", value: 1 }];
     normalizeItem(helm);
     const model = {
-      targets: ["Healing Amplification", "Melee Power", "Ranged Power"], mlCap: 34, dodgeCap: null,
+      targets: ["Healing Amplification", "Melee Power", "Ranged Power"], mlCap: 34,
       worn: [slot("Helmet", [helm])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -4213,7 +4240,7 @@ async function withCrossAdd(map, fn) {
     };
     const withComposite = mk(); withComposite.forEach(normalizeItem);
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Cloak", withComposite)],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -4238,7 +4265,7 @@ async function withCrossAdd(map, fn) {
     };
     const pool = mk(); pool.forEach(normalizeItem);
     const r = await S.solveLexicographic({
-      targets: ["Balance"], mlCap: 34, dodgeCap: null,
+      targets: ["Balance"], mlCap: 34,
       worn: [slot("Cloak", pool)],
     }, highs);
     assert.strictEqual(r.effective.Balance, 9,
@@ -4328,7 +4355,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(Number(aware.ac.value), 6);
 
     const model = {
-      targets: ["Armor Class"], mlCap: 34, dodgeCap: null,
+      targets: ["Armor Class"], mlCap: 34,
       worn: [slot("Belt", [parry.v]), slot("Helmet", [aware.v])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -4374,7 +4401,7 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(Number(parry.fort.value), 2);
 
     const model = {
-      targets: ["Armor Class", "Fortitude Save"], mlCap: 34, dodgeCap: null,
+      targets: ["Armor Class", "Fortitude Save"], mlCap: 34,
       worn: [slot("Bracers", [rip.v]), slot("Belt", [parry.v])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -4403,14 +4430,14 @@ async function withCrossAdd(map, fn) {
     const worn = [slot("Ring", [pieceR, betterR]), slot("Necklace", [pieceN, betterN])];
 
     const free = await S.solveLexicographic(
-      { targets: ["Intelligence"], mlCap: 34, dodgeCap: null, worn }, highs);
+      { targets: ["Intelligence"], mlCap: 34, worn }, highs);
     assert.strictEqual(free.status, "optimal");
     assert.strictEqual(free.effective.Intelligence, 18, "unpinned takes the two better items");
     assert.deepStrictEqual((free.setsActive || []).map((m) => m.set), [],
       "and declines the set, which buys it nothing it ranked");
 
     const pinned = await S.solveLexicographic(
-      { targets: ["Intelligence"], mlCap: 34, dodgeCap: null, worn,
+      { targets: ["Intelligence"], mlCap: 34, worn,
         pinnedSets: ["Bond"] }, highs);
     assert.strictEqual(pinned.status, "optimal");
     assert.deepStrictEqual((pinned.setsActive || []).map((m) => m.set), ["Bond"],
@@ -4431,7 +4458,7 @@ async function withCrossAdd(map, fn) {
     const pieceN = setPiece("Set Neck", "Necklace", [["Intelligence", "Insight", 1]], "Bond", tiers);
     const betterR = item("Plain Ring", "Ring", [["Intelligence", "Enhancement", 9]]);
     const betterN = item("Plain Neck", "Necklace", [["Intelligence", "Insight", 9]]);
-    const model = { targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+    const model = { targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [pieceR, betterR]), slot("Necklace", [pieceN, betterN])],
       pinnedSets: ["Bond"] };
 
@@ -4452,7 +4479,7 @@ async function withCrossAdd(map, fn) {
     const tiers = [{ n: 2, affixes: [["Intelligence", "Artifact", 10]] }];
     const a = setPiece("Good Ring", "Ring", [["Intelligence", "Enhancement", 9]], "Bond", tiers);
     const b = setPiece("Good Neck", "Necklace", [["Intelligence", "Insight", 9]], "Bond", tiers);
-    const model = { targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+    const model = { targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [a]), slot("Necklace", [b])], pinnedSets: ["Bond"] };
     const pinned = await S.solveLexicographic(model, highs);
     const price = await S.probeSetPinCost(model, highs, pinned.perTarget || {});
@@ -4465,7 +4492,7 @@ async function withCrossAdd(map, fn) {
     // nothing to assert, and conflating the two would let the UI claim a check it
     // never ran.
     const a = item("Ring A", "Ring", [["Intelligence", "Enhancement", 9]]);
-    const model = { targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+    const model = { targets: ["Intelligence"], mlCap: 34,
       worn: [slot("Ring", [a])] };
     assert.strictEqual(await S.probeSetPinCost(model, highs, {}), null);
   });
@@ -4476,7 +4503,7 @@ async function withCrossAdd(map, fn) {
     const only = setPiece("Set Ring", "Ring", [["Intelligence", "Enhancement", 1]], "Bond", tiers);
     const other = item("Plain Ring", "Ring", [["Intelligence", "Enhancement", 9]]);
     const r = await S.solveLexicographic(
-      { targets: ["Intelligence"], mlCap: 34, dodgeCap: null,
+      { targets: ["Intelligence"], mlCap: 34,
         worn: [slot("Ring", [only, other])], pinnedSets: ["Bond"] }, highs);
     assert.strictEqual(r.status, "optimal",
       "an unsatisfiable pin must not cost the player their whole answer");
@@ -4487,7 +4514,7 @@ async function withCrossAdd(map, fn) {
     // The other half. Suppressing on stat name alone would collapse these too,
     // withholding the fix from the 86 Parrying items carrying an Armor-typed AC.
     const model = {
-      targets: ["Armor Class"], mlCap: 34, dodgeCap: null,
+      targets: ["Armor Class"], mlCap: 34,
       worn: [slot("Belt", [item("P", "Belt", [["Armor Class", "Insight", 2]])]),
              slot("Armor", [item("A", "Armor", [["Armor Class", "Armor", 8]])])],
     };
@@ -4507,7 +4534,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1: Covers AE1. a credit displaces weaker same-bucket gear", async () => {
     const model = {
-      targets: ["CM", "KI"], mlCap: 34, dodgeCap: null,
+      targets: ["CM", "KI"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       worn: [
         slot("Ring", [item("cmWeak", "Ring", [["CM", "Insight", 5]])]),
@@ -4522,7 +4549,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1: Covers AE2. stronger gear still wins its bucket", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       worn: [slot("Ring", [item("cmStrong", "Ring", [["CM", "Insight", 9]])])],
     };
@@ -4533,7 +4560,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1: Covers AE4. a credit stacks across buckets, never within one", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       worn: [slot("Ring", [item("cmEnh", "Ring", [["CM", "Enhancement", 5]])])],
     };
@@ -4543,7 +4570,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1: a credit equal to its gear does not double the bucket", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       worn: [slot("Ring", [item("cmEqual", "Ring", [["CM", "Insight", 7]])])],
     };
@@ -4553,7 +4580,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1: two credits on one stat in different buckets both contribute", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7), credit("CM", "Sacred", 4)],
       worn: [slot("Ring", [item("none", "Ring", [["KI", "Enhancement", 1]])])],
     };
@@ -4566,7 +4593,7 @@ async function withCrossAdd(map, fn) {
     M.setStackEquiv({ Insightful: "Insight" });
     try {
       const model = {
-        targets: ["CM"], mlCap: 34, dodgeCap: null,
+        targets: ["CM"], mlCap: 34,
         credits: [credit("CM", "Insight", 7)],
         worn: [slot("Ring", [item("cmEquiv", "Ring", [["CM", "Insightful", 5]])])],
       };
@@ -4579,7 +4606,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1: Covers R3. no declared credits leaves the solve unchanged", async () => {
     const base = () => ({
-      targets: ["CM", "KI"], mlCap: 34, dodgeCap: null,
+      targets: ["CM", "KI"], mlCap: 34,
       worn: [
         slot("Ring", [item("cmA", "Ring", [["CM", "Insight", 5]])]),
         slot("Necklace", [item("kiX", "Necklace", [["KI", "Enhancement", 10]])]),
@@ -4600,7 +4627,7 @@ async function withCrossAdd(map, fn) {
     // credit that is not the gain objective carries no objective coefficient, so
     // nothing pulls its z to 1 unless a constraint does.
     const model = {
-      targets: ["CM", "KI"], mlCap: 34, dodgeCap: null,
+      targets: ["CM", "KI"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       worn: [
         slot("Ring", [item("cmWeak", "Ring", [["CM", "Insight", 5]])]),
@@ -4629,7 +4656,7 @@ async function withCrossAdd(map, fn) {
     // rebalance proves infeasible and produces nothing: Con 22 -> give 2 -> the
     // Con-2 necklace can be swapped for the KI-8 one and still clear Con >= 20.
     const model = {
-      targets: ["Con", "KI", "CM"], mlCap: 34, dodgeCap: null,
+      targets: ["Con", "KI", "CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       worn: [
         slot("Ring", [item("conR", "Ring", [["Con", "Enhancement", 20]])]),
@@ -4662,7 +4689,7 @@ async function withCrossAdd(map, fn) {
     // CM resolved to 7 against an Insight-10 augment, breaking R5. The constraint
     // is now emitted after every push. Worn-only tests cannot catch this.
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       worn: [slot("Ring", [host("ringHost", "Ring", [], ["Colorless"])])],
       augments: [augment("augCM", "Colorless", [["CM", "Insight", 10]])],
@@ -4674,7 +4701,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1: a weaker augment in the credited bucket does not drag the total down", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       worn: [slot("Ring", [host("ringHost", "Ring", [], ["Colorless"])])],
       augments: [augment("augWeak", "Colorless", [["CM", "Insight", 3]])],
@@ -4687,7 +4714,7 @@ async function withCrossAdd(map, fn) {
     // The same ordering trap on a different late-pushed channel.
     const tier = [{ n: 2, affixes: [["CM", "Insight", 11]] }];
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       worn: [
         slot("Ring", [setPiece("rA", "Ring", [], "Alpha", tier)]),
@@ -4703,7 +4730,7 @@ async function withCrossAdd(map, fn) {
     // stat that is bucketed but not a target would not surface in `effective`.
     // It must either be reported or be provably absent — never counted invisibly.
     const model = {
-      targets: ["KI"], mlCap: 34, dodgeCap: null,
+      targets: ["KI"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       worn: [slot("Ring", [item("kiX", "Ring", [["KI", "Enhancement", 10]])])],
     };
@@ -4722,7 +4749,7 @@ async function withCrossAdd(map, fn) {
     // of 10; Insight gear could not have closed the gap, because the credit holds
     // that bucket.
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       floors: { CM: 10 },
       worn: [slot("Ring", [item("enh", "Ring", [["CM", "Enhancement", 5]])])],
@@ -4734,7 +4761,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U4: a floor a credit counts toward reports the loadout's gear contribution", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       floors: { CM: 10 },
       worn: [slot("Ring", [item("enh", "Ring", [["CM", "Enhancement", 5]])])],
@@ -4751,7 +4778,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U4: a credit that lost its bucket claims no floor", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 2)],
       floors: { CM: 5 },
       worn: [slot("Ring", [item("ins", "Ring", [["CM", "Insight", 9]])])],
@@ -4765,7 +4792,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U4: a floor still unmet with a credit reports unmet, credit counted", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       floors: { CM: 99 },
       worn: [slot("Ring", [item("enh", "Ring", [["CM", "Enhancement", 5]])])],
@@ -4778,7 +4805,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U4: Covers R10 (narrowed). the report names the best gear the credit beat", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       worn: [slot("Ring", [item("weak", "Ring", [["CM", "Insight", 5]])])],
     };
@@ -4791,7 +4818,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U4: a credit that lost its bucket reports no displacement", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 4)],
       worn: [slot("Ring", [item("strong", "Ring", [["CM", "Insight", 9]])])],
     };
@@ -4814,7 +4841,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U4: no credits declared means no creditReport entries", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       worn: [slot("Ring", [item("enh", "Ring", [["CM", "Enhancement", 5]])])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -4824,7 +4851,7 @@ async function withCrossAdd(map, fn) {
 
   function creditModelU4() {
     return {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       floors: { CM: 10 },
       worn: [slot("Ring", [item("enh", "Ring", [["CM", "Enhancement", 5]])])],
@@ -4839,7 +4866,7 @@ async function withCrossAdd(map, fn) {
     // ring slot. Reading the credit's own bucket as "best present" while reading
     // every other bucket as "best selected" mixed a hypothetical with an actual.
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null, floors: { CM: 12 },
+      targets: ["CM"], mlCap: 34, floors: { CM: 12 },
       credits: [credit("CM", "Insight", 7)],
       worn: [slot("Ring", [item("ins", "Ring", [["CM", "Insight", 6]]),
                            item("enh", "Ring", [["CM", "Enhancement", 5]])])],
@@ -4855,7 +4882,7 @@ async function withCrossAdd(map, fn) {
     // Ground truth. A3 forbids a counterfactual solve at RUNTIME; a test may run
     // one, and this is the check that would have caught the false floor claim.
     const base = () => ({
-      targets: ["Dodge", "CM"], mlCap: 34, dodgeCap: null, floors: { CM: 10 },
+      targets: ["Dodge", "CM"], mlCap: 34, floors: { CM: 10 },
       worn: [slot("Ring", [item("a", "Ring", [["CM", "Enhancement", 5], ["Dodge", "Enhancement", 3]]),
                            item("b", "Ring", [["CM", "Enhancement", 12]])])],
     });
@@ -4877,7 +4904,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U4: beatGear ignores gear the player locked out of the build", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null,
+      targets: ["CM"], mlCap: 34,
       credits: [credit("CM", "Insight", 7)],
       query: { slotConstraints: { Ring: { type: "empty" } } },
       worn: [slot("Ring", [item("ins", "Ring", [["CM", "Insight", 6]])]),
@@ -4891,7 +4918,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U4: two credits on one stat report one floor between them", async () => {
     const model = {
-      targets: ["CM"], mlCap: 34, dodgeCap: null, floors: { CM: 10 },
+      targets: ["CM"], mlCap: 34, floors: { CM: 10 },
       credits: [credit("CM", "Insight", 7), credit("CM", "Profane", 4)],
       worn: [slot("Ring", [item("enh", "Ring", [["CM", "Enhancement", 2]])])],
     };
@@ -4917,7 +4944,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1/#239: a stat whose buckets are full with sources left over is reported", async () => {
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [
         // Two Equipment sources, same bucket: only the best can ever count.
         slot("Goggles", [item("best-equip", "Goggles", [["KL", "Equipment", 24]]),
@@ -4938,7 +4965,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1/#239: a stat with no unused sources is NOT reported, though it is maxed", async () => {
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [slot("Goggles", [item("only", "Goggles", [["KL", "Equipment", 24]])])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -4953,7 +4980,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1/#239: a bucket left unfilled means the stat is not saturated", async () => {
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [
         slot("Goggles", [item("equip", "Goggles", [["KL", "Equipment", 24]])]),
         // Two Artifact sources in ONE slot: the better one is taken, so the
@@ -4974,7 +5001,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1/#239: an absent bonus type and an explicit Untyped stay separate buckets", async () => {
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [
         slot("Goggles", [item("native", "Goggles", [["KL", null, 6]]),
                          item("native-lo", "Goggles", [["KL", null, 4]])]),
@@ -4994,7 +5021,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1/#239: a stat nothing in the pool carries produces no entry", async () => {
     const model = {
-      targets: ["Absent"], mlCap: 34, dodgeCap: null,
+      targets: ["Absent"], mlCap: 34,
       worn: [slot("Ring", [item("r", "Ring", [["Other", "Equipment", 5]])])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -5004,7 +5031,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1/#239: saturationReport is plain JSON with no reference to the program", async () => {
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [slot("Goggles", [item("a", "Goggles", [["KL", "Equipment", 24]]),
                               item("b", "Goggles", [["KL", "Equipment", 20]])])],
     };
@@ -5028,7 +5055,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1/#449: a stat whose every bucket is filled reads achieved === ceiling, allFilled true", async () => {
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [
         slot("Goggles", [item("best-equip", "Goggles", [["KL", "Equipment", 24]]),
                          item("lesser-equip", "Goggles", [["KL", "Equipment", 20]])]),
@@ -5051,7 +5078,7 @@ async function withCrossAdd(map, fn) {
     // though a live 20 sits in it. The census must show the whole bucket sum as
     // the ceiling — this is the state the fraction exists to make visible.
     const model = {
-      targets: ["A", "B"], mlCap: 34, dodgeCap: null,
+      targets: ["A", "B"], mlCap: 34,
       worn: [
         slot("Ring", [item("rA", "Ring", [["A", "Equipment", 10]]),
                       item("rB", "Ring", [["B", "Equipment", 20]])]),
@@ -5071,7 +5098,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1/#449: an unsaturated stat is in ceilingReport and NOT in saturationReport", async () => {
     const model = {
-      targets: ["A", "B"], mlCap: 34, dodgeCap: null,
+      targets: ["A", "B"], mlCap: 34,
       worn: [
         slot("Ring", [item("rA", "Ring", [["A", "Equipment", 10]]),
                       item("rB", "Ring", [["B", "Equipment", 20]])]),
@@ -5092,7 +5119,7 @@ async function withCrossAdd(map, fn) {
     // and its consumers read a fixed field shape, and field ORDER is part of what
     // this holds. A projection that reorders or renames is a silent break.
     const saturated = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [
         slot("Goggles", [item("best-equip", "Goggles", [["KL", "Equipment", 24]]),
                          item("lesser-equip", "Goggles", [["KL", "Equipment", 20]])]),
@@ -5100,7 +5127,7 @@ async function withCrossAdd(map, fn) {
       ],
     };
     const untyped = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [
         slot("Goggles", [item("native", "Goggles", [["KL", null, 6]]),
                          item("native-lo", "Goggles", [["KL", null, 4]])]),
@@ -5117,7 +5144,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1/#449: one live source per bucket reads achieved === ceiling with no unused sources", async () => {
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [
         slot("Goggles", [item("equip", "Goggles", [["KL", "Equipment", 24]])]),
         slot("Ring", [item("art-lo", "Ring", [["KL", "Artifact", 6]]),
@@ -5135,7 +5162,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1/#449: a ranked stat with no live source reads 0 / 0 rather than vanishing", async () => {
     const model = {
-      targets: ["Absent"], mlCap: 34, dodgeCap: null,
+      targets: ["Absent"], mlCap: 34,
       worn: [slot("Ring", [item("r", "Ring", [["Other", "Equipment", 5]])])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -5150,7 +5177,7 @@ async function withCrossAdd(map, fn) {
     // KTD7 — the card's headline is effectiveOf = min(cap, raw). An unclamped
     // numerator would state a third total for one stat, inches from the capNote.
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null, userCaps: { KL: 20 },
+      targets: ["KL"], mlCap: 34, userCaps: { KL: 20 },
       worn: [
         slot("Goggles", [item("best-equip", "Goggles", [["KL", "Equipment", 24]]),
                          item("lesser-equip", "Goggles", [["KL", "Equipment", 20]])]),
@@ -5170,7 +5197,7 @@ async function withCrossAdd(map, fn) {
   await test("U1/#449: the Utility sentinel gets no census row (KTD8)", async () => {
     const SENTINEL = require("../web/model.js").UTILITY_SENTINEL;
     const model = {
-      targets: ["KL", SENTINEL], mlCap: 34, dodgeCap: null,
+      targets: ["KL", SENTINEL], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [slot("Goggles", [item("g", "Goggles", [["KL", "Equipment", 24], ["Ghost Touch", "Bool", 1]]),
                               item("g2", "Goggles", [["KL", "Equipment", 20]])])],
@@ -5188,7 +5215,7 @@ async function withCrossAdd(map, fn) {
     // contribution fired. `achieved` must read 0 WITH a row, not no row at all —
     // a renderer cannot tell "nothing yet" from "not a target" otherwise.
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [slot("Goggles", [item("g", "Goggles", [["KL", "Equipment", 24]])])],
     };
     const program = S.buildProgram(model);
@@ -5207,7 +5234,7 @@ async function withCrossAdd(map, fn) {
     // stops an inspected alternative from blanking — or borrowing the
     // optimum's numerator beside its own headline.
     const model = {
-      targets: ["A", "B"], mlCap: 34, dodgeCap: null,
+      targets: ["A", "B"], mlCap: 34,
       worn: [
         slot("Ring", [item("rA", "Ring", [["A", "Equipment", 10]]),
                       item("rB", "Ring", [["B", "Equipment", 20]])]),
@@ -5229,7 +5256,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U1/#449: ceilingReport is plain JSON with no reference to the program", async () => {
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [slot("Goggles", [item("a", "Goggles", [["KL", "Equipment", 24]]),
                               item("b", "Goggles", [["KL", "Equipment", 20]])])],
     };
@@ -5250,7 +5277,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#239: worn slots the solve did not fill are reported empty", async () => {
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [
         slot("Goggles", [item("g", "Goggles", [["KL", "Equipment", 24]])]),
         slot("Ring", [item("r", "Ring", [["Unranked", "Equipment", 9]])]),
@@ -5265,7 +5292,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#239: a fully-used loadout reports no empty slots", async () => {
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [
         slot("Goggles", [item("g", "Goggles", [["KL", "Equipment", 24]])]),
         slot("Ring", [item("r", "Ring", [["KL", "Artifact", 6]])]),
@@ -5278,7 +5305,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#239: a slot the player locked empty is not reported as empty", async () => {
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       query: { slotConstraints: { Boots: { type: "empty" } } },
       worn: [
         slot("Goggles", [item("g", "Goggles", [["KL", "Equipment", 24]])]),
@@ -5292,7 +5319,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#239: emptySlots is plain JSON", async () => {
     const model = {
-      targets: ["KL"], mlCap: 34, dodgeCap: null,
+      targets: ["KL"], mlCap: 34,
       worn: [slot("Goggles", [item("g", "Goggles", [["KL", "Equipment", 24]])]),
              slot("Ring", [item("r", "Ring", [["Unranked", "Equipment", 9]])])],
     };
@@ -5320,7 +5347,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U6/#249: a quarantined carrier in the pool is reported when its stat is ranked", async () => {
     const model = {
-      targets: ["Fire Absorption"], mlCap: 34, dodgeCap: null,
+      targets: ["Fire Absorption"], mlCap: 34,
       worn: [
         slot("Goggles", [item("g", "Goggles", [["Fire Absorption", "Enhancement", 10]])]),
         slot("Helmet", [quarantined("Cyran Guard", "Helmet", "Elemental Absorption", "absent", FIVE)]),
@@ -5337,7 +5364,7 @@ async function withCrossAdd(map, fn) {
     // what the player asked for is noise, and noise is how a real disclosure
     // stops being read. Nothing here bears on a Dodge build.
     const model = {
-      targets: ["Dodge"], mlCap: 34, dodgeCap: null,
+      targets: ["Dodge"], mlCap: 34,
       worn: [
         slot("Goggles", [item("g", "Goggles", [["Dodge", "Enhancement", 10]])]),
         slot("Helmet", [quarantined("Cyran Guard", "Helmet", "Elemental Absorption", "absent", FIVE)]),
@@ -5349,7 +5376,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U6/#249: the report is present and empty when nothing was quarantined", async () => {
     const model = {
-      targets: ["Fire Absorption"], mlCap: 34, dodgeCap: null,
+      targets: ["Fire Absorption"], mlCap: 34,
       worn: [slot("Goggles", [item("g", "Goggles", [["Fire Absorption", "Enhancement", 10]])])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -5360,7 +5387,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U6/#249: a carrier offered in two slots is reported once", async () => {
     const model = {
-      targets: ["Cold Absorption"], mlCap: 34, dodgeCap: null,
+      targets: ["Cold Absorption"], mlCap: 34,
       worn: [
         slot("Ring", [quarantined("Twin Ward", "Ring", "Elemental Absorption", "unconfirmed", FIVE)], 2),
         slot("Helmet", [quarantined("Twin Ward", "Helmet", "Elemental Absorption", "unconfirmed", FIVE)]),
@@ -5373,7 +5400,7 @@ async function withCrossAdd(map, fn) {
 
   await test("U6/#249: absorptionQuarantine is plain JSON", async () => {
     const model = {
-      targets: ["Fire Absorption"], mlCap: 34, dodgeCap: null,
+      targets: ["Fire Absorption"], mlCap: 34,
       worn: [slot("Helmet", [quarantined("Cyran Guard", "Helmet", "Elemental Absorption", "absent", FIVE)])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -5392,7 +5419,7 @@ async function withCrossAdd(map, fn) {
   await test("U2 cross-add: an element priority counts Universal Spell Power buckets (100 + 50 = 150)", async () => {
     return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
       const model = {
-        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        targets: ["Combustion"], mlCap: 34,
         worn: [
           slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
           slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
@@ -5412,7 +5439,7 @@ async function withCrossAdd(map, fn) {
     // element lore — merging them into one name would collapse to max(13,5).
     return withCrossAdd({ "Void Lore": ["Spell Lore", "Universal Spell Lore"] }, async () => {
       const model = {
-        targets: ["Void Lore"], mlCap: 34, dodgeCap: null,
+        targets: ["Void Lore"], mlCap: 34,
         worn: [slot("Trinket", [item("undying", "Trinket", [
           ["Spell Lore", "Equipment", 13],
           ["Universal Spell Lore", "Exceptional", 5],
@@ -5427,7 +5454,7 @@ async function withCrossAdd(map, fn) {
   await test("U2 cross-add breakdown: cross-added parts carry crossAdd naming the source stat; own parts carry none", async () => {
     return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
       const model = {
-        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        targets: ["Combustion"], mlCap: 34,
         worn: [
           slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
           slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
@@ -5449,7 +5476,7 @@ async function withCrossAdd(map, fn) {
   await test("U2 cross-add: two USP sources of the SAME bonus type still collapse to the higher (max within the source's bucket)", async () => {
     return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
       const model = {
-        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        targets: ["Combustion"], mlCap: 34,
         worn: [
           slot("Ring", [item("uspHi", "Ring", [["Universal Spell Power", "Implement", 50]])]),
           slot("Necklace", [item("uspLo", "Necklace", [["Universal Spell Power", "Implement", 30]])]),
@@ -5465,7 +5492,7 @@ async function withCrossAdd(map, fn) {
   await test("U2 cross-add: USP Implement + USP Exceptional both count, and element Equipment adds on top", async () => {
     return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
       const model = {
-        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        targets: ["Combustion"], mlCap: 34,
         worn: [
           slot("Ring", [item("uspImp", "Ring", [["Universal Spell Power", "Implement", 50]])]),
           slot("Necklace", [item("uspExc", "Necklace", [["Universal Spell Power", "Exceptional", 20]])]),
@@ -5485,7 +5512,7 @@ async function withCrossAdd(map, fn) {
     // AFTER universal is added).
     return withCrossAdd({ Nullification: ["Universal Spell Power"] }, async () => {
       const model = {
-        targets: ["Nullification", "Universal Spell Power"], mlCap: 34, dodgeCap: null,
+        targets: ["Nullification", "Universal Spell Power"], mlCap: 34,
         worn: [
           slot("Ring", [item("elem", "Ring", [["Nullification", "Equipment", 100]])]),
           slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
@@ -5501,7 +5528,7 @@ async function withCrossAdd(map, fn) {
   await test("U2 cross-add: a cap on the ELEMENT stat clamps the combined element+USP value", async () => {
     return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
       const model = {
-        targets: ["Combustion"], mlCap: 34, dodgeCap: null, userCaps: { Combustion: 120 },
+        targets: ["Combustion"], mlCap: 34, userCaps: { Combustion: 120 },
         worn: [
           slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
           slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
@@ -5515,7 +5542,7 @@ async function withCrossAdd(map, fn) {
   await test("U2 cross-add: a floor on the ELEMENT stat is satisfiable via USP sources alone", async () => {
     return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
       const model = {
-        targets: ["Accuracy"], mlCap: 34, dodgeCap: null, floors: { Combustion: 40 },
+        targets: ["Accuracy"], mlCap: 34, floors: { Combustion: 40 },
         worn: [
           slot("Ring", [item("acc", "Ring", [["Accuracy", "Enhancement", 10]])]),
           slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
@@ -5538,7 +5565,7 @@ async function withCrossAdd(map, fn) {
     // not a rewrite of the shared z-vars).
     return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
       const model = {
-        targets: ["Combustion", "Universal Spell Power"], mlCap: 34, dodgeCap: null,
+        targets: ["Combustion", "Universal Spell Power"], mlCap: 34,
         userCaps: { "Universal Spell Power": 10 },
         worn: [
           slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
@@ -5559,7 +5586,7 @@ async function withCrossAdd(map, fn) {
     // own-bucket source is, and never added into the total.
     return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
       const model = {
-        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        targets: ["Combustion"], mlCap: 34,
         worn: [
           slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
           slot("Necklace", [item("uspHi", "Necklace", [["Universal Spell Power", "Implement", 50]]),
@@ -5586,7 +5613,7 @@ async function withCrossAdd(map, fn) {
     // matching what the headline total counts (solver.js U2 comment).
     return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
       const model = {
-        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        targets: ["Combustion"], mlCap: 34,
         credits: [credit("Combustion", "Implement", 20)],
         worn: [
           slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
@@ -5612,7 +5639,7 @@ async function withCrossAdd(map, fn) {
   await test("U2 cross-add: a credit declared ON the source stat flows into the element with its declared labeling intact", async () => {
     return withCrossAdd({ Combustion: ["Universal Spell Power"] }, async () => {
       const model = {
-        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        targets: ["Combustion"], mlCap: 34,
         credits: [credit("Universal Spell Power", "Sacred", 25)],
         worn: [slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])])],
       };
@@ -5640,7 +5667,7 @@ async function withCrossAdd(map, fn) {
     // "Unable to read LP model". Exposed by the U2 source-stat cap pin; fixed by
     // dVar()'s non-alphanumeric mapping. No cross-add map involved here.
     const model = {
-      targets: ["Physical Sheltering"], mlCap: 34, dodgeCap: null,
+      targets: ["Physical Sheltering"], mlCap: 34,
       userCaps: { "Physical Sheltering": 25 },
       worn: [slot("Ring", [item("prr", "Ring", [["Physical Sheltering", "Enhancement", 60]])])],
     };
@@ -5652,7 +5679,7 @@ async function withCrossAdd(map, fn) {
   await test("U2 cross-add: with NO map installed the solve is identical to the pre-change solver", async () => {
     CAM.setCrossAdd({}); // explicit uninstalled state
     const model = {
-      targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+      targets: ["Combustion"], mlCap: 34,
       worn: [
         slot("Ring", [item("elem", "Ring", [["Combustion", "Equipment", 100]])]),
         slot("Necklace", [item("usp", "Necklace", [["Universal Spell Power", "Implement", 50]])]),
@@ -5686,7 +5713,7 @@ async function withCrossAdd(map, fn) {
     gsHostV.green_steel_slot = true;
     const augHostV = host("AUG-H", "Helmet", [], ["Colorless"]);
     return {
-      targets: ["Melee Power", "Strength"], mlCap: 36, dodgeCap: null,
+      targets: ["Melee Power", "Strength"], mlCap: 36,
       worn: [slot("Ring", [dinoHostV]), slot("Neck", [ncHostV]), slot("Boots", [rollHostV]),
              slot("Trinket", [vikHostV]), slot("Belt", [sealHostV]), slot("Main Hand", [tfHostV]),
              slot("Gloves", [gsHostV]), slot("Helmet", [augHostV])],
@@ -5754,7 +5781,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#319 guards: only the fired augment of two placed is reported (identity join is per-variant)", async () => {
     const m = {
-      targets: ["Melee Power", "Strength"], mlCap: 36, dodgeCap: null,
+      targets: ["Melee Power", "Strength"], mlCap: 36,
       worn: [slot("Helmet", [host("AUG-H2", "Helmet", [], ["Colorless", "Colorless"])])],
       augments: [augment("GemA", "Colorless", [["Melee Power", "Enhancement", 6]]),
                  augment("GemB", "Colorless", [["Strength", "Insightful", 3]])],
@@ -5786,7 +5813,7 @@ async function withCrossAdd(map, fn) {
     craftHost.thunder_forged_tiers = [{ tier: 1 }];
     craftHost.minimum_level = craftHost.ml = 20; // heroic nc + lamordia tiers
     const model = {
-      targets: ["Melee Power"], mlCap: 36, dodgeCap: null,
+      targets: ["Melee Power"], mlCap: 36,
       worn: [slot("Armor", [armor]), slot("Ring", [craftHost])],
       dinoInserts: [{ dino_type: "Fang", category: "Accessory", name: "Dull Fang",
         affixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" }] }],
@@ -5820,7 +5847,7 @@ async function withCrossAdd(map, fn) {
     const dinoHostV = item("DINO-H", "Ring", []);
     dinoHostV.dino_slots_norm = ["Fang||Accessory"];
     return {
-      targets: ["Melee Power", "Strength"], mlCap: 36, dodgeCap: null,
+      targets: ["Melee Power", "Strength"], mlCap: 36,
       userCaps, credits,
       worn: [slot("Armor", [item("BIGMP", "Armor", wornAffixes || [])]), slot("Ring", [dinoHostV])],
       dinoInserts: [{ dino_type: "Fang", category: "Accessory", name: "Test Fang", affixes: dinoAffixes }],
@@ -5917,7 +5944,7 @@ async function withCrossAdd(map, fn) {
     const gsHostV = item("GS-H2", "Gloves", []);
     gsHostV.green_steel_slot = true;
     const program = S.buildProgram({
-      targets: ["Melee Power"], mlCap: 36, dodgeCap: null,
+      targets: ["Melee Power"], mlCap: 36,
       userCaps: { "Melee Power": 15 },
       worn: [slot("Armor", [item("BIGMP2", "Armor", [["Melee Power", "Enhancement", 12]])]),
              slot("Ring", [dinoHostV]), slot("Gloves", [gsHostV])],
@@ -6006,7 +6033,7 @@ async function withCrossAdd(map, fn) {
       const dinoHostV = item("DINO-H3", "Ring", []);
       dinoHostV.dino_slots_norm = ["Fang||Accessory"];
       const program = S.buildProgram({
-        targets: ["Combustion", "Universal Spell Power"], mlCap: 36, dodgeCap: null,
+        targets: ["Combustion", "Universal Spell Power"], mlCap: 36,
         userCaps: { "Universal Spell Power": 15 },
         worn: [slot("Armor", [item("BIGUSP", "Armor", [["Universal Spell Power", "Enhancement", 20]])]),
                slot("Ring", [dinoHostV])],
@@ -6136,7 +6163,7 @@ async function withCrossAdd(map, fn) {
       const dinoHostV = item("DINO-H4", "Ring", []);
       dinoHostV.dino_slots_norm = ["Fang||Accessory"];
       const program = S.buildProgram({
-        targets: ["Combustion"], mlCap: 36, dodgeCap: null,
+        targets: ["Combustion"], mlCap: 36,
         userCaps: { Combustion: 15 },
         floors: { "Universal Spell Power": 5 },
         worn: [slot("Armor", [item("BIGCOMB", "Armor", [["Combustion", "Enhancement", 20]])]),
@@ -6168,7 +6195,7 @@ async function withCrossAdd(map, fn) {
     craftHost.thunder_forged_tiers = [{ tier: 1 }];
     craftHost.minimum_level = craftHost.ml = 20;
     const model = {
-      targets: ["Melee Power"], mlCap: 36, dodgeCap: null,
+      targets: ["Melee Power"], mlCap: 36,
       worn: [slot("Armor", [armor]), slot("Ring", [craftHost])],
       thunderForged: [tfOpt(1, "Melee Power", "Artifact", 25)],
     };
@@ -6193,7 +6220,7 @@ async function withCrossAdd(map, fn) {
     gsHostV.green_steel_slot = true;
     const plainRing = item("PLAIN", "Ring", [["Melee Power", "Insightful", 20]]);
     const model = {
-      targets: ["Melee Power"], mlCap: 36, dodgeCap: null,
+      targets: ["Melee Power"], mlCap: 36,
       worn: [slot("Armor", [armor]), slot("Ring", [gsHostV, plainRing])],
       greenSteel: [{ name: "Ethereal", stat: "Melee Power", bonus_type: "Insightful", value: 25, unit: "flat" }],
     };
@@ -6233,7 +6260,7 @@ async function withCrossAdd(map, fn) {
     // swap (shedding Ghost Touch) is a LEGAL trade — it surfaces, and the
     // analysis states the shed as a cost instead of suppressing the candidate.
     const model = {
-      targets: ["A", SENT, "B"], mlCap: 34, dodgeCap: null,
+      targets: ["A", SENT, "B"], mlCap: 34,
       utilityCountingSet: new Set(["Ghost Touch"]),
       worn: [
         slot("Ring", [item("rA", "Ring", [["A", "Enhancement", 10]])]),
@@ -6280,7 +6307,7 @@ async function withCrossAdd(map, fn) {
       gsHostV.green_steel_slot = true;
       const plainRing = item("PLAIN", "Ring", [["Melee Power", "Insightful", 20]]);
       return {
-        targets, mlCap: 36, dodgeCap: null,
+        targets, mlCap: 36,
         utilityCountingSet: new Set(["Ghost Touch"]),
         worn: [slot("Armor", [armor]), slot("Ring", [gsHostV, plainRing])],
         greenSteel: [{ name: "Ethereal", stat: "Melee Power", bonus_type: "Insightful", value: 25, unit: "flat" }],
@@ -6353,7 +6380,7 @@ async function withCrossAdd(map, fn) {
   // than a hoped-for one.
   const O = require("../web/overrides.js");
   const conModel = () => ({
-    targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+    targets: ["Constitution"], mlCap: 34,
     worn: [slot("Ring", [item("R", "Ring", [["Constitution", "Enhancement", 10]])]),
            slot("Necklace", [item("N", "Necklace", [["Constitution", "Enhancement", 6]])])],
   });
@@ -6420,7 +6447,7 @@ async function withCrossAdd(map, fn) {
   // override silently uncredited with the whole suite green.
   await test("#88 U6: a crafted (pool_key) override reaches a real solve and names its host", async () => {
     const craftedModel = () => ({
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Trinket", [sealHost("Sealed Trinket", "Trinket",
         [{ seal_type: "Undeath", category: "Trinket" }],
         [["Constitution", "Enhancement", 10]])])],
@@ -6454,7 +6481,7 @@ async function withCrossAdd(map, fn) {
     const host = item("Black Satin Waist", "Belt", [["Constitution", "Enhancement", 10]]);
     host.nc_per_item_slots = [{ category: "Ability Score" }];
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Belt", [host])],
       nearlyCompletePerItem: { "Black Satin Waist": [
         { stat: "Constitution", bonus_type: "Enhancement", value: 6, unit: "flat", pool: "Nearly Finished" },
@@ -6478,7 +6505,7 @@ async function withCrossAdd(map, fn) {
   // becomes the single surface naming a contribution nothing else endorses.
   await test("review #7: a hidden placement's override is not reported as a contribution", async () => {
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Trinket", [sealHost("Sealed Trinket", "Trinket",
         [{ seal_type: "Undeath", category: "Trinket" }], [["Constitution", "Enhancement", 10]])])],
       seal: [sealOpt("Undeath", "Constitution", "Enhancement", 15)],
@@ -6513,7 +6540,7 @@ async function withCrossAdd(map, fn) {
   // Enhancement source and takes the Deadly with it. The gain rises and the priority
   // BELOW it falls, which is the property KTD3 exists for.
   const concessionModel = () => ({
-    targets: ["Strength", "Doublestrike", "Deadly"], mlCap: 34, dodgeCap: null,
+    targets: ["Strength", "Doublestrike", "Deadly"], mlCap: 34,
     worn: [
       slot("Ring", [
         item("Ring X", "Ring", [["Strength", "Enhancement", 20]]),
@@ -6586,7 +6613,7 @@ async function withCrossAdd(map, fn) {
   await test("#481: a window that buys nothing returns null, distinct from an infeasible solve", async () => {
     // One slot, one axis: no concession on Strength can move Doublestrike.
     const flat = () => ({
-      targets: ["Strength", "Doublestrike"], mlCap: 34, dodgeCap: null,
+      targets: ["Strength", "Doublestrike"], mlCap: 34,
       worn: [slot("Ring", [item("Ring Solo", "Ring", [["Strength", "Enhancement", 20]])])],
       augments: [],
     });
@@ -6696,7 +6723,7 @@ async function withCrossAdd(map, fn) {
     // alongside a declared credit — which is exactly the reported player's state:
     // "doublestrike might be my highest priority until i hit 100% then its irrelevant".
     const model = {
-      targets: ["Doublestrike"], mlCap: 34, dodgeCap: null,
+      targets: ["Doublestrike"], mlCap: 34,
       intrinsicCaps: { Doublestrike: 100 },
       credits: [{ stat: "Doublestrike", bonus_type: "Profane", value: 85 }],
       worn: [slot("Ring", [item("ds", "Ring", [["Doublestrike", "Enhancement", 18]])])],
@@ -6715,7 +6742,7 @@ async function withCrossAdd(map, fn) {
     // analogy: Doubleshot WRAPS past 100% into extra shots. A cap here would
     // delete real points from every ranged build.
     const model = {
-      targets: ["Doubleshot"], mlCap: 34, dodgeCap: null,
+      targets: ["Doubleshot"], mlCap: 34,
       intrinsicCaps: { Doublestrike: 100 },   // the shipped table, verbatim
       credits: [{ stat: "Doubleshot", bonus_type: "Profane", value: 85 }],
       worn: [slot("Ring", [item("dsh", "Ring", [["Doubleshot", "Enhancement", 18]])])],
@@ -6728,7 +6755,7 @@ async function withCrossAdd(map, fn) {
 
   await test("#199: a TIGHTER user cap wins, a LOOSER one does not", async () => {
     const base = {
-      targets: ["Doublestrike"], mlCap: 34, dodgeCap: null,
+      targets: ["Doublestrike"], mlCap: 34,
       intrinsicCaps: { Doublestrike: 100 },
       credits: [{ stat: "Doublestrike", bonus_type: "Profane", value: 85 }],
       worn: [slot("Ring", [item("ds", "Ring", [["Doublestrike", "Enhancement", 18]])])],
@@ -6747,7 +6774,7 @@ async function withCrossAdd(map, fn) {
     // The stale-cached-dataset path: `metadata.intrinsic_stat_caps` is absent, so
     // dataset.js installs {} and every solve must be byte-identical to before.
     const worn = [slot("Ring", [item("ds", "Ring", [["Doublestrike", "Enhancement", 18]])])];
-    const q = { targets: ["Doublestrike"], mlCap: 34, dodgeCap: null,
+    const q = { targets: ["Doublestrike"], mlCap: 34,
       credits: [{ stat: "Doublestrike", bonus_type: "Profane", value: 85 }], worn };
     const withNone = await S.solveLexicographic({ ...q }, highs);
     const withEmpty = await S.solveLexicographic({ ...q, intrinsicCaps: {} }, highs);
@@ -6766,7 +6793,7 @@ async function withCrossAdd(map, fn) {
   // -------------------------------------------------------------------------
 
   const abandonModel = () => ({
-    targets: ["Intelligence", "Wisdom"], mlCap: 34, dodgeCap: null,
+    targets: ["Intelligence", "Wisdom"], mlCap: 34,
     worn: [slot("Helmet", [item("h1", "Helmet", [["Intelligence", "Enhancement", 10], ["Wisdom", "Insight", 4]])]),
       slot("Ring", [item("r1", "Ring", [["Wisdom", "Enhancement", 8]])])],
   });

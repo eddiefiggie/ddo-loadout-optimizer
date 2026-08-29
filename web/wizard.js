@@ -959,7 +959,7 @@ function buildQuery(state, vocab) {
     // ML N" on an augment-free loadout is a claim about nothing.
     augCeiling: _rungExcludesAllAugments(rung) ? null : clampAugCeiling(state.augCeiling, mlCap),
     targets: state.priorities.slice(),
-    armorType: forged ? null : (state.armor || null),   // dodge-cap input
+    armorType: forged ? null : (state.armor || null),   // equippability + #573 disclosure
     // U4 — armor eligibility gate (R7). A druidic oath now drives TWO independent
     // things (#162): proficiency (light + medium body armor, non-Tower shields) via
     // armorTypes here, and a metal restriction via `oath` + the wiki-sourced material
@@ -2382,7 +2382,7 @@ if (typeof window !== "undefined" && window.App) {
                 <optgroup label="Basic races">${RACES_BASIC.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</optgroup>
                 <optgroup label="Iconic heroes">${RACES_ICONIC.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</optgroup></select></label>
             <div class="wz-field wz-span" data-req="armor"><span class="wz-label"><span class="wz-req-mark" aria-hidden="true">*</span> Armor type ${forged ? '<span class="wz-sub">· docent (Forged race)</span>' : ""}</span>
-            <span class="wz-help">Your proficiency — sets the dodge cap and eligible body armor.</span>
+            <span class="wz-help">Your proficiency — sets which body armor you can equip.</span>
             <div class="wz-seg" id="wz-armor">${ARMOR.map(([v, l]) => `<button class="wz-chip ${state.armor === v ? "on" : ""}" data-armor="${v}" ${forged ? "disabled" : ""}>${l}</button>`).join("")}</div></div>
             </div>
           </fieldset>
