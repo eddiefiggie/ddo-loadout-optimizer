@@ -2849,6 +2849,15 @@ async function solveLexicographic(model, highs, opts = {}) {
     // pre-dominance pool it compares against no longer exists here) and carried
     // as plain JSON so a restored character discloses without re-solving.
     blockReport: model.blockReport || [],
+    // #246 — the ownership filter's own report, carried like the blocklist's so a
+    // RESTORED snapshot discloses the narrowing without re-solving. A shared build
+    // that silently omitted it would claim a full-roster optimum it never had.
+    packFilter: model.ownedPacks
+      ? { owned: model.ownedPacks, excluded: (model.packExcluded || []).length,
+          uncheckable: model.packUncheckable || 0,
+          packsExcluded: [...new Set((model.packExcluded || [])
+            .map((v) => v.location_pack).filter(Boolean))].sort() }
+      : null,
   };
 }
 

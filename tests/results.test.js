@@ -1563,6 +1563,36 @@ test("#339: the augment-ceiling notice renders from the shared projection senten
   assert.strictEqual(R.augCeilingNotice({}, { status: "optimal" }), "", "silent when unrestricted");
 });
 
+test("#246: the ownership filter discloses BOTH what it removed and what it could not check", () => {
+  // The second half is the one that matters. The filter can only exclude gear whose
+  // pack the wiki states; crafted, bought, event and Store gear is not pack-gated at
+  // all. Reporting the exclusions alone would read as a complete answer to "only show
+  // me what I can farm" when it is a partial one.
+  const html = R.packFilterNotice({ status: "optimal", packFilter: {
+    owned: ["Ruins of Gianthold"], excluded: 12, uncheckable: 40,
+    packsExcluded: ["Mists of Ravenloft", "The Chill of Ravenloft"] } });
+  assert.ok(/excluded 12 items/.test(html), "says how much it removed");
+  assert.ok(/Mists of Ravenloft/.test(html), "and names the packs, so the player can act");
+  assert.ok(/40 candidates could not be checked/.test(html), "and what it could NOT check");
+  assert.ok(/may still include something you cannot get/.test(html),
+    "with the consequence stated, not left to be inferred");
+});
+
+test("#246: the notice is silent when the filter is off, and on a pre-feature snapshot", () => {
+  assert.strictEqual(R.packFilterNotice({ status: "optimal" }), "",
+    "a solve with no filter says nothing");
+  assert.strictEqual(R.packFilterNotice({ status: "optimal", packFilter: null }), "");
+});
+
+test("#246: a filter that excluded nothing still reports what it could not check", () => {
+  // Owning everything is not the same as the filter having nothing to say: the
+  // un-checkable population is a property of the DATA, not of the player's answer.
+  const html = R.packFilterNotice({ status: "optimal", packFilter: {
+    owned: ["A"], excluded: 0, uncheckable: 40, packsExcluded: [] } });
+  assert.ok(!/excluded 0/.test(html), "no empty exclusion sentence");
+  assert.ok(/could not be checked/.test(html), "but the caveat still lands");
+});
+
 test("#573: the Max Dex Bonus disclosure fires on armor + ranked Dodge, and only then", () => {
   const fire = (q) => R.dodgeMaxDexNotice(q, { status: "optimal" });
   // The whole point of removing ARMOR_DODGE_CAP: the gap is now REAL, so it must be
@@ -2547,6 +2577,9 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       emptySlotNotice: ["EMPTY SLOT", "actionable"],
       craftingExcludedNotice: ["EXCLUDED BY CRAFTING OPT-OUT", "actionable"],
       blockNotice: ["BLOCKED GEAR", "actionable"],
+      // #246 — actionable, unlike #573's disclosure: the player CAN resolve it, by
+      // ticking a pack they do own.
+      packFilterNotice: ["CONTENT NOT OWNED", "actionable"],
       // #539 — actionable: every line it can print names something the player can
       // change (remove a pin, tick an augment as owned, raise the level cap).
       setPinNotice: ["REQUIRED SETS", "actionable"],
@@ -2570,14 +2603,14 @@ test("#449 U5 (KTD5): every notice the builder renders has a table entry", () =>
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
   const build = srcBetween(src, "function noticeDescriptors(", "function noticePanel(", "noticeDescriptors");
   const pushed = [...build.matchAll(/push\("(\w+)"/g)].map((m) => m[1]);
-  assert.strictEqual(pushed.length, 11, "the eleven single-fact notices (#573 added DODGE NOT REDUCED BY ARMOR)");
+  assert.strictEqual(pushed.length, 12, "the twelve single-fact notices (#246 added CONTENT NOT OWNED)");
   for (const name of pushed) {
     assert.ok(R.NOTICE_TABLE[name], `${name} is rendered but has no KTD5 table entry`);
   }
   const split = [...build.matchAll(/split\("(\w+)"/g)].map((m) => m[1]);
   assert.deepStrictEqual(split.sort(), ["artifactNotice", "boundNotice", "zeroSourceNotice"],
     "and the three multi-fact notices come through their U10 entry functions");
-  assert.strictEqual(pushed.length + split.length, 14, "fourteen notices, all reached");
+  assert.strictEqual(pushed.length + split.length, 15, "fifteen notices, all reached");
 });
 
 test("#449 U5 (KTD5): a notice absent from the table renders unclassified, and does not throw", () => {
@@ -2623,7 +2656,7 @@ test("#449 U5 (R6/KTD5): every actionable route carries a control, and outbid de
     .filter(([, v]) => v.cls === "actionable").map(([k, v]) => [k, !!v.jump]);
   assert.deepStrictEqual(Object.fromEntries(routed), {
     staleSnapshotNotice: true, emptySlotNotice: true, craftingExcludedNotice: true,
-    blockNotice: true, augCeilingNotice: true, setPinNotice: true,
+    blockNotice: true, augCeilingNotice: true, setPinNotice: true, packFilterNotice: true,
     // R6's amendment: it already renders Require and price buttons in-card.
     outbidNotice: false,
   });

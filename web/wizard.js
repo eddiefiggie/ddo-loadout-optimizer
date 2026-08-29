@@ -993,6 +993,9 @@ function buildQuery(state, vocab) {
     // #110 (U1) — the blocklist, copied so the solve reads a snapshot rather
     // than the live state array. Absent (pre-feature state) reads as empty.
     blocklist: Array.isArray(state.blocklist) ? state.blocklist.slice() : [],
+    // #246 — NULL, not [], when the player has not answered. An empty array would
+    // mean "I own nothing" and empty the pool; absent means "do not filter".
+    ownedPacks: Array.isArray(state.ownedPacks) ? state.ownedPacks.slice() : null,
     // #539 — the set pins, copied so the solve reads a snapshot rather than live
     // state, exactly as the blocklist above does.
     pinnedSets: Array.isArray(state.pinnedSets) ? state.pinnedSets.slice() : [],
@@ -2255,6 +2258,9 @@ if (typeof window !== "undefined" && window.App) {
       // surface the backup reviver guards (a priority named `constructor` once
       // made a character permanently unloadable).
       blocklist: [],
+      // #246 — null until the player says otherwise: an unanswered question must
+      // not narrow the roster.
+      ownedPacks: null,
       pinnedSets: [],
       // #428 U3 (R20) — the name of the saved build currently being edited, or
       // "" for an unsaved one. Transient by design: it is NOT on INPUT_KEYS,
@@ -2600,6 +2606,21 @@ if (typeof window !== "undefined" && window.App) {
           <div id="wz-block-stage" class="wz-block-stage"></div>
           <div id="wz-block-list" class="wz-pin-list"></div>
         </div>
+        <div class="wz-pinbox wz-packbox" id="wz-packs">
+          <span class="wz-label">Content you own <span class="wz-sub">· optional · leave it alone to search everything</span></span>
+          <p class="wz-adv-note">Tick the adventure packs and expansions you have and the solve will stop
+            recommending gear you cannot go and get. Untouched, it searches the whole roster — that is the
+            default, and it is the right one if you are planning rather than farming.</p>
+          <p class="wz-adv-note">This cannot be complete, and it says so with the result: crafted, bought,
+            event and DDO Store gear is not gated by a pack at all, and some sources have no pack recorded
+            on the wiki. Those stay in the search rather than being dropped on a guess.</p>
+          <div class="wz-packrow">
+            <button class="btn ghost sm" id="wz-packs-all" type="button">Select all</button>
+            <button class="btn ghost sm" id="wz-packs-none" type="button">Clear</button>
+            <span id="wz-packs-stat" class="wz-help"></span>
+          </div>
+          <div id="wz-packs-list" class="wz-pack-list"></div>
+        </div>
         <div class="wz-pinbox wz-setpinbox">
           <span class="wz-label">Require a set <span class="wz-sub">· optional · the solve must deliver these, or say why it cannot</span></span>
           <p class="wz-adv-note">Ranking the stats a set grants does not force it — the solver takes those
@@ -2890,6 +2911,57 @@ if (typeof window !== "undefined" && window.App) {
         warn.textContent = msg ? `⏱ ${msg}` : "";
         warn.hidden = !msg;
       }
+    }
+
+    /** #246 — the content-ownership checklist.
+     *
+     *  Options come from the DATASET, not a hand-kept list: `location_pack` is
+     *  stamped on every variant by #495, so the packs offered are exactly the packs
+     *  that gate gear in this build, and each is shown with how much it gates. A
+     *  curated list here would drift the moment the mapping grew.
+     *
+     *  `Free to Play` is deliberately NOT offered. It is not something a player can
+     *  fail to own, and a tick-box for it would imply otherwise.
+     */
+    function packOptions() {
+      const n = new Map();
+      for (const v of dataset.items || []) {
+        const p = v.location_pack;
+        if (!p || p === "Free to Play") continue;
+        n.set(p, (n.get(p) || 0) + 1);
+      }
+      return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    }
+
+    function renderPackList() {
+      const box = document.getElementById("wz-packs-list");
+      const stat = document.getElementById("wz-packs-stat");
+      if (!box) return;
+      const opts = packOptions();
+      // null = unanswered = no filter. Distinct from [] ("I own nothing"), which is
+      // a real answer and empties nearly the whole roster.
+      const owned = Array.isArray(state.ownedPacks) ? new Set(state.ownedPacks) : null;
+      if (stat) {
+        stat.textContent = owned
+          ? `${owned.size} of ${opts.length} ticked — gear from the rest is excluded.`
+          : `Searching everything. ${opts.length} packs gate gear in this roster.`;
+      }
+      box.innerHTML = opts.map(([name, count]) => {
+        const on = owned ? owned.has(name) : true;
+        return `<label class="wz-pack-row"><input type="checkbox" data-pack="${esc(name)}"${on ? " checked" : ""}>
+          <span class="wz-pack-name">${esc(name)}</span>
+          <span class="wz-pack-count">${esc(count)}</span></label>`;
+      }).join("");
+      box.querySelectorAll("input[data-pack]").forEach((cb) => cb.onchange = () => {
+        // First touch materialises the answer from "everything" so unticking one box
+        // does not read as "I own only this one".
+        const cur = new Set(Array.isArray(state.ownedPacks)
+          ? state.ownedPacks : opts.map(([nm]) => nm));
+        if (cb.checked) cur.add(cb.dataset.pack); else cur.delete(cb.dataset.pack);
+        state.ownedPacks = [...cur].sort();
+        state.constraintsDirty = true; markDirty();
+        renderPackList();
+      });
     }
 
     function renderBlockList() {
@@ -5402,6 +5474,18 @@ if (typeof window !== "undefined" && window.App) {
         // step depends on it.
         const oaug = document.getElementById("wz-owned-augments");
         if (oaug) oaug.onchange = (e) => { state.ownedAugments = e.target.checked; };
+        // #246 — the content-ownership checklist, bound on step entry beside the
+        // other pool controls. `renderPackList` owns its own checkbox handlers and
+        // re-renders itself, so this is the only binding site.
+        renderPackList();
+        const pAll = document.getElementById("wz-packs-all");
+        const pNone = document.getElementById("wz-packs-none");
+        // "Select all" clears the answer back to NULL rather than ticking every box.
+        // Owning everything and not having answered produce the same solve, and null
+        // is the one that keeps a later dataset refresh — which may add a pack — from
+        // reading as a narrowing the player never chose.
+        if (pAll) pAll.onclick = () => { state.ownedPacks = null; state.constraintsDirty = true; markDirty(); renderPackList(); };
+        if (pNone) pNone.onclick = () => { state.ownedPacks = []; state.constraintsDirty = true; markDirty(); renderPackList(); };
         const disp = document.getElementById("wz-file-label"), real = document.getElementById("wz-file");
         if (disp) {
           disp.onclick = () => real.click();

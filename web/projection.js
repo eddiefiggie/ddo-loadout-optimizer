@@ -766,6 +766,36 @@
     return lines;
   }
 
+  /** #246 — what the content-ownership filter removed, and what it could not check.
+   *
+   *  BOTH halves are said, and the second is the one that matters. The filter can
+   *  only exclude gear whose adventure pack the wiki states; crafting, vendor, event
+   *  and Store gear is not pack-gated at all, and 33 source values carry no pack the
+   *  harvest could source. Those are KEPT — dropping them would narrow the pool on a
+   *  guess — so a build solved with the filter on may still contain something the
+   *  player cannot get. Reporting the exclusions alone would read as a complete
+   *  answer to "only show me what I can farm" when it is a partial one.
+   */
+  function packFilterNoticeLines(result) {
+    const f = result && result.packFilter;
+    if (!f) return [];
+    const lines = [];
+    if (f.excluded) {
+      const n = f.packsExcluded.length;
+      lines.push(`Content you have not marked as owned excluded ${f.excluded} `
+        + `${f.excluded === 1 ? "item" : "items"} from this solve, across `
+        + `${n} ${n === 1 ? "pack" : "packs"}: ${f.packsExcluded.join(", ")}. `
+        + "The result is optimal given those exclusions.");
+    }
+    if (f.uncheckable) {
+      lines.push(`${f.uncheckable} candidates could not be checked against your `
+        + "content — they are crafted, bought, event or Store gear, or the wiki records "
+        + "no adventure pack for their source. They were kept rather than dropped on a "
+        + "guess, so this build may still include something you cannot get.");
+    }
+    return lines;
+  }
+
   /** #539 — what the player's set pins did, as plain sentences.
    *
    *  Every verdict is said out loud, including the ones that landed. A pin that
@@ -1926,6 +1956,9 @@
         // touched the solve. A shared build asserting optimality with silent
         // exclusions is the solve-visible-but-share-invisible failure.
         blockNotice: blockNoticeLines(snap),
+        // #246 — same channel and same reason: a recipient must not read a build as
+        // a full-roster optimum when a content filter narrowed the pool.
+        packFilterNotice: packFilterNoticeLines(snap),
         setPinNotice: setPinNoticeLines(snap),
         // #449 (U2, R15) — the ONE full statement that qualifies every fraction
         // in the document. Rendered once per export, never per stat: repeated
@@ -2555,7 +2588,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine, dodgeMaxDexLine,
+    augCeilingLine, dodgeMaxDexLine, packFilterNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)
     NO_DROP_SOURCE_WORDING,
