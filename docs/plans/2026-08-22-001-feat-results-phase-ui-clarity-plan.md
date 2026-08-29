@@ -116,7 +116,7 @@ This work contains the notices, relocates the ceiling fact to the level it actua
 - **AE1** — A solve produces three actionable, two qualifying and one informational notice. The panel reads "Notes on this solve · 6 notes · **3 need attention** · 2 qualify this result", the amber pill pulsing and the qualifying marker static. Opened, the three amber cards sort first, then the two qualifying, then the informational; each amber card carries a jump control. The pill stops pulsing and stays amber and static.
 - **AE2** — A solve produces only informational notices. The panel reads "6 notes" with no pill and no qualifying marker, and nothing on screen moves.
 - **AE11** — A solve produces one qualifying notice and no actionable ones. The summary carries the qualifying marker, visible without opening the panel, and nothing pulses.
-- **AE12** — A solve produces no notices at all. No panel element renders.
+- ~~**AE12**~~ — **Struck 2026-08-28 as unreachable on a live solve.** Original: *a solve produces no notices at all; no panel element renders.* The contract it describes is real and still enforced — that is **R27**, covered at the render seam by `tests/results.test.js:2519` (`noticePanel([]) === ""`). What cannot exist is a *solve* that reaches it. `canFindUpgrades()` (`web/results.js:2405`) is true whenever `optimum.chosen` is non-empty and `highs` is loaded, so the UPGRADES notice fires on every solve that picks any gear; emptying the panel would take a solve that chose nothing. The one state that silences it is the **restore** path, which passes `highs: null` into `renderResults` (`web/wizard.js:4359`) — so a zero-notice *render* is conceivable and a zero-notice *solve* is not. Do not re-attempt this as a browser check. Evidence: #449.
 - **AE3** — A player with `prefers-reduced-motion: reduce` loads a solve with actionable notices. The pill renders static amber from the outset and is still identifiable as urgent. No motion occurs at any point.
 - **AE13** — A player opens the notes panel, then collapses it, then changes a per-slot constraint (triggering a full `renderResults`). The pill does not resume pulsing at any point after the first open.
 - **AE4** — Priority 1 Physical Sheltering reaches 132 with every bonus type filled. Its card's footer reads `132 / 132` in green, with a full green meter and a sentence stating no other item in the pool can raise it. This is the *expected* rank-1 state on essentially every solve, since priority 1 is always at its global maximum — a green rank-1 card is normal, not a defect (see KTD1).
@@ -462,7 +462,7 @@ flowchart TD
   - Mutation check: remove one row from the KTD5 table and confirm the completeness assertion — and only it — goes red.
   - A notice name absent from the table renders in the visible "unclassified" state and does **not** throw, so a correct solve's results screen survives.
   - Each card's title comes from the KTD5 table, not from the notice function's own markup.
-  - Covers AE12. Zero non-empty notices render no panel element at all.
+  - Covers R27 (and the struck AE12). Zero non-empty notices render no panel element at all. This is the render seam, and it is the ONLY place the state is reachable — see the AE12 entry.
   - The panel is collapsed on first render.
   - Structural guard: the `active-build-bar` element is not inside the panel.
   - Covers AE1/AE11. Each card's title text names its class independently of any colour class.
@@ -601,7 +601,7 @@ flowchart TD
 - Solver and export goldens either unchanged or deliberately re-ratified with the diff reviewed.
 - All five export formats independently confirmed to carry the fraction **and** its qualifying sentence.
 - No user-facing sentence added by this work asserts what a different solve would have produced.
-- A live browser pass covering: a maxed, an unmaxed and a zero-ceiling stat card; a solve with all three notice classes; a zero-notice solve; the pulse stopping on first open and staying stopped through a collapse and a re-solve; the pill legible with animation disabled; the slot control visible and tappable at 375px with no hover; keyboard focus visible on it.
+- A live browser pass covering: a maxed, an unmaxed and a zero-ceiling stat card; a solve with all three notice classes; the pulse stopping on first open and staying stopped through a collapse and a re-solve; the pill legible with animation disabled; the slot control visible and tappable at 375px with no hover; keyboard focus visible on it. **Done 2026-08-28** against build `08282026.3` — measured evidence on #449. A zero-notice solve was struck from this list rather than performed; see the AE12 entry for why no such solve exists.
 - Comments invalidated by U4 edited in place, not supplemented.
 - `#447` closed by the PR with a closing keyword; `#448` referenced as the deferral's tracking issue.
 - Build stamp bumped in all three places.
