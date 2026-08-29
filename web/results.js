@@ -1633,6 +1633,12 @@ const NOTICE_TABLE = {
   // qualifying.
   outbidNotice: { id: "priority-scored-0", title: "PRIORITY SCORED 0", subject: "priority scored 0", cls: NOTICE_ACTIONABLE, jump: null },
   absorptionQuarantineNotice: { id: "affix-withheld", title: "AFFIX WITHHELD", subject: "affix withheld", cls: NOTICE_QUALIFYING, jump: null },
+  // #573 — QUALIFYING, not actionable. The player cannot resolve it (we do not have
+  // the number and neither does the wiki, per item); they can only be told the
+  // headline Dodge total is un-reduced. The jump is offered because the ONE thing
+  // they can do about it — set the Max themselves — lives on another step.
+  dodgeMaxDexNotice: { id: "dodge-maxdex-unmodelled", title: "DODGE NOT REDUCED BY ARMOR", subject: "armor dodge reduction", cls: NOTICE_QUALIFYING,
+    jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null } },
   // R35 — already returns its own `<details>`. Unwrapped inside the panel so the
   // panel stays the only fold.
   saturationNotice: { id: "at-ceiling", title: "AT CEILING", subject: "at ceiling", cls: NOTICE_INFORMATIONAL, jump: null, unwrap: true },
@@ -1736,6 +1742,7 @@ function noticeDescriptors(ctx) {
   push("absorptionQuarantineNotice", absorptionQuarantineNotice(result));
   push("craftingExcludedNotice", craftingExcludedNotice(query, result));
   push("augCeilingNotice", augCeilingNotice(query, result));
+  push("dodgeMaxDexNotice", dodgeMaxDexNotice(query, result));
   push("blockNotice", blockNotice(result));
   push("setPinNotice", setPinNotice(result, { canPrice: !!ctx.canPriceSetPin }));
   push("upgradeNotice", upgradeNotice(ctx.canUpgrade, ctx.upgradeBar));
@@ -1834,6 +1841,20 @@ function augCeilingNotice(query, result) {
     ? Proj.augCeilingLine({ snapshot: result, query }) : null;
   return line
     ? `<p class="scope-note aug-ceiling-note" role="status">${esc(line)}</p>`
+    : "";
+}
+
+/** #573 — the Max Dex Bonus gap this solve does not model. Pure (query), and
+ *  identical on a restored snapshot: it describes the model's scope, not the solve.
+ *
+ *  Reads the SHARED sentence from projection, never a second wording — a notice
+ *  phrased once here and once in the exporters is how the app and a shared build come
+ *  to disagree about the same solve. */
+function dodgeMaxDexNotice(query, result) {
+  const line = (Proj && Proj.dodgeMaxDexLine)
+    ? Proj.dodgeMaxDexLine({ snapshot: result, query }) : null;
+  return line
+    ? `<p class="scope-note dodge-maxdex-note" role="status">${esc(line)}</p>`
     : "";
 }
 
@@ -3378,7 +3399,7 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, blockNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, blockNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,

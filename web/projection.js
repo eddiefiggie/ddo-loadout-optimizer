@@ -899,6 +899,42 @@
       + "higher-ML augments were not considered.";
   }
 
+  /** #573 — the Max Dex Bonus gap, disclosed because it cannot be modelled.
+   *
+   *  DDO reduces Maximum Dodge Bonus to the lowest Maximum Dexterity Bonus among the
+   *  equipped armor and tower shields. That is a real constraint and we do NOT model
+   *  it: Max Dex Bonus is a property of the individual armor, the dataset carries no
+   *  such field, and gear-planner has none to read (only two augments mention Max Dex
+   *  Bonus at all, and both RAISE it). So the Dodge total this solve reports is the
+   *  gear sum, un-reduced.
+   *
+   *  It used to be "modelled" by `ARMOR_DODGE_CAP`, four unsourced numbers keyed to
+   *  armor CATEGORY — the wrong granularity by the wiki's own wording, and a clamp
+   *  #199 had already refused to record. Removing it makes the gap real, so it has to
+   *  be spoken: an un-reduced number nobody flags is the failure this repo's
+   *  never-infer rule exists to prevent, and silence would simply move the wrong
+   *  answer from "too low" to "too high".
+   *
+   *  Silent once the player sets a Max on Dodge themselves — at that point they have
+   *  told us their limit, `boundNotice` reports it when it binds, and repeating the
+   *  invitation would ask for something already supplied. */
+  function dodgeMaxDexLine(rec) {
+    const snap = (rec && rec.snapshot) || rec || {};
+    const q = (rec && rec.query) || snap.query || {};
+    const armor = q.armorType;
+    if (!armor) return null;
+    const targets = Array.isArray(q.targets) ? q.targets : [];
+    if (!targets.includes("Dodge")) return null;
+    const caps = q.targetCaps || {};
+    if (caps.Dodge != null) return null;
+    return `You chose ${armor} armor and ranked Dodge. In game, your armor's Maximum `
+      + "Dexterity Bonus can reduce your Maximum Dodge Bonus \u2014 but that limit belongs to "
+      + "the individual armor, not to its category, and the wiki does not state it per "
+      + "item, so this solve does not apply it. The Dodge total above is the gear sum, "
+      + "not reduced by your armor. If you know your armor's limit, set it as the Max on "
+      + "your Dodge priority.";
+  }
+
   /** Variant_ids of host items that carry a solver-placed Set Augment. A Set Augment
    *  overrides ("suppresses") the host item's OWN named set(s) — the solver already
    *  dropped that set from setsActive/totals, so the set-satisfaction primitives must
@@ -1877,6 +1913,11 @@
         // a recipient must not compare this build against an unrestricted one
         // without being told the augment pool was narrower.
         augCeilingNotice: augCeilingLine(rec),
+        // #573 — the unmodelled armor Max Dex Bonus reduction (null unless an armor
+        // type was chosen AND Dodge ranked AND no Max set). Same channel and same
+        // reason as the two above: a recipient must not read a Dodge total as
+        // in-game-accurate when the reduction was never applied to it.
+        dodgeMaxDexNotice: dodgeMaxDexLine(rec),
         // #110 (U7/U9) — the blocklist disclosure: empty array when no block
         // touched the solve. A shared build asserting optimality with silent
         // exclusions is the solve-visible-but-share-invisible failure.
@@ -2510,7 +2551,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine,
+    augCeilingLine, dodgeMaxDexLine,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)
     NO_DROP_SOURCE_WORDING,
