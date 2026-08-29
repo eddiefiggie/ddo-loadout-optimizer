@@ -1,0 +1,2704 @@
+{
+  "_meta": {
+    "title": "location_quest -> adventure pack and source kind",
+    "issue": 495,
+    "harvested": "2026-08-29",
+    "source": "ddowiki.com, batched MediaWiki API (prop=revisions|categories) per docs/wiki-evidence/harvest-method.md",
+    "why": "The Farming List groups a build's sources so a player can answer 'do I even own this?' first. The dataset has no pack field and gear-planner has none upstream; the only acquisition datum is the free-text `location_quest`. This maps those values.",
+    "never_infer": "Every entry records the WIKI SIGNAL that decided it in `via`. A value with no such signal is `unknown` and renders under 'Source unknown' — it is never guessed from the name. 33 of 533 are unknown, and they are mostly public zones, non-locations and crafting ingredients rather than quests.",
+    "kinds": [
+      "pack-quest",
+      "vendor",
+      "event",
+      "crafting",
+      "store",
+      "unknown"
+    ],
+    "pack_semantics": "`pack` is the adventure pack, verbatim as the wiki writes it. 'Free to Play' means the wiki states the quest needs no pack. An empty `pack` on a pack-quest means the page is a quest but names no pack and none could be sourced.",
+    "via_codes": {
+      "A": "Quest infobox `adpack` parameter",
+      "T": "`Adpack` template on the page (the page IS in that pack)",
+      "B": "Quest infobox `adpack` parameter present and EMPTY (no pack required)",
+      "F": "`Free to Play quests` category",
+      "V": "vendor category",
+      "N": "`NPCs in …` category",
+      "D": "`Crafting devices` category",
+      "C": "`Crafting` category",
+      "E": "`Events` category",
+      "S": "`DDO Store` category",
+      "P": "`Adventure Packs` category",
+      "R": "cited as the `adpack` of other harvested quests",
+      "Q": "a quest page stating no pack",
+      "X": "no classifying category",
+      "M": "no wiki page"
+    },
+    "extraction_note": "The `adpack` parameter is often present and EMPTY. An earlier pattern used `\\s*$`, and because `\\s` matches a newline it ran the empty value onto the following line and captured `| level = 8` as three quests' adventure pack. The shipped pattern is line-bounded. All 533 rows were hash-verified against the live wiki before being written here."
+  },
+  "entries": {
+    "A Blood Pact": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Break In the Ice": {
+      "kind": "pack-quest",
+      "pack": "Shadowfell Conspiracy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Cabal for One": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Cry for Help": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Frosty Reception": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Legend Revisited": {
+      "kind": "pack-quest",
+      "pack": "Three-Barrel Cove",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Lesson in Deception": {
+      "kind": "pack-quest",
+      "pack": "Shadowfell Conspiracy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Light in the Attic": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Long Way to Mushrooms": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Miner Sacrifice": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A New Invasion": {
+      "kind": "pack-quest",
+      "pack": "The Devils of Shavarath",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Raven at the Door": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Relic of a Sovereign Past": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "A Sharn Welcome": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Small Problem": {
+      "kind": "pack-quest",
+      "pack": "Phiarlan Carnival",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Stay at the Inn": {
+      "kind": "pack-quest",
+      "pack": "The High Road of Shadows",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "A Study in Sable": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "A Vision of Destruction": {
+      "kind": "pack-quest",
+      "pack": "The Vale of Twilight",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Acute Delirium": {
+      "kind": "pack-quest",
+      "pack": "Reign of Madness",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Advance to level 15": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "All Hail the King": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Altar of Epic Rituals": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting devices` category"
+    },
+    "Altar of Fecundity": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting devices` category"
+    },
+    "Altar of Vulkoor": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting devices` category"
+    },
+    "An Element of Chaos": {
+      "kind": "pack-quest",
+      "pack": "Peril of the Planar Eyes",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "An Invitation to Dinner": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "An Offering of Blood": {
+      "kind": "pack-quest",
+      "pack": "Demon Sands",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "And the Dead Shall Rise...": {
+      "kind": "pack-quest",
+      "pack": "Delera's Tomb",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Anniversary Card Collection": {
+      "kind": "event",
+      "pack": null,
+      "via": "`Events` category"
+    },
+    "Anniversary Party": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Another Man's Treasure": {
+      "kind": "pack-quest",
+      "pack": "White Plume Mountain and Other Tales",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Army of Eternal Night": {
+      "kind": "pack-quest",
+      "pack": "Grip of the Hidden Hand",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Army of Shadow": {
+      "kind": "pack-quest",
+      "pack": "Shadowfell Conspiracy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Ascension Chamber": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Assault on Splinterskull": {
+      "kind": "pack-quest",
+      "pack": "Tangleroot Gorge",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Assault on Summerfield": {
+      "kind": "pack-quest",
+      "pack": "Attack on Stormreach",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Assault on the Aerie of the Slave Lords": {
+      "kind": "pack-quest",
+      "pack": "Against the Slave Lords",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Astral Ambush": {
+      "kind": "pack-quest",
+      "pack": "Illithid Invasion",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Attack on Stormreach": {
+      "kind": "pack-quest",
+      "pack": "Attack on Stormreach",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Aussircaex's Valley": {
+      "kind": "pack-quest",
+      "pack": "The Reaver's Reach",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Back to Basics": {
+      "kind": "pack-quest",
+      "pack": "Sinister Secret of Saltmarsh",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Back to the Abyss": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Bastion of Power": {
+      "kind": "pack-quest",
+      "pack": "The Devils of Shavarath",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Beautiful Nightmares": {
+      "kind": "pack-quest",
+      "pack": "Peril of the Planar Eyes",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Beneath the City Streets": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Best Laid Plans": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Black Dragonscale Armor": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Black and Blue": {
+      "kind": "pack-quest",
+      "pack": "Dragonblood Prophecy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Blockade Buster": {
+      "kind": "pack-quest",
+      "pack": "Attack on Stormreach",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Blown Deadline": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Blown to Bits": {
+      "kind": "pack-quest",
+      "pack": "Secrets of the Artificers",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Blue Dragonscale Armor": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Blue Water Inn": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Body and Mind": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "Quest infobox `adpack` parameter present and EMPTY (no pack required)"
+    },
+    "Book Burning": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Breaking the Ranks": {
+      "kind": "pack-quest",
+      "pack": "Shadowfell Conspiracy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Bring Me the Head of Ghola-Fan!": {
+      "kind": "pack-quest",
+      "pack": "The Restless Isles",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Brothers of the Forge": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Bullywugs and Booby Traps": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Burning Down the House": {
+      "kind": "pack-quest",
+      "pack": "The Dragons' Hand",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Caged Beast": {
+      "kind": "pack-quest",
+      "pack": "Keep on the Borderlands",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Captain Xendros": {
+      "kind": "vendor",
+      "pack": null,
+      "via": "vendor category"
+    },
+    "Captive of the Hidden God": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Catalyst Crafting": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting` category"
+    },
+    "Catastrophe": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Caught in the Web": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Cauldron of Sora Katra": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting devices` category"
+    },
+    "Caverns of Korromar": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Chains of Flame": {
+      "kind": "pack-quest",
+      "pack": "Demon Sands",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Cold Snap": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Combatting Corruption": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Come Out and Slay": {
+      "kind": "pack-quest",
+      "pack": "The Sharn Syndicate",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Crafted": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Creeping Death": {
+      "kind": "pack-quest",
+      "pack": "The Vale of Twilight",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Cult of the Six": {
+      "kind": "pack-quest",
+      "pack": "Sorrowdusk Isle",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "DDO Store": {
+      "kind": "store",
+      "pack": null,
+      "via": "`DDO Store` category"
+    },
+    "Danger at Dunwater": {
+      "kind": "pack-quest",
+      "pack": "Sinister Secret of Saltmarsh",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Death Hosts This Banquet": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Death House": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Defiler of the Just": {
+      "kind": "pack-quest",
+      "pack": "Trials of the Archons",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Delera's Tomb": {
+      "kind": "pack-quest",
+      "pack": "Delera's Tomb",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Demon Assault": {
+      "kind": "pack-quest",
+      "pack": "Trials of the Archons",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Demon in the Rough": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Den of Vipers": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Desecrated Temple of Vol": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Desecrated Temple of Vol (epic)": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Desire in the Dark": {
+      "kind": "pack-quest",
+      "pack": "The Mines of Tethyamar",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Detour": {
+      "kind": "pack-quest",
+      "pack": "The High Road of Shadows",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Devil Assault": {
+      "kind": "pack-quest",
+      "pack": "Devil Assault",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Devil Assault (quest)": {
+      "kind": "pack-quest",
+      "pack": "Devil Assault",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Dinosaur Crisis": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "Quest infobox `adpack` parameter present and EMPTY (no pack required)"
+    },
+    "Diplomatic Impunity": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Dirty Laundry": {
+      "kind": "pack-quest",
+      "pack": "The Sharn Syndicate",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Disciples of Shar": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Down You Go": {
+      "kind": "pack-quest",
+      "pack": "Sinister Secret of Saltmarsh",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Dragoncraft Armor": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting` category"
+    },
+    "Dragontouched Armor": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Dread Sea Scrolls": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "Quest infobox `adpack` parameter present and EMPTY (no pack required)"
+    },
+    "Dreamforge": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting devices` category"
+    },
+    "Dreams of Insanity": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Durk's Got A Secret": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Elfcraft Armor": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting` category"
+    },
+    "Emerald Claw Nugget": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Endgame: Marguerite": {
+      "kind": "pack-quest",
+      "pack": "The Catacombs",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Endgame: The Archbishop's Fate": {
+      "kind": "pack-quest",
+      "pack": "The Catacombs",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Ends and Means": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Enemy of My Enemy": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Epic Crafting": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting` category"
+    },
+    "Escape Plan": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Essence Crafting Tutorial": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Ettercap Incursion": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Eveningstar": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Eveningstar Challenge Pack": {
+      "kind": "pack-quest",
+      "pack": "Eveningstar Challenge Pack",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Eye Know Whodunnit": {
+      "kind": "pack-quest",
+      "pack": "Peril of the Planar Eyes",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Eye of the Titan": {
+      "kind": "pack-quest",
+      "pack": "The Dreaming Dark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Eyes of Stone": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Fables of the Feywild": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "cited as the `adpack` of other harvested quests"
+    },
+    "Fall of the Forbidden Temple": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Fashion Madness": {
+      "kind": "pack-quest",
+      "pack": "Heart of Madness",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Fathom the Depths": {
+      "kind": "pack-quest",
+      "pack": "The Red Fens",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Favor Rewards": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Fear Factory": {
+      "kind": "pack-quest",
+      "pack": "Harbinger of Madness",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Festivult": {
+      "kind": "event",
+      "pack": null,
+      "via": "`Events` category"
+    },
+    "Finding Dorris": {
+      "kind": "pack-quest",
+      "pack": "The Soul Splitter",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Fire Over Morgrave": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Fire on Thunder Peak": {
+      "kind": "pack-quest",
+      "pack": "Shadow Under Thunderholme",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Flesh Maker's Laboratory": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Flesh Maker's Laboratory (epic)": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Flocked Together": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "For Want of a Heart": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Frame Work": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Fred's First Date": {
+      "kind": "pack-quest",
+      "pack": "Slice of Life",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Free Delera": {
+      "kind": "pack-quest",
+      "pack": "Delera's Tomb",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Fresh-baked Dreams": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Friends in Low Places": {
+      "kind": "pack-quest",
+      "pack": "Shadowfell Conspiracy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Garrison's Missing Pack": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Genesis Point": {
+      "kind": "pack-quest",
+      "pack": "The Devils of Shavarath",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Ghost of a Chance": {
+      "kind": "pack-quest",
+      "pack": "Three-Barrel Cove",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Ghost of a Chance (epic)": {
+      "kind": "pack-quest",
+      "pack": "Three-Barrel Cove",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Ghosts of Perdition": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Ghosts of Perdition (epic)": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Giantcraft Armor": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting` category"
+    },
+    "Gianthold Tor": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Going Rogue": {
+      "kind": "pack-quest",
+      "pack": "The Dragons' Hand",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Good Intentions": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Grand Theft Aureon": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Graveyard Shift": {
+      "kind": "pack-quest",
+      "pack": "The Mines of Tethyamar",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Grim and Barett": {
+      "kind": "pack-quest",
+      "pack": "The Devil's Gambit",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Growing Pains": {
+      "kind": "pack-quest",
+      "pack": "Grip of the Hidden Hand",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Gwylan's Stand": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Halls of Shan-To-Kor": {
+      "kind": "pack-quest",
+      "pack": "The Seal of Shan-To-Kor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Harbinger of Madness": {
+      "kind": "pack-quest",
+      "pack": "Harbinger of Madness",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Haywire Foundry": {
+      "kind": "pack-quest",
+      "pack": "Vault of Night",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Heart of the Problem": {
+      "kind": "pack-quest",
+      "pack": "The Lost Gatekeepers",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Heyton's Rest": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Hideous to Behold": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Hold for Reinforcements": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Threnal",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Horde of the Illithid Controller": {
+      "kind": "pack-quest",
+      "pack": "Illithid Invasion",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Hound of Xoriat": {
+      "kind": "pack-quest",
+      "pack": "The Vale of Twilight",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "House Cannith Manufactury": {
+      "kind": "pack-quest",
+      "pack": "Secrets of the Artificers",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "House Deneith": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "House of Pain": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Housekeeping": {
+      "kind": "pack-quest",
+      "pack": "The Lost Gatekeepers",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Hunt or Be Hunted": {
+      "kind": "pack-quest",
+      "pack": "Hunter and Hunted",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Hunter and Hunted": {
+      "kind": "pack-quest",
+      "pack": "Hunter and Hunted",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "If It Wasn't For Bad Luck": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Immortality Lessons": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Impossible Demands": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "In The Flesh": {
+      "kind": "pack-quest",
+      "pack": "Harbinger of Madness",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Inferno of the Damned": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Inferno of the Damned (epic)": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Into the Deep": {
+      "kind": "pack-quest",
+      "pack": "The Red Fens",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Into the Mists": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Invaders!": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Invasion Tokens": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Irestone Inlet": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Isle of Dread (wilderness)": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Just Business": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Kill Ten Rats": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Killing Time": {
+      "kind": "pack-quest",
+      "pack": "Dragonblood Prophecy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Kind of a Big Deal": {
+      "kind": "pack-quest",
+      "pack": "White Plume Mountain and Other Tales",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Korthos Island": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Lahar": {
+      "kind": "vendor",
+      "pack": null,
+      "via": "vendor category"
+    },
+    "Land of Lamordia": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Law and Order": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Legendary Crafting": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Legendary Hound of Xoriat": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Legendary Lord of Blades": {
+      "kind": "pack-quest",
+      "pack": "Secrets of the Artificers",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Legendary Master Artificer": {
+      "kind": "pack-quest",
+      "pack": "Secrets of the Artificers",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Legendary Tempest's Spine": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Legendary Vision of Destruction": {
+      "kind": "pack-quest",
+      "pack": "The Vale of Twilight",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Lines of Supply": {
+      "kind": "pack-quest",
+      "pack": "Shadowfell Conspiracy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Litany of the Dead": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Locked Away (Part One)": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Locked Away (Part Two)": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Lost at Sea": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Lost in the Swamp": {
+      "kind": "pack-quest",
+      "pack": "The High Road of Shadows",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Mad Tea Party": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Madstone Crater": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Magic of Myth Drannor": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "cited as the `adpack` of other harvested quests"
+    },
+    "Magma Forge": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting devices` category"
+    },
+    "Make Believe": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Members Only": {
+      "kind": "pack-quest",
+      "pack": "The Soul Splitter",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Memory Lapse": {
+      "kind": "pack-quest",
+      "pack": "White Plume Mountain and Other Tales",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Mikrom Sum": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting devices` category"
+    },
+    "Mimic Hunt": {
+      "kind": "event",
+      "pack": null,
+      "via": "`Events` category"
+    },
+    "Missing": {
+      "kind": "pack-quest",
+      "pack": "Harbinger of Madness",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Monster Hunter": {
+      "kind": "vendor",
+      "pack": null,
+      "via": "vendor category"
+    },
+    "Morten Edgewright": {
+      "kind": "vendor",
+      "pack": null,
+      "via": "vendor category"
+    },
+    "Mount Reysalon": {
+      "kind": "pack-quest",
+      "pack": "The Reaver's Reach",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Multitude of Menace": {
+      "kind": "pack-quest",
+      "pack": "The Devil's Gambit",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "N/A": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Necromancer's Doom": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Necropolis": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Needle in a Fey Stack": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Night Falls on Stormreach": {
+      "kind": "pack-quest",
+      "pack": "Disciples of Rage",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "No Refunds": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "None": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Oath of Vengeance": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Obstructing the Orcs": {
+      "kind": "pack-quest",
+      "pack": "Keep on the Borderlands",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Oghma's Song": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Old Baba's Hut": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Old Tomb, New Tenants": {
+      "kind": "pack-quest",
+      "pack": "Three-Barrel Cove",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "One Dame Thing After Another": {
+      "kind": "pack-quest",
+      "pack": "Hunter and Hunted",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Orchard of the Macabre": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Order in the Court!": {
+      "kind": "pack-quest",
+      "pack": "Grip of the Hidden Hand",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Outbreak": {
+      "kind": "pack-quest",
+      "pack": "The Druid's Deep",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Overgrowth": {
+      "kind": "pack-quest",
+      "pack": "The Druid's Deep",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Palace of Stone": {
+      "kind": "pack-quest",
+      "pack": "Heart of Madness",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Paper Trail": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Party 101": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Partycrashers": {
+      "kind": "pack-quest",
+      "pack": "Phiarlan Carnival",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Peril of the Planar Eyes": {
+      "kind": "pack-quest",
+      "pack": "Peril of the Planar Eyes",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Phiarlan Carnival": {
+      "kind": "pack-quest",
+      "pack": "Phiarlan Carnival",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Pilgrims' Peril": {
+      "kind": "pack-quest",
+      "pack": "Illithid Invasion",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Plane of Night": {
+      "kind": "pack-quest",
+      "pack": "Vault of Night",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Plundering Pirates' Point": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Portal to Below": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Power Play": {
+      "kind": "pack-quest",
+      "pack": "Secrets of the Artificers",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Precious Cargo": {
+      "kind": "pack-quest",
+      "pack": "Three-Barrel Cove",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Prey on the Hunter": {
+      "kind": "pack-quest",
+      "pack": "The Reaver's Reach",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Project Nemesis": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Prove Your Worth (epic)": {
+      "kind": "pack-quest",
+      "pack": "Three-Barrel Cove",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Quarantine": {
+      "kind": "pack-quest",
+      "pack": "Disciples of Rage",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Quid Pro Quo": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Random": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Rats in a Cage": {
+      "kind": "pack-quest",
+      "pack": "Fall of the Night Brigade",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Ravens' Bane": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Reach for the Sky": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Reclaiming the Rift": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Records of the Past": {
+      "kind": "pack-quest",
+      "pack": "The Mines of Tethyamar",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Red Rain": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Redemption (quest)": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Redwillow's Ruins": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Reign of Madness": {
+      "kind": "pack-quest",
+      "pack": "Reign of Madness",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Relentless": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Repossession": {
+      "kind": "pack-quest",
+      "pack": "The Sharn Syndicate",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Rest Stop": {
+      "kind": "pack-quest",
+      "pack": "The High Road of Shadows",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Rest for the Night": {
+      "kind": "pack-quest",
+      "pack": "Sinister Secret of Saltmarsh",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Retrieve the Stolen Goods": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Return to Cabal for One": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Return to Gianthold Tor": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Return to Madstone Crater": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Return to Prison of the Planes": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Return to the Sanctuary": {
+      "kind": "pack-quest",
+      "pack": "The Catacombs",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Riding the Storm Out": {
+      "kind": "pack-quest",
+      "pack": "Dragonblood Prophecy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Risia Ice Games": {
+      "kind": "event",
+      "pack": null,
+      "via": "`Events` category"
+    },
+    "Ritual Table": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting devices` category"
+    },
+    "Roll Call": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Rosemary's Ballad": {
+      "kind": "pack-quest",
+      "pack": "The Lost Gatekeepers",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Ruinous Schemes": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Ruins of Gianthold": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Ruins of Myth Drannor": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Sacrifices": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Safety in Numbers": {
+      "kind": "pack-quest",
+      "pack": "The Soul Splitter",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Saltmarsh": {
+      "kind": "pack-quest",
+      "pack": "Sinister Secret of Saltmarsh",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Sands of Menechtarun": {
+      "kind": "pack-quest",
+      "pack": "Demon Sands",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Scavenger Hunt": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Schemes of the Enemy": {
+      "kind": "pack-quest",
+      "pack": "Secrets of the Artificers",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Schism Shard Crafting": {
+      "kind": "pack-quest",
+      "pack": "Dragonblood Prophecy",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Sealed Altar": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting devices` category"
+    },
+    "Sealed in Amber": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Search and Rescue": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Secret of the Slavers' Stockade": {
+      "kind": "pack-quest",
+      "pack": "Against the Slave Lords",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Secrets of the Red Wizards": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Security Detail": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Seeds of Decay": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Seizing the Dawn": {
+      "kind": "pack-quest",
+      "pack": "Peril of the Planar Eyes",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Servants of the Overlord": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "Quest infobox `adpack` parameter present and EMPTY (no pack required)"
+    },
+    "Setting the Wards: The Lower Cathedral": {
+      "kind": "pack-quest",
+      "pack": "The Catacombs",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Setting the Wards: The Patriarchs' Crypt": {
+      "kind": "pack-quest",
+      "pack": "The Catacombs",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Shadow of a Doubt": {
+      "kind": "pack-quest",
+      "pack": "Shadowfell Conspiracy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Sharn quests": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no wiki page"
+    },
+    "Shield of Legend": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Shipwreck Shore": {
+      "kind": "pack-quest",
+      "pack": null,
+      "via": "a quest page stating no pack"
+    },
+    "Siegebreaker": {
+      "kind": "pack-quest",
+      "pack": "Attack on Stormreach",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Silver Flame Nugget": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Sinister Secret of Saltmarsh": {
+      "kind": "pack-quest",
+      "pack": "Sinister Secret of Saltmarsh",
+      "via": "cited as the `adpack` of other harvested quests"
+    },
+    "Sinister Storage": {
+      "kind": "pack-quest",
+      "pack": "Harbinger of Madness",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Sins of Attrition": {
+      "kind": "pack-quest",
+      "pack": "The Devils of Shavarath",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Skeletons in the Closet": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Slave Pits of the Undercity": {
+      "kind": "pack-quest",
+      "pack": "Against the Slave Lords",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Slavers of the Shrieking Mines": {
+      "kind": "pack-quest",
+      "pack": "The Restless Isles",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Sleeping with the Fishes": {
+      "kind": "pack-quest",
+      "pack": "Tavern Tales",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Smash and Burn": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Snowfall and Sunlight": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Snowpeaks Festival": {
+      "kind": "event",
+      "pack": null,
+      "via": "`Events` category"
+    },
+    "Soami Gardens": {
+      "kind": "pack-quest",
+      "pack": "The Reaver's Reach",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Soul Survivor": {
+      "kind": "pack-quest",
+      "pack": "The Soul Splitter",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Special Delivery": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Special event items": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Spiders and Flies": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Stealing from Sorcere": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Stealthy Repossession": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Steps Obliss": {
+      "kind": "vendor",
+      "pack": null,
+      "via": "vendor category"
+    },
+    "Stolen Power": {
+      "kind": "pack-quest",
+      "pack": "Illithid Invasion",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Stone of Change": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting devices` category"
+    },
+    "Stone of Experience": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Stopping the Sahuagin": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Stormcleave Outpost": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Strike Back": {
+      "kind": "pack-quest",
+      "pack": "The Mines of Tethyamar",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Subversion": {
+      "kind": "pack-quest",
+      "pack": "The Devil's Gambit",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Sunrise": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Swim at Your Own Risk": {
+      "kind": "pack-quest",
+      "pack": "Sinister Secret of Saltmarsh",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Syranian Forged Weaponry": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting` category"
+    },
+    "Taken in Hand": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Tattered Tapestries": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Tavern Brawl": {
+      "kind": "pack-quest",
+      "pack": "The Devil's Gambit",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Tempest's Spine": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Temple of the Deathwyrm": {
+      "kind": "pack-quest",
+      "pack": "Shadow Under Thunderholme",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Terminal Delirium": {
+      "kind": "pack-quest",
+      "pack": "Heart of Madness",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Terror of Demogorgon": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "cited as the `adpack` of other harvested quests"
+    },
+    "Test Dojo Loot Room": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "The Abandoned Excavation": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "The Age of Rage": {
+      "kind": "pack-quest",
+      "pack": "Disciples of Rage",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Archons' Trial": {
+      "kind": "pack-quest",
+      "pack": "Trials of the Archons",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Bark and the Blade": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Battle for Eveningstar": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Bloody Crypt": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 1",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Body Snatchers": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Borderlands": {
+      "kind": "pack-quest",
+      "pack": "Keep on the Borderlands",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "The Bugbear Bandits": {
+      "kind": "pack-quest",
+      "pack": "Keep on the Borderlands",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Cannith Crystal": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Captives": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Cerulean Hills": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "The Chamber of Raiyum": {
+      "kind": "pack-quest",
+      "pack": "Demon Sands",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Chronoscope": {
+      "kind": "pack-quest",
+      "pack": "Devil Assault",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Chronoscope (Legendary)": {
+      "kind": "pack-quest",
+      "pack": "Devil Assault",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Church and the Cult": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Claw of Vulkoor": {
+      "kind": "pack-quest",
+      "pack": "The Red Fens",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Cloven-jaw Scourge: The Caverns of Shaagh": {
+      "kind": "pack-quest",
+      "pack": "The Seal of Shan-To-Kor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Collaborator": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Covered Culvert": {
+      "kind": "pack-quest",
+      "pack": "Tavern Tales",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Crucible": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Crypt of Gerard Dryden": {
+      "kind": "pack-quest",
+      "pack": "The Catacombs",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Curse and the Captive Crustacean": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Curse of Strahd": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Cursed Crypt": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 3",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Darklake": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "The Darkness and the Light": {
+      "kind": "pack-quest",
+      "pack": "Fall of the Night Brigade",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Deal and the Demon": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Devil's Details": {
+      "kind": "pack-quest",
+      "pack": "Trials of the Archons",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Devils to Pay": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Druid's Curse": {
+      "kind": "pack-quest",
+      "pack": "The Druid's Deep",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Dryad and the Demigod": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The End of the Road": {
+      "kind": "pack-quest",
+      "pack": "The High Road of Shadows",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Endless Revels": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Evil We Know": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Fall of Truth": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Fetid Wedding": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Feywild": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "The Final Draw": {
+      "kind": "pack-quest",
+      "pack": "The Dragons' Hand",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Final Enemy": {
+      "kind": "pack-quest",
+      "pack": "Sinister Secret of Saltmarsh",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Final Vintage": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Friar's Niece": {
+      "kind": "pack-quest",
+      "pack": "The Catacombs",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Gate Chamber": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Threnal",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Grey Moon's Den: Extermination": {
+      "kind": "pack-quest",
+      "pack": "Sorrowdusk Isle",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Grotto": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Hand and the Eyes": {
+      "kind": "pack-quest",
+      "pack": "Grip of the Hidden Hand",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Haunted Halls of Eveningstar": {
+      "kind": "pack-quest",
+      "pack": "The Haunted Halls of Eveningstar",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Haunting of Saltmarsh": {
+      "kind": "pack-quest",
+      "pack": "Sinister Secret of Saltmarsh",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Hijacked Haul": {
+      "kind": "pack-quest",
+      "pack": "Sinister Secret of Saltmarsh",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Hobgoblin Horde": {
+      "kind": "pack-quest",
+      "pack": "Keep on the Borderlands",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Home of Memory": {
+      "kind": "pack-quest",
+      "pack": "The Lost Gatekeepers",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The House of Broken Chains": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The House of Death Undone": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The House of Gems": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The House of Rusted Blades": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Icemount Curse": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Key to the Mythal": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Knife's Edge": {
+      "kind": "pack-quest",
+      "pack": "Fall of the Night Brigade",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Knight Who Cried Windmill": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Kobolds' New Ringleader": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Last Stand": {
+      "kind": "pack-quest",
+      "pack": "The Red Fens",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Legend of the Lost Locket": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Lord of Eyes": {
+      "kind": "pack-quest",
+      "pack": "Reign of Madness",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Lord of Stone": {
+      "kind": "pack-quest",
+      "pack": "Reign of Madness",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Lords of Dust": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "Quest infobox `adpack` parameter present and EMPTY (no pack required)"
+    },
+    "The Lost Gatekeepers": {
+      "kind": "pack-quest",
+      "pack": "The Lost Gatekeepers",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "The Lost Seekers": {
+      "kind": "pack-quest",
+      "pack": null,
+      "via": "a quest page stating no pack"
+    },
+    "The Lost Thread": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Madness of Crowds": {
+      "kind": "pack-quest",
+      "pack": "Disciples of Rage",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Magma Must Flow": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Maleficent Cabal": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "The Mark of Death": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 4",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Marketplace": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "The Mask of Deception": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Master Artificer": {
+      "kind": "pack-quest",
+      "pack": "Secrets of the Artificers",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Maze of Madness": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Mindsunder": {
+      "kind": "pack-quest",
+      "pack": "The Path of Inspiration",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Missing Party": {
+      "kind": "pack-quest",
+      "pack": "Delera's Tomb",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Mystery of Delera's Tomb": {
+      "kind": "pack-quest",
+      "pack": "Delera's Tomb",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Newcomers": {
+      "kind": "pack-quest",
+      "pack": "Dragonblood Prophecy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Night Revels": {
+      "kind": "event",
+      "pack": null,
+      "via": "`Events` category"
+    },
+    "The Offshore Account": {
+      "kind": "pack-quest",
+      "pack": "The Soul Splitter",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Old Archives": {
+      "kind": "pack-quest",
+      "pack": "The Catacombs",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Pit": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Portal Opens": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Price of Freedom": {
+      "kind": "pack-quest",
+      "pack": "White Plume Mountain and Other Tales",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Price of an Egg": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Prison of the Planes": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Promise of Fire": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "Quest infobox `adpack` parameter present and EMPTY (no pack required)"
+    },
+    "The Proper Authorities": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Reaver's Fate": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Ruins of Thunderholme": {
+      "kind": "pack-quest",
+      "pack": "Shadow Under Thunderholme",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "The Sacred Bounty": {
+      "kind": "pack-quest",
+      "pack": "The Lost Gatekeepers",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Sacred Helm": {
+      "kind": "pack-quest",
+      "pack": "The Seal of Shan-To-Kor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Safehold": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Salvation of Korthos": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "The Same Old Song": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Sane Asylum": {
+      "kind": "pack-quest",
+      "pack": "Reign of Madness",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Seal of Shan-To-Kor": {
+      "kind": "pack-quest",
+      "pack": "The Seal of Shan-To-Kor",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "The Shadow Crypt": {
+      "kind": "pack-quest",
+      "pack": "The Necropolis, Part 2",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Sharn Syndicate": {
+      "kind": "pack-quest",
+      "pack": "The Sharn Syndicate",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "The Smuggler's Warehouse": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Snitch": {
+      "kind": "pack-quest",
+      "pack": "Phiarlan Carnival",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Soul Splitter": {
+      "kind": "pack-quest",
+      "pack": "The Soul Splitter",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "The Spawn of Whisperdoom": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Spinner of Shadows": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "Quest infobox `adpack` parameter present and EMPTY (no pack required)"
+    },
+    "The Stone Crypt Chronicle": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Storehouse's Secret": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Subterrane - Central": {
+      "kind": "pack-quest",
+      "pack": "The Vale of Twilight",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "The Swiped Signet": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Tear of Dhakaan": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Thornwright": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Threnal Arena": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Threnal",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Thrill of the Hunt": {
+      "kind": "pack-quest",
+      "pack": "Shadowfell Conspiracy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Tide Turns": {
+      "kind": "pack-quest",
+      "pack": "Sentinels of Stormreach",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Titan Awakes": {
+      "kind": "pack-quest",
+      "pack": "The Restless Isles",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Tracker's Trap": {
+      "kind": "pack-quest",
+      "pack": "Shadowfell Conspiracy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Trouble with Tar Pits": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Twilight Forge": {
+      "kind": "pack-quest",
+      "pack": "The Restless Isles",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Underdark": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "The Underlane Assignment": {
+      "kind": "pack-quest",
+      "pack": "The Soul Splitter",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Unquiet Graves": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Vault of Night": {
+      "kind": "pack-quest",
+      "pack": "Vault of Night",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Voyage": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "The Weapons Shipment": {
+      "kind": "pack-quest",
+      "pack": "The Devils of Shavarath",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Wish": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Wizard's Labyrinth": {
+      "kind": "pack-quest",
+      "pack": "Fall of the Night Brigade",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Wraithcallers": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "The Xorian Cipher": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "The Zulkir's Plan": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Third Time's a Charm": {
+      "kind": "pack-quest",
+      "pack": "The Mines of Tethyamar",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "This Old Haunt": {
+      "kind": "pack-quest",
+      "pack": "Slice of Life",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Thorn and Paw": {
+      "kind": "pack-quest",
+      "pack": "The Druid's Deep",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Thrall of Duty": {
+      "kind": "pack-quest",
+      "pack": "The Dragons' Hand",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Thrall of the Necromancer": {
+      "kind": "pack-quest",
+      "pack": "Delera's Tomb",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Thralls of the Fungus Lord": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Threats Old and New": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Three Paths to Battle": {
+      "kind": "pack-quest",
+      "pack": "Grip of the Hidden Hand",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Three-Barrel Cove (epic)": {
+      "kind": "pack-quest",
+      "pack": "Three-Barrel Cove",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Three-Barrel Cove (heroic)": {
+      "kind": "pack-quest",
+      "pack": "Three-Barrel Cove",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Through a Mirror Darkly": {
+      "kind": "pack-quest",
+      "pack": "Shadowfell Conspiracy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Through the Tulgey Wood": {
+      "kind": "pack-quest",
+      "pack": "Hunter and Hunted",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Timeline Fragment Exchange": {
+      "kind": "event",
+      "pack": null,
+      "via": "`Events` category"
+    },
+    "Times Long Past": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "To Curse the Sky": {
+      "kind": "pack-quest",
+      "pack": "The Vale of Twilight",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "ToEE: Air Node": {
+      "kind": "pack-quest",
+      "pack": "The Temple of Elemental Evil",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "ToEE: Depths of the Temple": {
+      "kind": "pack-quest",
+      "pack": "The Temple of Elemental Evil",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "ToEE: Earth Node": {
+      "kind": "pack-quest",
+      "pack": "The Temple of Elemental Evil",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "ToEE: Fire Node": {
+      "kind": "pack-quest",
+      "pack": "The Temple of Elemental Evil",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "ToEE: First Level and Earth Temple": {
+      "kind": "pack-quest",
+      "pack": "The Temple of Elemental Evil",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "ToEE: Lower Temple Complex": {
+      "kind": "pack-quest",
+      "pack": "The Temple of Elemental Evil",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "ToEE: Water Node": {
+      "kind": "pack-quest",
+      "pack": "The Temple of Elemental Evil",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Toil and Trouble": {
+      "kind": "pack-quest",
+      "pack": "Tavern Tales",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Tome of Untold Legends": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Too Cold to Continue": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Too Hot to Handle": {
+      "kind": "pack-quest",
+      "pack": "Masterminds of Sharn",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Too Many Cooks": {
+      "kind": "pack-quest",
+      "pack": "Slice of Life",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Total Chaos": {
+      "kind": "pack-quest",
+      "pack": "Keep on the Borderlands",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Tower of Despair": {
+      "kind": "pack-quest",
+      "pack": "The Devils of Shavarath",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Tower of Frost": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Tower of Vengeance": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Toxic Treatment": {
+      "kind": "pack-quest",
+      "pack": "Disciples of Rage",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Treasure Hunt": {
+      "kind": "pack-quest",
+      "pack": "Keep on the Borderlands",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Treasure of Crystal Cove": {
+      "kind": "event",
+      "pack": null,
+      "via": "`Events` category"
+    },
+    "Trial by Fury": {
+      "kind": "pack-quest",
+      "pack": "Menace of the Underdark",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Trials of the Triceratops": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Turn the Page (quest)": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Under the Big Top": {
+      "kind": "pack-quest",
+      "pack": "Phiarlan Carnival",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Under the Cover of Darkness": {
+      "kind": "pack-quest",
+      "pack": "Sinister Secret of Saltmarsh",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Underdark Arena: Ring of Fire": {
+      "kind": "pack-quest",
+      "pack": "Eveningstar Challenge Pack",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Undermine": {
+      "kind": "pack-quest",
+      "pack": "Attack on Stormreach",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Unholy Defiler of the Hidden Hand": {
+      "kind": "crafting",
+      "pack": null,
+      "via": "`Crafting devices` category"
+    },
+    "Vagan Taneer": {
+      "kind": "vendor",
+      "pack": null,
+      "via": "vendor category"
+    },
+    "Vault of Night": {
+      "kind": "pack-quest",
+      "pack": "Vault of Night",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Vaults of the Artificers": {
+      "kind": "pack-quest",
+      "pack": "Vaults of the Artificers",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Vecna Denied": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Vecna Unleashed": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "cited as the `adpack` of other harvested quests"
+    },
+    "Vecna Unleashed (quest)": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Veteran Status II starter item": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "Viktranium Experiment crafting": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "`Adpack` template on the page (the page IS in that pack)"
+    },
+    "Violent Delights": {
+      "kind": "pack-quest",
+      "pack": "Keep on the Borderlands",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Voices of the Dead": {
+      "kind": "pack-quest",
+      "pack": "Magic of Myth Drannor",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Wake Me Up Inside": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Walk the Butcher's Path": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Watch Your Step": {
+      "kind": "pack-quest",
+      "pack": "Keep on the Borderlands",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "What Dreams May Come": {
+      "kind": "pack-quest",
+      "pack": "Vecna Unleashed",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "What Goes Up": {
+      "kind": "pack-quest",
+      "pack": "Shadowfell Conspiracy",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "What Sleeps Below": {
+      "kind": "pack-quest",
+      "pack": "Sinister Secret of Saltmarsh",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Where There's Smoke...": {
+      "kind": "pack-quest",
+      "pack": "Free to Play",
+      "via": "`Free to Play quests` category"
+    },
+    "Whispers of Return": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "White Dragonscale Armor": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category"
+    },
+    "White Plume Mountain": {
+      "kind": "pack-quest",
+      "pack": "White Plume Mountain and Other Tales",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Wild Thing": {
+      "kind": "pack-quest",
+      "pack": "The Isle of Dread",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Wish Upon a Card": {
+      "kind": "pack-quest",
+      "pack": "The Dragons' Hand",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Witch Hunt": {
+      "kind": "pack-quest",
+      "pack": "Fables of the Feywild",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Wrath of the Earth": {
+      "kind": "pack-quest",
+      "pack": "Mists of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Wrath of the Flame": {
+      "kind": "pack-quest",
+      "pack": "The Devils of Shavarath",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Year of the Dragon": {
+      "kind": "event",
+      "pack": null,
+      "via": "`Events` category"
+    },
+    "Zawabi's Revenge": {
+      "kind": "pack-quest",
+      "pack": "Demon Sands",
+      "via": "Quest infobox `adpack` parameter"
+    },
+    "Zoo Creeper": {
+      "kind": "pack-quest",
+      "pack": "The Chill of Ravenloft",
+      "via": "Quest infobox `adpack` parameter"
+    }
+  }
+}

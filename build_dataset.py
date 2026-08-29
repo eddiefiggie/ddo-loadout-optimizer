@@ -26,6 +26,7 @@ from src import verify as verify_mod
 from src import colors as colors_mod
 from src import set_parser as set_mod
 from src import dino as dino_mod
+from src import adventure_packs as packs_mod
 from src import dino_parser as dino_parser_mod
 from src import nearly_complete as nc_mod
 from src import viktranium as vik_mod
@@ -1086,6 +1087,16 @@ def build() -> dict:
     # is entirely the typed insert slots the solver fills.
     variants = variants + dino_blanks
 
+    # #495 — join the free-text `location_quest` to the curated, wiki-sourced pack
+    # mapping and stamp `location_pack` / `location_kind` on every variant. Stamped
+    # HERE, on the final variant list, so a synthesized record (a Dino blank, a
+    # crafted twin) is classified by the same rule a native one is rather than
+    # silently missing the fields. Coverage is measured against this same list, so
+    # the number in `metadata` describes what shipped, not what the seed hoped for.
+    _pack_mapping = packs_mod.load()
+    packs_mod.apply_to(variants, _pack_mapping)
+    _pack_coverage = packs_mod.check(variants, _pack_mapping)
+
     # Wildcard set pieces (Gem of Many Facets, U6): the item rolls ONE set from each of
     # two pools (rerollable; theoretical-BiS picks the best per group). The pools aren't
     # in gear-planner (0 sets for the Gem), so they come from the wiki-sourced joker seed.
@@ -1732,6 +1743,9 @@ def build() -> dict:
             # minimal exception to gear-planner sole-authority).
             "gap_corrections_coverage": _gap_coverage,
             "cannith_tier_coverage": _cannith_coverage,
+            # #495 — what the curated location_quest -> pack mapping actually covers,
+            # measured against the live population rather than claimed by a date.
+            "adventure_pack_coverage": _pack_coverage,
             "value_corrections_coverage": _value_coverage,
             "name_corrections_coverage": _name_coverage,
             # #259 — bonus-type corrections, disclosed per channel: the same

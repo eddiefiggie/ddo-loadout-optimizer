@@ -95,15 +95,59 @@ test("#501: the no-known-source flag survives onto the farming list", () => {
     "and the export carries it too — a shared list must not drop the warning");
 });
 
-test("#501: the adventure-pack gap is stated on every surface, and never guessed", () => {
-  // Pack is in neither the dataset nor gear-planner. Guessing it from the quest
-  // name is not available: "The Twilight Forge" is a quest and "Ritual Table" is
-  // a crafting station, and no pattern separates them. So the tab says so.
-  const plan = F.farmingPlan(rec([it("Tor Ring", "Ring", "Gianthold Tor", 30)]));
-  assert.strictEqual(plan.sources[0].adventurePack, null,
+test("#501/#495: a sourced pack is named, and an unsourced one is still stated", () => {
+  // #501 pinned that the pack gap was disclosed on every surface and never guessed.
+  // #495 closed the gap where the DDO wiki states a pack — so the promise changes
+  // shape but not substance: name it when it is sourced, SAY SO when it is not, and
+  // guess it in neither case. Both halves are pinned here.
+  const v = (id, q, pack, kind) => ({ slot: "Ring", variant: {
+    variant_id: id, slot: "Ring", ml: 30, minimum_level: 30, affixes: [],
+    location_quest: q, location_pack: pack, location_kind: kind } });
+
+  const named = F.farmingPlan({ snapshot: { chosen: [
+    v("Tor Ring", "Gianthold Tor", "Ruins of Gianthold", "pack-quest")] } });
+  assert.strictEqual(named.sources[0].adventurePack, "Ruins of Gianthold");
+  assert.ok(/Ruins of Gianthold/.test(R.farmingPanel(named, {}, {})), "named on the panel");
+
+  const gap = F.farmingPlan({ snapshot: { chosen: [
+    v("Odd Ring", "Random", null, "unknown")] } });
+  assert.strictEqual(gap.sources[0].adventurePack, null,
     "explicitly null, so a view renders the gap rather than nothing");
-  assert.ok(/Adventure pack not recorded/.test(R.farmingPanel(plan, {}, {})), "stated per source");
-  assert.ok(/not recorded in the dataset/.test(F.farmingMarkdown(plan, {})), "and in the export");
+  assert.ok(/Adventure pack not recorded/.test(R.farmingPanel(gap, {}, {})), "stated per source");
+  assert.ok(/Source unknown/.test(F.farmingMarkdown(gap, {})),
+    "and the export names the remainder rather than claiming full coverage");
+});
+
+test("#495: a non-pack source says why it has no pack, rather than 'not recorded'", () => {
+  // The wordings differ because the facts do. A vendor has no pack because a vendor
+  // is not pack content; collapsing that into "not recorded" would imply a missing
+  // datum where there is nothing to miss.
+  const vendor = F.farmingPlan({ snapshot: { chosen: [{ slot: "Belt", variant: {
+    variant_id: "V Belt", slot: "Belt", ml: 20, location_quest: "Morten Edgewright",
+    location_pack: null, location_kind: "vendor" } }] } });
+  const html = R.farmingPanel(vendor, {}, {});
+  assert.ok(/not pack content/.test(html), `vendor wording: ${html.slice(0, 0) || "missing"}`);
+  assert.ok(!/Adventure pack not recorded/.test(html), "and NOT the missing-datum wording");
+});
+
+test("#495: sources group by pack first, with siblings for what is not pack content", () => {
+  const v = (id, q, pack, kind) => ({ slot: "Ring", variant: {
+    variant_id: id, slot: "Ring", ml: 30, location_quest: q,
+    location_pack: pack, location_kind: kind } });
+  const plan = F.farmingPlan({ snapshot: { chosen: [
+    v("a", "Gianthold Tor", "Ruins of Gianthold", "pack-quest"),
+    v("b", "The Crucible", "Ruins of Gianthold", "pack-quest"),
+    v("c", "Morten Edgewright", null, "vendor"),
+    v("d", "Ritual Table", null, "crafting"),
+    v("e", "Random", null, "unknown"),
+  ] } });
+  const names = plan.groups.map((g) => g.name);
+  assert.strictEqual(names[0], "Ruins of Gianthold", "packs lead — 'do I own this?' first");
+  assert.strictEqual(plan.groups[0].sources.length, 2, "two quests, one pack, one run");
+  assert.strictEqual(plan.groups[0].itemCount, 2);
+  assert.deepStrictEqual(names.slice(1).sort(),
+    ["Crafting", "Source unknown", "Vendors"], "the rest are SIBLING groups, not one bucket");
+  assert.ok(plan.groups.slice(1).every((g) => !g.isPack));
 });
 
 test("#501: augments are listed to slot, not to find", () => {
