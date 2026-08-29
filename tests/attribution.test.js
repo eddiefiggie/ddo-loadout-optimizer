@@ -50,7 +50,7 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
   // a 2-piece set granting Insightful Constitution.
   const tier = [{ n: 2, affixes: [["Constitution", "Insightful", 5]] }];
   const mixModel = () => ({
-    targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+    targets: ["Constitution"], mlCap: 34,
     worn: [
       slot("Ring", [setHost("R", "Ring", [["Constitution", "Enhancement", 10]], "Alpha", ["Blue"], tier)], 1),
       slot("Necklace", [setHost("N", "Necklace", [], "Alpha", [], tier)]),
@@ -111,7 +111,7 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
 
   await test("capped stat: raw contributions may exceed the capped effective value", async () => {
     const r = await S.solveLexicographic({
-      targets: ["Dodge"], mlCap: 34, dodgeCap: 5,
+      targets: ["Dodge"], mlCap: 34, userCaps: { Dodge: 5 },
       worn: [slot("Boots", [item("B", "Boots", [["Dodge", "Enhancement", 10]])])],
       augments: [],
     }, highs);
@@ -126,7 +126,7 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
 
   await test("U4: whyThis flags a boolean win; the card renders presence, not +1", async () => {
     const r = await S.solveLexicographic({
-      targets: ["Salt"], mlCap: 34, dodgeCap: null,
+      targets: ["Salt"], mlCap: 34,
       worn: [slot("Trinket", [item("T", "Trinket", [["Salt", "Bool", 1]])])],
     }, highs);
     const wins = R.whyThis(r, { slot: "Trinket", variant_id: "T" });
@@ -165,7 +165,7 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
   const Proj = require("../web/projection.js");
   const credit = (stat, bonus_type, value) => ({ stat, bonus_type, value });
   const creditModel = (extra) => Object.assign({
-    targets: ["CM"], mlCap: 34, dodgeCap: null,
+    targets: ["CM"], mlCap: 34,
     credits: [credit("CM", "Insight", 7)],
     worn: [slot("Ring", [item("ring", "Ring", [["CM", "Enhancement", 5]])])],
   }, extra || {});
@@ -274,7 +274,7 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     CAM.setCrossAdd({ Combustion: ["Universal Spell Power"] });
     try {
       const model = {
-        targets: ["Combustion"], mlCap: 34, dodgeCap: null,
+        targets: ["Combustion"], mlCap: 34,
         worn: [
           slot("Ring", [item("Ember Band", "Ring", [["Combustion", "Equipment", 100]])]),
           slot("Necklace", [item("Universal Torc", "Necklace", [["Universal Spell Power", "Implement", 50]])]),

@@ -74,7 +74,7 @@ test("the solver's bucket keeps the higher same-type value and drops the lower",
     ],
   };
   const program = Solver.buildProgram({
-    targets: ["Conjuration Focus"], mlCap: 34, dodgeCap: null,
+    targets: ["Conjuration Focus"], mlCap: 34,
     worn: [{ slot: "Ring", cardinality: 1, variants: [variant] }],
   });
   const bucket = [...program.zByBucket].find(([k]) => k.startsWith("Conjuration Focus||"));

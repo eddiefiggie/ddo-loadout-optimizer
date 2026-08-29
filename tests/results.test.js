@@ -1563,6 +1563,22 @@ test("#339: the augment-ceiling notice renders from the shared projection senten
   assert.strictEqual(R.augCeilingNotice({}, { status: "optimal" }), "", "silent when unrestricted");
 });
 
+test("#573: the Max Dex Bonus disclosure fires on armor + ranked Dodge, and only then", () => {
+  const fire = (q) => R.dodgeMaxDexNotice(q, { status: "optimal" });
+  // The whole point of removing ARMOR_DODGE_CAP: the gap is now REAL, so it must be
+  // spoken. Silence here would move the wrong answer from "too low" to "too high".
+  const on = fire({ armorType: "heavy", targets: ["Dodge"] });
+  assert.ok(/Maximum Dexterity Bonus/.test(on), "names the mechanism the wiki names");
+  assert.ok(/not reduced by your armor/.test(on), "and says plainly what was NOT applied");
+  assert.ok(/heavy/.test(on), "naming the armor the player actually chose");
+
+  assert.strictEqual(fire({ targets: ["Dodge"] }), "", "silent with no armor type");
+  assert.strictEqual(fire({ armorType: "heavy", targets: ["Strength"] }), "",
+    "silent when Dodge is not ranked — the reduction cannot affect an unranked stat");
+  assert.strictEqual(fire({ armorType: "heavy", targets: ["Dodge"], targetCaps: { Dodge: 4 } }), "",
+    "and silent once the player set their own Max: they have supplied the limit");
+});
+
 test("U7/#110: the banner qualifies optimality only when a block removed a candidate", () => {
   const on = R.blockNotice({ blockReport: [{ id: "X", name: "X", pool: "Ring", bestAvailable: false }] });
   assert.ok(/block-note/.test(on) && /optimal given those exclusions/.test(on));
@@ -2537,6 +2553,10 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       augCeilingNotice: ["AUGMENT POOL NARROWED", "actionable"],
       outbidNotice: ["PRIORITY SCORED 0", "actionable"],
       absorptionQuarantineNotice: ["AFFIX WITHHELD", "qualifying"],
+      // #573 — qualifying, not actionable: the player cannot supply the missing
+      // Max Dex Bonus (neither can we, per item), so the card can only disclose
+      // that the headline Dodge total is un-reduced.
+      dodgeMaxDexNotice: ["DODGE NOT REDUCED BY ARMOR", "qualifying"],
       saturationNotice: ["AT CEILING", "informational"],
       upgradeNotice: ["UPGRADES", "informational"],
     });
@@ -2550,14 +2570,14 @@ test("#449 U5 (KTD5): every notice the builder renders has a table entry", () =>
   const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
   const build = srcBetween(src, "function noticeDescriptors(", "function noticePanel(", "noticeDescriptors");
   const pushed = [...build.matchAll(/push\("(\w+)"/g)].map((m) => m[1]);
-  assert.strictEqual(pushed.length, 10, "the ten single-fact notices (#539 added REQUIRED SETS)");
+  assert.strictEqual(pushed.length, 11, "the eleven single-fact notices (#573 added DODGE NOT REDUCED BY ARMOR)");
   for (const name of pushed) {
     assert.ok(R.NOTICE_TABLE[name], `${name} is rendered but has no KTD5 table entry`);
   }
   const split = [...build.matchAll(/split\("(\w+)"/g)].map((m) => m[1]);
   assert.deepStrictEqual(split.sort(), ["artifactNotice", "boundNotice", "zeroSourceNotice"],
     "and the three multi-fact notices come through their U10 entry functions");
-  assert.strictEqual(pushed.length + split.length, 13, "thirteen notices, all reached");
+  assert.strictEqual(pushed.length + split.length, 14, "fourteen notices, all reached");
 });
 
 test("#449 U5 (KTD5): a notice absent from the table renders unclassified, and does not throw", () => {

@@ -49,7 +49,7 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
   await test("breakdown splits a target into typed contributions with source labels, highest-first", async () => {
     const tier = [{ n: 2, affixes: [["Constitution", "Insightful", 5]] }];
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [
         slot("Ring", [setHost("R", "Ring", [["Constitution", "Enhancement", 10]], "Alpha", ["Blue"], tier)]),
         slot("Necklace", [setHost("N", "Necklace", [], "Alpha", [], tier)]),
@@ -79,7 +79,7 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
   await test("same-type across sources shows only the winning contribution (bucket-max)", async () => {
     // worn Enhancement 10 and an augment Enhancement 6 land in one bucket -> one part.
     const model = {
-      targets: ["Constitution"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution"], mlCap: 34,
       worn: [slot("Ring", [setHost("R", "Ring", [["Constitution", "Enhancement", 10]], "Alpha", ["Blue"], [])])],
       augments: [augment("AugC", "Blue", [["Constitution", "Enhancement", 6]])],
     };
@@ -92,7 +92,7 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
 
   await test("computeScale reports variants, crafts, and stages", async () => {
     const model = {
-      targets: ["Constitution", "Strength"], mlCap: 34, dodgeCap: null,
+      targets: ["Constitution", "Strength"], mlCap: 34,
       worn: [slot("Ring", [setHost("R", "Ring", [["Constitution", "Enhancement", 10]], "Alpha", ["Blue"], [])])],
       augments: [augment("AugC", "Blue", [["Strength", "Enhancement", 6]])],
     };

@@ -74,9 +74,28 @@ function isTwinEligible(variant) {
   return DUPLICABLE_RINGS.has(variantKey(variant));
 }
 
-// Approximate DDO max-dodge by armor type (configurable; the mechanism is what
-// matters, not the exact cap). null = uncapped for this query.
-const ARMOR_DODGE_CAP = { cloth: 25, light: 25, medium: 11, heavy: 4 };
+// #573 — `ARMOR_DODGE_CAP = { cloth: 25, light: 25, medium: 11, heavy: 4 }` used to
+// live here and clamp a ranked Dodge stat by armor category. It is GONE, and it must
+// not come back in that shape. Three findings retired it, all recorded in
+// `docs/wiki-evidence/intrinsic-stat-caps.md` §4:
+//
+//   1. The four numbers traced to nothing, in shipped solver input. A wrong clamp is
+//      indistinguishable from a right one in a finished loadout.
+//   2. The wiki rules the granularity impossible: the reduction is keyed to the
+//      Maximum Dexterity Bonus of the SPECIFIC equipped armor, not to its category,
+//      so no four-number table can be right for every armor in a category. And 25 is
+//      the value Maximum Dodge Bonus *begins* at and the player raises, not a ceiling.
+//   3. #199 harvested the intrinsic cap table and REFUSED Dodge outright
+//      ("the cap is itself player-built"), which the dataset stamps as
+//      `metadata.intrinsic_stat_caps_refused`. The clamp contradicted our own ruling.
+//
+// It also ignored the gear that exists to defeat it: `Solar Gem of Dodge Cap`
+// (+1/+3) and `Sapphire of Armored Agility` (+1/+2 Max Dex Bonus) are real slottable
+// augments carrying rankable stats, and a constant lookup could never read them.
+//
+// Dodge is now uncapped from gear, and the gap is DISCLOSED rather than guessed —
+// `dodgeMaxDexLine` in projection.js fires whenever an armor type is chosen and Dodge
+// is ranked, and points the player at the per-priority Max they can set by hand.
 
 // #91 (U3, KTD1) — the Utility tier's sentinel priority token. It rides
 // `query.targets` / `state.priorities` like a stat name but is NOT a stat: the
@@ -185,9 +204,9 @@ function setStackEquiv(map) {
 // #199 — wiki-sourced intrinsic in-game stat ceilings, emitted into items.json as
 // `metadata.intrinsic_stat_caps` and installed here (dataset.js calls
 // setIntrinsicCaps on load), same two-runtime bridge as the stacking table above.
-// buildProgram merges these into cappedStats as a THIRD source beside the armor
-// dodge cap and the player's own caps; the tighter of the three wins, which is the
-// rule CONCEPTS.md "Stat cap" already states for the first two.
+// buildProgram merges these into cappedStats beside the player's own caps; the
+// tighter of the two wins, which is the rule CONCEPTS.md "Stat cap" already states.
+// (#573 removed a third source, the unsourced armor dodge clamp.)
 //
 // EXCLUDE-UNTIL-VERIFIED, and here the ABSENCE half is the load-bearing half: a
 // stat missing from this table has NO ceiling in the game, not an unknown one.
@@ -502,9 +521,10 @@ function variantConflict(v, query, gates) {
 
   // R7 — Armor-type proficiency: keep only body armor whose concrete armor_type
   // is in the character's proficiency set. Gated on the dedicated wizard field
-  // `armorTypes` (an array of allowed types) — NOT on `query.armorType`, which
-  // is the live dodge-cap input; decoupling avoids silently excluding armor if
-  // the pipeline later stamps armor_type onto items[]. Fail-open on
+  // `armorTypes` (an array of allowed types) — NOT on `query.armorType`, which is
+  // the single armor the player declared. They stay decoupled: it avoids silently
+  // excluding armor if the pipeline later stamps armor_type onto items[], and
+  // `armorType` now feeds only the #573 disclosure. Fail-open on
   // "unknown"/absent, and a heavy-proficient character passes lighter types too.
   if (v.slot === "Armor" && !isDocent(v) &&
       Array.isArray(query.armorTypes) && query.armorTypes.length &&
@@ -1037,7 +1057,7 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
 }
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
- *  augment source pool, the Dino insert pool, target list, and the dodge cap. */
+ *  augment source pool, the Dino insert pool, and the target list. */
 function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = [], augmentSetDefs = {}, utilityCountingSet = null, nearlyCompletePerItem = {}) {
   // #245 — the niche-crafting opt-out. A craftable option slot makes its host a
   // wildcard for every rankable stat (the Viktranium pool alone reaches 126), so
@@ -1345,9 +1365,6 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     augments.push(...dominanceFilter(group, targetSet, mlCap));
   }
 
-  const dodgeCap = query.armorType && targetSet.has("Dodge")
-    ? (ARMOR_DODGE_CAP[query.armorType] ?? null) : null;
-
   // #199 — the wiki-sourced intrinsic ceilings, narrowed to the stats this solve
   // actually tracks so the program does not mint buckets for stats nobody ranked.
   const intrinsicCaps = {};
@@ -1475,7 +1492,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // here survives into the program.
     pinnedSets: _setPins.pinned,
     setPinReport: _setPins.report,
-    dodgeCap, intrinsicCaps, mlCap,
+    intrinsicCaps, mlCap,
     // #91 (U3, KTD3) — the counting set rides the MODEL, never the persisted
     // query: buildProgram reads it from here to widen its own targetSet and
     // mint the per-effect indicator binaries. `utilityEnabled` mirrors the
@@ -1489,7 +1506,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     utilityOrder: _uOrder,
     utilityEnabled,
     // U1 — user-set per-stat caps (clamp a stat's counted value); merged with the
-    // armor dodge cap in buildProgram. U2 — user-set per-stat floors (best-effort).
+    // #199 intrinsic ceilings in buildProgram. U2 — per-stat floors (best-effort).
     userCaps: query.targetCaps || {},
     floors: query.targetFloors || {},
     // U1 (declared stat credits) — what the player already holds from a non-gear
@@ -1623,6 +1640,6 @@ if (typeof module !== "undefined" && module.exports) {
     rungExcludesNicheCrafting, rungExcludesSolarLunar, rungExcludesAllAugments,
     setCrossAdd: _crossAddApi.setCrossAdd, crossAddSourcesFor: _crossAddApi.crossAddSourcesFor,
     widenWithCrossAddSources: _crossAddApi.widenWithCrossAddSources,
-    WORN_SLOTS, SLOT_CARDINALITY, ARMOR_DODGE_CAP,
+    WORN_SLOTS, SLOT_CARDINALITY,
   };
 }
