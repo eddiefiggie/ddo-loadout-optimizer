@@ -1,0 +1,1571 @@
+{
+  "_meta": {
+    "title": "Cannith Challenge (Vaults of the Artificers) upgrade-tier enchantments",
+    "issue": 313,
+    "harvested": "2026-08-29",
+    "source": "ddowiki.com item pages, same-origin paced harvest per docs/wiki-evidence/harvest-method.md",
+    "why": "gear-planner emits NO enchantments for a Vaults item whose wiki page uses the 'Upgradeable - Tier N' layout; it emits only a marker affix (VotAU on worn gear, 'Upgradeable - Tier' on weapons). 97 of the 140 Vaults variants are stat-less as a result. This shard covers the 33 WORN variants; the 64 weapon variants are tracked separately (see _meta.weapons_deferred).",
+    "scope": "Worn gear only. Weapons are excluded deliberately - their tier enchantments are almost entirely bane/proc effects (Dragon Bane, Tidal Burst, Crushing Wave, Incandescence) that this optimizer does not value numerically; see #331 for proc valuation, which is the prerequisite for them being worth anything.",
+    "weapons_deferred": "64 weapon variants across 13 families carry the same 'Upgradeable - Tier' gap. Harvested and measured in the same pass; not admitted here.",
+    "tier_choice": "final - the fully-upgraded Tier 3 state. Matches the project's founding position that theoretical best-in-slot assumes access to everything (README, and the attainability non-goal in AGENTS.md). Every tier's raw text is kept below so a different choice never needs a re-harvest.",
+    "raw_is_authoritative": "`raw` is the verbatim rendered Enchantments block, tier headers included, with ' / ' separating lines. `final` is DERIVED from it by src/cannith_tiers.py, and tests/test_cannith_tiers.py re-derives every entry and fails on any disagreement - so a hand-edited `final` cannot ship.",
+    "bundled_enchantments_quarantined": [
+      "Heightened Awareness",
+      "Parrying",
+      "Riposte",
+      "Speed"
+    ]
+  },
+  "items": {
+    "Blasting Chime (level 11)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Blasting_Chime_(level_11)",
+      "ml": 11,
+      "slot": "Trinket",
+      "raw": "Upgradeable - Tier 1 / Weaken Construct / Sonic Lore +12% / Sonic Guard +3 / Resonance +82 / Evocation Focus I / Upgradeable - Tier 2 / Sonic Lore +12% -> Sonic Lore +13% / Resonance +82 -> Resonance +88 / Adds Anthem / Upgradeable - Tier 3 / Sonic Lore +13% -> Sonic Lore +14% / Resonance +88 -> Resonance +94 / Sonic Guard +3 -> Sonic Guard +4 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Weaken Construct",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Weaken Construct",
+          "unit": "bool",
+          "type_source": "Blasting Chime family sibling"
+        },
+        {
+          "name": "Anthem",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Anthem",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Sonic Lore",
+          "type": "Equipment",
+          "value": 14,
+          "wiki_name": "Sonic Lore",
+          "unit": "percent",
+          "type_source": "Blasting Chime family sibling"
+        },
+        {
+          "name": "Sonic Spell Power",
+          "type": "Equipment",
+          "value": 94,
+          "wiki_name": "Resonance",
+          "unit": "flat",
+          "type_source": "Blasting Chime family sibling"
+        },
+        {
+          "name": "Sonic Guard",
+          "type": "Bool",
+          "value": 4,
+          "wiki_name": "Sonic Guard",
+          "unit": "flat",
+          "type_source": "catalog-wide uniform type"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Evocation Focus I",
+          "reason": "affix name 'Evocation Focus I' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Blasting Chime (level 15)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Blasting_Chime_(level_15)",
+      "ml": 15,
+      "slot": "Trinket",
+      "raw": "Upgradeable - Tier 1 / Weaken Construct / Sonic Lore +14% / Cacophonic Guard / Resonance +96 / Evocation Focus I / Anthem / Upgradeable - Tier 2 / Resonance +96 -> Resonance +102 / Sonic Lore +14% -> Sonic Lore +15% / Upgradeable - Tier 3 / Resonance +102 -> Resonance +108 / Sonic Lore +15% -> Sonic Lore +16% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Weaken Construct",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Weaken Construct",
+          "unit": "bool",
+          "type_source": "Blasting Chime family sibling"
+        },
+        {
+          "name": "Anthem",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Anthem",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Sonic Spell Power",
+          "type": "Equipment",
+          "value": 108,
+          "wiki_name": "Resonance",
+          "unit": "flat",
+          "type_source": "Blasting Chime family sibling"
+        },
+        {
+          "name": "Sonic Lore",
+          "type": "Equipment",
+          "value": 16,
+          "wiki_name": "Sonic Lore",
+          "unit": "percent",
+          "type_source": "Blasting Chime family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Cacophonic Guard",
+          "reason": "affix name 'Cacophonic Guard' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Evocation Focus I",
+          "reason": "affix name 'Evocation Focus I' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Blasting Chime (level 7)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Blasting_Chime_(level_7)",
+      "ml": 7,
+      "slot": "Trinket",
+      "raw": "Upgradeable - Tier 1 / Weaken Construct / Sonic Lore +10% / Sonic Guard +2 / Resonance +69 / Upgradeable - Tier 2 / Sonic Lore +10% -> Sonic Lore +11% / Sonic Guard +2 -> Sonic Guard +3 / Resonance +69 -> Resonance +74 / Upgradeable - Tier 3 / Sonic Lore +11% -> Sonic Lore +12% / Resonance +74 -> Resonance +79 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Weaken Construct",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Weaken Construct",
+          "unit": "bool",
+          "type_source": "Blasting Chime family sibling"
+        },
+        {
+          "name": "Sonic Guard",
+          "type": "Bool",
+          "value": 3,
+          "wiki_name": "Sonic Guard",
+          "unit": "flat",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Sonic Lore",
+          "type": "Equipment",
+          "value": 12,
+          "wiki_name": "Sonic Lore",
+          "unit": "percent",
+          "type_source": "Blasting Chime family sibling"
+        },
+        {
+          "name": "Sonic Spell Power",
+          "type": "Equipment",
+          "value": 79,
+          "wiki_name": "Resonance",
+          "unit": "flat",
+          "type_source": "Blasting Chime family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Bracers of Wind (level 11)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Wind_(level_11)",
+      "ml": 11,
+      "slot": "Bracers",
+      "raw": "Upgradeable - Tier 1 / Magnetism +82 / Lightning Lore +12% / Blurry / Dodge +6% / Upgradeable - Tier 2 / Magnetism +82 -> Magnetism +88 / Lightning Lore +12% -> Lightning Lore +13% / Dodge +6% -> Dodge +7% / Upgradeable - Tier 3 / Magnetism +88 -> Magnetism +94 / Lightning Lore +13% -> Lightning Lore +14% / Dodge +7% -> Dodge +8% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Blurry",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Blurry",
+          "unit": "bool",
+          "type_source": "Bracers of Wind family sibling"
+        },
+        {
+          "name": "Electric Spell Power",
+          "type": "Equipment",
+          "value": 94,
+          "wiki_name": "Magnetism",
+          "unit": "flat",
+          "type_source": "Bracers of Wind family sibling"
+        },
+        {
+          "name": "Lightning Lore",
+          "type": "Equipment",
+          "value": 14,
+          "wiki_name": "Lightning Lore",
+          "unit": "percent",
+          "type_source": "Bracers of Wind family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Dodge +8%",
+          "reason": "bonus type unsourced: no sibling in the 'Bracers of Wind' family carries 'Dodge', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Bracers of Wind (level 15)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Wind_(level_15)",
+      "ml": 15,
+      "slot": "Bracers",
+      "raw": "Upgradeable - Tier 1 / Magnetism +96 / Lightning Lore +14% / Blurry / Dodge +8% / Air Guard / Upgradeable - Tier 2 / Magnetism +96 -> Magnetism +102 / Lightning Lore +14% -> Lightning Lore +15% / Upgradeable - Tier 3 / Magnetism +102 -> Magnetism +108 / Lightning Lore +15% -> Lightning Lore +16% / Dodge +8% -> Dodge +9% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Blurry",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Blurry",
+          "unit": "bool",
+          "type_source": "Bracers of Wind family sibling"
+        },
+        {
+          "name": "Air Guard",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Air Guard",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Electric Spell Power",
+          "type": "Equipment",
+          "value": 108,
+          "wiki_name": "Magnetism",
+          "unit": "flat",
+          "type_source": "Bracers of Wind family sibling"
+        },
+        {
+          "name": "Lightning Lore",
+          "type": "Equipment",
+          "value": 16,
+          "wiki_name": "Lightning Lore",
+          "unit": "percent",
+          "type_source": "Bracers of Wind family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Dodge +9%",
+          "reason": "bonus type unsourced: no sibling in the 'Bracers of Wind' family carries 'Dodge', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Bracers of Wind (level 7)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Wind_(level_7)",
+      "ml": 7,
+      "slot": "Bracers",
+      "raw": "Upgradeable - Tier 1 / Magnetism +69 / Lightning Lore +10% / Blurry / Upgradeable - Tier 2 / Magnetism +69 -> Magnetism +74 / Lightning Lore +10% -> Lightning Lore +11% / Upgradeable - Tier 3 / Magnetism +74 -> Magnetism +79 / Lightning Lore +11% -> Lightning Lore +12% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Blurry",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Blurry",
+          "unit": "bool",
+          "type_source": "Bracers of Wind family sibling"
+        },
+        {
+          "name": "Electric Spell Power",
+          "type": "Equipment",
+          "value": 79,
+          "wiki_name": "Magnetism",
+          "unit": "flat",
+          "type_source": "Bracers of Wind family sibling"
+        },
+        {
+          "name": "Lightning Lore",
+          "type": "Equipment",
+          "value": 12,
+          "wiki_name": "Lightning Lore",
+          "unit": "percent",
+          "type_source": "Bracers of Wind family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Cloak of Flames (level 11)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_Flames_(level_11)",
+      "ml": 11,
+      "slot": "Cloak",
+      "raw": "Upgradeable - Tier 1 / Combustion +82 / Fire Lore +12% / Heightened Awareness 2 / Fire Absorption +21% / Upgradeable - Tier 2 / Combustion +82 -> Combustion +88 / Fire Lore +12% -> Fire Lore +13% / Fire Absorption +21% -> Fire Absorption +22% / Upgradeable - Tier 3 / Combustion +88 -> Combustion +94 / Fire Lore +13% -> Fire Lore +14% / Fire Absorption +22% -> Fire Absorption +24% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Fire Spell Power",
+          "type": "Equipment",
+          "value": 94,
+          "wiki_name": "Combustion",
+          "unit": "flat",
+          "type_source": "Cloak of Flames family sibling"
+        },
+        {
+          "name": "Fire Lore",
+          "type": "Equipment",
+          "value": 14,
+          "wiki_name": "Fire Lore",
+          "unit": "percent",
+          "type_source": "Cloak of Flames family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Heightened Awareness 2",
+          "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+        },
+        {
+          "raw": "Fire Absorption +24%",
+          "reason": "bonus type unsourced: no sibling in the 'Cloak of Flames' family carries 'Fire Absorption', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Cloak of Flames (level 15)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_Flames_(level_15)",
+      "ml": 15,
+      "slot": "Cloak",
+      "raw": "Upgradeable - Tier 1 / Combustion +96 / Fire Lore +14% / Heightened Awareness 2 / Fire Absorption +24% / Fire Shield (Hot) / Upgradeable - Tier 2 / Combustion +96 -> Combustion +102 / Fire Lore +14% -> Fire Lore +15% / Fire Absorption +24% -> Fire Absorption +25% / Upgradeable - Tier 3 / Combustion +102 -> Combustion +108 / Fire Lore +15% -> Fire Lore +16% / Fire Absorption +25% -> Fire Absorption +27% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Fire Shield (Hot)",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Fire Shield (Hot)",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Fire Spell Power",
+          "type": "Equipment",
+          "value": 108,
+          "wiki_name": "Combustion",
+          "unit": "flat",
+          "type_source": "Cloak of Flames family sibling"
+        },
+        {
+          "name": "Fire Lore",
+          "type": "Equipment",
+          "value": 16,
+          "wiki_name": "Fire Lore",
+          "unit": "percent",
+          "type_source": "Cloak of Flames family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Heightened Awareness 2",
+          "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+        },
+        {
+          "raw": "Fire Absorption +27%",
+          "reason": "bonus type unsourced: no sibling in the 'Cloak of Flames' family carries 'Fire Absorption', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Cloak of Flames (level 7)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_Flames_(level_7)",
+      "ml": 7,
+      "slot": "Cloak",
+      "raw": "Upgradeable - Tier 1 / Combustion +69 / Fire Lore +10% / Heightened Awareness 1 / Upgradeable - Tier 2 / Combustion +69 -> Combustion +74 / Fire Lore +10% -> Fire Lore +11% / Upgradeable - Tier 3 / Combustion +74 -> Combustion +79 / Fire Lore +11% -> Fire Lore +12% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Fire Spell Power",
+          "type": "Equipment",
+          "value": 79,
+          "wiki_name": "Combustion",
+          "unit": "flat",
+          "type_source": "Cloak of Flames family sibling"
+        },
+        {
+          "name": "Fire Lore",
+          "type": "Equipment",
+          "value": 12,
+          "wiki_name": "Fire Lore",
+          "unit": "percent",
+          "type_source": "Cloak of Flames family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Heightened Awareness 1",
+          "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Epic Blasting Chime": {
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Blasting_Chime",
+      "ml": 20,
+      "slot": "Trinket",
+      "raw": "Upgradeable - Tier 1 / Weaken Construct / Sonic Lore +16% / Cacophonic Guard / Resonance +110 / Evocation Focus II / Anthem / Upgradeable - Tier 2 / Sonic Lore +16% -> Sonic Lore +17% / Resonance +110 -> Resonance +116 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Sonic Lore +17% -> Sonic Lore +18% / Resonance +116 -> Resonance +122 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Weaken Construct",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Weaken Construct",
+          "unit": "bool",
+          "type_source": "Blasting Chime family sibling"
+        },
+        {
+          "name": "Anthem",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Anthem",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Sonic Lore",
+          "type": "Equipment",
+          "value": 18,
+          "wiki_name": "Sonic Lore",
+          "unit": "percent",
+          "type_source": "Blasting Chime family sibling"
+        },
+        {
+          "name": "Sonic Spell Power",
+          "type": "Equipment",
+          "value": 122,
+          "wiki_name": "Resonance",
+          "unit": "flat",
+          "type_source": "Blasting Chime family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Cacophonic Guard",
+          "reason": "affix name 'Cacophonic Guard' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Evocation Focus II",
+          "reason": "affix name 'Evocation Focus II' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Colorless Augment Slot",
+          "reason": "augment slot, not an affix"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Epic Bracers of Wind": {
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Bracers_of_Wind",
+      "ml": 20,
+      "slot": "Bracers",
+      "raw": "Upgradeable - Tier 1 / Magnetism +110 / Lightning Lore +16% / Blurry / Dodge +9% / Air Guard / Upgradeable - Tier 2 / Magnetism +110 -> Magnetism +116 / Lightning Lore +16% -> Lightning Lore +17% / Dodge +9% -> Dodge +10% / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Magnetism +116 -> Magnetism +122 / Lightning Lore +17% -> Lightning Lore +18% / Dodge +10% -> Dodge +11% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Blurry",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Blurry",
+          "unit": "bool",
+          "type_source": "Bracers of Wind family sibling"
+        },
+        {
+          "name": "Air Guard",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Air Guard",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Electric Spell Power",
+          "type": "Equipment",
+          "value": 122,
+          "wiki_name": "Magnetism",
+          "unit": "flat",
+          "type_source": "Bracers of Wind family sibling"
+        },
+        {
+          "name": "Lightning Lore",
+          "type": "Equipment",
+          "value": 18,
+          "wiki_name": "Lightning Lore",
+          "unit": "percent",
+          "type_source": "Bracers of Wind family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Colorless Augment Slot",
+          "reason": "augment slot, not an affix"
+        },
+        {
+          "raw": "Dodge +11%",
+          "reason": "bonus type unsourced: no sibling in the 'Bracers of Wind' family carries 'Dodge', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Epic Cloak of Flames": {
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Cloak_of_Flames",
+      "ml": 20,
+      "slot": "Cloak",
+      "raw": "Upgradeable - Tier 1 / Combustion +110 / Fire Lore +16% / Heightened Awareness 4 / Fire Absorption +27% / Fire Shield (Hot) / Upgradeable - Tier 2 / Combustion +110 -> Combustion +116 / Fire Lore +16% -> Fire Lore +17% / Fire Absorption +27% -> Fire Absorption +28% / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Combustion +116 -> Combustion +122 / Fire Lore +17% -> Fire Lore +18% / Fire Absorption +28% -> Fire Absorption +30% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Fire Shield (Hot)",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Fire Shield (Hot)",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Fire Spell Power",
+          "type": "Equipment",
+          "value": 122,
+          "wiki_name": "Combustion",
+          "unit": "flat",
+          "type_source": "Cloak of Flames family sibling"
+        },
+        {
+          "name": "Fire Lore",
+          "type": "Equipment",
+          "value": 18,
+          "wiki_name": "Fire Lore",
+          "unit": "percent",
+          "type_source": "Cloak of Flames family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Heightened Awareness 4",
+          "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+        },
+        {
+          "raw": "Colorless Augment Slot",
+          "reason": "augment slot, not an affix"
+        },
+        {
+          "raw": "Fire Absorption +30%",
+          "reason": "bonus type unsourced: no sibling in the 'Cloak of Flames' family carries 'Fire Absorption', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Epic Mournlode Docent": {
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Mournlode_Docent",
+      "ml": 20,
+      "slot": "Armor",
+      "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Protection +8 / Resistance +8 / Undead Guard +4 / Protection from Evil / Weaken Undead / Upgradeable - Tier 2 / +5 Enhancement Bonus -> +6 Enhancement Bonus / Undead Guard +4 -> Undead Guard +5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Protection +8 -> Protection +9 / Resistance +8 -> Resistance +9 / Adds Negative Energy Absorption +30% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Weaken Undead",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Weaken Undead",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Enhancement Bonus",
+          "type": "Enhancement",
+          "value": 6,
+          "wiki_name": "Enhancement Bonus",
+          "unit": "flat",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Undead Guard",
+          "type": "Bool",
+          "value": 5,
+          "wiki_name": "Undead Guard",
+          "unit": "flat",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Negative Energy Absorption",
+          "type": "Enhancement",
+          "value": 30,
+          "wiki_name": "Negative Energy Absorption",
+          "unit": "percent",
+          "type_source": "catalog-wide uniform type"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Protection from Evil",
+          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Protection from Evil', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Colorless Augment Slot",
+          "reason": "augment slot, not an affix"
+        },
+        {
+          "raw": "Protection +9",
+          "reason": "affix name 'Protection' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Resistance +9",
+          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Epic Ring of Master Artifice": {
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Master_Artifice",
+      "ml": 20,
+      "slot": "Ring",
+      "raw": "Upgradeable - Tier 1 / Reconstruct — 1 Charges (Recharged/Day:1) / Wizardry +192 / Reconstruction +110 / Repair Lore +16% / Greater Auto-Repair / Upgradeable - Tier 2 / Wizardry +192 -> Wizardry +206 / Reconstruction +110 -> Reconstruction +116 / Repair Lore +16% -> Repair Lore +17% / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Wizardry +206 -> Wizardry +220 / Reconstruction +116 -> Reconstruction +122 / Repair Lore +17% -> Repair Lore +18% / Adds Repair Systems / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Greater Auto-Repair",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Greater Auto-Repair",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Wizardry",
+          "type": "Enhancement",
+          "value": 220,
+          "wiki_name": "Wizardry",
+          "unit": "flat",
+          "type_source": "Ring of Master Artifice family sibling"
+        },
+        {
+          "name": "Reconstruction",
+          "type": "Equipment",
+          "value": 122,
+          "wiki_name": "Reconstruction",
+          "unit": "flat",
+          "type_source": "Ring of Master Artifice family sibling"
+        },
+        {
+          "name": "Repair Lore",
+          "type": "Equipment",
+          "value": 18,
+          "wiki_name": "Repair Lore",
+          "unit": "percent",
+          "type_source": "Ring of Master Artifice family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Reconstruct — 1 Charges (Recharged/Day:1)",
+          "reason": "clickie charge, not a passive stat"
+        },
+        {
+          "raw": "Colorless Augment Slot",
+          "reason": "augment slot, not an affix"
+        },
+        {
+          "raw": "Repair Systems",
+          "reason": "affix name 'Repair Systems' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Epic Ring of the Stalker": {
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_the_Stalker",
+      "ml": 20,
+      "slot": "Ring",
+      "raw": "Upgradeable - Tier 1 / Manslayer / Insightful Deception +3 / Seeker +9 / Ethereal / Upgradeable - Tier 2 / Ethereal -> Ghostly / Insightful Deception +3 -> Insightful Deception +4 / Seeker +9 -> Seeker +10 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Seeker +10 -> Seeker +11 / Adds Deception +8 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Manslayer",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Manslayer",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Ghostly",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Ghostly",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Seeker",
+          "type": "Enhancement",
+          "value": 11,
+          "wiki_name": "Seeker",
+          "unit": "flat",
+          "type_source": "Ring of the Stalker family sibling"
+        },
+        {
+          "name": "Deception",
+          "type": "Enhancement",
+          "value": 8,
+          "wiki_name": "Deception",
+          "unit": "flat",
+          "type_source": "Ring of the Stalker family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Insightful Deception +4",
+          "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Colorless Augment Slot",
+          "reason": "augment slot, not an affix"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Epic Rock Boots": {
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Rock_Boots",
+      "ml": 20,
+      "slot": "Boots",
+      "raw": "Upgradeable - Tier 1 / Corrosion +110 / Acid Lore +16% / Stone Prison Guard / Earthgrab Guard / Immunity to Slippery Surfaces / Upgradeable - Tier 2 / Corrosion +110 -> Corrosion +116 / Acid Lore +16% -> Acid Lore +17% / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Corrosion +116 -> Corrosion +122 / Acid Lore +17% -> Acid Lore +18% / Adds Acid Absorption +30% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Stone Prison Guard",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Stone Prison Guard",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Earthgrab Guard",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Earthgrab Guard",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Immunity to Slippery Surfaces",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Immunity to Slippery Surfaces",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Acid Spell Power",
+          "type": "Equipment",
+          "value": 122,
+          "wiki_name": "Corrosion",
+          "unit": "flat",
+          "type_source": "Rock Boots family sibling"
+        },
+        {
+          "name": "Acid Lore",
+          "type": "Equipment",
+          "value": 18,
+          "wiki_name": "Acid Lore",
+          "unit": "percent",
+          "type_source": "Rock Boots family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Colorless Augment Slot",
+          "reason": "augment slot, not an affix"
+        },
+        {
+          "raw": "Acid Absorption +30%",
+          "reason": "bonus type unsourced: no sibling in the 'Rock Boots' family carries 'Acid Absorption', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Epic Spare Hand": {
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Spare_Hand",
+      "ml": 20,
+      "slot": "Belt",
+      "raw": "Upgradeable - Tier 1 / Riposte +4 / Insightful Combat Mastery +4 / Staggering Blow / Disable Device +17 / Open Lock +17 / Upgradeable - Tier 2 / Disable Device +17 -> Disable Device +18 / Open Lock +17 -> Open Lock +18 / Adds Use Magic Device +3 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Riposte +4 -> Riposte +5 / Insightful Combat Mastery +4 -> Insightful Combat Mastery +5 / Use Magic Device +3 -> Use Magic Device +4 / Adds Doublestrike 12% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Staggering Blow",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Staggering Blow",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Disable Device",
+          "type": "Competence",
+          "value": 18,
+          "wiki_name": "Disable Device",
+          "unit": "flat",
+          "type_source": "Spare Hand family sibling"
+        },
+        {
+          "name": "Open Lock",
+          "type": "Competence",
+          "value": 18,
+          "wiki_name": "Open Lock",
+          "unit": "flat",
+          "type_source": "Spare Hand family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Colorless Augment Slot",
+          "reason": "augment slot, not an affix"
+        },
+        {
+          "raw": "Riposte +5",
+          "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+        },
+        {
+          "raw": "Insightful Combat Mastery +5",
+          "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Use Magic Device +4",
+          "reason": "bonus type unsourced: no sibling in the 'Spare Hand' family carries 'Use Magic Device', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Doublestrike 12%",
+          "reason": "bonus type unsourced: no sibling in the 'Spare Hand' family carries 'Doublestrike', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Mournlode Docent (level 12)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Docent_(level_12)",
+      "ml": 12,
+      "slot": "Armor",
+      "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Protection +5 / Resistance +5 / Undead Guard +3 / Protection from Evil / Upgradeable - Tier 2 / +3 Enhancement Bonus -> +4 Enhancement Bonus / Protection +5 -> Protection +6 / Resistance +5 -> Resistance +6 / Upgradeable - Tier 3 / Undead Guard +3 -> Undead Guard +4 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Enhancement Bonus",
+          "type": "Enhancement",
+          "value": 4,
+          "wiki_name": "Enhancement Bonus",
+          "unit": "flat",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Undead Guard",
+          "type": "Bool",
+          "value": 4,
+          "wiki_name": "Undead Guard",
+          "unit": "flat",
+          "type_source": "catalog-wide uniform type"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Protection from Evil",
+          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Protection from Evil', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Protection +6",
+          "reason": "affix name 'Protection' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Resistance +6",
+          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Mournlode Docent (level 16)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Docent_(level_16)",
+      "ml": 16,
+      "slot": "Armor",
+      "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Protection +6 / Resistance +6 / Undead Guard +4 / Protection from Evil / Weaken Undead / Upgradeable - Tier 2 / +4 Enhancement Bonus -> +5 Enhancement Bonus / Protection +6 -> Protection +7 / Resistance +6 -> Resistance +7 / Upgradeable - Tier 3 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Undead Guard",
+          "type": "Bool",
+          "value": 4,
+          "wiki_name": "Undead Guard",
+          "unit": "flat",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Weaken Undead",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Weaken Undead",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Enhancement Bonus",
+          "type": "Enhancement",
+          "value": 5,
+          "wiki_name": "Enhancement Bonus",
+          "unit": "flat",
+          "type_source": "catalog-wide uniform type"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Protection from Evil",
+          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Protection from Evil', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Protection +7",
+          "reason": "affix name 'Protection' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Resistance +7",
+          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Mournlode Docent (level 4)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Docent_(level_4)",
+      "ml": 4,
+      "slot": "Armor",
+      "raw": "+1 Enhancement Bonus / Protection +3 / Resistance +3 / Undead Guard +2",
+      "final": [
+        {
+          "name": "Enhancement Bonus",
+          "type": "Enhancement",
+          "value": 1,
+          "wiki_name": "Enhancement Bonus",
+          "unit": "flat",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Undead Guard",
+          "type": "Bool",
+          "value": 2,
+          "wiki_name": "Undead Guard",
+          "unit": "flat",
+          "type_source": "catalog-wide uniform type"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Protection +3",
+          "reason": "affix name 'Protection' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Resistance +3",
+          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
+        }
+      ]
+    },
+    "Mournlode Docent (level 8)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Docent_(level_8)",
+      "ml": 8,
+      "slot": "Armor",
+      "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Protection +4 / Resistance +4 / Undead Guard +2 / Upgradeable - Tier 2 / +2 Enhancement Bonus -> +3 Enhancement Bonus / Undead Guard +2 -> Undead Guard +3 / Upgradeable - Tier 3 / Protection +4 -> Protection +5 / Resistance +4 -> Resistance +5 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Enhancement Bonus",
+          "type": "Enhancement",
+          "value": 3,
+          "wiki_name": "Enhancement Bonus",
+          "unit": "flat",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Undead Guard",
+          "type": "Bool",
+          "value": 3,
+          "wiki_name": "Undead Guard",
+          "unit": "flat",
+          "type_source": "catalog-wide uniform type"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Protection +5",
+          "reason": "affix name 'Protection' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Resistance +5",
+          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Ring of Master Artifice (level 11)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Master_Artifice_(level_11)",
+      "ml": 11,
+      "slot": "Ring",
+      "raw": "Upgradeable - Tier 1 / Repair Moderate Damage — 1 Charges (Recharged/Day:1) / Wizardry +126 / Reconstruction +82 / Repair Lore +12% / Improved Auto-Repair / Upgradeable - Tier 2 / Wizardry +126 -> Wizardry +140 / Reconstruction +82 -> Reconstruction +88 / Repair Lore +12% -> Repair Lore +13% / Upgradeable - Tier 3 / Wizardry +140 -> Wizardry +154 / Reconstruction +88 -> Reconstruction +94 / Repair Lore +13% -> Repair Lore +14% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Improved Auto-Repair",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Improved Auto-Repair",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Wizardry",
+          "type": "Enhancement",
+          "value": 154,
+          "wiki_name": "Wizardry",
+          "unit": "flat",
+          "type_source": "Ring of Master Artifice family sibling"
+        },
+        {
+          "name": "Reconstruction",
+          "type": "Equipment",
+          "value": 94,
+          "wiki_name": "Reconstruction",
+          "unit": "flat",
+          "type_source": "Ring of Master Artifice family sibling"
+        },
+        {
+          "name": "Repair Lore",
+          "type": "Equipment",
+          "value": 14,
+          "wiki_name": "Repair Lore",
+          "unit": "percent",
+          "type_source": "Ring of Master Artifice family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Repair Moderate Damage — 1 Charges (Recharged/Day:1)",
+          "reason": "clickie charge, not a passive stat"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Ring of Master Artifice (level 15)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Master_Artifice_(level_15)",
+      "ml": 15,
+      "slot": "Ring",
+      "raw": "Upgradeable - Tier 1 / Reconstruct — 1 Charges (Recharged/Day:1) / Wizardry +159 / Reconstruction +96 / Repair Lore +14% / Improved Auto-Repair / Upgradeable - Tier 2 / Wizardry +159 -> Wizardry +173 / Reconstruction +96 -> Reconstruction +102 / Repair Lore +14% -> Repair Lore +15% / Upgradeable - Tier 3 / Wizardry +173 -> Wizardry +187 / Reconstruction +102 -> Reconstruction +108 / Repair Lore +15% -> Repair Lore +16% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Improved Auto-Repair",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Improved Auto-Repair",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Wizardry",
+          "type": "Enhancement",
+          "value": 187,
+          "wiki_name": "Wizardry",
+          "unit": "flat",
+          "type_source": "Ring of Master Artifice family sibling"
+        },
+        {
+          "name": "Reconstruction",
+          "type": "Equipment",
+          "value": 108,
+          "wiki_name": "Reconstruction",
+          "unit": "flat",
+          "type_source": "Ring of Master Artifice family sibling"
+        },
+        {
+          "name": "Repair Lore",
+          "type": "Equipment",
+          "value": 16,
+          "wiki_name": "Repair Lore",
+          "unit": "percent",
+          "type_source": "Ring of Master Artifice family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Reconstruct — 1 Charges (Recharged/Day:1)",
+          "reason": "clickie charge, not a passive stat"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Ring of Master Artifice (level 7)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Master_Artifice_(level_7)",
+      "ml": 7,
+      "slot": "Ring",
+      "raw": "Upgradeable - Tier 1 / Repair Moderate Damage — 1 Charges (Recharged/Day:1) / Wizardry +93 / Reconstruction +69 / Repair Lore +10% / Auto-Repair / Upgradeable - Tier 2 / Wizardry +93 -> Wizardry +107 / Reconstruction +69 -> Reconstruction +74 / Repair Lore +10% -> Repair Lore +11% / Upgradeable - Tier 3 / Wizardry +107 -> Wizardry +118 / Reconstruction +74 -> Reconstruction +79 / Repair Lore +11% -> Repair Lore +12% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Auto-Repair",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Auto-Repair",
+          "unit": "bool",
+          "type_source": "Ring of Master Artifice family sibling"
+        },
+        {
+          "name": "Wizardry",
+          "type": "Enhancement",
+          "value": 118,
+          "wiki_name": "Wizardry",
+          "unit": "flat",
+          "type_source": "Ring of Master Artifice family sibling"
+        },
+        {
+          "name": "Reconstruction",
+          "type": "Equipment",
+          "value": 79,
+          "wiki_name": "Reconstruction",
+          "unit": "flat",
+          "type_source": "Ring of Master Artifice family sibling"
+        },
+        {
+          "name": "Repair Lore",
+          "type": "Equipment",
+          "value": 12,
+          "wiki_name": "Repair Lore",
+          "unit": "percent",
+          "type_source": "Ring of Master Artifice family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Repair Moderate Damage — 1 Charges (Recharged/Day:1)",
+          "reason": "clickie charge, not a passive stat"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Ring of the Stalker (level 11)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_the_Stalker_(level_11)",
+      "ml": 11,
+      "slot": "Ring",
+      "raw": "Upgradeable - Tier 1 / Manslayer / Insightful Deception +2 / Seeker +6 / Upgradeable - Tier 2 / Seeker +6 -> Seeker +7 / Upgradeable - Tier 3 / Insightful Deception +2 -> Insightful Deception +3 / Seeker +7 -> Seeker +8 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Manslayer",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Manslayer",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Seeker",
+          "type": "Enhancement",
+          "value": 8,
+          "wiki_name": "Seeker",
+          "unit": "flat",
+          "type_source": "Ring of the Stalker family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Insightful Deception +3",
+          "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Ring of the Stalker (level 15)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_the_Stalker_(level_15)",
+      "ml": 15,
+      "slot": "Ring",
+      "raw": "Upgradeable - Tier 1 / Manslayer / Insightful Deception +3 / Seeker +8 / Ethereal / Upgradeable - Tier 2 / BUG: No change / Upgradeable - Tier 3 / Seeker +8 -> Seeker +9 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Manslayer",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Manslayer",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Ethereal",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Ethereal",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Seeker",
+          "type": "Enhancement",
+          "value": 9,
+          "wiki_name": "Seeker",
+          "unit": "flat",
+          "type_source": "Ring of the Stalker family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Insightful Deception +3",
+          "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Ring of the Stalker (level 7)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_the_Stalker_(level_7)",
+      "ml": 7,
+      "slot": "Ring",
+      "raw": "Upgradeable - Tier 1 / Deception +3 / Seeker +5 / Upgradeable - Tier 2 / Deception +3 -> Insightful Deception +2 / Upgradeable - Tier 3 / Seeker +5 -> Seeker +6 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Seeker",
+          "type": "Enhancement",
+          "value": 6,
+          "wiki_name": "Seeker",
+          "unit": "flat",
+          "type_source": "Ring of the Stalker family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Insightful Deception +2",
+          "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Rock Boots (level 11)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Rock_Boots_(level_11)",
+      "ml": 11,
+      "slot": "Boots",
+      "raw": "Upgradeable - Tier 1 / Corrosion +82 / Acid Lore +12% / Stone Prison Guard / Upgradeable - Tier 2 / Corrosion +82 -> Corrosion +88 / Acid Lore +12% -> Acid Lore +13% / Adds Immunity to Slippery Surfaces / Upgradeable - Tier 3 / Corrosion +88 -> Corrosion +94 / Acid Lore +13% -> Acid Lore +14% / Adds Green Augment Slot / Mythic Boot Boost +1 or +3",
+      "final": [
+        {
+          "name": "Stone Prison Guard",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Stone Prison Guard",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Immunity to Slippery Surfaces",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Immunity to Slippery Surfaces",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Acid Spell Power",
+          "type": "Equipment",
+          "value": 94,
+          "wiki_name": "Corrosion",
+          "unit": "flat",
+          "type_source": "Rock Boots family sibling"
+        },
+        {
+          "name": "Acid Lore",
+          "type": "Equipment",
+          "value": 14,
+          "wiki_name": "Acid Lore",
+          "unit": "percent",
+          "type_source": "Rock Boots family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        },
+        {
+          "raw": "Mythic Boot Boost +1 or +3",
+          "reason": "wiki states two values with no rule for which applies"
+        }
+      ]
+    },
+    "Rock Boots (level 15)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Rock_Boots_(level_15)",
+      "ml": 15,
+      "slot": "Boots",
+      "raw": "Upgradeable - Tier 1 / Corrosion +96 / Acid Lore +14% / Stone Prison Guard / Earthgrab Guard / Immunity to Slippery Surfaces / Upgradeable - Tier 2 / Corrosion +96 -> Corrosion +102 / Acid Lore +14% -> Acid Lore +15% / Upgradeable - Tier 3 / Corrosion +102 -> Corrosion +108 / Acid Lore +15% -> Acid Lore +16% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Stone Prison Guard",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Stone Prison Guard",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Earthgrab Guard",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Earthgrab Guard",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Immunity to Slippery Surfaces",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Immunity to Slippery Surfaces",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Acid Spell Power",
+          "type": "Equipment",
+          "value": 108,
+          "wiki_name": "Corrosion",
+          "unit": "flat",
+          "type_source": "Rock Boots family sibling"
+        },
+        {
+          "name": "Acid Lore",
+          "type": "Equipment",
+          "value": 16,
+          "wiki_name": "Acid Lore",
+          "unit": "percent",
+          "type_source": "Rock Boots family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Rock Boots (level 7)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Rock_Boots_(level_7)",
+      "ml": 7,
+      "slot": "Boots",
+      "raw": "Upgradeable - Tier 1 / Corrosion +69 / Acid Lore +10% / Lesser Stone Prison Guard / Upgradeable - Tier 2 / Corrosion +69 -> Corrosion +74 / Acid Lore +10% -> Acid Lore +11% / Upgradeable - Tier 3 / Corrosion +74 -> Corrosion +79 / Acid Lore +11% -> Acid Lore +12% / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Lesser Stone Prison Guard",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Lesser Stone Prison Guard",
+          "unit": "bool",
+          "type_source": "Rock Boots family sibling"
+        },
+        {
+          "name": "Acid Spell Power",
+          "type": "Equipment",
+          "value": 79,
+          "wiki_name": "Corrosion",
+          "unit": "flat",
+          "type_source": "Rock Boots family sibling"
+        },
+        {
+          "name": "Acid Lore",
+          "type": "Equipment",
+          "value": 12,
+          "wiki_name": "Acid Lore",
+          "unit": "percent",
+          "type_source": "Rock Boots family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Spare Hand (level 11)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Spare_Hand_(level_11)",
+      "ml": 11,
+      "slot": "Belt",
+      "raw": "Upgradeable - Tier 1 / Riposte +2 / Insightful Combat Mastery +3 / Staggering Blow / Disable Device +14 / Open Lock +14 / Upgradeable - Tier 2 / Riposte +2 -> Riposte +3 / Disable Device +14 -> Disable Device +15 / Open Lock +14 -> Open Lock +15 / Upgradeable - Tier 3 / Disable Device +15 -> Disable Device +16 / Open Lock +15 -> Open Lock +16 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Staggering Blow",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Staggering Blow",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Disable Device",
+          "type": "Competence",
+          "value": 16,
+          "wiki_name": "Disable Device",
+          "unit": "flat",
+          "type_source": "Spare Hand family sibling"
+        },
+        {
+          "name": "Open Lock",
+          "type": "Competence",
+          "value": 16,
+          "wiki_name": "Open Lock",
+          "unit": "flat",
+          "type_source": "Spare Hand family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Insightful Combat Mastery +3",
+          "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Riposte +3",
+          "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Spare Hand (level 15)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Spare_Hand_(level_15)",
+      "ml": 15,
+      "slot": "Belt",
+      "raw": "Upgradeable - Tier 1 / Riposte +3 / Insightful Combat Mastery +3 / Staggering Blow / Disable Device +16 / Open Lock +16 / Upgradeable - Tier 2 / Insightful Combat Mastery +3 -> Insightful Combat Mastery +4 / Upgradeable - Tier 3 / Riposte +3 -> Riposte +4 / Disable Device +16 -> Disable Device +17 / Open Lock +16 -> Open Lock +17 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Staggering Blow",
+          "type": "Bool",
+          "value": 1,
+          "wiki_name": "Staggering Blow",
+          "unit": "bool",
+          "type_source": "catalog-wide uniform type"
+        },
+        {
+          "name": "Disable Device",
+          "type": "Competence",
+          "value": 17,
+          "wiki_name": "Disable Device",
+          "unit": "flat",
+          "type_source": "Spare Hand family sibling"
+        },
+        {
+          "name": "Open Lock",
+          "type": "Competence",
+          "value": 17,
+          "wiki_name": "Open Lock",
+          "unit": "flat",
+          "type_source": "Spare Hand family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Insightful Combat Mastery +4",
+          "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Riposte +4",
+          "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    },
+    "Spare Hand (level 7)": {
+      "wiki_url": "https://ddowiki.com/page/Item:Spare_Hand_(level_7)",
+      "ml": 7,
+      "slot": "Belt",
+      "raw": "Upgradeable - Tier 1 / Riposte +2 / Insightful Combat Mastery +2 / Disable Device +10 / Open Lock +10 / Upgradeable - Tier 2 / Disable Device +10 -> Disable Device +11 / Open Lock +10 -> Open Lock +11 / Upgradeable - Tier 3 / Insightful Combat Mastery +2 -> Insightful Combat Mastery +3 / Disable Device +11 -> Disable Device +13 / Open Lock +11 -> Open Lock +13 / Adds Green Augment Slot",
+      "final": [
+        {
+          "name": "Disable Device",
+          "type": "Competence",
+          "value": 13,
+          "wiki_name": "Disable Device",
+          "unit": "flat",
+          "type_source": "Spare Hand family sibling"
+        },
+        {
+          "name": "Open Lock",
+          "type": "Competence",
+          "value": 13,
+          "wiki_name": "Open Lock",
+          "unit": "flat",
+          "type_source": "Spare Hand family sibling"
+        }
+      ],
+      "quarantined": [
+        {
+          "raw": "Riposte +2",
+          "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+        },
+        {
+          "raw": "Insightful Combat Mastery +3",
+          "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
+        },
+        {
+          "raw": "Green Augment Slot",
+          "reason": "augment slot, not an affix"
+        }
+      ]
+    }
+  }
+}
