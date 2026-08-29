@@ -2428,8 +2428,42 @@ async function probeConcession(model, program, highs, stat, targetList, perTarge
   return { stat, cap: base - found, concession: found, window, deltas, sol };
 }
 
-async function solveLexicographic(model, highs) {
+async function solveLexicographic(model, highs, opts = {}) {
   let program = buildProgram(model);
+  // #582 — ABANDON-AFTER-STAGE. Opt-in, and silent when nobody opts in.
+  //
+  // Every `highs.solve` below is SYNCHRONOUS. This function is `async` but has
+  // historically contained no `await` at all, so a solve is one uninterrupted
+  // block on the main thread: no event can be dispatched while it runs, which is
+  // why a Stop button on the overlay could never have been clicked. The yields
+  // here are what make the control clickable, not a nicety around it.
+  //
+  // Cancellation is therefore COOPERATIVE and bounded by one stage: a HiGHS call
+  // in flight cannot be preempted, so the promise is "stops after the current
+  // pass", never "stops now". The UI says exactly that.
+  //
+  // The whole seam is gated on `opts.abandon` being supplied. Without it no yield
+  // is inserted and no predicate is called, so every existing caller — the golden
+  // guard, the perf gate, alternatives, the concession probe — runs the identical
+  // synchronous program it ran before, with identical timing. That is deliberate:
+  // this is surgery on the most load-bearing function in the repo, and the safest
+  // shape is one where not asking for the feature cannot pay for it.
+  const abandonAsked = typeof opts.abandon === "function" ? opts.abandon : null;
+  /** A stage boundary: yield the task queue so a queued click can land, then ask.
+   *  A macrotask, not a microtask — microtasks drain without ever returning to the
+   *  event loop, so input would still never be delivered (the same distinction
+   *  `tests/wizard-yield.test.js` pins for the paint yield). */
+  const stageBreak = async (where) => {
+    if (!abandonAsked) return null;
+    await new Promise((r) => setTimeout(r, 0));
+    if (!abandonAsked()) return null;
+    // NOT `status: "infeasible"`. #532 established that a non-optimal result is
+    // several different facts and that collapsing them tells the player to go
+    // rework a build over something the build never caused. "You stopped this"
+    // is its own fact, and nothing about the constraints is implied by it.
+    return { status: "abandoned", failure: "abandoned", abandonedAt: where,
+      reason: `stopped by the player after ${where}` };
+  };
   // #532 — a stage that did not return Optimal is TWO different facts, and the
   // difference is the whole advice the player gets.
   //
@@ -2600,7 +2634,24 @@ async function solveLexicographic(model, highs) {
   const utilitySecured = [];
   const utilityUnsecured = [];
 
+  // #582 — the first boundary a player can reach: the set-pin escape probe and the
+  // best-effort floors machinery above can each spend several solves before the
+  // ranked stages begin.
+  {
+    const stop = await stageBreak("the pre-stage probes");
+    if (stop) return stop;
+  }
+
+  let _stageNo = 0;
   for (const stat of program.targetList) {
+    // #582 — one boundary per ranked stage. This is what bounds the wait: the
+    // worst case a player sees after pressing Stop is the remainder of the pass
+    // already in flight. Counted rather than read off `perTarget`, because the
+    // sentinel's stage writes no entry there and would make two passes share a
+    // number.
+    _stageNo += 1;
+    const stop = await stageBreak(`priority pass ${_stageNo}`);
+    if (stop) return stop;
     if (stat === _UTILITY_SENTINEL) {
       // The Utility stage: maximize the distinct-effect count (Σ u_e) under
       // the locks accumulated so far. Stats ranked BELOW the sentinel still
@@ -2713,6 +2764,15 @@ async function solveLexicographic(model, highs) {
           blockedByHigherOrder: keepAbove.length > 0 };
       }
     }
+  }
+
+  // #582 — the last boundary. Everything past here (tie-break, the no-op augment
+  // drop, the colorless post-stage, readSolution and the report builders) is the
+  // assembly tail; stopping inside it would throw away work that is already paid
+  // for, so this is the final chance to bow out.
+  {
+    const stop = await stageBreak("the ranked passes");
+    if (stop) return stop;
   }
 
   const tb = highs.solve(encodeStage(program, { sense: "min", tieBreak: true, locks, extra: utilityExtra }));
