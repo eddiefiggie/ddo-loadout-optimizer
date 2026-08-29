@@ -3,7 +3,9 @@
 const assert = require("assert");
 const {
   serializeAll, parseBackup, mergeInto, CURRENT_SCHEMA,
+  parsePortable, parseAny, uniqueName, PORTABLE_FORMAT,
 } = require("../web/backup.js");
+const { toPortableJSON } = require("../web/exporters.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -165,8 +167,7 @@ test("U5: a hand-edited backup cannot smuggle an invalid credit into the solve",
   assert.strictEqual({}.polluted, undefined, "no prototype pollution");
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed`);
-
+if (!process.exitCode) 
 // #346 (U3) — the ladder survives the hand-export / re-import round trip, which
 // is the real cross-version boundary: users export these to files and import
 // them into whatever build they are running later.
@@ -469,3 +470,117 @@ test("the status line no longer claims a merge-by-name it does not perform", () 
   assert.ok(!/merged by name/.test(WIZ),
     "the qualifier that was true of one payload and false of the other two is gone");
 });
+
+
+// ---- #190 — the portable single-build envelope, which was write-only ----
+//
+// `toPortableJSON` has stamped `format: "ddo-loadout/v1"` since it shipped so that
+// "a future import reader can tell a portable loadout from a plain backup file".
+// No reader existed, so a player could hand the file to someone and neither of them
+// could load it. These pin the round trip closed.
+
+const envelope = (r) => JSON.stringify(toPortableJSON(r || rec("Caster", 34), "2026-08-29T12:00:00.000Z"));
+
+test("#190: a portable export reads back, carrying the build it was written from", () => {
+  const res = parsePortable(envelope());
+  assert.ok(res.ok, res.message);
+  assert.strictEqual(res.kind, "portable");
+  assert.strictEqual(res.name, "Caster");
+  assert.strictEqual(res.character.inputs.ml, 34, "the inputs survive the trip");
+  assert.deepStrictEqual(res.character.query, { targets: ["Constitution"] });
+  assert.strictEqual(res.exportedAt, "2026-08-29T12:00:00.000Z");
+});
+
+test("#190: only `core` is read — the sender's `resolved` render is not trusted", () => {
+  // `resolved` is project(core): derived, and re-derived on render against whatever
+  // dataset the READER has. Installing the sender's copy would pin a stale rendering
+  // of the build against a newer catalog, with nothing to say which was current.
+  const env = JSON.parse(envelope());
+  env.resolved = { loadout: [{ item: "SOMETHING THE READER SHOULD NEVER SHOW" }] };
+  const res = parsePortable(JSON.stringify(env));
+  assert.ok(res.ok);
+  assert.ok(!JSON.stringify(res).includes("SHOULD NEVER SHOW"),
+    "the resolved block does not reach the imported record");
+  assert.deepStrictEqual(Object.keys(res.character).sort(),
+    ["inputs", "name", "query", "savedAt", "snapshot", "stampedBuildId"]);
+});
+
+test("#190: the envelope is sanitized through the SAME gate a backup's characters are", () => {
+  // It is a saved record and gets the record's own scrubbing plus the input
+  // allowlist — not a pass because it arrived alone.
+  const env = JSON.parse(envelope());
+  env.core.inputs.notOnTheAllowlist = "dropped";
+  env.core.extraTopLevelKey = "dropped";
+  const res = parsePortable(JSON.stringify(env));
+  assert.ok(res.ok);
+  assert.strictEqual(res.character.inputs.notOnTheAllowlist, undefined);
+  assert.strictEqual(res.character.extraTopLevelKey, undefined);
+});
+
+test("#190: a prototype-polluting envelope cannot reach the store", () => {
+  const bad = `{"format":"${PORTABLE_FORMAT}","schema_version":1,"core":`
+    + `{"name":"X","inputs":{"__proto__":{"polluted":true}},"snapshot":{}}}`;
+  const res = parsePortable(bad);
+  assert.ok(!({}).polluted, "Object.prototype is untouched");
+  if (res.ok) assert.ok(!res.character.inputs.polluted);
+});
+
+test("#190: the two file kinds are refused by each other's parser, by name", () => {
+  const backup = JSON.stringify(serializeAll({ Sook: rec("Sook", 34) }, { buildId: "b" }));
+  assert.strictEqual(parsePortable(backup).ok, false);
+  assert.match(parsePortable(backup).message, /not a shared loadout/);
+  assert.strictEqual(parseBackup(envelope()).ok, false);
+  assert.match(parseBackup(envelope()).message, /not a recognized backup/);
+});
+
+test("#190: a newer or unversioned envelope is declined rather than guessed at", () => {
+  const env = JSON.parse(envelope()); env.schema_version = 99;
+  assert.strictEqual(parsePortable(JSON.stringify(env)).error, "newer");
+  delete env.schema_version;
+  assert.strictEqual(parsePortable(JSON.stringify(env)).error, "invalid");
+});
+
+test("#190: an envelope with no readable build is refused, not imported empty", () => {
+  const env = JSON.parse(envelope()); delete env.core;
+  const res = parsePortable(JSON.stringify(env));
+  assert.strictEqual(res.ok, false);
+  assert.match(res.message, /no readable build/);
+});
+
+test("#190: parseAny routes on `format`, which is what that field is for", () => {
+  assert.strictEqual(parseAny(envelope()).kind, "portable");
+  const backup = JSON.stringify(serializeAll({ Sook: rec("Sook", 34) }, { buildId: "b" }));
+  const r = parseAny(backup);
+  assert.ok(r.ok && !r.kind, "a backup parses as a backup");
+  assert.ok(r.characters.Sook);
+});
+
+test("#190: a file that is neither keeps the BACKUP wording, not a vaguer one", () => {
+  // Anything without `format` reads as a backup, so the existing message for a
+  // wrong file is unchanged rather than replaced by one hedging about two formats.
+  assert.match(parseAny("{}").message, /not a recognized backup/);
+  assert.match(parseAny("not json").message, /not valid backup JSON/);
+});
+
+test("#190: an imported build NEVER overwrites one you already have", () => {
+  // The store has no stable build id — persist.js keys by name and says so — so an
+  // incoming "Caster" is indistinguishable from the player's own "Caster", and the
+  // file usually came from someone else. Renaming is the only non-destructive read.
+  assert.strictEqual(uniqueName("Caster", ["Main", "Tank"]), "Caster", "no clash, no rename");
+  assert.strictEqual(uniqueName("Caster", ["Caster"]), "Caster (imported)");
+  assert.strictEqual(uniqueName("Caster", ["caster"]), "Caster (imported)",
+    "case-insensitive, like every other name comparison in the app");
+  assert.strictEqual(uniqueName("Caster", ["Caster", "Caster (imported)"]), "Caster (imported 2)");
+});
+
+test("#190: a nameless build still lands somewhere findable", () => {
+  assert.strictEqual(uniqueName("", []), "Imported build");
+  assert.strictEqual(uniqueName("   ", []), "Imported build");
+});
+
+test("#190: an oversized envelope is refused before it is parsed", () => {
+  const res = parsePortable(envelope(), { maxChars: 10 });
+  assert.strictEqual(res.error, "oversized");
+});
+
+console.log(`\n${passed} passed`);
