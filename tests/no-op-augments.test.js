@@ -58,7 +58,7 @@ const slot = (name, variants, card = 1) => ({ slot: name, cardinality: card, var
     const aug = augment("Topaz of Conjured Power", "Yellow",
       [["Conjuration Focus", "Equipment", 8]]);
     const r = await S.solveLexicographic({
-      targets: ["Conjuration Focus"], mlCap: 34, dodgeCap: null,
+      targets: ["Conjuration Focus"], mlCap: 34,
       worn: [slot("Ring", [host])], augments: [aug],
     }, highs);
     assert.strictEqual(r.status, "optimal");
@@ -75,7 +75,7 @@ const slot = (name, variants, card = 1) => ({ slot: name, cardinality: card, var
     const aug = augment("Topaz of Insightful Conjuration", "Yellow",
       [["Conjuration Focus", "Insight", 4]]);   // different type -> stacks
     const r = await S.solveLexicographic({
-      targets: ["Conjuration Focus"], mlCap: 34, dodgeCap: null,
+      targets: ["Conjuration Focus"], mlCap: 34,
       worn: [slot("Ring", [host])], augments: [aug],
     }, highs);
     assert.strictEqual(r.perTarget["Conjuration Focus"], 17, "different types stack: 13 + 4");
@@ -89,7 +89,7 @@ const slot = (name, variants, card = 1) => ({ slot: name, cardinality: card, var
     const weak = augment("Topaz of Conjuration", "Yellow", [["Conjuration Focus", "Equipment", 5]]);
     const strong = augment("Topaz of Conjured Power", "Yellow", [["Conjuration Focus", "Equipment", 8]]);
     const r = await S.solveLexicographic({
-      targets: ["Conjuration Focus"], mlCap: 34, dodgeCap: null,
+      targets: ["Conjuration Focus"], mlCap: 34,
       worn: [slot("Ring", [host])], augments: [weak, strong],
     }, highs);
     assert.strictEqual(r.perTarget["Conjuration Focus"], 8, "the host's 2 is dominated by the 8");

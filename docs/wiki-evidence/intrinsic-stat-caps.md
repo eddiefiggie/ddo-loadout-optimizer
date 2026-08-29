@@ -101,10 +101,43 @@ what matters, not the exact cap)". Against the page above, that is modelling the
 unsourced numbers. Max Dex Bonus is a property of the individual armor, not of its
 category, so no four-number table can be right for every armor in a category.
 
-Left alone by this pass, deliberately: it is pre-existing, it is honest about being
-approximate, and correcting it means harvesting Max Dex Bonus per armor item — a
-different and much larger harvest. **Tracked as #573.** Recorded here so the next
-reader of that constant finds the wiki rule beside it.
+Left alone by the #199 pass, deliberately: it was pre-existing, it was honest about
+being approximate, and correcting it looked like it meant harvesting Max Dex Bonus per
+armor item — a different and much larger harvest. Tracked as #573.
+
+### RESOLVED 2026-08-29 (#573) — the constant is removed, the gap is disclosed
+
+`ARMOR_DODGE_CAP` and its clamp are **gone**. Dodge is no longer capped from gear.
+
+Removal rather than harvest, on three findings:
+
+1. **It contradicted this document.** §4 above refuses a Dodge cap on wiki evidence,
+   and the build stamps that refusal as `metadata.intrinsic_stat_caps_refused`. Shipping
+   a clamp anyway meant the solver disagreed with our own ruling — and an unsourced
+   clamp is the sharpest form of the never-infer failure, because a wrong ceiling is
+   invisible in a finished loadout.
+2. **The per-item harvest has no cheap path.** gear-planner carries no Max Dex Bonus on
+   any armor record. Exactly two variants mention the stat at all — `Sapphire of Armored
+   Agility +1/+2` — and both **raise** it. So the "harvest it per item" option is a fresh
+   paced ddowiki sweep of ~850 armor variants, not a re-read of existing seed.
+3. **The clamp ignored the gear that defeats it.** `Solar Gem of Dodge Cap`
+   (Heroic +1 / Legendary +3) and the two Sapphires above are real slottable augments
+   carrying rankable stats (`Dodge Cap`, `Max Dex Bonus`, both in `CORE_STATS`). A
+   constant keyed on armor category could never read them, so a player could slot a
+   Legendary Dodge Cap gem and still be clamped at 4.
+
+**What replaces it:** a disclosure, not a number. `dodgeMaxDexLine` (web/projection.js)
+fires whenever an armor type is chosen AND Dodge is ranked AND the player has not set
+their own Max, and says plainly that the armor reduction exists, that this solve does
+not apply it, and that the Dodge total shown is therefore the un-reduced gear sum. It
+rides the export notices bag as well as the results panel, so a shared build cannot
+report the total without the caveat.
+
+**If someone revisits this:** the honest fix remains a per-item `max_dex_bonus` field
+fed by a paced harvest, plus a clamp that reads the equipped armor's real value *and*
+adds the player's `Dodge Cap` / `Max Dex Bonus` gear. Do not reintroduce a
+category-keyed constant — the wiki wording above rules that granularity out, and
+`tests/model.test.js` now asserts both the constant and the model field stay gone.
 
 ## 5. Concealment — REFUSED, no numeric cap
 

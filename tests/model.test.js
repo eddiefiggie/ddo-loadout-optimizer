@@ -374,11 +374,19 @@ test("weapon types share ONE main-hand slot (not one slot per type)", () => {
   assert.ok(!model.worn.some((s) => s.slot === "Light Crossbow"));
 });
 
-test("dodge cap set only when Dodge is a target and armor given", () => {
-  const noCap = M.buildModel(data.items, { mlCap: 34, targets: ["Intelligence"], armorType: "heavy" });
-  assert.strictEqual(noCap.dodgeCap, null);
-  const cap = M.buildModel(data.items, { mlCap: 34, targets: ["Dodge"], armorType: "heavy" });
-  assert.strictEqual(cap.dodgeCap, M.ARMOR_DODGE_CAP.heavy);
+test("#573: no armor-category dodge clamp is minted, and the constant is gone", () => {
+  // The inverse of the test this replaces, which pinned `cap.dodgeCap === ARMOR_DODGE_CAP.heavy`.
+  //
+  // Both halves matter and they fail for different reasons. The constant being unexported
+  // stops a caller reaching for the four numbers again; the model carrying no `dodgeCap`
+  // stops the clamp being re-plumbed under the old name. A future re-introduction has to
+  // defeat both, and either way it has to argue with `intrinsic-stat-caps.md` §4, which
+  // REFUSED a Dodge cap on wiki evidence.
+  assert.strictEqual(M.ARMOR_DODGE_CAP, undefined, "the unsourced constant is not exported");
+  const m = M.buildModel(data.items, { mlCap: 34, targets: ["Dodge"], armorType: "heavy" });
+  assert.strictEqual(m.dodgeCap, undefined, "heaviest armor + ranked Dodge mints no clamp");
+  assert.ok(!("Dodge" in (m.intrinsicCaps || {})),
+    "and Dodge did not reappear via the #199 intrinsic table, which refused it");
 });
 
 test("dominates: an affix item does NOT dominate a Dino blank offering slots it lacks", () => {

@@ -1,7 +1,7 @@
 // U7 — staged lexicographic solve over the worn-item model, driven by HiGHS.
 //
 // Exactness scope: worn-item affixes with bonus-type stacking (only the highest
-// value of each same-named type counts), the armor-dependent dodge cap,
+// value of each same-named type counts), the wiki-sourced intrinsic stat caps,
 // lexicographic priority over the ranked targets, and a deterministic tie-break.
 //
 // Gated-contribution primitive (U1): every stat source — worn affix, augment,
@@ -217,15 +217,17 @@ function slotConstraintBodies(xVars, slotConstraints) {
 
 function buildProgram(model) {
   const mlCap = model.mlCap;
-  // U1 — capped stats = the armor dodge cap plus any user-set per-stat caps. When a
-  // user caps Dodge and armor also caps it, the tighter (min) cap wins. Each capped
-  // stat is clamped in encodeStage (d <= raw, d <= cap) and read back as min(cap, raw).
+  // U1 — capped stats = the wiki-sourced intrinsic ceilings plus any user-set
+  // per-stat caps. When both cap a stat, the tighter (min) wins. Each capped stat is
+  // clamped in encodeStage (d <= raw, d <= cap) and read back as min(cap, raw).
+  //
+  // #573 — there used to be a THIRD source ahead of these two: `model.dodgeCap`, an
+  // unsourced per-armor-category clamp on Dodge. It is gone; #199 refused a Dodge cap
+  // outright and the numbers contradicted that ruling. See the note in model.js.
   const cappedStats = {};
-  if (model.dodgeCap != null) cappedStats.Dodge = model.dodgeCap;
-  // #199 — the wiki-sourced intrinsic ceilings join as a THIRD source, under the
-  // same tighter-of-the-set rule. Merged BEFORE the user's own caps so a player who
-  // sets a tighter cap by hand still wins; a player who sets a LOOSER one does not,
-  // because the game's ceiling is not something a preference can raise.
+  // #199 — the wiki-sourced intrinsic ceilings. Merged BEFORE the user's own caps so
+  // a player who sets a tighter cap by hand still wins; a player who sets a LOOSER
+  // one does not, because the game's ceiling is not something a preference can raise.
   for (const [stat, cap] of Object.entries(model.intrinsicCaps || {})) {
     if (cap == null) continue;
     cappedStats[stat] = cappedStats[stat] != null ? Math.min(cappedStats[stat], cap) : cap;
