@@ -296,6 +296,8 @@ def assert_local_affix_synonyms() -> int:
 
 
 GAP_CORRECTIONS_PATH = os.path.join(HERE, "data", "seed", "gap_corrections.json")
+CANNITH_TIERS_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "cannith_challenge_tiers.json")
 VALUE_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "item_value_corrections.json")
 NAME_CORRECTIONS_PATH = os.path.join(
@@ -355,6 +357,70 @@ MATERIAL_CLASS_PATH = os.path.join(HERE, "data", "seed", "compendium", "material
 # the oath is moot for Forged, so they stay out.
 SHIELD_TYPES = {"Bucklers", "Small shields", "Large shields", "Tower shields"}
 BODY_ARMOR_TYPES = {"Cloth armor", "Light armor", "Medium armor", "Heavy armor"}
+
+
+def load_cannith_tiers(path: str = CANNITH_TIERS_PATH) -> dict:
+    """#313 — the Cannith Challenge upgrade-tier overlay.
+
+    gear-planner emits NO enchantments for a Vaults of the Artificers item whose wiki
+    page uses the `Upgradeable - Tier N` layout — only a marker affix (`VotAU` on worn
+    gear, `Upgradeable - Tier` on weapons). 97 of the 140 Vaults variants reach the
+    solver carrying nothing scorable; this overlay covers the 33 WORN ones.
+
+    This is the SECOND sanctioned additive overlay, and it is a different case from
+    `gap_corrections`: that one restores affixes gear-planner under-parsed on items it
+    otherwise read, this one supplies affixes for items it read as empty. Neither ever
+    overwrites a native affix.
+
+    Returns `{item_name: [{name,type,value}, …]}`. Missing file -> {}."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    out = {}
+    for name, entry in (raw.get("items") or {}).items():
+        rows = [{"name": a["name"], "type": a["type"], "value": str(a["value"])}
+                for a in entry.get("final") or []]
+        if rows:
+            out[name] = rows
+    return out
+
+
+def apply_cannith_tiers(records: list, overlay: dict) -> dict:
+    """Apply the #313 overlay ADDITIVELY, with the same anti-double-count guard.
+
+    An overlay affix is SKIPPED when the record already carries that `(name, type)`,
+    so a future upstream refresh that starts parsing these tiers cannot produce a
+    doubled value — the overlay simply goes quiet, item by item, and the coverage
+    numbers in `metadata` say so."""
+    by_name = {}
+    for r in records:
+        by_name.setdefault(r.get("name"), r)
+    items_filled = affixes_added = affixes_skipped = 0
+    for name in sorted(overlay):
+        rec = by_name.get(name)
+        if rec is None:
+            continue
+        existing = {(a.get("name"), a.get("type")) for a in rec.get("affixes") or []}
+        added = 0
+        for aff in overlay[name]:
+            key = (aff["name"], aff["type"])
+            if key in existing:
+                affixes_skipped += 1
+                continue
+            rec.setdefault("affixes", []).append(dict(aff))
+            existing.add(key)
+            added += 1
+        if added:
+            items_filled += 1
+            affixes_added += added
+    return {
+        "items_filled": items_filled,
+        "affixes_added": affixes_added,
+        "affixes_skipped_already_present": affixes_skipped,
+        "overlay_items": sorted(overlay),
+        "missing_from_roster": sorted(n for n in overlay if by_name.get(n) is None),
+    }
 
 
 def load_gap_corrections(path: str = GAP_CORRECTIONS_PATH) -> dict:
@@ -676,6 +742,10 @@ def build() -> dict:
     # (restores only affixes gear-planner genuinely LACKS; anti-double-count guarded).
     _gap_corrections = load_gap_corrections()
     _gap_coverage = apply_gap_corrections(planner_records, _gap_corrections)
+    # #313 — applied AFTER the gap overlay so its anti-double-count guard sees any
+    # affix that one restored, and before every downstream normalization stage so a
+    # tier affix travels the identical path a natively-parsed one does.
+    _cannith_coverage = apply_cannith_tiers(planner_records, load_cannith_tiers())
     # #207 — wiki-sourced VALUE corrections. Separate from the additive overlay
     # above, which cannot overwrite by design. Runs after it so a corrected value
     # applies to the final affix block, and fails the build when its recorded
@@ -1661,6 +1731,7 @@ def build() -> dict:
             # U7.5 — wiki-validated gap-corrections overlay coverage (sanctioned
             # minimal exception to gear-planner sole-authority).
             "gap_corrections_coverage": _gap_coverage,
+            "cannith_tier_coverage": _cannith_coverage,
             "value_corrections_coverage": _value_coverage,
             "name_corrections_coverage": _name_coverage,
             # #259 — bonus-type corrections, disclosed per channel: the same

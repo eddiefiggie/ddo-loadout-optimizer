@@ -104,8 +104,13 @@ test("the 161 unstamped boolean-composite components are ineligible", () => {
   // 561 not 161 since #140: `Greater Heroism` joined COMPOSITE_COMPONENTS, adding
   // exactly 16 carriers x 25 components = 400. The predicate's behavior is
   // unchanged — every one of the 400 is still refused below.
-  assert.strictEqual(derived.length, 561,
-    "normalizeDataset generates 561 composite components carrying no provenance stamp");
+  //
+  // 565 not 561 since #313: the Cannith Challenge tier overlay gives four Bracers of
+  // Wind variants their `Blurry`, and `Blurry` is a Concealment composite component,
+  // so each mints one more. Re-ratified rather than accepted: 4 new carriers x 1
+  // component = 4, and the predicate still refuses every one below.
+  assert.strictEqual(derived.length, 565,
+    "normalizeDataset generates 565 composite components carrying no provenance stamp");
   assert.ok(derived.every((a) => !O.isEligible(a)),
     "and the predicate refuses every one of them, so it cannot be a `via` presence test");
 });
@@ -317,12 +322,31 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // `eligible` and `byCat` are deliberately UNCHANGED — generated composite
   // components are never engraved, so they enter the total and nothing else.
   // That asymmetry is the check that the write stayed inside its lane.
-  assert.strictEqual(total, 42585, "post-normalize pool size");
+  //
+  // 42,697 not 42,585 since #313: +112, which is the whole Cannith tier overlay —
+  // 108 admitted affixes plus the 4 `Blurry`-derived Concealment components counted
+  // above.
+  assert.strictEqual(total, 42697, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
-  // which counts the unstamped composite components (161 then, 561 now) as engraved. Applying all
+  // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
-  assert.strictEqual(eligible, 20578, "engraved, eligible affixes");
-  assert.deepStrictEqual(byCat, { item: 13548, weapon: 6113, augment: 917 });
+  // 20,641 not 20,578 since #313: +63, the non-presence half of the same overlay.
+  // This one SHOULD move, and it is worth saying why rather than just re-pinning it.
+  // `isEligible` marks an affix as able to carry a player bonus-type override (#88),
+  // and an overlay affix must be exactly as overridable as a natively-parsed one — it
+  // is a native-shaped affix that happens to have reached the record from a shard.
+  // It matters more here than usual: the wiki states these magnitudes and never their
+  // bonus types, so the type was sourced from a parsed sibling rather than read off
+  // the page, and the override is the player's recourse if a sibling ever mistypes
+  // one. The remaining 45 of the 108 are Bool presences, which are ineligible by rule
+  // 1 and correctly absent from this count.
+  assert.strictEqual(eligible, 20641, "engraved, eligible affixes");
+  // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
+  // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
+  // so the whole eligible delta must land in `item` and the other two must not move at
+  // all. They do not. (The 64 weapon variants with the same upstream gap are the
+  // deferred half — if they ever land, `weapon` is where they will show up.)
+  assert.deepStrictEqual(byCat, { item: 13611, weapon: 6113, augment: 917 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {
@@ -401,7 +425,10 @@ test("the generator marks composite components, so provenance is read not inferr
   for (const v of pool.items) for (const a of v.affixes || []) {
     if (a._compositeOf) { marked++; assert.strictEqual(O.isEligible(a), false); }
   }
-  assert.strictEqual(marked, 561, "every generated composite component carries the mark");
+  // 565 not 561 since #313 — the same four `Blurry`-derived components as above, and
+  // the assertion inside the loop is the one that matters: each is still marked and
+  // still ineligible, so the overlay minted no unmarked composite.
+  assert.strictEqual(marked, 565, "every generated composite component carries the mark");
   const one = pool.items.flatMap((v) => v.affixes || []).find((a) => a._compositeOf);
   assert.ok(!Object.keys(one).includes("_compositeOf"), "and the mark is non-enumerable");
 });
