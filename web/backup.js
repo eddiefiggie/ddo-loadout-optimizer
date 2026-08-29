@@ -15,6 +15,17 @@
   const WINDOW = 3;           // migrate the last 3 schema versions up to current
   const MAX_CHARS = 5000000;  // ~5MB, matched to the localStorage budget
 
+  // #190 — the PORTABLE single-build envelope `exporters.toPortableJSON` writes.
+  // A different file from a backup and read differently: a backup is your whole
+  // store coming home, a portable file is ONE build, usually from someone else.
+  //
+  // `format` is what tells them apart, and it exists for exactly this — the
+  // exporter's own comment said "a future import reader can tell a portable
+  // loadout from a plain backup file". This is that reader.
+  const PORTABLE_FORMAT = "ddo-loadout/v1";
+  const PORTABLE_SCHEMA = 1;
+  const PORTABLE_WINDOW = 3;
+
   // NB: written as an explicit comparison, NOT an object literal — `{ __proto__: … }`
   // is prototype-setter syntax, so a literal would define no own "__proto__" key
   // and silently fail to match the single most important pollution key.
@@ -155,22 +166,32 @@
     return null;
   }
 
+  /** Text -> object, with the two guards every file share: a size cap and the
+   *  prototype-pollution reviver. Returns `{ok:false,…}` in the same typed shape
+   *  the parsers return, so a caller can pass it straight back.
+   *
+   *  Split out for #190 so the portable envelope cannot end up with weaker
+   *  handling than a backup by being written later and separately. */
+  function readFile(text, maxChars, noun) {
+    if (typeof text !== "string" || text.length > maxChars) {
+      return { ok: false, error: "oversized", message: `${noun} file is too large to import.` };
+    }
+    try {
+      return { ok: true, data: JSON.parse(text, safeReviver) };
+    } catch (e) {
+      return { ok: false, error: "invalid", message: `This file is not valid ${noun.toLowerCase()} JSON.` };
+    }
+  }
+
   function parseBackup(text, opts) {
     const o = opts || {};
     const current = o.current != null ? o.current : CURRENT_SCHEMA;
     const window = o.window != null ? o.window : WINDOW;
     const maxChars = o.maxChars != null ? o.maxChars : MAX_CHARS;
 
-    if (typeof text !== "string" || text.length > maxChars) {
-      return { ok: false, error: "oversized", message: "Backup file is too large to import." };
-    }
-
-    let data;
-    try {
-      data = JSON.parse(text, safeReviver);
-    } catch (e) {
-      return { ok: false, error: "invalid", message: "This file is not valid backup JSON." };
-    }
+    const read = readFile(text, maxChars, "Backup");
+    if (!read.ok) return read;
+    const data = read.data;
     if (!data || typeof data !== "object"
         || typeof data.schema_version !== "number"
         || !data.characters || typeof data.characters !== "object") {
@@ -225,6 +246,101 @@
     return { ok: true, characters: clean, bundles, farming, schemaVersion: current };
   }
 
+  /** #190 — read the portable single-build envelope.
+   *
+   *  The export has been write-only since it shipped: `toPortableJSON` stamps
+   *  `format: "ddo-loadout/v1"` so a reader could tell it apart, and no reader was
+   *  ever written. A player could hand the file to someone else and neither of them
+   *  could load it, so the round trip the versioned format exists to enable never
+   *  closed. This closes it.
+   *
+   *  Reads `core` ONLY. `resolved` is `project(core)` — derived, and re-derived on
+   *  render from whatever dataset the reader has. Trusting the sender's copy would
+   *  install a stale rendering of a build against a newer catalog, which is the
+   *  same solve-visible-but-share-invisible failure in reverse: the file would say
+   *  one thing and a re-solve another, with nothing to say which was current.
+   *
+   *  `core` is sanitized through `sanitizeCharacter`, the same gate a backup's
+   *  characters pass — it IS a saved record, so it gets the record's own scrubbing
+   *  and the input allowlist rather than being trusted because it arrived alone.
+   */
+  function parsePortable(text, opts) {
+    const o = opts || {};
+    const current = o.portableCurrent != null ? o.portableCurrent : PORTABLE_SCHEMA;
+    const window = o.portableWindow != null ? o.portableWindow : PORTABLE_WINDOW;
+    const maxChars = o.maxChars != null ? o.maxChars : MAX_CHARS;
+
+    const read = readFile(text, maxChars, "Loadout");
+    if (!read.ok) return read;
+    const data = read.data;
+
+    if (!data || typeof data !== "object" || data.format !== PORTABLE_FORMAT) {
+      return { ok: false, error: "invalid", message: "This file is not a shared loadout." };
+    }
+    if (typeof data.schema_version !== "number") {
+      return { ok: false, error: "invalid", message: "This shared loadout has no version and cannot be read." };
+    }
+    const v = data.schema_version;
+    if (v > current) {
+      return { ok: false, error: "newer", message: "This loadout was exported by a newer version of the app." };
+    }
+    if (v < current - (window - 1)) {
+      return { ok: false, error: "too-old", message: "This loadout is too old to import; export it again from a newer build." };
+    }
+    if (!inputKeys()) {
+      return { ok: false, error: "no-allowlist",
+        message: "The app could not read its saved-input list, so nothing was imported." };
+    }
+    const character = sanitizeCharacter(data.core);
+    if (!character) {
+      return { ok: false, error: "invalid", message: "This shared loadout carries no readable build." };
+    }
+    return { ok: true, kind: "portable", character, name: character.name,
+             exportedAt: typeof data.exported_at === "string" ? data.exported_at : null,
+             appBuildId: data.app_build_id || null };
+  }
+
+  /** #190 — one entry point for "the player picked a .json file".
+   *
+   *  A player handed a file should not have to know which kind it is, and does not
+   *  have to: `format` distinguishes them, which is what it was added for. Anything
+   *  without it is read as a backup, so the existing message for a wrong file is
+   *  unchanged rather than replaced by a vaguer one about two formats.
+   */
+  function parseAny(text, opts) {
+    const maxChars = (opts && opts.maxChars != null) ? opts.maxChars : MAX_CHARS;
+    const read = readFile(text, maxChars, "Backup");
+    if (!read.ok) return read;
+    return (read.data && typeof read.data === "object" && read.data.format === PORTABLE_FORMAT)
+      ? parsePortable(text, opts)
+      : parseBackup(text, opts);
+  }
+
+  /** A name that does not collide with one already saved, for #190's import.
+   *
+   *  The store has NO stable build id — `persist.js` keys by name and says so — so
+   *  an incoming build named "Caster" is indistinguishable from your own "Caster".
+   *  Overwriting is therefore not an option a portable import may take: the file
+   *  usually came from somebody else, and the collision is likely to be two
+   *  different builds sharing an obvious name rather than the same build returning.
+   *
+   *  So it never overwrites. It renames, and the caller reports the rename — a
+   *  silent one would leave the player looking for a name that is not there.
+   *  Case-insensitive, matching every other name comparison in the app.
+   */
+  function uniqueName(desired, taken) {
+    const base = String(desired == null ? "" : desired).trim() || "Imported build";
+    const have = new Set((taken || []).map((n) => String(n).trim().toLowerCase()));
+    if (!have.has(base.toLowerCase())) return base;
+    const withSuffix = `${base} (imported)`;
+    if (!have.has(withSuffix.toLowerCase())) return withSuffix;
+    for (let i = 2; i < 1000; i++) {
+      const n = `${base} (imported ${i})`;
+      if (!have.has(n.toLowerCase())) return n;
+    }
+    return `${base} (imported ${Date.now()})`;
+  }
+
   // Per-name merge (default): colliding names update, new names add, others stay.
   // "replace" wipes existing and installs only the incoming set.
   function mergeInto(existing, incoming, mode) {
@@ -236,6 +352,8 @@
 
   const api = {
     CURRENT_SCHEMA, WINDOW, MAX_CHARS, MIGRATIONS,
+    PORTABLE_FORMAT, PORTABLE_SCHEMA, PORTABLE_WINDOW,
+    parsePortable, parseAny, uniqueName,
     serializeAll, parseBackup, mergeInto, migrate, sanitizeCharacter,
   };
 

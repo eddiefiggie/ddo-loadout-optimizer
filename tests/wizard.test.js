@@ -3794,11 +3794,20 @@ test("#428 U4 (R15): serializeCharacter writes a record with no snapshot and no 
 test("#428 U4 (R18/AE5): nothing persists unless the player saves", () => {
   const fs = require("fs"); const path = require("path");
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
-  // The store is written from exactly two places: the explicit save the rail
-  // triggers, and the backup import. No autosave, no unload hook, no timer.
+  // The store is written from exactly three places: the explicit save the rail
+  // triggers, the backup import, and (#190) the shared-build import. No autosave,
+  // no unload hook, no timer.
+  //
+  // 3 not 2 since #190. The count is the point of this test, so it is re-ratified
+  // deliberately rather than bumped: the third write is the portable envelope
+  // landing a single shared build, and it is player-initiated in the same way the
+  // other two are — they picked a file. What this guard exists to catch is a write
+  // the player did NOT ask for, and the two assertions below are the ones that
+  // catch it. If this number moves again, check that the new write is reachable
+  // only from something the player pressed.
   const writes = (src.match(/CharacterStore\.save(Character|Many)\(/g) || []);
-  assert.strictEqual(writes.length, 2,
-    `expected exactly the save-button and import writes; found ${writes.length}`);
+  assert.strictEqual(writes.length, 3,
+    `expected the save-button, backup-import and shared-build-import writes; found ${writes.length}`);
   assert.ok(!/beforeunload|visibilitychange/.test(src),
     "no unload hook quietly persists an unsaved build");
   assert.ok(!/setInterval\(/.test(src), "no autosave timer");

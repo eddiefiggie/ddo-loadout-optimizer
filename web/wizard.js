@@ -4767,10 +4767,13 @@ if (typeof window !== "undefined" && window.App) {
             back if you clear your browser data. <strong>Version snapshots are not included:</strong> they are taken automatically
             on every solve and would make this file far larger, so clearing your browser loses your version history and keeps
             everything you wrote. Backups stay compatible across the last 3 data versions; a file older than that, or made by a
-            newer version of the app, is declined so a bad import can't corrupt your saves.</p>
+            newer version of the app, is declined so a bad import can't corrupt your saves.
+            This is also where you open a <strong>single build somebody shared with you</strong> — drop their
+            <code>.json</code> in here and it is added alongside your own. A shared build never replaces one of yours:
+            if the name is already taken it is saved under a new one and the panel tells you which.</p>
           <div class="wz-data-row">
             <button class="btn ghost" id="wz-export-${ns}" type="button">Export all (.json)</button>
-            <input id="wz-import-label-${ns}" type="text" readonly placeholder="Import a backup (.json)…" class="wz-file">
+            <input id="wz-import-label-${ns}" type="text" readonly placeholder="Import a backup or a shared build (.json)…" class="wz-file">
             <input id="wz-import-${ns}" type="file" accept=".json,application/json" class="wz-hidden">
           </div>
           <div id="wz-data-stat-${ns}" class="wz-filestat"></div>
@@ -4885,9 +4888,46 @@ if (typeof window !== "undefined" && window.App) {
           const reader = new FileReader();
           reader.onload = () => {
             const s = stat();
+            // #190 — ONE input for both file kinds. A player handed a `.json` should
+            // not have to know whether it is their own backup or a build somebody
+            // shared with them; `format` is what tells the reader apart, and it was
+            // added for exactly this.
             // eslint-disable-next-line no-undef
-            const res = BackupIO.parseBackup(reader.result);
+            const res = BackupIO.parseAny(reader.result);
             if (!res.ok) { s.className = "wz-filestat warn"; s.textContent = res.message || "Import failed."; return; }
+
+            // #190 — a shared single build takes its own path. It is ADDITIVE and
+            // never overwrites: the store has no stable build id (it keys by name),
+            // so an incoming "Caster" cannot be told apart from the player's own
+            // "Caster", and the file usually came from someone else. Renaming and
+            // saying so is the only reading that cannot destroy authored work.
+            if (res.kind === "portable") {
+              // eslint-disable-next-line no-undef
+              const existing = CharacterStore.allCharacters() || {};
+              // eslint-disable-next-line no-undef
+              const name = BackupIO.uniqueName(res.name, Object.keys(existing));
+              const one = Object.create(null);
+              one[name] = Object.assign({}, res.character, { name });
+              // eslint-disable-next-line no-undef
+              const w = CharacterStore.saveMany(one);
+              if (!w.ok) {
+                s.className = "wz-filestat warn";
+                s.textContent = w.error === "quota"
+                  ? "Storage full — remove some saves and try again."
+                  : "Could not save the imported loadout.";
+                return;
+              }
+              s.className = "wz-filestat";
+              // The rename is REPORTED, never silent: a player who imports "Caster"
+              // and is shown "Imported" would go looking for a build under a name
+              // that is not there, and would reasonably conclude it overwrote theirs.
+              s.textContent = name === res.name
+                ? `Imported the shared build "${name}".`
+                : `Imported the shared build "${res.name}" as "${name}" — you already had a build with that name, and it was left alone.`;
+              renderRail();
+              renderStored();
+              return;
+            }
             // saveMany already merges by name into the existing store, so pass the
             // imported set directly — no separate mergeInto pass needed for "merge".
             // eslint-disable-next-line no-undef
