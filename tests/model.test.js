@@ -374,6 +374,77 @@ test("weapon types share ONE main-hand slot (not one slot per type)", () => {
   assert.ok(!model.worn.some((s) => s.slot === "Light Crossbow"));
 });
 
+// ---- #246 — the content-ownership filter ----
+
+// Each in its OWN slot: six identical Rings would be pruned by dominanceFilter and
+// the test would be measuring that instead of the ownership filter.
+const packV = (id, pack, kind, slot) => ({
+  source_item: id, variant_id: id, slot: slot || "Ring", category: "item",
+  minimum_level: 30, ml: 30, verification: "verified",
+  affixes: [{ stat: "Constitution", bonus_type: "Enhancement", name: "Constitution",
+              type: "Enhancement", value: 10, unit: "flat" }],
+  scaling: [], set_bonus: [], augment_slots: [], restrictions: "unknown", armor_type: null,
+  location_pack: pack, location_kind: kind,
+});
+const PACK_POOL = [
+  packV("owned", "Ruins of Gianthold", "pack-quest", "Ring"),
+  packV("unowned", "Mists of Ravenloft", "pack-quest", "Goggles"),
+  packV("free", "Free to Play", "pack-quest", "Helmet"),
+  packV("crafted", null, "crafting", "Boots"),
+  packV("vendor", null, "vendor", "Belt"),
+  packV("nopack", null, "unknown", "Cloak"),
+];
+const packQ = (owned) => ({ mlCap: 34, targets: ["Constitution"], targetCaps: {}, targetFloors: {},
+  ownedPacks: owned });
+const idsIn = (m) => new Set(m.worn.flatMap((sl) => (sl.variants || []).map((v) => v.variant_id)));
+
+test("#246: an ABSENT ownedPacks filters nothing", () => {
+  // The same contract an absent blocklist has, and for the same reason: most callers
+  // never set the key, and a truthiness slip here would empty their pools.
+  const m = M.buildModel(PACK_POOL, packQ(undefined));
+  assert.strictEqual(m.packExcluded.length, 0);
+  assert.strictEqual(m.ownedPacks, null);
+  assert.strictEqual(idsIn(m).size, PACK_POOL.length);
+});
+
+test("#246: only gear behind a NAMED, unticked pack is excluded", () => {
+  const m = M.buildModel(PACK_POOL, packQ(["Ruins of Gianthold"]));
+  const ids = idsIn(m);
+  assert.ok(ids.has("owned"), "a ticked pack stays");
+  assert.ok(!ids.has("unowned"), "an unticked pack goes");
+  // Everything below is NOT pack-gated, so excluding it would be wrong rather than
+  // merely cautious — 1,711 real variants are crafted, bought, event or Store gear.
+  assert.ok(ids.has("free"), "Free to Play is not something you can fail to own");
+  assert.ok(ids.has("crafted"), "crafted gear is not gated by an expansion");
+  assert.ok(ids.has("vendor"), "nor is vendor gear");
+  assert.ok(ids.has("nopack"), "and an unsourced pack is KEPT, never dropped on a guess");
+  assert.deepStrictEqual(m.packExcluded.map((v) => v.variant_id), ["unowned"]);
+});
+
+test("#246: what could not be checked is COUNTED, not silently passed over", () => {
+  // A filter that reports what it removed and stays quiet about what it could not
+  // check reads as a complete answer when it is a partial one.
+  const m = M.buildModel(PACK_POOL, packQ(["Ruins of Gianthold"]));
+  assert.strictEqual(m.packUncheckable, 4, "free + crafted + vendor + nopack");
+});
+
+test("#246: an EMPTY ownedPacks is a real answer, not the absent one", () => {
+  // [] means "I own nothing"; null means "I have not said". Conflating them would
+  // make the first touch of a checkbox empty the roster.
+  const m = M.buildModel(PACK_POOL, packQ([]));
+  assert.deepStrictEqual(m.packExcluded.map((v) => v.variant_id).sort(), ["owned", "unowned"]);
+  assert.ok(idsIn(m).has("free"), "and it still cannot exclude un-gated gear");
+});
+
+test("#246: the filter runs AFTER the blocklist, so a block keeps its attribution", () => {
+  // A variant the player both blocked and does not own is attributed to the block —
+  // the reason they actually chose.
+  const m = M.buildModel(PACK_POOL, Object.assign(packQ(["Ruins of Gianthold"]),
+    { blocklist: ["unowned"] }));
+  assert.deepStrictEqual(m.blocked.map((v) => v.variant_id), ["unowned"]);
+  assert.deepStrictEqual(m.packExcluded.map((v) => v.variant_id), []);
+});
+
 test("#573: no armor-category dodge clamp is minted, and the constant is gone", () => {
   // The inverse of the test this replaces, which pinned `cap.dodgeCap === ARMOR_DODGE_CAP.heavy`.
   //

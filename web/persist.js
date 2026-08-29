@@ -127,6 +127,12 @@
     // build that was solved under a pin must come back holding it, or a reload
     // silently drops a constraint the player set.
     "pinnedSets",
+    // #246 — the content the player owns, as a plain string array of adventure-pack
+    // names. Character-independent and stable, so it belongs with the saved profile
+    // rather than being re-entered per solve. ABSENT means "not answered", which
+    // reads as no filter — a build saved before this shipped reloads solving exactly
+    // what it solved before, the same contract `ownedAugments` and `augCeiling` set.
+    "ownedPacks",
     "targetCaps", "targetFloors",
     // U2/U5 — declared stat credits, keyed `stat||bonusType`. Plain JSON, so it
     // needs no special serialization the way the two Sets above do.

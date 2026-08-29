@@ -1184,6 +1184,33 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // never carries the key, and a truthiness slip here would empty its pools.
   // The removed set is retained on the model so the disclosure (U7) can
   // attribute without recomputing.
+  // #246 — the content-ownership filter, applied at THIS seam and for the same
+  // reasons #110 gives: it filters CANDIDACY, upstream of dominanceFilter, so an
+  // excluded winner leaves the genuine runner-up as the pool's new best, and it
+  // removes the variant from every worn slot, both hands and the augment pools at
+  // once. Expressing it as a variantConflict would instead say "this character can
+  // never equip this", which is false — the player could buy the pack tomorrow.
+  //
+  // ABSENT `ownedPacks` means "filter nothing", exactly as an absent blocklist does.
+  // A truthiness slip here would empty the pool for every caller that does not set
+  // the key, which is most of them.
+  //
+  // What it excludes is deliberately NARROW: only a variant whose `location_pack`
+  // is a real, named adventure pack the player did not tick. Everything else stays:
+  //
+  //   * `Free to Play` is a pack value meaning NO pack is required.
+  //   * Crafting, vendor, event and Store gear is not pack-gated at all — 1,711
+  //     variants that no expansion purchase gates, so excluding them would be wrong
+  //     rather than merely cautious.
+  //   * A variant whose pack could not be sourced (#495 leaves 33 source values
+  //     unknown) is KEPT and disclosed. Dropping it would silently narrow the pool
+  //     on a guess, which is the failure this whole filter exists to make visible.
+  //
+  // So the filter removes only what it can POSITIVELY determine is behind content
+  // the player says they do not have.
+  const ownedPacks = Array.isArray(query.ownedPacks) ? new Set(query.ownedPacks) : null;
+  const packExcluded = [];
+  const packUncheckable = { count: 0 };
   const blockedIds = new Set(Array.isArray(query.blocklist) ? query.blocklist : []);
   const blocked = [];
   let elig = eligAll;
@@ -1215,6 +1242,19 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
         || (cand.block_identity && blockedIdentities.has(cand.block_identity));
       (hit ? blocked : elig).push(cand);
     }
+  }
+
+  // #246 — applied AFTER the blocklist so a variant the player both blocked and
+  // does not own is attributed to the block, which is the reason they chose.
+  if (ownedPacks) {
+    const kept = [];
+    for (const cand of elig) {
+      const pack = cand.location_pack || null;
+      if (!pack || pack === "Free to Play") { packUncheckable.count += 1; kept.push(cand); continue; }
+      if (ownedPacks.has(pack)) { kept.push(cand); continue; }
+      packExcluded.push(cand);
+    }
+    elig = kept;
   }
 
   // Pinned variant ids (U6): kept through the dominance pre-filter so a pinned
@@ -1431,6 +1471,13 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // #110 (U2) — eligible-but-blocked variants, retained for the disclosure's
     // attribution. Never re-enters any pool below.
     blocked,
+    // #246 — variants excluded because their adventure pack was not ticked, and a
+    // count of those no ownership answer could apply to. Both are needed: a filter
+    // that reports what it removed and stays silent about what it could not check
+    // reads as a complete answer when it is a partial one.
+    packExcluded,
+    packUncheckable: packUncheckable.count,
+    ownedPacks: ownedPacks ? [...ownedPacks].sort() : null,
     // #110 (U8) — worn slots whose every candidate the player blocked, captured
     // at pool assembly because the omitted slot never reaches `worn`.
     blockEmptiedSlots,

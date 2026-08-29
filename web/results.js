@@ -1499,6 +1499,16 @@ function statReach(build, stat) {
 
 /** #110 (U7) — the blocklist disclosure. Reads the SHARED sentences from
  *  projection; silent when no block removed an eligible candidate. */
+/** #246 — the content-ownership filter's disclosure. Pure (result), and identical
+ *  on a restored snapshot, because it reads the solver-stamped report rather than a
+ *  live input — a shared build must disclose the narrowing without re-solving. */
+function packFilterNotice(result) {
+  const lines = (Proj && Proj.packFilterNoticeLines) ? Proj.packFilterNoticeLines(result) : [];
+  return lines.length
+    ? `<p class="scope-note pack-filter-note" role="status">${lines.map(esc).join(" ")}</p>`
+    : "";
+}
+
 function blockNotice(result) {
   const lines = (Proj && Proj.blockNoticeLines) ? Proj.blockNoticeLines(result) : [];
   return lines.length
@@ -1622,6 +1632,10 @@ const NOTICE_TABLE = {
     jump: { label: "Change crafting opt-out →", step: "character", anchor: 'input[name="wz-crafting-rung"]' } },
   blockNotice: { id: "blocked-gear", title: "BLOCKED GEAR", subject: "blocked gear", cls: NOTICE_ACTIONABLE,
     jump: { label: "Review block list →", step: "pool", anchor: null } },
+  // #246 — ACTIONABLE, unlike the #573 disclosure: the player CAN resolve it, by
+  // ticking a pack they do own. The jump goes to the same step the control lives on.
+  packFilterNotice: { id: "content-not-owned", title: "CONTENT NOT OWNED", subject: "content not owned", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Review your content →", step: "pool", anchor: "#wz-packs" } },
   // #539 — actionable, not qualifying: every line it can print names something
   // the player can change (remove a pin, tick an augment as owned, raise the cap).
   setPinNotice: { id: "required-sets", title: "REQUIRED SETS", subject: "required sets", cls: NOTICE_ACTIONABLE,
@@ -1744,6 +1758,7 @@ function noticeDescriptors(ctx) {
   push("augCeilingNotice", augCeilingNotice(query, result));
   push("dodgeMaxDexNotice", dodgeMaxDexNotice(query, result));
   push("blockNotice", blockNotice(result));
+  push("packFilterNotice", packFilterNotice(result));
   push("setPinNotice", setPinNotice(result, { canPrice: !!ctx.canPriceSetPin }));
   push("upgradeNotice", upgradeNotice(ctx.canUpgrade, ctx.upgradeBar));
 
@@ -3416,7 +3431,7 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, blockNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, blockNotice, packFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,
