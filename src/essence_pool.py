@@ -51,6 +51,37 @@ INSIGHTFUL_PREFIX = "Insightful "
 # between offering that Gem nine Insight options and offering it none.
 INSIGHT_MIN_ML = 10
 
+# A SECOND, separate ML-10 rule, from two other sentences:
+#   "Extra enchantment slots are not available on items under minimum level 10."
+#       — Essence Crafting, Components
+#   "If the item is ML 10 or greater, it has a 'Mark of House Cannith Slot'"
+#       — Essence Crafting steps
+# That gates the SLOT rather than the effect. The two coincide today only because
+# every Extra effect this pool offers happens to be Insight-typed; they are kept
+# apart so a non-Insight Extra effect cannot arrive later and quietly skip it.
+EXTRA_SLOT_MIN_ML = 10
+
+# The crafted minimum level is the CRAFTER's choice, not a property the item
+# arrives with: "This shard determines the minimum level of the item, the power
+# level of scaling effect shards crafted onto the item" (Essence Crafting, Steps).
+# Shards exist for ML 1-36.
+#
+# The solver reads the HOST's ml as the level to craft at, and that is correct
+# only because of two things that are checked rather than assumed:
+#
+#   1. Every offered option's ML curve is monotonic non-decreasing and peaks at
+#      36, so crafting at the highest available level is always optimal. Asserted
+#      in tests/test_essence_pool.py.
+#   2. The highest available level for a named item appears to be its own ML — a
+#      Legendary Gem (ML 30) refuses an ML 36 shard. That is a PLAYER OBSERVATION
+#      (maintainer, 2026-08-30), NOT a wiki statement; see
+#      docs/wiki-evidence/essence-crafting.md for where it was searched for.
+#
+# Both matter beyond the Gem. When the Rune Arm, Ring and Melee menus are sourced,
+# their hosts are blanks with no meaningful native ML, and reading a host record's
+# ml will produce ML 1 values for an item a player would craft at 34.
+MAX_SHARD_ML = 36
+
 # Only hosts whose record is `verified` get live slots. `Trinket [Crafted]` — a
 # blank craftable trinket — declares the same three menus but is `quarantined`
 # ("no solver-eligible affixes") and carries ML 1, which is a placeholder rather
