@@ -384,6 +384,46 @@ test("#498: the Loadout card carries slot, affixes and set name on one row", () 
   assert.ok(/pd-rset/.test(html) && /Dread Isle/.test(html), "names the set it belongs to");
 });
 
+// #614 — the unmodelled-penalty note on the gear card. The sentence itself is
+// tested in projection.test.js; what is guarded HERE is the render path, which
+// no pure-function test reaches — the weight, the icon, and the silence.
+const PEN_RE = /<div class="pd-note pd-rnote pd-penalty[\s\S]*?<\/div>/;
+
+function penRow(targets) {
+  const v = { variant_id: "Glass Cannon", affixes: [
+    { name: "Intelligence", type: "Enhancement", value: "11" },
+    { name: "Fortification", type: "Penalty", value: "-25" }] };
+  return R.equippedRow("Off Hand", { variant: v, idx: 0 }, {}, new Set(),
+    { setAugByHost: new Map() }, new Map(),
+    { mode: false, augments: false, slotsCovered: new Set() }, null,
+    { result: null, attr: null, targets });
+}
+
+test("#614: a penalty on a RANKED stat is warn-weighted on the card", () => {
+  const note = (penRow(["Fortification"]).match(PEN_RE) || [""])[0];
+  assert.ok(note, "the note renders at all");
+  assert.ok(/is-craft/.test(note), "warn-coloured: a number ON THIS CARD is wrong-high");
+  assert.ok(note.includes("\u26a0"), "and carries the warning glyph");
+  assert.ok(/optimistic/.test(note));
+});
+
+test("#614: a penalty on an UNRANKED stat is muted, not a warning", () => {
+  const note = (penRow(["Strength"]).match(PEN_RE) || [""])[0];
+  assert.ok(note, "still disclosed — it is a real drawback of the item");
+  assert.ok(/muted/.test(note) && !/is-craft/.test(note),
+    "but no displayed total is wrong, so it must not read as one");
+  assert.ok(!note.includes("\u26a0"));
+});
+
+test("#614: an item with no penalty renders no note at all", () => {
+  const v = { variant_id: "Clean Ring", affixes: [{ name: "Strength", type: "Enhancement", value: "5" }] };
+  const html = R.equippedRow("Ring", { variant: v, idx: 0 }, {}, new Set(),
+    { setAugByHost: new Map() }, new Map(),
+    { mode: false, augments: false, slotsCovered: new Set() }, null,
+    { result: null, attr: null, targets: ["Strength"] });
+  assert.ok(!PEN_RE.test(html), "no empty note family member on a clean card");
+});
+
 test("U5/R5: equippedRow tags an Artifact slot with a badge + is-artifact frame", () => {
   const pick = { slot: "Trinket", variant: { variant_id: "Family Blade", minimum_level: 32, artifact: true } };
   const html = R.equippedRow("Trinket", pick, {});

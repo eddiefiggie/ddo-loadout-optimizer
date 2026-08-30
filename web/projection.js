@@ -703,6 +703,54 @@
   // constant exists to forbid.
   const NO_DROP_SOURCE_WORDING = "no known live drop source";
 
+  // #614 — the unmodelled-penalty disclosure. 36 affixes ship a real signed
+  // magnitude under a `Penalty` bonus type, and the solver discards every one of
+  // them at twelve `value > 0` gates, so an item is scored on its upside alone.
+  // If the penalty lands on a stat the player ranked, the reported total for that
+  // stat is WRONG-HIGH and nothing says so — the class of error this project
+  // treats as worst, because it is indistinguishable from a right number inside a
+  // finished loadout.
+  //
+  // Subtracting it needs an LP change AND a wiki ruling on how penalties stack
+  // (five stats carry co-equippable penalties across different slots, Will Save
+  // across five), so the number cannot be corrected yet. Disclosure is what can
+  // ship without inferring a game rule: a visible gap beats a confident wrong
+  // number. ONE spelling, here, for the same reason NO_DROP_SOURCE_WORDING is.
+  const PENALTY_NOT_COUNTED_WORDING = "not subtracted by the solver";
+
+  /** #614 — an equipped item's signed penalties, as [{stat, value}], worst first.
+   *  Values are coerced because the raw catalog stores them as strings. */
+  function itemPenalties(v) {
+    return ((v && v.affixes) || [])
+      .filter((a) => a && a.type === "Penalty" && Number(a.value) < 0)
+      .map((a) => ({ stat: a.name, value: Number(a.value) }))
+      .sort((x, y) => x.value - y.value);
+  }
+
+  /** #614 — the disclosure sentence for one item, or "" when it carries none.
+   *
+   *  Two shapes, because the two cases differ in whether a displayed number is
+   *  wrong. A penalty on a RANKED stat makes that stat's total optimistic and
+   *  says so by name; a penalty on an unranked stat is information about the item
+   *  with no number to correct, and claiming otherwise would overstate. */
+  function penaltyDisclosure(v, targets) {
+    const pens = itemPenalties(v);
+    if (!pens.length) return "";
+    const ranked = new Set(targets || []);
+    const hit = pens.filter((p) => ranked.has(p.stat));
+    const list = pens.map((p) => `${p.value} ${p.stat}`).join(", ");
+    if (!hit.length) {
+      return `Carries ${list} \u2014 ${PENALTY_NOT_COUNTED_WORDING}.`
+        + ` ${pens.length > 1 ? "None are" : "It is not"} among your priorities, so no total above is affected.`;
+    }
+    const names = hit.map((p) => p.stat);
+    const named = names.length === 1 ? names[0]
+      : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+    return `Carries ${list} \u2014 ${PENALTY_NOT_COUNTED_WORDING}.`
+      + ` ${named} ${names.length === 1 ? "is" : "are"} ranked, so`
+      + ` ${names.length === 1 ? "its total" : "those totals"} above ${names.length === 1 ? "is" : "are"} optimistic.`;
+  }
+
   /** #245 — is this equipped item picked ONLY for its craftable options?
    *
    *  A craftable option slot makes its host a wildcard for every rankable stat,
@@ -1914,6 +1962,12 @@
         // dataset field: an unverified item carries no key at all, so no
         // surface can render a note the wiki evidence lacks (R2/R5).
         ...(v.no_drop_source ? { noDropSource: NO_DROP_SOURCE_WORDING } : {}),
+        // #614 — signed penalties the solver discarded, carried as the shared
+        // content model so no export can show the pick without the caveat. Same
+        // only-when-set shape as noDropSource above: an item with no penalty
+        // carries no key, so no surface can print a note the data lacks.
+        ...(itemPenalties(v).length
+          ? { penalties: itemPenalties(v), penaltyNote: penaltyDisclosure(v, priorities) } : {}),
       };
     });
 
@@ -2661,6 +2715,9 @@
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)
     NO_DROP_SOURCE_WORDING,
+    // #614 — the one unmodelled-penalty disclosure wording + its two helpers
+    // (results card and every exporter read them from here; never respell)
+    PENALTY_NOT_COUNTED_WORDING, itemPenalties, penaltyDisclosure,
     // #110 — the blocklist disclosure sentences
     blockNoticeLines, setPinNoticeLines,
     // U10 — the three multi-fact notices, one addressable entry per fired branch

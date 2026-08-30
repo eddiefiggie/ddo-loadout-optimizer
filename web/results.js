@@ -375,7 +375,25 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
     ? recNote(owned.mode, owned.augments, hasAugmentSlots(pick ? pick.idx : -1, maps),
         craftRowsFor(v, pick ? pick.idx : -1, maps).length > 0)
     : "";
-  const notes = `${reasonNote}${noDropNote}${rec}${prio}`;
+  // #614 — the unmodelled-penalty disclosure, in the same foot-note family.
+  // Two weights on purpose: a penalty on a RANKED stat means a number ON THIS
+  // CARD is wrong-high, which is warn-coloured and carries the ⚠; a penalty on an
+  // unranked stat corrects no displayed total and is muted. The sentence itself
+  // comes from projection.js so the card and every exporter print one spelling.
+  const penNote = (() => {
+    if (!v || locked) return "";
+    const pens = Proj.itemPenalties(v);
+    if (!pens.length) return "";
+    const targets = (prioCtx && prioCtx.targets) || [];
+    const ranked = new Set(targets);
+    const hits = pens.some((p) => ranked.has(p.stat));
+    const txt = Proj.penaltyDisclosure(v, targets);
+    return `<div class="pd-note pd-rnote pd-penalty${hits ? " is-craft" : " muted"}"`
+      + ` title="The solver discards negative affixes, so this item was scored on its upside alone (#614)">`
+      + `<span class="pd-note-ico" aria-hidden="true">${hits ? "⚠" : "▽"}</span>`
+      + `<span>${esc(txt)}</span></div>`;
+  })();
+  const notes = `${reasonNote}${noDropNote}${penNote}${rec}${prio}`;
   return `<div class="${rowCls}">
     <div class="pd-card-head">
       <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>

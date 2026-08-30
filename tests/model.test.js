@@ -34,6 +34,66 @@ test("dominates: strictly-better same-slot variant dominates", () => {
   assert.ok(!M.dominates(B, A, targets, 30));
 });
 
+// #614 — a penalty is a bucket with a NEGATIVE value, and `dominates` used to
+// iterate only B's buckets, so A's own penalty was never looked at.
+test("#614: a penalised variant does not dominate a clean one", () => {
+  const ts = new Set(["Strength", "Constitution"]);
+  const A = { variant_id: "A_penalized", affixes: [
+    { name: "Strength", type: "Enhancement", value: 10 },
+    { name: "Constitution", type: "Penalty", value: -2 }] };
+  const B = { variant_id: "B_clean", affixes: [
+    { name: "Strength", type: "Enhancement", value: 10 }] };
+  assert.strictEqual(M.dominates(A, B, ts, 34), false,
+    "the penalty is a cost A carries and B does not");
+  assert.strictEqual(M.dominates(B, A, ts, 34), true,
+    "the clean variant genuinely dominates: same upside, no downside");
+});
+
+test("#614: the clean alternative survives the pre-filter, not the penalised one", () => {
+  // The old behaviour was MUTUAL domination, so the `i < j` tie-break kept
+  // whichever came first and deleted the other — here, the penalised item, with
+  // the clean one removed from the pool before the program was ever built.
+  const ts = new Set(["Strength", "Constitution"]);
+  const A = { variant_id: "A_penalized", affixes: [
+    { name: "Strength", type: "Enhancement", value: 10 },
+    { name: "Constitution", type: "Penalty", value: -2 }] };
+  const B = { variant_id: "B_clean", affixes: [
+    { name: "Strength", type: "Enhancement", value: 10 }] };
+  assert.deepStrictEqual(
+    M.dominanceFilter([A, B], ts, 34, 1).map((v) => v.variant_id), ["B_clean"],
+    "penalised item listed FIRST must still lose to the clean one");
+});
+
+test("#614: a penalty does not make a genuinely better item prunable", () => {
+  // The fix must not overshoot into keeping everything: an item that wins on the
+  // upside AND carries a penalty is no longer comparable either way, so both
+  // survive and the solver chooses — it is not itself pruned.
+  const ts = new Set(["Strength", "Constitution"]);
+  const C = { variant_id: "C_better", affixes: [
+    { name: "Strength", type: "Enhancement", value: 20 },
+    { name: "Constitution", type: "Penalty", value: -2 }] };
+  const B = { variant_id: "B_clean", affixes: [
+    { name: "Strength", type: "Enhancement", value: 10 }] };
+  assert.strictEqual(M.dominates(C, B, ts, 34), false, "C's penalty blocks it");
+  assert.strictEqual(M.dominates(B, C, ts, 34), false, "B's weaker Strength blocks it");
+  assert.deepStrictEqual(
+    M.dominanceFilter([C, B], ts, 34, 1).map((v) => v.variant_id).sort(),
+    ["B_clean", "C_better"], "neither prunes the other");
+});
+
+test("#614: an untracked penalty is invisible, as every untracked affix is", () => {
+  // variantBuckets filters on targetSet first, so a penalty to a stat nobody
+  // ranked must not perturb pruning — otherwise the fix would keep the whole pool.
+  const ts = new Set(["Strength"]);
+  const A = { variant_id: "A", affixes: [
+    { name: "Strength", type: "Enhancement", value: 10 },
+    { name: "Constitution", type: "Penalty", value: -2 }] };
+  const B = { variant_id: "B", affixes: [
+    { name: "Strength", type: "Enhancement", value: 10 }] };
+  assert.strictEqual(M.dominates(A, B, ts, 34), true,
+    "Constitution is not ranked, so it is not a bucket at all here");
+});
+
 test("dominanceFilter prunes the dominated variant", () => {
   const A = v("A", "Ring", [["Intelligence", "Enhancement", 10]]);
   const B = v("B", "Ring", [["Intelligence", "Enhancement", 5]]);
