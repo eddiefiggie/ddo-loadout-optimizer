@@ -2517,6 +2517,51 @@ test("U4/#110: an already-blocked variant is not duplicated by block-selected", 
   assert.deepStrictEqual(r.added, ["Gem B"]);
 });
 
+// #623 — the gear-pool folds' collapsed status lines. `poolStatus` computed the
+// right answer and only `stepPool()` ever wrote it, so a targeted list render left
+// the summary stating the state the panel was in BEFORE the player touched it.
+
+test("#623: every panel poolStatus answers for has a live status refresh", () => {
+  // A completeness claim across seven panels, so it is asserted rather than
+  // trusted. `setaug` had this fix and the other six did not, for months — the
+  // way that stops recurring is a check, not a careful edit.
+  const body = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function poolStatus(key)"));
+  const decl = body.slice(0, body.indexOf("\n    }"));
+  const keys = [...decl.matchAll(/case "([a-z]+)":/g)].map((m) => m[1]);
+  assert.ok(keys.length >= 7, `poolStatus should answer for at least 7 panels, found ${keys.length}`);
+  const refreshed = new Set(
+    [...WIZARD_SRC.matchAll(/refreshPoolStatus\("([a-z]+)"\)/g)].map((m) => m[1]));
+  const missing = keys.filter((k) => !refreshed.has(k));
+  assert.deepStrictEqual(missing, [],
+    `panel(s) whose collapsed summary never repaints after a mutation: ${missing}. `
+    + "The summary is the only thing visible while the fold is shut, which is its "
+    + "default state, so a stale one is the whole disclosure.");
+});
+
+test("#623: the slot-constraint MAP is never passed where one constraint is expected", () => {
+  // `pinnedVariantIds(c)` returns [] unless `c.type === "pin"`. The map is keyed
+  // by slot and has no `type`, so passing it yields [] for every build — which is
+  // how the pin fold reported "nothing pinned" over a populated pin list. A
+  // contract violation that returns a plausible empty answer instead of throwing.
+  const calls = [...WIZARD_SRC.matchAll(/_pinnedVariantIds\(([^)]*)\)/g)].map((m) => m[1].trim());
+  assert.ok(calls.length >= 4, `expected several call sites, found ${calls.length}`);
+  const wrong = calls.filter((a) => /^state\.slotConstraints$/.test(a));
+  assert.deepStrictEqual(wrong, [],
+    "pinnedVariantIds takes ONE slot's constraint — iterate the map's values instead");
+});
+
+test("#623: the status patch targets the styled span, never the summary text", () => {
+  // Writing textContent on the <summary> flattens the fold's `.wz-sub` styling on
+  // the first tick, so the status would change font the moment the player used
+  // it. That is why the ONE panel which already had this patched the span.
+  const i = WIZARD_SRC.indexOf("function refreshPoolStatus(");
+  assert.ok(i > 0, "the shared helper exists");
+  const fn = WIZARD_SRC.slice(i, WIZARD_SRC.indexOf("\n    }", i));
+  assert.ok(/summary \.wz-sub/.test(fn), "it resolves the styled span");
+  assert.ok(/data-poolfold/.test(fn), "keyed by the fold's own attribute, not a per-panel id");
+  assert.ok(!/sum\.textContent/.test(fn), "and never writes the summary's own text");
+});
+
 test("#620: blocking a pinned variant lands the block and displaces the pin", () => {
   const sc = {}; applyPinId(sc, "Ring", "Contested Ring", () => 2);
   const r = addBlocks([], ["Contested Ring", "Free Gem"], sc);
