@@ -2019,14 +2019,18 @@ input.wz-ml { width: 120px; }
    ~67 rows: a single column pushes the rest of the Gear pool step off-screen, and
    the count column is what makes an unfamiliar pack name actionable. */
 .wz-packrow { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-2) 0; }
+/* The list no longer scrolls inside itself. It used to sit in a 22rem box with
+   its own scrollbar inside an already-scrolling page — two nested scrollbars for
+   one list — and the section it lives in now folds, so length is the fold's
+   problem rather than an inner viewport's. */
 .wz-pack-list {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: var(--sp-1) var(--sp-3); max-height: 22rem; overflow-y: auto;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: var(--sp-1) var(--sp-3);
   padding: var(--sp-2); border: 1px solid var(--line); border-radius: var(--radius);
 }
 .wz-pack-row {
   display: flex; align-items: center; gap: var(--sp-2); font-size: 0.92em; cursor: pointer;
-  padding: 2px var(--sp-1); border-radius: var(--radius);
+  padding: 3px var(--sp-1); border-radius: var(--radius); min-height: 1.9rem;
   /* Unticked rows recede rather than disappear — a pack you do not own is still a fact
      about the roster, and greying it out entirely made the list read as broken. */
   opacity: 0.55; transition: opacity 120ms ease, background 120ms ease;
@@ -2034,11 +2038,15 @@ input.wz-ml { width: 120px; }
 .wz-pack-row.is-on { opacity: 1; }
 .wz-pack-row:hover { background: var(--line); opacity: 1; }
 .wz-pack-row input { flex: none; }
-.wz-pack-name { flex: 1 1 8rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The name gets the room, and the row grows to fit it rather than clipping. Pack
+   names are long and share a prefix — "The Chill of R…", "The Temple …" and
+   "Ruins of Gian…" are not identifiable, which is the whole job of this list.
+   `title` on the row still carries the full name for a hover. */
+.wz-pack-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 /* Proportional bar: with 66 rows the bare numbers do not convey that the largest pack
    gates ~10x what the median one does. Sized off the max, so it is a comparison
    within the list rather than a claim about any absolute scale. */
-.wz-pack-bar { flex: 0 0 3.5rem; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.wz-pack-bar { flex: 0 0 2.5rem; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
 .wz-pack-bar > span { display: block; height: 100%; background: var(--accent, currentColor); opacity: 0.55; }
 .wz-pack-count { flex: 0 0 2.5rem; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
 .wz-pack-filter { flex: 1 1 12rem; min-width: 8rem; }
@@ -2051,3 +2059,39 @@ input.wz-ml { width: 120px; }
 }
 .wz-pack-meter > span { display: block; height: 100%; background: var(--accent, currentColor); }
 .wz-pack-pct { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+
+/* ---- Gear pool step: one container shape for every subsection -----------------
+
+   The step used to be flat `.wz-pinbox` blocks separated by a top border, with a
+   single differently-styled `<details>` among them, so it read as a run-on rather
+   than as a set of settings. Every subsection is now the same fold the Character
+   step already uses for Weapon setup: same border, same padding, same caret, same
+   width — and each says its own state while closed, so folding one never hides a
+   setting the player forgot they made. */
+.wz-pool-sec { margin-top: var(--sp-3); }
+/* Left as normal inline flow, NOT flex: the caret is a `::before` with a trailing
+   space and the status span opens with one, and a flex container trims both — the
+   title ends up jammed against its own caret and its status. */
+.wz-pool-sec > summary .wz-sub { font-weight: 500; }
+.wz-pool-sec[open] > summary { margin-bottom: var(--sp-3); }
+.wz-pool-body { min-width: 0; }
+/* The controls inside a section are full-width of the section, so the search
+   boxes, filter rows and lists all line up on one left and one right edge instead
+   of each choosing its own. */
+.wz-pool-body .wz-addrow input,
+.wz-pool-body > .wz-pin-list,
+.wz-pool-body > .wz-pin-results { width: 100%; }
+/* Uniform control height across the step: a `.btn.sm` next to a text input used to
+   be visibly shorter than it. */
+.wz-pool-body .wz-packrow { gap: var(--sp-2); }
+.wz-pool-body .wz-packrow input,
+.wz-pool-body .wz-packrow .btn { height: 2.25rem; box-sizing: border-box; }
+.wz-pool-body .wz-packrow .btn { flex: 0 0 auto; padding-inline: var(--sp-3); }
+/* The Set Augment checklist is the one list on the step that is a plain grid of
+   names; give it the same column rhythm as the pack list so the two do not read
+   as two different kinds of thing. */
+.wz-pool-body .wz-setaug-list {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--sp-1) var(--sp-3);
+}
