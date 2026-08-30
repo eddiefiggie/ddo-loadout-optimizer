@@ -173,3 +173,72 @@ loudly instead of waiting for a third player report.
   alias; `Speed` is not a stat at all but an enchantment granting three of them, which
   is the umbrella case `src/umbrella.py` already handles.
 - A harvest must capture **both** template parameters, not just the magnitude.
+
+---
+
+## 4. Swiftness — the third upstream name (#597, confirmed 2026-08-29)
+
+§3 ruled correctly that `Topaz of Swiftness 15%` grants 15% attack speed. **That ruling
+then did nothing for a year**, because the join never reached these records.
+
+gear-planner emits ONE affix on each of the three augments, and names it neither `Speed`
+nor `Striding` (`data/seed/compendium/raw/gearplanner_crafting.json`):
+
+```json
+{"affixes": [{"name": "Swiftness", "type": "Enhancement", "value": "15"}],
+ "ml": 20, "name": "Topaz of Swiftness 15%", "quests": ["DDO Store"]}
+```
+
+`Swiftness` is a **third name for the same family**. The splitter matched `Speed` alone,
+so all three augments shipped carrying one affix that is not a stat, is in no other
+record, and is not rankable — crediting nothing, and impossible for a player to ask for.
+
+### Re-confirmed at the source, 2026-08-29
+
+`Raw data/Item augments` — the page gear-planner scrapes. Effect cell, and the templates
+each cell links to:
+
+| Augment | ML | Cell | Links to |
+|---|---|---|---|
+| Topaz of Swiftness 5% | 12 | `Striding +30% Melee Alacrity 5%` | `Striding`, `Melee_Alacrity` |
+| Topaz of Swiftness 10% | 16 | `Striding +30% Melee Alacrity 10%` | `Striding`, `Melee_Alacrity` |
+| Topaz of Swiftness 15% | 20 | `Speed +30%` | `Speed`, **`Movement_speed`**, **`Attack_speed`** |
+
+The 5% and 10% carry **two** effects, and their alacrity comes from the separate
+`Melee Alacrity` link — not from Striding, whose own page says it gives "an Enhancement
+bonus to **run speed**" and nothing else. Neither links to `Ranged_Alacrity`, which is why
+they get melee only.
+
+The 15% is the only one on `{{Speed}}`, and its rendered tooltip states the magnitude
+outright — read from the `popup tooltip` span, per the standing bundled-template rule:
+
+> **Speed +30%:** +30% enhancement bonus to movement speed, **15% bonus to attack speed.**
+
+### Template mechanics, re-verified from the template's own rendered examples
+
+| Wikitext | Renders |
+|---|---|
+| `{{Speed\|I}}` | +5% movement, **+1% melee and ranged** attack speed |
+| `{{Speed\|IV}}` | +20% movement, +4% melee and ranged |
+| `{{Speed\|XIX}}` | **+30%** movement, **+19%** melee and ranged |
+| `{{Speed\|XX\|ranged}}` | +30% movement, **+20% ranged only** |
+| `{{Speed\|15}}` | +15% movement, 5% attack speed *(the unrecorded default)* |
+| `{{Speed\|27}}` | +27% movement, 12% attack speed *(a recorded switch row)* |
+
+Every claim in §2 holds: `movement = min(5 × rank, 30)`, `attack = rank%`, the movement
+cap does **not** cap attack speed (XIX is the proof), and the Type parameter is the only
+thing that narrows which alacrity applies. `{{Speed|30}}` is a recorded switch row
+(30 → 15), so the 15% augment's magnitude is stated rather than defaulted.
+
+### The guard, and why the old numbers looked fine
+
+`speed_augment_coverage` read `renamed: 4, melee_added: 0, ranged_added: 0` over
+`inspected: 7`, with `uncovered: 0`. Nothing was wrong with those numbers — `uncovered`
+counts records the SHARD does not cover, and the shard covered all seven. It cannot see a
+record the shard covers and the **matcher** passed over, which is exactly this failure.
+
+`speed_split.check_augment_coverage` now asserts the other direction: every augment the
+shard names in the roster must have been rewritten. Removing the alias fails the build
+with `the shard names 7 augments in the roster but only 4 were rewritten`.
+
+Post-fix: `renamed: 7, movement_corrected: 3, melee_added: 1, ranged_added: 1`.

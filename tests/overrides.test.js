@@ -326,7 +326,12 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // 42,697 not 42,585 since #313: +112, which is the whole Cannith tier overlay —
   // 108 admitted affixes plus the 4 `Blurry`-derived Concealment components counted
   // above.
-  assert.strictEqual(total, 42697, "post-normalize pool size");
+  // 42,699 not 42,697 since #597: +2, the `Melee Alacrity 15` and `Ranged Alacrity 15`
+  // the splitter now adds to `Topaz of Swiftness 15%`. The three `Swiftness` affixes
+  // were RENAMED rather than added, so the delta is the two new components and nothing
+  // else — which is the check that the alias widened the match without widening the
+  // rewrite.
+  assert.strictEqual(total, 42699, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -340,13 +345,25 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // the page, and the override is the player's recourse if a sibling ever mistypes
   // one. The remaining 45 of the 108 are Bool presences, which are ineligible by rule
   // 1 and correctly absent from this count.
-  assert.strictEqual(eligible, 20641, "engraved, eligible affixes");
+  // 20,638 not 20,641 since #597: MINUS 3, and the direction is the point. The three
+  // `Swiftness` affixes were bare and therefore override-eligible; they are now
+  // `Movement Speed` carrying `via: Swiftness`, which makes them EXPANSIONS — and a
+  // generated component is not independently overridable, by the same rule that keeps
+  // composite components out of this count. The two new alacrity affixes are likewise
+  // expansions and add nothing here. So the total gained 2 while eligible lost 3, which
+  // is only coherent if the rename really did convert bare affixes into provenanced
+  // ones — the check that the fix expanded rather than merely relabelled.
+  assert.strictEqual(eligible, 20638, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
   // all. They do not. (The 64 weapon variants with the same upstream gap are the
   // deferred half — if they ever land, `weapon` is where they will show up.)
-  assert.deepStrictEqual(byCat, { item: 13611, weapon: 6113, augment: 917 });
+  // augment 914 not 917 since #597: -3, and `item` and `weapon` do not move at all.
+  // That is the independent cross-check — the three affixes that lost override
+  // eligibility are all on AUGMENTS (the Topaz of Swiftness tiers), so the whole delta
+  // must land in this one category. It does.
+  assert.deepStrictEqual(byCat, { item: 13611, weapon: 6113, augment: 914 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {

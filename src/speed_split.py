@@ -62,7 +62,11 @@ RANGED_NAME = "Ranged Alacrity"
 # Offering it as a rankable priority guarantees a partial score against what the
 # player meant, which is exactly the confusion #154 was reported as. The picker
 # drops it and redirects here (metadata.expanded_away_names).
-EXPANDED_AWAY = {FOLDED_NAME.lower(): [MOVEMENT_NAME, MELEE_NAME, RANGED_NAME]}
+EXPANDED_AWAY = {FOLDED_NAME.lower(): [MOVEMENT_NAME, MELEE_NAME, RANGED_NAME],
+                 # `Swiftness` is the same non-stat problem under a third name: it is
+                 # an augment's title, not something a player can be given. Redirect it
+                 # too, or searching the word that IS on the augment finds nothing.
+                 "swiftness": [MOVEMENT_NAME, MELEE_NAME, RANGED_NAME]}
 
 _ALACRITY_KEYS = (("melee", MELEE_NAME), ("ranged", RANGED_NAME))
 
@@ -72,6 +76,12 @@ _ALACRITY_KEYS = (("melee", MELEE_NAME), ("ranged", RANGED_NAME))
 # name-and-bucket key instead.
 _CONFIG = _es.SplitConfig(
     folded_name=FOLDED_NAME,
+    # gear-planner names the three `Topaz of Swiftness` augments' affix `Swiftness`
+    # rather than `Speed` or `Striding`, so the splitter passed over them and all
+    # three reached the solver crediting nothing — 30% movement, and on the 15% a
+    # further 15% melee and 15% ranged alacrity, none of it scored or rankable.
+    # Confirmed against the wiki 2026-08-29; see docs/wiki-evidence/speed-and-alacrity.md §4.
+    folded_aliases=("Swiftness",),
     primary_name=MOVEMENT_NAME,
     primary_key="movement",
     primary_corrected_stat="movement_corrected",
@@ -101,8 +111,41 @@ def apply_to_augments(records, shard: dict) -> dict:
     `Striding +30%` and could therefore never add alacrity. The wiki
     contradicts that: `Topaz of Swiftness 15%` renders `{{Speed|30}}`, which is
     30% movement AND 15% melee/ranged attack speed.
+
+    That correction landed in the shard and then did nothing for a year, because the
+    join never reached these records: upstream names their affix `Swiftness`, and the
+    splitter matched `Speed` alone. Fixed by `folded_aliases`; the guard below now
+    asserts every shard entry was actually rewritten, which is what would have caught
+    it — `renamed: 4` of `inspected: 7` with `uncovered: 0` read as complete.
     """
     return _rewrite_all(records, shard, lambda rec: rec.get("name"))
+
+
+def check_augment_coverage(records, shard: dict, coverage: dict) -> None:
+    """Every augment the shard names must have been REWRITTEN, not merely inspected.
+
+    The gap this closes: `speed_augment_coverage` reported `renamed: 4` of
+    `inspected: 7` with `uncovered: 0`, and that read as complete. It was not — three
+    `Topaz of Swiftness` augments were passed over because upstream names their affix
+    `Swiftness` and the splitter matched `Speed` alone, so all three credited nothing
+    for a year while the numbers looked clean.
+
+    `uncovered` counts records the SHARD does not cover. It cannot see a record the
+    shard covers and the matcher missed, which is precisely the failure mode. This
+    asserts the other direction.
+    """
+    named = {k for k in (shard or {}).get("harvested", {}) if not k.startswith("_")}
+    if not named:
+        raise AssertionError("speed augment coverage: refusing to pass over an empty shard")
+    by_name = {r.get("name") for r in records or []}
+    present = named & by_name
+    if not present:
+        raise AssertionError("speed augment coverage: the shard names no augment in the roster")
+    if coverage.get("renamed", 0) < len(present):
+        raise AssertionError(
+            f"speed augment coverage: the shard names {len(present)} augments in the roster "
+            f"but only {coverage.get('renamed', 0)} were rewritten — an upstream affix name "
+            "the splitter does not recognise (see folded_aliases)")
 
 
 def _rewrite_all(records, shard: dict, key_of) -> dict:

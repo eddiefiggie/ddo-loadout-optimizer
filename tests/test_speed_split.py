@@ -743,3 +743,82 @@ def test_an_affix_the_record_already_carried_is_not_stamped():
             "provenance": "stated"}}))
 
     assert via not in _by_name(rec)["Dodge"]
+
+
+# ---- #597 — `Swiftness`, the third upstream name for this family ----
+
+def test_swiftness_is_recognised_as_a_folded_name():
+    """gear-planner names the Topaz of Swiftness augments' affix `Swiftness`.
+
+    A splitter keyed on `Speed` alone passed over all three, so they reached the
+    solver with one unrankable affix and credited nothing — 30% movement, and on the
+    15% a further 15% melee and 15% ranged alacrity, none of it scored."""
+    assert "Swiftness" in speed_split._CONFIG.folded_aliases
+
+
+def test_the_three_swiftness_augments_carry_real_stats():
+    import json, os
+    ds = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                      "web", "data", "items.json")
+    with open(ds, encoding="utf-8") as fh:
+        d = json.load(fh)
+    by = {v["variant_id"]: v for v in d["items"]}
+    # Confirmed against the wiki 2026-08-29. The 5% and 10% render `Striding +30%`
+    # plus a separate `Melee Alacrity N%`; the 15% renders `{{Speed|30}}`, whose
+    # tooltip states "+30% ... movement speed, 15% bonus to attack speed".
+    for name, want in [
+        ("Topaz of Swiftness 5%", {("Movement Speed", "30")}),
+        ("Topaz of Swiftness 10%", {("Movement Speed", "30")}),
+        ("Topaz of Swiftness 15%", {("Movement Speed", "30"),
+                                    ("Melee Alacrity", "15"), ("Ranged Alacrity", "15")}),
+    ]:
+        got = {(a["name"], str(a["value"])) for a in by[name]["affixes"]}
+        assert got == want, f"{name}: got {sorted(got)}, want {sorted(want)}"
+        assert not any(a["name"] == "Swiftness" for a in by[name]["affixes"]), \
+            f"{name}: the inert folded affix survived"
+
+
+def test_provenance_names_the_enchantment_the_record_carried():
+    """A `Swiftness` augment reads as Swiftness, not as Speed.
+
+    Captured before the rename mutates the affix in place — reading it after records
+    the stat just written instead of the enchantment it came from."""
+    import json, os
+    ds = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                      "web", "data", "items.json")
+    with open(ds, encoding="utf-8") as fh:
+        d = json.load(fh)
+    by = {v["variant_id"]: v for v in d["items"]}
+    for a in by["Topaz of Swiftness 15%"]["affixes"]:
+        assert a.get("via") == "Swiftness", f"{a['name']}: via is {a.get('via')!r}"
+    # and the canonical path is untouched
+    via_speed = sum(1 for v in d["items"] for a in (v.get("affixes") or [])
+                    if a.get("via") == "Speed")
+    assert via_speed > 100, "Speed items must still attribute via Speed"
+
+
+def test_swiftness_redirects_in_the_picker():
+    """It is an augment's TITLE, not a stat. Searching the word that is actually on
+    the augment must point at what it grants rather than finding nothing."""
+    assert speed_split.EXPANDED_AWAY["swiftness"] == [speed_split.MOVEMENT_NAME, speed_split.MELEE_NAME, speed_split.RANGED_NAME]
+
+
+def test_the_coverage_guard_refuses_a_shard_entry_that_was_never_rewritten():
+    shard = {"harvested": {"A": {}, "B": {}}}
+    recs = [{"name": "A"}, {"name": "B"}]
+    speed_split.check_augment_coverage(recs, shard, {"renamed": 2})        # complete -> passes
+    for bad in ({"renamed": 1}, {"renamed": 0}):
+        try:
+            speed_split.check_augment_coverage(recs, shard, bad)
+        except AssertionError:
+            continue
+        raise AssertionError(f"a shard entry that was never rewritten passed: {bad}")
+
+
+def test_the_coverage_guard_refuses_an_empty_shard_and_an_absent_roster():
+    for recs, shard in (([{"name": "A"}], {"harvested": {}}), ([], {"harvested": {"A": {}}})):
+        try:
+            speed_split.check_augment_coverage(recs, shard, {"renamed": 0})
+        except AssertionError:
+            continue
+        raise AssertionError("the guard passed over an empty population")
