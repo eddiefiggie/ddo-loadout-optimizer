@@ -43,6 +43,23 @@
     // re-solving a restored character. Plain JSON by construction (see
     // buildCreditReport) precisely so it can live here.
     "creditReport",
+    // #199/#574 — the wiki-sourced intrinsic ceilings. `ceilingChip` reads
+    // `build.intrinsicCaps` to say WHICH cap bound, and its own comment calls that
+    // "the whole point of surfacing intrinsic caps at all". Dropped on save, the chip
+    // silently degraded to the generic "raw exceeds the cap" wording on a restored or
+    // shared build — the specific claim replaced by a vaguer one, with no sign.
+    "intrinsicCaps",
+    // #345 (U1/R5) — the outbid disclosure. Its own comment in projection.js says it
+    // "reads the solver-stamped set, so a shared build discloses the outbid targets
+    // without the recipient re-solving" — which is exactly what omitting it here
+    // prevented. `outbidTargets` has a recompute fallback, but that needs `model`,
+    // and `model` is dropped, so a restored or shared build disclosed nothing.
+    "outbidReport",
+    // #246 — the content-ownership filter's report. Same failure as the two below,
+    // shipped again on 2026-08-29: the notice rendered on a fresh solve and went
+    // silent on reload, so a restored build presented a content-FILTERED optimum as
+    // if it were a full-roster one. That is the disclosure this field exists to make.
+    "packFilter",
     // #239 U1 — the saturation disclosure, for the same reason as creditReport
     // directly above: it is computed from `program.zByBucket`, `program` is
     // dropped by omission, and a restored character is never re-solved. Without

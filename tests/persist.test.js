@@ -864,3 +864,62 @@ test("#518: renaming a build that does not exist is refused rather than creating
   assert.strictEqual(r.reason, "missing");
   assert.deepStrictEqual(listCharacters(st), [], "nothing was conjured into the store");
 });
+
+
+// ---- #357/U1 — a disclosure that renders on a solve and vanishes on reload ----
+//
+// This has now happened five times. `creditReport`, `saturationReport` and the #449
+// ceiling census were each added to RESULT_KEEP only AFTER someone noticed a
+// disclosure had gone quiet on reload; `outbidReport` and `packFilter` were both
+// still live when this guard was written, the second of them shipped the same day.
+//
+// The shape is always identical: a new field is stamped on the solver result, a
+// notice reads it, and nobody edits the allowlist in `persist.js` — so the build
+// solves correctly, says the right thing once, and then silently stops saying it.
+// A RESTORED build is the bad case; a SHARED one is worse, because `project()` reads
+// the saved record and the recipient cannot re-solve to find out what was withheld.
+//
+// The real fix is plan U1 (delete the allowlist, drop only the unserialisable by
+// name). Until that lands this makes the omission a build failure instead of a thing
+// somebody eventually notices.
+test("#357: every result field the disclosure layer reads survives a save", () => {
+  const fs = require("fs"), path = require("path");
+  const read = (f) => fs.readFileSync(path.join(__dirname, "..", "web", f), "utf8");
+
+  // Fields read off a solved snapshot by the two layers that render disclosures.
+  const found = new Set();
+  for (const src of [read("projection.js"), read("results.js")]) {
+    for (const m of src.matchAll(/\b(?:snap|snapshot|result|build)(?:\s*&&\s*(?:snap|snapshot|result|build))?\.([a-zA-Z][a-zA-Z0-9]*)/g)) {
+      found.add(m[1]);
+    }
+  }
+
+  // Not solver output, so not RESULT_KEEP's business. Each is here for a stated
+  // reason rather than because it was inconvenient.
+  const EXEMPT = new Set([
+    "query", "inputs", "name", "savedAt", "stampedBuildId",   // record fields, not result
+    "snapshot", "length", "map", "filter", "forEach", "find", "slice", "some",
+    "every", "reduce", "sort", "concat", "join", "push", "indexOf", "includes",
+    "status",                          // in RESULT_KEEP already; listed for clarity
+    "floorReport", "targets", "items", "metadata",            // model/dataset/query reads
+    "alternatives", "altState", "sol",                        // live-only, never persisted
+    // A FAILED solve is never saved as a build: `RESULT_KEEP` requires `status`, and
+    // renderResults short-circuits to the empty state when it is not "optimal", so a
+    // record can never reach the failure text these two feed. Exempt because they are
+    // unreachable from a saved record, not because persisting them was inconvenient.
+    "failure", "reason",
+  ]);
+
+  const KEEP = new Set(require("../web/persist.js").RESULT_KEEP
+    || JSON.parse(JSON.stringify(RESULT_KEEP_FROM_SOURCE(read("persist.js")))));
+
+  const missing = [...found].filter((k) => !EXEMPT.has(k) && !KEEP.has(k)).sort();
+  assert.deepStrictEqual(missing, [],
+    "these are read off a saved build but not persisted, so they render once and "
+    + "vanish on reload: " + missing.join(", "));
+});
+
+function RESULT_KEEP_FROM_SOURCE(src) {
+  const blk = src.slice(src.indexOf("const RESULT_KEEP = ["));
+  return [...blk.slice(0, blk.indexOf("];")).matchAll(/"([a-zA-Z]+)"/g)].map((m) => m[1]);
+}

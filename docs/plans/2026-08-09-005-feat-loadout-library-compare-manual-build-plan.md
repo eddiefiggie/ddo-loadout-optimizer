@@ -21,6 +21,17 @@ execution: code
   - **Gate status (checked 2026-08-17):** #91, #92 and #93 are CLOSED; only #88 remains open. Three quarters of this gate has lifted since the plan was written, so re-read the sequencing before assuming the effort is blocked. The plan itself was never committed — it sat in a git stash on a since-deleted branch until this recovery, which is why the note went stale unnoticed.
 - **Open blockers:** None for planning. **Execution is still gated on #88** — see Sequencing. The effort ships whole rather than staged (KD12).
 - **Planning status (2026-08-20):** Enriched to implementation-ready. The seven Outstanding Questions are resolved below under *Planning Contract*; #190 is folded in as U2 rather than left an external dependency, on KD12's ships-whole reasoning.
+- **Execution status (2026-08-29):** The #88 gate is CLOSED, so execution is no longer gated.
+  **KD12 was broken, and not deliberately.** #190 shipped standalone as PR #587 on
+  2026-08-29 without this plan being read, which is exactly the staged intermediate state
+  KD12 declined after two reviewers proposed it: a build can now be imported but not
+  compared. Recorded rather than quietly reconciled, because KD12 is session-settled by
+  user direction and the deviation should be a visible decision to revisit, not a fait
+  accompli. **U2 is therefore partly shipped and incomplete against its own requirements** —
+  the envelope reader, whole-file refusal, `sanitizeCharacter` validation and the
+  never-overwrite collision rule all landed, but **R12 (provenance stamping) did not**, and
+  neither did U2's deep-clone regression test. Whoever resumes U2 should treat it as
+  outstanding on R12, not as done.
 - **Product Contract preservation:** unchanged. No R/A/F/AE ID or Key Decision was altered by planning; every question planning answered was already marked "deferred to planning".
 
 ---
@@ -416,6 +427,18 @@ Planning proceeds regardless (it costs nothing and this artifact is the delivera
 - **Files:** `web/persist.js`, `web/results.js`, `web/wizard.js`, `tests/persist.test.js`, `tests/results.test.js`.
 - **Approach:** Render from the record shape rather than the stripped result. Remove `RESULT_KEEP` and its strip step; keep `INPUT_KEYS` (a genuine input allowlist, and `backup.js` imports it). Add R5's quota-exceeded path: catch the storage write failure, surface it, leave existing builds untouched. Record the measured bytes-per-record figure PQ5 calls for.
 - **Execution note:** Characterization first — capture what the results view renders for a saved build today, then prove it unchanged after the seam moves. This is a refactor of a path that has already dropped a field silently.
+- **Motivation, hardened 2026-08-29:** the incident is at **five occurrences**, three of
+  which were still LIVE when they were finally measured. `creditReport`, `saturationReport`
+  and the #449 ceiling census were each added to the allowlist only after somebody noticed
+  a disclosure had gone quiet; `intrinsicCaps` (#574), `outbidReport` (#345) and
+  `packFilter` (#246) were all shipped broken and found together by a structural guard, the
+  last of them on the day it was written. `outbidReport` is the sharpest: projection.js's
+  own comment says it is stamped "so a shared build discloses the outbid targets without
+  the recipient re-solving", which is precisely what omitting it from the allowlist
+  prevented. An interim guard now fails the build on a new omission
+  (`tests/persist.test.js`, "#357: every result field the disclosure layer reads survives a
+  save"); U1 remains the real fix, because a guard that must be kept in step with an
+  allowlist is still two places.
 - **Test scenarios:**
   - A field present on a fresh solve but absent from the old allowlist (e.g. `creditReport`) now survives a save/load round trip and renders identically. *This is the `creditReport` incident as a regression test.*
   - A saved record round-trips byte-identically through save then load.
