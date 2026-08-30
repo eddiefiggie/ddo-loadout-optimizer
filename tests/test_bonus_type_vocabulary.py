@@ -57,33 +57,56 @@ def test_every_offered_type_is_a_wiki_bonus_type_or_a_reasoned_exception():
     offered = _offered()
     assert len(offered) > 15, f"only {len(offered)} types offered; the read is not working"
     allowed = _wiki_names()
-    exceptions = _shard()["offered_but_not_categorised"]
-    stray = [t for t in offered if t not in allowed and t not in exceptions]
+    shard = _shard()
+    exceptions = shard["offered_but_not_categorised"]
+    pending = shard["offered_pending_data_fix"]
+    stray = [t for t in offered
+             if t not in allowed and t not in exceptions and t not in pending]
     assert not stray, (
         f"offered as a bonus type but not one the wiki names: {stray}. Either it is in "
         "Category:Bonus types (re-harvest the shard), or it is real-but-uncategorised "
         "(add it to `offered_but_not_categorised` WITH the wiki sentence that says so), "
-        "or it is not a bonus type and does not belong in the picker.")
+        "or it is not a bonus type at all — in which case it belongs in "
+        "`offered_pending_data_fix` with the issue that will retype the affixes, and "
+        "leaves the picker when that issue closes.")
 
 
 def test_each_uncategorised_exception_carries_its_evidence():
     """An exception without a reason is just an exemption, and the next reader
     cannot tell a sourced one from a convenient one."""
     for name, reason in _shard()["offered_but_not_categorised"].items():
+        if name.startswith("_"):
+            continue
         assert len(reason) > 80, f"{name}: no reasoning recorded"
-    for name, reason in _shard()["refused"].items():
-        assert len(reason) > 80, f"{name}: refused with no reasoning"
 
 
-def test_sneak_attack_is_refused_and_stays_refused():
-    """The worked case. It is the STAT being bonused, not a bonus type, and the
-    wiki gives its sources an Artifact bonus."""
-    shard = _shard()
-    assert "Sneak Attack" in shard["refused"]
-    assert "Artifact" in shard["refused"]["Sneak Attack"], \
-        "the refusal must keep the type the wiki actually assigns"
-    assert "Sneak Attack" not in _offered(), \
-        "Sneak Attack is offered again; it is a stat, not a bucket a player can skip"
+def test_sneak_attack_is_recorded_as_not_a_type_but_stays_offered_until_the_data_is_fixed():
+    """The worked case, and the reason `offered_pending_data_fix` exists.
+
+    `Sneak Attack` is the STAT being bonused; the wiki gives its sources an
+    Artifact bonus. But 20 affixes still RECORD it as their type, and removing the
+    name from the picker does not remove the bucket from the dataset — it removes
+    the player's ability to name or correct it. So the truth is recorded here and
+    the name stays offered until #608 retypes the affixes.
+    """
+    entry = _shard()["offered_pending_data_fix"]["Sneak Attack"]
+    assert "Artifact" in entry["why_not_a_type"], \
+        "the record must keep the type the wiki actually assigns"
+    assert entry["issue"] == 608
+    assert "Sneak Attack" in _offered(), (
+        "dropped from the picker while affixes still record it — that hides the defect "
+        "from the one person who could work around it. Fix #608 first, then remove it.")
+
+
+def test_nothing_sits_in_pending_without_an_issue_to_retire_it():
+    """A name offered on the promise of a future fix, with no fix filed, is just an
+    exemption. Every entry cites the issue that removes it."""
+    for name, entry in _shard()["offered_pending_data_fix"].items():
+        if name.startswith("_"):
+            continue
+        assert isinstance(entry.get("issue"), int), f"{name}: no issue number"
+        assert len(entry.get("why_not_a_type") or "") > 80, f"{name}: no evidence it is not a type"
+        assert len(entry.get("why_still_offered") or "") > 80, f"{name}: no reason it is still offered"
 
 
 # A fourth guard was written here and removed. It asserted that every offered type

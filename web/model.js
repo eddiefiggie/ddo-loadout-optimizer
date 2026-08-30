@@ -1636,17 +1636,24 @@ const CREDIT_BONUS_TYPES = [
   // deliberately still absent: equivType collapses those to their plain type, so
   // offering both names would put two names on one bucket.
   //
-  // `Sneak Attack` was here and is not a bonus type — it is the STAT being
-  // bonused. The wiki's `Sneak attack` page splits the mechanic into Dice and
-  // Bonus Damage and gives every source an ARTIFACT bonus, so the affix is
-  // `Sneak Attack Bonus` and its type is `Artifact`. Offering it let a player
-  // skip, or correct an affix TO, a bucket the game does not have.
+  // `Sneak Attack` is NOT a bonus type — it is the STAT being bonused. The wiki's
+  // `Sneak attack` page splits the mechanic into Dice and Bonus Damage and gives
+  // every source it lists an ARTIFACT bonus, so the affix is `Sneak Attack Bonus`
+  // and its type is `Artifact`.
+  //
+  // It stays here anyway, on purpose, until #608 retypes the data. 20 affixes
+  // still RECORD that type, and removing the name does not remove the bucket —
+  // it removes the player's ability to name or correct it, which is worse than
+  // offering a name the game does not have. `overrides.test.js` holds the same
+  // line structurally: every recorded type must be expressible or
+  // equivalence-mapped, and it fails if this is dropped first.
   //
   // The list is checked against the wiki's own Category:Bonus types on every
   // build — see data/seed/compendium/bonus_type_vocabulary.json and
-  // tests/test_bonus_type_vocabulary.py, which also carry the reasoning for the
-  // three members that are real but uncategorised (Untyped, Orb, Vitality).
-  "Orb", "Determination",
+  // tests/test_bonus_type_vocabulary.py, which carry the reasoning for the three
+  // members that are real but uncategorised (Untyped, Orb, Vitality) and for this
+  // one, which is neither real nor removable yet.
+  "Orb", "Sneak Attack", "Determination",
 ];
 const _CREDIT_TYPE_SET = new Set(CREDIT_BONUS_TYPES);
 
