@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -2517,12 +2517,57 @@ test("U4/#110: an already-blocked variant is not duplicated by block-selected", 
   assert.deepStrictEqual(r.added, ["Gem B"]);
 });
 
-test("U5/#110: blocking a pinned variant is refused with the pin named", () => {
+test("#620: blocking a pinned variant lands the block and displaces the pin", () => {
   const sc = {}; applyPinId(sc, "Ring", "Contested Ring", () => 2);
   const r = addBlocks([], ["Contested Ring", "Free Gem"], sc);
-  assert.deepStrictEqual(r.list, ["Free Gem"], "only the unpinned id lands");
-  assert.deepStrictEqual(r.refused, [{ id: "Contested Ring", slot: "Ring" }],
-    "the refusal names the conflicting pin's slot");
+  assert.deepStrictEqual(r.list, ["Contested Ring", "Free Gem"],
+    "a block is a hard rule — the pinned id lands too, it is not refused");
+  assert.deepStrictEqual(r.displaced, [{ id: "Contested Ring", slot: "Ring" }],
+    "the displaced pin names its slot so the confirmation can state it");
+  assert.deepStrictEqual(sc, { Ring: { type: "pin", variant_ids: ["Contested Ring"] } },
+    "addBlocks stays pure — the caller applies the unpin through removePinFrom");
+});
+
+test("#620: a displaced Ring pin loses only the blocked variant, not its co-pin", () => {
+  const sc = {};
+  applyPinId(sc, "Ring", "Contested Ring", () => 2);
+  applyPinId(sc, "Ring", "Innocent Ring", () => 2);
+  const r = addBlocks([], ["Contested Ring"], sc);
+  assert.deepStrictEqual(r.displaced, [{ id: "Contested Ring", slot: "Ring" }]);
+  for (const x of r.displaced) removePinFrom(sc, x.slot, x.id, () => 2);
+  assert.deepStrictEqual(sc, { Ring: { type: "pin", variant_ids: ["Innocent Ring"] } },
+    "the second Ring pin survives — a block conflicts only on the id being blocked");
+});
+
+test("#620: displacing the only pin in a slot drops the constraint entirely", () => {
+  const sc = {}; applyPinId(sc, "Trinket", "Legendary Heartshard", () => 1);
+  const r = addBlocks([], ["Legendary Heartshard"], sc);
+  for (const x of r.displaced) removePinFrom(sc, x.slot, x.id, () => 1);
+  assert.deepStrictEqual(sc, {}, "no empty pin husk is left behind");
+});
+
+test("#620: the confirmation names every displaced pin and its slot", () => {
+  const one = blockDisplacesPinText([{ id: "Legendary Heartshard", slot: "Trinket" }]);
+  assert.ok(one.includes("Legendary Heartshard"), "the item is named");
+  assert.ok(one.includes("Trinket"), "the slot is named");
+  assert.ok(/\bis pinned\b/.test(one) && /removes that pin/.test(one), "singular wording");
+  const two = blockDisplacesPinText([
+    { id: "A", slot: "Ring" }, { id: "B", slot: "Cloak" },
+  ]);
+  assert.ok(two.includes("A") && two.includes("B") && two.includes("Ring") && two.includes("Cloak"));
+  assert.ok(/\bare pinned\b/.test(two) && /removes those pins/.test(two), "plural wording");
+  assert.strictEqual(blockDisplacesPinText([]), "", "nothing displaced, nothing to confirm");
+  assert.strictEqual(blockDisplacesPinText(undefined), "", "an absent list never prompts");
+});
+
+test("#620: hand-typed block and imported block now resolve a pin the same way", () => {
+  // blockLoadMessage has always told an importing player that a block wins.
+  // addBlocks used to say the opposite. The two surfaces must not disagree.
+  const sc = {}; applyPinId(sc, "Ring", "Both Ring", () => 2);
+  const loadMsg = blockLoadMessage(["Both Ring"], sc, null);
+  assert.ok(/block wins/.test(loadMsg), "the load path states block-wins");
+  const r = addBlocks([], ["Both Ring"], sc);
+  assert.ok(r.list.includes("Both Ring"), "the hand-typed path now agrees with it");
 });
 
 test("U5/#110: pinning a blocked variant is refused symmetrically", () => {
@@ -2541,9 +2586,12 @@ test("U5/#110: a loaded character holding both states is detected for the report
 test("U5/#110: a Ring pin holding two variants conflicts only on the one being blocked", () => {
   const sc = {}; applyPinId(sc, "Ring", "Ring One", () => 2); applyPinId(sc, "Ring", "Ring Two", () => 2);
   const r = addBlocks([], ["Ring Two"], sc);
-  assert.deepStrictEqual(r.refused.map((x) => x.id), ["Ring Two"]);
+  // #620 — the conflict is now a displacement rather than a refusal, but it is
+  // still scoped to the id actually being blocked, not to the whole Ring pin.
+  assert.deepStrictEqual(r.displaced.map((x) => x.id), ["Ring Two"]);
   const ok = addBlocks([], ["Ring Three"], sc);
   assert.deepStrictEqual(ok.list, ["Ring Three"], "an unpinned third ring blocks fine");
+  assert.deepStrictEqual(ok.displaced, [], "an unpinned id displaces nothing");
 });
 
 
@@ -2588,7 +2636,13 @@ test("review/#110: the load path clears the staged block selection", () => {
   const slice = WIZARD_SRC.slice(start, end);
   assert.ok(/blockStage\.clear\(\);/.test(slice),
     "ticks staged on the previous character must not commit into this one");
-  assert.ok(/state\.blockRefusedMsg = null;/.test(slice), "the refusal message resets too");
+  // #620 — `state.blockRefusedMsg` is gone with the refusal that fed it, so
+  // there is no longer a transient message for the load path to reset.
+  // Matched on `state.` so the guard tracks CODE, not prose — every use was a
+  // `state.blockRefusedMsg` read or write, and a bare-name match fires on the
+  // comment above the render site that explains why the field is gone.
+  assert.ok(!/state\.blockRefusedMsg/.test(WIZARD_SRC),
+    "the one-shot refusal state is fully removed, not merely unused");
 });
 
 test("review/#110: the load path sanitizes blocklist elements to non-empty strings", () => {
