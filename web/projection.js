@@ -1598,7 +1598,14 @@
       case "seal": return `Sealed in ${o.seal_type}: ${craftValue(o)}`;
       case "tf": return `Thunder-Forged T${o.tier}: ${craftValue(o)}`;
       case "gs": return `Green Steel: ${craftValue(o)}`;
-      case "essence": return `Essence Crafting ${o.menu}: ${craftValue(o)}`;
+      // #193 — the EFFECT is named whenever it differs from the stat, because
+      // that name is the shard the player has to go and make: `Insightful
+      // Constitution` is a different recipe from `Constitution`, and a shared
+      // build that printed only "Constitution +6 Insight" would leave a recipient
+      // deriving which of the two to craft. Same "name, then affixes" idiom the
+      // dino and Nearly Complete rows use.
+      case "essence": return `Essence Crafting ${o.menu}: `
+        + (o.effect && o.effect !== o.stat ? `${o.effect}, ` : "") + craftValue(o);
       case "joker": return `Wildcard set: ${o.set}`;
       case "augmentset": {
         // A solver-placed Set Augment (host is solver-DECIDED, read from

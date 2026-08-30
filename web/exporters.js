@@ -76,6 +76,10 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       dino: ["🦴", "Dino Bone"], nc: ["✨", "Nearly Completed"], roll: ["🎲", "Choice"],
       vik: ["⚗️", "Viktranium"], seal: ["🔮", "Sealed"], tf: ["⚡", "Thunder-Forged"],
       gs: ["💠", "Green Steel"], joker: ["🃏", "Wildcard set"], membership: ["🔗", "Set craft"],
+      // #193 — without an entry here `craftStr` renders the row bare, so an
+      // Essence craft read as an ordinary affix line in every text export while
+      // its siblings carried a cue. The legend below lists it for the same reason.
+      essence: ["🔧", "Essence Crafting"],
     },
   };
   // BBCode named colors for the augment-color words (real color, per KTD5).
@@ -106,7 +110,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const colors = ["red", "yellow", "blue", "green", "orange", "purple", "colorless"]
       .map((k) => cue("color", k, fmt)).join("  ");
     const moon = ["Lunar", "Solar"].map((k) => cue("moon", k, fmt)).join("  ");
-    const craft = ["dino", "nc", "roll", "vik", "seal", "tf", "gs", "joker", "membership"]
+    const craft = ["dino", "nc", "roll", "vik", "seal", "tf", "gs", "essence", "joker", "membership"]
       .map((k) => cue("craft", k, fmt)).join("  ");
     return `Legend — augment slots: ${colors} · ${moon} · crafting: ${craft}`;
   }
