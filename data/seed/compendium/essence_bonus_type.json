@@ -1,0 +1,695 @@
+{
+  "_meta": {
+    "field": "essence_bonus_type",
+    "status": "HARVESTED, NOT YET WIRED — 22 of 157 effects carry a wiki-stated bonus type.",
+    "note": "The dimension `essence_crafting.json` is missing. That shard has every PLACEMENT and every ML CURVE; the solver additionally needs the BONUS TYPE, because it buckets each contribution as (stat, bonus_type) and caps each bucket at one contributor. Harvested 2026-08-29 by reading all 157 craftable effect pages on the DDO wiki. Only `stated` is solver-eligible.",
+    "supersedes": "The 2026-08-27 ruling in essence_crafting.json said NO reachable source records the type. That was too strong, and WHY is the part worth keeping: the earlier sampling looked for a type word NEAR the Essence Crafting mention. Several effect pages instead group their sources under `=== <Type> bonus ===` SECTION HEADINGS, so the type sits in the heading ABOVE the crafting line where a proximity search cannot see it. A section-aware read finds it. The other half of that ruling holds: the main Essence Crafting page (44 KB) and the four crafting tables state zero types, and gear-planner still ships no Essence pool.",
+    "join_shapes": {
+      "same-line": "A type word and the Essence Crafting reference in one line. Strongest.",
+      "section-heading": "The crafting line sits under a `=== <Type> bonus ===` heading.",
+      "page-subject": "The page's whole subject IS the bonus type, and it lists Essence Crafting as a source with a magnitude. Used once, for Natural Armor.",
+      "named-variant": "The page names the crafted variant and types that variant by name elsewhere on the page. Used once, for Seeker."
+    },
+    "not_inferred": "`Insightful X` is NOT assumed to be an Insight bonus. Where one is recorded `stated`, a page said so outright. `Insightful Seeker` is the counter-example that earns the rule: the Seeker page names it, then assigns Insight to the FORMER 'Exceptional Seeker' instead — so it is `unsourced` despite its name.",
+    "corroboration": "Two independent checks agree with the six ability results. (1) The wiki redirects `Insightful Strength`, `Insightful Constitution`, `Insightful Dexterity`, `Insightful Intelligence`, `Insightful Wisdom` and `Insightful Charisma` to `Insight bonus`. (2) The `Insight bonus` page states an Insight enchantment is worth half its Enhancement equivalent rounding down, and the harvested ML curves match: abilities 15/7, Accuracy 23/11, Haggle 20/10. Neither is treated as a source for an UNSTATED effect.",
+    "sources": {
+      "effect_pages": "https://ddowiki.com/page/<effect name> — all 157 read via the MediaWiki API",
+      "roster": "data/seed/compendium/essence_crafting.json `placements`"
+    },
+    "harvested": "2026-08-29",
+    "unreadable": "59 roster names have no readable page of their own: 52 return `missing` (mostly `Insightful X`, which the wiki documents on the base effect's page rather than separately) and 11 resolve to a disambiguation page. They are ABSENT from `harvested` rather than recorded as silent, so coverage still counts them as work to do. Three of them — Insightful Accuracy, Insightful Haggle, Insightful Spell Resistance — are `stated` anyway, sourced from the BASE effect's page."
+  },
+  "harvested": {
+    "Accuracy": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * [[Essence Crafting]] from +2 through +23; Insight bonus up to 11 -- the Insight half is typed and lives under 'Insightful Accuracy'; the +2..+23 base carries no type on this line.",
+      "harvested": "2026-08-29"
+    },
+    "Aligned": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Armor-Piercing": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * [[Essence Crafting]]: up to +23%",
+      "harvested": "2026-08-29"
+    },
+    "Balance": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Bashing": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Blindness Immunity": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Bluff": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Charisma": {
+      "value": {
+        "bonus_type": "Enhancement",
+        "range": "+1 to +15",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "[[Essence Crafting]] Items may come with the enhancement bonus of +1 - +15.  (page Charisma, section: Raising Charisma Scores > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Combat Mastery": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Concentration": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Constitution": {
+      "value": {
+        "bonus_type": "Enhancement",
+        "range": "+1 to +15",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "[[Essence Crafting]] Items may come with the enhancement bonus of +1 - +15.  (page Constitution, section: Raising Constitution Scores > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Damage": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Deadly": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * [[Essence Crafting]]: up to +12 -- page states 'Deadly enchantment is also available with different bonus types which stack with the regular competence bonus', so the crafted one is ambiguous.",
+      "harvested": "2026-08-29"
+    },
+    "Deathblock": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * [[Essence Crafting]]  (section: Other sources:)",
+      "harvested": "2026-08-29"
+    },
+    "Deception": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Dexterity": {
+      "value": {
+        "bonus_type": "Enhancement",
+        "range": "+1 to +15",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "[[Essence Crafting]] Items may come with the enhancement bonus of +1 - +15.  (page Dexterity, section: Raising Dexterity Scores > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Diplomacy": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Disable Device": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Disease Ward": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Diversion": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Dodge": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Doubleshot": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Doublestrike": {
+      "value": {
+        "bonus_type": "Enhancement",
+        "join": "section-heading"
+      },
+      "provenance": "stated",
+      "raw": "* [[Cannith_Crafting/table_1b|Cannith Crafting (shard costs: 100 essence, 15 small planar crystals, 5 scholarly notes)]]  (page Doublestrike, section: Sources of Doublestrike > Enhancement bonus)",
+      "harvested": "2026-08-29"
+    },
+    "Efficient Metamagic": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] This effect is non-scaling for [[Essence Crafting]] and can only produce the 1st tier effect.",
+      "harvested": "2026-08-29"
+    },
+    "Eternal Faith": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Everbright": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] Everbright can still be added to weapons via [[Essence Crafting]].",
+      "harvested": "2026-08-29"
+    },
+    "False Life": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * [[Essence Crafting]]  (page 'False Life (enchantment)')",
+      "harvested": "2026-08-29"
+    },
+    "Fearsome": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] This effect is available via [[Essence Crafting]] and on [[Dragontouched Armor]].",
+      "harvested": "2026-08-29"
+    },
+    "Feather Fall": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Fortification": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Fortitude": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Ghost Touch": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Haggle": {
+      "value": {
+        "bonus_type": "Competence",
+        "range": "+20",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": ": +20 ''Competence'' ([[Essence Crafting]])  (page Haggle, section: Best Sources of Haggle > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Healing Amplification": {
+      "value": {
+        "bonus_type": "Competence",
+        "join": "section-heading"
+      },
+      "provenance": "stated",
+      "raw": "* Crafted items: [[Greensteel]] weapon (tier 3), [[Legendary Green Steel items/Tier 3|LGS]] weapon (tier 3), new [[Essence Crafting]] gear  (page Healing Amplification, section: Item bonus > Competence bonus)",
+      "harvested": "2026-08-29"
+    },
+    "Hide": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Incite": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Insightful Accuracy": {
+      "value": {
+        "bonus_type": "Insight",
+        "range": "up to 11",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "* [[Essence Crafting]] from +2 through +23; Insight bonus up to 11  (page Accuracy, section: Note)",
+      "harvested": "2026-08-29"
+    },
+    "Insightful Charisma": {
+      "value": {
+        "bonus_type": "Insight",
+        "range": "+1 to +7",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "[[Essence Crafting]] items may come with a +1 - +7 Insight bonus.  (page Charisma, section: Raising Charisma Scores > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Insightful Combat Mastery": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Insightful Constitution": {
+      "value": {
+        "bonus_type": "Insight",
+        "range": "+1 to +7",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "[[Essence Crafting]] items may come with a +1 - +7 Insight bonus.  (page Constitution, section: Raising Constitution Scores > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Insightful Dexterity": {
+      "value": {
+        "bonus_type": "Insight",
+        "range": "+1 to +7",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "[[Essence Crafting]] items may come with a +1 - +7 Insight bonus.  (page Dexterity, section: Raising Dexterity Scores > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Insightful Haggle": {
+      "value": {
+        "bonus_type": "Insight",
+        "range": "+10",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": ": +10* ''Insight'' ([[Essence Crafting]])  (page Haggle, section: Best Sources of Haggle > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Insightful Intelligence": {
+      "value": {
+        "bonus_type": "Insight",
+        "range": "+1 to +7",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "[[Essence Crafting]] items may come with a +1 - +7 Insight bonus.  (page Intelligence, section: Raising Intelligence Scores > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Insightful Seeker": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] Named on the Seeker craft line but NOT typed: the page's type sentence assigns Insight to the FORMER 'Exceptional Seeker', not to Insightful Seeker.",
+      "harvested": "2026-08-29"
+    },
+    "Insightful Spell Resistance": {
+      "value": {
+        "bonus_type": "Insight",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "* [[:C:Insightful_Spell_Resistance_items|Insight bonus]] - available on random loot and via Cannith crafting  (page Spell Resistance, section: Spell Resistance on player characters)",
+      "harvested": "2026-08-29"
+    },
+    "Insightful Strength": {
+      "value": {
+        "bonus_type": "Insight",
+        "range": "+1 to +7",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "[[Essence Crafting]] items may come with a +1 - +7 Insight bonus.  (page Strength, section: Raising Strength Scores > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Insightful Wisdom": {
+      "value": {
+        "bonus_type": "Insight",
+        "range": "+1 to +7",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "[[Essence Crafting]] items may come with a +1 - +7 Insight bonus.  (page Wisdom, section: Raising Wisdom Scores > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Intelligence": {
+      "value": {
+        "bonus_type": "Enhancement",
+        "range": "+1 to +15",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "[[Essence Crafting]] Items may come with the enhancement bonus of +1 - +15.  (page Intelligence, section: Raising Intelligence Scores > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Intimidate": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Invulnerability": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Keen": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Listen": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Melee Alacrity": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Metalline": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Move Silently": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Natural Armor": {
+      "value": {
+        "bonus_type": "Natural",
+        "range": "+1 to +15",
+        "join": "page-subject"
+      },
+      "provenance": "stated",
+      "raw": "** [[Essence Crafting]]: +1 to +15  (page 'Natural armor bonus' -- the page's entire subject IS the bonus type, and it lists Essence Crafting as a source with a magnitude)",
+      "harvested": "2026-08-29"
+    },
+    "Negative Amplification": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Open Lock": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Parrying": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] The current enchantment found on randomly generated loot and crafted by [[Essence Crafting]] is formatted as 'Parrying (Number).'",
+      "harvested": "2026-08-29"
+    },
+    "Perform": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Persuasion": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * Craftable as a prefix via [[Essence Crafting]] on:",
+      "harvested": "2026-08-29"
+    },
+    "Poison Ward": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Potency": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Protection": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * Available up to +12 in [[Essence Crafting]] for Ring bracer and Trinket.",
+      "harvested": "2026-08-29"
+    },
+    "Ranged Alacrity": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Reflex": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Regeneration": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Repair Amplification": {
+      "value": {
+        "bonus_type": "Enhancement",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "* [[Essence Crafting]] - enhancement bonus  (page Repair Amplification, section: Items > Crafted)",
+      "harvested": "2026-08-29"
+    },
+    "Sacred": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * As of Update 12.3, this shard may not be added to a docent ([[Essence Crafting]]).",
+      "harvested": "2026-08-29"
+    },
+    "Search": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * Search bonuses can be found on various items, including random loot and crafted in [[Essence Crafting]]",
+      "harvested": "2026-08-29"
+    },
+    "Seeker": {
+      "value": {
+        "bonus_type": "Enhancement",
+        "range": "up to +15",
+        "join": "named-variant"
+      },
+      "provenance": "stated",
+      "raw": "* [[Essence Crafting]]: prefix Seeker (up to +15) and extra Insightful Seeker (up to +7)  ||  Seeker items can provide various types of bonus. Regular Seeker grants Enhancement bonus, then there's Insightful Seeker and much rarer Quality Seeker. The former Exceptional Seeker grants Insight bonus.  (page Seeker)",
+      "harvested": "2026-08-29"
+    },
+    "Shatter": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Sheltering": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Shield Bashing": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Shield Spikes": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * [[Cannith Crafting]]",
+      "harvested": "2026-08-29"
+    },
+    "Silver Flame": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Songblade": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * Also available with [[Essence Crafting]]",
+      "harvested": "2026-08-29"
+    },
+    "Spell Focus": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Spell Focus Mastery": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Spell Lore": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * [[Essence Crafting]]: 6% - 23% for any single type; 1% - 13% for all types.",
+      "harvested": "2026-08-29"
+    },
+    "Spell Penetration": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Spell Power": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Spell Resistance": {
+      "value": {
+        "bonus_type": "Enhancement",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "* [[:C:Spell_Resistance_items|Enhancement bonus]] - available on named items, random loot and via Cannith crafting  (page Spell Resistance, section: Spell Resistance on player characters)",
+      "harvested": "2026-08-29"
+    },
+    "Spellsight": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Spot": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Strength": {
+      "value": {
+        "bonus_type": "Enhancement",
+        "range": "+1 to +15",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "[[Essence Crafting]] Items may come with the enhancement bonus of +1 - +15.  (page Strength, section: Raising Strength Scores > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Striding": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] ! [[Essence Crafting]]",
+      "harvested": "2026-08-29"
+    },
+    "Stunning": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Swim": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Tendon Slice": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Unbalancing": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] * Also found on: [[Essence Crafting]]",
+      "harvested": "2026-08-29"
+    },
+    "Underwater Action": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Vampirism": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[mention-without-type] Vampirism is available as extra effect from the new [[Essence Crafting]]. Works on ranged weapons but has an internal cooldown of 2-3 seconds.",
+      "harvested": "2026-08-29"
+    },
+    "Vengeful": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Vitality": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Will": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    },
+    "Wisdom": {
+      "value": {
+        "bonus_type": "Enhancement",
+        "range": "+1 to +15",
+        "join": "same-line"
+      },
+      "provenance": "stated",
+      "raw": "[[Essence Crafting]] Items may come with the enhancement bonus of +1 - +15.  (page Wisdom, section: Raising Wisdom Scores > Items)",
+      "harvested": "2026-08-29"
+    },
+    "Wizardry": {
+      "value": null,
+      "provenance": "unsourced",
+      "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
+      "harvested": "2026-08-29"
+    }
+  }
+}

@@ -103,10 +103,31 @@ def test_the_shard_declares_that_it_is_not_wired():
     assert "gear-planner" in meta["blocker"]
 
 
+# The one file allowed to open the shard, and why. It reads `placements` ONLY to
+# learn WHICH effect names exist, so the bonus-type harvest has a work order and a
+# denominator. It never reads a magnitude and never emits anything into the
+# dataset. Anything else touching this file is the failure this guard exists for.
+ROSTER_READER = "scripts/merge_harvest.py"
+# Tests may name the shard freely: asserting ON the data is the opposite of
+# feeding it to the solver, and a test cannot ship a value into a loadout. The
+# allowance is by directory so a new guard file does not have to edit this list.
+TEST_DIR = "tests" + os.sep
+# The value halves. Reading one of these IS consuming the shard, even from the
+# allowlisted file — the allowance is for the roster, not for the numbers.
+VALUE_KEYS = ("values_by_ml", "non_scalar_effects")
+
+
 def test_nothing_in_the_tree_consumes_the_shard_yet():
-    """The honest state: harvested, disclosed, unused. A build that started
-    reading it without sourcing bonus types would be shipping 157 inferred game
-    values."""
+    """The honest state: harvested, disclosed, unused by the solver. A build that
+    started reading it without sourcing bonus types would be shipping inferred
+    game values.
+
+    #193 reopened this: `merge_harvest.py` now reads `placements` for the effect
+    ROSTER driving the bonus-type harvest (`essence_bonus_type.json`). That is a
+    work order, not a solver input, so it is allowlisted by name — and the
+    allowance is checked to be exactly that, by asserting the file never touches
+    the magnitude halves.
+    """
     hits = []
     for dirpath, dirnames, filenames in os.walk(ROOT):
         if any(p in dirpath for p in (".git", "node_modules", "__pycache__", "web/data")):
@@ -119,11 +140,26 @@ def test_nothing_in_the_tree_consumes_the_shard_yet():
                 continue
             with open(path, encoding="utf-8", errors="ignore") as fh:
                 if "essence_crafting.json" in fh.read():
-                    hits.append(os.path.relpath(path, ROOT))
-    assert not hits, (
+                    rel = os.path.relpath(path, ROOT)
+                    if not rel.startswith(TEST_DIR):
+                        hits.append(rel)
+    assert hits == [ROSTER_READER], (
         "something now reads the Essence Crafting shard: " + ", ".join(hits)
-        + ". Before wiring it, source the bonus types — see "
-        "docs/wiki-evidence/essence-crafting.md.")
+        + f". Only {ROSTER_READER} may, and only for the effect roster. Before wiring "
+        "the values, source the bonus types — see docs/wiki-evidence/essence-crafting.md.")
+
+
+def test_the_allowlisted_reader_takes_the_roster_and_not_the_magnitudes():
+    """Proves the allowance above is as narrow as it claims. If the roster reader
+    ever reaches for a magnitude, the allowlist is silently covering a solver
+    input and this fails rather than waving it through."""
+    with open(os.path.join(ROOT, ROSTER_READER), encoding="utf-8") as fh:
+        src = fh.read()
+    assert "placements" in src, f"{ROSTER_READER} no longer reads the roster it is allowlisted for"
+    for key in VALUE_KEYS:
+        assert f'"{key}"' not in src and f"'{key}'" not in src, (
+            f"{ROSTER_READER} now reads {key!r}. That is a magnitude, not a roster: "
+            "the allowlist covers the effect NAMES only.")
 
 
 def test_the_twelve_labels_are_still_declared_unserved():
