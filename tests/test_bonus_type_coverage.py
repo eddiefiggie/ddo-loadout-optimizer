@@ -17,6 +17,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 SEED = os.path.join(ROOT, "data", "seed", "compendium", "bonus_type_dispositions.json")
+#: #625 — the ruling PROSE. The seed and the dataset already guard each other in
+#: both directions; nothing guarded the document that explains them, so when #608
+#: retired `Sneak Attack` the seed was updated correctly and the markdown went on
+#: citing 36 records for a type that had none.
+DOC = os.path.join(ROOT, "docs", "wiki-evidence", "bonus-type-equivalence.md")
+#: Everything below this heading is explicitly a record of types that have LEFT,
+#: so a retired name is expected there and nowhere above it.
+RETIRED_HEADING = "## Retired types"
 DATASET = os.path.join(ROOT, "web", "data", "items.json")
 #: #140 — the OTHER place a bonus type can enter the model. `COMPOSITE_COMPONENTS`
 #: decomposes boolean composites at load time in the browser, so the types it mints
@@ -104,6 +112,42 @@ def test_the_seed_does_not_disposition_types_that_no_longer_exist():
     assert not stale, (
         f"disposition(s) for type(s) the dataset no longer produces: {stale}. "
         "Retire them deliberately so the coverage count means what it says.")
+
+
+def test_the_ruling_doc_does_not_discuss_a_retired_type_as_live():
+    """#625 — a retired type must not still be described as shipping.
+
+    The seed retires a type deliberately (`_retired`), but the ruling document is
+    what a human reads, and it had `Sneak Attack` sitting in a list of "legitimate
+    native types" with a record count, months after the type stopped existing. A
+    reader deciding whether the question was settled would have been reading a
+    sentence about nothing.
+
+    The rule is positional and cheap to satisfy: once a type is retired, its prose
+    moves below the Retired heading. Nothing else in the document may name it.
+    """
+    with open(SEED, encoding="utf-8") as fh:
+        retired = json.load(fh).get("_retired") or {}
+    assert retired, (
+        "no retired types were read out of bonus_type_dispositions.json — this guard "
+        "is inspecting an empty population and would pass whatever the document said.")
+    with open(DOC, encoding="utf-8") as fh:
+        text = fh.read()
+    cut = text.find(RETIRED_HEADING)
+    assert cut >= 0, (
+        f"{RETIRED_HEADING!r} is missing from the ruling document, so there is nowhere "
+        "for a retired type's reasoning to live and this guard cannot tell the two "
+        "halves apart.")
+    live_prose = text[:cut]
+    offenders = []
+    for name in retired:
+        for m in re.finditer("`" + re.escape(name) + "`", live_prose):
+            offenders.append(f"{name} (line {live_prose.count(chr(10), 0, m.start()) + 1})")
+    assert not offenders, (
+        f"retired bonus type(s) still described as live in {os.path.basename(DOC)}: "
+        f"{offenders}. The dataset no longer produces them. Move the entry below "
+        f"{RETIRED_HEADING!r} with the reason it was retired, rather than deleting it — "
+        "an unrecorded retirement gets re-investigated.")
 
 
 def test_dispositions_use_the_closed_vocabulary():
