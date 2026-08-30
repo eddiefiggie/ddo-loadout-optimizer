@@ -1052,6 +1052,11 @@ def build() -> dict:
         raise SystemExit("speed augment snapshot guard failed:\n  " +
                          "\n  ".join(_speed_aug_guard["problems"]))
     _speed_aug_coverage = speed_split_mod.apply_to_augments(aug_pool, _speed_aug_shard)
+    # Every augment the shard names must have been REWRITTEN, not merely inspected.
+    # `uncovered` counts records the shard misses; it cannot see a record the shard
+    # covers and the matcher passed over, which is how three Topaz of Swiftness
+    # augments credited nothing while the coverage numbers read as complete.
+    speed_split_mod.check_augment_coverage(aug_pool, _speed_aug_shard, _speed_aug_coverage)
     # #191 — the augment channel of the Elemental Resistance expansion. One
     # augment carries the compound today (Draconic Soul Gem), and coverage of
     # the item channel is not coverage of this one (#293's lesson): an augment

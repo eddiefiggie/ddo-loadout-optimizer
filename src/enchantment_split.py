@@ -103,6 +103,12 @@ class SplitConfig:
     primary_name: str
     primary_key: str
     primary_corrected_stat: str
+    # Other upstream names for the SAME folded enchantment. gear-planner does not
+    # always use one name: the three `Topaz of Swiftness` augments carry an affix
+    # literally named `Swiftness`, so a splitter keyed on `folded_name` alone passed
+    # over them and they reached the solver crediting nothing. Matching is by the set
+    # of names; the rewrite is unchanged.
+    folded_aliases: tuple = ()
     # (value key, affix name, stat counter) per additional contribution.
     extras: tuple = ()
     shadow_key: Callable[[dict], object] = field(default=name_only)
@@ -150,9 +156,13 @@ def rewrite_all(records, shard: dict, key_of, cfg: SplitConfig) -> dict:
 
     for rec in records or []:
         affixes = rec.get("affixes") or []
-        folded = [a for a in affixes if a.get("name") == cfg.folded_name]
+        names = {cfg.folded_name, *(cfg.folded_aliases or ())}
+        folded = [a for a in affixes if a.get("name") in names]
         if not folded:
             continue
+        # Captured HERE, before any rename mutates these affixes in place. Read later
+        # it would report the stat just written rather than the enchantment engraved.
+        source_name = folded[0].get("name") or cfg.folded_name
 
         entry = harvested.get(key_of(rec))
         if entry is None:
@@ -207,11 +217,15 @@ def rewrite_all(records, shard: dict, key_of, cfg: SplitConfig) -> dict:
                 affixes.remove(affix)
                 stats["primary_suppressed"] += 1
             else:
+                # Captured BEFORE the rename: reading it after would record the stat we
+                # just wrote rather than the enchantment it came from.
                 affix["name"] = cfg.primary_name
                 # R12: renaming is an expansion too — the item is engraved
                 # "Parrying", not "Armor Class", so the emitted affix names the
-                # enchantment it came from.
-                affix[PROVENANCE_KEY] = cfg.folded_name
+                # enchantment it came from. For an aliased name that is the name the
+                # record ACTUALLY carried, so a `Swiftness` augment reads as Swiftness
+                # rather than as Speed. Identical for the canonical case.
+                affix[PROVENANCE_KEY] = source_name
                 stats["renamed"] += 1
 
                 primary = value.get(cfg.primary_key)
@@ -233,7 +247,7 @@ def rewrite_all(records, shard: dict, key_of, cfg: SplitConfig) -> dict:
                 if cfg.shadow_key(candidate) in present:
                     continue
                 affixes.append({"name": name, "type": btype, "value": str(magnitude),
-                                PROVENANCE_KEY: cfg.folded_name})
+                                PROVENANCE_KEY: source_name})
                 present.add(cfg.shadow_key(candidate))
                 stats[stat] += 1
 
