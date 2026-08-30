@@ -1606,6 +1606,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // the query carries a `(stat, bonus type)`-keyed map so the UI can address a
     // single credit for edit and removal.
     credits: normalizeCredits(query.declaredCredits),
+    // The other half of the same picker — see `normalizeExclusions`.
+    excludedTypes: normalizeExclusions(query.excludedTypes),
   };
 }
 
@@ -1646,6 +1648,40 @@ const _CREDIT_TYPE_SET = new Set(CREDIT_BONUS_TYPES);
 const MAX_CREDIT_VALUE = 9999;
 
 /** Declared credits as a deduped array, from either the keyed map or an array. */
+/** The bonus types the player told the solver NOT to use for a stat.
+ *
+ *  A declared CREDIT says "I already have N of this, so only beat it". An
+ *  EXCLUSION says "do not use this bonus type for this stat at all" — the player
+ *  has it covered from somewhere the tool cannot see and does not want a slot
+ *  spent on it, at any magnitude. The two are different answers to the same
+ *  question, which is why they share a picker in the UI and nothing else: a
+ *  credit is a floor a contribution can clear, an exclusion is not.
+ *
+ *  Same shape and the same refusals as `normalizeCredits` — an unknown bonus type
+ *  or a prototype-pollution stat name is dropped rather than minting an LP
+ *  variable for something no gear can carry.
+ */
+function normalizeExclusions(declared) {
+  if (!declared) return [];
+  const rows = Array.isArray(declared) ? declared : Object.values(declared);
+  const seen = new Set();
+  const out = [];
+  for (const row of rows) {
+    if (!row) continue;
+    const stat = String(row.stat == null ? "" : row.stat).trim();
+    const bonusType = String(row.bonus_type == null ? "" : row.bonus_type).trim();
+    if (stat === "__proto__" || stat === "constructor" || stat === "prototype") continue;
+    if (!stat) continue;
+    if (!_CREDIT_TYPE_SET.has(bonusType)) continue;
+    const key = `${stat}||${bonusType}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ stat, bonus_type: bonusType });
+  }
+  return out;
+}
+
+
 function normalizeCredits(declared) {
   if (!declared) return [];
   const rows = Array.isArray(declared) ? declared : Object.values(declared);
@@ -1721,7 +1757,7 @@ function poolStatNames(model) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { poolStatNames, setIntrinsicCaps, setEssenceCoverage, essenceCoverage, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
-    buildModel, normalizeCredits, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
+    buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,

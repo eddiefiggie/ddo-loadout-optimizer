@@ -244,6 +244,14 @@ function buildProgram(model) {
   // SAME bucket gear would land in (KTD2); forming the key any other way would
   // drift the moment the equivalence table changes.
   const credits = _normalizeCredits(model.credits);
+  // The other half of the same player answer: bonus types NOT to use for a stat,
+  // at any magnitude. Keyed exactly like a credit — `_equivType` on the type half
+  // — so an exclusion names the bucket gear would actually land in rather than a
+  // near-miss that silently excludes nothing. Applied far below, after every
+  // contribution has been pushed; see the deletion loop for why it has to be late.
+  const excludedBuckets = new Set((model.excludedTypes || [])
+    .filter((e) => e && e.stat && e.bonus_type)
+    .map((e) => `${e.stat}||${_equivType(e.bonus_type)}`));
   const targetSet = new Set([...model.targets, ...Object.keys(cappedStats), ...Object.keys(model.floors || {}),
     ...credits.map((c) => c.stat)]);
   // U2 (#290/#291) — widen with every tracked stat's cross-add SOURCE stats
@@ -1388,7 +1396,25 @@ function buildProgram(model) {
   // once: a credit of 7 against an Insight-10 augment resolved to 7 with the
   // augment unequipped, breaking R5. Worn-only tests cannot catch it; the
   // augment and set-tier regressions in tests/solver.test.js pin it.
+  // Excluded bonus types, dropped HERE for exactly the reason the credit floors
+  // below are emitted here: augments, set tiers, crafting and set augments push
+  // into `zByBucket` throughout the body above, so anything earlier would delete
+  // the contributions that existed at that point and silently keep every one
+  // added afterwards — an exclusion that held for worn gear and leaked on
+  // augments. Deleting the whole bucket is the whole mechanism: a bucket with no
+  // contributions cannot be scored, so nothing is credited for it and nothing is
+  // placed FOR it. Items are still free to be chosen for their other stats, which
+  // is the correct reading — the player excluded a bonus type, not an item.
+  for (const key of excludedBuckets) zByBucket.delete(key);
+
   for (const [key, floorValue] of creditBuckets) {
+    // NOTE on the skip interaction: a bucket deleted just above is absent from
+    // `zByBucket`, so `zs` is empty and the guard below already skips its floor.
+    // That matters — a floor on a deleted bucket is unsatisfiable and would make
+    // the whole solve infeasible, and a hand-edited backup can carry both answers
+    // for one type even though the UI cannot. No separate exclusion check is
+    // written here on purpose: it could not be made to fail, and a guard that
+    // cannot fail reads as protection this code does not actually have.
     const zs = zByBucket.get(key) || [];
     if (!zs.length) continue;
     extraConstraints.push(`${zs.map((z) => `+ ${z.value} ${z.name}`).join(" ")} >= ${floorValue}`);
