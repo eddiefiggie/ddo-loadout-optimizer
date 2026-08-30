@@ -208,3 +208,39 @@ def test_the_shipping_seed_adjudicates_the_real_roster_completely():
     allow, quarantined = untyped_rankable.load(SHARD)
     checked = untyped_rankable.assert_adjudicated(_real_records(), allow, quarantined)
     assert checked == len(allow) + len(quarantined)
+
+
+def test_no_quarantine_entry_is_still_unreviewed():
+    """#230 — every one of the 22 was adjudicated against the wiki on 2026-08-29.
+
+    The old reason was the literal word "unreviewed", which is a placeholder rather
+    than a verdict. A new candidate arriving later may legitimately be unreviewed, but
+    it must then also carry no `verified` date — the two together would be a lie."""
+    import json, os
+    shard = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         "data", "seed", "compendium", "untyped_rankable.json")
+    with open(shard, encoding="utf-8") as fh:
+        d = json.load(fh)
+    q = d["quarantined"]
+    assert q, "refusing to pass over an empty quarantine"
+    CATS = {"no-wiki-page", "proc", "conditional", "unrankable-concept", "parse-gap", "not-a-stat"}
+    for e in q:
+        assert e.get("category") in CATS, f"{e['name']}: no adjudicated category"
+        assert e.get("reason") and "unreviewed" not in e["reason"], \
+            f"{e['name']}: still carries the placeholder reason"
+        assert e.get("wiki_url"), f"{e['name']}: no wiki url recorded"
+        assert e.get("verified"), f"{e['name']}: adjudicated with no date"
+
+
+def test_the_adjudication_records_why_none_were_admitted():
+    """A sweep that admits nothing must say so, or it reads as a sweep that never ran."""
+    import json, os
+    shard = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         "data", "seed", "compendium", "untyped_rankable.json")
+    with open(shard, encoding="utf-8") as fh:
+        d = json.load(fh)
+    a = d.get("_adjudication_2026_08_29")
+    assert a, "the sweep's own record is missing"
+    assert sum(a["categories"].values()) == len(d["quarantined"]), \
+        "the category tally must cover every quarantined name"
+    assert a.get("revisit_when"), "a verdict with no revisit condition cannot be reopened deliberately"

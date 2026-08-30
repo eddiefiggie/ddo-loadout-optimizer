@@ -1,258 +1,338 @@
 {
- "_README": "Adjudication of UNTYPED gear-planner affixes that look like real worn-gear magnitude stats (#227). The candidate rule in src/untyped_rankable.py is 'untyped + numeric + >= 2 distinct items + well-formed + reaches a worn slot'. A candidate in NEITHER list fails the build, so a new untyped worn stat is a reviewed event rather than a silent omission. Only 'allow' names enter metadata.rankable_affixes; 'quarantined' names stay out of the picker suggestions but remain free-typeable via the known set, exactly as before.",
- "_discipline": "exclude-until-verified. Add to 'allow' ONLY with wiki evidence that the name is a real, rankable magnitude a player would want to prioritise. 'unreviewed' is an honest reason and marks the filed backlog; it is not a judgement that the name is noise. An empty 'allow' list reproduces the pre-feature rankable vocabulary exactly.",
- "_why_untyped_is_skipped_by_default": "Of 183 distinct untyped names across ~5,400 raw item affixes, the population is dominated by weapon procs and banes (Holy on 197 items, Chilling 191, Vampirism 161, Maiming 157, the Bane family). rankable_affixes() skips untyped affixes for that reason and keeps doing so; this file is the narrow, evidenced exception.",
- "allow": [
-  {
-   "name": "Enhanced Ki",
-   "items": 19,
-   "wiki_url": "https://ddowiki.com/page/Enhanced_Ki",
-   "verified": "2026-08-10",
-   "evidence": "The Enhanced Ki page describes an enchantment that increases the rate at which the user gains ki with each successful attack. It is a magnitude (values 1-5 across the roster), not a proc, and it appears on boots, goggles, necklaces, bracers, armor, and trinkets - never on a weapon alone.",
-   "reason": "Reported by a player who could not find it in the priority picker (#227). Reaches the picker under its wiki name via affix_name_corrections.json."
+  "_README": "Adjudication of UNTYPED gear-planner affixes that look like real worn-gear magnitude stats (#227). The candidate rule in src/untyped_rankable.py is 'untyped + numeric + >= 2 distinct items + well-formed + reaches a worn slot'. A candidate in NEITHER list fails the build, so a new untyped worn stat is a reviewed event rather than a silent omission. Only 'allow' names enter metadata.rankable_affixes; 'quarantined' names stay out of the picker suggestions but remain free-typeable via the known set, exactly as before.",
+  "_discipline": "exclude-until-verified. Add to 'allow' ONLY with wiki evidence that the name is a real, rankable magnitude a player would want to prioritise. 'unreviewed' is an honest reason and marks the filed backlog; it is not a judgement that the name is noise. An empty 'allow' list reproduces the pre-feature rankable vocabulary exactly.",
+  "_why_untyped_is_skipped_by_default": "Of 183 distinct untyped names across ~5,400 raw item affixes, the population is dominated by weapon procs and banes (Holy on 197 items, Chilling 191, Vampirism 161, Maiming 157, the Bane family). rankable_affixes() skips untyped affixes for that reason and keeps doing so; this file is the narrow, evidenced exception.",
+  "allow": [
+    {
+      "name": "Enhanced Ki",
+      "items": 19,
+      "wiki_url": "https://ddowiki.com/page/Enhanced_Ki",
+      "verified": "2026-08-10",
+      "evidence": "The Enhanced Ki page describes an enchantment that increases the rate at which the user gains ki with each successful attack. It is a magnitude (values 1-5 across the roster), not a proc, and it appears on boots, goggles, necklaces, bracers, armor, and trinkets - never on a weapon alone.",
+      "reason": "Reported by a player who could not find it in the priority picker (#227). Reaches the picker under its wiki name via affix_name_corrections.json."
+    }
+  ],
+  "quarantined": [
+    {
+      "name": "Upgradeable - Tier",
+      "items": 53,
+      "category": "no-wiki-page",
+      "reason": "no page at ddowiki.com/page/Upgradeable_-_Tier (404). It is also typed on other items, so the untyped instances remain a likely upstream parse gap rather than a stat.",
+      "wiki_url": "https://ddowiki.com/page/Upgradeable_-_Tier",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Linguistics",
+      "items": 33,
+      "category": "not-a-stat",
+      "reason": "wiki: 'reduced the cooldowns of your Social skills (Bluff, Diplomacy, Intimidate) by 10%.' A cooldown reduction, not a stat the solver can sum or rank.",
+      "wiki_url": "https://ddowiki.com/page/Linguistics",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Tendon Slice",
+      "items": 28,
+      "category": "proc",
+      "reason": "wiki: 'gives a X% chance to Hamstring the target for each attack that does damage.' A proc rate, not a worn magnitude. Valuing it needs #331.",
+      "wiki_url": "https://ddowiki.com/page/Tendon_Slice",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Spearblock",
+      "items": 18,
+      "category": "unrankable-concept",
+      "reason": "wiki: 'Reduces physical damage taken by (X), except from Bludgeoning or Slashing weapons. (Damage Reduction: (X)/Slash, Bludgeon)'. A real worn magnitude, but qualified Damage Reduction is not a rankable concept here — `Damage Reduction` is not in CORE_STATS and the solver models PRR/MRR instead. Admitting it would mint a stat family the solver has no notion of.",
+      "wiki_url": "https://ddowiki.com/page/Spearblock",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Arcane Casting Dexterity",
+      "items": 17,
+      "category": "not-a-stat",
+      "reason": "wiki: 'reduces the arcane spell failure chance by -5%.' Arcane spell failure is not a tracked stat, and the wiki states a fixed -5% while the catalog carries values 5/10/15 — so the stored number does not mean what the name suggests either.",
+      "wiki_url": "https://ddowiki.com/page/Arcane_Casting_Dexterity",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Axeblock",
+      "items": 16,
+      "category": "unrankable-concept",
+      "reason": "wiki: the same qualified Damage Reduction shape as Spearblock (except Bludgeoning or Piercing). Same verdict.",
+      "wiki_url": "https://ddowiki.com/page/Axeblock",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Arcane Augmentation",
+      "items": 13,
+      "category": "conditional",
+      "reason": "wiki: 'increases your effective caster level for specific spells by the listed level... determined on a spell-by-spell basis.' Conditional and spell-specific, which is #214's class — a flat constant would misstate it.",
+      "wiki_url": "https://ddowiki.com/page/Arcane_Augmentation",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Smite Evil Charges",
+      "items": 10,
+      "category": "no-wiki-page",
+      "reason": "no page at ddowiki.com/page/Smite_Evil_Charges (404); nothing to verify against.",
+      "wiki_url": "https://ddowiki.com/page/Smite_Evil_Charges",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Lesser Arcane Augmentation",
+      "items": 6,
+      "category": "conditional",
+      "reason": "same Spell Augmentation page and the same spell-by-spell conditionality as Arcane Augmentation. #214.",
+      "wiki_url": "https://ddowiki.com/page/Lesser_Arcane_Augmentation",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Illusory Death",
+      "items": 5,
+      "category": "conditional",
+      "reason": "wiki: 'Increases your caster level when casting Illusion and Necromancy spells by x.' A real magnitude, but conditional on the school cast — #214's class, and it is stored type `None` rather than untyped.",
+      "wiki_url": "https://ddowiki.com/page/Illusory_Death",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Raging Strength",
+      "items": 5,
+      "category": "conditional",
+      "reason": "wiki: 'Your Rage abilities grant an additional +X Strength.' Held only while raging, and only by a character with Rage. #214's class.",
+      "wiki_url": "https://ddowiki.com/page/Raging_Strength",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Divine Augmentation",
+      "items": 4,
+      "category": "conditional",
+      "reason": "same Spell Augmentation page and the same spell-by-spell conditionality as Arcane Augmentation. #214.",
+      "wiki_url": "https://ddowiki.com/page/Divine_Augmentation",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Deception",
+      "items": 3,
+      "category": "parse-gap",
+      "reason": "wiki: '+X (type) bonus to hit and +Y to damage for any hit that would qualify as a sneak attack' — it CARRIES a type. The catalog bears that out: 187 instances typed Bool/Enhancement/Insight/Quality and only a handful untyped, so the untyped ones are an upstream parse gap, not an untyped stat.",
+      "wiki_url": "https://ddowiki.com/page/Deception",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Hammerblock",
+      "items": 3,
+      "category": "unrankable-concept",
+      "reason": "wiki: the same qualified Damage Reduction shape as Spearblock (except Piercing or Slashing). Same verdict.",
+      "wiki_url": "https://ddowiki.com/page/Hammerblock",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Improved Fire Augmentation",
+      "items": 3,
+      "category": "no-wiki-page",
+      "reason": "no page at ddowiki.com/page/Improved_Fire_Augmentation (404); nothing to verify against.",
+      "wiki_url": "https://ddowiki.com/page/Improved_Fire_Augmentation",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Burning Glory",
+      "items": 2,
+      "category": "proc",
+      "reason": "wiki: 'On Harmful Spellcast: Do an additional X to (6*X) Fire Damage... Cooldown: 1 second.' An on-cast proc. Needs #331.",
+      "wiki_url": "https://ddowiki.com/page/Burning_Glory",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Distant Incite",
+      "items": 2,
+      "category": "parse-gap",
+      "reason": "wiki: '+X% Enhancement bonus to increased threat generation from ranged damage' — stated as an Enhancement bonus, so the untyped instances are an upstream parse gap.",
+      "wiki_url": "https://ddowiki.com/page/Distant_Incite",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Ice Guard",
+      "items": 2,
+      "category": "proc",
+      "reason": "wiki (Elemental Guard): damage to an attacker on a successful melee attack against the wearer. An on-hit proc. Needs #331.",
+      "wiki_url": "https://ddowiki.com/page/Ice_Guard",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Lesser Divine Augmentation",
+      "items": 2,
+      "category": "no-wiki-page",
+      "reason": "no page at ddowiki.com/page/Lesser_Divine_Augmentation (404); nothing to verify against.",
+      "wiki_url": "https://ddowiki.com/page/Lesser_Divine_Augmentation",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Lesser Evocation Augmentation",
+      "items": 2,
+      "category": "no-wiki-page",
+      "reason": "no page at ddowiki.com/page/Lesser_Evocation_Augmentation (404); nothing to verify against.",
+      "wiki_url": "https://ddowiki.com/page/Lesser_Evocation_Augmentation",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Radiant Glory",
+      "items": 2,
+      "category": "proc",
+      "reason": "wiki: 'On Harmful Spellcast: Do an additional 2 to 12 Light Damage... Cooldown 1 second.' An on-cast proc. Needs #331.",
+      "wiki_url": "https://ddowiki.com/page/Radiant_Glory",
+      "verified": "2026-08-29"
+    },
+    {
+      "name": "Thorn Guard",
+      "items": 2,
+      "category": "proc",
+      "reason": "wiki: '1d8 piercing damage on a successful melee attack' against the wearer. An on-hit proc. Needs #331. Also typed elsewhere, so the untyped instances may additionally be a parse gap.",
+      "wiki_url": "https://ddowiki.com/page/Thorn_Guard",
+      "verified": "2026-08-29"
+    }
+  ],
+  "_retired_2026_08_18": {
+    "why": "#374/U4 — the 2026-08-18 gear-planner refresh re-encoded the type field and assigned real bonus types to these names. Their untyped instances no longer exist, so the quarantine cannot apply. Each entry records the types upstream now emits. Retired, not deleted: this is the record of a quarantine resolving as its own stated reason predicted.",
+    "entries": {
+      "Magical Efficiency": {
+        "name": "Magical Efficiency",
+        "items": 99,
+        "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 99, 'Bool': 8}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Efficient Metamagic - Maximize": {
+        "name": "Efficient Metamagic - Maximize",
+        "items": 52,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 52}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Improved Deception": {
+        "name": "Improved Deception",
+        "items": 47,
+        "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 73}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Wizardry": {
+        "name": "Wizardry",
+        "items": 42,
+        "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 205, 'Insight': 64, 'Quality': 29}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Efficient Metamagic - Empower": {
+        "name": "Efficient Metamagic - Empower",
+        "items": 34,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 34}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Power": {
+        "name": "Power",
+        "items": 20,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 20}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Efficient Metamagic - Empower Healing": {
+        "name": "Efficient Metamagic - Empower Healing",
+        "items": 15,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 15}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Fire Guard": {
+        "name": "Fire Guard",
+        "items": 15,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Bool': 15}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Energy Siphon": {
+        "name": "Energy Siphon",
+        "items": 13,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Bool': 13}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Efficient Metamagic - Extend": {
+        "name": "Efficient Metamagic - Extend",
+        "items": 12,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 12}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Negative Energy Absorption": {
+        "name": "Negative Energy Absorption",
+        "items": 12,
+        "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 36}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Solar Guard": {
+        "name": "Solar Guard",
+        "items": 12,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Bool': 12}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Dazing": {
+        "name": "Dazing",
+        "items": 11,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 11}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Efficient Metamagic - Enlarge": {
+        "name": "Efficient Metamagic - Enlarge",
+        "items": 11,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 11}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Efficient Metamagic - Intensify": {
+        "name": "Efficient Metamagic - Intensify",
+        "items": 8,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 8}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Acid Guard": {
+        "name": "Acid Guard",
+        "items": 5,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Bool': 5}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Minor Spell Penetration": {
+        "name": "Minor Spell Penetration",
+        "items": 5,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 5}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Efficient Metamagic - Embolden": {
+        "name": "Efficient Metamagic - Embolden",
+        "items": 4,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 4}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Hardened Exterior": {
+        "name": "Hardened Exterior",
+        "items": 4,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Profane': 4}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Mystic Incite": {
+        "name": "Mystic Incite",
+        "items": 4,
+        "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 4, 'Insight': 2}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      },
+      "Efficient Metamagic - Quicken": {
+        "name": "Efficient Metamagic - Quicken",
+        "items": 2,
+        "reason": "unreviewed",
+        "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 2}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
+      }
+    }
+  },
+  "_adjudication_2026_08_29": {
+    "issue": 230,
+    "verdict": "All 22 reviewed against the DDO Wiki. NONE is admitted to the picker.",
+    "why_none": "The candidate rule finds untyped affixes that LOOK like worn magnitudes. Reading each page shows every one is something else: a proc, a conditional or spell-specific effect, a real magnitude for a concept this app does not rank (qualified Damage Reduction), an upstream parse gap on an affix that is typed elsewhere, or a page that does not exist. That is a result, not an absence of one — the queue no longer carries 22 names whose status nobody had checked.",
+    "categories": {
+      "no-wiki-page": 5,
+      "proc": 5,
+      "conditional": 5,
+      "unrankable-concept": 3,
+      "parse-gap": 2,
+      "not-a-stat": 2
+    },
+    "revisit_when": "A proc verdict changes if #331 ships proc valuation. A conditional verdict changes if #214 gives the pipeline a way to tell a conditional from a constant. A parse-gap verdict changes on a gear-planner refresh that types the remaining instances — which is exactly how the 21 names retired on 2026-08-18 resolved."
   }
- ],
- "quarantined": [
-  {
-   "name": "Upgradeable - Tier",
-   "items": 53,
-   "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat"
-  },
-  {
-   "name": "Linguistics",
-   "items": 33,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Tendon Slice",
-   "items": 28,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Spearblock",
-   "items": 18,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Arcane Casting Dexterity",
-   "items": 17,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Axeblock",
-   "items": 16,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Arcane Augmentation",
-   "items": 13,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Smite Evil Charges",
-   "items": 10,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Lesser Arcane Augmentation",
-   "items": 6,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Illusory Death",
-   "items": 5,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Raging Strength",
-   "items": 5,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Divine Augmentation",
-   "items": 4,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Deception",
-   "items": 3,
-   "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat"
-  },
-  {
-   "name": "Hammerblock",
-   "items": 3,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Improved Fire Augmentation",
-   "items": 3,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Burning Glory",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Distant Incite",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Ice Guard",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Lesser Divine Augmentation",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Lesser Evocation Augmentation",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Radiant Glory",
-   "items": 2,
-   "reason": "unreviewed"
-  },
-  {
-   "name": "Thorn Guard",
-   "items": 2,
-   "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat"
-  }
- ],
- "_retired_2026_08_18": {
-  "why": "#374/U4 — the 2026-08-18 gear-planner refresh re-encoded the type field and assigned real bonus types to these names. Their untyped instances no longer exist, so the quarantine cannot apply. Each entry records the types upstream now emits. Retired, not deleted: this is the record of a quarantine resolving as its own stated reason predicted.",
-  "entries": {
-   "Magical Efficiency": {
-    "name": "Magical Efficiency",
-    "items": 99,
-    "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 99, 'Bool': 8}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Efficient Metamagic - Maximize": {
-    "name": "Efficient Metamagic - Maximize",
-    "items": 52,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 52}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Improved Deception": {
-    "name": "Improved Deception",
-    "items": 47,
-    "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 73}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Wizardry": {
-    "name": "Wizardry",
-    "items": 42,
-    "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 205, 'Insight': 64, 'Quality': 29}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Efficient Metamagic - Empower": {
-    "name": "Efficient Metamagic - Empower",
-    "items": 34,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 34}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Power": {
-    "name": "Power",
-    "items": 20,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 20}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Efficient Metamagic - Empower Healing": {
-    "name": "Efficient Metamagic - Empower Healing",
-    "items": 15,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 15}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Fire Guard": {
-    "name": "Fire Guard",
-    "items": 15,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Bool': 15}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Energy Siphon": {
-    "name": "Energy Siphon",
-    "items": 13,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Bool': 13}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Efficient Metamagic - Extend": {
-    "name": "Efficient Metamagic - Extend",
-    "items": 12,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 12}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Negative Energy Absorption": {
-    "name": "Negative Energy Absorption",
-    "items": 12,
-    "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 36}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Solar Guard": {
-    "name": "Solar Guard",
-    "items": 12,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Bool': 12}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Dazing": {
-    "name": "Dazing",
-    "items": 11,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 11}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Efficient Metamagic - Enlarge": {
-    "name": "Efficient Metamagic - Enlarge",
-    "items": 11,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 11}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Efficient Metamagic - Intensify": {
-    "name": "Efficient Metamagic - Intensify",
-    "items": 8,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 8}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Acid Guard": {
-    "name": "Acid Guard",
-    "items": 5,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Bool': 5}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Minor Spell Penetration": {
-    "name": "Minor Spell Penetration",
-    "items": 5,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 5}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Efficient Metamagic - Embolden": {
-    "name": "Efficient Metamagic - Embolden",
-    "items": 4,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 4}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Hardened Exterior": {
-    "name": "Hardened Exterior",
-    "items": 4,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Profane': 4}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Mystic Incite": {
-    "name": "Mystic Incite",
-    "items": 4,
-    "reason": "unreviewed; also appears typed on other items, so the untyped instances may be an upstream parse gap rather than an untyped stat",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 4, 'Insight': 2}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   },
-   "Efficient Metamagic - Quicken": {
-    "name": "Efficient Metamagic - Quicken",
-    "items": 2,
-    "reason": "unreviewed",
-    "retired_2026_08_18": "upstream now types every instance ({'Enhancement': 2}) — no untyped instance remains, so the quarantine is resolved in the direction its own reason predicted (\"may be an upstream parse gap rather than an untyped stat\"). The stat now flows through the normal typed-rankable path."
-   }
-  }
- }
 }
