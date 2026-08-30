@@ -1,7 +1,7 @@
 {
   "_meta": {
     "field": "essence_crafting",
-    "status": "HARVESTED, NOT WIRED — see `blocker` below and docs/wiki-evidence/essence-crafting.md",
+    "status": "HARVESTED, NOT WIRED — the bonus-type dimension is now PARTLY sourced (22 of 157) in essence_bonus_type.json; see the blocker below.",
     "note": "Wiki-harvested seed shard for Essence Crafting (the Cannith Crafting rename, U79). Records WHICH effects can be crafted into which item/affix slot, and WHAT MAGNITUDE each effect has at each minimum level 1-36. Verbatim from the DDO wiki.",
     "sources": {
       "placements": "https://ddowiki.com/page/Essence_Crafting/table_1b",
@@ -9,7 +9,7 @@
     },
     "evidence": "docs/wiki-evidence/essence-crafting.md",
     "harvested": "2026-08-27",
-    "blocker": "NO SOURCE REACHABLE TO US RECORDS THE BONUS TYPE OF A CRAFTED EFFECT. The four Essence Crafting wiki tables carry zero occurrences of Enhancement/Insight/Competence/Quality/Profane/Sacred/Artifact as bonus types, and gear-planner ships no Essence Crafting pool at all. The solver buckets a contribution as (stat, bonus_type); without the type, a crafted effect either double-counts against real gear or wrongly collapses with it. Both produce a wrong number in a finished loadout, which is this project's worst output. So this shard is DATA ONLY and nothing consumes it until the type dimension is sourced."
+    "blocker": "THE SOLVER BUCKETS EVERY CONTRIBUTION AS (stat, bonus_type), AND 135 OF THE 157 CRAFTABLE EFFECTS STILL HAVE NO SOURCED BONUS TYPE. Without the type, a crafted effect either double-counts against real gear or wrongly collapses with it. Both produce a wrong number in a finished loadout, which is this project's worst output. So this shard stays DATA ONLY.\n\nCORRECTION (2026-08-29, #193). The original wording of this blocker said NO source records the type at all. That was too strong. It was reached by looking for a type word NEAR the Essence Crafting mention on an effect's page — but several pages group their sources under '=== <Type> bonus ===' SECTION HEADINGS, putting the type in the heading ABOVE the crafting line, where a proximity search cannot see it. A section-aware read of all 157 effect pages found 22 stated types. See essence_bonus_type.json and docs/wiki-evidence/essence-crafting-bonus-types.md.\n\nWHAT STILL HOLDS: the four Essence Crafting wiki tables carry zero bonus types, the 44 KB Essence Crafting page states zero, and gear-planner ships no Essence Crafting pool at all. The type lives on the individual effect pages, unevenly — which is why coverage is 22 and not 157."
   },
   "non_scalar_effects": [
     "Bane",

@@ -88,6 +88,17 @@ FIELDS = {
         "help": "items carrying a gear-planner `Heightened Awareness` affix (#169)",
         "key": "name",
     },
+    # The one dimension Essence Crafting is missing. `essence_crafting.json` has
+    # every placement and every ML curve; nothing anywhere records what BONUS TYPE
+    # a crafted effect grants, and the solver buckets on `(stat, bonus_type)`. Keyed
+    # by EFFECT name — these are effects, not items, so there is no item page to
+    # join on. Scope a run with `--slot` (see `roster`); the roster is the whole
+    # 157-effect system by default so coverage always reports against it.
+    "essence_bonus_type": {
+        "shard": os.path.join(SHARD_DIR, "essence_bonus_type.json"),
+        "help": "craftable Essence Crafting effects, all 16 slots (#193)",
+        "key": "name",
+    },
 }
 
 # Affix fields whose roster is every raw item carrying the folded affix, keyed by
@@ -103,7 +114,7 @@ def _title(url: str) -> str:
     return urllib.parse.unquote(url.replace("/page/", "")).replace("_", " ")
 
 
-def roster(field: str) -> set:
+def roster(field: str, slot: str = "") -> set:
     """The set of wiki titles this field must cover, from the pinned raw snapshot."""
     with open(RAW_ITEMS, encoding="utf-8") as fh:
         items = json.load(fh)
@@ -120,11 +131,44 @@ def roster(field: str) -> set:
         # share one `Augment Slot` url. The roster is every augment upstream
         # folds into `Speed`, read from the crafting catalog.
         return _folded_augment_names()
+    if field == "essence_bonus_type":
+        return _essence_effect_names(slot)
     affix = NAME_KEYED_AFFIX.get(field)
     if affix is not None:
         return {i["name"] for i in items
                 if any(a.get("name") == affix for a in i.get("affixes") or [])}
     raise SystemExit(f"unknown field {field!r}; expected one of {sorted(FIELDS)}")
+
+
+ESSENCE_SHARD = os.path.join(SHARD_DIR, "essence_crafting.json")
+
+
+def essence_slots() -> list:
+    """The 16 equipment slot types Essence Crafting publishes menus for."""
+    with open(ESSENCE_SHARD, encoding="utf-8") as fh:
+        return sorted(json.load(fh)["placements"])
+
+
+def _essence_effect_names(slot: str = "") -> set:
+    """Every craftable effect name, or just one slot's when `slot` is given.
+
+    The default is deliberately the WHOLE system rather than whatever slot is
+    being worked on. Coverage is a claim about a population, and the population
+    here is all 157 effects; a roster that shrank to match the current run would
+    report 100% while most of the system stayed unharvested. `--slot` scopes the
+    work order without moving the denominator.
+    """
+    with open(ESSENCE_SHARD, encoding="utf-8") as fh:
+        placements = json.load(fh)["placements"]
+    if slot:
+        if slot not in placements:
+            raise SystemExit(
+                f"unknown slot {slot!r}; expected one of {sorted(placements)}")
+        placements = {slot: placements[slot]}
+    return {effect
+            for menus in placements.values()
+            for effects in menus.values()
+            for effect in effects}
 
 
 def _folded_augment_names() -> set:
@@ -162,6 +206,10 @@ def main() -> int:
                     help="print per-provenance coverage counts")
     ap.add_argument("--limit", type=int, default=0,
                     help="with --missing-only, print at most N titles (0 = all)")
+    ap.add_argument("--slot", default="",
+                    help="essence_bonus_type only: scope the work order to one "
+                         "equipment slot (e.g. Trinkets). Coverage still reports "
+                         "against the whole 157-effect system.")
     ap.add_argument("--compare-tooltips", metavar="DUMP",
                     help="report drift between stored tooltip snapshots and a "
                          "browser-rendered dump; never writes")
@@ -174,11 +222,21 @@ def main() -> int:
     shard = harvest.load_shard(shard_path, args.field)
     targets = roster(args.field)
 
+    if args.slot:
+        if args.field != "essence_bonus_type":
+            raise SystemExit("--slot applies only to --field essence_bonus_type")
+        if not args.missing_only:
+            raise SystemExit("--slot scopes a work order; use it with --missing-only")
+
     if args.missing_only:
-        missing = harvest.missing_titles(shard, targets)
+        scope = roster(args.field, args.slot) if args.slot else targets
+        missing = harvest.missing_titles(shard, scope)
         for t in (missing[: args.limit] if args.limit else missing):
             print(t)
-        print(f"# {len(missing)} of {len(targets)} still unharvested", file=sys.stderr)
+        scope_note = f" in {args.slot}" if args.slot else ""
+        print(f"# {len(missing)} of {len(scope)}{scope_note} still unharvested "
+              f"({len(harvest.missing_titles(shard, targets))} of {len(targets)} "
+              f"system-wide)", file=sys.stderr)
         return 0
 
     if args.coverage:
