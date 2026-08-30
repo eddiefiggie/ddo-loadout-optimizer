@@ -1619,48 +1619,110 @@ const NOTICE_CLASS_ORDER = [NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMA
  *  the notice rather than in a parallel lookup. Tracked as **#448**; the
  *  completeness assertion in `tests/results.test.js` is what holds the seam
  *  until then. */
-const NOTICE_TABLE = {
+/** #448 — the notice registry: ONE entry per notice, carrying both its
+ *  classification and how to render it.
+ *
+ *  This replaces a hand-maintained lookup table keyed by function name, which sat
+ *  beside a hand-written list of `push(...)` calls. Two places, edited together by
+ *  hand, every time a notice was added — and they drifted exactly as predicted: the
+ *  table grew 10 -> 12 in a single day (#573, then #246), and each addition also
+ *  needed three separate test fixtures updated by hand. A notice added to the render
+ *  list and forgotten in the table rendered "unclassified" until somebody looked.
+ *
+ *  There is now one list. Adding a notice is one entry, and the classification lives
+ *  beside the thing it classifies rather than in a parallel structure that can fall
+ *  behind it. `NOTICE_TABLE` is DERIVED from this and kept as the public shape, so
+ *  every existing reader and test still sees what it always saw.
+ *
+ *  Two kinds of entry, and the difference is real rather than cosmetic:
+ *
+ *    * `render(ctx) -> html` — a SINGLE-fact notice. It carries its own id, title,
+ *      subject, class and jump here, because nothing else knows them.
+ *    * `entries(ctx) -> [{id,title,class,sentence}]` — a SPLIT notice, which mints
+ *      one card per fired branch. Its titles and classes come from projection.js,
+ *      which is the only thing that knows which branch fired, so this list carries
+ *      no classification for them — only the route, via NOTICE_ENTRY_JUMPS.
+ *
+ *  ORDER IS LOAD-BEARING. Splits first, then the single-fact notices in the order
+ *  written, because `noticeDescriptors` sorts by class with insertion index as the
+ *  stable tie-break — so this array's order is the within-class order on screen.
+ */
+const NOTICES = [
+  // ---- split notices: several cards from one source, classified by projection.js ----
+  { name: "artifactNotice", split: true,
+    entries: (c) => artifactNoticeEntries(c.result, c.query) },
+  { name: "boundNotice", split: true,
+    entries: (c) => boundNoticeEntries(c.query, c.result) },
+  { name: "zeroSourceNotice", split: true,
+    entries: (c) => zeroSourceNoticeEntries(c.query, c.result, c.model, c.dataset) },
+
+  // ---- single-fact notices ----
   // #453 U6 (R18/KD6) — labelled for what it does. The control opens the adjust
   // panel; the player presses `Re-solve ⚡` inside it. "Re-solve now" promised an
   // action the jump never performed, which is half of why the inert jump read as
   // broken rather than as a mis-scoped label.
-  staleSnapshotNotice: { id: "stale-snapshot", title: "STALE SNAPSHOT", subject: "stale snapshot", cls: NOTICE_ACTIONABLE,
-    jump: { label: "Adjust & re-solve →", step: null, anchor: "#wz-adjust-slot" } },
-  emptySlotNotice: { id: "empty-slot", title: "EMPTY SLOT", subject: "empty slot", cls: NOTICE_ACTIONABLE,
-    jump: { label: "Adjust & re-solve →", step: null, anchor: "#wz-adjust-slot" } },
-  craftingExcludedNotice: { id: "crafting-opt-out", title: "EXCLUDED BY CRAFTING OPT-OUT", subject: "crafting opt-out", cls: NOTICE_ACTIONABLE,
-    jump: { label: "Change crafting opt-out →", step: "character", anchor: 'input[name="wz-crafting-rung"]' } },
-  blockNotice: { id: "blocked-gear", title: "BLOCKED GEAR", subject: "blocked gear", cls: NOTICE_ACTIONABLE,
-    jump: { label: "Review block list →", step: "pool", anchor: null } },
-  // #246 — ACTIONABLE, unlike the #573 disclosure: the player CAN resolve it, by
-  // ticking a pack they do own. The jump goes to the same step the control lives on.
-  packFilterNotice: { id: "content-not-owned", title: "CONTENT NOT OWNED", subject: "content not owned", cls: NOTICE_ACTIONABLE,
-    jump: { label: "Review your content →", step: "pool", anchor: "#wz-packs" } },
-  // #539 — actionable, not qualifying: every line it can print names something
-  // the player can change (remove a pin, tick an augment as owned, raise the cap).
-  setPinNotice: { id: "required-sets", title: "REQUIRED SETS", subject: "required sets", cls: NOTICE_ACTIONABLE,
-    jump: { label: "Review required sets →", step: "pool", anchor: "#wz-setpin-search" } },
-  augCeilingNotice: { id: "augment-ceiling", title: "AUGMENT POOL NARROWED", subject: "augment ceiling", cls: NOTICE_ACTIONABLE,
-    jump: { label: "Change augment ceiling →", step: "character", anchor: "#wz-augceiling" } },
+  { name: "staleSnapshotNotice", id: "stale-snapshot", title: "STALE SNAPSHOT", subject: "stale snapshot",
+    cls: NOTICE_ACTIONABLE, jump: { label: "Adjust & re-solve →", step: null, anchor: "#wz-adjust-slot" },
+    render: (c) => staleSnapshotNotice(c.result) },
   // Fires only when the player set the ceiling themselves — the same shape as
-  // the crafting opt-out, which is why both are actionable rather than
-  // qualifying.
-  outbidNotice: { id: "priority-scored-0", title: "PRIORITY SCORED 0", subject: "priority scored 0", cls: NOTICE_ACTIONABLE, jump: null },
-  absorptionQuarantineNotice: { id: "affix-withheld", title: "AFFIX WITHHELD", subject: "affix withheld", cls: NOTICE_QUALIFYING, jump: null },
+  // the crafting opt-out, which is why both are actionable rather than qualifying.
+  { name: "outbidNotice", id: "priority-scored-0", title: "PRIORITY SCORED 0", subject: "priority scored 0",
+    cls: NOTICE_ACTIONABLE, jump: null,
+    render: (c) => outbidNotice(c.query, c.result, c.model, c.canPrice, c.canRequire) },
+  // R35 — already returns its own `<details>`. Unwrapped inside the panel so the
+  // panel stays the only fold.
+  { name: "saturationNotice", id: "at-ceiling", title: "AT CEILING", subject: "at ceiling",
+    cls: NOTICE_INFORMATIONAL, jump: null, unwrap: true,
+    render: (c) => saturationNotice(c.result) },
+  { name: "emptySlotNotice", id: "empty-slot", title: "EMPTY SLOT", subject: "empty slot",
+    cls: NOTICE_ACTIONABLE, jump: { label: "Adjust & re-solve →", step: null, anchor: "#wz-adjust-slot" },
+    render: (c) => emptySlotNotice(c.query, c.result) },
+  { name: "absorptionQuarantineNotice", id: "affix-withheld", title: "AFFIX WITHHELD", subject: "affix withheld",
+    cls: NOTICE_QUALIFYING, jump: null,
+    render: (c) => absorptionQuarantineNotice(c.result) },
+  { name: "craftingExcludedNotice", id: "crafting-opt-out", title: "EXCLUDED BY CRAFTING OPT-OUT", subject: "crafting opt-out",
+    cls: NOTICE_ACTIONABLE,
+    jump: { label: "Change crafting opt-out →", step: "character", anchor: 'input[name="wz-crafting-rung"]' },
+    render: (c) => craftingExcludedNotice(c.query, c.result) },
+  { name: "augCeilingNotice", id: "augment-ceiling", title: "AUGMENT POOL NARROWED", subject: "augment ceiling",
+    cls: NOTICE_ACTIONABLE, jump: { label: "Change augment ceiling →", step: "character", anchor: "#wz-augceiling" },
+    render: (c) => augCeilingNotice(c.query, c.result) },
   // #573 — QUALIFYING, not actionable. The player cannot resolve it (we do not have
   // the number and neither does the wiki, per item); they can only be told the
   // headline Dodge total is un-reduced. The jump is offered because the ONE thing
   // they can do about it — set the Max themselves — lives on another step.
-  dodgeMaxDexNotice: { id: "dodge-maxdex-unmodelled", title: "DODGE NOT REDUCED BY ARMOR", subject: "armor dodge reduction", cls: NOTICE_QUALIFYING,
-    jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null } },
-  // R35 — already returns its own `<details>`. Unwrapped inside the panel so the
-  // panel stays the only fold.
-  saturationNotice: { id: "at-ceiling", title: "AT CEILING", subject: "at ceiling", cls: NOTICE_INFORMATIONAL, jump: null, unwrap: true },
+  { name: "dodgeMaxDexNotice", id: "dodge-maxdex-unmodelled", title: "DODGE NOT REDUCED BY ARMOR",
+    subject: "armor dodge reduction", cls: NOTICE_QUALIFYING,
+    jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
+    render: (c) => dodgeMaxDexNotice(c.query, c.result) },
+  { name: "blockNotice", id: "blocked-gear", title: "BLOCKED GEAR", subject: "blocked gear",
+    cls: NOTICE_ACTIONABLE, jump: { label: "Review block list →", step: "pool", anchor: null },
+    render: (c) => blockNotice(c.result) },
+  // #246 — ACTIONABLE, unlike the #573 disclosure: the player CAN resolve it, by
+  // ticking a pack they do own. The jump goes to the same step the control lives on.
+  { name: "packFilterNotice", id: "content-not-owned", title: "CONTENT NOT OWNED", subject: "content not owned",
+    cls: NOTICE_ACTIONABLE, jump: { label: "Review your content →", step: "pool", anchor: "#wz-packs" },
+    render: (c) => packFilterNotice(c.result) },
+  // #539 — actionable, not qualifying: every line it can print names something
+  // the player can change (remove a pin, tick an augment as owned, raise the cap).
+  { name: "setPinNotice", id: "required-sets", title: "REQUIRED SETS", subject: "required sets",
+    cls: NOTICE_ACTIONABLE, jump: { label: "Review required sets →", step: "pool", anchor: "#wz-setpin-search" },
+    render: (c) => setPinNotice(c.result, { canPrice: !!c.canPriceSetPin }) },
   // #499 — `jump: null` for the same reason `outbidNotice` carries one: the card
   // already holds the control that resolves it, and a jump beside it would offer
   // a second, worse route to the thing the player is looking straight at.
-  upgradeNotice: { id: "upgrades", title: "UPGRADES", subject: "upgrades", cls: NOTICE_INFORMATIONAL, jump: null },
-};
+  { name: "upgradeNotice", id: "upgrades", title: "UPGRADES", subject: "upgrades",
+    cls: NOTICE_INFORMATIONAL, jump: null,
+    render: (c) => upgradeNotice(c.canUpgrade, c.upgradeBar) },
+];
+
+/** The classification lookup, DERIVED from `NOTICES` so the two can no longer drift.
+ *  Kept as the public shape every existing reader and test already expects. */
+const NOTICE_TABLE = Object.fromEntries(NOTICES.filter((n) => !n.split).map((n) => {
+  const row = { id: n.id, title: n.title, subject: n.subject, cls: n.cls, jump: n.jump || null };
+  if (n.unwrap) row.unwrap = true;
+  return [n.name, row];
+}));
 
 /** #449 U6 (R26) — the short subject each card contributes to the qualifying
  *  marker, for the cards U10 split out. The marker NAMES what qualifies rather
@@ -1724,43 +1786,36 @@ function _unwrapDetails(html) {
  *  name for a split entry — so the completeness assertion covers both tables
  *  from one array. */
 function noticeDescriptors(ctx) {
-  const { result, query, model, dataset, canPrice, canRequire } = ctx;
   const out = [];
-  const push = (name, html, over) => {
-    if (!html) return;                       // R4/R27 — an empty return is not a card
-    const t = NOTICE_TABLE[name];
-    out.push(Object.assign({ name, html, unclassified: !t },
-      t || { id: `unclassified-${name}`, title: name.toUpperCase(), cls: NOTICE_QUALIFYING, jump: null },
-      over || {}));
-  };
-  // The split notices first: each fired branch becomes its own card, carrying the
-  // title and class projection.js minted for it and the route from the second table.
-  const split = (name, entries) => {
-    for (const e of entries) {
-      out.push({ name, id: e.id, title: e.title, cls: e.class, unclassified: false,
-        jump: NOTICE_ENTRY_JUMPS[e.id] || null,
-        // A missing subject falls back to the lowercased title rather than to
-        // nothing: the marker must never name fewer subjects than it counts.
-        subject: NOTICE_ENTRY_SUBJECTS[e.id] || String(e.title || "").toLowerCase(),
-        html: `<p class="notice-sentence">${e.sentence}</p>` });
+  for (const n of NOTICES) {
+    if (n.split) {
+      // Each fired branch becomes its own card, carrying the title and class
+      // projection.js minted for it and the route from the entry-id table.
+      for (const e of n.entries(ctx) || []) {
+        out.push({ name: n.name, id: e.id, title: e.title, cls: e.class, unclassified: false,
+          jump: NOTICE_ENTRY_JUMPS[e.id] || null,
+          // A missing subject falls back to the lowercased title rather than to
+          // nothing: the marker must never name fewer subjects than it counts.
+          subject: NOTICE_ENTRY_SUBJECTS[e.id] || String(e.title || "").toLowerCase(),
+          html: `<p class="notice-sentence">${e.sentence}</p>` });
+      }
+      continue;
     }
-  };
-  split("artifactNotice", artifactNoticeEntries(result, query));
-  split("boundNotice", boundNoticeEntries(query, result));
-  split("zeroSourceNotice", zeroSourceNoticeEntries(query, result, model, dataset));
-
-  push("staleSnapshotNotice", staleSnapshotNotice(result));
-  push("outbidNotice", outbidNotice(query, result, model, canPrice, canRequire));
-  push("saturationNotice", saturationNotice(result));
-  push("emptySlotNotice", emptySlotNotice(query, result));
-  push("absorptionQuarantineNotice", absorptionQuarantineNotice(result));
-  push("craftingExcludedNotice", craftingExcludedNotice(query, result));
-  push("augCeilingNotice", augCeilingNotice(query, result));
-  push("dodgeMaxDexNotice", dodgeMaxDexNotice(query, result));
-  push("blockNotice", blockNotice(result));
-  push("packFilterNotice", packFilterNotice(result));
-  push("setPinNotice", setPinNotice(result, { canPrice: !!ctx.canPriceSetPin }));
-  push("upgradeNotice", upgradeNotice(ctx.canUpgrade, ctx.upgradeBar));
+    const html = n.render(ctx);
+    if (!html) continue;                     // R4/R27 — an empty return is not a card
+    // The fallback no longer guards a FORGOTTEN table row — that state is now
+    // unreachable, which is the point of the registry. It guards a MALFORMED entry:
+    // one added here without a class. Such a card renders visibly unclassified and
+    // sorts last rather than silently taking a neighbour's treatment.
+    const classified = !!n.cls;
+    out.push({ name: n.name, html, unclassified: !classified,
+      id: n.id || `unclassified-${n.name}`,
+      title: n.title || n.name.toUpperCase(),
+      subject: n.subject,
+      cls: n.cls || NOTICE_QUALIFYING,
+      jump: n.jump || null,
+      ...(n.unwrap ? { unwrap: true } : {}) });
+  }
 
   const rank = (d) => {
     const i = NOTICE_CLASS_ORDER.indexOf(d.cls);
@@ -3431,7 +3486,7 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, blockNotice, packFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, blockNotice, packFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,

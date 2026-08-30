@@ -20,6 +20,8 @@ function test(name, fn) {
  *  Both markers are asserted present, so a renamed marker fails here naming the
  *  marker, instead of somewhere downstream naming a behaviour that is fine.
  */
+const NOTICE_CLASSES = ["actionable", "qualifying", "informational"];
+
 function srcBetween(src, open, close, label) {
   const a = src.indexOf(open);
   assert.ok(a >= 0, `${label || "srcBetween"}: opening marker not found — ${open}`);
@@ -1996,10 +1998,14 @@ test("U1: renderResults emits the outbid notice — the render, not just the fun
   // into noticeDescriptors, so the slice follows them. The intent is unchanged
   // and now spans two links: the builder must CALL the notice, and renderResults
   // must call the builder. Either one missing and it renders nowhere again.
-  const build = srcBetween(src, "function noticeDescriptors(", "function noticePanel(", "noticeDescriptors");
-  assert.ok(/push\("outbidNotice", outbidNotice\(query, result, model/.test(build),
-    "noticeDescriptors must emit outbidNotice, or it renders nowhere");
-  assert.ok(/canPrice(?![A-Za-z])/.test(build),
+  // #448 replaced the hand-written push() list with the NOTICES registry, so the
+  // call site is now an entry rather than a line of source. Assert it as data —
+  // which is stronger, because it checks the thing that actually runs.
+  const entry = R.NOTICES.find((n) => n.name === "outbidNotice");
+  assert.ok(entry, "outbidNotice must be in the registry, or it renders nowhere");
+  assert.strictEqual(typeof entry.render, "function");
+  const reg = srcBetween(src, "const NOTICES = [", "\nconst NOTICE_TABLE", "NOTICES");
+  assert.ok(/outbidNotice\(c\.query, c\.result, c\.model, c\.canPrice/.test(reg),
     "and it must pass the pricing capability, or the ask never renders");
   const render = srcBetween(src, "function renderResults(", "active-build-bar", "renderResults head");
   assert.ok(/noticeDescriptors\(\{/.test(render) && /canPrice: canPriceOutbid\(\)/.test(render),
@@ -2595,38 +2601,67 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
     });
 });
 
-test("#449 U5 (KTD5): every notice the builder renders has a table entry", () => {
-  // The test-time completeness assertion that stands in for a runtime throw:
-  // renderResults sits inside a try/catch whose catch replaces the whole results
-  // box with "Solver error", so a throw here would destroy a correct solve's
-  // screen and misattribute it to the solver.
-  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
-  const build = srcBetween(src, "function noticeDescriptors(", "function noticePanel(", "noticeDescriptors");
-  const pushed = [...build.matchAll(/push\("(\w+)"/g)].map((m) => m[1]);
-  assert.strictEqual(pushed.length, 12, "the twelve single-fact notices (#246 added CONTENT NOT OWNED)");
-  for (const name of pushed) {
-    assert.ok(R.NOTICE_TABLE[name], `${name} is rendered but has no KTD5 table entry`);
-  }
-  const split = [...build.matchAll(/split\("(\w+)"/g)].map((m) => m[1]);
-  assert.deepStrictEqual(split.sort(), ["artifactNotice", "boundNotice", "zeroSourceNotice"],
+test("#448: the registry is the ONLY source — nothing classifies a notice but its own entry", () => {
+  // This replaces a test that grepped the source for `push("…")` calls and checked
+  // each name had a row in a parallel table. That test existed because there WERE
+  // two places; #448 made it one, so the assertion becomes structural.
+  const single = R.NOTICES.filter((n) => !n.split);
+  const split = R.NOTICES.filter((n) => n.split);
+
+  assert.deepStrictEqual(Object.keys(R.NOTICE_TABLE), single.map((n) => n.name),
+    "NOTICE_TABLE is derived from the registry, in registry order");
+  assert.strictEqual(single.length, 12, "the twelve single-fact notices");
+  assert.deepStrictEqual(split.map((n) => n.name),
+    ["artifactNotice", "boundNotice", "zeroSourceNotice"],
     "and the three multi-fact notices come through their U10 entry functions");
-  assert.strictEqual(pushed.length + split.length, 15, "fifteen notices, all reached");
+
+  for (const n of single) {
+    assert.strictEqual(typeof n.render, "function", `${n.name}: no render`);
+    for (const k of ["id", "title", "subject", "cls"]) {
+      assert.ok(n[k], `${n.name}: missing ${k} — the registry entry is the only place it can come from`);
+    }
+    assert.ok(NOTICE_CLASSES.includes(n.cls), `${n.name}: unknown class ${n.cls}`);
+  }
+  for (const n of split) {
+    assert.strictEqual(typeof n.entries, "function", `${n.name}: no entries()`);
+    assert.strictEqual(n.cls, undefined,
+      `${n.name}: a split notice must NOT carry a class — projection.js classifies each branch`);
+  }
+  // Ids are what the jump table and the DOM key on; two cards sharing one would
+  // route a player to the wrong control.
+  const ids = single.map((n) => n.id);
+  assert.strictEqual(new Set(ids).size, ids.length, "ids are unique");
 });
 
-test("#449 U5 (KTD5): a notice absent from the table renders unclassified, and does not throw", () => {
-  const P = require("../web/projection.js");
-  const saved = R.NOTICE_TABLE.blockNotice;
-  delete R.NOTICE_TABLE.blockNotice;
+test("#448: registry ORDER is the on-screen order within a class, and splits lead", () => {
+  // noticeDescriptors sorts by class with the insertion index as a stable tie-break,
+  // so the array's order is load-bearing rather than cosmetic. Pinned so a reorder
+  // is a deliberate edit.
+  assert.deepStrictEqual(R.NOTICES.map((n) => n.name), [
+    "artifactNotice", "boundNotice", "zeroSourceNotice",
+    "staleSnapshotNotice", "outbidNotice", "saturationNotice", "emptySlotNotice",
+    "absorptionQuarantineNotice", "craftingExcludedNotice", "augCeilingNotice",
+    "dodgeMaxDexNotice", "blockNotice", "packFilterNotice", "setPinNotice", "upgradeNotice",
+  ]);
+});
+
+test("#448: a registry entry with no class renders visibly unclassified, and does not throw", () => {
+  // The fallback no longer guards a FORGOTTEN table row — that state is unreachable
+  // now, which is the point. It guards a MALFORMED entry: one added to the registry
+  // without a class. Such a card must be visible and sort last, never silently take
+  // a neighbour's treatment. renderResults sits inside a try/catch whose catch
+  // replaces the whole results box, so throwing here would destroy a correct solve.
+  const saved = R.NOTICES.find((n) => n.name === "blockNotice");
+  const at = R.NOTICES.indexOf(saved);
+  R.NOTICES[at] = { name: "blockNotice", render: () => "<p>x</p>" };   // no cls, no id, no title
   try {
-    const ctx = _noticeCtx();
-    ctx.result.blockReport = [{ id: "X", name: "Thing", slot: "Ring", stat: "Dodge" }];
-    const ds = R.noticeDescriptors(ctx);
+    const ds = R.noticeDescriptors({ result: { status: "optimal" }, query: {}, model: {}, dataset: {} });
     const card = ds.find((d) => d.name === "blockNotice");
-    assert.ok(card, "the notice still renders — an unmapped entry must not silence it");
+    assert.ok(card, "it still renders");
     assert.strictEqual(card.unclassified, true, "and it is flagged");
+    assert.strictEqual(card.title, "BLOCKNOTICE", "with a fallback title rather than none");
     assert.ok(/is-unclassified/.test(R.noticePanel(ds)), "visibly, in the markup");
-  } finally { R.NOTICE_TABLE.blockNotice = saved; }
-  assert.ok(P, "projection stays loadable");
+  } finally { R.NOTICES[at] = saved; }
 });
 
 test("#449 U5 (R5): cards sort actionable, then qualifying, then informational", () => {
@@ -2652,14 +2687,25 @@ test("#449 U5 (R28/AE11): each card names its class in text, independent of colo
 });
 
 test("#449 U5 (R6/KTD5): every actionable route carries a control, and outbid deliberately does not", () => {
-  const routed = Object.entries(R.NOTICE_TABLE)
-    .filter(([, v]) => v.cls === "actionable").map(([k, v]) => [k, !!v.jump]);
-  assert.deepStrictEqual(Object.fromEntries(routed), {
-    staleSnapshotNotice: true, emptySlotNotice: true, craftingExcludedNotice: true,
-    blockNotice: true, augCeilingNotice: true, setPinNotice: true, packFilterNotice: true,
-    // R6's amendment: it already renders Require and price buttons in-card.
-    outbidNotice: false,
-  });
+  // #448 — asserted as the RULE with its one documented exception, rather than by
+  // enumerating every actionable notice. The old form listed all seven and so had to
+  // be hand-edited for each new one; that is the drift this issue was about, and the
+  // enumeration was carrying no meaning the rule does not.
+  //
+  // The exception is deliberate and stays named: R6's amendment — outbidNotice already
+  // renders Require and price buttons in-card, so a jump beside them would offer a
+  // second, worse route to the control the player is looking straight at.
+  const ROUTE_EXEMPT = new Set(["outbidNotice"]);
+  const unrouted = Object.entries(R.NOTICE_TABLE)
+    .filter(([k, v]) => v.cls === "actionable" && !v.jump && !ROUTE_EXEMPT.has(k))
+    .map(([k]) => k);
+  assert.deepStrictEqual(unrouted, [],
+    "an actionable card with no route asks the player to fix something and does not say where");
+  for (const k of ROUTE_EXEMPT) {
+    assert.ok(R.NOTICE_TABLE[k], `${k} is exempted from routing but is not in the table`);
+    assert.strictEqual(R.NOTICE_TABLE[k].jump, null,
+      `${k} is exempt because it resolves in-card; giving it a jump means the exemption should go`);
+  }
   assert.deepStrictEqual(Object.keys(R.NOTICE_ENTRY_JUMPS).sort(),
     ["artifact-pinned-in", "floor-not-reached", "re-solve-to-apply", "stat-filtered-out",
       "twf-not-applied"],
