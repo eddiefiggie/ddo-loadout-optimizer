@@ -72,10 +72,22 @@ rules out, and it would wrongly suppress a bonus that genuinely stacks.
   `tests/test_affix_parser.py:188` are **dormant against the live gear-planner path** — they
   guard a parser the shipping dataset does not flow through. Recorded because the rule reads
   as active protection and is not.
-- **`Vitality` (149, all `False Life`), `Orb` (110, all `Orb Bonus`), `Festive` (6),
-  `Penalty` (33), `Sneak Attack` (36, all `Sneak Attack Bonus`)** — all legitimate native
-  types, no collapse warranted. None of their stats appear under a second type, so none can
-  be splitting a bucket.
+- **`Vitality` (all `False Life`), `Orb` (all `Orb Bonus`), `Festive`, `Penalty`** — all
+  legitimate native types, no collapse warranted. Each names a distinct in-game bonus type,
+  which is the actual collapse test: per the `Implement` entry below, *a stat appearing under
+  two types is only a defect when the two name one in-game type*.
+
+  **The justification this entry used to give was the wrong test, and was also false.** It
+  read "None of their stats appear under a second type, so none can be splitting a bucket."
+  Measured against the build of 2026-08-30 (#625): every one of `Penalty`'s twelve stats also
+  appears under Artifact / Competence / Enhancement / Exceptional / Insight / Profane /
+  Quality; so do all six of `Festive`'s, and `Vitality`'s single `False Life`. Only `Orb`
+  still satisfies it. The conclusion survives — none of these collapses — but it never rested
+  on that sentence, and by the `Implement` rule two bullets down, a shared stat was never
+  evidence either way. Record kept rather than deleted so the check is not re-derived.
+
+  Record counts are deliberately no longer quoted here: they drift with every upstream
+  refresh, and the population is owned by `bonus_type_dispositions.json` and its guard.
 - **`Legendary` (93) is a real bonus type, not a tier word.** Its stats arrived from
   gear-planner under prefixed display names (`Legendary Accuracy`, `Legendary Conditioning`,
   `Legendary Armor-Piercing`, `Legendary Spell Penetration`, `Legendary Deadly`), but the
@@ -134,7 +146,7 @@ Every stacking bucket the built dataset produces was examined, not a sample. The
 | `Maximum dexterity` | 1 | Not a bonus type → #223 (§3) |
 | `Determination` | 1 | Verified real (§2) |
 | Null type (weapon enchantments) | 1 | Source convention, correct (§2) |
-| Remaining named types | 24 | Legitimate; no stat splits a bucket across two names |
+| Remaining named types | 24 | Legitimate; each names a distinct in-game bonus type |
 
 The tell used to find §3's defects: a type carrying **exactly one stat** is a candidate for
 "not a bonus type at all". Twenty-two types are single-stat, and most are legitimate
@@ -183,6 +195,26 @@ records a disposition for every type the dataset produces, and
 `tests/test_bonus_type_coverage.py` fails the build when a type appears with no
 disposition. A dated completeness claim cannot notice its own staleness; this
 one now does.
+
+## Retired types
+
+A type that leaves the dataset does not leave this document silently. Its ruling is kept
+here, below this heading, so the reasoning survives while the prose above stays a
+description of what actually ships. `tests/test_bonus_type_coverage.py` fails the build if a
+name listed in `bonus_type_dispositions.json`'s `_retired` block is still discussed as live
+above this line — which is exactly how this section came to exist.
+
+- **`Sneak Attack` — retired 2026-08-30 by #608. It was never a bonus type.** It was the
+  STAT being bonused, minted as a type because upstream falls back to the affix NAME when
+  `Template:Sneak Attack Bonus` is called without its second (bonus type) parameter. All 20
+  records were retyped from their own rendered tooltips (#613); the dataset now carries zero.
+
+  Until #625 this document still listed it among the live "legitimate native types", citing
+  36 records for a type that had none. That is the failure
+  `docs/solutions/conventions/a-dated-coverage-claim-cannot-notice-its-own-staleness.md`
+  names, in its second form: not a claim that went stale about a population, but a claim
+  naming a member of that population which had since been removed. The seed had been
+  updated correctly and the prose had not, because nothing checked the prose.
 
 ## Harvest record
 
