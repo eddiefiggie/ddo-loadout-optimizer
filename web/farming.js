@@ -63,6 +63,10 @@
         // apart from a quest instead of filing both under one heading.
         pack: v.location_pack || NO_SOURCE,
         kind: v.location_kind || "unknown",
+        // #285 — the wiki-recorded predecessor for an item that is CRAFTED rather
+        // than dropped. One step only: a Legendary points at its Epic, which has its
+        // own entry. The chain is followed by reading each item, never collapsed here.
+        lineage: v.location_lineage || NO_SOURCE,
         wikiUrl: v.wiki_url || null,
         // #262 — an item the wiki records no live source for. It is still a
         // solver candidate, and a farming list that silently lists it as
@@ -103,6 +107,18 @@
     const bySource = new Map();
     const unsourced = [];
     for (const e of entries) {
+      // #285 — an item with a recorded predecessor is NOT unsourced. It was landing in
+      // the no-source group, which told a player nothing about an item whose
+      // acquisition the wiki documents perfectly well. It groups by its lineage
+      // instead, so "crafted from X" is what they read.
+      if (!e.source && e.lineage) {
+        const label = e.lineage.kind === "legendary-crafted"
+          ? `Legendary-crafted from ${e.lineage.from}`
+          : `Epic-crafted from ${e.lineage.from}`;
+        if (!bySource.has(label)) bySource.set(label, []);
+        bySource.get(label).push(e);
+        continue;
+      }
       if (!e.source) { unsourced.push(e); continue; }
       if (!bySource.has(e.source)) bySource.set(e.source, []);
       bySource.get(e.source).push(e);

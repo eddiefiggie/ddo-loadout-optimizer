@@ -27,6 +27,7 @@ from src import colors as colors_mod
 from src import set_parser as set_mod
 from src import dino as dino_mod
 from src import adventure_packs as packs_mod
+from src import crafting_lineage as lineage_mod
 from src import dino_parser as dino_parser_mod
 from src import nearly_complete as nc_mod
 from src import viktranium as vik_mod
@@ -1097,6 +1098,13 @@ def build() -> dict:
     packs_mod.apply_to(variants, _pack_mapping)
     _pack_coverage = packs_mod.check(variants, _pack_mapping)
 
+    # #285 — the crafted predecessors. Applied AFTER the pack stage so it can see the
+    # `location_kind` that stage set, and can leave it alone for a variant that already
+    # records a real source: the lineage is extra information about such an item, not a
+    # replacement for what it already told the player.
+    _lineage_mapping = lineage_mod.load()
+    _lineage_coverage = lineage_mod.check(variants, _lineage_mapping)
+
     # Wildcard set pieces (Gem of Many Facets, U6): the item rolls ONE set from each of
     # two pools (rerollable; theoretical-BiS picks the best per group). The pools aren't
     # in gear-planner (0 sets for the Gem), so they come from the wiki-sourced joker seed.
@@ -1746,6 +1754,8 @@ def build() -> dict:
             # #495 — what the curated location_quest -> pack mapping actually covers,
             # measured against the live population rather than claimed by a date.
             "adventure_pack_coverage": _pack_coverage,
+            # #285 — what the crafted-predecessor backfill reached.
+            "crafting_lineage_coverage": _lineage_coverage,
             "value_corrections_coverage": _value_coverage,
             "name_corrections_coverage": _name_coverage,
             # #259 — bonus-type corrections, disclosed per channel: the same
