@@ -1636,24 +1636,21 @@ const CREDIT_BONUS_TYPES = [
   // deliberately still absent: equivType collapses those to their plain type, so
   // offering both names would put two names on one bucket.
   //
-  // `Sneak Attack` is NOT a bonus type — it is the STAT being bonused. The wiki's
-  // `Sneak attack` page splits the mechanic into Dice and Bonus Damage and gives
-  // every source it lists an ARTIFACT bonus, so the affix is `Sneak Attack Bonus`
-  // and its type is `Artifact`.
-  //
-  // It stays here anyway, on purpose, until #608 retypes the data. 20 affixes
-  // still RECORD that type, and removing the name does not remove the bucket —
-  // it removes the player's ability to name or correct it, which is worse than
-  // offering a name the game does not have. `overrides.test.js` holds the same
-  // line structurally: every recorded type must be expressible or
-  // equivalence-mapped, and it fails if this is dropped first.
+  // `Sneak Attack` was here and is gone (#608). It is not a bonus type — it is the
+  // STAT being bonused — and it was offered only because 20 affixes still RECORDED
+  // it, so removing the name first would have taken away the player's ability to
+  // name or correct a bucket that still existed. The data was fixed first: the
+  // wiki renders those affixes through Template:Sneak Attack Bonus, whose second
+  // parameter is the bonus type and whose documented default is Enhancement, and
+  // every one of the 20 rendered tooltips says "Enhancement modifier" outright.
+  // With the records retyped, nothing carries `Sneak Attack` and the name could
+  // leave. `overrides.test.js` enforced that order.
   //
   // The list is checked against the wiki's own Category:Bonus types on every
   // build — see data/seed/compendium/bonus_type_vocabulary.json and
   // tests/test_bonus_type_vocabulary.py, which carry the reasoning for the three
-  // members that are real but uncategorised (Untyped, Orb, Vitality) and for this
-  // one, which is neither real nor removable yet.
-  "Orb", "Sneak Attack", "Determination",
+  // members that are real but uncategorised (Untyped, Orb, Vitality).
+  "Orb", "Determination",
 ];
 const _CREDIT_TYPE_SET = new Set(CREDIT_BONUS_TYPES);
 

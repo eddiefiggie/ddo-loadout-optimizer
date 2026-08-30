@@ -1,49 +1,51 @@
 {
- "_README": "Every distinct affix bonus_type the built dataset produces, with its disposition. The #88 coverage sweep's completeness claim is guarded against this file by tests/test_bonus_type_coverage.py, so a NEW type arriving upstream fails the build instead of silently sitting outside a sweep that still claims to be complete. Types minted by web/dataset.js's COMPOSITE_COMPONENTS count as live too (#140): they never reach the built JSON, so reading only the dataset would let a composite introduce an unruled bucket.",
- "_why": "The 2026-08-10 sweep said 'every stacking bucket the built dataset produces was examined'. That was true when written. On 2026-08-18 the canon migration introduced `Psionic` and nobody re-ran it, so the claim quietly stopped being true — and the type it missed turned out to be a live over-credit (#88). A dated completeness claim needs a guard, not a date.",
- "_dispositions": {
-  "legitimate": "A real DDO bonus type carrying its own stacking bucket. No action.",
-  "equivalence-mapped": "Shares a bucket with another type; see type_stacking_equivalence.json.",
-  "verified-real-singleton": "One affix, wiki-verified as a real bonus type.",
-  "not-a-bonus-type": "A DR bypass qualifier or similar field-semantics artifact; see #223.",
-  "source-convention": "Absent type is meaningful in the source (weapon enchantments)."
- },
- "_meta": {
-  "swept": "2026-08-10",
-  "resurveyed": "2026-08-28",
-  "ruling": "docs/wiki-evidence/bonus-type-equivalence.md"
- },
- "types": {
-  "(null)": "source-convention",
-  "-": "not-a-bonus-type",
-  "Armor": "legitimate",
-  "Artifact": "legitimate",
-  "Bool": "legitimate",
-  "Competence": "legitimate",
-  "Deflection": "legitimate",
-  "Determination": "verified-real-singleton",
-  "Enhancement": "legitimate",
-  "Equipment": "legitimate",
-  "Exceptional": "legitimate",
-  "Festive": "legitimate",
-  "Implement": "legitimate",
-  "Insight": "legitimate",
-  "Insight Natural": "equivalence-mapped",
-  "Legendary": "legitimate",
-  "Luck": "legitimate",
-  "Morale": "legitimate",
-  "Natural": "legitimate",
-  "Orb": "legitimate",
-  "Penalty": "legitimate",
-  "Primal Natural": "equivalence-mapped",
-  "Profane": "legitimate",
-  "Profane Natural": "equivalence-mapped",
-  "Quality": "legitimate",
-  "Resistance": "legitimate",
-  "Sacred": "legitimate",
-  "Shield": "legitimate",
-  "Sneak Attack": "legitimate",
-  "Untyped": "legitimate",
-  "Vitality": "legitimate"
- }
+  "_README": "Every distinct affix bonus_type the built dataset produces, with its disposition. The #88 coverage sweep's completeness claim is guarded against this file by tests/test_bonus_type_coverage.py, so a NEW type arriving upstream fails the build instead of silently sitting outside a sweep that still claims to be complete. Types minted by web/dataset.js's COMPOSITE_COMPONENTS count as live too (#140): they never reach the built JSON, so reading only the dataset would let a composite introduce an unruled bucket.",
+  "_why": "The 2026-08-10 sweep said 'every stacking bucket the built dataset produces was examined'. That was true when written. On 2026-08-18 the canon migration introduced `Psionic` and nobody re-ran it, so the claim quietly stopped being true — and the type it missed turned out to be a live over-credit (#88). A dated completeness claim needs a guard, not a date.",
+  "_dispositions": {
+    "legitimate": "A real DDO bonus type carrying its own stacking bucket. No action.",
+    "equivalence-mapped": "Shares a bucket with another type; see type_stacking_equivalence.json.",
+    "verified-real-singleton": "One affix, wiki-verified as a real bonus type.",
+    "not-a-bonus-type": "A DR bypass qualifier or similar field-semantics artifact; see #223.",
+    "source-convention": "Absent type is meaningful in the source (weapon enchantments)."
+  },
+  "_meta": {
+    "swept": "2026-08-10",
+    "resurveyed": "2026-08-28",
+    "ruling": "docs/wiki-evidence/bonus-type-equivalence.md"
+  },
+  "types": {
+    "(null)": "source-convention",
+    "-": "not-a-bonus-type",
+    "Armor": "legitimate",
+    "Artifact": "legitimate",
+    "Bool": "legitimate",
+    "Competence": "legitimate",
+    "Deflection": "legitimate",
+    "Determination": "verified-real-singleton",
+    "Enhancement": "legitimate",
+    "Equipment": "legitimate",
+    "Exceptional": "legitimate",
+    "Festive": "legitimate",
+    "Implement": "legitimate",
+    "Insight": "legitimate",
+    "Insight Natural": "equivalence-mapped",
+    "Legendary": "legitimate",
+    "Luck": "legitimate",
+    "Morale": "legitimate",
+    "Natural": "legitimate",
+    "Orb": "legitimate",
+    "Penalty": "legitimate",
+    "Primal Natural": "equivalence-mapped",
+    "Profane": "legitimate",
+    "Profane Natural": "equivalence-mapped",
+    "Quality": "legitimate",
+    "Resistance": "legitimate",
+    "Sacred": "legitimate",
+    "Shield": "legitimate",
+    "Untyped": "legitimate",
+    "Vitality": "legitimate"
+  },
+  "_retired": {
+    "Sneak Attack": "Retired 2026-08-30 by #608, and it was never `legitimate` — it was the STAT being bonused, minted as a type because upstream falls back to the affix NAME when Template:Sneak Attack Bonus is called without its second (bonus type) parameter. All 20 records were retyped to Enhancement from their own rendered tooltips, so the dataset no longer produces it and the bidirectional gate in test_bonus_type_coverage.py requires the disposition to go with them. Kept here rather than deleted so the next reader can see it was ruled on, not overlooked."
+  }
 }

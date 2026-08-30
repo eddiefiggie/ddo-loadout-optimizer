@@ -1,142 +1,383 @@
 {
- "_meta": {
-  "title": "wiki-sourced affix bonus-type corrections (#259)",
-  "note": "gear-planner is the single source of truth for WHICH affixes a record has, read structurally. The DDO Wiki is the source of truth for the BONUS TYPE when the two disagree and the wiki's rendered tooltip states it outright. A wrong type is a different defect from a wrong value: the magnitude is right, but the affix lands in the wrong stacking bucket and over- or under-stacks against everything else granting the stat.",
-  "why_not_value_corrections": "src/value_corrections.py overwrites the VALUE and nothing else, and its stale guard is keyed on the value field. Each corrections mechanism changes exactly one field so its guard cannot be weakened for the sake of another field's fix.",
-  "stale_guard": "Every entry records `from` — the type gear-planner currently carries — and `value` — the magnitude the tooltip was verified against. The build FAILS if either no longer matches upstream, and FAILS if an entry reaches no record in any channel (renamed/dropped upstream), rather than silently pinning or silently no-opping.",
-  "evidence_rule": "Every entry carries the verbatim rendered tooltip stating the bonus type, and the wiki page it was read from."
- },
- "Moment to Moment": [
-  {
-   "name": "Action Boost Charges",
-   "from": "Untyped",
-   "to": "Enhancement",
-   "value": "1",
-   "tooltip": "Slotted Effect: +1 Enhancement bonus to Action Boost Charges.",
-   "wiki_url": "https://ddowiki.com/page/Item:Moment_to_Moment",
-   "verified": "2026-08-12",
-   "note": "Enchantments line reads 'Minor Action Boost Enhancement'. All 19 worn-item sources of Action Boost Charges in the dataset are Enhancement-typed; stored Untyped, this augment stacked with every one of them."
-  }
- ],
- "Legendary Moment to Legendary Moment": [
-  {
-   "name": "Action Boost Charges",
-   "from": "Untyped",
-   "to": "Enhancement",
-   "value": "3",
-   "tooltip": "Slotted Effect: +3 Enhancement bonus to Action Boost Charges.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Moment_to_Legendary_Moment",
-   "verified": "2026-08-12",
-   "note": "Enchantments line reads 'Action Boost Enhancement'. Player-reported (2026-08-12 batch, data/bug_reports.txt); the report named this tier."
-  }
- ],
- "Barnacled Buckler": [
-  {
-   "name": "Elemental Resistance",
-   "from": "Competence",
-   "to": "Insight",
-   "value": "10",
-   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
-   "template": "{{Elemental Resistance|elemental|10|insight}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Barnacled_Buckler",
-   "verified": "2026-08-19",
-   "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
-  }
- ],
- "Epic Chain of Conviction": [
-  {
-   "name": "Elemental Resistance",
-   "from": "Competence",
-   "to": "Insight",
-   "value": "10",
-   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
-   "template": "{{Elemental Resistance|elemental|10|insight}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Chain_of_Conviction",
-   "verified": "2026-08-19",
-   "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
-  }
- ],
- "Epic Death's Rampart": [
-  {
-   "name": "Elemental Resistance",
-   "from": "Competence",
-   "to": "Insight",
-   "value": "10",
-   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
-   "template": "{{Elemental Resistance|elemental|10|insight}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Death%27s_Rampart",
-   "verified": "2026-08-19",
-   "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
-  }
- ],
- "Jeweled Cloak (level 23)": [
-  {
-   "name": "Elemental Resistance",
-   "from": "Competence",
-   "to": "Insight",
-   "value": "10",
-   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
-   "template": "{{Elemental Resistance|elemental|10|insight}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Jeweled_Cloak",
-   "verified": "2026-08-19",
-   "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
-  }
- ],
- "Jeweled Cloak (level 24)": [
-  {
-   "name": "Elemental Resistance",
-   "from": "Competence",
-   "to": "Insight",
-   "value": "10",
-   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
-   "template": "{{Elemental Resistance|elemental|10|insight}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Jeweled_Cloak",
-   "verified": "2026-08-19",
-   "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
-  }
- ],
- "Jeweled Cloak (level 25)": [
-  {
-   "name": "Elemental Resistance",
-   "from": "Competence",
-   "to": "Insight",
-   "value": "10",
-   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
-   "template": "{{Elemental Resistance|elemental|10|insight}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Jeweled_Cloak",
-   "verified": "2026-08-19",
-   "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
-  }
- ],
- "Litany of the Dead": [
-  {
-   "name": "Litany of the Dead - Ability Bonus",
-   "from": null,
-   "to": "Profane",
-   "value": "1",
-   "tooltip": "Litany of the Dead - Ability Bonus: The Litany of the Dead enhances the physical and mental abilities of its owner. Grants a +1 Profane bonus to all Abilities.",
-   "template": "{{Litany of the Dead|1|Ability}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Litany_of_the_Dead",
-   "verified": "2026-08-20",
-   "note": "#367 \u2014 upstream carries this affix with NO `type` key at all (one of the ~90 key-less affixes left after the 2026-08-18 re-encoding, #374), while its own Combat sibling on the same item and both Epic-tier affixes are Profane. `from` is null because that is the faithful record of an absent key, and it is what lets apply() match a.get(\"type\") is None. Left untyped, the six ability scores this expands into (src/umbrella.py _NAMED_UMBRELLA) would land in the untyped bucket and stack with every Profane source instead of competing with them. Ruling: docs/wiki-evidence/litany-of-the-dead.md."
-  }
- ],
- "_retired_2026_08_18": {
-  "why": "#374/U4 — upstream adopted this retype in the 2026-08-18 refresh: Juiblex's Reign now carries ('Acid Absorption','Insight','15') natively, which is exactly what this shard and its paired item_value_corrections entry produced. Retired as a no-op; kept as the record. SCOPE, re-checked 2026-08-18 during the test re-ratification: ONLY the Juiblex entry was adopted. The two `Moment to Moment` augment entries were retired in the same edit WITHOUT cause — upstream still emits ('Action Boost Charges','Untyped') on both Yellow-Augment-Slot stones, so their wiki-verified retype is still live and still needed, and retiring them would have silently re-opened the #259 double-count against the 19 Enhancement-typed worn sources. They are restored above. Every entry retired here must be confirmed adopted in the refreshed raw, per-entry.",
-  "verified": "2026-08-18 against upstream commit 767a7f747d0e7d211a702b8c456348e1c36ba699",
-  "entries": {
-   "Juiblex's Reign": [
+  "_meta": {
+    "title": "wiki-sourced affix bonus-type corrections (#259)",
+    "note": "gear-planner is the single source of truth for WHICH affixes a record has, read structurally. The DDO Wiki is the source of truth for the BONUS TYPE when the two disagree and the wiki's rendered tooltip states it outright. A wrong type is a different defect from a wrong value: the magnitude is right, but the affix lands in the wrong stacking bucket and over- or under-stacks against everything else granting the stat.",
+    "why_not_value_corrections": "src/value_corrections.py overwrites the VALUE and nothing else, and its stale guard is keyed on the value field. Each corrections mechanism changes exactly one field so its guard cannot be weakened for the sake of another field's fix.",
+    "stale_guard": "Every entry records `from` — the type gear-planner currently carries — and `value` — the magnitude the tooltip was verified against. The build FAILS if either no longer matches upstream, and FAILS if an entry reaches no record in any channel (renamed/dropped upstream), rather than silently pinning or silently no-opping.",
+    "evidence_rule": "Every entry carries the verbatim rendered tooltip stating the bonus type, and the wiki page it was read from.",
+    "sneak_attack_class": "#608 — 20 entries share one cause and are worth reading as a class. The wiki renders these through Template:Sneak Attack Bonus, whose SECOND parameter is the bonus type. Upstream maps that parameter to `type` correctly when it is present (Seal of House Avithoul's `|Insightful` arrives as Insight) and, when it is ABSENT, falls back to the affix NAME — minting a bonus type `Sneak Attack` that the game does not have. The template documents the real default: \"An undefined or empty value will use : Enhancement\". Every entry is verified against the RENDERED tooltip rather than that documentation, because the template's own source comments call the default an assumption (\"Sneak Attack Bonus default type assumed to be Enhancement bonus\", reasoned from its not stacking with Deception). The rendered tooltip states Enhancement outright, which the evidence rule above requires and the comment does not supply."
+  },
+  "Moment to Moment": [
     {
-     "name": "Acid Absorption",
-     "from": "Enhancement",
-     "to": "Insight",
-     "value": "15",
-     "tooltip": "Insightful Acid Absorption +15%: Passive: 15% Insight Bonus to Acid Absorption.",
-     "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
-     "verified": "2026-08-13",
-     "note": "#288 — the tooltip states an Insight bonus; gear-planner types it Enhancement, so it wrongly max-competed with worn Enhancement absorption. `value` is the post-value-correction magnitude: the sibling item_value_corrections.json entry lands 16 -> 15 first (value corrections apply before type corrections in build_dataset.py)."
+      "name": "Action Boost Charges",
+      "from": "Untyped",
+      "to": "Enhancement",
+      "value": "1",
+      "tooltip": "Slotted Effect: +1 Enhancement bonus to Action Boost Charges.",
+      "wiki_url": "https://ddowiki.com/page/Item:Moment_to_Moment",
+      "verified": "2026-08-12",
+      "note": "Enchantments line reads 'Minor Action Boost Enhancement'. All 19 worn-item sources of Action Boost Charges in the dataset are Enhancement-typed; stored Untyped, this augment stacked with every one of them."
     }
-   ]
-  }
- }
+  ],
+  "Legendary Moment to Legendary Moment": [
+    {
+      "name": "Action Boost Charges",
+      "from": "Untyped",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Slotted Effect: +3 Enhancement bonus to Action Boost Charges.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Moment_to_Legendary_Moment",
+      "verified": "2026-08-12",
+      "note": "Enchantments line reads 'Action Boost Enhancement'. Player-reported (2026-08-12 batch, data/bug_reports.txt); the report named this tier."
+    }
+  ],
+  "Barnacled Buckler": [
+    {
+      "name": "Elemental Resistance",
+      "from": "Competence",
+      "to": "Insight",
+      "value": "10",
+      "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+      "template": "{{Elemental Resistance|elemental|10|insight}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Barnacled_Buckler",
+      "verified": "2026-08-19",
+      "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
+    }
+  ],
+  "Epic Chain of Conviction": [
+    {
+      "name": "Elemental Resistance",
+      "from": "Competence",
+      "to": "Insight",
+      "value": "10",
+      "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+      "template": "{{Elemental Resistance|elemental|10|insight}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Chain_of_Conviction",
+      "verified": "2026-08-19",
+      "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
+    }
+  ],
+  "Epic Death's Rampart": [
+    {
+      "name": "Elemental Resistance",
+      "from": "Competence",
+      "to": "Insight",
+      "value": "10",
+      "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+      "template": "{{Elemental Resistance|elemental|10|insight}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Death%27s_Rampart",
+      "verified": "2026-08-19",
+      "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
+    }
+  ],
+  "Jeweled Cloak (level 23)": [
+    {
+      "name": "Elemental Resistance",
+      "from": "Competence",
+      "to": "Insight",
+      "value": "10",
+      "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+      "template": "{{Elemental Resistance|elemental|10|insight}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Jeweled_Cloak",
+      "verified": "2026-08-19",
+      "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
+    }
+  ],
+  "Jeweled Cloak (level 24)": [
+    {
+      "name": "Elemental Resistance",
+      "from": "Competence",
+      "to": "Insight",
+      "value": "10",
+      "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+      "template": "{{Elemental Resistance|elemental|10|insight}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Jeweled_Cloak",
+      "verified": "2026-08-19",
+      "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
+    }
+  ],
+  "Jeweled Cloak (level 25)": [
+    {
+      "name": "Elemental Resistance",
+      "from": "Competence",
+      "to": "Insight",
+      "value": "10",
+      "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+      "template": "{{Elemental Resistance|elemental|10|insight}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Jeweled_Cloak",
+      "verified": "2026-08-19",
+      "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
+    }
+  ],
+  "Litany of the Dead": [
+    {
+      "name": "Litany of the Dead - Ability Bonus",
+      "from": null,
+      "to": "Profane",
+      "value": "1",
+      "tooltip": "Litany of the Dead - Ability Bonus: The Litany of the Dead enhances the physical and mental abilities of its owner. Grants a +1 Profane bonus to all Abilities.",
+      "template": "{{Litany of the Dead|1|Ability}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Litany_of_the_Dead",
+      "verified": "2026-08-20",
+      "note": "#367 — upstream carries this affix with NO `type` key at all (one of the ~90 key-less affixes left after the 2026-08-18 re-encoding, #374), while its own Combat sibling on the same item and both Epic-tier affixes are Profane. `from` is null because that is the faithful record of an absent key, and it is what lets apply() match a.get(\"type\") is None. Left untyped, the six ability scores this expands into (src/umbrella.py _NAMED_UMBRELLA) would land in the untyped bucket and stack with every Profane source instead of competing with them. Ruling: docs/wiki-evidence/litany-of-the-dead.md."
+    }
+  ],
+  "_retired_2026_08_18": {
+    "why": "#374/U4 — upstream adopted this retype in the 2026-08-18 refresh: Juiblex's Reign now carries ('Acid Absorption','Insight','15') natively, which is exactly what this shard and its paired item_value_corrections entry produced. Retired as a no-op; kept as the record. SCOPE, re-checked 2026-08-18 during the test re-ratification: ONLY the Juiblex entry was adopted. The two `Moment to Moment` augment entries were retired in the same edit WITHOUT cause — upstream still emits ('Action Boost Charges','Untyped') on both Yellow-Augment-Slot stones, so their wiki-verified retype is still live and still needed, and retiring them would have silently re-opened the #259 double-count against the 19 Enhancement-typed worn sources. They are restored above. Every entry retired here must be confirmed adopted in the refreshed raw, per-entry.",
+    "verified": "2026-08-18 against upstream commit 767a7f747d0e7d211a702b8c456348e1c36ba699",
+    "entries": {
+      "Juiblex's Reign": [
+        {
+          "name": "Acid Absorption",
+          "from": "Enhancement",
+          "to": "Insight",
+          "value": "15",
+          "tooltip": "Insightful Acid Absorption +15%: Passive: 15% Insight Bonus to Acid Absorption.",
+          "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
+          "verified": "2026-08-13",
+          "note": "#288 — the tooltip states an Insight bonus; gear-planner types it Enhancement, so it wrongly max-competed with worn Enhancement absorption. `value` is the post-value-correction magnitude: the sibling item_value_corrections.json entry lands 16 -> 15 first (value corrections apply before type corrections in build_dataset.py)."
+        }
+      ]
+    }
+  },
+  "Assassin Initiate's Leathers (level 13)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "2",
+      "tooltip": "Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate%27s_Leathers_%28level_13%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Assassin Initiate's Leathers (level 14)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "2",
+      "tooltip": "Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate%27s_Leathers_%28level_14%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Assassin Initiate's Leathers (level 15)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate%27s_Leathers_%28level_15%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Backstabber's Gloves (level 12)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_12%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Backstabber's Gloves (level 13)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "4",
+      "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_13%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Backstabber's Gloves (level 14)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "4",
+      "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_14%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Backstabber's Gloves (level 23)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_23%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Backstabber's Gloves (level 24)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_24%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Backstabber's Gloves (level 25)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_25%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Bravo's Sword": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Bravo%27s_Sword",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Drow Piwafwi": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Drow_Piwafwi",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Goggles of Intuition": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "2",
+      "tooltip": "Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Goggles_of_Intuition",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Lenses of Opportunity": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Lenses_of_Opportunity",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Polycurse Dagger": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Polycurse_Dagger",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Rebellion": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Rebellion",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Seal of House Avithoul": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Seal_of_House_Avithoul",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Shard of the Shadowfell": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "4",
+      "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Shard_of_the_Shadowfell",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Tharne's Goggles": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Tharne%27s_Goggles",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Treason": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Treason",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Wretched Twilight": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "4",
+      "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Wretched_Twilight",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ]
 }

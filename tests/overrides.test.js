@@ -251,11 +251,16 @@ test("an override never changes an affix's value", () => {
 
 // ------------------------------------------------------- U3: vocabulary + guard
 
-test("AE14 — the replacement vocabulary is closed and carries the three additions", () => {
+test("AE14 — the replacement vocabulary is closed and carries the real additions", () => {
   const vocab = Model.CREDIT_BONUS_TYPES;
-  for (const t of ["Orb", "Sneak Attack", "Determination"]) {
+  // #88 U3 added three names the dataset carried that the list lacked. #608 removed
+  // one of them again: `Sneak Attack` is the STAT being bonused, not a bonus type,
+  // and its 20 records were retyped to Enhancement from their rendered tooltips.
+  for (const t of ["Orb", "Determination"]) {
     assert.ok(vocab.includes(t), `${t} is offered`);
   }
+  assert.ok(!vocab.includes("Sneak Attack"),
+    "Sneak Attack is a stat, not a bucket — #608 retyped its records and removed the name");
   assert.ok(!vocab.includes("insight"), "a near-miss string is not a member");
   assert.ok(!vocab.some((t) => /Natural$/.test(t) && t !== "Natural"),
     "the X Natural family is excluded — the equivalence map collapses those");

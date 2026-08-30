@@ -71,12 +71,12 @@
     "Morale": "Arrives as a declared credit (Greater Heroism +4 Morale), not as an item affix.",
     "Alchemical": "Real per Category:Bonus types; nothing in the catalog carries it today."
   },
-  "offered_pending_data_fix": {
-    "_note": "NOT bonus types, and offered anyway — deliberately, and only until the data that records them is corrected. Removing a name from the picker does not remove the bucket from the dataset: it removes the player's ability to NAME or CORRECT it. Every entry here must cite the issue that will retype the affixes, and must disappear when that issue closes.",
+  "refused": {
+    "_note": "Names that are NOT bonus types and are not offered. An entry here has to survive the data too — nothing may RECORD the type, or the picker would be hiding a bucket the player can still see in a build and cannot name.",
     "Sneak Attack": {
-      "issue": 608,
       "why_not_a_type": "REMOVED 2026-08-30. Not a bonus type: it is the STAT being bonused. The wiki's `Sneak attack` page says \"Sneak Attack damage is split into two types: Dice, and Bonus Damage\", and every source it lists grants an ARTIFACT bonus — named item sets at +1/2/3 Artifact, the Solar Gems at Artifact. So `Sneak Attack Bonus` is the affix and `Artifact` is its type. 20 affixes in the built dataset are typed `Sneak Attack`, which puts them in a bucket of their own that stacks with everything; retyping them needs per-item evidence and is filed separately.",
-      "why_still_offered": "20 affixes still record `type: \"Sneak Attack\"`. While they do, this is the only string a player can use to skip that bucket or to correct an affix out of it. Dropping it first would hide the defect from the one person positioned to work around it, and `tests/overrides.test.js` says so structurally: every recorded type must be expressible or equivalence-mapped."
+      "how_the_data_was_fixed": "#608, 2026-08-30. The wiki renders these affixes through Template:Sneak Attack Bonus, whose SECOND parameter is the bonus type; upstream maps it correctly when present (Seal of House Avithoul's `|Insightful` arrives as Insight) and falls back to the affix NAME when absent. The template documents the real default — \"An undefined or empty value will use : Enhancement\" — and all 20 rendered tooltips state \"Enhancement modifier\" outright. Retyped through affix_type_corrections.json, one entry per record, each carrying its own rendered tooltip. `Sneak Attack` now appears as a bonus type nowhere in the built dataset.",
+      "removed_from_picker": "2026-08-30"
     }
   }
 }
