@@ -103,54 +103,61 @@ def test_the_shard_declares_that_it_is_not_wired():
     assert "gear-planner" in meta["blocker"]
 
 
-# The one file allowed to open the shard, and why. It reads `placements` ONLY to
-# learn WHICH effect names exist, so the bonus-type harvest has a work order and a
-# denominator. It never reads a magnitude and never emits anything into the
-# dataset. Anything else touching this file is the failure this guard exists for.
+# The files allowed to open the shard, and why. Neither is a solver input.
+#
+#   merge_harvest.py       reads `placements` ONLY, for the effect ROSTER that
+#                          drives the bonus-type harvest. Never a magnitude.
+#   essence_curve_join.py  reads `values_by_ml` deliberately — resolving the
+#                          effect-name -> curve-row join (#599) IS its job. It is
+#                          allowed the magnitudes and denied a route into the
+#                          build, which the next test enforces.
 ROSTER_READER = "scripts/merge_harvest.py"
+JOIN_MODULE = os.path.join("src", "essence_curve_join.py")
+SHARD_READERS = sorted([ROSTER_READER, JOIN_MODULE])
 # Tests may name the shard freely: asserting ON the data is the opposite of
 # feeding it to the solver, and a test cannot ship a value into a loadout. The
 # allowance is by directory so a new guard file does not have to edit this list.
 TEST_DIR = "tests" + os.sep
-# The value halves. Reading one of these IS consuming the shard, even from the
-# allowlisted file — the allowance is for the roster, not for the numbers.
+# The value halves. Reading one of these IS consuming the shard — allowed only in
+# the join module, which exists to read them.
 VALUE_KEYS = ("values_by_ml", "non_scalar_effects")
+# Everything the built dataset is made of. Nothing here may reach the join.
+BUILD_SURFACE = ("build_dataset.py", "src" + os.sep, "web" + os.sep)
 
 
-def test_nothing_in_the_tree_consumes_the_shard_yet():
-    """The honest state: harvested, disclosed, unused by the solver. A build that
-    started reading it without sourcing bonus types would be shipping inferred
-    game values.
-
-    #193 reopened this: `merge_harvest.py` now reads `placements` for the effect
-    ROSTER driving the bonus-type harvest (`essence_bonus_type.json`). That is a
-    work order, not a solver input, so it is allowlisted by name — and the
-    allowance is checked to be exactly that, by asserting the file never touches
-    the magnitude halves.
-    """
-    hits = []
+def _tree_files(exts=(".py", ".js")):
     for dirpath, dirnames, filenames in os.walk(ROOT):
         if any(p in dirpath for p in (".git", "node_modules", "__pycache__", "web/data")):
             continue
         for fn in filenames:
-            if not fn.endswith((".py", ".js")):
-                continue
-            path = os.path.join(dirpath, fn)
-            if os.path.abspath(path) == os.path.abspath(__file__):
-                continue
-            with open(path, encoding="utf-8", errors="ignore") as fh:
-                if "essence_crafting.json" in fh.read():
-                    rel = os.path.relpath(path, ROOT)
-                    if not rel.startswith(TEST_DIR):
-                        hits.append(rel)
-    assert hits == [ROSTER_READER], (
-        "something now reads the Essence Crafting shard: " + ", ".join(hits)
-        + f". Only {ROSTER_READER} may, and only for the effect roster. Before wiring "
-        "the values, source the bonus types — see docs/wiki-evidence/essence-crafting.md.")
+            if fn.endswith(exts):
+                yield os.path.join(dirpath, fn)
 
 
-def test_the_allowlisted_reader_takes_the_roster_and_not_the_magnitudes():
-    """Proves the allowance above is as narrow as it claims. If the roster reader
+def test_nothing_in_the_tree_consumes_the_shard_yet():
+    """The honest state: harvested, disclosed, unused BY THE SOLVER.
+
+    Two files may open it, both named above and neither on a path into the build.
+    Anything else is the failure this guard exists for.
+    """
+    hits = []
+    for path in _tree_files():
+        if os.path.abspath(path) == os.path.abspath(__file__):
+            continue
+        rel = os.path.relpath(path, ROOT)
+        if rel.startswith(TEST_DIR):
+            continue
+        with open(path, encoding="utf-8", errors="ignore") as fh:
+            if "essence_crafting.json" in fh.read():
+                hits.append(rel)
+    assert sorted(hits) == SHARD_READERS, (
+        "the set of files reading the Essence Crafting shard changed: "
+        + ", ".join(sorted(hits)) + f". Expected exactly {SHARD_READERS}. Before wiring "
+        "the values into the build, see docs/wiki-evidence/essence-crafting-bonus-types.md.")
+
+
+def test_the_roster_reader_takes_the_roster_and_not_the_magnitudes():
+    """Proves the roster allowance is as narrow as it claims. If merge_harvest
     ever reaches for a magnitude, the allowlist is silently covering a solver
     input and this fails rather than waving it through."""
     with open(os.path.join(ROOT, ROSTER_READER), encoding="utf-8") as fh:
@@ -160,6 +167,30 @@ def test_the_allowlisted_reader_takes_the_roster_and_not_the_magnitudes():
         assert f'"{key}"' not in src and f"'{key}'" not in src, (
             f"{ROSTER_READER} now reads {key!r}. That is a magnitude, not a roster: "
             "the allowlist covers the effect NAMES only.")
+
+
+def test_no_build_path_reaches_the_curve_join():
+    """The real boundary, now that a module reads the magnitudes on purpose.
+
+    `essence_curve_join` may read every value in the shard; what it may NOT do is
+    end up inside the dataset. So nothing on the build surface — `build_dataset.py`,
+    the rest of `src/`, or any of `web/` — may import it. When Essence Crafting is
+    finally wired, this is the assertion that has to be deleted deliberately.
+    """
+    importers = []
+    for path in _tree_files():
+        rel = os.path.relpath(path, ROOT)
+        if rel.startswith(TEST_DIR) or rel == JOIN_MODULE:
+            continue
+        if not rel.startswith(BUILD_SURFACE):
+            continue
+        with open(path, encoding="utf-8", errors="ignore") as fh:
+            if "essence_curve_join" in fh.read():
+                importers.append(rel)
+    assert not importers, (
+        "the dataset build now reaches the Essence Crafting curve join: "
+        + ", ".join(importers) + ". 37 of 157 effects are still quarantined and "
+        "135 have no sourced bonus type — wiring it means disclosing that to the player.")
 
 
 def test_the_twelve_labels_are_still_declared_unserved():

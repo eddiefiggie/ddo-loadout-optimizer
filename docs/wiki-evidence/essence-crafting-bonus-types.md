@@ -166,26 +166,82 @@ Two entries genuinely add, because no named item occupies their bucket at all,
 and `Doublestrike` beats its bucket by +1. Those three are the whole upside found
 so far, and none is large.
 
-## The second join, which is NOT solved
+## The second join — solved, and how (#599)
 
-There is a second name-mapping problem behind the first, and it is easy to walk
-into. **The ML curve table uses its own vocabulary, not the effect names.** Its
-75 rows are keyed by value FAMILY — `Ability` and `Ins. Ability` cover all twelve
-ability entries, and others read `Ins. Accuracy`, `Combat mastery`,
-`Armor-piercing`. Only **22 of the 157 effect names match a curve row literally**;
-135 do not.
+There is a second name-mapping problem behind the first. **The ML curve table
+uses its own vocabulary, not the effect names.** Its 75 rows are keyed by value
+FAMILY — `Ability` and `Ins. Ability` cover all twelve ability entries, and
+others read `Ins. Accuracy`, `Combat mastery`, `Armor-piercing`. Only **22 of the
+157 effect names match a curve row literally**.
 
-So `curves[effect_name]` silently returns the wrong row or nothing. Drafting the
-table above, `Insightful Accuracy` was first joined to the `Accuracy` row and
-read 23 — the BASE competence magnitude, not the Insight one. The correct row is
-`Ins. Accuracy`, and the correct value is 11, which ties rather than beating by
-+12. The table above therefore uses the ranges stated in the type sentences
-themselves, never a curve lookup by effect name.
+`curves[effect_name]` therefore returns the wrong row or nothing, **silently**.
+It already did: drafting the value table above, `Insightful Accuracy` was joined
+to the `Accuracy` row and read **23** — the base competence magnitude — where the
+correct `Ins. Accuracy` row reads **11**. That turned an exact tie into an
+apparent +12 win. Unlike a missing bonus type, nothing about the result looks
+wrong.
 
-Anyone wiring this must solve the effect-name -> curve-row join deliberately. It
-is a separate piece of work from the type harvest, and it is the same hazard the
-earlier value measurement hit from the other side, where 73 of 157 effects had no
-confident mapping onto CATALOG names.
+**Neither table states the join, but two others do**, and `src/essence_curve_join.py`
+uses them:
+
+- **table 2c** ("Recipes for scaling effects") carries a **Group** column —
+  `Ability`, `Skill`, `Defense`, `Offense`, `Tactical` and eleven more. That is
+  the wiki stating which effects are abilities and which are skills, which is
+  exactly what the category-named curve rows need.
+- **table 2b** ("Recipes for non-scaling effects") supplies the other half. An
+  effect listed there **does not scale**, so having no ML curve is *correct* for
+  it rather than a gap — which stops a later sweep hunting for a row that should
+  not exist.
+
+Both are harvested into `data/seed/compendium/essence_recipe_groups.json`.
+
+### The rules, strongest first
+
+| Rule | What states it | Example |
+|---|---|---|
+| `identity` | the row label IS the effect name | `Armor-Piercing` -> `Armor-piercing` |
+| `gloss` | the label plus a parenthetical | `Spell Resistance` -> `Spell Resistance (SR)` |
+| `enumeration` | the label spells its members out | `Fortitude` -> `Reflex/Fortitude/Will` |
+| `group` | table 2c's Group column | `Balance` -> `Skill` |
+| `insightful` | table 3b's `Ins.` abbreviation | `Insightful Strength` -> `Ins. Ability` |
+
+### Coverage
+
+**120 of 157** effects resolve to a curve row. The other 37 are quarantined, never
+guessed at:
+
+| Reason | Count | Meaning |
+|---|---:|---|
+| `non-scaling` | 21 | table 2b says it does not scale — having no curve is correct |
+| `unmapped` | 14 | no rule reaches a row; magnitude unsourced |
+| `ambiguous` | 2 | two rows answer to the name |
+
+The 14 `unmapped` are the honest remainder, and the cheapest wins are visible in
+it: `Healing`, `Negative` and `Repair Amplification` all sit beside an
+`Amplification` row, and `Spell Penetration` beside a `Penetration` row, but a
+rule that matched a row to the tail of an effect name would be a guess dressed as
+a rule. They stay out.
+
+### Refusing rather than choosing
+
+`Resistance` and `Resistance (save)` are **both real rows**. An earlier draft
+silently took the first one it saw. The join now detects that two rows answer to
+one name and quarantines the effect — picking either would record a coin flip as
+a game value. `Resistance` and `Insightful Resistance` are the two `ambiguous`
+entries, and `test_two_rows_answering_to_one_name_are_refused` pins it.
+
+### The join validates the type harvest
+
+The magnitudes here come from **table 3b**; the ranges in the bonus-type section
+above come from **sentences on effect pages**. They are independent harvests, and
+where both have a value they agree exactly in **15 of 17** cases — every ability
+score at 15, every Insightful ability at 7, `Insightful Accuracy` at 11, `Seeker`
+and `Natural Armor` at 15.
+
+Both exceptions are Haggle (22 vs 20, 11 vs 10), whose page dates its own numbers
+*"as of Update 36 Release Notes"*. That is staleness on the Haggle page, not a
+join error — and it is named in the test rather than absorbed by a tolerance, so
+a third disagreement fails the build.
 
 ## Reproducing
 
