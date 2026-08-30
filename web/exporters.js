@@ -80,6 +80,11 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // Essence craft read as an ordinary affix line in every text export while
       // its siblings carried a cue. The legend below lists it for the same reason.
       essence: ["🔧", "Essence Crafting"],
+      // #603 — a placed Set Augment used to render bare, because a family with no
+      // entry here gets no cue at all. It is the family that needs one most: the
+      // augment carries the set, and the host item's own data says nothing about
+      // it, so a recipient of a shared build cannot re-derive the placement.
+      augmentset: ["🧩", "Set Augment"],
     },
   };
   // BBCode named colors for the augment-color words (real color, per KTD5).
@@ -110,7 +115,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const colors = ["red", "yellow", "blue", "green", "orange", "purple", "colorless"]
       .map((k) => cue("color", k, fmt)).join("  ");
     const moon = ["Lunar", "Solar"].map((k) => cue("moon", k, fmt)).join("  ");
-    const craft = ["dino", "nc", "roll", "vik", "seal", "tf", "gs", "essence", "joker", "membership"]
+    const craft = ["dino", "nc", "roll", "vik", "seal", "tf", "gs", "essence", "joker",
+      "membership", "augmentset"]
       .map((k) => cue("craft", k, fmt)).join("  ");
     return `Legend — augment slots: ${colors} · ${moon} · crafting: ${craft}`;
   }
@@ -148,10 +154,28 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     return `${lead ? lead + ": " : ""}${esc(aug.name)}${eff ? " — " + eff : ""}`;
   }
 
-  // One crafting upgrade: craft-family cue: label.
+  // One crafting upgrade: craft-family cue, then the label.
+  //
+  // #603 — the cue's WORD is dropped when the label already opens with it, so the
+  // system is named once instead of twice. Every family used to stutter:
+  //
+  //   before   💠 Green Steel: Green Steel: Constitution +6 Insight
+  //   after    💠 Green Steel: Constitution +6 Insight
+  //
+  // The emoji is always kept, so the legend still explains every marker in the
+  // body. Trimming the LABEL instead is not an option: `toGearset` prints
+  // `cr.label` with no cue at all, so it has to stay self-describing on its own.
+  //
+  // A family whose label does not open with its system name is untouched — `dino`
+  // leads with the insert type (`Claw: …`), which the cue does not duplicate.
   function craftStr(cr, esc, fmt) {
-    const c = cue("craft", cr.family, fmt);
-    return `${c ? c + ": " : ""}${esc(cr.label)}`;
+    const parts = cueParts("craft", cr.family);
+    const label = String(cr.label == null ? "" : cr.label);
+    if (!parts) return esc(label);
+    const [emoji, word] = parts;
+    const opensWithWord = label.toLowerCase().startsWith(word.toLowerCase());
+    if (opensWithWord) return `${emoji} ${esc(label)}`;
+    return `${cue("craft", cr.family, fmt)}: ${esc(label)}`;
   }
 
   // One attribution source line: "Type +Value — Source [ (set)] [ via slots]".
