@@ -5811,6 +5811,15 @@ ${(() => {
                 stat.innerHTML = `✓ Parsed <strong>${rowCount.toLocaleString()}</strong> entries · <strong>${m.ownedCount}</strong> distinct names · matched <strong>${m.matched}</strong> named items.`
                   + (m.unrecognized
                     ? ` <span class="wz-sub">The other ${m.unrecognized.toLocaleString()} are mostly things this tool doesn't optimize over — filigrees, collectables, consumables and randomly-generated loot. Only named gear is searched.</span>`
+                    : "")
+                  // #411 — the honest half of the recovery. A Trove export has no
+                  // level column, and 288 named items exist at several minimum
+                  // levels, so owning the name cannot say WHICH one is in the bags.
+                  // Every version is considered, capped by the ML you set. Silence
+                  // here would let a build quietly assume the best tier of an item
+                  // the player might hold at the lowest.
+                  + (m.tierAmbiguous
+                    ? ` <span class="wz-sub">${m.tierAmbiguous.toLocaleString()} of those come in more than one minimum level, and the export doesn't say which you hold — every version is considered, up to your ML cap.</span>`
                     : "");
               } catch (err) {
                 state.ownedNames = null;

@@ -4,8 +4,11 @@ const fs = require("fs");
 const path = require("path");
 const {
   splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, itemName, USED_COLUMNS,
-  ownedHasCatalogName, singularCandidates,
+  ownedHasCatalogName, singularCandidates, baseItemName,
 } = require("../web/import.js");
+// #411's tests use the module namespace so a new export cannot be silently missed
+// from the destructure above.
+const I = require("../web/import.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -188,4 +191,62 @@ test("#408: the disclosure and the pool agree about what 'owned' means", () => {
     ["Ruby of Flame (2d6)", "Solar Gem of Constitution (Legendary)"]);
   assert.strictEqual(m.matched, 2, "both count as matched in the disclosure too");
   assert.strictEqual(m.matched, kept.length, "disclosure and pool cannot disagree");
+});
+
+// ---- #411: the wiki's `(level N)` disambiguator -------------------------------
+
+test("#411: a bare export name matches a catalog name carrying (level N)", () => {
+  // Trove writes the in-game name, which has no level in it. The catalog carries
+  // the wiki's page title, which for a level-scaled named item does.
+  const owned = new Set(["Cloak of Winter's End"]);
+  assert.ok(I.ownedHasCatalogName(owned, "Cloak of Winter's End (level 4)"));
+  assert.ok(I.ownedHasCatalogName(owned, "Cloak of Winter's End (level 36)"));
+  // …and does not reach a DIFFERENT item that merely shares a shape.
+  assert.ok(!I.ownedHasCatalogName(owned, "Cloak of Summer's End (level 4)"));
+});
+
+test("#411: only `(level N)` is stripped, never another parenthetical", () => {
+  // `(Legendary)`, `(Heroic)` and the tier parentheticals are part of the item's
+  // identity — a Solar Gem of Constitution (Legendary) is not the Heroic one, and
+  // collapsing them would hand a player an item they do not own.
+  assert.strictEqual(I.baseItemName("Solar Gem of Constitution (Legendary)"),
+    "Solar Gem of Constitution (Legendary)");
+  assert.strictEqual(I.baseItemName("Ring of Fire, Lesser"), "Ring of Fire, Lesser");
+  assert.strictEqual(I.baseItemName("Cloak of Winter's End (level 12)"), "Cloak of Winter's End");
+  const owned = new Set(["Solar Gem of Constitution"]);
+  assert.ok(!I.ownedHasCatalogName(owned, "Solar Gem of Constitution (Legendary)"),
+    "a tier parenthetical is identity, not a disambiguator to strip");
+});
+
+test("#411: the coverage report counts tier-ambiguous matches separately", () => {
+  // A name that matched only through its base admitted SEVERAL versions, and the
+  // export cannot say which is owned. The count is what the disclosure prints, so
+  // it has to be the same number the filter acted on.
+  const items = [
+    { source_item: "Cloak of Winter's End (level 4)" },
+    { source_item: "Cloak of Winter's End (level 36)" },
+    { source_item: "Plain Item" },
+  ];
+  const m = I.ownedMatch(new Set(["Cloak of Winter's End", "Plain Item"]), items);
+  assert.strictEqual(m.matched, 2, "both owned names matched");
+  assert.strictEqual(m.tierAmbiguous, 1, "only the multi-level one is ambiguous");
+  assert.strictEqual(m.unrecognized, 0);
+});
+
+test("#411: the report and the pool filter agree, or the disclosure lies", () => {
+  // Same contract #408 set: a name the report calls matched must be a name the
+  // filter admits. They are separate code paths and drifted before.
+  const items = [
+    { source_item: "Cloak of Winter's End (level 4)" },
+    { source_item: "Cloak of Winter's End (level 36)" },
+    { source_item: "Solar Gem of Constitution (Legendary)" },
+    { source_item: "Unowned Thing (level 9)" },
+  ];
+  const owned = new Set(["Cloak of Winter's End", "Solar Gems of Constitution (Legendary)"]);
+  const m = I.ownedMatch(owned, items);
+  const kept = I.filterItemsToOwned(items, owned);
+  const keptBases = new Set(kept.map((v) => I.baseItemName(I.itemName(v))));
+  assert.strictEqual(m.matched, 2, "the plural augment and the level-scaled item both match");
+  assert.strictEqual(keptBases.size, 2, "and the filter admits exactly those two");
+  assert.ok(!kept.some((v) => /Unowned/.test(v.source_item)), "nothing unowned leaks in");
 });

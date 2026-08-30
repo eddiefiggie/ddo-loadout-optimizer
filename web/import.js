@@ -84,6 +84,30 @@ function itemName(v) {
   return (v && (v.source_item || v.variant_id || v.name)) || "";
 }
 
+/** #411 — the catalog's `source_item` is documented above as "the base item",
+ *  and for 1,323 variants across 288 base items it is not: the wiki disambiguates
+ *  a level-scaled named item by page title, so `Cloak of Winter's End` arrives as
+ *  nine records named `Cloak of Winter's End (level 4|8|…|36)`. NONE of those 288
+ *  appears unsuffixed, so an export writing the in-game name — which is what the
+ *  game shows the player, with no level in it — misses every single one.
+ *
+ *  Stripping the suffix is LOSSLESS rather than a heuristic, which is what makes
+ *  this safe to do at the matching seam instead of in the data. Measured across
+ *  all 1,323: the level in the name equals `ml` in every case, and `variant_id`
+ *  is byte-identical to `source_item`, so the suffix distinguishes nothing that
+ *  `ml` does not already carry. Nothing is being guessed at or thrown away.
+ *
+ *  What it CANNOT recover is which tier the player holds: a Trove export has no
+ *  level column at all. So owning the name admits every tier of it, bounded by
+ *  the ML cap the solve already applies, and `ownedMatch` counts those names
+ *  separately so the import can say so rather than quietly assuming the best one.
+ */
+const _LEVEL_SUFFIX = /\s*\(level\s+\d+\)$/i;
+
+function baseItemName(name) {
+  return String(name || "").replace(_LEVEL_SUFFIX, "");
+}
+
 /** #408 — Trove writes a STACKED item's name in the plural, and the catalog
  *  stores the singular. `Solar Gems of Constitution (Legendary)` in the export
  *  is `Solar Gem of Constitution (Legendary)` in the dataset, so a player who
@@ -126,6 +150,10 @@ function singularCandidates(name) {
 function ownedHasCatalogName(ownedNames, catalogName) {
   if (!ownedNames || !catalogName) return false;
   if (ownedNames.has(catalogName)) return true;
+  // #411 — the export writes the in-game name, which carries no level. The
+  // catalog's may carry the wiki's `(level N)` disambiguator.
+  const base = baseItemName(catalogName);
+  if (base !== catalogName && ownedNames.has(base)) return true;
   // The export may hold the plural of this catalog name.
   for (const [re, to] of _STACK_PLURALS) {
     // Build the plural by inverting the rule: "Gem of" -> "Gems of".
@@ -146,18 +174,33 @@ function ownedHasCatalogName(ownedNames, catalogName) {
  *  by base-item name. `items` is the worn/weapon variant pool. */
 function ownedMatch(ownedNames, items) {
   const datasetNames = new Set();
-  (items || []).forEach((v) => { const n = itemName(v); if (n) datasetNames.add(n); });
+  // #411 — base name -> how many tiers of it the catalog carries, so a match made
+  // only through the base can say how many versions it admitted.
+  const tiersByBase = new Map();
+  (items || []).forEach((v) => {
+    const n = itemName(v);
+    if (!n) return;
+    datasetNames.add(n);
+    const base = baseItemName(n);
+    if (base !== n) tiersByBase.set(base, (tiersByBase.get(base) || 0) + 1);
+  });
   let matched = 0;
+  let tierAmbiguous = 0;
   // #408 — a stacked-item plural counts as matched, because the pool filter
-  // below now admits it. The two must agree or the disclosure lies.
+  // below now admits it. The two must agree or the disclosure lies. #411 adds the
+  // base-name class on the same terms.
   ownedNames.forEach((n) => {
     if (datasetNames.has(n)) { matched++; return; }
-    if (singularCandidates(n).some((s2) => datasetNames.has(s2))) matched++;
+    if (singularCandidates(n).some((s2) => datasetNames.has(s2))) { matched++; return; }
+    if (tiersByBase.has(n)) { matched++; tierAmbiguous++; }
   });
   const ownedCount = ownedNames.size;
   return {
     ownedCount,
     matched,
+    // Owned names that matched ONLY by base, i.e. the catalog holds several level
+    // versions and the export does not say which one is in the player's bags.
+    tierAmbiguous,
     unrecognized: ownedCount - matched,
     matchRate: ownedCount ? matched / ownedCount : 0,
   };
@@ -173,9 +216,9 @@ function filterItemsToOwned(items, ownedNames) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, itemName,
-    ownedHasCatalogName, singularCandidates, USED_COLUMNS };
+    ownedHasCatalogName, singularCandidates, baseItemName, USED_COLUMNS };
 }
 if (typeof window !== "undefined") {
   window.TroveImport = { splitCsvLine, parseTroveCsv, ownedMatch, filterItemsToOwned, itemName,
-    ownedHasCatalogName, singularCandidates };
+    ownedHasCatalogName, singularCandidates, baseItemName };
 }
