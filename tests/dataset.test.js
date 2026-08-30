@@ -1186,6 +1186,51 @@ test("#228: the word-cap casualty set is pinned, so a new named effect surfaces"
   assert.deepStrictEqual(presenceWordCapCasualties(realData), WORD_CAP_CASUALTIES);
 });
 
+// #615 — wearer drawbacks the priority picker was offering as things to SEEK.
+// The split is carrier-shaped, not name-shaped: a name carried on at least one
+// non-weapon WORN slot cannot be an on-hit effect on an enemy.
+const DENIED_615 = [
+  "Curse of Clumsiness", "Curse of Dullness", "Curse of Foolishness",
+  "Curse of Repulsiveness", "Cursed Level Drain", "Mind Drain",
+  "Power Drain", "Metal Fatigue",
+];
+// Weapon-only carriers in the same population: the on-hit reading stays open, so
+// none of them is denied. `Weaken Undead` is the reason the line cannot be drawn
+// on the name — it is a real thing to seek, on 55 weapons.
+const WEAPON_ONLY_615 = ["Curse of Weakness", "Critical Weakening", "Weaken Undead"];
+
+test("#615: wearer drawbacks are not offered as priorities, but stay free-typeable", () => {
+  const v = buildPickerVocabulary(realData);
+  const suggested = new Set(v.suggestions);   // `suggestions` is an ordered Array
+  for (const n of DENIED_615) {
+    assert.ok(!suggested.has(n), `${n} must not be suggested as a priority`);
+    assert.ok(!v.presence.has(n), `${n} must not badge as a build-around effect`);
+    assert.ok(v.known.has(n), `${n} stays typeable — denial is recoverable, hiding is not`);
+  }
+});
+
+test("#615: the deny list does not creep onto the weapon-only names", () => {
+  const v = buildPickerVocabulary(realData);
+  const suggested = new Set(v.suggestions);
+  for (const n of WEAPON_ONLY_615) {
+    assert.ok(suggested.has(n),
+      `${n} is weapon-only, so the on-hit reading stands until #615's harvest rules`);
+    assert.ok(v.presence.has(n), `${n} still badges on its carriers`);
+  }
+});
+
+test("#615: every denied name is still carried, so no entry goes dead unnoticed", () => {
+  // A guard, not a dated claim: an upstream rename would otherwise leave a
+  // silent no-op in PRESENCE_DENY and quietly re-suggest the renamed drawback.
+  const carried = new Set();
+  for (const it of realData.items || []) {
+    for (const a of it.affixes || []) if (a && a.name) carried.add(String(a.name).trim());
+  }
+  for (const n of DENIED_615.concat(WEAPON_ONLY_615)) {
+    assert.ok(carried.has(n), `${n} is no longer in the dataset — re-adjudicate rather than keep it`);
+  }
+});
+
 // #231 — the eight adjudicated names. Suggested + presence-flagged, same shape
 // as the KICK assertions above; pinned here so a rebuild that drops a carrier
 // (or a PRESENCE_ALLOW edit that loses one) fails loudly.

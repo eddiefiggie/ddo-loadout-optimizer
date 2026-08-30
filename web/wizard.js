@@ -1305,22 +1305,59 @@ function blockPinSlotOf(slotConstraints, id) {
   return null;
 }
 
-/** #110 (U4/KTD5) — one block action over the ids the player selected. Dedupes
- *  against the existing list AND within the staged set, and refuses any id that
- *  is currently pinned (U5/R4) — the refusal names the pin's slot so the message
- *  can state the conflict. Returns { list, added, refused }; never mutates. */
+/** #110 (U4/KTD5), #620 — one block action over the ids the player selected.
+ *  Dedupes against the existing list AND within the staged set.
+ *
+ *  An id currently pinned to a slot is blocked ANYWAY, and its pin reported as
+ *  displaced. This reverses the original U5/R4 refusal, which was the one surface
+ *  in the app arguing that a pin outranks a block: `blockLoadMessage` below tells
+ *  an importing player the opposite in so many words ("a block wins, so the pin
+ *  will not be honored"), and `web/model.js` implements that — the block filters
+ *  candidacy upstream of everything, so a pinned-and-blocked id resolves with the
+ *  block winning no matter how the state arrived. A block typed by hand now means
+ *  what a block loaded from a file has always meant.
+ *
+ *  Returns { list, added, displaced }; never mutates. The unpin is applied by the
+ *  caller through `removePinFrom`, keeping this decision core pure and the DOM
+ *  work in the renderers. */
 function addBlocks(blocklist, ids, slotConstraints) {
   const have = new Set(blocklist || []);
   const added = [];
-  const refused = [];
+  const displaced = [];
   for (const id of ids || []) {
     if (!id || have.has(id)) continue;
     const slot = blockPinSlotOf(slotConstraints, id);
-    if (slot) { refused.push({ id, slot }); continue; }
+    if (slot) displaced.push({ id, slot });
     have.add(id);
     added.push(id);
   }
-  return { list: (blocklist || []).concat(added), added, refused };
+  return { list: (blocklist || []).concat(added), added, displaced };
+}
+
+/** #620 — the confirmation shown before a block drops a pin the player set by
+ *  hand. Dropping it silently would trade one silent failure for another; the
+ *  old path's failure was that it refused the block, wrote a warning into
+ *  transient state that the next render cleared, and emptied the staged
+ *  selection anyway, so a refusal was indistinguishable from a success.
+ *
+ *  A dialog here does NOT contradict the deep-dive pin row, which refuses inline
+ *  precisely to avoid one. That surface destroys nothing — it declines an action.
+ *  This one removes a constraint the player authored, which is the class
+ *  `deleteBundleConfirmText` and the other build-mutating confirmations occupy.
+ *
+ *  Pure and unit-tested; "" when nothing is displaced, so the caller can gate on
+ *  the count rather than on the string. */
+function blockDisplacesPinText(displaced) {
+  const d = displaced || [];
+  if (!d.length) return "";
+  const q = (x) => `\u201C${x.id}\u201D`;
+  if (d.length === 1) {
+    return `${q(d[0])} is pinned to ${d[0].slot}. Blocking it removes that pin`
+      + " \u2014 a block is a hard rule, so the pin cannot be honored. Continue?";
+  }
+  const list = d.map((x) => `${q(x)} (${x.slot})`).join(", ");
+  return `${list} are pinned to slots. Blocking them removes those pins`
+    + " \u2014 a block is a hard rule, so the pin cannot be honored. Continue?";
 }
 
 /** #110 (U3/R3) — remove one entry, leaving the rest intact. */
@@ -2251,7 +2288,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -2931,14 +2968,20 @@ ${(() => {
       const commit = document.getElementById("wz-block-commit");
       if (commit) commit.onclick = () => {
         const r = addBlocks(state.blocklist, [...blockStage], state.slotConstraints);
+        // #620 — confirm BEFORE anything is applied, and leave the staged
+        // selection intact on a decline. Clearing the stage is the signal to the
+        // player that the action succeeded, so it must not run on a path that
+        // did not: the old code cleared it even on a total refusal.
+        if (r.displaced.length && !window.confirm(blockDisplacesPinText(r.displaced))) return;
         state.blocklist = r.list;
+        for (const x of r.displaced) removePinFrom(state.slotConstraints, x.slot, x.id, slotCardOf);
         state.constraintsDirty = true; markDirty();
         blockStage.clear();
-        if (r.refused.length) {
-          state.blockRefusedMsg = r.refused.map((x) =>
-            `${x.id} is pinned to ${x.slot} — unpin it before blocking it.`).join(" ");
-        }
-        renderBlockStage(); renderBlockList(); renderBlockResults(); renderPinResults();
+        // renderPinList too: a displaced pin that stays drawn is the same "screen
+        // disagrees with state" failure this fix exists to remove. Every other pin
+        // mutation redraws both surfaces; so does this one.
+        renderBlockStage(); renderBlockList(); renderBlockResults();
+        renderPinList(); renderPinResults();
       };
       const clear = document.getElementById("wz-block-clear");
       if (clear) clear.onclick = () => { blockStage.clear(); renderBlockStage(); renderBlockResults(); };
@@ -2962,9 +3005,15 @@ ${(() => {
         const already = blockedSet.has(id);
         const pinSlot = blockPinSlotOf(state.slotConstraints, id);
         // #262 (U4) — same disclosure in the block picker's rows.
-        const note = (already ? " · blocked" : pinSlot ? ` · pinned to ${esc(pinSlot)}` : "") + noDropNote(v);
-        return `<label class="wz-block-hit${already || pinSlot ? " wz-block-hit-off" : ""}">
-          <input type="checkbox" data-block-id="${esc(id)}"${blockStage.has(id) ? " checked" : ""}${already || pinSlot ? " disabled" : ""}>
+        // #620 — a pinned row is TICKABLE. It used to be disabled alongside an
+        // already-blocked one, which quietly made block-beats-pin unreachable from
+        // the surface a player actually uses, and left this row asserting the
+        // opposite of what the load path tells them. Only `already` still
+        // disables, and only that is a no-op: there is nothing left to add.
+        const note = (already ? " · blocked"
+          : pinSlot ? ` · pinned to ${esc(pinSlot)} — blocking removes the pin` : "") + noDropNote(v);
+        return `<label class="wz-block-hit${already ? " wz-block-hit-off" : ""}">
+          <input type="checkbox" data-block-id="${esc(id)}"${blockStage.has(id) ? " checked" : ""}${already ? " disabled" : ""}>
           <span class="wz-pin-hit-name">${esc(name)}</span>
           <span class="wz-pin-hit-slot">${esc(v.category === "augment" ? ((v.aug_color || {}).color || "augment") + " augment" : v.slot || "")}${note}</span></label>`;
       }).join("")
@@ -3197,15 +3246,15 @@ ${(() => {
     function renderBlockList() {
       const box = document.getElementById("wz-block-list");
       if (!box) return;
-      const refusal = state.blockRefusedMsg
-        ? `<p class="wz-pin-mutexwarn">⚠ ${esc(state.blockRefusedMsg)}</p>` : "";
-      state.blockRefusedMsg = null;
+      // #620 — the one-shot `blockRefusedMsg` is gone with the refusal that fed
+      // it. It was written to transient state and nulled by the next render, so
+      // the single warning a player got could vanish before they read it.
       const entries = state.blocklist || [];
-      if (!entries.length) { box.innerHTML = refusal + `<p class="wz-pin-empty">Nothing blocked — search above to forbid gear the solver keeps recommending.</p>`; return; }
+      if (!entries.length) { box.innerHTML = `<p class="wz-pin-empty">Nothing blocked — search above to forbid gear the solver keeps recommending.</p>`; return; }
       // U6 — stale entries (no longer resolving to any roster variant) are
       // labelled by name rather than silently kept or dropped.
       const staleSet = new Set(blockStale(entries, dataset.items));
-      box.innerHTML = refusal + entries.map((id) => {
+      box.innerHTML = entries.map((id) => {
         const stale = staleSet.has(id)
           ? `<span class="wz-pin-flag" title="No current item or augment carries this id — it may have been renamed upstream. The entry still saves; it just matches nothing right now.">no longer matches anything</span>`
           : "";
@@ -4635,7 +4684,6 @@ ${(() => {
       // review fix — the STAGED selection is per-character UI state too: ticks
       // staged on the previous character must not commit into this one.
       blockStage.clear();
-      state.blockRefusedMsg = null;
       // U6 — restore owned set augments (stored as an array; rebuilt as a Set).
       state.ownedSetAugments = Array.isArray(i.ownedSetAugments) ? new Set(i.ownedSetAugments) : new Set();
       state.pool = i.pool || "all";
