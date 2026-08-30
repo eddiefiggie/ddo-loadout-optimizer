@@ -130,6 +130,37 @@ test("#495: a non-pack source says why it has no pack, rather than 'not recorded
   assert.ok(!/Adventure pack not recorded/.test(html), "and NOT the missing-datum wording");
 });
 
+test("#285: a crafted item names its predecessor instead of landing in 'no source'", () => {
+  // These items are not unobtainable — the wiki documents exactly how to get them,
+  // and before the backfill the farming list said "Source unknown", which is the
+  // least useful thing it could say about them.
+  const v = (id, quest, kind, lineage) => ({ slot: "Ring", variant: {
+    variant_id: id, slot: "Ring", ml: 30, location_quest: quest,
+    location_pack: null, location_kind: kind, location_lineage: lineage } });
+  const plan = F.farmingPlan({ snapshot: { chosen: [
+    v("Epic Thing", "", "crafting", { kind: "epic-crafted", from: "Thing" }),
+    v("Legendary Thing", "", "crafting", { kind: "legendary-crafted", from: "Epic Thing" }),
+  ] } });
+  assert.strictEqual(plan.unsourced.length, 0, "neither is 'no source' any more");
+  const names = plan.sources.map((s) => s.name).sort();
+  assert.deepStrictEqual(names,
+    ["Epic-crafted from Thing", "Legendary-crafted from Epic Thing"],
+    "each names ONE step, the way the wiki states it");
+  assert.deepStrictEqual(plan.groups.map((g) => g.name), ["Crafting"],
+    "and they group as crafting, not under a pack they do not have");
+});
+
+test("#285: an item with a real source is NOT re-filed under its lineage", () => {
+  // The lineage is extra information about such an item, not a replacement for the
+  // quest it already tells the player about.
+  const plan = F.farmingPlan({ snapshot: { chosen: [{ slot: "Ring", variant: {
+    variant_id: "Base Thing", slot: "Ring", ml: 20, location_quest: "Some Quest",
+    location_pack: "A Pack", location_kind: "pack-quest",
+    location_lineage: { kind: "epic-crafted", from: "Older Thing" } } }] } });
+  assert.strictEqual(plan.sources[0].name, "Some Quest", "the real source still wins");
+  assert.strictEqual(plan.groups[0].name, "A Pack");
+});
+
 test("#495: sources group by pack first, with siblings for what is not pack content", () => {
   const v = (id, q, pack, kind) => ({ slot: "Ring", variant: {
     variant_id: id, slot: "Ring", ml: 30, location_quest: q,

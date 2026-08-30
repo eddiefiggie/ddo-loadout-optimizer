@@ -284,3 +284,44 @@ gold-coin rewards, naming the Greatclub explicitly, and Festivult runs
 annually; The Admiral of Bling — `crafting = Treasure of Crystal Cove`
 (recurring event). These stay unflagged: "from a seasonal event" is a live
 source, not a retired one.
+
+---
+
+## Backfill complete, 2026-08-29 (#285)
+
+The 179 `wiki_has_source` items are no longer "Source unknown". Their acquisition —
+the `epic` / `legendary` lineage the triage above recorded as prose — is now harvested
+as structured values into `data/seed/compendium/crafting_lineage.json` and stamped onto
+each variant as `location_lineage`, with `location_kind: "crafting"` where the record
+had no source of its own.
+
+**Population, re-measured.** The triage's table said 179 (~100 epic + ~77 legendary +
+2 quest drops). Today the shard holds **177**, split **84 epic-crafted / 93
+legendary-crafted**, and the split differs from the estimate because the counts were
+approximate. The **2 quest drops are gone from the backfill entirely** — upstream
+caught up, and `Drow Wizard's Greaves` now carries `Stealing from Sorcere` in the
+roster with no help from us. The three non-lineage `wiki_has_source` entries (two Green
+Steel blanks from Festivult, `The Admiral of Bling` from Crystal Cove) are not lineage
+and are not in this shard.
+
+**Method.** Batched `POST /api.php` (`prop=revisions`, 20 titles per request, ~1.6s),
+reading the `{{Named item}}` template's `epic` / `legendary` parameters with the same
+flag-value guard the triage established — `no`/`none`/`yes` are template flags, not
+lineage. None of the 177 came from a flag value.
+
+**The pattern, and why it is asserted rather than used.** All 177 are perfectly
+regular: `Epic X` → `X`, and `Legendary X` → `Epic X` (never straight to the base;
+93 of 93). That regularity is what let the shard be reconstructed locally and
+**hash-verified byte-identical against the live harvest** rather than transcribed by
+hand. It is *asserted* in `tests/test_crafting_lineage.py` so a future entry that
+breaks it is caught — never *derived from*, because an irregular entry is far more
+likely a slip than a real exception, and the day a genuine exception appears the test
+is where that decision gets made.
+
+**One step, never a chain.** Each entry records exactly what one wiki page states.
+`Legendary Chimera's Crown` → `Epic Chimera's Crown` → `Chimera's Crown` →
+`The Tide Turns` is read by composing three entries. Collapsing it into a single
+"comes from The Tide Turns" would publish a claim no page makes, and would be wrong the
+moment one link changes. All 177 predecessors resolve to real roster gear, and 113 of
+them already carry a real quest — the remaining 64 are Legendary items whose Epic
+predecessor is itself in this shard, so their chains close too.

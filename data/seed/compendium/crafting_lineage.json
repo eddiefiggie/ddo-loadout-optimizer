@@ -1,0 +1,723 @@
+{
+  "_meta": {
+    "title": "Crafting-lineage acquisition for items with no recorded drop",
+    "issue": 285,
+    "harvested": "2026-08-29",
+    "source": "ddowiki.com item pages, batched MediaWiki API (prop=revisions), per docs/wiki-evidence/harvest-method.md",
+    "why": "#262's triage found 179 items whose wiki page records an acquisition source the dataset lacks. They are not unobtainable — they are CRAFTED from a predecessor, and the wiki records which one in the `{{Named item}}` template's `epic` / `legendary` parameters. Without this they render under 'Source unknown' with no way to learn how to get them.",
+    "params": "`epic = <base item>` means the page IS the epic-crafted version of that base. `legendary = <epic predecessor>` means it is the Legendary Crafting upgrade of that one.",
+    "flag_value_guard": "The values no/none/yes are template FLAGS, not lineage. #262's triage recorded that `Legendary Great Forge Helm` and `Legendary High Priestess' Focus` carry `epic = no` and were initially misread as sourced; the harvest that produced this shard applies the same guard, and none of the 177 entries came from a flag value.",
+    "one_step_only": "Each entry records ONE step, verbatim as the wiki states it. A Legendary item points at its Epic predecessor, which has its own entry pointing at the base. The chain is followed by composing entries, never by resolving it here — collapsing three wiki statements into one would publish a claim no single page makes.",
+    "not_a_derivation": "Every value is harvested. The naming pattern is perfectly regular across all 177 (Epic X -> X, Legendary X -> Epic X), and `tests/test_crafting_lineage.py` asserts that — NOT to derive from, but so a future entry that breaks the pattern is caught rather than trusted."
+  },
+  "entries": {
+    "Epic Adherent's Pendant": {
+      "kind": "epic-crafted",
+      "from": "Adherent's Pendant"
+    },
+    "Epic Azure Necklace of Prophecy": {
+      "kind": "epic-crafted",
+      "from": "Azure Necklace of Prophecy"
+    },
+    "Epic Belt of the Mroranon": {
+      "kind": "epic-crafted",
+      "from": "Belt of the Mroranon"
+    },
+    "Epic Blademark's Docent": {
+      "kind": "epic-crafted",
+      "from": "Blademark's Docent"
+    },
+    "Epic Boots of Corrosion": {
+      "kind": "epic-crafted",
+      "from": "Boots of Corrosion"
+    },
+    "Epic Bracers of Deftness": {
+      "kind": "epic-crafted",
+      "from": "Bracers of Deftness"
+    },
+    "Epic Bracers of the Demon's Consort": {
+      "kind": "epic-crafted",
+      "from": "Bracers of the Demon's Consort"
+    },
+    "Epic Bramble-Casters": {
+      "kind": "epic-crafted",
+      "from": "Bramble-Casters"
+    },
+    "Epic Brawn's Spirits": {
+      "kind": "epic-crafted",
+      "from": "Brawn's Spirits"
+    },
+    "Epic Chainmail Coif": {
+      "kind": "epic-crafted",
+      "from": "Chainmail Coif"
+    },
+    "Epic Charged Gauntlets": {
+      "kind": "epic-crafted",
+      "from": "Charged Gauntlets"
+    },
+    "Epic Chimera's Crown": {
+      "kind": "epic-crafted",
+      "from": "Chimera's Crown"
+    },
+    "Epic Cloak of the Zephyr": {
+      "kind": "epic-crafted",
+      "from": "Cloak of the Zephyr"
+    },
+    "Epic Coronation Shield": {
+      "kind": "epic-crafted",
+      "from": "Coronation Shield"
+    },
+    "Epic Crimson Necklace of Prophecy": {
+      "kind": "epic-crafted",
+      "from": "Crimson Necklace of Prophecy"
+    },
+    "Epic Darkstorm Helm": {
+      "kind": "epic-crafted",
+      "from": "Darkstorm Helm"
+    },
+    "Epic Demon Scale Armor": {
+      "kind": "epic-crafted",
+      "from": "Demon Scale Armor"
+    },
+    "Epic Diabolist's Docent": {
+      "kind": "epic-crafted",
+      "from": "Diabolist's Docent"
+    },
+    "Epic Diabolist's Robe": {
+      "kind": "epic-crafted",
+      "from": "Diabolist's Robe"
+    },
+    "Epic Docent of Grace": {
+      "kind": "epic-crafted",
+      "from": "Docent of Grace"
+    },
+    "Epic Dragon's Eye": {
+      "kind": "epic-crafted",
+      "from": "Dragon's Eye"
+    },
+    "Epic Dusk Heart": {
+      "kind": "epic-crafted",
+      "from": "Dusk Heart"
+    },
+    "Epic Dustless Boots": {
+      "kind": "epic-crafted",
+      "from": "Dustless Boots"
+    },
+    "Epic Envenomed Cloak": {
+      "kind": "epic-crafted",
+      "from": "Envenomed Cloak"
+    },
+    "Epic Firestorm Greaves": {
+      "kind": "epic-crafted",
+      "from": "Firestorm Greaves"
+    },
+    "Epic Frozen Plate": {
+      "kind": "epic-crafted",
+      "from": "Frozen Plate"
+    },
+    "Epic Full Plate of the Ringleader": {
+      "kind": "epic-crafted",
+      "from": "Full Plate of the Ringleader"
+    },
+    "Epic Gloves of the Falcon": {
+      "kind": "epic-crafted",
+      "from": "Gloves of the Falcon"
+    },
+    "Epic Golden Greaves": {
+      "kind": "epic-crafted",
+      "from": "Golden Greaves"
+    },
+    "Epic Golden Guile": {
+      "kind": "epic-crafted",
+      "from": "Golden Guile"
+    },
+    "Epic Grim's Bracelet": {
+      "kind": "epic-crafted",
+      "from": "Grim's Bracelet"
+    },
+    "Epic Helm of the Mroranon": {
+      "kind": "epic-crafted",
+      "from": "Helm of the Mroranon"
+    },
+    "Epic Hruvayah's Medallion": {
+      "kind": "epic-crafted",
+      "from": "Hruvayah's Medallion"
+    },
+    "Epic Hyena Claw Necklace": {
+      "kind": "epic-crafted",
+      "from": "Hyena Claw Necklace"
+    },
+    "Epic Infested Scalemail": {
+      "kind": "epic-crafted",
+      "from": "Infested Scalemail"
+    },
+    "Epic Ironweave Robe": {
+      "kind": "epic-crafted",
+      "from": "Ironweave Robe"
+    },
+    "Epic Kundarak Delving Boots": {
+      "kind": "epic-crafted",
+      "from": "Kundarak Delving Boots"
+    },
+    "Epic Kundarak Delving Goggles": {
+      "kind": "epic-crafted",
+      "from": "Kundarak Delving Goggles"
+    },
+    "Epic Kundarak Warding Bracers": {
+      "kind": "epic-crafted",
+      "from": "Kundarak Warding Bracers"
+    },
+    "Epic Lion-headed Belt Buckle": {
+      "kind": "epic-crafted",
+      "from": "Lion-headed Belt Buckle"
+    },
+    "Epic Marilith Chain": {
+      "kind": "epic-crafted",
+      "from": "Marilith Chain"
+    },
+    "Epic Mask of Comedy": {
+      "kind": "epic-crafted",
+      "from": "Mask of Comedy"
+    },
+    "Epic Mask of Tragedy": {
+      "kind": "epic-crafted",
+      "from": "Mask of Tragedy"
+    },
+    "Epic Mummy Wrappings": {
+      "kind": "epic-crafted",
+      "from": "Mummy Wrappings"
+    },
+    "Epic Phiarlan Mirror Cloak": {
+      "kind": "epic-crafted",
+      "from": "Phiarlan Mirror Cloak"
+    },
+    "Epic Pouch of Jerky": {
+      "kind": "epic-crafted",
+      "from": "Pouch of Jerky"
+    },
+    "Epic Rakshasa Hide": {
+      "kind": "epic-crafted",
+      "from": "Rakshasa Hide"
+    },
+    "Epic Ring of Baphomet": {
+      "kind": "epic-crafted",
+      "from": "Ring of Baphomet"
+    },
+    "Epic Ring of Elemental Essence": {
+      "kind": "epic-crafted",
+      "from": "Ring of Elemental Essence"
+    },
+    "Epic Ring of Spell Storing": {
+      "kind": "epic-crafted",
+      "from": "Ring of Spell Storing"
+    },
+    "Epic Robe of Dissonance": {
+      "kind": "epic-crafted",
+      "from": "Robe of Dissonance"
+    },
+    "Epic Robe of Fire": {
+      "kind": "epic-crafted",
+      "from": "Robe of Fire"
+    },
+    "Epic Ruby Encrusted Gauntlets": {
+      "kind": "epic-crafted",
+      "from": "Ruby Encrusted Gauntlets"
+    },
+    "Epic Saltiron Targe": {
+      "kind": "epic-crafted",
+      "from": "Saltiron Targe"
+    },
+    "Epic Sandstorm Glasses": {
+      "kind": "epic-crafted",
+      "from": "Sandstorm Glasses"
+    },
+    "Epic Scorched Bracers": {
+      "kind": "epic-crafted",
+      "from": "Scorched Bracers"
+    },
+    "Epic Seal of the Earth": {
+      "kind": "epic-crafted",
+      "from": "Seal of the Earth"
+    },
+    "Epic Shard of Vollun": {
+      "kind": "epic-crafted",
+      "from": "Shard of Vollun"
+    },
+    "Epic Shield of the Scorpion": {
+      "kind": "epic-crafted",
+      "from": "Shield of the Scorpion"
+    },
+    "Epic Shimmering Pendant": {
+      "kind": "epic-crafted",
+      "from": "Shimmering Pendant"
+    },
+    "Epic Shining Crest of St. Markus": {
+      "kind": "epic-crafted",
+      "from": "Shining Crest of St. Markus"
+    },
+    "Epic Silken Mail": {
+      "kind": "epic-crafted",
+      "from": "Silken Mail"
+    },
+    "Epic Silver Necklace of Prophecy": {
+      "kind": "epic-crafted",
+      "from": "Silver Necklace of Prophecy"
+    },
+    "Epic Skull of the Sea": {
+      "kind": "epic-crafted",
+      "from": "Skull of the Sea"
+    },
+    "Epic Smash 'n Grabber": {
+      "kind": "epic-crafted",
+      "from": "Smash 'n Grabber"
+    },
+    "Epic Snakeskin Belt": {
+      "kind": "epic-crafted",
+      "from": "Snakeskin Belt"
+    },
+    "Epic Spectacles of Spirit Sight": {
+      "kind": "epic-crafted",
+      "from": "Spectacles of Spirit Sight"
+    },
+    "Epic Spectral Gloves": {
+      "kind": "epic-crafted",
+      "from": "Spectral Gloves"
+    },
+    "Epic Spiked Turban": {
+      "kind": "epic-crafted",
+      "from": "Spiked Turban"
+    },
+    "Epic Stinkpelt's Hide": {
+      "kind": "epic-crafted",
+      "from": "Stinkpelt's Hide"
+    },
+    "Epic Stonemeld Plate Armor": {
+      "kind": "epic-crafted",
+      "from": "Stonemeld Plate Armor"
+    },
+    "Epic Templar's Bastion": {
+      "kind": "epic-crafted",
+      "from": "Templar's Bastion"
+    },
+    "Epic Templar's Bulwark": {
+      "kind": "epic-crafted",
+      "from": "Templar's Bulwark"
+    },
+    "Epic Templar's Docent": {
+      "kind": "epic-crafted",
+      "from": "Templar's Docent"
+    },
+    "Epic Torc of Prince Raiyum-de II": {
+      "kind": "epic-crafted",
+      "from": "Torc of Prince Raiyum-de II"
+    },
+    "Epic Tourney Armor": {
+      "kind": "epic-crafted",
+      "from": "Tourney Armor"
+    },
+    "Epic Utility Vest": {
+      "kind": "epic-crafted",
+      "from": "Utility Vest"
+    },
+    "Epic Vambraces of Inner Light": {
+      "kind": "epic-crafted",
+      "from": "Vambraces of Inner Light"
+    },
+    "Epic Vulkoorim Fighting Leathers": {
+      "kind": "epic-crafted",
+      "from": "Vulkoorim Fighting Leathers"
+    },
+    "Epic Vulkoorim Pendant": {
+      "kind": "epic-crafted",
+      "from": "Vulkoorim Pendant"
+    },
+    "Epic Ward of Undeath": {
+      "kind": "epic-crafted",
+      "from": "Ward of Undeath"
+    },
+    "Epic Weathered Targe": {
+      "kind": "epic-crafted",
+      "from": "Weathered Targe"
+    },
+    "Epic Wind-Swept Buckler": {
+      "kind": "epic-crafted",
+      "from": "Wind-Swept Buckler"
+    },
+    "Epic Wolf Whistle": {
+      "kind": "epic-crafted",
+      "from": "Wolf Whistle"
+    },
+    "Legendary Azure Necklace of Prophecy": {
+      "kind": "legendary-crafted",
+      "from": "Epic Azure Necklace of Prophecy"
+    },
+    "Legendary Belt of the Mroranon": {
+      "kind": "legendary-crafted",
+      "from": "Epic Belt of the Mroranon"
+    },
+    "Legendary Big Top": {
+      "kind": "legendary-crafted",
+      "from": "Epic Big Top"
+    },
+    "Legendary Blademark's Docent": {
+      "kind": "legendary-crafted",
+      "from": "Epic Blademark's Docent"
+    },
+    "Legendary Bloodstone": {
+      "kind": "legendary-crafted",
+      "from": "Epic Bloodstone"
+    },
+    "Legendary Boots of the Mire": {
+      "kind": "legendary-crafted",
+      "from": "Epic Boots of the Mire"
+    },
+    "Legendary Bracers of Deftness": {
+      "kind": "legendary-crafted",
+      "from": "Epic Bracers of Deftness"
+    },
+    "Legendary Bracers of the Claw": {
+      "kind": "legendary-crafted",
+      "from": "Epic Bracers of the Claw"
+    },
+    "Legendary Bracers of the Demon's Consort": {
+      "kind": "legendary-crafted",
+      "from": "Epic Bracers of the Demon's Consort"
+    },
+    "Legendary Bracers of the Hunter": {
+      "kind": "legendary-crafted",
+      "from": "Epic Bracers of the Hunter"
+    },
+    "Legendary Bramble-Casters": {
+      "kind": "legendary-crafted",
+      "from": "Epic Bramble-Casters"
+    },
+    "Legendary Brawn's Spirits": {
+      "kind": "legendary-crafted",
+      "from": "Epic Brawn's Spirits"
+    },
+    "Legendary Cape of the Roc": {
+      "kind": "legendary-crafted",
+      "from": "Epic Cape of the Roc"
+    },
+    "Legendary Chainmail Coif": {
+      "kind": "legendary-crafted",
+      "from": "Epic Chainmail Coif"
+    },
+    "Legendary Chimera's Crown": {
+      "kind": "legendary-crafted",
+      "from": "Epic Chimera's Crown"
+    },
+    "Legendary Cloak of the Silver Concord": {
+      "kind": "legendary-crafted",
+      "from": "Epic Cloak of the Silver Concord"
+    },
+    "Legendary Cloak of the Zephyr": {
+      "kind": "legendary-crafted",
+      "from": "Epic Cloak of the Zephyr"
+    },
+    "Legendary Coronation Shield": {
+      "kind": "legendary-crafted",
+      "from": "Epic Coronation Shield"
+    },
+    "Legendary Crimson Necklace of Prophecy": {
+      "kind": "legendary-crafted",
+      "from": "Epic Crimson Necklace of Prophecy"
+    },
+    "Legendary Darkstorm Helm": {
+      "kind": "legendary-crafted",
+      "from": "Epic Darkstorm Helm"
+    },
+    "Legendary Demon Scale Armor": {
+      "kind": "legendary-crafted",
+      "from": "Epic Demon Scale Armor"
+    },
+    "Legendary Deneith Heavy Chain": {
+      "kind": "legendary-crafted",
+      "from": "Epic Deneith Heavy Chain"
+    },
+    "Legendary Docent of Grace": {
+      "kind": "legendary-crafted",
+      "from": "Epic Docent of Grace"
+    },
+    "Legendary Dragon's Eye": {
+      "kind": "legendary-crafted",
+      "from": "Epic Dragon's Eye"
+    },
+    "Legendary Dusk Heart": {
+      "kind": "legendary-crafted",
+      "from": "Epic Dusk Heart"
+    },
+    "Legendary Dustless Boots": {
+      "kind": "legendary-crafted",
+      "from": "Epic Dustless Boots"
+    },
+    "Legendary Elder's Cap": {
+      "kind": "legendary-crafted",
+      "from": "Epic Elder's Cap"
+    },
+    "Legendary Elder's Focus": {
+      "kind": "legendary-crafted",
+      "from": "Epic Elder's Focus"
+    },
+    "Legendary Firestorm Greaves": {
+      "kind": "legendary-crafted",
+      "from": "Epic Firestorm Greaves"
+    },
+    "Legendary Frozen Plate": {
+      "kind": "legendary-crafted",
+      "from": "Epic Frozen Plate"
+    },
+    "Legendary Full Plate of the Ringleader": {
+      "kind": "legendary-crafted",
+      "from": "Epic Full Plate of the Ringleader"
+    },
+    "Legendary Gloves of the Claw": {
+      "kind": "legendary-crafted",
+      "from": "Epic Gloves of the Claw"
+    },
+    "Legendary Gloves of the Falcon": {
+      "kind": "legendary-crafted",
+      "from": "Epic Gloves of the Falcon"
+    },
+    "Legendary Goggles of Time-Sensing": {
+      "kind": "legendary-crafted",
+      "from": "Epic Goggles of Time-Sensing"
+    },
+    "Legendary Golden Greaves": {
+      "kind": "legendary-crafted",
+      "from": "Epic Golden Greaves"
+    },
+    "Legendary Golden Guile": {
+      "kind": "legendary-crafted",
+      "from": "Epic Golden Guile"
+    },
+    "Legendary Grim's Bracelet": {
+      "kind": "legendary-crafted",
+      "from": "Epic Grim's Bracelet"
+    },
+    "Legendary Helm of the Mroranon": {
+      "kind": "legendary-crafted",
+      "from": "Epic Helm of the Mroranon"
+    },
+    "Legendary Helm of the Red Dragon": {
+      "kind": "legendary-crafted",
+      "from": "Epic Helm of the Red Dragon"
+    },
+    "Legendary Hruvayah's Medallion": {
+      "kind": "legendary-crafted",
+      "from": "Epic Hruvayah's Medallion"
+    },
+    "Legendary Hyena Claw Necklace": {
+      "kind": "legendary-crafted",
+      "from": "Epic Hyena Claw Necklace"
+    },
+    "Legendary Ironweave Robe": {
+      "kind": "legendary-crafted",
+      "from": "Epic Ironweave Robe"
+    },
+    "Legendary Jidz-Tet'ka": {
+      "kind": "legendary-crafted",
+      "from": "Epic Jidz-Tet'ka"
+    },
+    "Legendary Kundarak Delving Boots": {
+      "kind": "legendary-crafted",
+      "from": "Epic Kundarak Delving Boots"
+    },
+    "Legendary Kundarak Delving Goggles": {
+      "kind": "legendary-crafted",
+      "from": "Epic Kundarak Delving Goggles"
+    },
+    "Legendary Kundarak Warding Bracers": {
+      "kind": "legendary-crafted",
+      "from": "Epic Kundarak Warding Bracers"
+    },
+    "Legendary Kundarak Warding Shield": {
+      "kind": "legendary-crafted",
+      "from": "Epic Kundarak Warding Shield"
+    },
+    "Legendary Lion-headed Belt Buckle": {
+      "kind": "legendary-crafted",
+      "from": "Epic Lion-headed Belt Buckle"
+    },
+    "Legendary Marilith Chain": {
+      "kind": "legendary-crafted",
+      "from": "Epic Marilith Chain"
+    },
+    "Legendary Mask of Comedy": {
+      "kind": "legendary-crafted",
+      "from": "Epic Mask of Comedy"
+    },
+    "Legendary Mask of Tragedy": {
+      "kind": "legendary-crafted",
+      "from": "Epic Mask of Tragedy"
+    },
+    "Legendary Mummy Wrappings": {
+      "kind": "legendary-crafted",
+      "from": "Epic Mummy Wrappings"
+    },
+    "Legendary Necklace of Venom": {
+      "kind": "legendary-crafted",
+      "from": "Epic Necklace of Venom"
+    },
+    "Legendary Phiarlan Mirror Cloak": {
+      "kind": "legendary-crafted",
+      "from": "Epic Phiarlan Mirror Cloak"
+    },
+    "Legendary Pouch of Jerky": {
+      "kind": "legendary-crafted",
+      "from": "Epic Pouch of Jerky"
+    },
+    "Legendary Raven's Sight": {
+      "kind": "legendary-crafted",
+      "from": "Epic Raven's Sight"
+    },
+    "Legendary Raven's Talons": {
+      "kind": "legendary-crafted",
+      "from": "Epic Raven's Talons"
+    },
+    "Legendary Ring of Baphomet": {
+      "kind": "legendary-crafted",
+      "from": "Epic Ring of Baphomet"
+    },
+    "Legendary Ring of Spell Storing": {
+      "kind": "legendary-crafted",
+      "from": "Epic Ring of Spell Storing"
+    },
+    "Legendary Ring of Venom": {
+      "kind": "legendary-crafted",
+      "from": "Epic Ring of Venom"
+    },
+    "Legendary Ring of the Mire": {
+      "kind": "legendary-crafted",
+      "from": "Epic Ring of the Mire"
+    },
+    "Legendary Ring of the Silver Concord": {
+      "kind": "legendary-crafted",
+      "from": "Epic Ring of the Silver Concord"
+    },
+    "Legendary Robe of Fire": {
+      "kind": "legendary-crafted",
+      "from": "Epic Robe of Fire"
+    },
+    "Legendary Ruby Encrusted Gauntlets": {
+      "kind": "legendary-crafted",
+      "from": "Epic Ruby Encrusted Gauntlets"
+    },
+    "Legendary Sacred Band": {
+      "kind": "legendary-crafted",
+      "from": "Epic Sacred Band"
+    },
+    "Legendary Sacred Helm": {
+      "kind": "legendary-crafted",
+      "from": "Epic Sacred Helm"
+    },
+    "Legendary Sandstorm Glasses": {
+      "kind": "legendary-crafted",
+      "from": "Epic Sandstorm Glasses"
+    },
+    "Legendary Seal of the Earth": {
+      "kind": "legendary-crafted",
+      "from": "Epic Seal of the Earth"
+    },
+    "Legendary Shaman's Band": {
+      "kind": "legendary-crafted",
+      "from": "Epic Shaman's Band"
+    },
+    "Legendary Shaman's Beads": {
+      "kind": "legendary-crafted",
+      "from": "Epic Shaman's Beads"
+    },
+    "Legendary Shard of Vollun": {
+      "kind": "legendary-crafted",
+      "from": "Epic Shard of Vollun"
+    },
+    "Legendary Shield of the Scorpion": {
+      "kind": "legendary-crafted",
+      "from": "Epic Shield of the Scorpion"
+    },
+    "Legendary Shimmering Pendant": {
+      "kind": "legendary-crafted",
+      "from": "Epic Shimmering Pendant"
+    },
+    "Legendary Shining Crest of St. Markus": {
+      "kind": "legendary-crafted",
+      "from": "Epic Shining Crest of St. Markus"
+    },
+    "Legendary Silken Mail": {
+      "kind": "legendary-crafted",
+      "from": "Epic Silken Mail"
+    },
+    "Legendary Silver Necklace of Prophecy": {
+      "kind": "legendary-crafted",
+      "from": "Epic Silver Necklace of Prophecy"
+    },
+    "Legendary Siren's Belt": {
+      "kind": "legendary-crafted",
+      "from": "Epic Siren's Belt"
+    },
+    "Legendary Siren's Charm": {
+      "kind": "legendary-crafted",
+      "from": "Epic Siren's Charm"
+    },
+    "Legendary Spectacles of Spirit Sight": {
+      "kind": "legendary-crafted",
+      "from": "Epic Spectacles of Spirit Sight"
+    },
+    "Legendary Spectral Gloves": {
+      "kind": "legendary-crafted",
+      "from": "Epic Spectral Gloves"
+    },
+    "Legendary Spiked Turban": {
+      "kind": "legendary-crafted",
+      "from": "Epic Spiked Turban"
+    },
+    "Legendary Stinkpelt's Hide": {
+      "kind": "legendary-crafted",
+      "from": "Epic Stinkpelt's Hide"
+    },
+    "Legendary Templar's Bulwark": {
+      "kind": "legendary-crafted",
+      "from": "Epic Templar's Bulwark"
+    },
+    "Legendary Torc of Prince Raiyum-de II": {
+      "kind": "legendary-crafted",
+      "from": "Epic Torc of Prince Raiyum-de II"
+    },
+    "Legendary Tourney Armor": {
+      "kind": "legendary-crafted",
+      "from": "Epic Tourney Armor"
+    },
+    "Legendary Twisted Talisman": {
+      "kind": "legendary-crafted",
+      "from": "Epic Twisted Talisman"
+    },
+    "Legendary Vambraces of Inner Light": {
+      "kind": "legendary-crafted",
+      "from": "Epic Vambraces of Inner Light"
+    },
+    "Legendary Vulkoorim Dervish Robe": {
+      "kind": "legendary-crafted",
+      "from": "Epic Vulkoorim Dervish Robe"
+    },
+    "Legendary Vulkoorim Fighting Leathers": {
+      "kind": "legendary-crafted",
+      "from": "Epic Vulkoorim Fighting Leathers"
+    },
+    "Legendary Vulkoorim Pendant": {
+      "kind": "legendary-crafted",
+      "from": "Epic Vulkoorim Pendant"
+    },
+    "Legendary Ward of Undeath": {
+      "kind": "legendary-crafted",
+      "from": "Epic Ward of Undeath"
+    },
+    "Legendary Weathered Targe": {
+      "kind": "legendary-crafted",
+      "from": "Epic Weathered Targe"
+    },
+    "Legendary Wolf Whistle": {
+      "kind": "legendary-crafted",
+      "from": "Epic Wolf Whistle"
+    }
+  }
+}
