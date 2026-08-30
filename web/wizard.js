@@ -2673,7 +2673,14 @@ if (typeof window !== "undefined" && window.App) {
       const n = (v) => (Array.isArray(v) ? v.length : 0);
       switch (key) {
         case "pin": {
-          const c = _pinnedVariantIds(state.slotConstraints).length;
+          // #623 — `pinnedVariantIds` takes ONE slot's constraint, not the map:
+          // it returns [] unless `c.type === "pin"`, and the map has no `type`, so
+          // this read "nothing pinned" for every build ever solved. The bug
+          // predates the stale-summary one and was hidden by it — the summary was
+          // only written by `stepPool()`, so a wrong value and a never-updated
+          // value looked identical. Every other caller iterates the slots.
+          const c = Object.values(state.slotConstraints || {})
+            .reduce((n, con) => n + _pinnedVariantIds(con).length, 0);
           return c ? `${c} pinned` : "nothing pinned";
         }
         case "block": {
@@ -2702,6 +2709,26 @@ if (typeof window !== "undefined" && window.App) {
         }
         default: return "";
       }
+    }
+
+    /** #623 — repaint one fold's collapsed status line after a targeted re-render.
+     *
+     *  `poolStatus` computes the right answer, but only `stepPool()` ever wrote
+     *  it, and every panel mutates through a targeted list render that leaves the
+     *  `<summary>` untouched. So a player who blocked an item, collapsed the
+     *  panel and came back read "nothing blocked" over a non-empty list — and the
+     *  summary is the ONLY thing visible while the fold is shut, which is its
+     *  default state.
+     *
+     *  Patches the `.wz-sub` span, never the summary's `textContent`: writing the
+     *  latter flattens the fold's styling on the first tick, so the status would
+     *  change font the moment the player used it. That reasoning is `syncSetAug`'s
+     *  — it had solved this for ONE of the seven panels, by id. This is the same
+     *  fix keyed on `data-poolfold` so the other six stop being exceptions. */
+    function refreshPoolStatus(key) {
+      const fold = document.querySelector(`details[data-poolfold="${key}"]`);
+      const sub = fold && fold.querySelector("summary .wz-sub");
+      if (sub) sub.textContent = ` · ${poolStatus(key)}`;
     }
 
     function stepPool() {
@@ -2902,6 +2929,7 @@ ${(() => {
 
     // Pinned-items list: name + worn slot + inline conflict reason (B4) + remove.
     function renderPinList() {
+      refreshPoolStatus("pin");   // #623
       const box = document.getElementById("wz-pin-list");
       if (!box) return;
       const pins = currentPins();
@@ -3074,6 +3102,7 @@ ${(() => {
     }
 
     function renderSetPinList() {
+      refreshPoolStatus("setpin");   // #623
       const box = document.getElementById("wz-setpin-list");
       if (!box) return;
       const entries = state.pinnedSets || [];
@@ -3164,6 +3193,7 @@ ${(() => {
     }
 
     function renderSetExList() {
+      refreshPoolStatus("setex");   // #623
       const box = document.getElementById("wz-setex-list");
       if (!box) return;
       const list = state.excludedSets || [];
@@ -3190,6 +3220,7 @@ ${(() => {
     }
 
     function renderPackList() {
+      refreshPoolStatus("packs");   // #623
       const box = document.getElementById("wz-packs-list");
       const stat = document.getElementById("wz-packs-stat");
       if (!box) return;
@@ -3244,6 +3275,7 @@ ${(() => {
     }
 
     function renderBlockList() {
+      refreshPoolStatus("block");   // #623
       const box = document.getElementById("wz-block-list");
       if (!box) return;
       // #620 — the one-shot `blockRefusedMsg` is gone with the refusal that fed
@@ -4037,6 +4069,7 @@ ${(() => {
     /** U11 (R34/R35) — the manager. Rows and their action sets come from
      *  `Overrides.managerRows`, so the view never decides what a state allows. */
     function renderOverrideManager() {
+      refreshPoolStatus("overrides");   // #623
       const box = document.getElementById("wz-override-list");
       if (!box) return;
       const O = _overridesModule();
@@ -5779,10 +5812,12 @@ ${(() => {
           // tick, so the count would change font the moment the player used it.
           // Falls back to the whole summary if the span is ever absent, which is
           // the pre-fold shape and still correct, just unstyled.
+          // #623 — through the shared helper now, so the seven panels cannot
+          // drift apart again. The pre-fold fallback below is kept: it handles
+          // the shape with no `.wz-sub` span, which the helper no-ops on.
+          refreshPoolStatus("setaug");
           const sum = document.querySelector("#wz-setaug > summary");
-          const sub = sum && sum.querySelector(".wz-sub");
-          if (sub) sub.textContent = ` · ${setAugStatus(owned.size)}`;
-          else if (sum) sum.textContent = setAugSummaryLabel(owned.size);
+          if (sum && !sum.querySelector(".wz-sub")) sum.textContent = setAugSummaryLabel(owned.size);
           // A bulk button that cannot change anything is disabled rather than a
           // no-op click — the same courtesy the picklists get when "All added".
           // Inertness is re-read rather than inferred from the button's CURRENT
