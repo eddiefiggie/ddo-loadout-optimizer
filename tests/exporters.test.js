@@ -1880,12 +1880,8 @@ test("#449 U2: a pre-#449 restore exports exactly as it did before", () => {
 const CUELESS_ON_PURPOSE = {
   // Documented at `craftLabel`'s vikEmpty case: a cue would file an EMPTY slot
   // under a crafting family in the legend and read as a craft to go apply.
+  // #603 closed the other entry (`augmentset`) — it was a gap, not a decision.
   vikEmpty: "an empty declared slot, not a craft",
-  // KNOWN GAP, not a decision — see the issue filed alongside #193. A placed Set
-  // Augment renders bare in all five text exports today. Left alone deliberately
-  // rather than fixed in passing: it changes player-facing output for an
-  // unrelated feature, so it is somebody's call, not a drive-by.
-  augmentset: "pre-existing gap, filed separately",
 };
 
 test("#193: every craft family the loadout can emit carries an export cue", () => {
@@ -1920,6 +1916,91 @@ test("#193: an Essence craft is cued and names the shard to make", () => {
   const base = Proj.craftLabel({ menu: "Prefix", effect: "Strength", stat: "Strength",
     bonus_type: "Enhancement", value: 13, unit: "flat" }, "essence");
   assert.strictEqual(base, "Essence Crafting Prefix: Strength +13", base);
+});
+
+// ---- #603 — the cue names the system once, not twice --------------------------
+
+// A minimal record whose one item carries one Green Steel craft, so the composed
+// export line can be read back. Green Steel is the clearest case: its label IS its
+// system name, so the doubling was total.
+function craftRec(family, placedKey, placed) {
+  return {
+    name: "T",
+    inputs: { ml: 34, priorities: ["Constitution"], pool: "all" },
+    snapshot: {
+      status: "optimal",
+      perTarget: { Constitution: 6 },
+      chosen: [{ slot: "Trinket", variant: {
+        variant_id: "Widget", source_item: "Widget", minimum_level: 30, affixes: [],
+      } }],
+      [placedKey]: placed,
+    },
+  };
+}
+
+test("#603: a Set Augment is cued, and the legend explains it", () => {
+  assert.strictEqual(cue("craft", "augmentset", "md"), "🧩 Set Augment");
+  assert.ok(legendText("md").includes("🧩 Set Augment"),
+    "a cue used in the body but absent from the legend is an unexplained emoji");
+});
+
+test("#603: the cue's word is dropped when the label already opens with it", () => {
+  const md = toMarkdown(craftRec("gs", "gsPlaced", [{
+    item: "Widget", name: "GS", stat: "Constitution", bonus_type: "Insight",
+    value: 6, unit: "flat",
+  }]));
+  // Skip the legend, which lists every cue by definition.
+  const line = md.split("\n").find((l) => l.includes("💠") && !l.includes("Legend"));
+  assert.ok(line, "the Green Steel craft did not render at all");
+  assert.ok(!/Green Steel:\s*Green Steel/.test(line),
+    `the system is named twice: ${line}`);
+  assert.ok(line.includes("💠 Green Steel:"), `the cue emoji and system are lost: ${line}`);
+});
+
+test("#603: a family whose label does NOT open with its system keeps the full cue", () => {
+  // `vik` leads with the SLOT (`Slot Dolorous (Accessory) Viktranium augment`),
+  // not the system, so the cue word is not a duplicate and must be kept. This is
+  // why the rule keys on "does the label open with the word" rather than
+  // stripping every family's prefix.
+  const md = toMarkdown(craftRec("vik", "vikPlaced", [{
+    item: "Widget", slot_type: "Dolorous", category: "Accessory",
+    stat: "Constitution", bonus_type: "Insight", value: 6, unit: "flat",
+  }]));
+  const line = md.split("\n").find((l) => l.includes("⚗️") && !l.includes("Legend"));
+  assert.ok(line, "the Viktranium craft did not render at all");
+  assert.ok(/⚗️ Viktranium: Slot Dolorous/.test(line),
+    `vik must keep its cue word — its label names the slot, not the system: ${line}`);
+});
+
+test("#603: the de-stutter fires on every family whose label opens with its system", () => {
+  // Nearly Complete is the second worked case: its label IS its system name, the
+  // same shape as Green Steel, and it reaches the export by a different map.
+  const md = toMarkdown(craftRec("nc", "ncPlaced", [{
+    item: "Widget", name: "Widget", stat: "Constitution",
+    bonus_type: "Insight", value: 6, unit: "flat",
+  }]));
+  const line = md.split("\n").find((l) => l.includes("✨") && !l.includes("Legend"));
+  assert.ok(line, "the Nearly Complete craft did not render at all");
+  assert.ok(!/Nearly Completed:\s*Nearly Completed/.test(line), `named twice: ${line}`);
+  assert.ok(line.includes("✨ Nearly Completed:"), line);
+});
+
+test("#603: the gearset label stays self-describing, because it prints with no cue", () => {
+  // `toGearset` prints `cr.label` bare. Trimming the system name out of the LABEL
+  // rather than out of the cue would have left that export saying only
+  // "Prefix: Strength +13", with nothing naming the system.
+  const cases = {
+    gs: [{ stat: "Constitution", bonus_type: "Insight", value: 6, unit: "flat" }, "Green Steel"],
+    essence: [{ menu: "Prefix", effect: "Strength", stat: "Strength",
+                bonus_type: "Enhancement", value: 13, unit: "flat" }, "Essence Crafting"],
+    tf: [{ tier: 1, stat: "Constitution", bonus_type: "Insight", value: 6, unit: "flat" },
+         "Thunder-Forged"],
+  };
+  for (const [family, [o, word]] of Object.entries(cases)) {
+    const label = Proj.craftLabel(o, family);
+    assert.ok(label.toLowerCase().startsWith(word.toLowerCase()),
+      `${family}: "${label}" must name its system standalone — the gearset prints it with no cue`);
+  }
 });
 
 console.log(`\n  ${passed} passed`);
