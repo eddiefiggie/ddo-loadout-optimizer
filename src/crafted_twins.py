@@ -12,10 +12,18 @@ The blocklist was not wrong. The catalog carries **one item in two states**:
   * the `[Crafted]` record — the same item AFTER its Essence Crafting slots are
     used, which drops that marker and gains the `Essence Crafting: *` slot menus.
 
-Those slots are inert: every one sits in `crafting_coverage.UNSERVED_ALLOWLIST`
-("No pool"), because Essence Crafting is unmodelled (#193). So the crafted state
-is a strict affix-SUBSET of the base with nothing gained, it can never beat its
-own base, and `dominanceFilter` prunes it — right up until the base is blocked.
+Those slots WERE all inert when this was written, because Essence Crafting was
+unmodelled (#193). Three no longer are: `Essence Crafting: Trinket - Prefix /
+Suffix / Extra` are served by the `essence_crafting` pool, so the four Trinket
+hosts — the three Gem of Many Facets tiers and the blank craftable trinket — now
+gain real capacity when crafted and can beat their own base. Every other
+`Essence Crafting: *` label (Melee, Ring, Rune Arm) is still unserved.
+
+That does NOT dissolve the pairing, because the pairing answers a different
+question — see the self-retiring clause in `derive` for why. For the still-inert
+majority the crafted state remains a strict affix-SUBSET of the base with nothing
+gained, it can never beat its own base, and `dominanceFilter` prunes it — right
+up until the base is blocked.
 The blocklist deliberately runs UPSTREAM of dominance so that blocking a winner
 leaves the genuine runner-up standing, and here the "runner-up" is the same item
 under a different name.
@@ -38,11 +46,14 @@ them correct:
   * the crafted record's affixes are a SUBSET of the base's;
   * every crafting label the crafted record adds is one nothing serves.
 
-A pair that fails any of those FAILS THE BUILD, naming the record. That last
-clause is the self-retiring half: when #193 wires Essence Crafting to a pool, the
-crafted record starts carrying capacity its base does not have, it stops being a
-duplicate, and the build says so instead of quietly continuing to fold a block
-across two records that have become genuinely different.
+A pair that fails any of the first three FAILS THE BUILD, naming the record.
+
+The fourth is the self-retiring half, and it has now fired (#193). It is recorded
+as `capacity_divergent` rather than raised, because it turned out to be the wrong
+trigger for THIS identity: block-folding is about one game item, not about two
+interchangeable offers. The reasoning is at the clause itself. The pairs it names
+are surfaced in `metadata.crafted_twin_identity_divergent` so the change is
+visible rather than absorbed.
 """
 from __future__ import annotations
 
@@ -111,6 +122,7 @@ def derive(variants, unserved_labels) -> dict:
     identity = {}
     pairs = []
     problems = []
+    capacity_divergent = []
     inspected = 0
 
     for name in sorted(by_name):
@@ -165,23 +177,34 @@ def derive(variants, unserved_labels) -> dict:
                 f"{name!r} carries affixes its base does not ({sorted(extra)!r}) — "
                 "it is no longer a strict subset, so it is not the same offer")
 
-        # The self-retiring clause. Every crafting label the crafted state adds
-        # must be one nothing serves; the moment #193 wires Essence Crafting to a
-        # pool, this fires and the folding has to be reconsidered rather than
-        # quietly continuing.
+        # The self-retiring clause, RECONSIDERED (#193 wired Essence Crafting for
+        # Trinkets). It used to fail the build. It now records the pair as
+        # capacity-divergent and keeps the block identity, because the clause
+        # conflated two different questions and only one of them changed:
+        #
+        #   "are these interchangeable to the SOLVER?"  -> no longer. The crafted
+        #       Gem carries three craftable menus its base does not, so it can beat
+        #       its own base and must stay a distinct candidate. Nothing here
+        #       suppressed that: this module never touched candidacy or dominance.
+        #   "are these ONE GAME ITEM to the player?"    -> still yes, and that is
+        #       the only question `block_identity` answers. A player blocking the
+        #       Gem does not own it, and does not own the version they would have
+        #       crafted from it either. Dropping the fold here would hand them the
+        #       twin — the exact #547 report.
+        #
+        # So a served added label is expected for these pairs, and only for these:
+        # it is recorded and surfaced, never silently absorbed. Every other clause
+        # above still FAILS the build.
         added = [c for c in (crafted.get("crafting") or [])
                  if c not in (base.get("crafting") or [])]
         served = [c for c in added if c not in unserved_labels]
         if served:
-            problems.append(
-                f"{name!r} adds crafting labels that are now SERVED by a pool "
-                f"({served!r}) — the crafted state offers capacity its base does "
-                "not, so it is a distinct candidate and #547's block-folding no "
-                "longer describes it. See #193.")
+            capacity_divergent.append({"crafted": name, "base": base_name,
+                                       "served_labels": sorted(served)})
 
         identity[name] = base_name
         identity[base_name] = base_name
         pairs.append((name, base_name))
 
-    return {"identity": identity, "pairs": pairs,
-            "inspected": inspected, "problems": problems}
+    return {"identity": identity, "pairs": pairs, "inspected": inspected,
+            "problems": problems, "capacity_divergent": capacity_divergent}

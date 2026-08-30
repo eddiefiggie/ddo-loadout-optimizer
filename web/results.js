@@ -714,6 +714,7 @@ function statChipEntries(v, idx2, maps, contribIdx, craftStated) {
     take(maps.sealByItem && maps.sealByItem.get(v.variant_id));
     take(maps.tfByItem && maps.tfByItem.get(v.variant_id));
     take(maps.gsByItem && maps.gsByItem.get(v.variant_id));
+    take(maps.essByItem && maps.essByItem.get(v.variant_id));
   }
   const raw = [...printed, ...crafted];
   const sourceOf = new Map();
@@ -938,6 +939,7 @@ function craftRowsFor(v, idx, maps) {
   push(maps.sealByItem && maps.sealByItem.get(v.variant_id), "seal");
   push(maps.tfByItem && maps.tfByItem.get(v.variant_id), "tf");
   push(maps.gsByItem && maps.gsByItem.get(v.variant_id), "gs");
+  push(maps.essByItem && maps.essByItem.get(v.variant_id), "essence");
   return rows;
 }
 
@@ -1510,6 +1512,17 @@ function setFilterNotice(result) {
 /** #246 — the content-ownership filter's disclosure. Pure (result), and identical
  *  on a restored snapshot, because it reads the solver-stamped report rather than a
  *  live input — a shared build must disclose the narrowing without re-solving. */
+/** #193/#599 — Essence Crafting's disclosure. Pure (result) and identical on a
+ *  restored snapshot, like every other notice: it reads the solver-stamped
+ *  report, so a shared build says it was solved over a subset of the menu without
+ *  needing to re-solve. */
+function essenceNotice(result) {
+  const lines = (Proj && Proj.essenceNoticeLines) ? Proj.essenceNoticeLines(result) : [];
+  return lines.length
+    ? `<p class="scope-note essence-note" role="status">${lines.map(esc).join(" ")}</p>`
+    : "";
+}
+
 function packFilterNotice(result) {
   const lines = (Proj && Proj.packFilterNoticeLines) ? Proj.packFilterNoticeLines(result) : [];
   return lines.length
@@ -1703,6 +1716,13 @@ const NOTICES = [
     subject: "armor dodge reduction", cls: NOTICE_QUALIFYING,
     jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
     render: (c) => dodgeMaxDexNotice(c.query, c.result) },
+  // #193/#599 — qualifying for the same reason as the notice above: there is
+  // nothing for the player to press. It reports that the Gem's menus were solved
+  // over 25 of the 170 effects the game offers, which is a fact about the DATA
+  // rather than about their query.
+  { name: "essenceNotice", id: "essence-crafting", title: "ESSENCE CRAFTING",
+    subject: "essence crafting menus", cls: NOTICE_QUALIFYING,
+    render: (c) => essenceNotice(c.result) },
   { name: "blockNotice", id: "blocked-gear", title: "BLOCKED GEAR", subject: "blocked gear",
     cls: NOTICE_ACTIONABLE, jump: { label: "Review block list →", step: "pool", anchor: null },
     render: (c) => blockNotice(c.result) },

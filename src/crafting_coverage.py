@@ -112,9 +112,6 @@ UNSERVED_ALLOWLIST = frozenset({
     "Essence Crafting: Rune Arm - Extra",
     "Essence Crafting: Rune Arm - Prefix",
     "Essence Crafting: Rune Arm - Suffix",
-    "Essence Crafting: Trinket - Extra",
-    "Essence Crafting: Trinket - Prefix",
-    "Essence Crafting: Trinket - Suffix",
     # Slaver's crafting — heroic and legendary. No pool.
     "Slaver's Bonus Slot",
     "Slaver's Extra Slot",
@@ -234,6 +231,21 @@ def _thunder_forged(dataset):
     return len(recs), {f"T{r['tier']}" for r in recs if r.get("tier") is not None}
 
 
+def _essence_crafting(dataset):
+    """Keyed by `menu` -> `"Essence Crafting: Trinket - <menu>"` (#193/#599).
+
+    Serving a label here means the solver can craft SOMETHING into that menu, not
+    that it can craft everything: 25 of 170 Trinket placements are offered, and
+    the rest are disclosed to the player through
+    `metadata.essence_crafting_coverage`. The other nine `Essence Crafting: *`
+    labels (Melee, Ring, Rune Arm) stay on UNSERVED_ALLOWLIST because no pool
+    fills them at all.
+    """
+    recs = dataset.get("essence_crafting") or []
+    return len(recs), {f"Essence Crafting: Trinket - {r['menu']}" for r in recs
+                       if r.get("menu")}
+
+
 # Ordered so the report reads pool by pool. The keys are POOL names, and the
 # gate never compares them against label text.
 POOL_READERS = {
@@ -247,6 +259,7 @@ POOL_READERS = {
     "seal": _seal,
     "green_steel": _green_steel,
     "thunder_forged": _thunder_forged,
+    "essence_crafting": _essence_crafting,
 }
 
 

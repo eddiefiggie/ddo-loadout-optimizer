@@ -32,6 +32,7 @@ sys.path.insert(0, ROOT)
 from src import container_registry as cr  # noqa: E402
 from src import crafting_catalog, dino, nearly_complete, seal  # noqa: E402
 from src import green_steel, thunder_forged, viktranium  # noqa: E402
+from src import essence_pool  # noqa: E402
 from src.spell_focus import PROVENANCE_KEY  # noqa: E402
 
 
@@ -372,6 +373,11 @@ def test_registry_declares_every_single_pick_container_with_a_verdict():
         "seal":                     (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
         "green_steel":              (cr.FLAT,   (),               cr.KNOWN_UNSAFE,  False),
         "thunder_forged":           (cr.FLAT,   (),               cr.KNOWN_UNSAFE,  False),
+        # #193 — FLAT and verified-safe, which is what separates it from the two
+        # above: a crafted Essence effect grants exactly ONE stat by construction,
+        # so there is no multi-affix option for a flat shape to split. Reachable,
+        # unlike green_steel/thunder_forged: three verified Gem tiers host it.
+        "essence_crafting":         (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
         "roll_groups":              (cr.FLAT,   (),               cr.VERIFIED_SAFE, False),
     }
     actual = {name: (shape, exps, verdict, reachable)
@@ -425,7 +431,29 @@ def _shipped_source_options():
         "seal": seal.build_seal(catalog)["source_options"],
         "green_steel": green_steel.build_green_steel(catalog)["source_options"],
         "thunder_forged": thunder_forged.build_thunder_forged(catalog)["source_options"],
+        # #193 — Essence Crafting's source is the seed shards, not the crafting
+        # catalog, so it is recomputed from the pool builder instead. Still an
+        # independent path from the shipped dataset: the builder re-reads
+        # `essence_crafting.json` / `essence_bonus_type.json` and re-runs the curve
+        # join rather than trusting anything the build wrote down.
+        "essence_crafting": len(essence_pool.build_trinket_pool(
+            *_catalog_stats_and_units())["records"]),
     }
+
+
+def _catalog_stats_and_units():
+    """The affix vocabulary the pool builder gates against, off the shipped items."""
+    with open(DATASET, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    stats, units = set(), {}
+    for it in data["items"]:
+        for a in it.get("affixes") or []:
+            n = a.get("name")
+            if not n:
+                continue
+            stats.add(n)
+            units.setdefault(n, set()).add("flat")
+    return stats, units
 
 
 def test_gate_passes_on_the_built_dataset():
@@ -439,7 +467,7 @@ def test_gate_passes_on_the_built_dataset():
 
     stats = cr.check(data, _shipped_source_options())
 
-    assert stats["checked"] == 8
+    assert stats["checked"] == 9
     assert stats["compared"] > 700, stats
     assert stats["records"]["viktranium"] > 0
     assert stats["records"]["dino_inserts"] > 0
@@ -496,7 +524,10 @@ def test_build_metadata_discloses_the_gate_coverage():
     assert cov["compared"] == sum(cov["records"].values())
     # The split is disclosed rather than buried in a VERIFIED_SAFE verdict.
     assert cov["records"]["green_steel"] > cov["source_options"]["green_steel"]
-    assert cov["hosts"] == {"green_steel": 0, "thunder_forged": 0}
+    # #193 — essence_crafting is the first host-marked container that is actually
+    # REACHED: three verified Gem of Many Facets tiers carry `essence_slots`. The
+    # other two stay at zero, which is what holds their KNOWN_UNSAFE split safe.
+    assert cov["hosts"] == {"essence_crafting": 3, "green_steel": 0, "thunder_forged": 0}
     # And every declared expansion pass left evidence it ran.
     assert cov["expanded_affixes"]["viktranium"] > 0
     assert cov["expanded_affixes"]["dino_inserts"] > 0

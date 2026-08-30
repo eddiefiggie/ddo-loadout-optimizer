@@ -792,6 +792,41 @@
    *  player cannot get. Reporting the exclusions alone would read as a complete
    *  answer to "only show me what I can farm" when it is a partial one.
    */
+  /** #193/#599 — what Essence Crafting offered this solve, and what it did not.
+   *
+   *  Said whenever a crafting host was a CANDIDATE, not only when something was
+   *  crafted, because both halves are news. A player who sees three crafted
+   *  effects should know the menu they came from is a fifth of the game's, and a
+   *  player who sees none should know the menu was short rather than assume the
+   *  solver judged every option useless.
+   *
+   *  The heroic Gem gets a third sentence: its Extra menu looks empty for a
+   *  sourced reason (Insight effects need ML 10+), not because we lack the data.
+   */
+  function essenceNoticeLines(result) {
+    const r = result && result.essenceReport;
+    if (!r) return [];
+    const lines = [];
+    const n = (r.placed || []).length;
+    if (n) {
+      const what = r.placed.map((p) => `${p.menu}: ${p.effect} +${p.value}`).join(", ");
+      lines.push(`Essence Crafting placed ${n} ${n === 1 ? "effect" : "effects"} (${what}). `
+        + "Crafting these destroys them if the item is later upgraded or its sets rerolled.");
+    }
+    if (r.offered != null && r.total != null) {
+      lines.push(`The solver chose from ${r.offered} of the ${r.total} effects these menus offer in game. `
+        + "The rest are not modelled: an effect is only offered once its placement, its bonus type and "
+        + "its level curve are all sourced from the wiki, and most are missing the bonus type — "
+        + "without which a crafted effect would either double-count against your gear or wrongly "
+        + "replace it.");
+    }
+    if (r.insightGated && r.insightMinMl) {
+      lines.push(`This host is below minimum level ${r.insightMinMl}, so the Insightful effects in the `
+        + "Extra menu are unavailable to it in game — that menu is short for a game reason, not a data one.");
+    }
+    return lines;
+  }
+
   function packFilterNoticeLines(result) {
     const f = result && result.packFilter;
     if (!f) return [];
@@ -905,7 +940,7 @@
     // entirely on Viktranium or seals is exactly the player who most needs to know
     // the ladder exists, and counting augments alone left them with no notice.
     const crafts = ["vikPlaced", "sealPlaced", "ncPlaced", "dinoPlaced", "tfPlaced",
-      "gsPlaced", "membershipPlaced", "setAugmentsPlaced"]
+      "gsPlaced", "essPlaced", "membershipPlaced", "setAugmentsPlaced"]
       .reduce((n, k) => n + ((snap[k] || []).length), 0);
     if (!augs && !crafts) return null;   // nothing to give up; no advice worth crowding the results with
     const gems = (snap.augmentsPlaced || [])
@@ -1259,7 +1294,8 @@
       augAssign, dinoAssign,
       ncByItem: byItemMap(build.ncPlaced), rollByItem: byItemMap(build.rollPlaced),
       vikByItem, sealByItem: byItemMap(build.sealPlaced),
-      tfByItem: byItemMap(build.tfPlaced), gsByItem: byItemMap(build.gsPlaced), jokerByHost,
+      tfByItem: byItemMap(build.tfPlaced), gsByItem: byItemMap(build.gsPlaced),
+      essByItem: byItemMap(build.essPlaced), jokerByHost,
       membershipByHost, setAugByHost,
     };
   }
@@ -1381,6 +1417,9 @@
       case "seal": return `Sealed in ${o.seal_type}`;
       case "tf": return `Thunder-Forged T${o.tier}`;
       case "gs": return "Green Steel";
+      // #193/#599 — the menu is named because the Gem has three of them and they
+      // are spent independently; "Essence Crafting" alone would read as one craft.
+      case "essence": return `Essence Crafting ${o.menu}`;
       default: return craftLabel(o, family);
     }
   }
@@ -1438,6 +1477,8 @@
         title: "Legendary Thunder-Forged tier upgrade" };
       case "gs": return { where: "Green Steel", what: craftValue(o), system: sys(family),
         title: "Legendary Green Steel craft" };
+      case "essence": return { where: `${o.menu} menu`, what: craftValue(o), system: sys(family),
+        title: `Essence Crafting ${o.menu}: ${o.effect}` };
       // #472 — the three families that yield a SET rather than an affix. They were
       // the open question on that issue: a wildcard, a chosen membership and a Set
       // Augment wrap a set, not a slot with a stat in it, so it was not obvious
@@ -1508,7 +1549,7 @@
   const CRAFT_SECTION_LABEL = {
     vik: "Viktranium", vikEmpty: "Viktranium", nc: "Nearly Completed",
     dino: "Dino crafting", seal: "Seal crafting", tf: "Thunder-Forged",
-    gs: "Green Steel", roll: "Choice slots",
+    gs: "Green Steel", roll: "Choice slots", essence: "Essence Crafting",
     // #472 — the set-yielding families. `membership` is a fallback only: that case
     // reads its system name from the CraftingSystems registry, because the two
     // stations behind the one primitive are two different systems.
@@ -1557,6 +1598,7 @@
       case "seal": return `Sealed in ${o.seal_type}: ${craftValue(o)}`;
       case "tf": return `Thunder-Forged T${o.tier}: ${craftValue(o)}`;
       case "gs": return `Green Steel: ${craftValue(o)}`;
+      case "essence": return `Essence Crafting ${o.menu}: ${craftValue(o)}`;
       case "joker": return `Wildcard set: ${o.set}`;
       case "augmentset": {
         // A solver-placed Set Augment (host is solver-DECIDED, read from
@@ -1803,6 +1845,7 @@
     for (const n of maps.sealByItem.get(v.variant_id) || []) out.push({ family: "seal", label: craftLabel(n, "seal") });
     for (const n of maps.tfByItem.get(v.variant_id) || []) out.push({ family: "tf", label: craftLabel(n, "tf") });
     for (const n of maps.gsByItem.get(v.variant_id) || []) out.push({ family: "gs", label: craftLabel(n, "gs") });
+    for (const n of (maps.essByItem && maps.essByItem.get(v.variant_id)) || []) out.push({ family: "essence", label: craftLabel(n, "essence") });
     for (const j of maps.jokerByHost.get(v.variant_id) || []) out.push({ family: "joker", label: craftLabel(j, "joker") });
     for (const m of maps.membershipByHost.get(v.variant_id) || []) out.push({ family: "membership", label: craftLabel(m, "membership"), station: m.station || null });
     // Solver-placed Set Augments on this host (KTD-6: host read from the solve, not
@@ -1976,6 +2019,7 @@
         // a full-roster optimum when a content filter narrowed the pool.
         packFilterNotice: packFilterNoticeLines(snap),
         setFilterNotice: setFilterNoticeLines(snap),
+        essenceNotice: essenceNoticeLines(snap),
         setPinNotice: setPinNoticeLines(snap),
         // #449 (U2, R15) — the ONE full statement that qualifies every fraction
         // in the document. Rendered once per export, never per stat: repeated
@@ -2606,6 +2650,7 @@
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
     augCeilingLine, dodgeMaxDexLine, packFilterNoticeLines, setFilterNoticeLines,
+    essenceNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)
     NO_DROP_SOURCE_WORDING,

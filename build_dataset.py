@@ -34,6 +34,7 @@ from src import viktranium as vik_mod
 from src import seal as seal_mod
 from src import thunder_forged as tf_mod
 from src import green_steel as gs_mod
+from src import essence_pool as essence_mod
 from src import membership as membership_mod
 from src import augment_sets as augment_sets_mod
 from src import compendium as compendium_mod
@@ -1497,6 +1498,44 @@ def build() -> dict:
     tf = tf_mod.build_thunder_forged(crafting)
     gs = gs_mod.build_green_steel(crafting)
 
+    # Essence Crafting — the Gem of Many Facets' three Trinket menus (#193/#599).
+    # An option is offered only when its PLACEMENT, BONUS TYPE and ML CURVE are all
+    # sourced; `catalog_stats` is passed so an option naming a stat nothing else
+    # uses cannot slip through and get a private bucket that stacks with every real
+    # item. That is the double-count the bonus-type harvest exists to prevent, and
+    # it would arrive through the front door.
+    _catalog_stats, _catalog_units = set(), {}
+    for _v in variants:
+        for _a in _v.get("affixes") or []:
+            _st = _a.get("stat")
+            if not _st:
+                continue
+            _catalog_stats.add(_st)
+            _catalog_units.setdefault(_st, set()).add(_a.get("unit") or "flat")
+    essence = essence_mod.build_trinket_pool(catalog_stats=_catalog_stats,
+                                             catalog_units=_catalog_units)
+
+    # Only `verified` hosts keep live menus. `Trinket [Crafted]` declares the same
+    # three and is quarantined with a placeholder ML 1 — crafting real numbers onto
+    # a record we do not trust is how an unverified item becomes a recommendation.
+    essence_active, essence_pending = {}, {}
+    for v in variants:
+        if not v.get("essence_slots"):
+            continue
+        if v.get("verification") == essence_mod.REQUIRED_VERIFICATION:
+            essence_active[v["source_item"]] = len(v["essence_slots"])
+        else:
+            essence_pending[v["source_item"]] = len(v["essence_slots"])
+            v["essence_slots"] = None
+    essence["coverage"]["hosts_active"] = len(essence_active)
+    essence["coverage"]["slots_active"] = sum(essence_active.values())
+    essence["coverage"]["hosts_pending"] = sorted(essence_pending)
+    if not essence_active:
+        raise SystemExit(
+            "Essence Crafting: the pool has options but NO verified host carries a menu. "
+            "The pool would be inert while the coverage gate reports the labels served — "
+            "exactly the overstatement this gate exists to prevent.")
+
     # #211 — the umbrella-affix detector. Every rankable-or-craftable name
     # sharing a registered family's component head-word (`... Focus`,
     # `... Absorption`, `... Save`, ...) or matching the umbrella name shapes
@@ -1550,6 +1589,10 @@ def build() -> dict:
         "seal": sl["source_options"],
         "green_steel": gs["source_options"],
         "thunder_forged": tf["source_options"],
+        # One record per (menu, effect) by construction — the pool has no
+        # multi-affix option to split, so source options and records are the
+        # same population and the gate's equality check is exact.
+        "essence_crafting": len(essence["records"]),
     }
 
     # Compendium browse index (U6): derived from the NATIVE roster (the built
@@ -1663,6 +1706,7 @@ def build() -> dict:
             "seal_coverage": sl["coverage"],
             "thunder_forged_coverage": tf["coverage"],
             "green_steel_coverage": gs["coverage"],
+            "essence_crafting_coverage": essence["coverage"],
             "membership_coverage": membership_mod.coverage(membership_defs),
             "augment_set_coverage": membership_mod.coverage(augment_set_defs),
             "augment_coverage": augment_coverage,
@@ -1902,6 +1946,7 @@ def build() -> dict:
         "viktranium": vik["records"],
         "seal": sl["records"],
         "thunder_forged": tf["records"],
+        "essence_crafting": essence["records"],
         "green_steel": gs["records"],
         "membership_set_defs": membership_defs,
         # U2 — the 21 Augment-Set defs (3-piece Set Bonuses), same shape as
@@ -2001,7 +2046,13 @@ def build() -> dict:
 
     out["metadata"]["crafted_twin_identity"] = _twins["identity"]
     out["metadata"]["crafted_twin_coverage"] = {
-        "inspected": _twins["inspected"], "pairs": len(_twins["pairs"])}
+        "inspected": _twins["inspected"], "pairs": len(_twins["pairs"]),
+        "capacity_divergent": len(_twins["capacity_divergent"])}
+    # Pairs that are ONE ITEM for blocking but TWO CANDIDATES for solving, because
+    # the crafted state's Essence menus are now served (#193). Surfaced rather than
+    # absorbed: this is the property #547 originally asserted could not happen, and
+    # a reader deserves to see which pairs it stopped holding for.
+    out["metadata"]["crafted_twin_identity_divergent"] = _twins["capacity_divergent"]
 
     # build_id hashes the full assembled dataset (everything except metadata) so
     # drift in sets, augments, or crafting inputs — not just base variants —

@@ -93,14 +93,21 @@ def test_parse_artifacts_are_recorded_rather_than_silently_dropped():
 
 # --- the blocker, pinned so it cannot be forgotten ----------------------------
 
-def test_the_shard_declares_that_it_is_not_wired():
-    """#193's remaining work is a TYPE problem, not a volume problem. If someone
-    starts consuming this shard, they must first delete this assertion — which is
-    the point of it."""
+def test_the_shard_declares_what_is_wired_and_what_is_not():
+    """The status line is a claim to the next reader, so it is asserted.
+
+    It must name BOTH halves: the Trinket menus that are live and the thirteen
+    other equipment slots that are still data-only. A status naming only the first
+    would read as "Essence Crafting is done", when 135 of 157 effects still have
+    no sourced bonus type."""
     meta = _shard()["_meta"]
-    assert "NOT WIRED" in meta["status"]
-    assert "bonus type" in meta["blocker"].lower()
-    assert "gear-planner" in meta["blocker"]
+    assert "WIRED FOR TRINKETS" in meta["status"]
+    assert "data-only" in meta["status"], "the status must name what is still NOT wired"
+    blocker = meta["blocker"]
+    assert "bonus type" in blocker.lower()
+    assert "gear-planner" in blocker
+    assert "WHAT IS NOT" in blocker, "the blocker must still name the unserved slots"
+    assert "135" in blocker, "the blocker must keep the size of the remaining gap"
 
 
 # The files allowed to open the shard, and why. Neither is a solver input.
@@ -113,7 +120,8 @@ def test_the_shard_declares_that_it_is_not_wired():
 #                          build, which the next test enforces.
 ROSTER_READER = "scripts/merge_harvest.py"
 JOIN_MODULE = os.path.join("src", "essence_curve_join.py")
-SHARD_READERS = sorted([ROSTER_READER, JOIN_MODULE])
+POOL_MODULE = os.path.join("src", "essence_pool.py")
+SHARD_READERS = sorted([ROSTER_READER, JOIN_MODULE, POOL_MODULE])
 # Tests may name the shard freely: asserting ON the data is the opposite of
 # feeding it to the solver, and a test cannot ship a value into a loadout. The
 # allowance is by directory so a new guard file does not have to edit this list.
@@ -134,11 +142,12 @@ def _tree_files(exts=(".py", ".js")):
                 yield os.path.join(dirpath, fn)
 
 
-def test_nothing_in_the_tree_consumes_the_shard_yet():
-    """The honest state: harvested, disclosed, unused BY THE SOLVER.
+def test_only_the_named_files_read_the_shard():
+    """The shard IS consumed now (#193 wired the Gem's Trinket menus), so this
+    stopped being "nothing reads it" and became "exactly these read it".
 
-    Two files may open it, both named above and neither on a path into the build.
-    Anything else is the failure this guard exists for.
+    The list is the point. Each of the three has a different, bounded job, and a
+    fourth reader appearing means the values reached somewhere nobody audited.
     """
     hits = []
     for path in _tree_files():
@@ -152,54 +161,68 @@ def test_nothing_in_the_tree_consumes_the_shard_yet():
                 hits.append(rel)
     assert sorted(hits) == SHARD_READERS, (
         "the set of files reading the Essence Crafting shard changed: "
-        + ", ".join(sorted(hits)) + f". Expected exactly {SHARD_READERS}. Before wiring "
-        "the values into the build, see docs/wiki-evidence/essence-crafting-bonus-types.md.")
+        + ", ".join(sorted(hits)) + f". Expected exactly {SHARD_READERS}. A new reader "
+        "means Essence Crafting values reached a surface nobody audited.")
 
 
-def test_the_roster_reader_takes_the_roster_and_not_the_magnitudes():
-    """Proves the roster allowance is as narrow as it claims. If merge_harvest
-    ever reaches for a magnitude, the allowlist is silently covering a solver
-    input and this fails rather than waving it through."""
-    with open(os.path.join(ROOT, ROSTER_READER), encoding="utf-8") as fh:
-        src = fh.read()
-    assert "placements" in src, f"{ROSTER_READER} no longer reads the roster it is allowlisted for"
-    for key in VALUE_KEYS:
-        assert f'"{key}"' not in src and f"'{key}'" not in src, (
-            f"{ROSTER_READER} now reads {key!r}. That is a magnitude, not a roster: "
-            "the allowlist covers the effect NAMES only.")
+def test_the_browser_never_sees_the_raw_shard_or_the_join():
+    """The boundary that replaced "nothing is wired".
 
-
-def test_no_build_path_reaches_the_curve_join():
-    """The real boundary, now that a module reads the magnitudes on purpose.
-
-    `essence_curve_join` may read every value in the shard; what it may NOT do is
-    end up inside the dataset. So nothing on the build surface — `build_dataset.py`,
-    the rest of `src/`, or any of `web/` — may import it. When Essence Crafting is
-    finally wired, this is the assertion that has to be deleted deliberately.
+    `web/` gets the RESOLVED pool out of `items.json` — options whose placement,
+    bonus type and ML curve were all sourced at build time. It must never reach
+    the raw shard or the curve join itself, because those carry the 135 effects
+    with no sourced bonus type and the 37 with no curve row. The whole point of
+    resolving in the pipeline is that the browser cannot see the unresolved ones.
     """
+    leaked = []
+    for path in _tree_files():
+        rel = os.path.relpath(path, ROOT)
+        if not rel.startswith("web" + os.sep):
+            continue
+        with open(path, encoding="utf-8", errors="ignore") as fh:
+            body = fh.read()
+        if "essence_crafting.json" in body or "essence_curve_join" in body:
+            leaked.append(rel)
+    assert not leaked, (
+        "the browser now reaches Essence Crafting's raw data: " + ", ".join(leaked)
+        + ". It must consume only the resolved pool the build emits.")
+
+
+def test_the_curve_join_is_reached_only_through_the_pool_builder():
+    """`essence_curve_join` resolves effect names to ML curve rows and quarantines
+    37 it cannot. `essence_pool` is the one module allowed to call it, because it
+    is the one that also checks the bonus type and the catalog stat before letting
+    an option out. A second caller could take a magnitude without those checks."""
     importers = []
     for path in _tree_files():
         rel = os.path.relpath(path, ROOT)
-        if rel.startswith(TEST_DIR) or rel == JOIN_MODULE:
-            continue
-        if not rel.startswith(BUILD_SURFACE):
+        if rel.startswith(TEST_DIR) or rel in (JOIN_MODULE, POOL_MODULE):
             continue
         with open(path, encoding="utf-8", errors="ignore") as fh:
             if "essence_curve_join" in fh.read():
                 importers.append(rel)
     assert not importers, (
-        "the dataset build now reaches the Essence Crafting curve join: "
-        + ", ".join(importers) + ". 37 of 157 effects are still quarantined and "
-        "135 have no sourced bonus type — wiring it means disclosing that to the player.")
+        "something other than the pool builder reaches the curve join: "
+        + ", ".join(importers) + ". A magnitude taken there has not been checked for "
+        "a sourced bonus type or a catalog stat name.")
 
 
-def test_the_twelve_labels_are_still_declared_unserved():
-    """The player-facing half of the honest position: the slots show in the
-    compendium and every export as declared-but-inert, rather than being modelled
-    wrongly. If this list changes, the disclosure changed with it."""
+def test_nine_essence_labels_remain_unserved_and_the_trinket_three_do_not():
+    """The player-facing half, now that #193 wired the Gem's menus.
+
+    Three of the original twelve are SERVED by the `essence_crafting` pool. The
+    other nine — Melee, Ring, Rune Arm — have no pool at all and are still
+    declared-but-inert, which is what the compendium and every export must keep
+    saying about them. The split is the disclosure: a reader must be able to tell
+    the wired third from the nine that are not.
+    """
     from src import crafting_coverage
     ec = sorted(x for x in crafting_coverage.UNSERVED_ALLOWLIST if x.startswith("Essence Crafting:"))
-    assert len(ec) == 12, ec
-    for item in ("Melee", "Ring", "Rune Arm", "Trinket"):
+    assert len(ec) == 9, ec
+    for item in ("Melee", "Ring", "Rune Arm"):
         for part in ("Extra", "Prefix", "Suffix"):
-            assert f"Essence Crafting: {item} - {part}" in ec
+            assert f"Essence Crafting: {item} - {part}" in ec, f"{item} {part} stopped being disclosed"
+    for part in ("Extra", "Prefix", "Suffix"):
+        assert f"Essence Crafting: Trinket - {part}" not in ec, (
+            f"Trinket {part} is served by the essence_crafting pool now; leaving it "
+            "allowlisted makes the gate vouch for a gap that closed (#193).")

@@ -32,6 +32,7 @@ import os
 import re
 
 from src.seal import normalize_seal_type
+from src import essence_pool
 
 RAW_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "seed",
                         "compendium", "raw", "gearplanner_items.json")
@@ -109,6 +110,17 @@ def _lamordia_slots(crafting):
     return out
 
 
+def _essence_slots(crafting):
+    """Essence Crafting Trinket menus from the crafting[] list (#193/#599).
+
+    Surfaced from the same labels the compendium shows, so the slots the solver
+    fills are exactly the slots the item is documented to have. The
+    verification gate is applied later, in build_dataset, where a record's
+    verification is known.
+    """
+    return essence_pool.essence_slots(crafting)
+
+
 def _nearly_complete(crafting):
     """U81 Nearly-Complete host category from `"Nearly Complete: <category>"`
     (the parametric single-affix choice slot). First marker wins; None if absent."""
@@ -183,6 +195,9 @@ def _record(it, verified_seal_types, nc_per_item_hosts=None):
     lam = _lamordia_slots(it.get("crafting"))
     if lam:
         rec["lamordia_slots"] = lam
+    ess = _essence_slots(it.get("crafting"))
+    if ess:
+        rec["essence_slots"] = ess
     nc = _nearly_complete(it.get("crafting"))
     if nc:
         rec["nearly_complete"] = nc

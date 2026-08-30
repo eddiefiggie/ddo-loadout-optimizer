@@ -4227,7 +4227,7 @@ ${(() => {
           // "Almost There"), keyed by host name. Threaded as an ARGUMENT like
           // every other pool; the solver reaches a host's options through its
           // own `nc_per_item_slots` marker.
-          dataset.nearly_complete_per_item);
+          dataset.nearly_complete_per_item, dataset.essence_crafting);
         const t0 = performance.now();
         // #582 — the abandon predicate. Supplying it is what turns on the solver's
         // stage-boundary yields; every other caller omits it and runs unchanged.
@@ -4601,7 +4601,7 @@ ${(() => {
           // "Almost There"), keyed by host name. Threaded as an ARGUMENT like
           // every other pool; the solver reaches a host's options through its
           // own `nc_per_item_slots` marker.
-          dataset.nearly_complete_per_item);
+          dataset.nearly_complete_per_item, dataset.essence_crafting);
         // fresh:false + the original stamp so a later Save preserves staleness (see saveCurrentCharacter).
         state.lastRun = { model, result: snap, query, fresh: false, stampedBuildId: rec.stampedBuildId || null };
         state.loadedStale = !!(rec.stampedBuildId && currentBuildId() && rec.stampedBuildId !== currentBuildId());

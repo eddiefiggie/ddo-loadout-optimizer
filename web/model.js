@@ -217,6 +217,13 @@ function setStackEquiv(map) {
 // and their quotes are in data/seed/compendium/intrinsic_stat_caps.json and
 // docs/wiki-evidence/intrinsic-stat-caps.md.
 let _INTRINSIC_CAPS = Object.create(null);
+// #193/#599 — Essence Crafting coverage, same two-runtime bridge. The solver
+// stamps it onto the result so the disclosure survives a restored snapshot: a
+// shared build has to say it was solved over 25 of 170 options WITHOUT re-solving.
+let _ESSENCE_COVERAGE = null;
+function setEssenceCoverage(cov) { _ESSENCE_COVERAGE = cov || null; }
+function essenceCoverage() { return _ESSENCE_COVERAGE; }
+
 function setIntrinsicCaps(map) {
   _INTRINSIC_CAPS = Object.create(null);
   if (map && typeof map === "object") {
@@ -1058,7 +1065,7 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, and the target list. */
-function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = [], augmentSetDefs = {}, utilityCountingSet = null, nearlyCompletePerItem = {}) {
+function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = [], augmentSetDefs = {}, utilityCountingSet = null, nearlyCompletePerItem = {}, essenceCrafting = []) {
   // #245 — the niche-crafting opt-out. A craftable option slot makes its host a
   // wildcard for every rankable stat (the Viktranium pool alone reaches 126), so
   // under strict lexicographic priority a Lamordia base is never worse and
@@ -1075,7 +1082,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // these option pools are model-level collections.
   if (rungExcludesNicheCrafting(craftingRung(query))) {
     dinoInserts = []; nearlyComplete = []; viktranium = []; seal = [];
-    thunderForged = []; greenSteel = [];
+    thunderForged = []; greenSteel = []; essenceCrafting = [];
     nearlyCompletePerItem = {};   // #371 — Nearly Finished / Almost There
     membershipSetDefs = {};   // chosen set-membership (Lost Purpose / Dino Set Bonus)
     augmentSetDefs = {};      // set-bonus augments are Dino crafting too
@@ -1486,6 +1493,13 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // target-advancing options only; the solver attaches them per host via the marker.
   const tfPool = (thunderForged || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
   const gsPool = (greenSteel || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
+  // Essence Crafting (#193/#599) — the Gem of Many Facets' three Trinket menus.
+  // Filtered to RANKED stats only, like every other pool: an option nobody asked
+  // for is a variable the MILP carries and can never use. `values_by_ml` rides
+  // along because the magnitude depends on the HOST's ML, which is not known
+  // until the option is bound to an item in the solver.
+  const essencePool = (essenceCrafting || []).filter((o) => o && targetSet.has(o.stat)
+    && Array.isArray(o.values_by_ml) && o.values_by_ml.length === 36);
 
   // #539 — classify the set pins against the ELIGIBLE pool. Done here, with the
   // pool and both def dicts in scope, so a pin the query cannot satisfy is named
@@ -1543,7 +1557,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, seal: sealPool,
     // #371 — `{host name: [option]}`, read per host via the item's `nc_per_item_slots`.
     nearlyCompletePerItem: ncPerItemPool,
-    thunderForged: tfPool, greenSteel: gsPool,
+    thunderForged: tfPool, greenSteel: gsPool, essenceCrafting: essencePool,
+    essenceCoverage: _ESSENCE_COVERAGE,
     membershipSetDefs: membershipSetDefs || {},
     // U6 — set-augment definitions (piece thresholds + affixes), forwarded like
     // membershipSetDefs so the solver's set-augment family reads model.augment_set_defs.
@@ -1682,7 +1697,7 @@ function poolStatNames(model) {
     }
   }
   const pools = [model.augments, model.dinoInserts, model.nearlyComplete, model.viktranium,
-                 model.seal, model.thunderForged, model.greenSteel];
+                 model.seal, model.thunderForged, model.greenSteel, model.essenceCrafting];
   for (const pool of pools) {
     for (const o of pool || []) {
       if (o && o.stat) out.add(o.stat);
@@ -1705,7 +1720,7 @@ function poolStatNames(model) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { poolStatNames, setIntrinsicCaps, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
+  module.exports = { poolStatNames, setIntrinsicCaps, setEssenceCoverage, essenceCoverage, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
