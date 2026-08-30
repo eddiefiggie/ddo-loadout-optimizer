@@ -1888,15 +1888,26 @@ function breakdownByTarget(program, prim, precomputedVisible) {
       const capFree = program.cappedStats && program.cappedStats[stat] != null;
       let override = null;
       if (capFree) {
+        // The best contribution this bucket can actually supply: equipped (every
+        // gate fired), still reported (not behind a hidden placement), and not a
+        // credit — credits carry their own substitution rules (#322/#325).
+        let best = null;
+        for (const z of zs) {
+          if (isCredit(z) || !z.gates.length) continue;
+          if (!z.gates.every((g) => prim(g) > 0.5)) continue;
+          if (z.gates.some(hiddenPlacementGate)) continue;
+          if (!best || z.value > best.value) best = z;
+        }
         const sel = zs.find((z) => prim(z.name) > 0.5);
-        if (sel && !isCredit(sel) && !sel.gates.some(hiddenPlacementGate)) {
-          for (const z of zs) {
-            if (z === sel || isCredit(z) || !z.gates.length) continue;
-            if (z.value <= sel.value) continue;
-            if (!z.gates.every((g) => prim(g) > 0.5)) continue;   // not actually equipped
-            if (z.gates.some(hiddenPlacementGate)) continue;
-            if (!override || z.value > override.value) override = z;
-          }
+        if (best && sel && !isCredit(sel)) {
+          // Two ways the LP's pick is not what the player has. It chose a smaller
+          // contributor (pure cap degeneracy), OR its pick has since been ruled a
+          // hidden placement — and then the bucket must fall back to what the
+          // player still wears rather than vanishing from the receipts entirely.
+          // Dropping it outright left raw at 7 against a displayed 15 on the
+          // reported build, breaking the invariant that the parts sum back to the
+          // effective total.
+          if (sel.gates.some(hiddenPlacementGate) || best.value > sel.value) override = best;
         }
       }
       for (const z of (override ? [override] : zs)) {
@@ -1978,7 +1989,57 @@ function computeScale(program) {
 // as min(cap, raw) — NOT the d_ variable, which an alternative's relaxed solve
 // leaves floating at its lower bound (see the note in readSolution).
 function rawTotalOf(program, prim, stat) {
-  return rawExpr(program, stat).reduce((sum, t) => sum + (prim(t.name) > 0.5 ? t.coef : 0), 0);
+  // #626 — on a CAPPED stat the LP's choice inside a bucket is free (the same
+  // degeneracy `breakdownByTarget` corrects): once raw clears the cap, every
+  // contributor is optimal, so summing the SELECTED z understates the raw the
+  // player's gear actually gives. Take each bucket's largest AVAILABLE
+  // contribution instead — the rule the game applies and the one the breakdown
+  // now reports, so the two cannot disagree about the same number.
+  //
+  // Uncapped is byte-identical: the stage lock pins the sum and the LP already
+  // took each bucket's maximum, so there is nothing to correct and this must not
+  // touch it. An UNSELECTED credit (no gates) is still not counted — a credit is
+  // held or it is not, and max-of-availability is about equipped gear.
+  if (!(program.cappedStats && program.cappedStats[stat] != null)) {
+    return rawExpr(program, stat).reduce((sum, t) => sum + (prim(t.name) > 0.5 ? t.coef : 0), 0);
+  }
+  let total = 0;
+  for (const [key, zs] of program.zByBucket) {
+    if (!bucketCountsFor(key, stat)) continue;
+    let best = 0;
+    for (const z of zs) {
+      const available = prim(z.name) > 0.5
+        || (z.gates.length > 0 && z.gates.every((g) => prim(g) > 0.5));
+      if (available && z.value > best) best = z.value;
+    }
+    total += best;
+  }
+  return total;
+}
+
+/** #626 — what removing placement `g` would actually cost stat-side, inside one
+ *  bucket: the z's value less whatever the bucket falls back to without it.
+ *
+ *  The old reckoning charged the z's WHOLE value, which is right only when it is
+ *  the bucket's sole source. It usually is; where it is not, a redundant craft
+ *  looked load-bearing and got recommended. Reported case: an Essence Crafting
+ *  suffix granting `Charisma | Enhancement 9` on an item whose OFF HAND already
+ *  carries the same bucket at 10. Removing the craft costs nothing — the bucket
+ *  falls back to 10 — but it was charged 9, cleared the cap test, and the player
+ *  was told to go craft it.
+ *
+ *  The declared-credit floor (#325) is the same idea and folds in as one more
+ *  fallback: in a credited bucket the credit backfills the floor, so the loss is
+ *  value − floor. `max(fallback, floor)` subsumes the old rule exactly. */
+function bucketMarginalOf(zs, z, gate, prim, floor) {
+  let fallback = floor != null ? floor : 0;
+  for (const other of zs) {
+    if (other === z || other.gates.includes(gate)) continue;
+    const available = prim(other.name) > 0.5
+      || (other.gates.length > 0 && other.gates.every((g) => prim(g) > 0.5));
+    if (available && other.value > fallback) fallback = other.value;
+  }
+  return Math.max(0, z.value - fallback);
 }
 function effectiveOf(program, prim, stat) {
   const cap = program.cappedStats ? program.cappedStats[stat] : null;
@@ -2061,8 +2122,10 @@ function visibleGateSet(program, prim) {
       // floor (only strictly-below-floor seating is LP-infeasible), so the
       // displayed total loses z.value − floor, not z.value. Summing the gross
       // value slightly over-reported visibility in the credited∩capped corner.
-      const net = floor != null ? z.value - floor : z.value;
       for (const g of z.gates) {
+        // #626 — the MARGINAL loss, not the gross value: a bucket that falls back
+        // to another equipped source loses nothing when this placement goes.
+        const net = bucketMarginalOf(zs, z, g, prim, floor);
         let sums = pending.get(g);
         if (!sums) pending.set(g, (sums = new Map()));
         for (const s of fedCapped) sums.set(s, (sums.get(s) || 0) + net);
