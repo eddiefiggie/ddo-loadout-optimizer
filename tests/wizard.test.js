@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -1037,21 +1037,68 @@ test("U3: no pending bundle state is held on `state` or in a closure", () => {
     "no closure-scoped accumulator outlives the character it was staged for");
 });
 
+// ---- the Gear pool step's folds ------------------------------------------------
+
+test("Gear pool: every subsection is the same fold, and none is left flat", () => {
+  // The step used to be flat `.wz-pinbox` blocks separated by a top border, with
+  // one differently-styled <details> among them. Uniformity is the fix, so it is
+  // the thing asserted: one shape, one caret, one status idiom.
+  const step = srcBetween(WIZARD_SRC, "function stepPool()", "// U3 — pre-solve item pinning helpers", "stepPool");
+  const folds = step.match(/poolFold\("([a-z]+)"/g) || [];
+  const keys = folds.map((m) => m.slice('poolFold("'.length, -1));
+  assert.deepStrictEqual(keys.sort(),
+    ["block", "overrides", "packs", "pin", "setaug", "setex", "setpin"],
+    "every Gear pool subsection goes through poolFold");
+  assert.ok(!/class="wz-pinbox/.test(step),
+    "no subsection is still a flat wz-pinbox — that is the shape this replaced");
+});
+
+test("Gear pool: every fold states its own condition while closed", () => {
+  // A fold that names itself and nothing else hides a setting the player made.
+  // Each key must have a status branch, and none may fall through to "".
+  const fn = srcBetween(WIZARD_SRC, "function poolStatus(key)", "function stepPool()", "poolStatus");
+  for (const key of ["pin", "block", "packs", "setaug", "setpin", "setex", "overrides"]) {
+    assert.ok(new RegExp(`case "${key}":`).test(fn), `${key} has no status branch`);
+  }
+});
+
+test("Gear pool: fold state is remembered, because the step re-renders wholesale", () => {
+  // Several handlers on this step re-render everything. Without this the fold the
+  // player just opened would snap shut under them — worse than not folding.
+  assert.ok(/state\.poolOpen/.test(WIZARD_SRC), "open state is kept on state, not in the DOM");
+  const bind = srcBetween(WIZARD_SRC, 'details[data-poolfold]', "const psearch", "poolfold binding");
+  assert.ok(/ontoggle/.test(bind), "the folds write their open state back");
+  assert.ok(/dataset\.poolfold/.test(bind),
+    "bound by data attribute, so a new section needs no new binding");
+});
+
 test("#509: the Set Augment summary label has ONE spelling, and it counts", () => {
-  assert.strictEqual(setAugSummaryLabel(0), "Set Augments I own",
-    "none selected reads as a plain title, not a zero");
+  // The section became one of the Gear pool folds, and every fold on that step
+  // states its own condition while closed — "nothing pinned", "nothing blocked".
+  // So zero now reads as "none owned" rather than as a bare title: a fold that
+  // says nothing about its state hides the setting it is folding.
+  assert.strictEqual(setAugSummaryLabel(0), "Set Augments I own · none owned",
+    "a closed fold has to say it is empty, not just name itself");
   assert.strictEqual(setAugSummaryLabel(1), "Set Augments I own · 1 selected");
   assert.strictEqual(setAugSummaryLabel(21), "Set Augments I own · 21 selected");
-  // Junk in, plain title out — never "· NaN selected" in front of a player.
+  // Junk in, the empty reading out — never "· NaN selected" in front of a player.
   for (const junk of [undefined, null, "", NaN, "seven"]) {
-    assert.strictEqual(setAugSummaryLabel(junk), "Set Augments I own", `junk ${String(junk)}`);
+    assert.strictEqual(setAugSummaryLabel(junk), "Set Augments I own · none owned",
+      `junk ${String(junk)}`);
   }
   // The markup must RENDER the helper rather than re-spelling it. Two spellings of
   // a label that carries a count is a wrong number waiting to happen, and the
   // inline-update path means the string genuinely appears in more than one place.
-  const region = srcBetween(WIZARD_SRC, 'id="wz-setaug"', "</details>", "setaug panel");
-  assert.ok(/setAugSummaryLabel\(/.test(region), "the summary renders the helper");
-  assert.ok(!/Set Augments I own\$\{/.test(region), "no hand-spelled copy of the label survives");
+  // The section is one of the Gear pool folds now, so the title comes from
+  // `poolFold` and the count from `setAugStatus` — but they must still be ONE
+  // spelling shared with the inline handler, which is what this guards.
+  const region = srcBetween(WIZARD_SRC, 'poolFold("setaug"', '"wz-setaug")', "setaug panel");
+  assert.ok(/poolStatus\("setaug"\)/.test(region), "the fold renders the shared status helper");
+  assert.ok(!/\d+ selected/.test(region), "no hand-spelled copy of the count survives in the markup");
+  // And the two helpers are the same string: the handler patches the summary
+  // inline, so a second spelling would replace the first on the player's first tick.
+  assert.strictEqual(setAugSummaryLabel(3), `Set Augments I own · ${setAugStatus(3)}`);
+  assert.strictEqual(setAugSummaryLabel(0), `Set Augments I own · ${setAugStatus(0)}`);
 });
 
 test("#509: the bulk pair exists, is inert-aware, and never clears retained ticks", () => {
@@ -2816,7 +2863,7 @@ test("#346: every reader of the ladder agrees on the same precedence", () => {
 // ladder's own rule exists to prevent. Same treatment as the augment ML ceiling.
 test("#346: the Set Augments picker is disabled on rungs that clear set-bonus crafting", () => {
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
-  const block = srcFrom(src, 'id="wz-setaug"', 1800, "wz-setaug block");
+  const block = srcFrom(src, 'poolFold("setaug"', 1800, "wz-setaug block");
   assert.match(block, /setAugInert \? " disabled" : ""/,
     "the checkboxes carry a disabled branch keyed on the rung");
   // The wording gained "on the Character step" when the panel moved to Gear pool: the

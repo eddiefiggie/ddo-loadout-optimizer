@@ -1611,10 +1611,19 @@ function containerSummary(list) {
  *  spelled in two places already (the markup and the change handler, which updates
  *  it inline rather than re-rendering) and a bulk control makes it three. Two
  *  spellings of one label is a drift waiting to happen, and this one carries a
- *  count, so a drifted copy reads as a wrong number rather than as a typo. Pure. */
-function setAugSummaryLabel(n) {
+ *  count, so a drifted copy reads as a wrong number rather than as a typo. Pure.
+ *
+ *  The section became one of the Gear pool folds, so the title now comes from
+ *  `poolFold` and the count from `setAugStatus`. Both halves still live here, and
+ *  the inline handler below still composes them through this function — otherwise
+ *  the handler's spelling would silently replace the fold's on the first tick,
+ *  which is the exact drift this was extracted to stop. */
+function setAugStatus(n) {
   const count = Number(n) || 0;
-  return `Set Augments I own${count ? ` · ${count} selected` : ""}`;
+  return count ? `${count} selected` : "none owned";
+}
+function setAugSummaryLabel(n) {
+  return `Set Augments I own · ${setAugStatus(n)}`;
 }
 
 /** #91 (U4/KTD8) — the load-path healing rule, beside `migratePriorities` in
@@ -2178,7 +2187,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -2288,6 +2297,11 @@ if (typeof window !== "undefined" && window.App) {
       // the character step's handlers re-render the whole step, and a fold that
       // snapped shut mid-edit would be worse than not folding at all.
       weaponsOpen: false,
+      // The Gear pool step's folds, keyed by section. UI-only and NOT persisted,
+      // for the same reason `weaponsOpen` is on state: several handlers on that
+      // step re-render the whole thing, and a fold that snapped shut mid-edit
+      // would be worse than not folding at all.
+      poolOpen: {},
       // #428 U6 (R8) — whether a blocked Continue has already asked. Until it
       // has, nothing is marked as needing an answer (R12); after it has, the
       // marks are re-applied on every render for whatever is STILL missing, so
@@ -2532,6 +2546,63 @@ if (typeof window !== "undefined" && window.App) {
       </section>`;
     }
 
+    /** The Gear pool step's folds. Every subsection on that step is one of these,
+     *  so they share a border, a padding and a caret rather than being told apart
+     *  by how much whitespace sits above them.
+     *
+     *  `status` is the collapsed state of the section — the thing a fold has to
+     *  say, or closing it hides a setting the player forgot they made. Same
+     *  `Title · status` idiom the Character step's Weapon setup fold uses.
+     *
+     *  Open state lives on `state.poolOpen` rather than in the DOM because the
+     *  step re-renders wholesale on several handlers.
+     */
+    function poolFold(key, title, status, body, id) {
+      const open = state.poolOpen && state.poolOpen[key] ? " open" : "";
+      const idAttr = id ? ` id="${esc(id)}"` : "";
+      return `<details class="wz-group wz-group-fold wz-pool-sec" data-poolfold="${esc(key)}"${idAttr}${open}>
+        <summary class="wz-group-legend">${esc(title)}<span class="wz-sub"> · ${esc(status)}</span></summary>
+        <div class="wz-pool-body">${body}</div>
+      </details>`;
+    }
+
+    /** One section's collapsed status line. Kept beside `poolFold` so every
+     *  section answers the same question the same way: what did I set here? */
+    function poolStatus(key) {
+      const n = (v) => (Array.isArray(v) ? v.length : 0);
+      switch (key) {
+        case "pin": {
+          const c = _pinnedVariantIds(state.slotConstraints).length;
+          return c ? `${c} pinned` : "nothing pinned";
+        }
+        case "block": {
+          const c = n(state.blocklist);
+          return c ? `${c} blocked` : "nothing blocked";
+        }
+        case "packs": {
+          if (!Array.isArray(state.ownedPacks)) return "searching everything";
+          return `${state.ownedPacks.length} pack${state.ownedPacks.length === 1 ? "" : "s"} ticked`;
+        }
+        case "setaug": {
+          const c = (state.ownedSetAugments instanceof Set) ? state.ownedSetAugments.size : 0;
+          return setAugStatus(c);
+        }
+        case "setpin": {
+          const c = n(state.pinnedSets);
+          return c ? `${c} required` : "no set required";
+        }
+        case "setex": {
+          const c = n(state.excludedSets);
+          return c ? `${c} excluded` : "nothing excluded";
+        }
+        case "overrides": {
+          const c = n(state.overrideApplied);
+          return c ? `${c} correction${c === 1 ? "" : "s"}` : "nothing corrected";
+        }
+        default: return "";
+      }
+    }
+
     function stepPool() {
       const owned = state.pool === "owned";
       return `<section class="wz-card">
@@ -2561,25 +2632,22 @@ if (typeof window !== "undefined" && window.App) {
               <small>Use only augments your export lists, plus the ones anyone can buy or trade for.
                 Off by default — augments otherwise come from the full catalog.</small></span></label>
         </div>
-        <div class="wz-pinbox">
-          <span class="wz-label">Pin specific items <span class="wz-sub">· optional · force gear you've already decided on into the build</span></span>
+        ${poolFold("pin", "Pin specific items", poolStatus("pin"), `
+          <p class="wz-adv-note">Force gear you have already decided on into the build.</p>
           <div class="wz-addrow">
             <input id="wz-pin-search" data-nodirty type="text" placeholder="Search an item by name — e.g. Hydra's Heart…" autocomplete="off">
           </div>
           <div id="wz-pin-results" class="wz-pin-results"></div>
-          <div id="wz-pin-list" class="wz-pin-list"></div>
-        </div>
-        <div class="wz-pinbox wz-blockbox">
-          <span class="wz-label">Block items or augments <span class="wz-sub">· optional · gear the solver must never recommend</span></span>
+          <div id="wz-pin-list" class="wz-pin-list"></div>`)}
+        ${poolFold("block", "Block items or augments", poolStatus("block"), `
+          <p class="wz-adv-note">Gear the solver must never recommend.</p>
           <div class="wz-addrow">
             <input id="wz-block-search" data-nodirty type="text" placeholder="Search anything placeable — e.g. Lunar Gem of Abjuration…" autocomplete="off">
           </div>
           <div id="wz-block-results" class="wz-pin-results"></div>
           <div id="wz-block-stage" class="wz-block-stage"></div>
-          <div id="wz-block-list" class="wz-pin-list"></div>
-        </div>
-        <div class="wz-pinbox wz-packbox" id="wz-packs">
-          <span class="wz-label">Content you own <span class="wz-sub">· optional · leave it alone to search everything</span></span>
+          <div id="wz-block-list" class="wz-pin-list"></div>`)}
+        ${poolFold("packs", "Content you own", poolStatus("packs"), `
           <p class="wz-adv-note">Tick the adventure packs and expansions you have and the solve will stop
             recommending gear you cannot go and get. Untouched, it searches the whole roster — that is the
             default, and it is the right one if you are planning rather than farming.</p>
@@ -2593,10 +2661,8 @@ if (typeof window !== "undefined" && window.App) {
             <button class="btn ghost sm" id="wz-packs-none" type="button">Clear</button>
           </div>
           <p id="wz-packs-stat" class="wz-help wz-pack-stat"></p>
-          <div id="wz-packs-list" class="wz-pack-list"></div>
-        </div>
-        <div class="wz-pinbox wz-setpinbox">
-          <span class="wz-label">Require a set <span class="wz-sub">· optional · the solve must deliver these, or say why it cannot</span></span>
+          <div id="wz-packs-list" class="wz-pack-list"></div>`)}
+        ${poolFold("setpin", "Require a set", poolStatus("setpin"), `
           <p class="wz-adv-note">Ranking the stats a set grants does not force it — the solver takes those
             stats from wherever they are cheapest. Pin the set instead and it has to appear.</p>
           <div class="wz-addrow">
@@ -2604,8 +2670,7 @@ if (typeof window !== "undefined" && window.App) {
           </div>
           <div id="wz-setpin-results" class="wz-pin-results"></div>
           <div id="wz-setpin-list" class="wz-pin-list"></div>
-          <p id="wz-setpin-slow" class="wz-pin-mutexwarn" hidden></p>
-        </div>
+          <p id="wz-setpin-slow" class="wz-pin-mutexwarn" hidden></p>`)}
 ${(() => {
             // U6 — Set Augment availability. The 21 set-augment names come from the
             // dataset's augment_set_defs (single source of truth). A checked name is
@@ -2622,24 +2687,19 @@ ${(() => {
             // exists to prevent, and the same treatment the augment ML ceiling gets.
             // Ticks are kept on state so they return when the player climbs back.
             const setAugInert = _rungExcludesNicheCrafting(_normalizeRung(state.craftingRung));
-            return `<details class="wz-data" id="wz-setaug">
-              <summary>${esc(setAugSummaryLabel(n))}</summary>
-              <div class="wz-data-body">
-                <p class="wz-help">${setAugInert
-                  ? "Not applicable — the crafting rung you chose on the Character step excludes set-bonus crafting, so no Augment Set can activate. Your selections are kept for when you move it back up."
-                  : "Check the <strong>Set Augments</strong> you own. Only checked ones are considered — each grants its bonus once 3 pieces of its set are equipped. None are considered by default."}</p>
-                <div class="wz-setaug-bulk" id="wz-setaug-bulk">
-                  <button type="button" class="btn ghost" id="wz-setaug-all"${setAugInert ? " disabled" : ""}>Select all ${setNames.length}</button>
-                  <button type="button" class="btn ghost" id="wz-setaug-none"${setAugInert ? " disabled" : ""}>Clear all</button>
-                </div>
-                <div class="wz-seg wz-setaug-list" id="wz-setaug-list">${setNames.map((s) =>
-                  `<label class="wz-check wz-check-inline"><input type="checkbox" data-setaug="${esc(s)}"${owned.has(s) ? " checked" : ""}${setAugInert ? " disabled" : ""}>
-                    <span class="wz-check-body"><span class="wz-label">${esc(s)}</span></span></label>`).join("")}</div>
+            return poolFold("setaug", "Set Augments I own", poolStatus("setaug"), `
+              <p class="wz-help">${setAugInert
+                ? "Not applicable — the crafting rung you chose on the Character step excludes set-bonus crafting, so no Augment Set can activate. Your selections are kept for when you move it back up."
+                : "Check the <strong>Set Augments</strong> you own. Only checked ones are considered — each grants its bonus once 3 pieces of its set are equipped. None are considered by default."}</p>
+              <div class="wz-packrow" id="wz-setaug-bulk">
+                <button type="button" class="btn ghost sm" id="wz-setaug-all"${setAugInert ? " disabled" : ""}>Select all ${setNames.length}</button>
+                <button type="button" class="btn ghost sm" id="wz-setaug-none"${setAugInert ? " disabled" : ""}>Clear</button>
               </div>
-            </details>`;
+              <div class="wz-seg wz-setaug-list" id="wz-setaug-list">${setNames.map((s) =>
+                `<label class="wz-check wz-check-inline"><input type="checkbox" data-setaug="${esc(s)}"${owned.has(s) ? " checked" : ""}${setAugInert ? " disabled" : ""}>
+                  <span class="wz-check-body"><span class="wz-label">${esc(s)}</span></span></label>`).join("")}</div>`, "wz-setaug");
           })()}
-        <div class="wz-pinbox wz-setexbox">
-          <span class="wz-label">Exclude a set <span class="wz-sub">· optional · keep a set's gear out of the search entirely</span></span>
+        ${poolFold("setex", "Exclude a set", poolStatus("setex"), `
           <p class="wz-adv-note">The mirror of <em>Require a set</em>. Excluding one removes its member items from the
             search, so nothing in your build can rest on it. Useful when you do not want to farm a set, or want to see
             the best build that does not use it.</p>
@@ -2649,14 +2709,11 @@ ${(() => {
             <input id="wz-setex-search" data-nodirty type="text" placeholder="Search a set to exclude…" autocomplete="off">
           </div>
           <div id="wz-setex-results" class="wz-pin-results"></div>
-          <div id="wz-setex-list" class="wz-pin-list"></div>
-        </div>
-        <div class="wz-pinbox wz-overridebox">
-          <span class="wz-label">Bonus types you have corrected <span class="wz-sub">· optional · when the game disagrees with the wiki</span></span>
+          <div id="wz-setex-list" class="wz-pin-list"></div>`)}
+        ${poolFold("overrides", "Bonus types you have corrected", poolStatus("overrides"), `
           <p class="wz-adv-note">Add these from an item's card in the results, or from Browse. They are your
             observations, not wiki-sourced — a solve that uses one says so, and so does every export.</p>
-          <div id="wz-override-list" class="wz-pin-list"></div>
-        </div>
+          <div id="wz-override-list" class="wz-pin-list"></div>`)}
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           ${saveControl("ghost")}<button class="btn primary" data-next>Continue →</button></div>
       </section>`;
@@ -5548,8 +5605,15 @@ ${(() => {
         const syncSetAug = () => {
           const owned = state.ownedSetAugments;
           for (const cb of setAugBoxes()) cb.checked = owned.has(cb.getAttribute("data-setaug"));
+          // Patch the STATUS span, not the whole summary: writing textContent on
+          // the summary would flatten the fold's `.wz-sub` styling on the first
+          // tick, so the count would change font the moment the player used it.
+          // Falls back to the whole summary if the span is ever absent, which is
+          // the pre-fold shape and still correct, just unstyled.
           const sum = document.querySelector("#wz-setaug > summary");
-          if (sum) sum.textContent = setAugSummaryLabel(owned.size);
+          const sub = sum && sum.querySelector(".wz-sub");
+          if (sub) sub.textContent = ` · ${setAugStatus(owned.size)}`;
+          else if (sum) sum.textContent = setAugSummaryLabel(owned.size);
           // A bulk button that cannot change anything is disabled rather than a
           // no-op click — the same courtesy the picklists get when "All added".
           // Inertness is re-read rather than inferred from the button's CURRENT
@@ -5636,6 +5700,16 @@ ${(() => {
             reader.readAsText(f);
           };
         }
+        // Every Gear pool subsection is a fold; remember which are open so the
+        // several handlers on this step that re-render wholesale do not snap them
+        // shut under the player. Same treatment `wz-weapons` gets on the Character
+        // step, applied by data attribute so a new section needs no new binding.
+        document.querySelectorAll("details[data-poolfold]").forEach((d) => {
+          d.ontoggle = () => {
+            if (!state.poolOpen) state.poolOpen = {};
+            state.poolOpen[d.dataset.poolfold] = d.open;
+          };
+        });
         // U3 — pre-solve item pinning: search + pinned list live under the pool pick.
         const psearch = document.getElementById("wz-pin-search");
         if (psearch) {
