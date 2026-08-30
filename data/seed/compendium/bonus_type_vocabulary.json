@@ -1,0 +1,77 @@
+{
+  "_meta": {
+    "title": "the DDO wiki's own bonus-type vocabulary",
+    "note": "`CREDIT_BONUS_TYPES` in web/model.js is the list a player picks from twice — the Advanced panel's skip picker and the bonus-type override. It had grown by adding whatever `type` values the built dataset happened to carry, which is how a STAT ended up in it as a bonus type. This shard is the wiki's answer, so the list can be checked against a source instead of against itself.",
+    "sources": {
+      "category": "https://ddowiki.com/page/Category:Bonus_types",
+      "ac_subcategory": "https://ddowiki.com/page/Category:Armor_class_bonus_types"
+    },
+    "harvested": "2026-08-30",
+    "method": "MediaWiki API, list=categorymembers, same-origin from a ddowiki tab per docs/wiki-evidence/harvest-method.md. Names are the page titles with a trailing ' bonus' removed."
+  },
+  "category_members": [
+    "Action Boost",
+    "Alchemical",
+    "Armor",
+    "Artifact",
+    "Circumstance",
+    "Combat Style",
+    "Competence",
+    "Determination",
+    "Divine",
+    "Enhancement",
+    "Epic",
+    "Equipment",
+    "Exceptional",
+    "Feat",
+    "Festive",
+    "Fortune",
+    "Guild",
+    "Implement",
+    "Inherent",
+    "Insight",
+    "Legendary",
+    "Luck",
+    "Morale",
+    "Music",
+    "Mythic",
+    "Primal",
+    "Profane",
+    "Psionic",
+    "Quality",
+    "Rage",
+    "Reaper",
+    "Resistance",
+    "Sacred",
+    "Shield",
+    "Size",
+    "Special"
+  ],
+  "armor_class_subcategory": [
+    "Armor",
+    "Centered",
+    "Charisma",
+    "Deflection",
+    "Dexterity",
+    "Insight",
+    "Luck",
+    "Miscellaneous",
+    "Natural armor",
+    "Shield",
+    "Size",
+    "Wisdom"
+  ],
+  "offered_but_not_categorised": {
+    "Untyped": "Not a bonus type and not meant to be — it is the ABSENCE of one. The solver needs a name for an affix that carries no type, and the picker needs to let a player skip that bucket like any other.",
+    "Orb": "Real, and named by the wiki, just without its own category page. `Orb` states: \"when you block with it, a magical barrier of force provides an Orb Bonus to your saving throws and energy resistances\". 110 affixes carry it. Note the bonus is CONDITIONAL (while blocking), which this tool does not model — see #214.",
+    "Vitality": "Real by the wiki's own stacking sentence rather than by category. `Vitality` states: \"This stacks with all bonuses except for other items bearing the Vitality enchantment\" — which is the definition of its own bucket. 149 affixes carry it."
+  },
+  "refused": {
+    "Sneak Attack": "REMOVED 2026-08-30. Not a bonus type: it is the STAT being bonused. The wiki's `Sneak attack` page says \"Sneak Attack damage is split into two types: Dice, and Bonus Damage\", and every source it lists grants an ARTIFACT bonus — named item sets at +1/2/3 Artifact, the Solar Gems at Artifact. So `Sneak Attack Bonus` is the affix and `Artifact` is its type. 20 affixes in the built dataset are typed `Sneak Attack`, which puts them in a bucket of their own that stacks with everything; retyping them needs per-item evidence and is filed separately."
+  },
+  "offered_but_uncarried": {
+    "_note": "Real bonus types the picker offers that NO affix in the built catalog currently carries. Recorded rather than gated: the same list is the bonus-type OVERRIDE's target list, and a correction target legitimately may not be carried yet — that is the situation being corrected. Measured 2026-08-30.",
+    "Morale": "Arrives as a declared credit (Greater Heroism +4 Morale), not as an item affix.",
+    "Alchemical": "Real per Category:Bonus types; nothing in the catalog carries it today."
+  }
+}
