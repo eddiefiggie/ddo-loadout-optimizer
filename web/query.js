@@ -181,7 +181,7 @@ window.App && window.App.ready((dataset) => {
         // "Almost There"), keyed by host name. Threaded as an ARGUMENT like every
         // other pool; the solver reaches a host's options through its own
         // `nc_per_item_slots` marker.
-        dataset.nearly_complete_per_item);
+        dataset.nearly_complete_per_item, dataset.essence_crafting);
       const t0 = performance.now();
       // eslint-disable-next-line no-undef
       const result = await solveLexicographic(model, h);

@@ -27,9 +27,17 @@ DATASET = os.path.join(ROOT, "web", "data", "items.json")
 sys.path.insert(0, ROOT)
 from src import crafting_coverage as cc  # noqa: E402
 
-# The baseline this unit converts into a gate: 33 declared labels no pool serves,
-# across 348 item-slot declarations. A diff here is a finding to attribute, never
+# The baseline this unit converts into a gate: 30 declared labels no pool serves,
+# across 336 item-slot declarations. A diff here is a finding to attribute, never
 # a number to edit into agreement.
+#
+# #193 moved it from 33/348. The three `Essence Crafting: Trinket - *` labels left
+# the allowlist when the `essence_crafting` pool started serving them, taking 12
+# item-slot declarations with them: FOUR declaring hosts (the three Gem of Many
+# Facets tiers and the blank `Trinket [Crafted]`) times three menus each. The
+# blank trinket is quarantined and gets no live slots, but it still DECLARES the
+# labels, so it counts here — this gate measures declarations, not active hosts.
+# The nine Melee/Ring/Rune Arm labels are untouched: no pool serves them.
 #
 # #371 moved it from 35/415: `Nearly Finished` (65 declarations) and `Almost
 # There` (2) left the allowlist when `nearly_complete_per_item` started serving
@@ -37,8 +45,8 @@ from src import crafting_coverage as cc  # noqa: E402
 # they are named individually, and asserted by the per-item scenarios at the foot
 # of this file, because a slot-level count cannot tell a covered host from an
 # uncovered one.
-BASELINE_UNSERVED_LABELS = 33
-BASELINE_UNSERVED_ITEM_SLOTS = 348
+BASELINE_UNSERVED_LABELS = 30
+BASELINE_UNSERVED_ITEM_SLOTS = 336
 
 # #371 — the per-item split as measured on the built dataset.
 BASELINE_PER_ITEM_DECLARERS = 65
@@ -132,6 +140,10 @@ def full_dataset(per_item=True, **overrides):
         "seal": [{"seal_type": "Fire"}],
         "green_steel": [{"tier_key": "T1 (Equipment)"}],
         "thunder_forged": [{"tier": 1}],
+        # #193 — keyed by `menu`. Present for the same reason every other pool is:
+        # `served_labels` refuses a pool that walks zero records, so a fixture
+        # missing this one fails on THAT rather than on what the test is about.
+        "essence_crafting": [{"menu": "Prefix"}],
         "nearly_complete_per_item": {PER_ITEM_HOST: [dict(PER_ITEM_OPTION)]},
     }
     data.update(overrides)
@@ -259,6 +271,7 @@ def test_each_pool_raises_distinguishably_when_it_walks_zero_records():
         "seal": {"seal": []},
         "green_steel": {"green_steel": []},
         "thunder_forged": {"thunder_forged": []},
+        "essence_crafting": {"essence_crafting": []},
         "nearly_complete_per_item": {"nearly_complete_per_item": {}},
     }
     assert set(empty) == set(cc.POOL_READERS), "a pool was added without a vacuity case"

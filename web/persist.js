@@ -30,7 +30,7 @@
     "status", "chosen", "effective", "perTarget", "breakdown", "setsActive",
     "computeScale", "capped", "augmentsPlaced", "dinoPlaced", "ncPlaced",
     "rollPlaced", "vikPlaced", "sealPlaced", "jokerPlaced", "tfPlaced",
-    "gsPlaced", "membershipPlaced", "setAugmentsPlaced",
+    "gsPlaced", "essPlaced", "essenceReport", "membershipPlaced", "setAugmentsPlaced",
     // #539 — what the player's set pins did. Kept for the same reason blockReport
     // is: `program` is dropped on save and KTD6 forbids re-solving on load, so a
     // restored build could not otherwise say whether a pin landed, was suppressed,

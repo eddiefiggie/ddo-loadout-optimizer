@@ -181,6 +181,21 @@ REGISTRY = {
         "record count — the pool has been full and inert for months, so a "
         "record-count trigger was already spent.",
         host_marker="thunder_forged_tiers", splits_options=True),
+    "essence_crafting": _c(
+        FLAT, (), VERIFIED_SAFE, True,
+        "Essence Crafting Trinket menus, the Gem of Many Facets' three (#193/#599). "
+        "Flat is CORRECT here rather than merely tolerated, which is what separates "
+        "it from green_steel and thunder_forged: a crafted Essence effect grants "
+        "exactly ONE stat by construction — the pool is built one record per "
+        "(menu, effect) from a placement table whose cells are single effects, so "
+        "there is no multi-affix option for a flat shape to split. `Insightful "
+        "Constitution` is not a second affix, it is Constitution in the Insight "
+        "bucket, and the builder resolves that to (stat, bonus_type) before a record "
+        "exists. The solver constrains Sigma <= 1 per MENU (three independent "
+        "single-pick slots on one host), so a player is never told they get one part "
+        "of something they crafted whole. Reachable: three verified Gem tiers carry "
+        "`essence_slots`.",
+        host_marker="essence_slots"),
     "roll_groups": _c(
         FLAT, (), VERIFIED_SAFE, False,
         "Item-level 'rolls one of' groups, derived by the gate from every variant. "
@@ -225,7 +240,7 @@ NON_CONTAINERS = {
 # unnoticed. Discovery catches an undeclared container that reaches the gate; this
 # catches the other direction — a declaration deleted, or a container added to the
 # registry without anyone revisiting the count.
-EXPECTED_CONTAINER_COUNT = 8
+EXPECTED_CONTAINER_COUNT = 9
 
 
 def describe() -> list:

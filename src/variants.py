@@ -191,6 +191,9 @@ def _make_variant(item, ml, tier_label, parsed):
         "thunder_forged_tiers": item.get("thunder_forged_tiers"),
         # Legendary Green Steel single-pick choice-slot marker (truthy = host).
         "green_steel_slot": item.get("green_steel_slot"),
+        # Essence Crafting Trinket menus [{menu:"Prefix"},…] — one single-pick
+        # choice slot each, the Gem of Many Facets' three (#193/#599).
+        "essence_slots": item.get("essence_slots"),
     }
 
 
@@ -216,6 +219,7 @@ def expand_item(item) -> list:
         var = _make_variant(item, ml=item.get("minimum_level"), tier_label=None,
                             parsed=parsed)
         var["lamordia_slots"] = item.get("lamordia_slots")
+        var["essence_slots"] = item.get("essence_slots")
         return [var]
 
     lines = item.get("enhancements", [])

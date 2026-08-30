@@ -28,11 +28,17 @@ def _rec(name, **over):
     return base
 
 
+# A label that is STILL unserved after #193 wired the Trinket menus. The fixture
+# used `Essence Crafting: Trinket - Prefix` until then; once a pool started serving
+# it, every "the pair is clean" test was quietly asserting the divergent case. Rune
+# Arm has no pool at all, which is what these tests need.
+INERT_LABEL = "Essence Crafting: Rune Arm - Prefix"
+
+
 def _pair(**crafted_over):
     """A base and its crafted twin, identical unless the caller diverges one."""
     base = _rec("Widget", affixes=[{"name": "Craftable Widget", "type": "Untyped", "value": "3"}])
-    crafted = _rec("Widget [Crafted]",
-                   crafting=["Essence Crafting: Trinket - Prefix"])
+    crafted = _rec("Widget [Crafted]", crafting=[INERT_LABEL])
     crafted.update(crafted_over)
     return [base, crafted]
 
@@ -69,7 +75,9 @@ def test_a_record_in_no_pair_gets_no_identity():
 def test_the_crafted_half_may_drop_affixes_the_base_carries():
     """That IS the relationship: the crafted state has spent its `Craftable`
     marker. Losing affixes is expected; gaining them is not."""
-    assert _derive(_pair())["problems"] == []
+    r = _derive(_pair())
+    assert r["problems"] == []
+    assert r["capacity_divergent"] == [], "an inert label is not divergence"
 
 
 # --- the ways a pair stops being one offer -------------------------------------
@@ -114,25 +122,41 @@ def test_multiple_variants_under_one_name_are_reported():
 
 # --- the self-retiring guard (#193) --------------------------------------------
 
-def test_a_served_crafting_label_retires_the_folding():
-    """THE guard that makes this safe to ship. The folding rests on Essence
-    Crafting being unmodelled: while its slots are inert the crafted state offers
-    nothing extra, so it is the same offer. The day #193 wires those slots to a
-    pool, the crafted record starts carrying capacity its base lacks — it becomes
-    a genuinely distinct candidate, and the build must say so rather than keep
-    silently folding a block across two different things.
+def test_a_served_crafting_label_marks_the_pair_capacity_divergent():
+    """THE guard, and it has now FIRED (#193 wired the Gem's Trinket menus).
 
-    Simulated by removing the label from the unserved set, which is exactly what
-    serving it would do."""
-    served_now = frozenset(x for x in UNSERVED if x != "Essence Crafting: Trinket - Prefix")
+    It used to fail the build, on the reasoning that a crafted record carrying
+    capacity its base lacks is no longer "the same offer". That is true, and it
+    changed nothing about what this module does — because the clause conflated two
+    questions and only one of them turned:
+
+      * interchangeable to the SOLVER? No longer. The crafted Gem has three
+        craftable menus and can beat its own base, so it must stay a distinct
+        candidate. This module never touched candidacy or dominance.
+      * ONE GAME ITEM to the player? Still yes — and that is the only question
+        `block_identity` answers. Someone blocking the Gem does not own it, and
+        does not own the version they would have crafted from it either. Dropping
+        the fold would hand them the twin, which IS the #547 report.
+
+    So it is recorded rather than raised. Every other clause still fails the build.
+    """
+    served_now = frozenset(x for x in UNSERVED if x != INERT_LABEL)
     r = _derive(_pair(), unserved=served_now)
-    assert any("now SERVED by a pool" in p and "#193" in p for p in r["problems"]), r["problems"]
+    assert r["problems"] == [], "a served label is no longer a build failure"
+    assert len(r["capacity_divergent"]) == 1, r["capacity_divergent"]
+    entry = r["capacity_divergent"][0]
+    assert entry["served_labels"] == [INERT_LABEL]
+    # The fold SURVIVES: this is the property the whole module exists for.
+    assert r["identity"][entry["crafted"]] == entry["base"], \
+        "the block identity must survive divergence — losing it re-opens #547"
 
 
 def test_the_same_pair_is_clean_while_the_label_stays_inert():
     """The counterfactual for the test above — otherwise it proves only that
     `derive` can emit a problem, not that this specific condition causes it."""
-    assert _derive(_pair())["problems"] == []
+    r = _derive(_pair())
+    assert r["problems"] == []
+    assert r["capacity_divergent"] == [], "an inert label is not divergence"
 
 
 def test_a_crafting_label_the_base_already_had_is_not_an_addition():
@@ -140,9 +164,10 @@ def test_a_crafting_label_the_base_already_had_is_not_an_addition():
     capacity, so it must not trip the served check even if it were served."""
     base, crafted = _pair()
     base["crafting"] = ["Blue Augment Slot"]
-    crafted["crafting"] = ["Blue Augment Slot", "Essence Crafting: Trinket - Prefix"]
+    crafted["crafting"] = ["Blue Augment Slot", INERT_LABEL]
     r = _derive([base, crafted], unserved=UNSERVED)
     assert r["problems"] == [], r["problems"]
+    assert r["capacity_divergent"] == [], "a shared label is not added capacity"
 
 
 # --- the shipped dataset --------------------------------------------------------
@@ -163,7 +188,17 @@ def test_the_built_dataset_publishes_the_identity():
     if data is None:
         return
     meta = data["metadata"]
-    assert meta["crafted_twin_coverage"] == {"inspected": 45, "pairs": 45}
+    # #193 — four pairs are now capacity-divergent: the three Gem of Many Facets
+    # tiers and the blank `Trinket [Crafted]`, all of which declare the three
+    # Trinket Essence menus the `essence_crafting` pool now serves. They are still
+    # ONE ITEM for blocking, which is what `crafted_twin_identity` is for.
+    assert meta["crafted_twin_coverage"] == {
+        "inspected": 45, "pairs": 45, "capacity_divergent": 4}
+    divergent = {d["crafted"] for d in meta["crafted_twin_identity_divergent"]}
+    assert divergent == {"Gem of Many Facets [Crafted]",
+                         "Epic Gem of Many Facets [Crafted]",
+                         "Legendary Gem of Many Facets [Crafted]",
+                         "Trinket [Crafted]"}, sorted(divergent)
     identity = meta["crafted_twin_identity"]
     assert identity["Legendary Gem of Many Facets [Crafted]"] == "Legendary Gem of Many Facets", \
         "the item #547 was reported about"

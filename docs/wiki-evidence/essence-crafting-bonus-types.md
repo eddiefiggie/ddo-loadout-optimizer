@@ -114,6 +114,9 @@ and it is why the ability numbers can be trusted rather than merely accepted.
 
 ## What this does and does not unblock
 
+**WIRED 2026-08-29.** The partial capability below is now live for the Gem — see
+"What shipped" at the foot of this document.
+
 **Does:** a partial capability. All six ability scores are typed in both
 Enhancement (Prefix and Suffix menus) and Insight (Extra menu), which is the
 shape that matters most on a trinket. For the **Gem of Many Facets** — three
@@ -262,3 +265,52 @@ line-proximity extractor re-derives the original wrong answer.
 - `tests/test_essence_bonus_type_shard.py` — the guards on every claim above.
 - `docs/solutions/conventions/exclude-until-verified-data-gates.md` — the rule
   the 135 unsourced effects rest on.
+
+## What shipped (2026-08-29)
+
+The Gem of Many Facets' three Trinket menus are solver-live. `src/essence_pool.py`
+builds the option pool and offers an effect only when **all four** of these are
+sourced — any one missing and it stays out:
+
+| | source | missing for |
+|---|---|---|
+| placement | table 1b | — |
+| bonus type | this document (#193) | 135 of 157 |
+| ML curve row | `essence_curve_join` (#599) | 37 of 157 |
+| catalog stat name | the built dataset | 1 (`Natural Armor`) |
+
+**25 of the 170 Trinket placements** are offered: 10 Prefix, 6 Suffix, 9 Extra.
+The player is told that number rather than shown a short menu with no
+explanation.
+
+Three things are worth knowing about the wiring:
+
+- **Three independent slots, not one.** The `<= 1` constraint is per MENU, so a
+  Gem crafts a Prefix, a Suffix and an Extra. Crafting one does not spend the
+  others.
+- **The magnitude comes from the HOST's minimum level**, read at bind time as
+  `values_by_ml[ml - 1]`. The same option is +4 on the heroic Gem (ML 5) and +13
+  on the legendary one (ML 30).
+- **Insight effects need ML 10.** The heroic Gem is ML 5, so its Extra menu is
+  empty *in game* — and the notice says so, because an empty menu otherwise reads
+  as missing data.
+
+`Natural Armor` is the one effect with placement, type and curve all present that
+is still refused. The catalog has no `Natural Armor` stat; it models natural
+armour as `Armor Class` in the `Natural` bucket. Mapping onto that is an
+unsourced stat rename stacked on top of this document's weakest evidence shape
+(`page-subject`, used once). Two stacked judgement calls on one value is how a
+wrong number ships. Sourcing either half admits it, in one line.
+
+### What the types bought, concretely
+
+The bonus type is not bookkeeping here — it is the difference between two numbers
+a player would see. On a Legendary Gem next to a necklace already giving
+Constitution +15 Enhancement:
+
+- crafting **Constitution** (Enhancement, +13) adds **nothing** — same bucket,
+  take the max, total stays 15;
+- crafting **Insightful Constitution** (Insight, +6) makes it **21**.
+
+Both are correct only because the type is known. Without it the first would have
+read 28.

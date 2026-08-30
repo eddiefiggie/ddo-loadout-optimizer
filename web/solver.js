@@ -442,6 +442,7 @@ function buildProgram(model) {
   const sealMeta = new Map(); // seal placement var -> {item, seal_type, category, stat, bonus_type, value, unit, wiki_url}
   const tfMeta = new Map();   // Thunder-Forged pick var -> {item, tier, stat, bonus_type, value, unit, wiki_url}
   const gsMeta = new Map();   // Green Steel pick var -> {item, name, stat, bonus_type, value, unit, wiki_url}
+  const essMeta = new Map();  // Essence Crafting pick var -> {item, menu, effect, stat, bonus_type, value, unit, wiki_url}
   const memberMeta = new Map(); // membership pick var -> {host, set, station} (chosen set-membership: Cannith / Dino Set-Bonus)
 
   // U3 — augment assignment (aggregate compatible-color capacity). Correctness
@@ -1065,6 +1066,57 @@ function buildProgram(model) {
     if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single craft per host
   }
 
+  // Essence Crafting (#193/#599) — the Gem of Many Facets' three Trinket menus.
+  // Three INDEPENDENT single-pick slots on one host, not one slot with three picks:
+  // a Gem carries a Prefix, a Suffix and an Extra, and crafting into one does not
+  // spend the others. So the `<= 1` is per MENU, inside the per-host loop.
+  //
+  // Two things differ from every pool above and both come from the wiki:
+  //
+  //   * The magnitude scales with the HOST's minimum level, so the value is read
+  //     from the option's curve at bind time (`values_by_ml[ml - 1]`) rather than
+  //     carried on the option. The same option on the heroic Gem (ML 5) and the
+  //     legendary one (ML 30) is a different number.
+  //   * Insight-bonus effects need ML >= 10 ("Effects that grant insight bonuses
+  //     can be applied to items ML 10 and higher only, regardless of
+  //     prefix/suffix/extra slot"). The heroic Gem is ML 5, so this is the
+  //     difference between offering it nine Insight options and offering it none.
+  //
+  // Contributions bucket as (stat, equivType(bonus_type)) like everything else,
+  // which is what makes crafting the same stat in two menus safe: they land in one
+  // bucket and take the max instead of stacking. That is the whole reason the
+  // bonus type had to be harvested before any of this could be wired.
+  let essc = 0;
+  for (const xv of xVars) {
+    const menus = xv.variant.essence_slots || [];
+    if (!menus.length) continue;
+    const hostMl = Number(xv.variant.ml);
+    if (!Number.isFinite(hostMl) || hostMl < 1 || hostMl > 36) continue;
+    for (const slot of menus) {
+      const slotVars = [];
+      for (const opt of model.essenceCrafting || []) {
+        if (opt.menu !== slot.menu) continue;
+        if (!targetSet.has(opt.stat)) continue;
+        if (hostMl < (opt.min_ml || 1)) continue;
+        const value = Number(opt.values_by_ml[hostMl - 1]);
+        if (!Number.isFinite(value) || value <= 0) continue;
+        const n = "ess" + essc++;
+        extraVars.push(n);
+        essMeta.set(n, {
+          item: xv.variant.variant_id, menu: opt.menu, effect: opt.effect,
+          name: opt.name, stat: opt.stat, bonus_type: opt.bonus_type,
+          value, unit: opt.unit || "flat", wiki_url: opt.wiki_url,
+        });
+        slotVars.push(n);
+        extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
+        const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
+        if (!zByBucket.has(k)) zByBucket.set(k, []);
+        zByBucket.get(k).push(zOf([n], value, opt, xv.variant.variant_id));
+      }
+      if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // one craft per menu
+    }
+  }
+
   // U5 — set thresholds. A set tier's parsed stats count only when >= N pieces
   // of the set are equipped. Per tier: a binary set_active with the linear
   // indicator  N*set_active - sum(equipped pieces of the set) <= 0  (so it can
@@ -1419,7 +1471,7 @@ function buildProgram(model) {
     // tracked stat it also feeds is capped and slack.
     flooredStats: Object.keys(model.floors || {}),
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
-    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
+    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
     // #91 (U3) — the Utility tier's stage state: whether the sentinel is
     // ranked, the per-effect indicator binaries, and their name/ceiling meta.
     utilityEnabled, utilityVars, utilityMeta,
@@ -1697,7 +1749,8 @@ function preferColorlessSetAugments(program, highs, prevRes, locks, extraBase) {
   // could otherwise flip reported sets, crafts, or suppression flags with
   // identical totals — display churn the settle stage exists to prevent.
   for (const meta of [program.setMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
-                      program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta]) {
+                      program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta,
+                      program.essMeta]) {
     pinVarsAt(pin, at, meta ? [...meta.keys()] : []);
   }
   pinVarsAt(pin, at, program.hostsVar ? [...program.hostsVar.values()] : []);
@@ -1715,7 +1768,8 @@ function preferColorlessSetAugments(program, highs, prevRes, locks, extraBase) {
 // the report endorses.
 function hiddenPlacementGateFn(program, visible) {
   const placementMetas = [program.placeMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
-                          program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta];
+                          program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta,
+                          program.essMeta];
   return (g) => !visible.has(g) && placementMetas.some((m) => m && m.has(g));
 }
 
@@ -1763,6 +1817,7 @@ function breakdownByTarget(program, prim, precomputedVisible) {
     if (program.rollMeta && program.rollMeta.has(gate)) { const m = program.rollMeta.get(gate); return { kind: "roll", label: "choice slot", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.vikMeta && program.vikMeta.has(gate)) { const m = program.vikMeta.get(gate); return { kind: "vik", label: `Slot ${m.slot_type} Viktranium augment`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.tfMeta && program.tfMeta.has(gate)) { const m = program.tfMeta.get(gate); return { kind: "tf", label: `Thunder-Forged Tier ${m.tier}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
+    if (program.essMeta && program.essMeta.has(gate)) { const m = program.essMeta.get(gate); return { kind: "essence", label: `Essence Crafting ${m.menu}: ${m.effect}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.gsMeta && program.gsMeta.has(gate)) { const m = program.gsMeta.get(gate); return { kind: "gs", label: "Green Steel", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.placeMeta && program.placeMeta.has(gate)) return { kind: "augment", label: program.placeMeta.get(gate).variant_id };
     return { kind: "other", label: gate };
@@ -1845,7 +1900,8 @@ function computeScale(program) {
     + (program.dinoMeta ? program.dinoMeta.size : 0) + (program.ncMeta ? program.ncMeta.size : 0)
     + (program.rollMeta ? program.rollMeta.size : 0) + (program.vikMeta ? program.vikMeta.size : 0)
     + (program.sealMeta ? program.sealMeta.size : 0) + (program.memberMeta ? program.memberMeta.size : 0)
-    + (program.tfMeta ? program.tfMeta.size : 0) + (program.gsMeta ? program.gsMeta.size : 0);
+    + (program.tfMeta ? program.tfMeta.size : 0) + (program.gsMeta ? program.gsMeta.size : 0)
+    + (program.essMeta ? program.essMeta.size : 0);
   return { variants: program.xVars.length, crafts, stages: (program.targetList || []).length + 1 };
 }
 
@@ -2028,6 +2084,11 @@ function readSolution(res, program, precomputedVisible) {
   for (const [n, meta] of program.tfMeta || []) if (prim(n) > 0.5 && fired.has(n)) tfPlaced.push(meta);
   const gsPlaced = [];
   for (const [n, meta] of program.gsMeta || []) if (prim(n) > 0.5 && fired.has(n)) gsPlaced.push(meta);
+  // Essence Crafting picks (#193/#599). Reported per menu so the player can read
+  // the Gem as three separate crafts rather than one lump — it is three slots and
+  // they are spent independently.
+  const essPlaced = [];
+  for (const [n, meta] of program.essMeta || []) if (prim(n) > 0.5 && fired.has(n)) essPlaced.push(meta);
   // Wildcard joker picks — report a group's chosen set only when the joker is truly
   // load-bearing: the set is active AND its real (non-joker) equipped pieces fall short
   // of the threshold, so the Gem is the completing piece. This holds regardless of solve
@@ -2090,7 +2151,7 @@ function readSolution(res, program, precomputedVisible) {
       setAugmentsPlaced.push({ ...meta, slot_color: setAugColorByY.get(y) || "Colorless" });
     }
   }
-  const out = { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced,
+  const out = { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, essPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced,
     // #449 U1 (KTD9) — the achieved/ceiling census, built HERE rather than in
     // solveLexicographic so the tieBreak:false alternatives path (solveConstrained,
     // which spreads this object) carries its OWN numbers. renderBuild is generic
@@ -2139,7 +2200,7 @@ function readSolution(res, program, precomputedVisible) {
       }
     });
     const craftMetas = [program.ncMeta, program.rollMeta, program.vikMeta,
-      program.sealMeta, program.tfMeta, program.gsMeta];
+      program.sealMeta, program.tfMeta, program.gsMeta, program.essMeta];
     const carrierOf = (gate) => {
       const xi = xIndex.get(gate);
       if (xi !== undefined) {
@@ -2822,7 +2883,12 @@ async function solveLexicographic(model, highs, opts = {}) {
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
     dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced,
     vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced, jokerPlaced: sol.jokerPlaced,
-    tfPlaced: sol.tfPlaced, gsPlaced: sol.gsPlaced,
+    tfPlaced: sol.tfPlaced, gsPlaced: sol.gsPlaced, essPlaced: sol.essPlaced,
+    // #193/#599 — stamped whenever the solve COULD craft, not only when it did.
+    // A Gem that was offered 25 options and took none is exactly the player who
+    // should be told the menu was short, and a build that crafted nothing still
+    // has to disclose what it was choosing from.
+    essenceReport: essenceReportFor(model, sol.essPlaced),
     membershipPlaced: sol.membershipPlaced, setAugmentsPlaced: sol.setAugmentsPlaced,
     breakdown: breakdownByTarget(program, prim, visible), computeScale: computeScale(program),
     capped: { ...program.cappedStats }, intrinsicCaps: { ...(program.intrinsicCaps || {}) }, floorReport, program,
@@ -3294,6 +3360,36 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
   return { status: "optimal", ...sol, breakdown: breakdownByTarget(program, prim, visible), capped: { ...program.cappedStats }, intrinsicCaps: { ...(program.intrinsicCaps || {}) } };
 }
 
+/** #193/#599 — what the Essence Crafting menus offered and what was taken.
+ *
+ *  Present only when a host with `essence_slots` was actually a candidate, so a
+ *  solve that never saw a Gem carries no report and renders no notice. Reads the
+ *  dataset-stamped coverage rather than recomputing, because the numbers are a
+ *  property of the BUILD (what was harvested) and not of this solve.
+ */
+function essenceReportFor(model, placed) {
+  const hosts = [];
+  for (const w of model.worn || []) {
+    for (const v of w.variants || []) {
+      if (v && (v.essence_slots || []).length) hosts.push(v);
+    }
+  }
+  if (!hosts.length) return null;
+  const cov = model.essenceCoverage || null;
+  const minMl = Math.min(...hosts.map((h) => Number(h.ml)).filter(Number.isFinite));
+  return {
+    hosts: hosts.length,
+    placed: (placed || []).map((p) => ({ item: p.item, menu: p.menu, effect: p.effect,
+                                         stat: p.stat, bonus_type: p.bonus_type, value: p.value })),
+    offered: cov ? cov.offered_all : null,
+    total: cov ? cov.total_all : null,
+    insightMinMl: cov ? cov.insight_min_ml : null,
+    // True when EVERY host is below the Insight gate, which is the heroic Gem's
+    // situation and the reason its Extra menu looks empty.
+    insightGated: cov && Number.isFinite(minMl) ? minMl < (cov.insight_min_ml || 10) : false,
+  };
+}
+
 // The bounded give allowed on a priority for an alternative: 10% or at least 2, so
 // the tolerance scales with the stat (Constitution ~40 vs Physical Sheltering ~150).
 function alternativeGive(value) { return Math.max(2, Math.round(0.10 * Math.abs(value))); }
@@ -3480,10 +3576,12 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     ...(program.ncMeta ? program.ncMeta.keys() : []), ...(program.vikMeta ? program.vikMeta.keys() : []),
     ...(program.sealMeta ? program.sealMeta.keys() : []), ...(program.tfMeta ? program.tfMeta.keys() : []),
     ...(program.gsMeta ? program.gsMeta.keys() : []),
+    ...(program.essMeta ? program.essMeta.keys() : []),
   ];
   const optCrafts = (optimum.augmentsPlaced || []).length + (optimum.dinoPlaced || []).length
     + (optimum.ncPlaced || []).length + (optimum.vikPlaced || []).length + (optimum.sealPlaced || []).length
-    + (optimum.tfPlaced || []).length + (optimum.gsPlaced || []).length;
+    + (optimum.tfPlaced || []).length + (optimum.gsPlaced || []).length
+    + (optimum.essPlaced || []).length;
   if (craftVars.length && optCrafts > 0) {
     const relaxedAll = ranked.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));   // #91 (KTD7) — no sentinel lock entry
     // Locks all targets → the count lock always rides when the tier is ranked
@@ -3496,6 +3594,7 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
       ? (sol.augmentsPlaced || []).length + (sol.dinoPlaced || []).length
         + (sol.ncPlaced || []).length + (sol.vikPlaced || []).length + (sol.sealPlaced || []).length
         + (sol.tfPlaced || []).length + (sol.gsPlaced || []).length
+        + (sol.essPlaced || []).length
       : optCrafts;
     // Only surface when it genuinely uses fewer crafts (a same-count different build
     // would headline "0 fewer crafting steps").

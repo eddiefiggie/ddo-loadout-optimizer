@@ -458,6 +458,14 @@ function installIntrinsicCaps(map) {
   }
 }
 
+// #193/#599 — same two-runtime bridge for the Essence Crafting coverage numbers.
+function installEssenceCoverage(cov) {
+  if (typeof setEssenceCoverage !== "undefined") { setEssenceCoverage(cov); return; }
+  if (typeof require !== "undefined") {
+    try { require("./model.js").setEssenceCoverage(cov); } catch (e) { /* model.js absent: no-op */ }
+  }
+}
+
 // U1 (#290/#291) — same two-runtime bridge for the cross-add map
 // {target_stat: [source_stats]} (metadata.cross_add): stats whose bucket totals
 // flat-ADD into the target across buckets. Solver crediting reads
@@ -486,6 +494,7 @@ function normalizeDataset(dataset) {
   // installing `{}` is correct there, because the table's absence means "no stat has
   // a verified ceiling", which is exactly the pre-#199 behavior.
   installIntrinsicCaps(meta.intrinsic_stat_caps || {});
+  installEssenceCoverage(meta.essence_crafting_coverage || null);
   const crossAdd = meta.cross_add || {};
   dataset._crossAdd = crossAdd;
   installCrossAdd(crossAdd);
