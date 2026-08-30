@@ -131,3 +131,81 @@ def test_psionic_is_gone_and_stays_gone():
         assert rec is not None, f"{name} left the roster — re-verify the ruling"
         assert rec.get("affixes"), f"{name} lost every affix; only the Psionic one should go"
         assert not any(a.get("type") == "Psionic" for a in rec["affixes"])
+
+
+# --- #225: a dormant guard, made live -----------------------------------------
+
+#: `src/affix_parser.py` treats `Insight` and `Insightful` as distinct stacking
+#: buckets, and `tests/test_affix_parser.py` pins that. Since gear-planner became
+#: the structural source of truth for item affixes (#69), NOTHING in the shipping
+#: dataset flows through that distinction — so the guard reads as active
+#: protection and protects nothing, which is how #225 came to be filed after
+#: testers reported "insight and insightful stacking wrong" and the existing test
+#: made it look like a settled question.
+#:
+#: Measured on 2026-08-30: nine channels emit `Insight`, none emits `Insightful`.
+#: That disproves #225's second possibility — a live pool minting `Insightful`
+#: while gear-planner mints `Insight`, putting one mechanic in two buckets that
+#: WOULD stack. The parser is still called by viktranium, seal, nearly_complete,
+#: dino, thunder_forged and green_steel; none of them produces the type.
+#:
+#: So the protection moves here, where it can actually fail. The moment any
+#: channel mints `Insightful`, this names it — and that is exactly when the open
+#: wiki question ("is Insightful a distinct bonus type, or the affix NAME for a
+#: bonus whose type is Insight?") has to be answered before the data ships.
+_INSIGHTFUL = "Insightful"
+
+
+def _every_bonus_type_by_channel(dataset):
+    """{bonus type: {channels that mint it}} across every channel in the file."""
+    found = {}
+
+    def walk(node, channel):
+        if isinstance(node, dict):
+            for key in ("bonus_type", "type"):
+                value = node.get(key)
+                if isinstance(value, str) and value:
+                    found.setdefault(value, set()).add(channel)
+            for value in node.values():
+                walk(value, channel)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value, channel)
+
+    for channel, value in dataset.items():
+        if channel == "metadata":
+            continue
+        walk(value, channel)
+    return found
+
+
+def test_no_channel_mints_insightful_as_a_bonus_type():
+    with open(DATASET) as fh:
+        dataset = json.load(fh)
+    by_type = _every_bonus_type_by_channel(dataset)
+
+    # Non-vacuity: the walker must actually be reaching typed records. Without
+    # this a rename of `bonus_type` would empty the map and the assertion below
+    # would pass by inspecting nothing — the shape this repo bans.
+    assert by_type.get("Insight"), \
+        "the walker found no `Insight` at all, so it is not reading typed records"
+    assert len(by_type) > 15, f"only {len(by_type)} bonus types found; the walk is not covering the file"
+
+    channels = sorted(by_type.get(_INSIGHTFUL, ()))
+    assert not channels, (
+        f"{_INSIGHTFUL!r} is now minted as a bonus TYPE by: {', '.join(channels)}. "
+        "gear-planner emits `Insight` for the same mechanic, so these are two buckets "
+        "for one thing and they will stack. Settle the wiki question in #225 — is "
+        "`Insightful` a distinct bonus type, or the affix NAME for a bonus whose type "
+        "is Insight? — before this data ships.")
+
+
+def test_the_parser_still_carries_the_distinction_it_is_tested_for():
+    """The parser's own vocabulary is unchanged; what moved is where the claim is
+    CHECKED. If `Insightful` ever leaves `src/affix_parser.py`'s type list, the
+    guard above starts asserting the absence of something nothing could produce,
+    and would keep passing for the wrong reason."""
+    from src import affix_parser
+    assert _INSIGHTFUL in affix_parser.BONUS_TYPES, (
+        "the parser no longer knows `Insightful`, so the dataset guard above can no "
+        "longer fail for the reason it was written — retire them together.")

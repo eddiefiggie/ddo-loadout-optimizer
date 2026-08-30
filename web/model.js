@@ -1630,12 +1630,29 @@ const CREDIT_BONUS_TYPES = [
   "Sacred", "Morale", "Luck", "Resistance", "Deflection", "Armor", "Shield",
   "Natural", "Artifact", "Vitality", "Equipment", "Untyped", "Implement",
   "Legendary", "Alchemical", "Primal", "Festive",
-  // #88 U3 — the three real bonus types the dataset carries that this list
-  // lacked. Overrides and declared credits share one list so the vocabulary and
-  // `_STACK_EQUIV` stay maintained together; these three cover 131 affixes that
-  // otherwise had no expressible replacement type. The `X Natural` family is
+  // #88 U3 — the real bonus types the dataset carries that this list lacked.
+  // Overrides and declared credits share one list so the vocabulary and
+  // `_STACK_EQUIV` stay maintained together. The `X Natural` family is
   // deliberately still absent: equivType collapses those to their plain type, so
   // offering both names would put two names on one bucket.
+  //
+  // `Sneak Attack` is NOT a bonus type — it is the STAT being bonused. The wiki's
+  // `Sneak attack` page splits the mechanic into Dice and Bonus Damage and gives
+  // every source it lists an ARTIFACT bonus, so the affix is `Sneak Attack Bonus`
+  // and its type is `Artifact`.
+  //
+  // It stays here anyway, on purpose, until #608 retypes the data. 20 affixes
+  // still RECORD that type, and removing the name does not remove the bucket —
+  // it removes the player's ability to name or correct it, which is worse than
+  // offering a name the game does not have. `overrides.test.js` holds the same
+  // line structurally: every recorded type must be expressible or
+  // equivalence-mapped, and it fails if this is dropped first.
+  //
+  // The list is checked against the wiki's own Category:Bonus types on every
+  // build — see data/seed/compendium/bonus_type_vocabulary.json and
+  // tests/test_bonus_type_vocabulary.py, which carry the reasoning for the three
+  // members that are real but uncategorised (Untyped, Orb, Vitality) and for this
+  // one, which is neither real nor removable yet.
   "Orb", "Sneak Attack", "Determination",
 ];
 const _CREDIT_TYPE_SET = new Set(CREDIT_BONUS_TYPES);

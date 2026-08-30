@@ -1854,6 +1854,20 @@ input.wz-ml { width: 120px; }
 /* Top bar (stepper + Browse trigger) and the on-demand Item Browser overlay (U9). */
 .wz-topbar { display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap; }
 .wz-topbar .wz-steps { flex: 1; }
+/* #204 — every wrapped row keeps the right edge.
+
+   `Browse items`, `Your data` and the header's support button are sized to read
+   as one right-edge column (same width, same height, flush edges). As the
+   viewport narrows they wrap onto rows of their own, and a `flex-start` row put
+   each at the LEFT edge while the button above stayed right — measured at 159px
+   of drift by #204, and worse further down, because each button wraps separately.
+
+   `justify-content: flex-end` rather than `margin-left: auto` on one control:
+   auto-margin fixes only the item it is on, so the SECOND button still wrapped
+   left. This is a no-op on the unwrapped row — `.wz-steps { flex: 1 }` absorbs
+   all the free space there, so there is nothing for justify-content to
+   distribute — and it right-aligns every row that does wrap. */
+.wz-topbar { justify-content: flex-end; }
 /* Width is shared with the header support button directly above it, so the two
    right-edge buttons line up as a column. */
 .wz-browse-btn { flex: none; width: var(--stack-btn-w); }
