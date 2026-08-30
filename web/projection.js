@@ -766,6 +766,22 @@
     return lines;
   }
 
+  /** What the excluded-sets filter removed.
+   *
+   *  Names the sets rather than counting them: "3 sets" tells a player something was
+   *  narrowed, not which of their own choices did it. The count of items is what makes
+   *  the size of the narrowing legible — excluding two large sets can take 146 variants
+   *  out of the pool, which is worth seeing before reading the build as unconstrained.
+   */
+  function setFilterNoticeLines(result) {
+    const f = result && result.setFilter;
+    if (!f || !f.excluded) return [];
+    const n = f.sets.length;
+    return [`You excluded ${n} ${n === 1 ? "set" : "sets"} (${f.sets.join(", ")}), `
+      + `which removed ${f.excluded} ${f.excluded === 1 ? "item" : "items"} from this solve. `
+      + "The result is optimal given those exclusions."];
+  }
+
   /** #246 — what the content-ownership filter removed, and what it could not check.
    *
    *  BOTH halves are said, and the second is the one that matters. The filter can
@@ -1959,6 +1975,7 @@
         // #246 — same channel and same reason: a recipient must not read a build as
         // a full-roster optimum when a content filter narrowed the pool.
         packFilterNotice: packFilterNoticeLines(snap),
+        setFilterNotice: setFilterNoticeLines(snap),
         setPinNotice: setPinNoticeLines(snap),
         // #449 (U2, R15) — the ONE full statement that qualifies every fraction
         // in the document. Rendered once per export, never per stat: repeated
@@ -2588,7 +2605,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine, dodgeMaxDexLine, packFilterNoticeLines,
+    augCeilingLine, dodgeMaxDexLine, packFilterNoticeLines, setFilterNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)
     NO_DROP_SOURCE_WORDING,

@@ -55,6 +55,9 @@
     // prevented. `outbidTargets` has a recompute fallback, but that needs `model`,
     // and `model` is dropped, so a restored or shared build disclosed nothing.
     "outbidReport",
+    // The excluded-sets report. Added WITH the field rather than after somebody notices
+    // the notice went quiet — which is the whole point of the guard in persist.test.js.
+    "setFilter",
     // #246 — the content-ownership filter's report. Same failure as the two below,
     // shipped again on 2026-08-29: the notice rendered on a fresh solve and went
     // silent on reload, so a restored build presented a content-FILTERED optimum as
@@ -144,6 +147,10 @@
     // build that was solved under a pin must come back holding it, or a reload
     // silently drops a constraint the player set.
     "pinnedSets",
+    // Sets whose gear is kept out of the search. A plain string array like `blocklist`
+    // and `pinnedSets`: a build solved with an exclusion must come back holding it, or
+    // a reload silently widens the pool the player narrowed.
+    "excludedSets",
     // #246 — the content the player owns, as a plain string array of adventure-pack
     // names. Character-independent and stable, so it belongs with the saved profile
     // rather than being re-entered per solve. ABSENT means "not answered", which

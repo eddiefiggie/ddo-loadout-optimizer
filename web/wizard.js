@@ -999,6 +999,8 @@ function buildQuery(state, vocab) {
     // #539 — the set pins, copied so the solve reads a snapshot rather than live
     // state, exactly as the blocklist above does.
     pinnedSets: Array.isArray(state.pinnedSets) ? state.pinnedSets.slice() : [],
+    // Sets whose member items must not be candidates. Absent/empty = exclude nothing.
+    excludedSets: Array.isArray(state.excludedSets) ? state.excludedSets.slice() : [],
     // U6 — set-augment ownership gate. A Set of owned set-augment `set` names;
     // empty => none of the 21 set augments are considered (default off).
     ownedSetAugments: state.ownedSetAugments instanceof Set
@@ -2261,6 +2263,7 @@ if (typeof window !== "undefined" && window.App) {
       // #246 — null until the player says otherwise: an unanswered question must
       // not narrow the roster.
       ownedPacks: null,
+      excludedSets: [],
       pinnedSets: [],
       // #428 U3 (R20) — the name of the saved build currently being edited, or
       // "" for an unsaved one. Transient by design: it is NOT on INPUT_KEYS,
@@ -2446,38 +2449,7 @@ if (typeof window !== "undefined" && window.App) {
                 : "Restrict augments to tiers you can realistically obtain — items still follow the ML cap. Defaults to your cap (no restriction); lower it to exclude higher augment tiers from the solve."}</span>
               <input id="wz-augceiling" class="wz-ml" type="number" min="1" max="40"${_rungExcludesAllAugments(rung) ? " disabled" : ""} value="${state.augCeiling != null ? esc(state.augCeiling) : esc(state.ml)}"></label>`;
           })()}
-          ${(() => {
-            // U6 — Set Augment availability. The 21 set-augment names come from the
-            // dataset's augment_set_defs (single source of truth). A checked name is
-            // added to state.ownedSetAugments; only owned set augments are considered
-            // by the solver. Collapsed by default so it stays out of the way.
-            const setNames = Object.keys(dataset.augment_set_defs || {}).sort();
-            if (!setNames.length) return "";
-            const owned = state.ownedSetAugments instanceof Set ? state.ownedSetAugments : new Set();
-            const n = owned.size;
-            // #346 (U2) — a Set Augment is set-bonus crafting, so every rung from
-            // no-niche-crafting down clears the whole family. Leaving this picker
-            // live there would let the player tick boxes the solve cannot honour —
-            // exactly the contradictory-but-permitted state the ladder's own rule
-            // exists to prevent, and the same treatment the augment ML ceiling gets.
-            // Ticks are kept on state so they return when the player climbs back.
-            const setAugInert = _rungExcludesNicheCrafting(_normalizeRung(state.craftingRung));
-            return `<details class="wz-data" id="wz-setaug">
-              <summary>${esc(setAugSummaryLabel(n))}</summary>
-              <div class="wz-data-body">
-                <p class="wz-help">${setAugInert
-                  ? "Not applicable — the rung you chose excludes set-bonus crafting, so no Augment Set can activate. Your selections are kept for when you move back up."
-                  : "Check the <strong>Set Augments</strong> you own. Only checked ones are considered — each grants its bonus once 3 pieces of its set are equipped. None are considered by default."}</p>
-                <div class="wz-setaug-bulk" id="wz-setaug-bulk">
-                  <button type="button" class="btn ghost" id="wz-setaug-all"${setAugInert ? " disabled" : ""}>Select all ${setNames.length}</button>
-                  <button type="button" class="btn ghost" id="wz-setaug-none"${setAugInert ? " disabled" : ""}>Clear all</button>
-                </div>
-                <div class="wz-seg wz-setaug-list" id="wz-setaug-list">${setNames.map((s) =>
-                  `<label class="wz-check wz-check-inline"><input type="checkbox" data-setaug="${esc(s)}"${owned.has(s) ? " checked" : ""}${setAugInert ? " disabled" : ""}>
-                    <span class="wz-check-body"><span class="wz-label">${esc(s)}</span></span></label>`).join("")}</div>
-              </div>
-            </details>`;
-          })()}
+
             </div>
           </fieldset>
           <details class="wz-group wz-group-fold" data-group="weapons" id="wz-weapons"${state.weaponsOpen ? " open" : ""}>
@@ -2615,10 +2587,12 @@ if (typeof window !== "undefined" && window.App) {
             event and DDO Store gear is not gated by a pack at all, and some sources have no pack recorded
             on the wiki. Those stay in the search rather than being dropped on a guess.</p>
           <div class="wz-packrow">
+            <input id="wz-packs-filter" data-nodirty type="text" class="wz-pack-filter"
+                   placeholder="Filter packs…" autocomplete="off">
             <button class="btn ghost sm" id="wz-packs-all" type="button">Select all</button>
             <button class="btn ghost sm" id="wz-packs-none" type="button">Clear</button>
-            <span id="wz-packs-stat" class="wz-help"></span>
           </div>
+          <p id="wz-packs-stat" class="wz-help wz-pack-stat"></p>
           <div id="wz-packs-list" class="wz-pack-list"></div>
         </div>
         <div class="wz-pinbox wz-setpinbox">
@@ -2631,6 +2605,51 @@ if (typeof window !== "undefined" && window.App) {
           <div id="wz-setpin-results" class="wz-pin-results"></div>
           <div id="wz-setpin-list" class="wz-pin-list"></div>
           <p id="wz-setpin-slow" class="wz-pin-mutexwarn" hidden></p>
+        </div>
+${(() => {
+            // U6 — Set Augment availability. The 21 set-augment names come from the
+            // dataset's augment_set_defs (single source of truth). A checked name is
+            // added to state.ownedSetAugments; only owned set augments are considered
+            // by the solver. Collapsed by default so it stays out of the way.
+            const setNames = Object.keys(dataset.augment_set_defs || {}).sort();
+            if (!setNames.length) return "";
+            const owned = state.ownedSetAugments instanceof Set ? state.ownedSetAugments : new Set();
+            const n = owned.size;
+            // #346 (U2) — a Set Augment is set-bonus crafting, so every rung from
+            // no-niche-crafting down clears the whole family. Leaving this picker
+            // live there would let the player tick boxes the solve cannot honour —
+            // exactly the contradictory-but-permitted state the ladder's own rule
+            // exists to prevent, and the same treatment the augment ML ceiling gets.
+            // Ticks are kept on state so they return when the player climbs back.
+            const setAugInert = _rungExcludesNicheCrafting(_normalizeRung(state.craftingRung));
+            return `<details class="wz-data" id="wz-setaug">
+              <summary>${esc(setAugSummaryLabel(n))}</summary>
+              <div class="wz-data-body">
+                <p class="wz-help">${setAugInert
+                  ? "Not applicable — the crafting rung you chose on the Character step excludes set-bonus crafting, so no Augment Set can activate. Your selections are kept for when you move it back up."
+                  : "Check the <strong>Set Augments</strong> you own. Only checked ones are considered — each grants its bonus once 3 pieces of its set are equipped. None are considered by default."}</p>
+                <div class="wz-setaug-bulk" id="wz-setaug-bulk">
+                  <button type="button" class="btn ghost" id="wz-setaug-all"${setAugInert ? " disabled" : ""}>Select all ${setNames.length}</button>
+                  <button type="button" class="btn ghost" id="wz-setaug-none"${setAugInert ? " disabled" : ""}>Clear all</button>
+                </div>
+                <div class="wz-seg wz-setaug-list" id="wz-setaug-list">${setNames.map((s) =>
+                  `<label class="wz-check wz-check-inline"><input type="checkbox" data-setaug="${esc(s)}"${owned.has(s) ? " checked" : ""}${setAugInert ? " disabled" : ""}>
+                    <span class="wz-check-body"><span class="wz-label">${esc(s)}</span></span></label>`).join("")}</div>
+              </div>
+            </details>`;
+          })()}
+        <div class="wz-pinbox wz-setexbox">
+          <span class="wz-label">Exclude a set <span class="wz-sub">· optional · keep a set's gear out of the search entirely</span></span>
+          <p class="wz-adv-note">The mirror of <em>Require a set</em>. Excluding one removes its member items from the
+            search, so nothing in your build can rest on it. Useful when you do not want to farm a set, or want to see
+            the best build that does not use it.</p>
+          <p class="wz-adv-note">This removes the <strong>items</strong>, not just the set bonus — a set you exclude
+            cannot contribute at all. It does not stop a set you did not exclude from completing.</p>
+          <div class="wz-addrow">
+            <input id="wz-setex-search" data-nodirty type="text" placeholder="Search a set to exclude…" autocomplete="off">
+          </div>
+          <div id="wz-setex-results" class="wz-pin-results"></div>
+          <div id="wz-setex-list" class="wz-pin-list"></div>
         </div>
         <div class="wz-pinbox wz-overridebox">
           <span class="wz-label">Bonus types you have corrected <span class="wz-sub">· optional · when the game disagrees with the wiki</span></span>
@@ -2933,25 +2952,115 @@ if (typeof window !== "undefined" && window.App) {
       return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
     }
 
+    /** Sets a player can exclude: every set that has member ITEMS.
+     *
+     *  Deliberately a different population from `pinnableSets`. That one includes sets
+     *  reachable only through a Set Augment or a craftable membership, because a pin can
+     *  ask for those. An exclusion removes member items, so a set with no member items
+     *  has nothing to remove and offering it would be an empty promise.
+     */
+    function excludableSets() {
+      const n = new Map();
+      for (const v of dataset.items || []) {
+        for (const sb of v.set_bonus || []) {
+          if (sb && sb.set) n.set(sb.set, (n.get(sb.set) || 0) + 1);
+        }
+      }
+      return [...n.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    }
+
+    function renderSetExResults() {
+      const box = document.getElementById("wz-setex-results");
+      const input = document.getElementById("wz-setex-search");
+      if (!box || !input) return;
+      const q = (input.value || "").trim();
+      if (!q) { box.innerHTML = `<p class="wz-pin-hint">Type a set name — only sets with gear in the roster can be excluded.</p>`; return; }
+      const ql = q.toLowerCase();
+      const have = new Set(state.excludedSets || []);
+      const hits = excludableSets().filter(([nm]) => nm.toLowerCase().includes(ql)).slice(0, 12);
+      if (!hits.length) { box.innerHTML = `<p class="wz-pin-hint">No set matches “${esc(q)}”.</p>`; return; }
+      box.innerHTML = hits.map(([nm, count]) => `<div class="wz-pin-row">
+        <span class="wz-pin-name">${esc(nm)}</span>
+        <span class="wz-pack-count">${esc(count)} item${count === 1 ? "" : "s"}</span>
+        <button type="button" class="btn ghost sm" data-setex-add="${esc(nm)}"${have.has(nm) ? " disabled" : ""}>${have.has(nm) ? "excluded" : "Exclude"}</button>
+      </div>`).join("");
+      box.querySelectorAll("[data-setex-add]").forEach((b) => b.onclick = () => {
+        const nm = b.dataset.setexAdd;
+        if ((state.excludedSets || []).includes(nm)) return;
+        state.excludedSets = (state.excludedSets || []).concat([nm]);
+        state.constraintsDirty = true; markDirty();
+        renderSetExResults(); renderSetExList();
+      });
+    }
+
+    function renderSetExList() {
+      const box = document.getElementById("wz-setex-list");
+      if (!box) return;
+      const list = state.excludedSets || [];
+      if (!list.length) {
+        box.innerHTML = `<p class="wz-pin-empty">Nothing excluded — the search covers every set.</p>`;
+        return;
+      }
+      // A name the roster no longer carries is LABELLED, never dropped: the same rule
+      // the block list and the set pins follow, so a saved build cannot lose a
+      // constraint silently when upstream renames a set.
+      const known = new Set(excludableSets().map(([nm]) => nm));
+      const counts = new Map(excludableSets());
+      box.innerHTML = list.map((nm) => {
+        const stale = !known.has(nm)
+          ? `<span class="wz-pin-flag" title="No set in the current roster carries this name — it may have been renamed upstream. The entry still saves; it just matches nothing right now.">no longer matches anything</span>`
+          : `<span class="wz-pack-count">${esc(counts.get(nm))} items</span>`;
+        return `<div class="wz-pin-row"><span class="wz-pin-name">${esc(nm)}</span>${stale}<button type="button" class="wz-pin-x" data-setex-rm="${esc(nm)}" aria-label="Stop excluding ${esc(nm)}">×</button></div>`;
+      }).join("");
+      box.querySelectorAll("[data-setex-rm]").forEach((b) => b.onclick = () => {
+        state.excludedSets = (state.excludedSets || []).filter((x) => x !== b.dataset.setexRm);
+        state.constraintsDirty = true; markDirty();
+        renderSetExResults(); renderSetExList();
+      });
+    }
+
     function renderPackList() {
       const box = document.getElementById("wz-packs-list");
       const stat = document.getElementById("wz-packs-stat");
       if (!box) return;
-      const opts = packOptions();
+      const all = packOptions();
+      // The filter narrows what is SHOWN, never what is answered: a hidden row keeps
+      // its tick. Anything else would let typing in a search box silently change the
+      // solve, which is the one thing a filter must not do.
+      const fq = ((document.getElementById("wz-packs-filter") || {}).value || "").trim().toLowerCase();
+      const opts = fq ? all.filter(([nm]) => nm.toLowerCase().includes(fq)) : all;
       // null = unanswered = no filter. Distinct from [] ("I own nothing"), which is
       // a real answer and empties nearly the whole roster.
       const owned = Array.isArray(state.ownedPacks) ? new Set(state.ownedPacks) : null;
+      // Gear reach, not pack count, is the fact a player is actually deciding on: 40 of
+      // 66 packs can still be most of the roster or very little of it.
+      const totalGear = all.reduce((n, [, c]) => n + c, 0);
+      const ownedGear = all.reduce((n, [nm, c]) => n + ((owned ? owned.has(nm) : true) ? c : 0), 0);
+      const pct = totalGear ? Math.round((ownedGear / totalGear) * 100) : 0;
       if (stat) {
-        stat.textContent = owned
-          ? `${owned.size} of ${opts.length} ticked — gear from the rest is excluded.`
-          : `Searching everything. ${opts.length} packs gate gear in this roster.`;
+        stat.innerHTML = owned
+          ? `<strong>${esc(owned.size)}</strong> of ${esc(all.length)} packs ticked · reaching
+             <strong>${esc(ownedGear.toLocaleString())}</strong> of ${esc(totalGear.toLocaleString())} pack-gated items
+             <span class="wz-pack-meter" aria-hidden="true"><span style="width:${esc(pct)}%"></span></span>
+             <span class="wz-pack-pct">${esc(pct)}%</span>`
+          : `Searching <strong>everything</strong> — ${esc(all.length)} packs gate
+             ${esc(totalGear.toLocaleString())} items in this roster. Untick what you do not own.`;
       }
+      if (!opts.length) {
+        box.innerHTML = `<p class="wz-pin-hint">No pack matches that filter.</p>`;
+      } else {
+      const max = Math.max(...all.map(([, c]) => c), 1);
       box.innerHTML = opts.map(([name, count]) => {
         const on = owned ? owned.has(name) : true;
-        return `<label class="wz-pack-row"><input type="checkbox" data-pack="${esc(name)}"${on ? " checked" : ""}>
-          <span class="wz-pack-name">${esc(name)}</span>
+        // A proportional bar behind the count: with 66 rows the numbers alone do not
+        // convey that the top pack gates ten times what the median one does.
+        const w = Math.max(4, Math.round((count / max) * 100));
+        return `<label class="wz-pack-row${on ? " is-on" : ""}"><input type="checkbox" data-pack="${esc(name)}"${on ? " checked" : ""}>
+          <span class="wz-pack-name" title="${esc(name)}">${esc(name)}</span>
+          <span class="wz-pack-bar" aria-hidden="true"><span style="width:${esc(w)}%"></span></span>
           <span class="wz-pack-count">${esc(count)}</span></label>`;
       }).join("");
+      }
       box.querySelectorAll("input[data-pack]").forEach((cb) => cb.onchange = () => {
         // First touch materialises the answer from "everything" so unticking one box
         // does not read as "I own only this one".
@@ -5356,58 +5465,6 @@ if (typeof window !== "undefined" && window.App) {
         for (const el of document.querySelectorAll('input[name="wz-crafting-rung"]')) {
           el.onchange = (e) => { if (e.target.checked) { state.craftingRung = _normalizeRung(e.target.value); render(); } };
         }
-        // U6 — set-augment availability checkboxes write into state.ownedSetAugments (a Set).
-        //
-        // #509 — every write goes through ONE sync, because a full render() is not
-        // available here: `#wz-setaug` does not persist its open state, so
-        // re-rendering would close the panel under the player mid-edit. That is why
-        // the original handler patched the summary inline, and why a bulk control
-        // has to patch the boxes too. Doing it in one place keeps the three
-        // surfaces (boxes, summary, bulk buttons) from disagreeing.
-        const setAugBoxes = () => root.querySelectorAll("#wz-setaug-list input[data-setaug]");
-        const syncSetAug = () => {
-          const owned = state.ownedSetAugments;
-          for (const cb of setAugBoxes()) cb.checked = owned.has(cb.getAttribute("data-setaug"));
-          const sum = document.querySelector("#wz-setaug > summary");
-          if (sum) sum.textContent = setAugSummaryLabel(owned.size);
-          // A bulk button that cannot change anything is disabled rather than a
-          // no-op click — the same courtesy the picklists get when "All added".
-          // Inertness is re-read rather than inferred from the button's CURRENT
-          // disabled state: inferring it made "disabled because everything is
-          // already ticked" indistinguishable from "disabled because the rung
-          // excludes the family", and unticking one box would then re-enable a
-          // control the rung is supposed to hold shut.
-          const inert = _rungExcludesNicheCrafting(_normalizeRung(state.craftingRung));
-          const total = setAugBoxes().length;
-          const all = document.getElementById("wz-setaug-all");
-          const none = document.getElementById("wz-setaug-none");
-          if (all) all.disabled = inert || owned.size === total;
-          if (none) none.disabled = inert || owned.size === 0;
-        };
-        setAugBoxes().forEach((cb) => cb.onchange = (e) => {
-          if (!(state.ownedSetAugments instanceof Set)) state.ownedSetAugments = new Set();
-          const name = e.target.getAttribute("data-setaug");
-          if (e.target.checked) state.ownedSetAugments.add(name);
-          else state.ownedSetAugments.delete(name);
-          syncSetAug();
-        });
-        // #509 — the bulk pair. Both respect the inert rung by being rendered
-        // `disabled` there, and NEITHER writes state when inert: the ladder keeps a
-        // player's ticks so they return when they climb back up (#346 U2), and a
-        // Clear that fired anyway would destroy exactly what that rule preserves.
-        const setAugBulk = (fill) => () => {
-          if (_rungExcludesNicheCrafting(_normalizeRung(state.craftingRung))) return;
-          if (!(state.ownedSetAugments instanceof Set)) state.ownedSetAugments = new Set();
-          state.ownedSetAugments = fill
-            ? new Set([...setAugBoxes()].map((cb) => cb.getAttribute("data-setaug")))
-            : new Set();
-          syncSetAug();
-        };
-        const setAugAll = document.getElementById("wz-setaug-all");
-        const setAugNone = document.getElementById("wz-setaug-none");
-        if (setAugAll) setAugAll.onclick = setAugBulk(true);
-        if (setAugNone) setAugNone.onclick = setAugBulk(false);
-        if (setAugAll || setAugNone) syncSetAug();
         root.querySelectorAll("#wz-armor .wz-chip").forEach((c) => c.onclick = () => {
           if (c.disabled) return;
           state.armor = state.armor === c.dataset.armor ? "" : c.dataset.armor;
@@ -5478,6 +5535,61 @@ if (typeof window !== "undefined" && window.App) {
         // other pool controls. `renderPackList` owns its own checkbox handlers and
         // re-renders itself, so this is the only binding site.
         renderPackList();
+        renderSetExResults(); renderSetExList();
+        // U6 — set-augment availability checkboxes write into state.ownedSetAugments (a Set).
+        //
+        // #509 — every write goes through ONE sync, because a full render() is not
+        // available here: `#wz-setaug` does not persist its open state, so
+        // re-rendering would close the panel under the player mid-edit. That is why
+        // the original handler patched the summary inline, and why a bulk control
+        // has to patch the boxes too. Doing it in one place keeps the three
+        // surfaces (boxes, summary, bulk buttons) from disagreeing.
+        const setAugBoxes = () => root.querySelectorAll("#wz-setaug-list input[data-setaug]");
+        const syncSetAug = () => {
+          const owned = state.ownedSetAugments;
+          for (const cb of setAugBoxes()) cb.checked = owned.has(cb.getAttribute("data-setaug"));
+          const sum = document.querySelector("#wz-setaug > summary");
+          if (sum) sum.textContent = setAugSummaryLabel(owned.size);
+          // A bulk button that cannot change anything is disabled rather than a
+          // no-op click — the same courtesy the picklists get when "All added".
+          // Inertness is re-read rather than inferred from the button's CURRENT
+          // disabled state: inferring it made "disabled because everything is
+          // already ticked" indistinguishable from "disabled because the rung
+          // excludes the family", and unticking one box would then re-enable a
+          // control the rung is supposed to hold shut.
+          const inert = _rungExcludesNicheCrafting(_normalizeRung(state.craftingRung));
+          const total = setAugBoxes().length;
+          const all = document.getElementById("wz-setaug-all");
+          const none = document.getElementById("wz-setaug-none");
+          if (all) all.disabled = inert || owned.size === total;
+          if (none) none.disabled = inert || owned.size === 0;
+        };
+        setAugBoxes().forEach((cb) => cb.onchange = (e) => {
+          if (!(state.ownedSetAugments instanceof Set)) state.ownedSetAugments = new Set();
+          const name = e.target.getAttribute("data-setaug");
+          if (e.target.checked) state.ownedSetAugments.add(name);
+          else state.ownedSetAugments.delete(name);
+          syncSetAug();
+        });
+        // #509 — the bulk pair. Both respect the inert rung by being rendered
+        // `disabled` there, and NEITHER writes state when inert: the ladder keeps a
+        // player's ticks so they return when they climb back up (#346 U2), and a
+        // Clear that fired anyway would destroy exactly what that rule preserves.
+        const setAugBulk = (fill) => () => {
+          if (_rungExcludesNicheCrafting(_normalizeRung(state.craftingRung))) return;
+          if (!(state.ownedSetAugments instanceof Set)) state.ownedSetAugments = new Set();
+          state.ownedSetAugments = fill
+            ? new Set([...setAugBoxes()].map((cb) => cb.getAttribute("data-setaug")))
+            : new Set();
+          syncSetAug();
+        };
+        const setAugAll = document.getElementById("wz-setaug-all");
+        const setAugNone = document.getElementById("wz-setaug-none");
+        if (setAugAll) setAugAll.onclick = setAugBulk(true);
+        if (setAugNone) setAugNone.onclick = setAugBulk(false);
+        if (setAugAll || setAugNone) syncSetAug();
+        const sx = document.getElementById("wz-setex-search");
+        if (sx) sx.oninput = renderSetExResults;
         const pAll = document.getElementById("wz-packs-all");
         const pNone = document.getElementById("wz-packs-none");
         // "Select all" clears the answer back to NULL rather than ticking every box.
@@ -5486,6 +5598,10 @@ if (typeof window !== "undefined" && window.App) {
         // reading as a narrowing the player never chose.
         if (pAll) pAll.onclick = () => { state.ownedPacks = null; state.constraintsDirty = true; markDirty(); renderPackList(); };
         if (pNone) pNone.onclick = () => { state.ownedPacks = []; state.constraintsDirty = true; markDirty(); renderPackList(); };
+        const pFilter = document.getElementById("wz-packs-filter");
+        // `data-nodirty` on the input: filtering is not an edit to the build, so it must
+        // not mark it dirty or trigger the unsaved-changes path.
+        if (pFilter) pFilter.oninput = renderPackList;
         const disp = document.getElementById("wz-file-label"), real = document.getElementById("wz-file");
         if (disp) {
           disp.onclick = () => real.click();

@@ -1208,6 +1208,21 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   //
   // So the filter removes only what it can POSITIVELY determine is behind content
   // the player says they do not have.
+  // Excluded sets — gear the player does not want the solver to reach for, named by the
+  // SET rather than one item at a time. A set is typically 3-5 variants, so the
+  // blocklist could already express this and doing so was simply tedious.
+  //
+  // It removes the member items from CANDIDACY, exactly as #110 and #246 do, and for
+  // the honesty reason those chose that seam: what is not in the pool cannot appear in
+  // the build, so nothing the player is shown can rest on a set they excluded.
+  //
+  // Deliberately NOT "forbid completing the set while allowing its items". That reading
+  // is the true inverse of a set pin and is coherent, but it is a different feature with
+  // a different disclosure, and offering both behind one label would leave a player
+  // unsure which one they picked.
+  const excludedSets = Array.isArray(query.excludedSets) && query.excludedSets.length
+    ? new Set(query.excludedSets) : null;
+  const setExcluded = [];
   const ownedPacks = Array.isArray(query.ownedPacks) ? new Set(query.ownedPacks) : null;
   const packExcluded = [];
   const packUncheckable = { count: 0 };
@@ -1242,6 +1257,17 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
         || (cand.block_identity && blockedIdentities.has(cand.block_identity));
       (hit ? blocked : elig).push(cand);
     }
+  }
+
+  // Applied BEFORE the pack filter and after the blocklist, so a variant that is both
+  // blocked and in an excluded set is attributed to the block — the more specific act.
+  if (excludedSets) {
+    const kept = [];
+    for (const cand of elig) {
+      const sets = (cand.set_bonus || []).map((sb) => sb && sb.set).filter(Boolean);
+      (sets.some((nm) => excludedSets.has(nm)) ? setExcluded : kept).push(cand);
+    }
+    elig = kept;
   }
 
   // #246 — applied AFTER the blocklist so a variant the player both blocked and
@@ -1475,6 +1501,10 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // count of those no ownership answer could apply to. Both are needed: a filter
     // that reports what it removed and stays silent about what it could not check
     // reads as a complete answer when it is a partial one.
+    // Variants removed because they belong to a set the player excluded, retained for
+    // the disclosure's attribution. Never re-enters any pool below.
+    setExcluded,
+    excludedSets: excludedSets ? [...excludedSets].sort() : null,
     packExcluded,
     packUncheckable: packUncheckable.count,
     ownedPacks: ownedPacks ? [...ownedPacks].sort() : null,

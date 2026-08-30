@@ -374,6 +374,67 @@ test("weapon types share ONE main-hand slot (not one slot per type)", () => {
   assert.ok(!model.worn.some((s) => s.slot === "Light Crossbow"));
 });
 
+// ---- excluded sets — the mirror of a set pin, at the candidacy seam ----
+
+const setV = (id, slot, sets) => ({
+  source_item: id, variant_id: id, slot, category: "item",
+  minimum_level: 30, ml: 30, verification: "verified",
+  affixes: [{ stat: "Constitution", bonus_type: "Enhancement", name: "Constitution",
+              type: "Enhancement", value: 10, unit: "flat" }],
+  scaling: [], set_bonus: (sets || []).map((s) => ({ set: s })), augment_slots: [],
+  restrictions: "unknown", armor_type: null, location_pack: null, location_kind: "unknown",
+});
+const SET_POOL = [
+  setV("inA", "Ring", ["Set A"]),
+  setV("inB", "Goggles", ["Set B"]),
+  setV("inBoth", "Helmet", ["Set A", "Set B"]),
+  setV("loose", "Boots", []),
+];
+const setQ = (ex) => ({ mlCap: 34, targets: ["Constitution"], targetCaps: {}, targetFloors: {},
+  excludedSets: ex });
+const wornIds = (m) => new Set(m.worn.flatMap((sl) => (sl.variants || []).map((v) => v.variant_id)));
+
+test("excluded sets: absent or empty filters nothing", () => {
+  for (const q of [setQ(undefined), setQ([])]) {
+    const m = M.buildModel(SET_POOL, q);
+    assert.strictEqual(m.setExcluded.length, 0);
+    assert.strictEqual(m.excludedSets, null, "and the report says the filter was off");
+    assert.strictEqual(wornIds(m).size, SET_POOL.length);
+  }
+});
+
+test("excluded sets: a member item leaves the pool entirely", () => {
+  // The chosen meaning: it removes the ITEMS, so nothing in the build can rest on the
+  // set. Not "allow the items but forbid completing it" — that is a different feature.
+  const m = M.buildModel(SET_POOL, setQ(["Set A"]));
+  const ids = wornIds(m);
+  assert.ok(!ids.has("inA"), "a member goes");
+  assert.ok(ids.has("inB"), "a non-member stays");
+  assert.ok(ids.has("loose"), "and so does an item in no set at all");
+  assert.deepStrictEqual(m.setExcluded.map((v) => v.variant_id).sort(), ["inA", "inBoth"]);
+});
+
+test("excluded sets: an item in TWO sets goes if EITHER is excluded", () => {
+  // Membership is not exclusive, and a player excluding one set has not consented to
+  // the item arriving via its other one.
+  assert.ok(!wornIds(M.buildModel(SET_POOL, setQ(["Set A"]))).has("inBoth"));
+  assert.ok(!wornIds(M.buildModel(SET_POOL, setQ(["Set B"]))).has("inBoth"));
+});
+
+test("excluded sets: a name matching nothing narrows nothing", () => {
+  const m = M.buildModel(SET_POOL, setQ(["A Set That Does Not Exist"]));
+  assert.strictEqual(m.setExcluded.length, 0);
+  assert.strictEqual(wornIds(m).size, SET_POOL.length);
+  assert.deepStrictEqual(m.excludedSets, ["A Set That Does Not Exist"],
+    "but the answer is still reported, so a renamed set shows as excluded-yet-inert");
+});
+
+test("excluded sets: the blocklist keeps attribution when both apply", () => {
+  const m = M.buildModel(SET_POOL, Object.assign(setQ(["Set A"]), { blocklist: ["inA"] }));
+  assert.deepStrictEqual(m.blocked.map((v) => v.variant_id), ["inA"], "the block is the reason chosen");
+  assert.deepStrictEqual(m.setExcluded.map((v) => v.variant_id), ["inBoth"]);
+});
+
 // ---- #246 — the content-ownership filter ----
 
 // Each in its OWN slot: six identical Rings would be pruned by dominanceFilter and

@@ -2024,7 +2024,30 @@ input.wz-ml { width: 120px; }
   gap: var(--sp-1) var(--sp-3); max-height: 22rem; overflow-y: auto;
   padding: var(--sp-2); border: 1px solid var(--line); border-radius: var(--radius);
 }
-.wz-pack-row { display: flex; align-items: center; gap: var(--sp-2); font-size: 0.92em; cursor: pointer; }
+.wz-pack-row {
+  display: flex; align-items: center; gap: var(--sp-2); font-size: 0.92em; cursor: pointer;
+  padding: 2px var(--sp-1); border-radius: var(--radius);
+  /* Unticked rows recede rather than disappear — a pack you do not own is still a fact
+     about the roster, and greying it out entirely made the list read as broken. */
+  opacity: 0.55; transition: opacity 120ms ease, background 120ms ease;
+}
+.wz-pack-row.is-on { opacity: 1; }
+.wz-pack-row:hover { background: var(--line); opacity: 1; }
 .wz-pack-row input { flex: none; }
-.wz-pack-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wz-pack-count { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wz-pack-name { flex: 1 1 8rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Proportional bar: with 66 rows the bare numbers do not convey that the largest pack
+   gates ~10x what the median one does. Sized off the max, so it is a comparison
+   within the list rather than a claim about any absolute scale. */
+.wz-pack-bar { flex: 0 0 3.5rem; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.wz-pack-bar > span { display: block; height: 100%; background: var(--accent, currentColor); opacity: 0.55; }
+.wz-pack-count { flex: 0 0 2.5rem; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wz-pack-filter { flex: 1 1 12rem; min-width: 8rem; }
+.wz-pack-stat { margin: var(--sp-1) 0 var(--sp-2); }
+/* The reach meter in the status line: the answer to "how much of the roster am I
+   actually searching", which the pack COUNT alone does not give. */
+.wz-pack-meter {
+  display: inline-block; vertical-align: middle; width: 5rem; height: 5px;
+  margin: 0 var(--sp-1); border-radius: 3px; background: var(--line); overflow: hidden;
+}
+.wz-pack-meter > span { display: block; height: 100%; background: var(--accent, currentColor); }
+.wz-pack-pct { font-variant-numeric: tabular-nums; color: var(--muted); }

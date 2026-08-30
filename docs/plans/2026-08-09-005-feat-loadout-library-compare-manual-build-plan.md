@@ -22,12 +22,12 @@ execution: code
 - **Open blockers:** None for planning. **Execution is still gated on #88** — see Sequencing. The effort ships whole rather than staged (KD12).
 - **Planning status (2026-08-20):** Enriched to implementation-ready. The seven Outstanding Questions are resolved below under *Planning Contract*; #190 is folded in as U2 rather than left an external dependency, on KD12's ships-whole reasoning.
 - **Execution status (2026-08-29):** The #88 gate is CLOSED, so execution is no longer gated.
-  **KD12 was broken, and not deliberately.** #190 shipped standalone as PR #587 on
-  2026-08-29 without this plan being read, which is exactly the staged intermediate state
-  KD12 declined after two reviewers proposed it: a build can now be imported but not
-  compared. Recorded rather than quietly reconciled, because KD12 is session-settled by
-  user direction and the deviation should be a visible decision to revisit, not a fait
-  accompli. **U2 is therefore partly shipped and incomplete against its own requirements** —
+  **KD12 was broken, then relaxed.** #190 shipped standalone as PR #587 on 2026-08-29
+  without this plan being read — the staged intermediate state KD12 declined after two
+  reviewers proposed it: a build can now be imported but not compared. Rather than leave
+  the plan asserting a rule reality had already broken, KD12 was **relaxed on the same
+  day, user-directed**; see the Key Decision itself for what carries over. The remaining
+  units may ship independently. **U2 is therefore partly shipped and incomplete against its own requirements** —
   the envelope reader, whole-file refusal, `sanitizeCharacter` validation and the
   never-overwrite collision rule all landed, but **R12 (provenance stamping) did not**, and
   neither did U2's deep-clone regression test. Whoever resumes U2 should treat it as
@@ -78,7 +78,16 @@ Three things block the library the app is one step away from being.
 
 - KD11. **A comparison runs only between compatible character setups; otherwise it is declined.** Two builds are compared under one shared frame or not at all. (session-settled: user-directed — chosen over scoring the candidate under the benchmark's setup, and over scoring each under its own. Scoring under the benchmark's setup silently drops items the benchmark's character cannot wear; scoring each under its own puts two differently-scaled columns side by side, since affix values scale at each build's own ML cap. Both produce a number that looks comparable and is not, which is the failure mode the project's disclosure culture exists to prevent. Declining is the honest third answer, and it narrows what Compare can be pointed at — see R22.)
 
-- KD12. **The effort ships whole rather than staged.** (session-settled: user-directed — chosen over shipping the record rework and envelope reader first: two reviewers independently proposed staging, and it was declined so that import, Compare, and manual building arrive as one coherent capability rather than an intermediate state where a build can be imported but not compared.)
+- KD12. ~~**The effort ships whole rather than staged.**~~ **RELAXED 2026-08-29 (user-directed).**
+  The original decision is preserved below because its reasoning is still sound and a
+  future effort may want it. It is no longer in force: #190 shipped standalone as PR #587,
+  producing the staged intermediate state it declined, and rather than leave the plan
+  asserting a rule reality had already broken, the constraint is lifted deliberately.
+  **The remaining units may ship independently.** Two things carry over from the original
+  reasoning and are NOT relaxed: a unit must not leave a player-visible half-capability
+  (U1 is invisible, which is why it is the right next one), and the intermediate states
+  the original decision worried about — importable but not comparable — must be disclosed
+  where a player would otherwise be misled. Original decision: (session-settled: user-directed — chosen over shipping the record rework and envelope reader first: two reviewers independently proposed staging, and it was declined so that import, Compare, and manual building arrive as one coherent capability rather than an intermediate state where a build can be imported but not compared.)
 
 The single-source consequence of KD7 and KD8 together:
 

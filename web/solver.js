@@ -2852,6 +2852,12 @@ async function solveLexicographic(model, highs, opts = {}) {
     // #246 — the ownership filter's own report, carried like the blocklist's so a
     // RESTORED snapshot discloses the narrowing without re-solving. A shared build
     // that silently omitted it would claim a full-roster optimum it never had.
+    // Carried like every other narrowing, and for the reason #595 made expensive: a
+    // disclosure that lives only on the live result renders once and goes silent on
+    // reload, so a restored build claims a full-roster optimum it never had.
+    setFilter: model.excludedSets
+      ? { sets: model.excludedSets, excluded: (model.setExcluded || []).length }
+      : null,
     packFilter: model.ownedPacks
       ? { owned: model.ownedPacks, excluded: (model.packExcluded || []).length,
           uncheckable: model.packUncheckable || 0,

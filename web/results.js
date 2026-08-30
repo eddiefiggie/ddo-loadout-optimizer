@@ -1499,6 +1499,14 @@ function statReach(build, stat) {
 
 /** #110 (U7) — the blocklist disclosure. Reads the SHARED sentences from
  *  projection; silent when no block removed an eligible candidate. */
+/** The excluded-sets disclosure. Pure (result), identical on a restored snapshot. */
+function setFilterNotice(result) {
+  const lines = (Proj && Proj.setFilterNoticeLines) ? Proj.setFilterNoticeLines(result) : [];
+  return lines.length
+    ? `<p class="scope-note set-filter-note" role="status">${lines.map(esc).join(" ")}</p>`
+    : "";
+}
+
 /** #246 — the content-ownership filter's disclosure. Pure (result), and identical
  *  on a restored snapshot, because it reads the solver-stamped report rather than a
  *  live input — a shared build must disclose the narrowing without re-solving. */
@@ -1703,6 +1711,10 @@ const NOTICES = [
   { name: "packFilterNotice", id: "content-not-owned", title: "CONTENT NOT OWNED", subject: "content not owned",
     cls: NOTICE_ACTIONABLE, jump: { label: "Review your content →", step: "pool", anchor: "#wz-packs" },
     render: (c) => packFilterNotice(c.result) },
+  // Actionable for the same reason the pack filter is: the player can un-exclude a set.
+  { name: "setFilterNotice", id: "sets-excluded", title: "SETS EXCLUDED", subject: "sets excluded",
+    cls: NOTICE_ACTIONABLE, jump: { label: "Review excluded sets →", step: "pool", anchor: "#wz-setex-search" },
+    render: (c) => setFilterNotice(c.result) },
   // #539 — actionable, not qualifying: every line it can print names something
   // the player can change (remove a pin, tick an augment as owned, raise the cap).
   { name: "setPinNotice", id: "required-sets", title: "REQUIRED SETS", subject: "required sets",
@@ -3486,7 +3498,7 @@ function wireResultTabs(container, onShow) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, blockNotice, packFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,
