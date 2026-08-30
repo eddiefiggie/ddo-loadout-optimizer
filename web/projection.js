@@ -246,9 +246,13 @@
     const cover = new Map();
     for (const a of affixes || []) {
       if (!a) continue;
-      const own = a.name != null ? a.name : a.stat;
-      const key = a[PROVENANCE_KEY] || own;
+      // #626 — the PRODUCER now goes through the shared helper too. It carried a
+      // second copy of the key rule inline, directly under a comment claiming one
+      // helper existed "so the producer and every consumer cannot disagree about
+      // it" — so the two could drift, and a fix applied to one would miss the other.
+      const key = affixCoverageKey(a);
       if (key == null) continue;
+      const own = affixOwnName(a);
       if (!cover.has(key)) cover.set(key, { stats: [], presence: false });
       const e = cover.get(key);
       if (own != null && e.stats.indexOf(own) === -1) e.stats.push(own);
@@ -258,11 +262,45 @@
   }
 
   /** #453 U1 — the key `affixStatCoverage` filed a DISPLAYED entry under.
-   *  One helper so the producer and every consumer cannot disagree about it. */
+   *  One helper so the producer and every consumer cannot disagree about it.
+   *
+   *  #626 — `stat` is preferred over `name`, and the order is the whole fix. On a
+   *  WORN affix `name` IS the stat and there is no `stat` field, so nothing
+   *  changes there. On a flat CRAFTING placement the two are different things:
+   *  `name` is the menu option, `stat` is what it grants —
+   *
+   *      { name: "Essence Crafting: Charisma", stat: "Charisma", ... }
+   *
+   *  — and the contribution index every consumer tests against is keyed by STAT.
+   *  Reading `name` first made the lookup miss, so a credited essence craft
+   *  classified as `incidental` and drew the hollow ◇ on the card while actually
+   *  paying into the player's top priority.
+   *
+   *  Measured across the four flat pools: `essence_crafting` (25) and `seal` (48)
+   *  were broken; `thunder_forged` (36) and `green_steel` (108) were correct only
+   *  because their `name` happens to EQUAL their `stat`. Preferring `stat` fixes
+   *  the first two and leaves the second two keyed identically, so they no longer
+   *  depend on that coincidence holding.
+   *
+   *  The empty-string guard is its own half of the bug: all 48 seal records carry
+   *  `name: ""`, and `"" != null` is true, so an empty name outranked a real stat.
+   *  A blank is absence, not a key. */
   function affixCoverageKey(entry) {
     if (!entry) return null;
-    const own = entry.name != null ? entry.name : entry.stat;
-    return entry[PROVENANCE_KEY] || own;
+    return entry[PROVENANCE_KEY] || affixOwnName(entry);
+  }
+
+  /** #626 — an entry's OWN stat name, with NO provenance override applied.
+   *
+   *  Distinct from `affixCoverageKey` and the distinction is load-bearing: an
+   *  expanded affix is FILED under its `via` (so the whole bundle classifies as
+   *  one) but LISTS its members by their own names, and `affixStatCoverage` needs
+   *  both at once — `{name: "Abjuration", via: "Sacred Spell Focus Mastery"}` keys
+   *  to the mastery and reports the school. */
+  function affixOwnName(entry) {
+    if (!entry) return null;
+    const pick = (x) => (x != null && x !== "") ? x : null;
+    return pick(entry.stat) != null ? entry.stat : pick(entry.name);
   }
 
   // Item-level ML read native-first (`ml`), legacy `minimum_level` fallback.
@@ -2695,7 +2733,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, utilityPriceLine, utilityUnsecuredLines, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, affixStatCoverage, affixCoverageKey, craftStepLabel, craftAffixRecords, itemMl, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, affixStatCoverage, affixCoverageKey, affixOwnName, craftStepLabel, craftAffixRecords, itemMl, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     // #449 (U2) — the achieved/ceiling fraction: numbers, state and wording from
     // one place, plus the once-per-document full statement.

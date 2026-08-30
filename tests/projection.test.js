@@ -928,6 +928,56 @@ test("U8/R9: a multi-affix craft with no provenance still lists each affix", () 
 
 
 // ---------------------------------------------------------------------------
+// #626 — `affixCoverageKey` read the crafting OPTION's name instead of the stat
+// it grants, so a credited essence craft classified as `incidental` and drew the
+// hollow diamond while paying into the player's top priority.
+
+test("#626: a flat crafting placement keys on the stat it grants, not the menu option", () => {
+  const ess = { name: "Essence Crafting: Charisma", stat: "Charisma",
+                bonus_type: "Enhancement", value: 9 };
+  assert.strictEqual(P.affixCoverageKey(ess), "Charisma",
+    "the contribution index is keyed by STAT, so the key must be the stat");
+});
+
+test("#626: an empty name is absence, not a key", () => {
+  // All 48 seal records carry `name: ""`, and `"" != null` is true, so an empty
+  // name outranked a real stat and every seal placement keyed to "".
+  const seal = { name: "", stat: "Legendary Affirmation", bonus_type: "Bool", value: 1 };
+  assert.strictEqual(P.affixCoverageKey(seal), "Legendary Affirmation");
+});
+
+test("#626: a worn affix is unchanged — its name IS its stat", () => {
+  assert.strictEqual(P.affixCoverageKey({ name: "Charisma", type: "Enhancement", value: 9 }), "Charisma");
+  assert.strictEqual(P.affixCoverageKey({ stat: "Charisma", bonus_type: "Profane", value: 1 }), "Charisma",
+    "a set-bonus affix carries only `stat`");
+  assert.strictEqual(P.affixCoverageKey(null), null);
+});
+
+test("#626: provenance still wins, and members still report their own names", () => {
+  // The key files an expanded bundle under its `via`; the coverage LISTS members
+  // by their own names. Collapsing those two is what broke this on the first pass.
+  const a = { name: "Abjuration", value: 3, type: "Sacred", via: "Sacred Spell Focus Mastery" };
+  assert.strictEqual(P.affixCoverageKey(a), "Sacred Spell Focus Mastery", "filed under the via");
+  assert.strictEqual(P.affixOwnName(a), "Abjuration", "but reports its own school");
+});
+
+test("#626: the two pools that were correct by coincidence stay correct", () => {
+  // thunder_forged (36) and green_steel (108) have `name` === `stat`, so the old
+  // name-first rule happened to work. They must not depend on that any more.
+  assert.strictEqual(P.affixCoverageKey({ name: "Corrosion", stat: "Corrosion", bonus_type: "Insight", value: 24 }), "Corrosion");
+  assert.strictEqual(P.affixCoverageKey({ name: "Acid Guard", stat: "Acid Guard", bonus_type: "Enhancement", value: 1 }), "Acid Guard");
+});
+
+test("#626: the producer and the key helper cannot disagree", () => {
+  const P_SRC = fs.readFileSync(path.join(__dirname, "..", "web", "projection.js"), "utf8");
+  const i = P_SRC.indexOf("function affixStatCoverage(");
+  const body = P_SRC.slice(i, P_SRC.indexOf("\n  }", i));
+  assert.ok(/affixCoverageKey\(a\)/.test(body),
+    "affixStatCoverage must go THROUGH the helper, not carry its own copy of the rule");
+  assert.ok(!/a\.name != null \? a\.name : a\.stat/.test(body),
+    "the inline duplicate of the key rule is gone");
+});
+
 // #614 — the unmodelled-penalty disclosure. The solver discards every negative
 // affix at twelve `value > 0` gates, so an item is scored on its upside alone.
 // Until the LP can subtract them (blocked on a wiki ruling on penalty stacking),

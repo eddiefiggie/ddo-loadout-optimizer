@@ -1861,8 +1861,46 @@ function breakdownByTarget(program, prim, precomputedVisible) {
       if (!counts) continue;
       const crossAdd = counts.source;
       const bonusType = key.split("||")[1];
-      for (const z of zs) {
-        if (prim(z.name) > 0.5) {
+      // #626 (tie-break) — on a CAPPED stat the LP's choice inside a bucket is
+      // free, and it picked arbitrarily.
+      //
+      // `Sum(z) <= 1` models max-of-type by letting the solver take at most one
+      // contributor, and while the objective is the raw sum it always takes the
+      // largest. A cap breaks that: the objective becomes `d`, with `d <= raw`
+      // and `d <= cap`, so once raw clears the cap EVERY choice of contributor is
+      // optimal and HiGHS returns whichever it happens to land on.
+      //
+      // Reported from a real build: Charisma capped at 15, with `Charisma |
+      // Enhancement` available at 9 (a Gem essence craft), 9 (Epic Flameward) and
+      // 10 (Epic Coalesced Coinage). The LP took the 9. Raw printed as 16 when
+      // the player's own gear gives 17, the breakdown named a craft instead of
+      // the worn item, and the +10 the player could see on their off hand read as
+      // ignored. In game they have the 10 — max-of-type is over what is EQUIPPED,
+      // not over what an LP found convenient.
+      //
+      // So on a capped stat the winner is recomputed as the largest contribution
+      // whose gates all fired. Deliberately scoped to capped stats: everywhere
+      // else the stage lock pins the sum, the LP already takes each bucket's
+      // maximum, and this must not perturb a byte of it. Credits and
+      // hidden-placement contributions are left alone on both sides — they carry
+      // their own substitution rules (#322/#325) that this must not step on.
+      const isCredit = (z) => !!(program.creditMeta && program.creditMeta.has(z.name));
+      const capFree = program.cappedStats && program.cappedStats[stat] != null;
+      let override = null;
+      if (capFree) {
+        const sel = zs.find((z) => prim(z.name) > 0.5);
+        if (sel && !isCredit(sel) && !sel.gates.some(hiddenPlacementGate)) {
+          for (const z of zs) {
+            if (z === sel || isCredit(z) || !z.gates.length) continue;
+            if (z.value <= sel.value) continue;
+            if (!z.gates.every((g) => prim(g) > 0.5)) continue;   // not actually equipped
+            if (z.gates.some(hiddenPlacementGate)) continue;
+            if (!override || z.value > override.value) override = z;
+          }
+        }
+      }
+      for (const z of (override ? [override] : zs)) {
+        if (override || prim(z.name) > 0.5) {
           // #322 — skip contributions gated by a hidden placement (see above).
           // #325 — but in a CREDITED bucket, emit the DECLARED part (value =
           // floor) in the skipped part's place. Both hidden shapes assume the

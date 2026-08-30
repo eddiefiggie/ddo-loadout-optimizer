@@ -5734,6 +5734,7 @@ async function withCrossAdd(map, fn) {
     for (const [, zs] of program.zByBucket) for (const z of zs) if (z.gates.includes(g)) out.push(z.name);
     return out;
   }
+  function primOf(res) { return (n) => (res.Columns[n] ? res.Columns[n].Primal : 0); }
   function primalOf(names) {
     return { Columns: Object.fromEntries(names.map((n) => [n, { Primal: 1 }])) };
   }
@@ -5854,6 +5855,57 @@ async function withCrossAdd(map, fn) {
     };
   }
   const xOf = (program, vid) => program.xVars.find((xv) => xv.variant.variant_id === vid).name;
+
+  // #626 (tie-break) — on a CAPPED stat the LP's choice inside a bucket is free,
+  // because `d <= raw` and `d <= cap` make every contributor optimal once raw
+  // clears the cap. Reported from a real build: Charisma capped at 15 with
+  // `Charisma | Enhancement` available at 9 and 10, the LP took the 9, and the
+  // player's better off-hand read as ignored. In game, max-of-type is over what
+  // is EQUIPPED.
+  function twoInOneBucket(cap) {
+    return {
+      targets: ["Melee Power"], mlCap: 36,
+      userCaps: cap != null ? { "Melee Power": cap } : undefined,
+      worn: [slot("Armor", [item("SMALL", "Armor", [["Melee Power", "Enhancement", 9]])]),
+             slot("Ring", [item("BIG", "Ring", [["Melee Power", "Enhancement", 10]])])],
+    };
+  }
+
+  await test("#626: a capped bucket reports the largest EQUIPPED contribution, not the LP's pick", async () => {
+    const program = S.buildProgram(twoInOneBucket(15));
+    assert.strictEqual(program.cappedStats["Melee Power"], 15, "cap minted");
+    const xS = xOf(program, "SMALL"), xB = xOf(program, "BIG");
+    // Both items equipped; the primal selects the SMALLER contribution's z — the
+    // degenerate choice a cap lets HiGHS make.
+    const prim = primOf(primalOf([xS, xB, zsForGate(program, xS)[0]]));
+    const parts = S.breakdownByTarget(program, prim)["Melee Power"] || [];
+    assert.strictEqual(parts.length, 1, "one contributor per bonus-type bucket");
+    assert.strictEqual(parts[0].value, 10,
+      "the 10 is worn, so the game gives 10 — reporting the LP's 9 understates it");
+    assert.strictEqual(parts[0].source, "BIG", "and the breakdown names the item that actually supplies it");
+  });
+
+  await test("#626: an UNCAPPED bucket is untouched — the LP already takes the max there", async () => {
+    const program = S.buildProgram(twoInOneBucket(null));
+    assert.ok(!program.cappedStats["Melee Power"], "no cap");
+    const xS = xOf(program, "SMALL"), xB = xOf(program, "BIG");
+    const prim = primOf(primalOf([xS, xB, zsForGate(program, xS)[0]]));
+    const parts = S.breakdownByTarget(program, prim)["Melee Power"] || [];
+    assert.strictEqual(parts[0].value, 9,
+      "uncapped, the stage lock pins the sum — the selected z is reported verbatim "
+      + "and this correction must not perturb a byte of it");
+  });
+
+  await test("#626: a contribution whose host is NOT equipped never wins the bucket", async () => {
+    // The correction is over what fired, not over the catalog: an item the solve
+    // did not pick cannot supply a number the player does not have.
+    const program = S.buildProgram(twoInOneBucket(15));
+    const xS = xOf(program, "SMALL");
+    const prim = primOf(primalOf([xS, zsForGate(program, xS)[0]]));   // BIG left off
+    const parts = S.breakdownByTarget(program, prim)["Melee Power"] || [];
+    assert.strictEqual(parts[0].value, 9, "only the equipped 9 is available");
+    assert.strictEqual(parts[0].source, "SMALL");
+  });
 
   await test("#322 guards: a placement clamped out by a stat cap is omitted and moves no total", async () => {
     const program = S.buildProgram(invisModel({
