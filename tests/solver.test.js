@@ -5856,6 +5856,108 @@ async function withCrossAdd(map, fn) {
   }
   const xOf = (program, vid) => program.xVars.find((xv) => xv.variant.variant_id === vid).name;
 
+  // #626 (craft placement) — a craft whose bucket already has a better EQUIPPED
+  // source buys the player nothing, and was being recommended anyway. The cap
+  // guard (#322) charged the placement its whole value when removing it actually
+  // costs the difference against what the bucket falls back to.
+  function zInBucket(program, bucketKey, gate) {
+    const zs = program.zByBucket.get(bucketKey) || [];
+    const z = zs.find((x) => x.gates.includes(gate));
+    return z ? z.name : null;
+  }
+  const bucketKeys = (program) => [...program.zByBucket.keys()];
+
+  await test("#626: a craft whose bucket falls back to worn gear is not recommended", async () => {
+    const program = S.buildProgram(invisModel({
+      // Artifact 10 worn puts the craft's own bucket beyond it; Enhancement 8
+      // pushes raw past the cap so the LP's choice inside a bucket goes free.
+      wornAffixes: [["Melee Power", "Artifact", 10], ["Melee Power", "Enhancement", 8]],
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 9, unit: "flat" }],
+      userCaps: { "Melee Power": 15 },
+    }));
+    const xa = xOf(program, "BIGMP");
+    const q = [...program.dinoMeta.keys()][0];
+    const artKey = bucketKeys(program).find((k) => k.startsWith("Melee Power||Artifact"));
+    const enhKey = bucketKeys(program).find((k) => k.startsWith("Melee Power||Enhancement"));
+    const zDino = zInBucket(program, artKey, q);
+    const zEnh = zInBucket(program, enhKey, xa);
+    assert.ok(zDino && zEnh, "both contributions minted");
+    // The degenerate pick: the CRAFT wins the Artifact bucket even though the
+    // worn 10 is right there. Under a cap the LP has no reason to prefer either.
+    const r = S.readSolution(primalOf([xa, q, zDino, zEnh]), program);
+    assert.strictEqual((r.dinoPlaced || []).length, 0,
+      "removing the craft costs nothing — the bucket falls back to the worn 10");
+    assert.strictEqual(r.effective["Melee Power"], 15, "and the displayed total is unmoved");
+  });
+
+  await test("#626: a craft that IS its bucket's only source is still recommended", async () => {
+    // The fix must not delete load-bearing crafts. Here nothing else supplies the
+    // Artifact bucket, so removing it drops the total below the cap.
+    const program = S.buildProgram(invisModel({
+      wornAffixes: [["Melee Power", "Enhancement", 10]],
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 9, unit: "flat" }],
+      userCaps: { "Melee Power": 15 },
+    }));
+    const xa = xOf(program, "BIGMP");
+    const q = [...program.dinoMeta.keys()][0];
+    const r = S.readSolution(primalOf([xa, ...zsForGate(program, xa), q, ...zsForGate(program, q)]), program);
+    assert.strictEqual((r.dinoPlaced || []).length, 1,
+      "raw 19 - 9 = 10 is under the cap, so the craft is load-bearing and reports");
+  });
+
+  await test("#626: rawTotalOf reports what the gear gives, not what the LP selected", async () => {
+    const program = S.buildProgram(invisModel({
+      wornAffixes: [["Melee Power", "Artifact", 10], ["Melee Power", "Enhancement", 8]],
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 9, unit: "flat" }],
+      userCaps: { "Melee Power": 15 },
+    }));
+    const xa = xOf(program, "BIGMP");
+    const q = [...program.dinoMeta.keys()][0];
+    const artKey = bucketKeys(program).find((k) => k.startsWith("Melee Power||Artifact"));
+    const enhKey = bucketKeys(program).find((k) => k.startsWith("Melee Power||Enhancement"));
+    const prim = primOf(primalOf([xa, q, zInBucket(program, artKey, q), zInBucket(program, enhKey, xa)]));
+    assert.strictEqual(S.rawTotalOf(program, prim, "Melee Power"), 18,
+      "Artifact falls to the worn 10 (not the selected craft 9) plus Enhancement 8");
+  });
+
+  await test("#626: an UNCAPPED stat's raw is the selected sum, untouched", async () => {
+    const program = S.buildProgram(invisModel({
+      wornAffixes: [["Melee Power", "Artifact", 10], ["Melee Power", "Enhancement", 8]],
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 9, unit: "flat" }],
+    }));
+    const xa = xOf(program, "BIGMP");
+    const q = [...program.dinoMeta.keys()][0];
+    const artKey = bucketKeys(program).find((k) => k.startsWith("Melee Power||Artifact"));
+    const enhKey = bucketKeys(program).find((k) => k.startsWith("Melee Power||Enhancement"));
+    const prim = primOf(primalOf([xa, q, zInBucket(program, artKey, q), zInBucket(program, enhKey, xa)]));
+    assert.strictEqual(S.rawTotalOf(program, prim, "Melee Power"), 17,
+      "uncapped: the stage lock pins the sum, so the SELECTED craft 9 is reported verbatim");
+  });
+
+  await test("#626: hiding a placement never leaves the receipts short of the total", async () => {
+    // Dropping the hidden z outright left raw at 7 against a displayed 15 on the
+    // reported build. The bucket must fall back to what the player still wears.
+    const program = S.buildProgram(invisModel({
+      wornAffixes: [["Melee Power", "Artifact", 10], ["Melee Power", "Enhancement", 8]],
+      dinoAffixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 9, unit: "flat" }],
+      userCaps: { "Melee Power": 15 },
+    }));
+    const xa = xOf(program, "BIGMP");
+    const q = [...program.dinoMeta.keys()][0];
+    const artKey = bucketKeys(program).find((k) => k.startsWith("Melee Power||Artifact"));
+    const enhKey = bucketKeys(program).find((k) => k.startsWith("Melee Power||Enhancement"));
+    const res = primalOf([xa, q, zInBucket(program, artKey, q), zInBucket(program, enhKey, xa)]);
+    const prim = primOf(res);
+    const r = S.readSolution(res, program);
+    const parts = S.breakdownByTarget(program, prim)["Melee Power"] || [];
+    const sum = parts.reduce((s, p) => s + p.value, 0);
+    assert.ok(sum >= r.effective["Melee Power"],
+      `receipts invariant: parts (${sum}) sum to at least the displayed effective (${r.effective["Melee Power"]})`);
+    assert.ok(parts.some((p) => p.value === 10 && p.sourceKind === "worn"),
+      "the Artifact bucket is reported through the worn item it actually comes from");
+    assert.ok(!parts.some((p) => p.sourceKind === "dino"), "and the dropped craft names nothing");
+  });
+
   // #626 (tie-break) — on a CAPPED stat the LP's choice inside a bucket is free,
   // because `d <= raw` and `d <= cap` make every contributor optimal once raw
   // clears the cap. Reported from a real build: Charisma capped at 15 with
