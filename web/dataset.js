@@ -580,7 +580,53 @@ const PRESENCE_TYPES = new Set(["boolean", "Bool"]);
 // PRESENCE_DENY force-hides, PRESENCE_ALLOW force-shows (both empty by default —
 // the extension point for tightening the list, e.g. trimming weapon materials).
 const _PRESENCE_NOISE = /[.%:]|\bchance\b|\bwhen you\b|\byour\b|\bclicky\b|\bupgrade|\bper (?:rest|day)\b|\bcharges?\b|\(\d|\d\/day/i;
-const PRESENCE_DENY = new Set([]);
+// #615 — wearer drawbacks the picker was offering as things to SEEK. A player
+// typing "curse" was suggested `Curse of Foolishness` as a priority, and Browse
+// rendered it as a ✓ on the item, visually identical to `Ghost Touch`. Ranking
+// one made the solver hunt for the item carrying it.
+//
+// The valence of a `Bool | 1` drawback name is NOT decidable from the name —
+// `Weaken Undead` (55 weapons) is plainly an on-hit debuff on the ENEMY and is a
+// real thing to seek. So the line drawn here is carrier-shaped, not name-shaped:
+// a name carried on at least one non-weapon WORN slot cannot be an on-hit effect,
+// which leaves the wearer as the only thing it can be acting on. Measured against
+// the built dataset:
+//
+//   Curse of Clumsiness    Goggles, Gloves, Weapon
+//   Curse of Dullness      Necklace, Trinket, Belt
+//   Curse of Foolishness   Necklace, Trinket, Ring
+//   Curse of Repulsiveness Cloak, Ring, Armor, Weapon
+//   Cursed Level Drain     Bracers
+//   Mind Drain             Ring, Off Hand
+//   Power Drain            Armor
+//   Metal Fatigue          Armor
+//
+// Three names in the same #615 population are WEAPON-ONLY — `Curse of Weakness`,
+// `Critical Weakening`, `Weaken Undead` — so the on-hit reading stays open for all
+// three and none of them is denied here. Treating them alike is the point: denying
+// `Critical Weakening` while allowing `Weaken Undead` would be reading the name,
+// which is the inference this repo does not make. #615's harvest settles them.
+//
+// Deliberately not listed: `Bestow Curse clicky`, already hidden by the `\bclicky\b`
+// noise rule — a dead entry is a guard that cannot fail.
+//
+// The grain is coarse: denial is per NAME, so `Tchurvul's Kukri` loses
+// suggestibility for `Curse of Repulsiveness` on its worn-slot siblings' evidence.
+// That is the mechanism's limit, and it errs the recoverable way — a denied name
+// stays free-typeable via `known`, while a suggested one is an active
+// recommendation. This is the cheap half of #615; recovering the stat and
+// magnitude each curse actually costs is the harvest half, and #614 is what would
+// then subtract it.
+const PRESENCE_DENY = new Set([
+  "Curse of Clumsiness",
+  "Curse of Dullness",
+  "Curse of Foolishness",
+  "Curse of Repulsiveness",
+  "Cursed Level Drain",
+  "Mind Drain",
+  "Power Drain",
+  "Metal Fatigue",
+]);
 // #228 — named effects the word cap drops. The cap is a proxy for "is this a
 // named effect or a sentence", and it splits the wrong way on any effect whose
 // real name runs past four words. `Kick 'Em While They're Down` is five and was
