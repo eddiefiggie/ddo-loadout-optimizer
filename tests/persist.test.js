@@ -923,3 +923,15 @@ function RESULT_KEEP_FROM_SOURCE(src) {
   const blk = src.slice(src.indexOf("const RESULT_KEEP = ["));
   return [...blk.slice(0, blk.indexOf("];")).matchAll(/"([a-zA-Z]+)"/g)].map((m) => m[1]);
 }
+
+
+test("the excluded-sets answer survives a save, like every other pool narrowing", () => {
+  // A build solved with an exclusion must come back holding it, or a reload silently
+  // WIDENS the pool the player narrowed — and the build would then differ from the one
+  // they saved with no sign that it had.
+  const KEEP = new Set(RESULT_KEEP_FROM_SOURCE(
+    require("fs").readFileSync(require("path").join(__dirname, "..", "web", "persist.js"), "utf8")));
+  assert.ok(KEEP.has("setFilter"), "the report is persisted, so the disclosure survives");
+  const P = require("../web/persist.js");
+  assert.ok(P.INPUT_KEYS.includes("excludedSets"), "and the answer itself is a saved input");
+});

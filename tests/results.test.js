@@ -2586,6 +2586,8 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       // #246 — actionable, unlike #573's disclosure: the player CAN resolve it, by
       // ticking a pack they do own.
       packFilterNotice: ["CONTENT NOT OWNED", "actionable"],
+      // Actionable for the same reason: the player can un-exclude a set.
+      setFilterNotice: ["SETS EXCLUDED", "actionable"],
       // #539 — actionable: every line it can print names something the player can
       // change (remove a pin, tick an augment as owned, raise the level cap).
       setPinNotice: ["REQUIRED SETS", "actionable"],
@@ -2610,7 +2612,7 @@ test("#448: the registry is the ONLY source — nothing classifies a notice but 
 
   assert.deepStrictEqual(Object.keys(R.NOTICE_TABLE), single.map((n) => n.name),
     "NOTICE_TABLE is derived from the registry, in registry order");
-  assert.strictEqual(single.length, 12, "the twelve single-fact notices");
+  assert.strictEqual(single.length, 13, "the thirteen single-fact notices");
   assert.deepStrictEqual(split.map((n) => n.name),
     ["artifactNotice", "boundNotice", "zeroSourceNotice"],
     "and the three multi-fact notices come through their U10 entry functions");
@@ -2641,7 +2643,7 @@ test("#448: registry ORDER is the on-screen order within a class, and splits lea
     "artifactNotice", "boundNotice", "zeroSourceNotice",
     "staleSnapshotNotice", "outbidNotice", "saturationNotice", "emptySlotNotice",
     "absorptionQuarantineNotice", "craftingExcludedNotice", "augCeilingNotice",
-    "dodgeMaxDexNotice", "blockNotice", "packFilterNotice", "setPinNotice", "upgradeNotice",
+    "dodgeMaxDexNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
   ]);
 });
 

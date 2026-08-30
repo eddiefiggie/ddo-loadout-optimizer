@@ -2819,8 +2819,13 @@ test("#346: the Set Augments picker is disabled on rungs that clear set-bonus cr
   const block = srcFrom(src, 'id="wz-setaug"', 1800, "wz-setaug block");
   assert.match(block, /setAugInert \? " disabled" : ""/,
     "the checkboxes carry a disabled branch keyed on the rung");
-  assert.match(block, /Not applicable — the rung you chose excludes set-bonus crafting/,
+  // The wording gained "on the Character step" when the panel moved to Gear pool: the
+  // control that makes it inert now lives somewhere else, and an inert panel whose
+  // explanation does not say where the cause is leaves the player hunting for it.
+  assert.match(block, /Not applicable — the crafting rung you chose on the Character step excludes set-bonus crafting/,
     "and the reason is stated, never left silently inert");
+  assert.match(block, /Character step/,
+    "and it names the step that owns the control, since it is no longer this one");
   assert.match(block, /Your selections are kept/,
     "and the player is told their ticks survive the trip");
   // Keyed on the niche-crafting rung, not the augment rungs — that is where the
