@@ -1350,11 +1350,14 @@ function addBlocks(blocklist, ids, slotConstraints) {
 function blockDisplacesPinText(displaced) {
   const d = displaced || [];
   if (!d.length) return "";
-  const one = d.length === 1;
-  const list = d.map((x) => `\u201C${x.id}\u201D (pinned to ${x.slot})`).join(", ");
-  return `${list} ${one ? "is" : "are"} pinned to a slot.`
-    + ` Blocking ${one ? "it removes that pin" : "them removes those pins"} \u2014 a block is a hard`
-    + " rule, so the pin cannot be honored. Continue?";
+  const q = (x) => `\u201C${x.id}\u201D`;
+  if (d.length === 1) {
+    return `${q(d[0])} is pinned to ${d[0].slot}. Blocking it removes that pin`
+      + " \u2014 a block is a hard rule, so the pin cannot be honored. Continue?";
+  }
+  const list = d.map((x) => `${q(x)} (${x.slot})`).join(", ");
+  return `${list} are pinned to slots. Blocking them removes those pins`
+    + " \u2014 a block is a hard rule, so the pin cannot be honored. Continue?";
 }
 
 /** #110 (U3/R3) — remove one entry, leaving the rest intact. */
@@ -2974,7 +2977,11 @@ ${(() => {
         for (const x of r.displaced) removePinFrom(state.slotConstraints, x.slot, x.id, slotCardOf);
         state.constraintsDirty = true; markDirty();
         blockStage.clear();
-        renderBlockStage(); renderBlockList(); renderBlockResults(); renderPinResults();
+        // renderPinList too: a displaced pin that stays drawn is the same "screen
+        // disagrees with state" failure this fix exists to remove. Every other pin
+        // mutation redraws both surfaces; so does this one.
+        renderBlockStage(); renderBlockList(); renderBlockResults();
+        renderPinList(); renderPinResults();
       };
       const clear = document.getElementById("wz-block-clear");
       if (clear) clear.onclick = () => { blockStage.clear(); renderBlockStage(); renderBlockResults(); };
@@ -2998,9 +3005,15 @@ ${(() => {
         const already = blockedSet.has(id);
         const pinSlot = blockPinSlotOf(state.slotConstraints, id);
         // #262 (U4) — same disclosure in the block picker's rows.
-        const note = (already ? " · blocked" : pinSlot ? ` · pinned to ${esc(pinSlot)}` : "") + noDropNote(v);
-        return `<label class="wz-block-hit${already || pinSlot ? " wz-block-hit-off" : ""}">
-          <input type="checkbox" data-block-id="${esc(id)}"${blockStage.has(id) ? " checked" : ""}${already || pinSlot ? " disabled" : ""}>
+        // #620 — a pinned row is TICKABLE. It used to be disabled alongside an
+        // already-blocked one, which quietly made block-beats-pin unreachable from
+        // the surface a player actually uses, and left this row asserting the
+        // opposite of what the load path tells them. Only `already` still
+        // disables, and only that is a no-op: there is nothing left to add.
+        const note = (already ? " · blocked"
+          : pinSlot ? ` · pinned to ${esc(pinSlot)} — blocking removes the pin` : "") + noDropNote(v);
+        return `<label class="wz-block-hit${already ? " wz-block-hit-off" : ""}">
+          <input type="checkbox" data-block-id="${esc(id)}"${blockStage.has(id) ? " checked" : ""}${already ? " disabled" : ""}>
           <span class="wz-pin-hit-name">${esc(name)}</span>
           <span class="wz-pin-hit-slot">${esc(v.category === "augment" ? ((v.aug_color || {}).color || "augment") + " augment" : v.slot || "")}${note}</span></label>`;
       }).join("")
@@ -3241,7 +3254,7 @@ ${(() => {
       // U6 — stale entries (no longer resolving to any roster variant) are
       // labelled by name rather than silently kept or dropped.
       const staleSet = new Set(blockStale(entries, dataset.items));
-      box.innerHTML = refusal + entries.map((id) => {
+      box.innerHTML = entries.map((id) => {
         const stale = staleSet.has(id)
           ? `<span class="wz-pin-flag" title="No current item or augment carries this id — it may have been renamed upstream. The entry still saves; it just matches nothing right now.">no longer matches anything</span>`
           : "";

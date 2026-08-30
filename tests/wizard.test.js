@@ -2560,6 +2560,35 @@ test("#620: the confirmation names every displaced pin and its slot", () => {
   assert.strictEqual(blockDisplacesPinText(undefined), "", "an absent list never prompts");
 });
 
+test("#620: committing a block that displaces a pin redraws the pin surfaces", () => {
+  // The handler mutates slotConstraints, so it owes the same redraw every other
+  // pin mutation does. Without it the displaced pin stays on screen and the player
+  // reads a constraint that no longer exists — the failure this fix exists to end.
+  const i = WIZARD_SRC.indexOf('getElementById("wz-block-commit")');
+  assert.ok(i > 0, "the commit handler resolves");
+  const handler = WIZARD_SRC.slice(i, i + 1400);
+  assert.ok(/removePinFrom\(state\.slotConstraints/.test(handler), "the unpin is applied");
+  assert.ok(/renderPinList\(\)/.test(handler), "the pin list is redrawn");
+  assert.ok(/renderPinResults\(\)/.test(handler), "the pin search rows are redrawn");
+});
+
+test("#620: the block search row for a pinned item is tickable, not disabled", () => {
+  // The pure core learning block-beats-pin is useless if the only surface a
+  // player reaches it from refuses the tick. This asserts the row template, which
+  // is where the old rule was ALSO enforced — and where a browser check caught it
+  // still standing after addBlocks had been fixed.
+  const start = WIZARD_SRC.indexOf("function renderBlockResults(");
+  const end = WIZARD_SRC.indexOf("\n    function ", start + 1);
+  assert.ok(end > start, "the slice's end marker resolves");
+  const slice = WIZARD_SRC.slice(start, end);
+  assert.ok(!/already \|\| pinSlot \? " disabled" : ""/.test(slice),
+    "a pinned row must not be disabled — only an already-blocked one is a no-op");
+  assert.ok(/\$\{already \? " disabled" : ""\}/.test(slice),
+    "an already-blocked row still disables: there is nothing left to add");
+  assert.ok(/blocking removes the pin/.test(slice),
+    "the row states the consequence rather than silently refusing");
+});
+
 test("#620: hand-typed block and imported block now resolve a pin the same way", () => {
   // blockLoadMessage has always told an importing player that a block wins.
   // addBlocks used to say the opposite. The two surfaces must not disagree.
@@ -2643,6 +2672,15 @@ test("review/#110: the load path clears the staged block selection", () => {
   // comment above the render site that explains why the field is gone.
   assert.ok(!/state\.blockRefusedMsg/.test(WIZARD_SRC),
     "the one-shot refusal state is fully removed, not merely unused");
+  // The message was interpolated at TWO render sites, and dropping only the
+  // declaration left the second one throwing a ReferenceError that no pure-function
+  // test could see — it only fired once a blocklist was non-empty. Caught in the
+  // browser; pinned here so the next removal of a render-local is complete.
+  const rbl = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderBlockList("));
+  const body = rbl.slice(0, rbl.indexOf("\n    function "))
+    .split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");   // code only, not prose
+  assert.ok(!/\brefusal\b/.test(body),
+    "renderBlockList references no leftover `refusal` local");
 });
 
 test("review/#110: the load path sanitizes blocklist elements to non-empty strings", () => {
