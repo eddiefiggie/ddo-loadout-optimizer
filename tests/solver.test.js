@@ -6851,3 +6851,74 @@ async function withCrossAdd(map, fn) {
 
   console.log(`\n${passed} passed`);
 })();
+
+// ---- skipped bonus types ------------------------------------------------------
+
+(async () => {
+  const H = await Highs({ locateFile: (f) => vendor + f });
+  const two = () => ({
+    targets: ["Constitution"], mlCap: 34,
+    worn: [slot("Necklace", [item("N", "Necklace", [["Constitution", "Enhancement", 15]])]),
+           slot("Ring", [item("R", "Ring", [["Constitution", "Insight", 7]])])],
+  });
+
+  await test("a skipped bonus type contributes nothing, at any magnitude", async () => {
+    const base = await S.solveLexicographic(two(), H);
+    assert.strictEqual(base.perTarget.Constitution, 22, "15 Enhancement + 7 Insight, both buckets live");
+    const skipIns = await S.solveLexicographic(
+      { ...two(), excludedTypes: [{ stat: "Constitution", bonus_type: "Insight" }] }, H);
+    assert.strictEqual(skipIns.perTarget.Constitution, 15, "the Insight bucket is gone entirely");
+    const skipBoth = await S.solveLexicographic({ ...two(), excludedTypes: [
+      { stat: "Constitution", bonus_type: "Insight" },
+      { stat: "Constitution", bonus_type: "Enhancement" }] }, H);
+    assert.strictEqual(skipBoth.perTarget.Constitution, 0, "skipping every type leaves nothing");
+  });
+
+  await test("a skip removes the BUCKET, never the item", async () => {
+    // The player excluded a bonus type, not a piece of gear. An item carrying a
+    // skipped affix is still free to be chosen for its other stats — anything else
+    // would turn a bonus-type preference into a silent blocklist.
+    const model = {
+      targets: ["Constitution", "Strength"], mlCap: 34,
+      worn: [slot("Necklace", [item("N", "Necklace",
+        [["Constitution", "Insight", 7], ["Strength", "Enhancement", 9]])])],
+      excludedTypes: [{ stat: "Constitution", bonus_type: "Insight" }],
+    };
+    const r = await S.solveLexicographic(model, H);
+    assert.strictEqual(r.perTarget.Constitution, 0, "the skipped bucket scores nothing");
+    assert.strictEqual(r.perTarget.Strength, 9, "and the item is still worn for its other stat");
+  });
+
+  await test("a credit on a skipped bucket does not make the solve infeasible", async () => {
+    // The UI keeps the two exclusive and cleanExclusionMap refuses it again, but a
+    // hand-edited backup can carry both. The credit floor would be unsatisfiable
+    // against a deleted bucket, and an infeasible solve is a far worse way to learn
+    // that than the skip — the stronger statement — simply winning.
+    const r = await S.solveLexicographic({ ...two(),
+      credits: [{ stat: "Constitution", bonus_type: "Insight", value: 5 }],
+      excludedTypes: [{ stat: "Constitution", bonus_type: "Insight" }] }, H);
+    assert.strictEqual(r.status, "optimal", "still solvable");
+    assert.strictEqual(r.perTarget.Constitution, 15, "the skip won; no phantom 5 was credited");
+  });
+
+  await test("the skip is keyed through equivType, like a credit is", async () => {
+    // `Insight Natural` collapses to `Insight`, so skipping Insight must reach it.
+    // Forming the key any other way drifts the moment the equivalence table does.
+    // The table is installed by dataset.js in the app; installed here explicitly so
+    // the test exercises the MECHANISM rather than whatever ambient state ran last.
+    const M = require("../web/model.js");
+    M.setStackEquiv({ "Insight Natural": "Insight" });
+    try {
+      const model = {
+        targets: ["Constitution"], mlCap: 34,
+        worn: [slot("Ring", [item("R", "Ring", [["Constitution", "Insight Natural", 7]])])],
+        excludedTypes: [{ stat: "Constitution", bonus_type: "Insight" }],
+      };
+      const r = await S.solveLexicographic(model, H);
+      assert.strictEqual(r.perTarget.Constitution, 0,
+        "an equivalent type name is the same bucket, so the skip reaches it");
+    } finally {
+      M.setStackEquiv({});   // shared module state; later tests expect identity
+    }
+  });
+})();

@@ -161,6 +161,11 @@
     // U2/U5 — declared stat credits, keyed `stat||bonusType`. Plain JSON, so it
     // needs no special serialization the way the two Sets above do.
     "declaredCredits",
+    // The other half of the same picker: bonus types the player told the solver
+    // not to use for a stat, keyed the same `stat||bonusType`. On the allowlist
+    // for the same reason its sibling is — a saved build that lost its skips would
+    // silently solve over gear the player excluded, and read as if it had not.
+    "excludedTypes",
     // #91 (U4/KTD8) — the Utility-tier save marker. Every save this code writes
     // is by definition post-feature, so pickInputs stamps it `true` uncondition-
     // ally; a save that LACKS it is pre-feature and the wizard's load path heals

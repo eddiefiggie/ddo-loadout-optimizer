@@ -2095,3 +2095,57 @@ input.wz-ml { width: 120px; }
   display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
   gap: var(--sp-1) var(--sp-3);
 }
+
+
+/* ---- the Advanced panel's bonus-type picker ----------------------------------
+
+   Replaced a "+ already have" button that added one row at a time, each carrying
+   its own type dropdown: picking several meant several trips through a shrinking
+   menu, picking all of them meant 26, and the number was mandatory when the
+   common answer has no number in it.
+
+   A ticked type is skipped entirely. Its number box then offers the softer
+   answer — "only use this type if it beats what I already have" — so the box is
+   disabled until the type is ticked, and blank is a meaningful value rather than
+   an unfinished one. */
+.wz-btypes { flex-basis: 100%; margin-top: var(--sp-2); }
+.wz-btype-bulk { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap;
+  margin-bottom: var(--sp-2); }
+.wz-btype-bulk .btn { flex: 0 0 auto; }
+.wz-btype-stat { margin: 0; }
+.wz-btype-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 2px var(--sp-3);
+}
+.wz-btype {
+  display: flex; align-items: center; gap: var(--sp-2); cursor: pointer;
+  padding: 2px var(--sp-1); border-radius: var(--radius); font-size: 0.92em;
+  /* The whole LABEL is the tap target, so the row carries the height rather than
+     the controls inside it. Without this the base `input { min-height: 44px }`
+     touch rule applies to the checkbox AND the number box, and 26 types become a
+     726px wall. Same density the pack checklist uses, for the same reason. */
+  min-height: 1.9rem;
+  /* Unticked types recede rather than disappear: the list is the vocabulary, and
+     greying one out entirely made the grid read as half-broken. Same treatment
+     the pack checklist gets, for the same reason. */
+  opacity: 0.6; transition: opacity 120ms ease, background 120ms ease;
+}
+.wz-btype.is-on { opacity: 1; }
+.wz-btype:hover { background: var(--line); opacity: 1; }
+.wz-btype input[type="checkbox"] { flex: none; min-height: 0; }
+.wz-btype-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.wz-btype-val {
+  flex: 0 0 3.4rem; width: 3.4rem; box-sizing: border-box;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm);
+  /* Explicit min-height and padding, overriding the 44px touch rule above: the
+     row is the tap target, and the base padding would also blow the width past
+     the 3.4rem this column is budgeted. */
+  min-height: 1.55rem; height: 1.55rem; padding: 0 4px;
+  font-size: 0.85em; text-align: center;
+}
+.wz-btype-val::placeholder { color: var(--faint); }
+.wz-btype-val:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+/* Disabled until the type is ticked — the number qualifies a skip, it does not
+   stand on its own, and an editable box on an unticked row invited exactly that. */
+.wz-btype-val:disabled { opacity: 0.35; cursor: not-allowed; }

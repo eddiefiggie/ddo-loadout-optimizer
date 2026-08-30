@@ -777,6 +777,54 @@ function cleanCreditMap(m, vocab) {
   return out;
 }
 
+/** The bonus-type picker's status line.
+ *
+ *  Says the two answers SEPARATELY, because they are different instructions and
+ *  a single "N skipped" was wrong the moment a type carried a number: that type
+ *  is not skipped, it is used only above the number. Counting both as "skipped"
+ *  read as a stronger restriction than the solve actually got. Pure. */
+function bonusTypeStatus(skipped, credited) {
+  const s = Number(skipped) || 0;
+  const c = Number(credited) || 0;
+  if (!s && !c) return "nothing set — every bonus type is on the table";
+  const bits = [];
+  if (s) bits.push(`${s} skipped`);
+  if (c) bits.push(`${c} used only above your number`);
+  return bits.join(" · ");
+}
+
+/** Clean the skipped-bonus-type map on the way to the query, mirroring
+ *  `cleanCreditMap` above and refusing at the same gates.
+ *
+ *  A SKIP says "do not use this bonus type for this stat at all". A CREDIT says
+ *  "only use it if it beats N". They are two answers to one question, so they
+ *  share a picker — and a type carrying a credit is not also skipped, because the
+ *  number IS the softer answer. The UI enforces that; this refuses it a second
+ *  time, for a hand-edited backup.
+ */
+function cleanExclusionMap(m, vocab, credits) {
+  const canonical = vocab && typeof vocab.canonical === "function" ? vocab.canonical : (s) => s;
+  const out = {};
+  if (!m || typeof m !== "object") return out;
+  for (const row of Object.values(m)) {
+    if (!row) continue;
+    const stat = canonical(String(row.stat == null ? "" : row.stat).trim()) || row.stat;
+    const bonusType = String(row.bonus_type == null ? "" : row.bonus_type).trim();
+    if (!stat || stat === _utilitySentinel) continue;
+    // Same presence-only refusal a credit gets: a stat whose only bucket is
+    // `stat||boolean` has no typed bucket to skip, so a skip on it would name
+    // nothing and read as a setting that did something.
+    if (!canDeclareCredit(stat, vocab)) continue;
+    if (!_creditBonusTypes.includes(bonusType)) continue;
+    const key = creditKey(stat, bonusType);
+    // A credit on the same pair wins: it is the more specific instruction, and
+    // the solver would otherwise carry a floor into a bucket it just deleted.
+    if (credits && Object.prototype.hasOwnProperty.call(credits, key)) continue;
+    out[key] = { stat, bonus_type: bonusType };
+  }
+  return out;
+}
+
 /** The count phrase on a collapsed row's Advanced summary — "" when nothing is
  *  set. Pure and exported so the initial render and the in-place refresh below
  *  cannot word it differently, and so R5's pluralization is unit-tested. */
@@ -853,13 +901,22 @@ function advancedRowModel(stat, state, vocab) {
     .map(([key, c]) => ({
       key, stat: c.stat, bonus_type: c.bonus_type, value: c.value, usable: creditIsUsable(c.value),
     }));
+  // Skipped bonus types — the other half of the same picker. Kept separate from
+  // `credits` all the way down: a skip has no magnitude, so folding the two into
+  // one list would need a sentinel value and every consumer would have to know it.
+  const allSkips = (canDeclareCredit(stat, vocab) && s.excludedTypes && typeof s.excludedTypes === "object")
+    ? s.excludedTypes : {};
+  const skipped = Object.entries(allSkips)
+    .filter(([, e]) => e && e.stat === stat)
+    .map(([key, e]) => ({ key, stat: e.stat, bonus_type: e.bonus_type }));
   const badgeCount = (floor != null ? 1 : 0) + (cap != null ? 1 : 0)
-    + credits.filter((c) => c.usable).length;
+    + credits.filter((c) => c.usable).length + skipped.length;
   // `canCredit` drives the AFFORDANCE, not just the list. Suppressing the rows
   // while still rendering "+ already have" left a button that silently wrote
   // state the query then discarded: clicking it on an on/off row produced no
   // visible row, no error, and one more orphan entry per click.
-  return { canCredit: canDeclareCredit(stat, vocab), floor, cap, credits, badgeCount, required: floor != null && Number(floor) > 0 };
+  return { canCredit: canDeclareCredit(stat, vocab), floor, cap, credits, skipped, badgeCount,
+    required: floor != null && Number(floor) > 0 };
 }
 
 // U3 — the Advanced panel's prose, defined ONCE here and interpolated per row.
@@ -880,7 +937,12 @@ const ADVANCED_PANEL_HELP = {
   // R7 — the sources this covers, on screen rather than only in a tooltip. The
   // feature exists because these bonuses are invisible to the tool, so a label
   // that does not name them cannot be found by the player who needs it.
-  credit: "<strong>Already have some of this?</strong> Character effects the tool can't see — trances, enhancements, epic destinies, past lives, filigrees, ship buffs — won't be found in your gear. Declare the amount and the solver stops spending a slot to beat it.",
+  // Relabelled from "Already have some of this?". The control is a picker over
+  // bonus types now: ticking one means "do not use it for this stat", and the
+  // number beside a ticked type is the softer answer — "only use it if it beats
+  // what I already have". Both come from the same situation (a trance, a past
+  // life, an epic destiny the tool cannot see), which is why they share a control.
+  credit: "<strong>Bonus types to skip.</strong> Tick a type the solver should not use for this stat — because you already have it from a trance, enhancement, epic destiny, past life, filigree or ship buff, and do not want a slot spent on it. Add a number to a ticked type instead and the solver will use it only if it beats that number.",
 };
 
 // U2/KTD1 — which rows currently have their Advanced panel open.
@@ -1017,6 +1079,8 @@ function buildQuery(state, vocab) {
     // is present either way, so the query object is not byte-identical to a
     // pre-feature one; nothing hashes or diffs it.
     declaredCredits: cleanCreditMap(state.declaredCredits, vocab),
+    excludedTypes: cleanExclusionMap(state.excludedTypes, vocab,
+      cleanCreditMap(state.declaredCredits, vocab)),
     // #88 U8 (R14/KTD6) — the overrides actually IN FORCE for this solve, which is
     // the overlay's APPLY REPORT, never the player's saved declaration. The two
     // differ exactly where it matters: a suspended, unmatched, or ineligible
@@ -2187,7 +2251,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict,
+  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, removeBlock, pinBlockedConflict,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -3481,7 +3545,7 @@ ${(() => {
           <p class="wz-adv-note">${ADVANCED_PANEL_HELP.min}</p>
           <p class="wz-adv-note">${ADVANCED_PANEL_HELP.max}</p>
           ${adv.canCredit ? `<p class="wz-adv-note">${ADVANCED_PANEL_HELP.credit}</p>
-          ${creditsHTML(stat, adv)}` : ""}
+          ${bonusTypesHTML(stat, adv)}` : ""}
         </div></details>`;
     }
 
@@ -3490,33 +3554,53 @@ ${(() => {
     // types differ, and A2 makes `(stat, bonus type)` the uniqueness key. Each row
     // carries its own key so editing the TYPE is a rekey rather than an edit in
     // place; a rekey onto an existing pair replaces it rather than duplicating.
-    function creditsHTML(stat, adv) {
-      // A row whose value the solver would drop must not READ as declared, and must
-      // not reserve its bonus type against its siblings — otherwise a "have: 0" or
-      // an over-range magnitude looks like a live declaration, silently contributes
-      // nothing, and blocks the type it is occupying. `creditIsUsable` is the same
-      // module-scope predicate the badge counts with, so the two cannot disagree.
-      const mine = (adv || advancedRowModel(stat, state, vocab)).credits;
-      const usedTypes = new Set(mine.filter((c) => c.usable).map((c) => c.bonus_type));
-      const rows = mine.map(({ key, ...c }) => {
-        const opts = _creditBonusTypes.map((t) =>
-          `<option value="${esc(t)}"${t === c.bonus_type ? " selected" : ""}${(t !== c.bonus_type && usedTypes.has(t)) ? " disabled" : ""}>${esc(t)}</option>`).join("");
-        return `<span class="wz-credit${c.usable ? "" : " is-incomplete"}">
-          <input class="wz-credit-val" type="number" min="1" step="1" max="${esc(_maxCreditValue)}" inputmode="numeric" data-cval="${esc(key)}"
-            value="${esc(c.value)}" placeholder="have" aria-label="${esc(stat)} ${esc(c.bonus_type)} bonus you already have" draggable="false">
-          <select class="wz-credit-type" data-ctype="${esc(key)}" aria-label="${esc(stat)} credit bonus type" draggable="false">${opts}</select>
-          <button type="button" data-crem="${esc(key)}" aria-label="remove ${esc(stat)} ${esc(c.bonus_type)} credit">✕</button></span>`;
+    /** The bonus-type picker on a stat's Advanced panel.
+     *
+     *  One checkbox per bonus type. Ticked means "do not use this type for this
+     *  stat, at any magnitude". A ticked type also gets a number box, and filling
+     *  it in swaps the answer to the softer one — "use it only if it beats this",
+     *  which is the declared-credit the panel has always had.
+     *
+     *  This replaced a `+ already have` button that added one row at a time, each
+     *  with its own type dropdown. Selecting several meant several clicks through
+     *  a shrinking menu, selecting all of them was 26, and the number was
+     *  mandatory when the common answer needed no number at all.
+     */
+    function bonusTypesHTML(stat, adv) {
+      const model = adv || advancedRowModel(stat, state, vocab);
+      // `usable` is the same predicate the badge counts with, so a half-typed
+      // number cannot read as a live declaration in one place and not the other.
+      const byType = new Map();
+      for (const c of model.credits) byType.set(c.bonus_type, c);
+      const skipped = new Set(model.skipped.map((e) => e.bonus_type));
+      const usableCredits = model.credits.filter((c) => c.usable).length;
+      const onCount = skipped.size + usableCredits;
+
+      const rows = _creditBonusTypes.map((t) => {
+        const credit = byType.get(t);
+        const on = skipped.has(t) || !!credit;
+        const val = credit ? credit.value : "";
+        return `<label class="wz-btype${on ? " is-on" : ""}">
+          <input type="checkbox" data-btype="${esc(stat)}" value="${esc(t)}"${on ? " checked" : ""}
+            aria-label="skip ${esc(t)} bonuses for ${esc(stat)}">
+          <span class="wz-btype-name">${esc(t)}</span>
+          <input class="wz-btype-val" type="number" min="1" step="1" max="${esc(_maxCreditValue)}"
+            inputmode="numeric" data-bval="${esc(creditKey(stat, t))}" value="${esc(val)}"
+            placeholder="any" title="Leave blank to skip this type entirely, or enter what you already have and the solver will only use it if it beats that."
+            aria-label="${esc(stat)} ${esc(t)} you already have"${on ? "" : " disabled"} draggable="false">
+        </label>`;
       }).join("");
-      // Offer the add affordance only while an unused bonus type remains, so the
-      // UI cannot produce the duplicate `(stat, type)` pair A2 forbids.
-      const free = _creditBonusTypes.find((t) => !usedTypes.has(t));
-      const add = free
-        ? `<button type="button" class="wz-credit-add" data-cadd="${esc(stat)}"
-             aria-label="add a non-gear bonus you already have for ${esc(stat)}"
-             title="Already have this from a trance, enhancement, epic destiny, past life, filigree, or ship buff? Declare it and the solver stops spending a slot on gear that cannot beat it.">+ already have</button>`
-        : "";
-      return `<span class="wz-credits">${rows}${add}</span>`;
+
+      return `<div class="wz-btypes" data-btypes="${esc(stat)}">
+        <div class="wz-btype-bulk">
+          <button type="button" class="btn ghost sm" data-btall="${esc(stat)}">Skip all ${_creditBonusTypes.length}</button>
+          <button type="button" class="btn ghost sm" data-btnone="${esc(stat)}"${onCount ? "" : " disabled"}>Clear</button>
+          <span class="wz-help wz-btype-stat">${esc(bonusTypeStatus(skipped.size, usableCredits))}</span>
+        </div>
+        <div class="wz-btype-grid">${rows}</div>
+      </div>`;
     }
+
     // Generic ranked-list renderer: reused by the priorities step and the
     // in-results "Adjust & re-solve" panel (U3). `rerender` re-renders that
     // same list after a mutation.
@@ -3529,12 +3613,10 @@ ${(() => {
         d.ontoggle = () => openPanelToggle(d.dataset.adv, d.open);
       });
       // D1 — the rebuild destroys the focused element. Without restoring focus, a
-      // player who clicks "+ already have" gets the panel they expect but a caret
-      // nowhere: focus falls to <body> and they must re-find the field by mouse or
+      // player who uses a bulk control gets the panel they expect but a caret
+      // nowhere: focus falls to <body> and they must re-find the row by mouse or
       // tab from the top of the list. Re-query AFTER the rebuild, by data
       // attribute rather than a built selector, so a stat name never needs escaping.
-      const focusCreditValue = (key) => ol.querySelectorAll("input.wz-credit-val")
-        .forEach((el) => { if (el.dataset.cval === key) el.focus(); });
       const focusSummary = (stat) => ol.querySelectorAll("details.wz-adv")
         .forEach((d) => { if (d.dataset.adv === stat) { const s = d.querySelector("summary"); if (s) s.focus(); } });
       // R5 — the bound and credit-value inputs deliberately do NOT rerender: a
@@ -3569,22 +3651,35 @@ ${(() => {
           }
           openPanelSweep(p);   // KTD1 — and its open-panel entry, for the same reason
         }
-        else if (b.dataset.cadd != null) {
-          const stat = b.dataset.cadd;
-          const map = state.declaredCredits || (state.declaredCredits = {});
-          const used = new Set(Object.values(map).filter((c) => c && c.stat === stat).map((c) => c.bonus_type));
-          const type = _creditBonusTypes.find((t) => !used.has(t));
-          if (type) {
-            const key = creditKey(stat, type);
-            map[key] = { stat, bonus_type: type, value: "" };
-            after = () => focusCreditValue(key);   // land the caret in the new field
+        else if (b.dataset.btall != null) {
+          // Skip every bonus type. The whole point of the bulk pair: the old
+          // control added one row at a time through a shrinking dropdown, so this
+          // was 26 clicks. Skips are written, not credits — "skip all" is the
+          // answer with no magnitude in it.
+          const stat = b.dataset.btall;
+          const map = state.excludedTypes || (state.excludedTypes = {});
+          const credited = new Set(Object.values(state.declaredCredits || {})
+            .filter((c) => c && c.stat === stat).map((c) => c.bonus_type));
+          for (const t of _creditBonusTypes) {
+            // A type already carrying a number keeps it: the number is the more
+            // specific answer and "skip all" must not silently discard it.
+            if (credited.has(t)) continue;
+            map[creditKey(stat, t)] = { stat, bonus_type: t };
           }
+          after = () => focusSummary(stat);
         }
-        else if (b.dataset.crem != null) {
-          const gone = (state.declaredCredits || {})[b.dataset.crem];
-          const stat = gone && gone.stat;
-          if (state.declaredCredits) delete state.declaredCredits[b.dataset.crem];
-          if (stat) after = () => focusSummary(stat);   // the removed control is gone; go up a level
+        else if (b.dataset.btnone != null) {
+          // Clear BOTH halves — the picker shows one state, so its clear has to
+          // reach both or a ticked-with-a-number type would survive a "Clear".
+          const stat = b.dataset.btnone;
+          for (const map of [state.excludedTypes, state.declaredCredits]) {
+            if (!map) continue;
+            for (const k of Object.keys(map)) {
+              const e = map[k];
+              if (e && e.stat === stat) delete map[k];
+            }
+          }
+          after = () => focusSummary(stat);
         }
         rerender();
         if (after) after();
@@ -3660,39 +3755,65 @@ ${(() => {
           refreshBadge(p);
         };
       });
-      // U2 — the credit value field. Blank or unusable clears the VALUE but keeps
-      // the row, so a half-typed entry does not vanish under the cursor; the
-      // shared normalizeCredits then drops it on the way to the query.
-      ol.querySelectorAll("input.wz-credit-val").forEach((inp) => {
-        inp.onpointerdown = (e) => e.stopPropagation();
-        inp.oninput = () => {
-          const c = (state.declaredCredits || {})[inp.dataset.cval];
-          if (!c) return;
-          if (inp.value === "") { c.value = ""; refreshBadge(c.stat); return; }
-          const num = Number(inp.value);
-          c.value = Number.isFinite(num) ? Math.max(0, Math.floor(num)) : "";
-          refreshBadge(c.stat);
+      // The checkbox: ticking skips the type, unticking clears both halves for it.
+      // The two maps are kept exclusive here rather than reconciled later — a type
+      // holding a skip AND a number would put a floor into a bucket the solver has
+      // deleted, and `cleanExclusionMap` refuses that a second time on the way out.
+      ol.querySelectorAll("input[data-btype]").forEach((cb) => {
+        cb.onpointerdown = (e) => e.stopPropagation();
+        cb.onchange = () => {
+          const stat = cb.dataset.btype;
+          const type = cb.value;
+          const key = creditKey(stat, type);
+          const skips = state.excludedTypes || (state.excludedTypes = {});
+          const credits = state.declaredCredits || (state.declaredCredits = {});
+          if (cb.checked) {
+            skips[key] = { stat, bonus_type: type };
+          } else {
+            delete skips[key];
+            delete credits[key];
+          }
+          rerender();
         };
       });
-      // U2 — changing the bonus type REKEYS the entry, because the key is
-      // `(stat, bonus type)`. Landing on a pair that already exists replaces it
-      // rather than duplicating (A2). The add affordance disables used types, so
-      // this is reachable only via keyboard on a stale render.
-      ol.querySelectorAll("select.wz-credit-type").forEach((sel) => {
-        sel.onpointerdown = (e) => e.stopPropagation();
-        sel.onchange = () => {
-          const map = state.declaredCredits || {};
-          const oldKey = sel.dataset.ctype;
-          const c = map[oldKey];
-          if (!c) return;
-          const next = creditKey(c.stat, sel.value);
-          delete map[oldKey];
-          map[next] = { stat: c.stat, bonus_type: sel.value, value: c.value };
-          rerender();
-          // D1 — the rekey rebuilds the list too; put focus back on the selector
-          // the player just changed rather than dropping it to <body>.
-          ol.querySelectorAll("select.wz-credit-type")
-            .forEach((el) => { if (el.dataset.ctype === next) el.focus(); });
+      // The number beside a ticked type. Typing one promotes the skip into a
+      // credit — "use it only if it beats this" — and clearing it demotes back to
+      // a plain skip. Deliberately does NOT rerender: a rebuild mid-keystroke
+      // destroys the field under the caret, so the badge is refreshed in place,
+      // exactly as the bound inputs beside it are.
+      ol.querySelectorAll("input.wz-btype-val").forEach((inp) => {
+        inp.onpointerdown = (e) => e.stopPropagation();
+        inp.oninput = () => {
+          const key = inp.dataset.bval;
+          const sep = key.indexOf("||");
+          const stat = key.slice(0, sep);
+          const type = key.slice(sep + 2);
+          const skips = state.excludedTypes || (state.excludedTypes = {});
+          const credits = state.declaredCredits || (state.declaredCredits = {});
+          if (inp.value === "") {
+            // Back to a plain skip. The box only exists on a ticked type, so an
+            // emptied number is never "nothing set" — it is the other answer.
+            delete credits[key];
+            skips[key] = { stat, bonus_type: type };
+            refreshBadge(stat);
+            return;
+          }
+          const num = Number(inp.value);
+          const value = Number.isFinite(num) ? Math.max(0, Math.floor(num)) : "";
+          // A ticked type always means AT LEAST "skip". Only a USABLE number
+          // softens it to "use it above this" — otherwise a half-typed "0" or an
+          // over-range magnitude would leave the box ticked while contributing
+          // neither answer, which is a control that looks set and does nothing.
+          // `creditIsUsable` is the same predicate the badge and the status line
+          // count with, so the three cannot disagree.
+          if (creditIsUsable(value)) {
+            delete skips[key];
+            credits[key] = { stat, bonus_type: type, value };
+          } else {
+            delete credits[key];
+            skips[key] = { stat, bonus_type: type };
+          }
+          refreshBadge(stat);
         };
       });
       let from = null;

@@ -1661,32 +1661,51 @@ test("#169: the disclosure banner escapes its message", () => {
       "it iterates rather than deleting a single stat-keyed entry");
   });
 
-  test("U2: the add affordance cannot produce a duplicate (stat, type) pair", () => {
-    const at = WIZARD_SRC.indexOf("dataset.cadd != null");
-    assert.ok(at > 0, "the add handler exists");
-    const branch = WIZARD_SRC.slice(at, at + 500);
-    assert.ok(/used\.has\(t\)/.test(branch), "it picks the first UNUSED bonus type");
-    assert.ok(/_creditBonusTypes/.test(branch), "from the curated vocabulary, not a literal");
+  test("the picker cannot produce a duplicate (stat, type) pair, by construction", () => {
+    // The old control ADDED a row at a time and had to hunt for an unused type to
+    // avoid a duplicate. The picker renders one checkbox per type, so the pair is
+    // unique by shape rather than by a guard that could be got wrong.
+    const at = WIZARD_SRC.indexOf("function bonusTypesHTML");
+    assert.ok(at > 0, "the picker renderer exists");
+    const fn = WIZARD_SRC.slice(at, endAfter(WIZARD_SRC, "\n    }", at));
+    assert.ok(/_creditBonusTypes\.map/.test(fn), "one row per curated type, from the shared list");
+    assert.ok(!/data-cadd/.test(WIZARD_SRC), "the add-a-row affordance is gone");
   });
 
-  test("U2: the selector renders from the curated vocabulary and marks used types", () => {
-    const at = WIZARD_SRC.indexOf("function creditsHTML");
-    assert.ok(at > 0, "the sub-row renderer exists");
+  test("the picker renders every curated bonus type, and escapes what reaches innerHTML", () => {
+    const at = WIZARD_SRC.indexOf("function bonusTypesHTML");
     const fn = WIZARD_SRC.slice(at, endAfter(WIZARD_SRC, "\n    }", at));
-    assert.ok(/_creditBonusTypes\.map/.test(fn), "options come from the shared list");
-    assert.ok(/usedTypes\.has\(t\)/.test(fn), "already-declared types are disabled");
+    assert.ok(/_creditBonusTypes\.map/.test(fn), "rows come from the shared list, not a literal");
+    assert.ok(/_creditBonusTypes\.length/.test(fn), "and the bulk control counts that same list");
     assert.ok(/esc\(/.test(fn), "stat and type names reach innerHTML and must be escaped");
   });
 
-  test("U2: the credit controls are labelled for screen readers", () => {
-    const at = WIZARD_SRC.indexOf("function creditsHTML");
+  test("the picker's controls are labelled for screen readers", () => {
+    const at = WIZARD_SRC.indexOf("function bonusTypesHTML");
     const fn = WIZARD_SRC.slice(at, endAfter(WIZARD_SRC, "\n    }", at));
-    for (const needle of ["wz-credit-val", "wz-credit-type", "data-crem", "data-cadd"]) {
+    for (const needle of ["data-btype", "wz-btype-val", "data-btall", "data-btnone"]) {
       assert.ok(fn.includes(needle), `${needle} is rendered`);
     }
     const labels = fn.match(/aria-label=/g) || [];
-    assert.ok(labels.length >= 4,
-      `every credit control needs a label; found ${labels.length}`);
+    assert.ok(labels.length >= 2,
+      `the checkbox and its number box both need a label; found ${labels.length}`);
+    // The number is the non-obvious half — blank means "skip entirely", a value
+    // means "only above this" — so it carries an explanation, not just a label.
+    assert.ok(/title="Leave blank to skip/.test(fn),
+      "the number box says what blank means; without it the control is a puzzle");
+  });
+
+  test("the two answers are kept exclusive: a type cannot be skipped AND carry a number", () => {
+    // The solver deletes an excluded bucket, so a credit floor on the same bucket
+    // would be unsatisfiable. Enforced in the handler and refused again on the way
+    // to the query.
+    const at = WIZARD_SRC.indexOf('input[data-btype]');
+    assert.ok(at > 0, "the checkbox handler exists");
+    const h = WIZARD_SRC.slice(at, at + 900);
+    assert.ok(/delete credits\[key\]/.test(h), "unticking clears the number too");
+    const clean = srcBetween(WIZARD_SRC, "function cleanExclusionMap", "\n}", "cleanExclusionMap");
+    assert.ok(/hasOwnProperty\.call\(credits, key\)/.test(clean),
+      "and a hand-edited backup carrying both is refused on the way out");
   });
 }
 
@@ -1733,9 +1752,9 @@ test("U2: the credit control is not offered on a presence row", () => {
   assert.ok(rowsAt >= 0, "rankedHTML is in the source");
   const rows = WIZARD_SRC.slice(rowsAt, WIZARD_SRC.indexOf("function advancedHTML", rowsAt));
   assert.ok(/state\.priorities\.map/.test(rows), "and the slice really spans its body");
-  assert.ok(!/creditsHTML/.test(rows), "the row body never renders credits directly");
-  const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function creditsHTML", "advancedHTML");
-  assert.ok(/creditsHTML\(stat/.test(panel), "credits render inside the panel, nowhere else");
+  assert.ok(!/bonusTypesHTML/.test(rows), "the row body never renders the picker directly");
+  const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function bonusTypesHTML", "advancedHTML");
+  assert.ok(/bonusTypesHTML\(stat/.test(panel), "the picker renders inside the panel, nowhere else");
 });
 
 test("U2: loading a character resets declared credits", () => {
@@ -1750,17 +1769,19 @@ test("U2: loading a character resets declared credits", () => {
     "declaredCredits must be reset alongside its sibling maps in loadCharacter");
 });
 
-test("U2: an unusable credit row neither reads as declared nor reserves its type", () => {
-  const at = WIZARD_SRC.indexOf("function creditsHTML");
-  const fn = WIZARD_SRC.slice(at, endAfter(WIZARD_SRC, "\n    }", at));
-  assert.ok(/is-incomplete/.test(fn), "an unusable row is visually marked");
-  assert.ok(/filter\(\(c\) => c\.usable\)/.test(fn),
-    "usedTypes counts only rows the solver would keep");
-  // The `usable` flag now comes from the shared module-scope predicate via the
-  // row model, so the markup and the badge cannot disagree about the same row.
-  assert.ok(/creditIsUsable\(/.test(WIZARD_SRC.slice(
-    WIZARD_SRC.indexOf("function advancedRowModel"), WIZARD_SRC.indexOf("const openPanels"))),
-    "the row model decides usability with the shared predicate");
+test("a ticked type always means at least 'skip', even with an unusable number", () => {
+  // The old control had a row that could exist with no usable value, so it was
+  // marked `is-incomplete` and counted for nothing. The picker has no such state
+  // by design: the box is the answer, and the number only SOFTENS it. A half-typed
+  // "0" must therefore fall back to the skip rather than leaving the box ticked
+  // and contributing neither answer.
+  const at = WIZARD_SRC.indexOf("input.wz-btype-val");
+  assert.ok(at > 0, "the number handler exists");
+  const h = WIZARD_SRC.slice(at, at + 1600);
+  assert.ok(/creditIsUsable\(value\)/.test(h),
+    "the shared predicate decides, so the badge and the status line cannot disagree with it");
+  assert.ok(/skips\[key\] = \{ stat, bonus_type: type \}/.test(h),
+    "an unusable number falls back to the skip");
 });
 
 // ---- U5 — declared credits persist with the character (R11) -----------------
@@ -1834,7 +1855,7 @@ test("U1: an on/off row keeps min/max but is offered no credit", () => {
   assert.strictEqual(advancedRowModel("Constitution", {}, presenceVocab).canCredit, true);
   // The button must be gated too, not just the rows: rendering it while the model
   // refuses the result gave a control that wrote invisible state on every click.
-  const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function creditsHTML", "advancedHTML");
+  const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function bonusTypesHTML", "advancedHTML");
   assert.ok(/adv\.canCredit \? /.test(panel), "the credit block renders only when the stat can carry one");
   // and the row still reads as on/off in the markup
   const rows = srcBetween(WIZARD_SRC, "function rankedHTML", "function advancedHTML", "rankedHTML");
@@ -1902,7 +1923,7 @@ test("U1: the wizard markup and the row model share one usable-credit predicate"
   // would count a credit the row is simultaneously dimming as incomplete.
   assert.ok(/function creditIsUsable\(/.test(WIZARD_SRC));
   assert.ok(!/const usable = \(v\) =>/.test(WIZARD_SRC),
-    "creditsHTML's local `usable` arrow is gone — it calls the shared predicate");
+    "the picker's local `usable` arrow is gone — it calls the shared predicate");
 });
 
 // ---- F2 — a bound on a presence stat cannot survive R6 ------------------------
@@ -1979,7 +2000,7 @@ test("KTD1: the markup READS the open set — the seam, not just the Set", () =>
   assert.strictEqual(panelOpenAttr("Dodge"), "", "only the opened stat");
   openPanelClear();
   assert.strictEqual(panelOpenAttr("Constitution"), "");
-  const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function creditsHTML", "advancedHTML");
+  const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function bonusTypesHTML", "advancedHTML");
   assert.ok(/\$\{panelOpenAttr\(stat\)\}/.test(panel), "the markup renders that attribute");
 });
 
@@ -2033,15 +2054,15 @@ test("KTD6: the drag guard covers the whole panel, not just INPUT/SELECT", () =>
     "and the original tagName clauses survive for controls outside the panel");
 });
 
-test("D1: adding or removing a credit restores focus after the rebuild", () => {
+test("D1: a bulk control restores focus after the rebuild", () => {
   // ol.innerHTML = rankedHTML() destroys the focused element, so without this a
-  // player who clicks "+ already have" gets the panel they expect and a caret
-  // nowhere — focus falls to <body>.
+  // player who presses "Skip all" gets the change they asked for and a caret
+  // nowhere — focus falls to <body> and they tab from the top of the list.
   const wire = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList"));
-  const cadd = srcBetween(wire, "b.dataset.cadd != null", "b.dataset.crem != null", "credit-add branch");
-  assert.ok(/after = \(\) => focusCreditValue\(key\)/.test(cadd), "add lands the caret in the new field");
-  const crem = srcBetween(wire, "b.dataset.crem != null", "rerender();", "credit-remove branch");
-  assert.ok(/after = \(\) => focusSummary\(stat\)/.test(crem), "remove goes up a level");
+  const all = srcBetween(wire, "b.dataset.btall != null", "b.dataset.btnone != null", "skip-all branch");
+  assert.ok(/after = \(\) => focusSummary\(stat\)/.test(all), "skip-all returns focus to the row");
+  const none = srcBetween(wire, "b.dataset.btnone != null", "rerender();", "clear branch");
+  assert.ok(/after = \(\) => focusSummary\(stat\)/.test(none), "and so does clear");
   assert.ok(/rerender\(\);\s*\n\s*if \(after\) after\(\);/.test(wire), "and it runs AFTER the rebuild");
 });
 
@@ -2122,7 +2143,7 @@ test("KTD1: the open set is keyed by stat, so reordering does not move a panel",
 
 test("KTD1: deleting a priority sweeps its open panel alongside its bounds", () => {
   const del = WIZARD_SRC.slice(WIZARD_SRC.indexOf("b.dataset.del != null"),
-    WIZARD_SRC.indexOf("b.dataset.cadd != null"));
+    WIZARD_SRC.indexOf("b.dataset.btall != null"));
   assert.ok(/openPanelSweep\(/.test(del),
     "the delete branch sweeps the open set, like it already does for bounds and credits");
 });
@@ -2154,7 +2175,7 @@ test("R5: the collapsed badge stays current when a bound is typed", () => {
   // Anchor on text unique to each handler body — "input.wz-bound" and
   // "input.wz-credit-val" also appear in the focus helpers above them.
   for (const [what, anchor] of [["the bound inputs", "const isMax = inp.dataset.max"],
-    ["the credit value field", "state.declaredCredits || {})[inp.dataset.cval]"]]) {
+    ["the picker's number field", "const key = inp.dataset.bval"]]) {
     const at = wire.indexOf(anchor);
     assert.ok(at > 0, `${what} handler found`);
     assert.ok(/refreshBadge\(/.test(wire.slice(at, at + 700)), `${what} refreshes the badge`);
@@ -2186,23 +2207,28 @@ test("U3: the explainer is DEFINED once, even though it renders per row", () => 
 });
 
 test("U3: the panel leads with the no-min-no-max default (R4)", () => {
-  const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function creditsHTML", "advancedHTML");
+  const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function bonusTypesHTML", "advancedHTML");
   const leadAt = panel.indexOf("ADVANCED_PANEL_HELP.lead");
   assert.ok(leadAt > 0, "the default line is in the panel");
   assert.ok(leadAt < panel.indexOf("wz-bounds"), "and it comes before the inputs it describes");
   assert.ok(/Nothing set is the default/.test(ADVANCED_HELP_SRC()), "it states the default plainly");
 });
 
-test("U3: 'already have' names its sources on screen, not only in a tooltip (R7)", () => {
+test("the skip control names its sources on screen, not only in a tooltip (R7)", () => {
+  // Relabelled from "Already have some of this?" to "Bonus types to skip", but the
+  // reason a player would use it is unchanged and still has to be visible: the
+  // sources are effects the tool cannot see. Singular now, because the sentence
+  // reads as a list of examples rather than a plural inventory.
   const help = ADVANCED_HELP_SRC();
-  for (const source of ["trances", "enhancements", "epic destinies"]) {
+  assert.ok(/Bonus types to skip/.test(help), "the control is named for what it does");
+  for (const source of ["trance", "enhancement", "epic destiny", "past life", "filigree", "ship buff"]) {
     assert.ok(help.includes(source), `the visible context names ${source}`);
   }
-  // The tooltip named a different set entirely; broadened so the two agree.
-  const tip = WIZARD_SRC.match(/title="Already have this from[^"]*"/)[0];
-  for (const source of ["enhancement", "epic destiny", "past life", "filigree", "ship buff"]) {
-    assert.ok(tip.includes(source), `the tooltip still covers ${source}`);
-  }
+  // And the non-obvious half — what a BLANK number means — is explained where the
+  // box is, since nothing else on screen could tell you.
+  const tip = WIZARD_SRC.match(/title="Leave blank to skip[^"]*"/);
+  assert.ok(tip, "the number box explains what leaving it blank does");
+  assert.ok(/beats/.test(tip[0]), "and what filling it in does");
 });
 
 // ---- U4 — bundle reorder, Attributes, Warlock ---------------------------------
