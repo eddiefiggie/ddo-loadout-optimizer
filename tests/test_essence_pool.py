@@ -161,3 +161,62 @@ def test_the_heroic_gem_can_reach_no_insight_option():
     reachable = [o for o in ds["essence_crafting"] if heroic["ml"] >= o["min_ml"]]
     assert reachable, "the heroic Gem must still reach the non-Insight options"
     assert not [o for o in reachable if o["bonus_type"] == "Insight"]
+
+
+# --- the ML premise (2026-08-30) -----------------------------------------------
+
+def test_every_ml_curve_is_monotonic_and_peaks_at_the_top():
+    """The whole reason reading the host's `ml` is correct.
+
+    The crafted minimum level is the CRAFTER's choice — "This shard determines the
+    minimum level of the item, the power level of scaling effect shards crafted
+    onto the item" — so the solver ought to be choosing an ML, not reading one. It
+    gets away with reading the host's because crafting at the highest available
+    level is always optimal, and that is only true while every curve rises.
+
+    The moment one option peaks mid-range, "take the top" stops being optimal and
+    the solver has to search the ML instead. This fails then, rather than quietly
+    crediting a value below the best one.
+    """
+    stats, units = _catalog()
+    records = essence_pool.build_trinket_pool(stats, units)["records"]
+    assert len(records) > 20, "the pool is too small for this to be measuring anything"
+    for rec in records:
+        vals = [float(str(v).strip().rstrip("%")) for v in rec["values_by_ml"]]
+        drops = [(i + 1, a, b) for i, (a, b) in enumerate(zip(vals, vals[1:])) if b < a]
+        assert not drops, (
+            f"{rec['effect']} ({rec['menu']}) falls at ML {drops[0][0]}: "
+            f"{drops[0][1]} -> {drops[0][2]}. Crafting at the highest ML is no longer "
+            "always optimal, so the solver can no longer read the host's ml and take "
+            "the top — it has to choose an ML. See docs/wiki-evidence/essence-crafting.md.")
+        assert vals[-1] == max(vals), f"{rec['effect']}: peak is not at ML 36"
+
+
+def test_the_two_ml_ten_gates_are_kept_apart():
+    """`INSIGHT_MIN_ML` gates the EFFECT; `EXTRA_SLOT_MIN_ML` gates the SLOT. Two
+    sentences, two rules, and they coincide today only because every Extra effect
+    offered happens to be Insight-typed. Folding them into one constant would let a
+    non-Insight Extra effect arrive later and skip the slot rule silently."""
+    assert essence_pool.INSIGHT_MIN_ML == essence_pool.EXTRA_SLOT_MIN_ML == 10
+    stats, units = _catalog()
+    extra = [r for r in essence_pool.build_trinket_pool(stats, units)["records"]
+             if r["menu"] == "Extra"]
+    assert extra, "no Extra options at all — the coincidence below is untested"
+    non_insight = [r["effect"] for r in extra if r["bonus_type"] != "Insight"]
+    assert not non_insight, (
+        f"an Extra effect is not Insight-typed: {non_insight}. The two ML-10 rules no "
+        "longer coincide, so the SLOT gate has to be applied in its own right — the "
+        "solver currently only enforces the effect gate via `min_ml`.")
+
+
+def test_the_shard_ceiling_is_recorded_as_a_player_observation():
+    """The ceiling — a named item cannot be crafted above its own ML — is the one
+    input here that is NOT from the wiki. It has to stay labelled as such, or a
+    later reader will treat it as sourced and build on it."""
+    doc = os.path.join(ROOT, "docs", "wiki-evidence", "essence-crafting.md")
+    with open(doc) as fh:
+        text = fh.read()
+    assert "The ceiling is NOT wiki-sourced" in text
+    assert "player observation" in text.lower()
+    assert "Mysterious Ring" in text, "the nearest contrary signal must stay recorded"
+    assert str(essence_pool.MAX_SHARD_ML) in text or "ML 1 through 36" in text

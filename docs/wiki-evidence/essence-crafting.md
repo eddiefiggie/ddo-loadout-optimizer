@@ -169,3 +169,82 @@ it usually would not, and that is now checkable rather than asserted.
 - `docs/wiki-evidence/harvest-method.md` — transport, pacing, and the privacy
   guard, which is why these tables were parsed in-page: the guard strips the `|`
   that wikitable markup is built from, so raw wikitext cannot be returned.
+
+
+## The minimum level is the CRAFTER's choice, not the item's (2026-08-30)
+
+Raised by the maintainer against the shipped Gem implementation, and they were
+right about the mechanic. From the Essence Crafting page, Steps:
+
+> Craft a Minimum Level shard at a Shard (Bound or Unbound) Crafting Device.
+> **This shard determines the minimum level of the item, the power level of
+> scaling effect shards crafted onto the item**, and the level-appropriate
+> Enhancement bonus (+1, +2, etc.) for a weapon, shield, or armor.
+
+Minimum Level shards exist for **ML 1 through 36** (the page tabulates a crafting
+difficulty for every one). So an item's ML under Essence Crafting is not a
+property it arrives with — it is set during crafting, and it determines how strong
+every scaling effect on that item is.
+
+**This is the premise the other slots will be modelled on**, and it is the one
+`src/essence_pool.py` got wrong in principle. Rune Arms, Rings and Melee blanks
+have no meaningful native ML to read; a blank craftable trinket is ML 1 until a
+shard says otherwise. Reading the host record's ML works for the Gem only because
+of the ceiling below, and it will not survive contact with the other twelve menus.
+
+### Two ML gates, from two different sentences
+
+Both are sourced, and they are NOT the same rule — they only coincide today
+because every offered Extra effect happens to be Insight-typed.
+
+| Gate | Source | What it blocks |
+|---|---|---|
+| Insight effects need ML 10+ | table 3b Notes: *"Effects that grant insight bonuses can be applied to items ML 10 and higher only, regardless of prefix/suffix/extra slot"* | the effect |
+| The Extra SLOT needs ML 10+ | main page: *"Extra enchantment slots are not available on items under minimum level 10"*, and `Essence Crafting steps`: *"If the item is ML 10 or greater, it has a 'Mark of House Cannith Slot'"* | the slot itself |
+
+### Picking the highest ML is always correct — measured, not assumed
+
+All 25 offered options have a **monotonic non-decreasing** ML curve, and every
+one of them peaks at ML 36. So there is never a reason to craft below the ceiling
+for the sake of the effect, and "use the highest ML available" is optimal rather
+than a heuristic. `tests/test_essence_pool.py` asserts the monotonicity, because
+the moment one curve peaks mid-range that reasoning stops holding and the solver
+would need to search the ML instead of taking the top.
+
+The one reason to craft LOWER is to make a high-ML item usable by a lower-level
+character — see the gap recorded below.
+
+### The ceiling is NOT wiki-sourced
+
+The maintainer reports, from play on 2026-08-30: a **Legendary** Gem of Many
+Facets (native ML 30) would not go above **ML 30** even with an ML 36 shard
+applied.
+
+That is consistent with "a named item cannot be crafted above its own minimum
+level", and the implementation behaves that way. **The rule itself was not found
+on the wiki.** Searched: the Essence Crafting page (Steps, Components, Minimum
+Level shards, Named items), all three Gem item pages, `Item:Mysterious Ring`,
+`Item:Trinket`, `Minimum level`, `Essence Crafting steps`, `Essence Crafting
+enchantments`, `Essence Crafting level progression`. The search API returned empty
+for every query, which `harvest-method.md` records as unreliable on this wiki
+rather than as evidence of absence.
+
+The nearest signal is on `Item:Mysterious Ring`:
+
+> There is no "Epic" version of this item. However, it can be Essence Crafted to
+> any ML desired.
+
+The "However" reads as though items that DO have version tiers are constrained by
+them — but that is a reading, not a statement, and it is recorded here as one.
+
+So the ceiling is carried as a **player observation with named provenance**, not
+as a game rule. If it is ever contradicted — a heroic Gem crafted to 30, say —
+this is the paragraph to correct, and nothing about the effect values changes with
+it.
+
+### Known gap: crafting DOWN is not modelled
+
+Because the shard sets the ML, a Legendary Gem can presumably be crafted at ML 20
+to be worn by a character capped there, at ML 20 effect values. The optimizer
+currently excludes it outright below ML 30. That is a missing option rather than a
+wrong number, and it is filed separately.
