@@ -769,6 +769,25 @@ function dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts = null) {
   for (const [key, vb] of bb) {
     if ((ba.get(key) || 0) < vb) return false;
   }
+  // #614 — the same test over A's OWN buckets, which the loop above never
+  // reaches. Domination is `A[k] >= B[k]` for every k in A UNION B, and iterating
+  // only B's keys is sound exactly while every value is >= 0: an extra positive
+  // bucket on A can only help it. `variantBuckets` keeps the sign, so a `Penalty`
+  // affix puts a NEGATIVE value in a bucket B does not carry at all — invisible
+  // here, and the penalised item then dominated the clean one.
+  //
+  // Worse, it dominated MUTUALLY: B could not see A's penalty either, so the
+  // `i < j` tie-break kept whichever came first in the list and deleted the
+  // other. Measured on a two-item pool identical but for a `Constitution |
+  // Penalty | -2`: both directions returned true and the filter kept only the
+  // PENALISED item, removing the clean alternative from the pool before the
+  // program was built — upstream of all twelve `value > 0` gates, so fixing
+  // those alone could never have surfaced it.
+  //
+  // Only A-only keys need the extra check; a key in both was covered above.
+  for (const [key, va] of ba) {
+    if (va < 0 && !bb.has(key)) return false;
+  }
   const sa = variantSets(A);
   for (const s of variantSets(B)) if (!sa.has(s)) return false;
   // augment-color multiset: A must have at least as many of each color

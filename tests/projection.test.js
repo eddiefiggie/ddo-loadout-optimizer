@@ -1,5 +1,7 @@
 // U6 — the shared content projection. Run: node tests/projection.test.js
 const assert = require("assert");
+const fs = require("fs");
+const path = require("path");
 const P = require("../web/projection.js");
 const R = require("../web/results.js");
 const Craft = require("../web/crafting-systems.js");
@@ -922,6 +924,67 @@ test("U8/R9: a multi-affix craft with no provenance still lists each affix", () 
   };
   assert.strictEqual(P.craftLabel(ins, "dino"),
     "Primal: Mixed, Constitution +3 Quality, Dodge +2% Quality");
+});
+
+
+// ---------------------------------------------------------------------------
+// #614 — the unmodelled-penalty disclosure. The solver discards every negative
+// affix at twelve `value > 0` gates, so an item is scored on its upside alone.
+// Until the LP can subtract them (blocked on a wiki ruling on penalty stacking),
+// the honest move is to say so where the player reads the number.
+
+test("#614: itemPenalties finds signed Penalty affixes, worst first, sign coerced", () => {
+  const v = { affixes: [
+    { name: "Intelligence", type: "Enhancement", value: "11" },
+    { name: "Constitution", type: "Penalty", value: "-2" },
+    { name: "Fortification", type: "Penalty", value: "-25" }] };
+  assert.deepStrictEqual(P.itemPenalties(v), [
+    { stat: "Fortification", value: -25 },
+    { stat: "Constitution", value: -2 },
+  ], "worst first, and the catalog's STRING values are coerced to numbers");
+  assert.deepStrictEqual(P.itemPenalties({ affixes: [{ name: "Strength", type: "Enhancement", value: "5" }] }), []);
+  assert.deepStrictEqual(P.itemPenalties(null), [], "a missing variant carries none");
+});
+
+test("#614: a penalty on a RANKED stat says the displayed total is optimistic", () => {
+  const v = { affixes: [{ name: "Fortification", type: "Penalty", value: "-25" }] };
+  const t = P.penaltyDisclosure(v, ["Fortification", "Strength"]);
+  assert.ok(t.includes("-25 Fortification"), "the magnitude is named, not just the stat");
+  assert.ok(t.includes(P.PENALTY_NOT_COUNTED_WORDING), "the one shared wording");
+  assert.ok(/is ranked, so its total above is optimistic/.test(t),
+    "the player is told which displayed number is wrong-high");
+});
+
+test("#614: a penalty on an UNRANKED stat claims no number is wrong", () => {
+  const v = { affixes: [{ name: "Fortification", type: "Penalty", value: "-25" }] };
+  const t = P.penaltyDisclosure(v, ["Strength"]);
+  assert.ok(t.includes("-25 Fortification"), "still disclosed — it is a real drawback");
+  assert.ok(/no total above is affected/.test(t),
+    "and NOT claimed to corrupt a total, which would overstate");
+  assert.ok(!/optimistic/.test(t));
+});
+
+test("#614: several ranked penalties are named together, in plural", () => {
+  const v = { affixes: [
+    { name: "Fortification", type: "Penalty", value: "-25" },
+    { name: "Constitution", type: "Penalty", value: "-2" }] };
+  const t = P.penaltyDisclosure(v, ["Fortification", "Constitution"]);
+  assert.ok(/Fortification and Constitution are ranked/.test(t));
+  assert.ok(/those totals above are optimistic/.test(t));
+});
+
+test("#614: an item with no penalty produces no sentence at all", () => {
+  assert.strictEqual(P.penaltyDisclosure({ affixes: [{ name: "Strength", type: "Enhancement", value: "5" }] }, ["Strength"]), "",
+    "only-when-set: no surface can render a note the data lacks");
+  assert.strictEqual(P.penaltyDisclosure(null, ["Strength"]), "");
+});
+
+test("#614: the wording is defined ONCE, so no surface can respell it", () => {
+  const R_SRC = fs.readFileSync(path.join(__dirname, "..", "web", "results.js"), "utf8");
+  assert.ok(/Proj\.penaltyDisclosure\(/.test(R_SRC),
+    "the card reads the sentence from projection rather than building its own");
+  assert.ok(!/not subtracted by the solver/.test(R_SRC),
+    "the phrase itself appears only in projection.js");
 });
 
 if (!process.exitCode) console.log(`\n${passed} passed`);
