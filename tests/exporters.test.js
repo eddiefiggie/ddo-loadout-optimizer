@@ -1,6 +1,7 @@
 // U12 — Markdown + CSV loadout exporters. Run: node tests/exporters.test.js
 const assert = require("assert");
-const { toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, toGearset, setBonusDetail, bbEsc, mdEsc, htmlEsc, csvSafe, constraintLines } = require("../web/exporters.js");
+const { toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, toGearset, setBonusDetail, bbEsc, mdEsc, htmlEsc, csvSafe, constraintLines, cue, legendText } = require("../web/exporters.js");
+const Proj = require("../web/projection.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -1868,3 +1869,57 @@ test("#449 U2: a pre-#449 restore exports exactly as it did before", () => {
   assert.strictEqual(toPortableJSON(old, "z").resolved.attribution.Dodge.ceiling, null);
   assert.strictEqual(toPortableJSON(old, "z").resolved.character.ceilingStatement, null);
 });
+
+
+// ---- #193 — every craft family is LABELLED as one --------------------------------
+
+// Families deliberately without an export cue, each with the reason. Anything
+// else missing one is a bug: `craftStr` prefixes the cue, so a family without one
+// renders bare and reads as an ordinary affix line rather than as something the
+// player has to go and craft.
+const CUELESS_ON_PURPOSE = {
+  // Documented at `craftLabel`'s vikEmpty case: a cue would file an EMPTY slot
+  // under a crafting family in the legend and read as a craft to go apply.
+  vikEmpty: "an empty declared slot, not a craft",
+  // KNOWN GAP, not a decision — see the issue filed alongside #193. A placed Set
+  // Augment renders bare in all five text exports today. Left alone deliberately
+  // rather than fixed in passing: it changes player-facing output for an
+  // unrelated feature, so it is somebody's call, not a drive-by.
+  augmentset: "pre-existing gap, filed separately",
+};
+
+test("#193: every craft family the loadout can emit carries an export cue", () => {
+  const families = Object.keys(Proj.CRAFT_SECTION_LABEL);
+  assert.ok(families.length >= 12, `only ${families.length} families — the source list moved`);
+  const missing = families.filter((f) => !cue("craft", f, "md"));
+  assert.deepStrictEqual(missing.sort(), Object.keys(CUELESS_ON_PURPOSE).sort(),
+    "a craft family without an export cue renders bare in every text format. Add it to "
+    + "CUE.craft in exporters.js, or to CUELESS_ON_PURPOSE here with the reason.");
+});
+
+test("#193: the legend lists every craft cue that exists", () => {
+  // A cue absent from the legend is an unexplained emoji in the export body.
+  const legend = legendText("md");
+  for (const fam of Object.keys(Proj.CRAFT_SECTION_LABEL)) {
+    const c = cue("craft", fam, "md");
+    if (!c) continue;
+    assert.ok(legend.includes(c), `${fam}: cue ${c} is used but never explained in the legend`);
+  }
+});
+
+test("#193: an Essence craft is cued and names the shard to make", () => {
+  assert.strictEqual(cue("craft", "essence", "md"), "🔧 Essence Crafting");
+  // The EFFECT is named when it differs from the stat: `Insightful Constitution`
+  // is a different recipe from `Constitution`, and a recipient of a shared build
+  // has to know which one to craft.
+  const ins = Proj.craftLabel({ menu: "Extra", effect: "Insightful Constitution",
+    stat: "Constitution", bonus_type: "Insight", value: 6, unit: "flat" }, "essence");
+  assert.ok(ins.includes("Insightful Constitution"), ins);
+  assert.ok(ins.includes("Extra"), "the menu is named — the Gem has three and they are spent separately");
+  // ...and NOT repeated when it is the same word.
+  const base = Proj.craftLabel({ menu: "Prefix", effect: "Strength", stat: "Strength",
+    bonus_type: "Enhancement", value: 13, unit: "flat" }, "essence");
+  assert.strictEqual(base, "Essence Crafting Prefix: Strength +13", base);
+});
+
+console.log(`\n  ${passed} passed`);
