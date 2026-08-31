@@ -168,7 +168,7 @@ def test_the_shipping_shard_renames_ki_and_cites_the_wiki():
     # merges of `Weighty Asset` and `Holding On` into `Undying`, which the wiki
     # groups with it as one stat. They are asserted separately below; this count
     # covers both kinds, which is why it is not the canon-defence count.
-    assert len(entries) == 20
+    assert len(entries) == 22
     e = next(x for x in entries if x["source_name"] == "Ki")
     assert e["source_name"] == "Ki"
     assert e["canonical_name"] == "Enhanced Ki"
@@ -195,7 +195,7 @@ def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
     # and twelve of the thirteen corrections fire here. Derived, not hand-counted:
     # the hit set must be exactly the shard entries whose source_name occurs in raw.
     # #632 — 15: the 13 canon-defence renames plus the two merges into `Undying`.
-    assert cov["names_corrected"] == 20
+    assert cov["names_corrected"] == 22
     shard = name_corrections.load(SHARD)
     raw_names = {a.get("name") for a in name_corrections._iter_affix_dicts(
         vocabulary._load(vocabulary.ITEMS_PATH))}
@@ -212,7 +212,9 @@ def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
     # a new total.
     # #615 — 1,420: +26, the cursed-item carriers merged into the five abilities
     # the wiki says each curse penalises. One rename per curse per item.
-    assert cov["affixes_renamed"] == 1420, cov["affixes_renamed"]
+    # #639 — 1,428: +8, the Mind Drain (4) and Power Drain (4) carriers merged into
+    # the spell-point pool they drain.
+    assert cov["affixes_renamed"] == 1428, cov["affixes_renamed"]
     # whatever the count, no source spelling may survive the pass
     for e in shard:
         assert not any(a.get("name") == e["source_name"]
@@ -350,9 +352,9 @@ def test_374_the_shard_declares_thirteen_and_marks_the_canon_defence():
     #       enchantments the wiki says grant one stat, renamed into `Undying` so
     #       they share its bucket instead of summing beside it. They carry
     #       `merge_into_existing`, cite the page, and are NOT canon defence.
-    assert len(entries) == 20
+    assert len(entries) == 22
     merges = [e for e in entries if e.get("merge_into_existing")]
-    assert len(merges) == 7, [e["source_name"] for e in merges]
+    assert len(merges) == 9, [e["source_name"] for e in merges]
     for m in merges:
         assert m.get("evidence"), f"{m['source_name']}: a merge must cite its wiki evidence"
         assert not m.get("canon_defense"), (
@@ -398,8 +400,13 @@ def test_374_every_canonical_survives_split_type_with_a_stat_left():
     # engraved curse name rides on `via`. Like `Undying`, every one of these
     # already existed natively, which is what makes them merges.
     ABILITY_MERGES = {"Strength", "Dexterity", "Intelligence", "Wisdom", "Charisma"}
+    # #639 — the spell-point pool joins as a merge target twice, in its two units.
+    # `Mind Drain` is -5% of max SP and `Power Drain` is -30 flat, and flat/percent
+    # are deliberately distinct stats, so they land in different canonicals rather
+    # than one. Both already existed natively, which is what makes them merges.
+    SP_MERGES = {"Wizardry", "Maximum Spell Points (%)"}
     assert canonicals == (set(FLIPPED) | {"Enhanced Ki", "Legendary Conditioning", "Undying"}
-                          | ABILITY_MERGES), sorted(canonicals)
+                          | ABILITY_MERGES | SP_MERGES), sorted(canonicals)
     for e in _shard():
         canonical = e["canonical_name"]
         btype, stat = _split_type(canonical)

@@ -239,6 +239,16 @@
    "variant": "Curse of Weakness",
    "canonical": "Strength",
    "reason": "#615 — the wiki's `Cursed` page rules this a '-1 Penalty' to the ability below, so the curse is merged into that ability and no longer exists as its own affix name. The alias keeps a player who typed or saved the engraved curse name resolving to the stat that now carries it; the card still shows the curse, via `via`."
+  },
+  {
+   "variant": "Mind Drain",
+   "canonical": "Maximum Spell Points (%)",
+   "reason": "#639 — this enchantment drains the spell-point pool rather than being a stat of its own, so it is merged into that pool and no longer exists as its own affix name. The alias keeps a player who typed or saved the engraved name resolving to the stat that now carries it."
+  },
+  {
+   "variant": "Power Drain",
+   "canonical": "Wizardry",
+   "reason": "#639 — this enchantment drains the spell-point pool rather than being a stat of its own, so it is merged into that pool and no longer exists as its own affix name. The alias keeps a player who typed or saved the engraved name resolving to the stat that now carries it."
   }
  ],
  "distinct": [

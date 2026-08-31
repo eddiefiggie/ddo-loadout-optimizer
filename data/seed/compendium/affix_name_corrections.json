@@ -202,6 +202,26 @@
    "issue": 615,
    "evidence": "https://ddowiki.com/page/Cursed states the whole family in one list: 'Equipping a cursed item bestows a -1 penalty to one of your ability scores: Curse of Clumsiness: Passive: -1 Penalty to Dexterity. Curse of Dullness: Passive: -1 Penalty to Intelligence. Curse of Foolishness: Passive: -1 Penalty to Wisdom. Curse of Frailty: Passive: -1 Penalty to Constitution. Curse of Repulsiveness: Passive: -1 Penalty to Charisma. Curse of Weakness: Passive: -1 Penalty to Strength.' Named carriers use the same definition: Item:Ring of Baphomet renders 'Curse of Foolishness' and 'Curse of Repulsiveness' whose tooltips link that same Cursed page. Harvested 2026-08-30.",
    "note": "#615 — `Curse of Weakness` is not a stat, it is a -1 Penalty to Strength. Merged so it lands in the Strength total the player actually ranks; the engraved curse name rides on `via`, so the card still names the curse."
+  },
+  {
+   "source_name": "Mind Drain",
+   "canonical_name": "Maximum Spell Points (%)",
+   "merge_into_existing": true,
+   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+   "verified": "2026-08-30",
+   "issue": 639,
+   "evidence": "https://ddowiki.com/page/Mind_Drain states the effect outright and lists exactly our four carriers: 'This item reduces your maximum spell points by 5% while worn. Found on: (4) Mind Drain items: Baphomet's Reign, Clouded Dreams, Legendary Lucid Dreams, Lucid Dreams.' Unconditional while worn. A percent of max SP, so it belongs to the percent stat, not the flat one — flat and percent are deliberately distinct stats (tests/test_vocabulary.py::test_unit_marker_is_significant_flat_vs_percent_distinct). Harvested 2026-08-30.",
+   "note": "#639 — `Mind Drain` is not a stat; the spell-point pool it drains is. Merged so the penalty lands in Maximum Spell Points (%), with the engraved name kept on `via`."
+  },
+  {
+   "source_name": "Power Drain",
+   "canonical_name": "Wizardry",
+   "merge_into_existing": true,
+   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+   "verified": "2026-08-30",
+   "issue": 639,
+   "evidence": "https://ddowiki.com/page/Power_Drain is a DISAMBIGUATION page with two readings, and the distinction matters: 'Power Drain (clicky) found on Vile Blasphemy, an effect regenerates SP over time' versus 'Power Drain (enchantment) found on Infused Chaosrobe and such, penalize your maximum SP'. All four of our carriers are the enchantment reading and the enchantment page lists exactly them. It states a SUSTAINED value — 'You lose 30 maximum spell points' — so by conditional_affix_quarantine's own discipline this is a value correction rather than a quarantine. Two conditionals are disclosed rather than modelled: up to 60 for Sorcerer and Favored Soul (we carry no class model), and suppression while wearing a Sustaining Symbiont. Harvested 2026-08-30.",
+   "note": "#639 — `Power Drain` is not a stat; the spell-point pool it drains is. Merged so the penalty lands in Wizardry, with the engraved name kept on `via`."
   }
  ],
  "_pending": "#374/U2 — an entry may carry pending_upstream + pending_reason when it is declared one unit AHEAD of the refreshed gear-planner snapshot that arms it. Pending entries are exempt from assert_all_reached (they reach nothing by construction) and excluded from the KTD3 declared-live set. The exemption is self-retiring: assert_canon_defense fails the build the moment the raw data arms an entry whose marker is still set.",

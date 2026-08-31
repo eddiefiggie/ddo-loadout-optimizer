@@ -108,14 +108,27 @@ def test_the_curses_are_no_longer_denied_from_the_picker():
             "more — the entry can never fire and hides that the merge happened.")
 
 
-def test_the_still_unadjudicated_drawbacks_stay_denied():
-    """The harvest did not reach these; they are Bools of undecided valence."""
+def test_the_unscoreable_drawbacks_stay_denied():
+    """#639 ruled all five, and two of them are ruled UNSCOREABLE rather than unread.
+
+    `Mind Drain` and `Power Drain` left this list because they were ruled real
+    penalties and merged into the spell-point pools they drain — a name that no
+    longer exists cannot be denied. `Critical Weakening` was never here: it is an
+    enemy debuff, a thing to want.
+
+    What remains is a third category the original issue did not anticipate — a
+    genuine wearer drawback the wiki declines to quantify. "A small chance" is not
+    a rate, and inventing one would be the never-infer violation. So these two stay
+    presence AND stay denied: unscoreable is not the same as harmless, and a
+    drawback offered as a goal is misleading either way.
+    """
     src = os.path.join(ROOT, "web", "dataset.js")
     with open(src, encoding="utf-8") as fh:
         text = fh.read()
     start = text.index("const PRESENCE_DENY = new Set([")
     body = text[start:text.index("]);", start)]
-    for name in ("Cursed Level Drain", "Mind Drain", "Power Drain", "Metal Fatigue"):
+    for name in ("Cursed Level Drain", "Metal Fatigue"):
         assert name in body, (
-            f"{name} left PRESENCE_DENY without a ruling. It is still an unadjudicated "
-            "Bool; removing it re-offers a possible drawback as a priority.")
+            f"{name} left PRESENCE_DENY. The wiki states no rate for it, so it cannot "
+            "be scored — and an unscoreable drawback offered as a goal is still "
+            "misleading. Remove it only if the wiki starts stating a magnitude.")

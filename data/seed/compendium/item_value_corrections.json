@@ -625,5 +625,101 @@
    "verified": "2026-08-30",
    "issue": 615
   }
+ ],
+ "Baphomet's Reign": [
+  {
+   "name": "Mind Drain",
+   "type": "Bool",
+   "from": 1,
+   "to": -5,
+   "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
+   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+   "verified": "2026-08-30",
+   "issue": 639
+  }
+ ],
+ "Clouded Dreams": [
+  {
+   "name": "Mind Drain",
+   "type": "Bool",
+   "from": 1,
+   "to": -5,
+   "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
+   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+   "verified": "2026-08-30",
+   "issue": 639
+  }
+ ],
+ "Legendary Lucid Dreams": [
+  {
+   "name": "Mind Drain",
+   "type": "Bool",
+   "from": 1,
+   "to": -5,
+   "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
+   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+   "verified": "2026-08-30",
+   "issue": 639
+  }
+ ],
+ "Lucid Dreams": [
+  {
+   "name": "Mind Drain",
+   "type": "Bool",
+   "from": 1,
+   "to": -5,
+   "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
+   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+   "verified": "2026-08-30",
+   "issue": 639
+  }
+ ],
+ "Fleshshaper's Brigandine": [
+  {
+   "name": "Power Drain",
+   "type": "Bool",
+   "from": 1,
+   "to": -30,
+   "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
+   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+   "verified": "2026-08-30",
+   "issue": 639
+  }
+ ],
+ "Fleshshaper's Docent": [
+  {
+   "name": "Power Drain",
+   "type": "Bool",
+   "from": 1,
+   "to": -30,
+   "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
+   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+   "verified": "2026-08-30",
+   "issue": 639
+  }
+ ],
+ "Infused Chaos Docent": [
+  {
+   "name": "Power Drain",
+   "type": "Bool",
+   "from": 1,
+   "to": -30,
+   "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
+   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+   "verified": "2026-08-30",
+   "issue": 639
+  }
+ ],
+ "Infused Chaosrobe": [
+  {
+   "name": "Power Drain",
+   "type": "Bool",
+   "from": 1,
+   "to": -30,
+   "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
+   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+   "verified": "2026-08-30",
+   "issue": 639
+  }
  ]
 }

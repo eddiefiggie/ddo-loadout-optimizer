@@ -201,7 +201,20 @@ LIVE_615 = {
     "Stinkpelt's Hide",
     "Tchurvul's Kukri",
 }
-LIVE = LIVE_619 | LIVE_632 | LIVE_615
+#: #639 — the two recoverable drawbacks. `Mind Drain` is -5% of max spell points;
+#: `Power Drain` is -30 flat. Upstream already separates the beneficial reading by
+#: name (`Power Drain clicky` on Vile Blasphemy), so the merge cannot collide with it.
+LIVE_639 = {
+    "Baphomet's Reign",
+    "Clouded Dreams",
+    "Fleshshaper's Brigandine",
+    "Fleshshaper's Docent",
+    "Infused Chaos Docent",
+    "Infused Chaosrobe",
+    "Legendary Lucid Dreams",
+    "Lucid Dreams",
+}
+LIVE = LIVE_619 | LIVE_632 | LIVE_615 | LIVE_639
 
 
 def test_the_only_live_corrections_are_declared_and_the_retirement_is_on_the_record():
@@ -249,7 +262,8 @@ def test_the_shipped_shard_carries_its_wiki_evidence():
     # Shoes and Ward Token, whose Bool-flattened magnitudes the Unconscious page states).
     # #615 — 54: 17 retired (#288) + 8 live (#619) + 3 (#632) + 26 (#615, the
     # cursed-item carriers, one entry per curse per item).
-    assert seen == 54, seen
+    # #639 — 62: +8, the Mind Drain (4) and Power Drain (4) carriers.
+    assert seen == 62, seen
 
 
 def test_a_retired_correction_is_one_upstream_actually_adopted():

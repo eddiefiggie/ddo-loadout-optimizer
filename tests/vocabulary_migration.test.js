@@ -117,11 +117,11 @@ test("#374: the correction roster is the declaration, and every entry is armed",
   // entries join `Weighty Asset` and `Holding On`: each is an enchantment the wiki
   // rules a "-1 Penalty" to a named ability, merged into that ability so the
   // solver subtracts it from the stat a player actually ranks.
-  assert.strictEqual(CORRECTIONS.length, 20,
-    "20 armed variants — 13 upstream-spelling corrections (#374) plus 7 " +
+  assert.strictEqual(CORRECTIONS.length, 22,
+    "22 armed variants — 13 upstream-spelling corrections (#374) plus 9 " +
     "evidence-bound merges (#632, #615); a new entry needs its own assertion, not a bump");
-  assert.strictEqual(CORRECTIONS.filter((c) => c.merge_into_existing).length, 7,
-    "seven entries are merges, and a merge must cite the wiki page that says the " +
+  assert.strictEqual(CORRECTIONS.filter((c) => c.merge_into_existing).length, 9,
+    "nine entries are merges, and a merge must cite the wiki page that says the " +
     "two names are one stat");
   for (const c of CORRECTIONS) {
     assert.ok(!c.pending_upstream,
