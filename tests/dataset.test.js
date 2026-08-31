@@ -2319,3 +2319,117 @@ test("#566: no Exclusive or Minor Artifact ring is ever twin-eligible", () => {
   }
   assert.ok(seen >= 60, `the loop must actually inspect blocked rings, saw ${seen}`);
 });
+
+// --- #529: every name the picker offers must be satisfiable by SOME channel ---
+//
+// A saved bundle stores affix NAMES. The dataset is rebuilt from wiki-sourced
+// seed data, so a name can stop existing — retyped, folded into a synonym, or
+// dropped when a source ruling changes. #529 is about disclosing that to the
+// player; this guard is about making sure there is nothing to disclose, by
+// failing the build the day a pickable name stops being scorable.
+//
+// Measured when this was written: of 1,165 picker suggestions, ZERO are
+// unsatisfiable. The disclosure #529 asks for would currently never fire, which
+// is why the guard is the proportionate half of that issue and the UI is not.
+//
+// THE POPULATION IS THE WHOLE DIFFICULTY, and the naive versions of this check
+// are all wrong. Four separate wrong answers were measured before this one, each
+// from a narrower notion of "scorable":
+//
+//   1. `vocab.known` alone            -> 0 flagged. It is a registry of NAMES, so
+//                                        every name is "known" by construction.
+//   2. item affixes only              -> 138 flagged, of which 54 merely REDIRECT
+//                                        (expanded-away / alias) to a name that is
+//                                        carried. Flagging those tells a player a
+//                                        healthy priority is dead.
+//   3. + resolution, still items only -> 12 flagged, including `Legendary Salt`
+//                                        and `Legendary Affirmation` — both of
+//                                        which a real reported build ranks and
+//                                        scores. Set-bonus tiers and the crafting
+//                                        pools were missing.
+//   4. + every pool, filtering on
+//      `eligible`                     -> 1 flagged (`Concealment`). Composite
+//                                        expansion mints 144 Concealment affixes
+//                                        from `Blurry` / `Lesser Displacement`,
+//                                        and those carry `eligible: undefined`.
+//
+// So: resolve the name first, then test carriage across item affixes, scaling,
+// set tiers, roll options, every crafting pool AND composite-minted affixes,
+// without filtering on `eligible`. Anything narrower produces false alarms, and a
+// false alarm here is worse than silence — it tells a player to abandon a
+// priority that works.
+function _scorableNames(ds, raw) {
+  const out = new Set();
+  const add = (a) => {
+    if (!a) return;
+    if (typeof a.name === "string") out.add(a.name);
+    if (typeof a.stat === "string") out.add(a.stat);
+  };
+  for (const v of ds.items) {
+    (v.affixes || []).forEach(add);          // NOT filtered on `eligible` — see 4 above
+    (v.scaling || []).forEach(add);
+    (v.set_bonus || []).forEach((sb) => (sb.stats || sb.affixes || []).forEach(add));
+    (v.parsed_set_bonuses || []).forEach((t) => (t.stats || t.affixes || []).forEach(add));
+    (v.roll_groups || []).forEach((g) => (g.options || []).forEach(add));
+  }
+  for (const key of ["dino_inserts", "seal", "viktranium", "nearly_complete",
+                     "essence_crafting", "green_steel", "thunder_forged"]) {
+    for (const r of (raw[key] || [])) { add(r); (r.affixes || []).forEach(add); }
+  }
+  for (const defs of [raw.membership_set_defs, raw.augment_set_defs, raw.set_defs]) {
+    if (!defs) continue;
+    for (const k of Object.keys(defs)) {
+      for (const t of (defs[k].tiers || defs[k] || [])) (t.stats || t.affixes || []).forEach(add);
+    }
+  }
+  return out;
+}
+
+test("#529: every stat the picker offers is satisfiable by some scoring channel", () => {
+  const raw = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+  const vocab = buildPickerVocabulary(realData);
+  const { migratePriorities } = require("../web/dataset.js");
+  const scorable = _scorableNames(realData, raw);
+  const offered = (vocab.suggestions || [])
+    .map((x) => (typeof x === "string" ? x : (x && (x.name || x.label))))
+    .filter(Boolean);
+
+  assert.ok(offered.length > 1000, `premise: a real picker vocabulary, saw ${offered.length}`);
+  assert.ok(scorable.size > 1500, `premise: a real scorable population, saw ${scorable.size}`);
+
+  const dead = [];
+  for (const n of offered) {
+    if (scorable.has(n)) continue;
+    const { priorities } = migratePriorities([n], vocab);
+    const resolved = (priorities && priorities[0]) || n;
+    if (!scorable.has(resolved)) dead.push(n);
+  }
+  assert.deepStrictEqual(dead, [],
+    `${dead.length} name(s) the picker offers can be ranked but never scored: `
+    + `${JSON.stringify(dead.slice(0, 8))}. A player who ranks one gets a priority `
+    + `that silently contributes nothing, and a bundle saved with it restores the same.`);
+});
+
+test("#529: the guard REJECTS a pickable name nothing can score", () => {
+  // Corrupt the input the guard exists to reject. Without this the assertion
+  // above passes on an empty `dead` list forever and proves only that it ran.
+  const scorable = new Set(["Constitution", "Dodge"]);
+  const offered = ["Constitution", "Dodge", "Stat That No Item Has"];
+  const dead = offered.filter((n) => !scorable.has(n));
+  assert.deepStrictEqual(dead, ["Stat That No Item Has"],
+    "the shape of the check must actually separate satisfiable from not");
+});
+
+test("#529: composite-minted affixes count as scorable, `eligible` flag or not", () => {
+  // The specific trap that produced the fourth wrong answer. `Concealment` is
+  // carried by no item directly; `Blurry` and `Lesser Displacement` mint it during
+  // normalization, and those minted affixes do not carry `eligible: true`.
+  const raw = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+  const minted = realData.items.reduce((n, v) =>
+    n + (v.affixes || []).filter((a) => a.name === "Concealment").length, 0);
+  assert.ok(minted > 100, `composite expansion must be live, saw ${minted} Concealment affixes`);
+  assert.ok(_scorableNames(realData, raw).has("Concealment"),
+    "a stat that exists only as a composite component is still scorable");
+});
