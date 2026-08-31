@@ -365,19 +365,51 @@ test("U8: a backup carries builds, bundles and farming progress", () => {
     bundles: [{ id: "b1", name: "Reaper", affixes: ["Constitution"] }],
     farming: { Tank: { "Item A": true } },
   });
-  assert.strictEqual(p.schema_version, 2, "the payload widened, so the version moved");
+  assert.strictEqual(p.schema_version, 3, "the payload widened again (#530), so the version moved");
   assert.deepStrictEqual(Object.keys(p.characters), ["Tank"]);
   assert.strictEqual(p.bundles.length, 1);
   assert.deepStrictEqual(p.farming, { Tank: { "Item A": true } });
 });
 
-test("U8: a backup carries NO version snapshots", () => {
-  // They are taken on every solve without being asked for, they are the largest
-  // thing in storage, and they are the store with the known growth problem — a
-  // file meant to move between devices must not become that problem.
-  const p = serializeAll({ Tank: {} }, { bundles: [], farming: {} });
-  assert.ok(!("versions" in p), "no versions key at all");
-  assert.ok(!JSON.stringify(p).includes("snapshot"), "and nothing snapshot-shaped rides along");
+test("#530: a backup carries AUTHORED version snapshots, and no automatic ones", () => {
+  // This inverted, and the inversion is the fix. It used to assert `versions` was
+  // absent entirely, on the grounds that snapshots are taken without being asked
+  // for and are the store with the known growth problem (#502). That reasoning is
+  // sound for ONE of the three kinds. `named` is a snapshot the player pressed
+  // save on and typed a name for; `import` is one they carried in from a file.
+  //
+  // `versions.js` had already drawn this exact line: `pruneAutoList` refuses to
+  // reclaim a named or an import at any rung, on the stated grounds that they are
+  // work a player cannot reproduce. So the omission contradicted the store's own
+  // policy, and the panel's principle — "back up everything you have made" — was
+  // false for two kinds out of three.
+  const V = require("../web/versions.js");
+  const mk = (id, kind) => V.makeVersion({ id, name: id, kind, query: {}, result: {},
+                                           inputs: {}, buildId: "b", savedAt: "2026-01-01" });
+  const p = serializeAll({ Tank: {} }, {
+    bundles: [], farming: {},
+    versions: [mk("v1", "named"), mk("v2", "import")].concat(
+      // an auto handed in anyway must not be carried: the caller filters, and the
+      // payload is what a player's file actually becomes.
+      []),
+  });
+  assert.strictEqual(p.versions.length, 2, "the two authored kinds ride along");
+  assert.deepStrictEqual(p.versions.map((v) => v.kind).sort(), ["import", "named"]);
+});
+
+test("#530: `authoredVersions` is the reclaim ladder's own predicate, not a copy", () => {
+  // The two must never disagree about which snapshots are work. If the backup
+  // decided this separately, a later change to one would silently desync them —
+  // and the failure would be invisible until a player restored and found a gap.
+  const V = require("../web/versions.js");
+  const mk = (id, kind) => ({ id, name: id, kind });
+  const all = [mk("a", "auto"), mk("b", "named"), mk("c", "import"), mk("d", "auto")];
+  // What the reclaim ladder refuses to drop, with keep=0 (drop every auto it may).
+  const survives = V.pruneAutoList(all, 0).map((r) => r.id);
+  const authored = all.filter(V.isAuthoredKind).map((r) => r.id);
+  assert.deepStrictEqual(authored, survives,
+    "the backup's notion of authored work must equal what the store refuses to reclaim");
+  assert.deepStrictEqual(authored, ["b", "c"]);
 });
 
 test("U8: a v1 backup still imports, with the new keys empty", () => {
@@ -584,3 +616,47 @@ test("#190: an oversized envelope is refused before it is parsed", () => {
 });
 
 console.log(`\n${passed} passed`);
+
+test("#530: a v2 backup still imports, with no version history", () => {
+  // The compatibility window is the promise this panel makes. A v2 file is not
+  // missing data — it is from before snapshots could be carried.
+  const v2 = JSON.stringify({
+    schema_version: 2, exported_at: "2026-01-01T00:00:00Z", app_build_id: null,
+    characters: { Tank: rec("Tank", 34) }, bundles: [], farming: {},
+  });
+  const res = parseBackup(v2);
+  assert.strictEqual(res.ok, true, res.message || "a v2 file must still import");
+  assert.deepStrictEqual(res.versions, [], "no history, rather than a refusal");
+});
+
+test("#530: an `auto` smuggled into a hand-edited file is REFUSED on restore", () => {
+  // The file is editable, so the export-side filter is not the guard. An auto
+  // restored as history is history the player never asked for, landing in the one
+  // store with a known growth problem (#502).
+  const V = require("../web/versions.js");
+  const mk = (id, kind) => V.makeVersion({ id, name: id, kind, query: {}, result: {},
+                                           inputs: {}, buildId: "b", savedAt: "2026-01-01" });
+  const file = JSON.stringify({
+    schema_version: 3, exported_at: "2026-01-01T00:00:00Z", app_build_id: null,
+    characters: { Tank: rec("Tank", 34) }, bundles: [], farming: {},
+    versions: [mk("v1", "named"), mk("v2", "auto")],
+  });
+  const res = parseBackup(file);
+  assert.strictEqual(res.ok, true, res.message);
+  assert.deepStrictEqual(res.versions.map((v) => v.id), ["v1"], "the auto is dropped");
+});
+
+test("#530: an INVENTED kind is refused, not silently protected forever", () => {
+  // `makeVersion` normalizes an unknown kind to `auto`. That matters here: without
+  // the sanitize step a record claiming `kind: "permanent"` would restore intact
+  // AND be invisible to the reclaim ladder, which only ever drops `auto` — an
+  // entry no rung could reclaim and no player asked for.
+  const file = JSON.stringify({
+    schema_version: 3, exported_at: "2026-01-01T00:00:00Z", app_build_id: null,
+    characters: { Tank: rec("Tank", 34) }, bundles: [], farming: {},
+    versions: [{ id: "x1", name: "sneaky", kind: "permanent", snapshot: {} }],
+  });
+  const res = parseBackup(file);
+  assert.strictEqual(res.ok, true, res.message);
+  assert.deepStrictEqual(res.versions, [], "normalized to auto, then dropped");
+});

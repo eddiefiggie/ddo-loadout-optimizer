@@ -163,6 +163,70 @@
     });
   }
 
+  /** #530 — the kinds the store refuses to reclaim, i.e. the player's AUTHORED
+   *  version history.
+   *
+   *  Deliberately the same predicate `pruneAutoList` applies, expressed once so
+   *  the two cannot drift. That matters because the whole argument of #530 is
+   *  that this store already knows which snapshots are disposable: the reclaim
+   *  path has never evicted a `named` or an `import` at any rung. A backup that
+   *  dropped them contradicted the store's own policy, not merely the panel's
+   *  wording.
+   *
+   *  `auto` is excluded, and that is what keeps the payload honest about size:
+   *  autos are the only kind that accumulates unbidden and the store with the
+   *  known growth problem (#502), so copying them into a file meant to travel
+   *  between devices would move that problem with it.
+   */
+  function isAuthoredKind(rec) {
+    const kind = KINDS.includes(rec && rec.kind) ? rec.kind : "auto";
+    return kind !== "auto";
+  }
+
+  function authoredVersions(storage) {
+    return listVersions(storage).filter(isAuthoredKind);
+  }
+
+  /** #530 — merge restored snapshots into the store. Mirrors
+   *  `saved-bundles.mergeIn` (KTD7) deliberately: MERGED, never replaced, because
+   *  the import path is reached precisely when something already went wrong, and
+   *  replacing would delete everything the player made since their last export.
+   *
+   *  Collision handling differs in one way, and it is the part #530 flagged as
+   *  less obviously harmless than a bundle's. Version ids are positional (`v7`),
+   *  not meaningful, so a clash between two DIFFERENT snapshots re-issues the
+   *  incoming one rather than overwriting. Sameness is judged on `savedAt` + name
+   *  rather than name alone: two snapshots of one character legitimately share a
+   *  name, and overwriting on name would silently merge two distinct saves into
+   *  one. A record that matches on both is the same save arriving twice — a
+   *  re-import of the same file — and replacing it is a no-op.
+   *
+   *  Only authored kinds are admitted; an `auto` in the incoming list is dropped
+   *  rather than merged, so a hand-edited file cannot refill the store with
+   *  history nobody asked for.
+   */
+  function mergeIn(incoming, storage) {
+    const existing = listVersions(storage);
+    const byId = new Map(existing.map((r) => [r.id, r]));
+    const out = existing.slice();
+    let ids = existing;
+    const key = (r) => `${String(r.savedAt || "")}::${String(r.name || "").trim().toLowerCase()}`;
+    for (const raw of Array.isArray(incoming) ? incoming : []) {
+      if (!raw || typeof raw !== "object" || !raw.id) continue;
+      const rec = makeVersion(raw);
+      if (!isAuthoredKind(rec)) continue;
+      const clash = byId.get(rec.id);
+      if (clash && key(clash) !== key(rec)) {
+        rec.id = nextId(ids);
+        ids = ids.concat([rec]);
+      }
+      const at = out.findIndex((r) => r.id === rec.id);
+      if (at >= 0) out[at] = rec; else out.unshift(rec);
+      byId.set(rec.id, rec);
+    }
+    return writeAll(out, storage);
+  }
+
   function pruneAuto(keep, storage) {
     const list = listVersions(storage);
     const kept = pruneAutoList(list, keep);
@@ -333,6 +397,7 @@
     STORE_KEY, KINDS, nextId, makeVersion,
     listVersions, saveVersion, deleteVersion, clearVersions, writeAll,
     usageBytes, countByKind, pruneAuto, pruneAutoList, RECLAIM_LADDER,
+    isAuthoredKind, authoredVersions, mergeIn,
     diffVersions, projectSide, craftStrings, indexLoadout,
   };
 

@@ -826,10 +826,24 @@ test("U7: a build delete in the list routes through the cascade coordinator", ()
 test("#502: the version row is the caller deleteVersion never had", () => {
   // The storage-full message has told players to delete a version since #500,
   // while deleteVersion sat in versions.js with no caller anywhere.
-  const region = srcFrom(WIZARD_SRC, "function renderStored", 2600, "stored list wiring");
+  const region = srcFrom(WIZARD_SRC, "function renderStored", 3600, "stored list wiring");
   assert.ok(/VersionStore\.deleteVersion\(/.test(region), "this is that caller");
-  assert.ok(/backups do not carry version history/.test(region),
-    "and the confirmation says a backup cannot bring it back, because U8 leaves snapshots out");
+});
+
+test("#530: the delete warning depends on the KIND, because the answer does", () => {
+  // This replaces the half of #502's test that asserted "backups do not carry
+  // version history" — copy that was true when U8 left every snapshot out and is
+  // now false for two kinds of three. Saying it to everyone would be the same
+  // defect pointed the other way: true for autos, false for exactly the snapshots
+  // a player cares about.
+  const region = srcFrom(WIZARD_SRC, "function renderStored", 3600, "stored list wiring");
+  assert.ok(/isAuthoredKind/.test(region),
+    "the warning asks the store which kind this is, rather than assuming");
+  assert.ok(/restore it from a backup/.test(region), "the authored branch says it comes back");
+  assert.ok(/captured automatically and is not carried/.test(region),
+    "and the auto branch still says it does not");
+  assert.ok(!/backups do not carry version history/.test(WIZARD_SRC),
+    "the blanket claim is gone — it is no longer true");
 });
 
 test("U4: applying a bundle REPLACES the ranking, in the bundle's order", () => {

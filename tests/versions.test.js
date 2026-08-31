@@ -177,7 +177,6 @@ test("#500: the ranked and unranked deltas are rendered as separate claims", () 
     "and the unranked section says why the solver let them move");
 });
 
-console.log(`\n${passed} passed`);
 
 // ---------------------------------------------------------------------------
 // #548 — auto snapshots grow unbidden and share one origin budget with the three
@@ -264,3 +263,34 @@ test("#548: the reclaim ladder ends at one, never at zero", () => {
   const desc = V.RECLAIM_LADDER.slice().sort((a, b) => b - a);
   assert.deepStrictEqual(V.RECLAIM_LADDER, desc, "each rung gives up strictly more");
 });
+
+test("#530: a restore MERGES snapshots and re-issues a clashing id", () => {
+  // Version ids are positional (`v7`), not meaningful, so two stores that both
+  // hold a `v1` hold two different saves. Overwriting on id would lose one.
+  const store = fakeStorage();
+  const mk = (id, name, savedAt, kind) => V.makeVersion({
+    id, name, kind: kind || "named", query: {}, result: {}, inputs: {},
+    buildId: "b", savedAt });
+  V.writeAll([mk("v1", "Mine", "2026-01-01")], store);
+  const r = V.mergeIn([mk("v1", "Theirs", "2026-02-02")], store);
+  assert.strictEqual(r.ok, true);
+  const after = V.listVersions(store);
+  assert.strictEqual(after.length, 2, "both survive; the incoming one is re-issued");
+  assert.deepStrictEqual(after.map((x) => x.name).sort(), ["Mine", "Theirs"]);
+  assert.strictEqual(new Set(after.map((x) => x.id)).size, 2, "and the ids are distinct");
+});
+
+test("#530: re-importing the SAME file twice does not duplicate", () => {
+  // Sameness is `savedAt` + name, not name alone: two snapshots of one character
+  // legitimately share a name, and matching on name would silently merge two
+  // distinct saves. Matching on both means a re-import is a no-op.
+  const store = fakeStorage();
+  const one = V.makeVersion({ id: "v1", name: "Raid", kind: "named", query: {},
+                              result: {}, inputs: {}, buildId: "b", savedAt: "2026-01-01" });
+  V.writeAll([one], store);
+  V.mergeIn([one], store);
+  V.mergeIn([one], store);
+  assert.strictEqual(V.listVersions(store).length, 1, "the same save arriving twice is one save");
+});
+
+console.log(`\n${passed} passed`);
