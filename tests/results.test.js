@@ -399,20 +399,28 @@ function penRow(targets) {
     { result: null, attr: null, targets });
 }
 
-test("#614: a penalty on a RANKED stat is warn-weighted on the card", () => {
-  const note = (penRow(["Fortification"]).match(PEN_RE) || [""])[0];
-  assert.ok(note, "the note renders at all");
-  assert.ok(/is-craft/.test(note), "warn-coloured: a number ON THIS CARD is wrong-high");
-  assert.ok(note.includes("\u26a0"), "and carries the warning glyph");
-  assert.ok(/optimistic/.test(note));
+test("#614: the penalty note is muted on every card — nothing here is wrong now", () => {
+  // Inverted from what this first asserted. The note carried a warning weight
+  // when the penalty landed on a ranked stat, because the solver discarded
+  // negatives and that total really was wrong-high. It subtracts them now, so a
+  // warning would be telling the player to distrust a correct number. One weight,
+  // muted, on both cards.
+  for (const targets of [["Fortification"], ["Strength"]]) {
+    const note = (penRow(targets).match(PEN_RE) || [""])[0];
+    assert.ok(note, `the note renders for targets ${JSON.stringify(targets)}`);
+    assert.ok(/muted/.test(note) && !/is-craft/.test(note),
+      "no warn weight: the totals above already account for the penalty");
+    assert.ok(!note.includes("\u26a0"), "and no warning glyph");
+    assert.ok(!/optimistic/.test(note), "the pre-subtraction claim is gone");
+  }
 });
 
-test("#614: a penalty on an UNRANKED stat is muted, not a warning", () => {
-  const note = (penRow(["Strength"]).match(PEN_RE) || [""])[0];
-  assert.ok(note, "still disclosed — it is a real drawback of the item");
-  assert.ok(/muted/.test(note) && !/is-craft/.test(note),
-    "but no displayed total is wrong, so it must not read as one");
-  assert.ok(!note.includes("\u26a0"));
+test("#614: the note still names the magnitude, ranked or not", () => {
+  for (const targets of [["Fortification"], ["Strength"]]) {
+    const note = (penRow(targets).match(PEN_RE) || [""])[0];
+    assert.ok(/-25 Fortification/.test(note),
+      "the cost is stated as a number, not merely flagged as existing");
+  }
 });
 
 test("#614: an item with no penalty renders no note at all", () => {

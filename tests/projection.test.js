@@ -996,21 +996,25 @@ test("#614: itemPenalties finds signed Penalty affixes, worst first, sign coerce
   assert.deepStrictEqual(P.itemPenalties(null), [], "a missing variant carries none");
 });
 
-test("#614: a penalty on a RANKED stat says the displayed total is optimistic", () => {
+test("#614: a penalty on a RANKED stat says the total already accounts for it", () => {
+  // This assertion is INVERTED from what it first shipped, and deliberately so.
+  // The note used to say the total was optimistic, because the solver discarded
+  // negatives. It subtracts them now (wiki: "Penalties always stack"), so the same
+  // sentence would be false. A disclosure that outlives the defect it described is
+  // worse than none — it teaches the player to distrust a number that is right.
   const v = { affixes: [{ name: "Fortification", type: "Penalty", value: "-25" }] };
   const t = P.penaltyDisclosure(v, ["Fortification", "Strength"]);
   assert.ok(t.includes("-25 Fortification"), "the magnitude is named, not just the stat");
-  assert.ok(t.includes(P.PENALTY_NOT_COUNTED_WORDING), "the one shared wording");
-  assert.ok(/is ranked, so its total above is optimistic/.test(t),
-    "the player is told which displayed number is wrong-high");
+  assert.ok(t.includes(P.PENALTY_COUNTED_WORDING), "the one shared wording");
+  assert.ok(/is ranked, so the total above already accounts for it/.test(t));
+  assert.ok(!/optimistic/.test(t), "the pre-#614 claim must not survive anywhere");
 });
 
-test("#614: a penalty on an UNRANKED stat claims no number is wrong", () => {
+test("#614: a penalty on an UNRANKED stat is still disclosed, plainly", () => {
   const v = { affixes: [{ name: "Fortification", type: "Penalty", value: "-25" }] };
   const t = P.penaltyDisclosure(v, ["Strength"]);
-  assert.ok(t.includes("-25 Fortification"), "still disclosed — it is a real drawback");
-  assert.ok(/no total above is affected/.test(t),
-    "and NOT claimed to corrupt a total, which would overstate");
+  assert.ok(t.includes("-25 Fortification"), "still disclosed — it is a real cost of the item");
+  assert.ok(/not among your priorities/.test(t));
   assert.ok(!/optimistic/.test(t));
 });
 
@@ -1020,7 +1024,7 @@ test("#614: several ranked penalties are named together, in plural", () => {
     { name: "Constitution", type: "Penalty", value: "-2" }] };
   const t = P.penaltyDisclosure(v, ["Fortification", "Constitution"]);
   assert.ok(/Fortification and Constitution are ranked/.test(t));
-  assert.ok(/those totals above are optimistic/.test(t));
+  assert.ok(/those totals above already account for them/.test(t));
 });
 
 test("#614: an item with no penalty produces no sentence at all", () => {
@@ -1033,7 +1037,7 @@ test("#614: the wording is defined ONCE, so no surface can respell it", () => {
   const R_SRC = fs.readFileSync(path.join(__dirname, "..", "web", "results.js"), "utf8");
   assert.ok(/Proj\.penaltyDisclosure\(/.test(R_SRC),
     "the card reads the sentence from projection rather than building its own");
-  assert.ok(!/not subtracted by the solver/.test(R_SRC),
+  assert.ok(!/subtracted, not ignored/.test(R_SRC),
     "the phrase itself appears only in projection.js");
 });
 

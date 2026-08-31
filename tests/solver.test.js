@@ -5856,6 +5856,93 @@ async function withCrossAdd(map, fn) {
   }
   const xOf = (program, vid) => program.xVars.find((xv) => xv.variant.variant_id === vid).name;
 
+  // #614 — penalties. The wiki's stacking page: "Penalties always stack", stated
+  // in a list whose other entries are the bucket rules the solver implements. So a
+  // penalty is additive and forced, never a contribution competing for a bucket.
+  function penModel({ targets, worn, userCaps }) {
+    return { targets, mlCap: 36, userCaps,
+      worn: worn.map(([slotName, id, affixes]) => slot(slotName, [item(id, slotName, affixes)])) };
+  }
+
+  await test("#614: a worn penalty is SUBTRACTED from the stat it names", async () => {
+    const program = S.buildProgram(penModel({
+      targets: ["Constitution"],
+      worn: [["Armor", "GIVER", [["Constitution", "Enhancement", 10]]],
+             ["Trinket", "COSTER", [["Constitution", "Penalty", -2]]]],
+    }));
+    const xg = xOf(program, "GIVER"), xc = xOf(program, "COSTER");
+    const prim = primOf(primalOf([xg, xc, ...zsForGate(program, xg), ...zsForGate(program, xc)]));
+    assert.strictEqual(S.rawTotalOf(program, prim, "Constitution"), 8,
+      "10 from the giver less 2 from the penalty");
+  });
+
+  await test("#614: penalties ALWAYS stack — they are not max-of-type", async () => {
+    // The rule that made this more than a sign fix. Under the bucket machinery
+    // these two -2s share the key `Constitution||Penalty`, and `Σz <= 1` would
+    // report ONE of them. The player wearing both takes both.
+    const program = S.buildProgram(penModel({
+      targets: ["Constitution"],
+      worn: [["Armor", "GIVER", [["Constitution", "Enhancement", 10]]],
+             ["Trinket", "COST1", [["Constitution", "Penalty", -2]]],
+             ["Ring", "COST2", [["Constitution", "Penalty", -2]]]],
+    }));
+    const xs = ["GIVER", "COST1", "COST2"].map((n) => xOf(program, n));
+    const zs = xs.flatMap((x) => zsForGate(program, x));
+    const prim = primOf(primalOf([...xs, ...zs]));
+    assert.strictEqual(S.rawTotalOf(program, prim, "Constitution"), 6,
+      "10 - 2 - 2; max-of-type would have reported 8 and dropped a penalty the player has");
+  });
+
+  await test("#614: a penalty is FORCED, so the objective cannot decline to pay it", async () => {
+    // The trap this issue was filed to prevent. Contributions are optional by
+    // construction, so a maximising objective sets a negative z to 0 unless a
+    // lower bound pins it — removing the `value > 0` gates alone changes nothing.
+    // Read off the encoded program rather than a hand-built primal, because the
+    // constraint either exists in the LP or it does not.
+    const program = S.buildProgram(penModel({
+      targets: ["Constitution"],
+      worn: [["Trinket", "COSTER", [["Constitution", "Penalty", -2]]]],
+    }));
+    const lp = S.encodeStage(program, { objectiveStat: "Constitution", sense: "max", locks: [] });
+    const x = xOf(program, "COSTER");
+    const z = zsForGate(program, x)[0];
+    assert.ok(lp.includes(`${z} - ${x} <= 0`), "the upper bound is still emitted");
+    assert.ok(lp.includes(`${z} - ${x} >= 0`),
+      "and the LOWER bound pins the penalty to its host — without this the solver "
+      + "equips the item and declines the cost");
+  });
+
+  await test("#614: a penalty bucket carries no max-of-type cap", async () => {
+    const program = S.buildProgram(penModel({
+      targets: ["Constitution"],
+      worn: [["Trinket", "COST1", [["Constitution", "Penalty", -2]]],
+             ["Ring", "COST2", [["Constitution", "Penalty", -2]]]],
+    }));
+    const lp = S.encodeStage(program, { objectiveStat: "Constitution", sense: "max", locks: [] });
+    const key = [...program.zByBucket.keys()].find((k) => k.startsWith("Constitution||"));
+    const zs = program.zByBucket.get(key).map((z) => z.name);
+    assert.strictEqual(zs.length, 2, "both penalties are their own contribution");
+    assert.ok(!lp.includes(`${zs.join(" + ")} <= 1`),
+      "the one-contributor cap must NOT be emitted for a penalty bucket");
+    assert.ok(program.penaltyKeys.has(key), "and the key is marked as such");
+  });
+
+  await test("#614: a positive bucket still collapses to max-of-type", async () => {
+    // The fix must not leak: penalties lose the cap, ordinary contributions keep it.
+    const program = S.buildProgram(penModel({
+      targets: ["Constitution"],
+      worn: [["Armor", "A", [["Constitution", "Enhancement", 10]]],
+             ["Trinket", "B", [["Constitution", "Enhancement", 6]]]],
+    }));
+    const lp = S.encodeStage(program, { objectiveStat: "Constitution", sense: "max", locks: [] });
+    const key = [...program.zByBucket.keys()].find((k) => k.startsWith("Constitution||Enhancement"));
+    const zs = program.zByBucket.get(key).map((z) => z.name);
+    assert.strictEqual(zs.length, 2);
+    assert.ok(lp.includes(`${zs.join(" + ")} <= 1`),
+      "two Enhancement sources still contend for one bucket");
+    assert.ok(!program.penaltyKeys.has(key));
+  });
+
   // #626 (craft placement) — a craft whose bucket already has a better EQUIPPED
   // source buys the player nothing, and was being recommended anyway. The cap
   // guard (#322) charged the placement its whole value when removing it actually

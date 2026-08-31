@@ -375,22 +375,24 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
     ? recNote(owned.mode, owned.augments, hasAugmentSlots(pick ? pick.idx : -1, maps),
         craftRowsFor(v, pick ? pick.idx : -1, maps).length > 0)
     : "";
-  // #614 — the unmodelled-penalty disclosure, in the same foot-note family.
-  // Two weights on purpose: a penalty on a RANKED stat means a number ON THIS
-  // CARD is wrong-high, which is warn-coloured and carries the ⚠; a penalty on an
-  // unranked stat corrects no displayed total and is muted. The sentence itself
-  // comes from projection.js so the card and every exporter print one spelling.
+  // #614 — the penalty note, in the same foot-note family.
+  //
+  // It used to carry two weights, warn-coloured when the penalty landed on a
+  // ranked stat, because back then the solver DISCARDED negatives and that total
+  // was wrong-high. It subtracts them now, so no number on this card is wrong and
+  // the warning weight is gone: one muted remark, so a player reading an item's
+  // upside is not surprised by its cost. The stat card shows the penalty as its
+  // own negative part; this is the at-a-glance version.
+  //
+  // The sentence comes from projection.js so the card and every exporter print
+  // one spelling.
   const penNote = (() => {
     if (!v || locked) return "";
-    const pens = Proj.itemPenalties(v);
-    if (!pens.length) return "";
-    const targets = (prioCtx && prioCtx.targets) || [];
-    const ranked = new Set(targets);
-    const hits = pens.some((p) => ranked.has(p.stat));
-    const txt = Proj.penaltyDisclosure(v, targets);
-    return `<div class="pd-note pd-rnote pd-penalty${hits ? " is-craft" : " muted"}"`
-      + ` title="The solver discards negative affixes, so this item was scored on its upside alone (#614)">`
-      + `<span class="pd-note-ico" aria-hidden="true">${hits ? "⚠" : "▽"}</span>`
+    if (!Proj.itemPenalties(v).length) return "";
+    const txt = Proj.penaltyDisclosure(v, (prioCtx && prioCtx.targets) || []);
+    return `<div class="pd-note pd-rnote pd-penalty muted"`
+      + ` title="This item's penalties are subtracted from the totals above (#614)">`
+      + `<span class="pd-note-ico" aria-hidden="true">▽</span>`
       + `<span>${esc(txt)}</span></div>`;
   })();
   const notes = `${reasonNote}${noDropNote}${penNote}${rec}${prio}`;
