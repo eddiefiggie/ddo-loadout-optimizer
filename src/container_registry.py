@@ -115,10 +115,11 @@ NON_CONTAINER_KINDS = (NOT_A_POOL, GRANTS_ALL)
 
 
 def _c(shape, expansions, verdict, reachable, note, *,
-       derived=False, host_marker=None, splits_options=False):
+       derived=False, host_marker=None, splits_options=False, expects_stations=()):
     return {"shape": shape, "expansions": tuple(expansions), "verdict": verdict,
             "reachable": reachable, "note": note, "derived": derived,
-            "host_marker": host_marker, "splits_options": splits_options}
+            "host_marker": host_marker, "splits_options": splits_options,
+            "expects_stations": tuple(expects_stations)}
 
 
 # Every single-pick choice-slot container in the dataset, with its audit verdict.
@@ -177,8 +178,22 @@ REGISTRY = {
         "exports a no-op. Converting was a builder change plus two pool filters.\n\n"
         "Still UNREACHABLE — no item carries `green_steel_slot` (#194) — so the host "
         "marker stays armed, now on the `reachable` branch: the first host that ships "
-        "asks for a re-audit against a real item instead of failing on the split.",
-        host_marker="green_steel_slot"),
+        "asks for a re-audit against a real item instead of failing on the split.\n\n"
+        "#653 — WHAT THIS POOL ACTUALLY IS. The `T*(Equipment)` menus are **Legendary "
+        "Green Steel** accessory recipes: every option records a Legendary Altar "
+        "(Invasion / Subjugation / Devastation) as its station. So the correct hosts "
+        "are the 48 ML-26 `Legendary Green Steel *` items in the roster, NOT the 47 "
+        "heroic ML-11/12 `Green Steel *` blanks — heroic Green Steel upgrades at the "
+        "non-Legendary altars of the same names and has no pool here. The container "
+        "name is kept for now because renaming it churns 34 files for a pool nobody "
+        "can reach; `expects_stations` is what holds the truth, and it is checked.\n\n"
+        "The three altars are also three TIERS, so single-pick is the wrong shape for "
+        "this system — a Legendary Green Steel accessory takes one effect per altar, "
+        "not one in total. Recorded, not fixed: it is inert, and fixing it properly "
+        "runs into the combinatorial set bonuses (Dominion / Opposition / "
+        "Ethereal-Material) that AGENTS.md lists as a non-goal.",
+        host_marker="green_steel_slot",
+        expects_stations=("Legendary Altar",)),
     "thunder_forged": _c(
         ATOMIC, (), VERIFIED_SAFE, False,
         "One record per craftable option carrying its own `affixes` list, tagged with "
@@ -189,8 +204,23 @@ REGISTRY = {
         "same time — a single quiet case is the one that survives review and ships "
         "the day a host appears.\n\n"
         "Still UNREACHABLE — no item carries `thunder_forged_tiers` (#194) — so the "
-        "host marker stays armed on the `reachable` branch.",
-        host_marker="thunder_forged_tiers"),
+        "host marker stays armed on the `reachable` branch.\n\n"
+        "#653 — THIS POOL IS NOT THUNDER-FORGED. The `T*(Weapon)` menus are "
+        "**Legendary Green Steel weapon** recipes: every option records a Legendary "
+        "Altar as its station, and the Legendary Green Steel wiki page lists exactly "
+        "this split in its own navigation ('Tier 3 Augment recipes (Weapon bonus "
+        "effects)'). Thunder-Forged is crafted at the Magma Forge in the Ruins of "
+        "Thunderholme, its tiers are ML 24/26/28, its spell-power effect is +144 "
+        "Equipment (ours reads 139), and it has NO menu in this 83-key catalog. The "
+        "mapping was an inference: the menu keys are generic and never named a "
+        "system.\n\n"
+        "So Thunder-Forged has no recipe data at all, and #194's premise — 'recipes "
+        "loaded, no craftable hosts' — is true only for Green Steel. DO NOT stamp "
+        "`thunder_forged_tiers` on the 42 `Thunder-Forged Alloy *` weapons in the "
+        "roster: they would be credited another system's effects. That is what "
+        "`expects_stations` now guards.",
+        host_marker="thunder_forged_tiers",
+        expects_stations=("Legendary Altar",)),
     "essence_crafting": _c(
         FLAT, (), VERIFIED_SAFE, True,
         "Essence Crafting Trinket menus, the Gem of Many Facets' three (#193/#599). "
@@ -521,6 +551,49 @@ def check(dataset: dict, source_options: dict) -> dict:
                 f"{name}: declared UNREACHABLE but now carries {len(records)} record(s). "
                 f"It was never audited against a real record. Audit it for the fan-out "
                 f"defect, then flip `reachable` to True.")
+
+        # --- #653: the pool's records must come from the crafting station this
+        # container claims. The menu keys in the gear-planner dump are GENERIC
+        # (`T1 (Weapon)`, `T2 (Equipment)`), so every mapping from a menu to a named
+        # system is an inference by whoever wrote the constant — and one of them was
+        # wrong for months. `THUNDER_FORGED_KEYS` claimed the `T*(Weapon)` menus,
+        # whose every option records a **Legendary Altar** as its station. Those are
+        # Legendary Green Steel weapon recipes. Thunder-Forged is crafted at the
+        # Magma Forge in Thunderholme, at ML 24/26/28, and has no menu in this
+        # catalog at all.
+        #
+        # It cost nothing only because both pools are inert. The moment #194's host
+        # surfacing stamped `thunder_forged_tiers` on the 42 `Thunder-Forged Alloy *`
+        # weapons in the roster, 42 real endgame weapons would have been credited
+        # another system's effects.
+        #
+        # Checked ALWAYS, not only when hosts exist: a mislabelled pool is wrong
+        # whether or not anything can reach it, and the whole point is to catch the
+        # relabelling before a host arrives rather than after.
+        expect = c["expects_stations"]
+        if expect:
+            seen_any = False
+            for idx, rec in enumerate(records):
+                if not isinstance(rec, dict):
+                    continue
+                stations = rec.get("source_stations")
+                if stations is None:
+                    continue   # a builder that does not carry provenance is judged elsewhere
+                seen_any = True
+                for st in stations:
+                    if not any(e in st for e in expect):
+                        problems.append(
+                            f"{name}[{idx}]: option is offered at {st!r}, which is not one of "
+                            f"the stations this container declares ({', '.join(expect)}). Either "
+                            f"upstream moved the menu, or this container is pointing at another "
+                            f"crafting system's recipes — the #653 defect. Do NOT rename the "
+                            f"declaration to match; establish which system the menu belongs to "
+                            f"first.")
+            if records and not seen_any:
+                problems.append(
+                    f"{name}: declares expected stations but no record carries "
+                    f"`source_stations`. The provenance stamp was dropped, so the check "
+                    f"passes vacuously — which is how the mislabelling survived before.")
 
         # --- host-keyed reachability. For a pool that is full but inert, record
         # count is the wrong trigger: it fired long ago and was spent. The live
