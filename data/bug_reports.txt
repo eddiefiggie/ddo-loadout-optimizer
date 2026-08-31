@@ -366,3 +366,31 @@ Stress-tested while validating, and NOT defects:
   redundant rather than silently credited. A set augment is placed exactly when it
   advances a ranked priority against the alternative use of its three augment slots.
   What the reporter wants is #539 (pin a named set), not a fix here.
+
+================================================================================
+2026-08-30 — user report (Xouk export: a ceiling below the achieved value)
+================================================================================
+
+Verbatim: "this attached loadout shows intelligence as 37/36 in the bar for
+intelligence within the priorities tab." (Xouk.json, ML 36 Gnome wizard, 43 ranked
+priorities, Intelligence at priority 1.)
+
+- #645 REPRODUCES from the export alone — no re-solve needed, because the snapshot
+  carries the census as plain JSON. The Intelligence row reads achieved 37, ceiling
+  36, allFilled true, and `Penalty` sits in its bonusTypes list beside Enhancement,
+  Insight, Quality, Artifact and the rest. Every positive bucket is full, so the
+  positive side sums to exactly 37; the missing point is one avoidable -1 curse the
+  build correctly declined, added into the ceiling as though a penalty were a
+  contribution competing for a bucket.
+
+  A regression from #614, and a narrow one: before penalties entered `zByBucket` the
+  census never saw a negative. `buildCeilingCensus` is deliberately ONE blind pass
+  over that map — a design choice made so a parallel notion of "the pool" could not
+  drift from the one the solve used — and the cost of that choice is that anything
+  new put into the map arrives in the census unannounced. The same line inflated
+  `unusedSources` (292 here) by counting refused curses as sources left on the table,
+  which is the gate the saturation notice fires on.
+
+  The fix keeps a WORN penalty in `achieved` and nowhere else: `achieved` is the
+  number the card's headline shows, so dropping it there would have traded one
+  self-contradicting card for another.

@@ -2251,6 +2251,17 @@
     if (!row) return null;
     const achieved = row.achieved || 0;
     const ceilingUpperBound = row.ceiling || 0;
+    // #645 — an INVERTED row is not renderable. A ceiling below the achieved
+    // value contradicts KTD2's whole premise, and every sentence below would be
+    // built on it: `maxed` goes false, so the card states a shortfall against a
+    // number smaller than the one printed beside it. A live solve cannot produce
+    // this (a bucket's taken never exceeds its best, and worn penalties only
+    // lower the numerator) — but a SAVED one can, because ceilingReport is
+    // persisted JSON and a restored character is never re-solved (KTD6). Builds
+    // saved before the penalty fix carry it permanently: the report that found
+    // this shipped a snapshot reading 37 / 36. Returning null routes the card to
+    // the legacy chip, which is the same path a pre-#449 restore already takes.
+    if (achieved > ceilingUpperBound) return null;
     const capped = (result && result.capped) || {};
     const cap = capped[stat] != null ? capped[stat] : null;
     // Both sides are already clamped, so `achieved === cap` IS "the cap is the

@@ -3271,6 +3271,7 @@ function buildEmptySlotReport(model, sol) {
 function buildCeilingCensus(program, prim) {
   const zByBucket = (program && program.zByBucket) || new Map();
   const forcedOff = (program && program.forcedOffVars) || new Set();
+  const penaltyBuckets = (program && program.penaltyKeys) || new Set();
   const reachable = (z) => !(z.gates || []).some((g) => forcedOff.has(g));
   const out = [];
 
@@ -3286,6 +3287,29 @@ function buildCeilingCensus(program, prim) {
       if (!bucketCountsFor(key, stat)) continue;
       const live = zs.filter(reachable);
       if (!live.length) continue;
+
+      // #645 — a PENALTY bucket contributes to `total` and to NOTHING
+      // else. Every other line in this loop assumes a bucket is an opportunity,
+      // and all three assumptions invert on a negative:
+      //   `ceiling += best` would SUBTRACT the least-bad penalty from an upper
+      //     bound, and an upper bound below the achieved value is not one. This
+      //     shipped: a build reading 37 Intelligence against a ceiling of 36,
+      //     because one avoidable -1 curse sat in the pool.
+      //   `unusedSources` would count a curse the solver correctly declined as a
+      //     source left on the table, inflating the saturation notice's headroom
+      //     with gear no player wants.
+      //   `bonusTypes` would list "Penalty" among a stat's bonus types, and
+      //     `bonusTypes.length > 0` is this census's sawBucket flag, so a stat
+      //     whose ONLY bucket is a penalty would report as a real row.
+      // `total` is the exception because it is the achieved value, and a worn
+      // penalty IS achieved — dropping it here would put the card's numerator
+      // out of step with the headline the player reads beside it.
+      // Summed, not assigned: penalty buckets carry no `Sigma z <= 1` (they are
+      // forced ON with their host, #614), so several can be live at once.
+      if (penaltyBuckets.has(key)) {
+        for (const z of live) if (prim(z.name) > 0.5) total += z.value;
+        continue;
+      }
 
       let best = -Infinity, taken = 0;
       for (const z of live) {
