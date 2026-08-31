@@ -336,7 +336,7 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // were RENAMED rather than added, so the delta is the two new components and nothing
   // else — which is the check that the alias widened the match without widening the
   // rewrite.
-  assert.strictEqual(total, 42699, "post-normalize pool size");
+  assert.strictEqual(total, 42820, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -369,7 +369,15 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // an expansion and LOST eligibility; here a presence became a magnitude and GAINED
   // it. A retype that did not move this number would mean the affix never reached the
   // eligible predicate at all.
-  assert.strictEqual(eligible, 20646, "engraved, eligible affixes");
+  // 20,750 not 20,646 since #631: PLUS 104, from 81 Epic (ML 20) Lunar/Solar gems
+  // the upstream crafting dump does not carry. They bring 121 affixes; 104 are
+  // override-eligible and 17 are not, and the 17 are the interesting half — they
+  // are EXPANSIONS (`Spell DCs` fans into seven school Focuses, `Spellpower` into
+  // its element siblings), which carry `via` and are ineligible by rule 5 like any
+  // generated component. So the split is itself a check that the umbrella
+  // machinery picked the new gems up exactly as it does their Heroic siblings; a
+  // clean +121 here would have meant the expansions never fired.
+  assert.strictEqual(eligible, 20750, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -385,7 +393,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // the eighth is `Staff of the Petitioner`, a weapon. No augment carries the affix,
   // so `augment` must not move, and it does not. Had the delta landed anywhere else,
   // the retype would have reached records other than the eight it names.
-  assert.deepStrictEqual(byCat, { item: 13618, weapon: 6114, augment: 914 });
+  // augment 1,018 since #631: +104, with `item` and `weapon` UNCHANGED — the
+  // independent cross-check. Every record the tier-gap shard adds is an augment, so
+  // the whole delta must land in one category, and it does.
+  assert.deepStrictEqual(byCat, { item: 13618, weapon: 6114, augment: 1018 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {

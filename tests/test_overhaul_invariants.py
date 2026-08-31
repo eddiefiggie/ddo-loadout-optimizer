@@ -63,7 +63,27 @@ def test_no_legacy_affix_keys_at_rest():
     #
     # The Oozing Hunger renames are a rename, not a loss: every Legendary tier of
     # that family was already in the roster before the refresh.
-    assert len(items) == 9110, f"expected 9110 items, saw {len(items)}"
+    # #631 — re-ratified 9110 -> 9191. PLUS 81, and every one is an Epic (ML 20)
+    # Lunar/Solar gem the upstream crafting dump does not carry: the wiki lists 103
+    # gem families at three tiers, upstream had 103 Heroic, 103 Legendary and 17
+    # Epic, and current upstream master carries the same 17 — so this is a hole, not
+    # a stale snapshot. Unlike the #374 delta above, NOTHING moved upstream; the
+    # roster is unchanged at 8,036 and the whole gain is the tier-gap shard.
+    #
+    # 81 rather than 86: three families have no Epic tier on the wiki at all
+    # (Lunar Accuracy, Lunar Natural Armor, Solar Enduring), `Solar Gem of Arcana`
+    # has no upstream record at any tier to derive a shape from, and `Lunar Gem of
+    # Weapon Damage` is deliberately excluded — its Heroic value disagrees with the
+    # wiki, so it failed the cross-check that validates every other Epic value.
+    assert len(items) == 9191, f"expected 9191 items, saw {len(items)}"
+    gems = [it for it in items
+            if "(Epic)" in (it.get("source_item") or "")
+            and (it.get("source_item", "").startswith("Lunar Gem")
+                 or it.get("source_item", "").startswith("Solar Gem"))]
+    assert len(gems) == 98, (
+        f"expected 98 Epic Lunar/Solar gems (17 upstream + 81 from the tier-gap "
+        f"shard), saw {len(gems)} — a coincidental count from an unrelated cause "
+        "would satisfy the total alone.")
     # the +2 is those 26 items and nothing else — a coincidental +2 from an
     # unrelated cause would satisfy the count alone.
     by_name = {it.get("source_item") for it in items}

@@ -1,0 +1,2287 @@
+{
+ "_README": "#631 — Epic (ML 20) Lunar/Solar gems the upstream gear-planner crafting dump does not carry. ADDITIVE ONLY: an entry whose name already exists in the pool is a build failure, never a silent overwrite — this shard may not correct upstream, only fill a hole it leaves.",
+ "_why": "The wiki's Lunar Gem page lists 103 gem families at three tiers; upstream carries 103 Heroic and 103 Legendary but only 17 Epic, and current master (checked 2026-08-30) still carries 17. So a refresh does not fix it. Epic gems arrived with Update 73 (Tavern Tales) per the wiki; upstream appears simply not to have scraped that tier.",
+ "_method": "The VALUE comes from the wiki's Epic column. The affix NAMES and BONUS TYPES come from our own shipped Heroic record for the same gem, NOT from the wiki row — the row's type text proved unreliable (it reads 'Profane' where the ruled type is 'Profane Natural', and mis-assigns across adjacent rows), while the (affix, type) shape is constant across tiers for all 103 bases, measured. Parse validated against the 204 shipped Heroic/Legendary records: 203 matched exactly.",
+ "_stale_guard": "Each entry records the sibling record it was derived from. The build FAILS when that sibling's affixes no longer match, rather than pinning a derived Epic value over a source that moved.",
+ "_excluded": {
+  "Lunar Gem of Weapon Damage": "the wiki's Heroic value (2) disagrees with the shipped Heroic record (Deadly Profane 1), so this gem's row failed the cross-check that validates every other Epic value. Its Epic value is therefore unverified and the gem is deliberately NOT added. Resolve the Heroic discrepancy first."
+ },
+ "count": 81,
+ "additions": [
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Abjuration (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Abjuration Focus",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Abjuration (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Abjuration Focus",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Balance and Tumble (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Balance",
+     "type": "Profane",
+     "value": "4"
+    },
+    {
+     "name": "Tumble",
+     "type": "Profane",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Balance and Tumble (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Balance",
+      "type": "Profane",
+      "value": "2"
+     },
+     {
+      "name": "Tumble",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Blast Dice (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Eldritch Blast Dice",
+     "type": "Profane",
+     "value": "2"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Blast Dice (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Eldritch Blast Dice",
+      "type": "Profane",
+      "value": "1"
+     }
+    ],
+    "wiki_heroic_value": "1"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Charisma (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Charisma",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Charisma (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Charisma",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Conjuration (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Conjuration Focus",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Conjuration (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Conjuration Focus",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Constitution (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Constitution",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Constitution (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Constitution",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Dexterity (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Dexterity",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Dexterity (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Dexterity",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Disable Device and Open Lock (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Disable Device",
+     "type": "Profane",
+     "value": "4"
+    },
+    {
+     "name": "Open Lock",
+     "type": "Profane",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Disable Device and Open Lock (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Disable Device",
+      "type": "Profane",
+      "value": "2"
+     },
+     {
+      "name": "Open Lock",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Enchantment (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Enchantment Focus",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Enchantment (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Enchantment Focus",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Evocation (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Evocation Focus",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Evocation (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Evocation Focus",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Haggle and Perform (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Haggle",
+     "type": "Profane",
+     "value": "4"
+    },
+    {
+     "name": "Perform",
+     "type": "Profane",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Haggle and Perform (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Haggle",
+      "type": "Profane",
+      "value": "2"
+     },
+     {
+      "name": "Perform",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Heal and Listen (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Heal",
+     "type": "Profane",
+     "value": "4"
+    },
+    {
+     "name": "Listen",
+     "type": "Profane",
+     "value": "4"
+    },
+    {
+     "name": "Concentration",
+     "type": "Profane",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Heal and Listen (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Heal",
+      "type": "Profane",
+      "value": "2"
+     },
+     {
+      "name": "Listen",
+      "type": "Profane",
+      "value": "2"
+     },
+     {
+      "name": "Concentration",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Healing Amplification (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Healing Amplification",
+     "type": "Profane",
+     "value": "20"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Healing Amplification (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Healing Amplification",
+      "type": "Profane",
+      "value": "10"
+     }
+    ],
+    "wiki_heroic_value": "10"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Hide and Move Silently (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Hide",
+     "type": "Profane",
+     "value": "4"
+    },
+    {
+     "name": "Move Silently",
+     "type": "Profane",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Hide and Move Silently (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Hide",
+      "type": "Profane",
+      "value": "2"
+     },
+     {
+      "name": "Move Silently",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Illusion (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Illusion Focus",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Illusion (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Illusion Focus",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Intelligence (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Intelligence",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Intelligence (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Intelligence",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Jump and Swim (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Jump",
+     "type": "Profane",
+     "value": "4"
+    },
+    {
+     "name": "Swim",
+     "type": "Profane",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Jump and Swim (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Jump",
+      "type": "Profane",
+      "value": "2"
+     },
+     {
+      "name": "Swim",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Linguistics (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Diplomacy",
+     "type": "Profane",
+     "value": "4"
+    },
+    {
+     "name": "Intimidate",
+     "type": "Profane",
+     "value": "4"
+    },
+    {
+     "name": "Bluff",
+     "type": "Profane",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Linguistics (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Diplomacy",
+      "type": "Profane",
+      "value": "2"
+     },
+     {
+      "name": "Intimidate",
+      "type": "Profane",
+      "value": "2"
+     },
+     {
+      "name": "Bluff",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Melee Power (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Melee Power",
+     "type": "Profane",
+     "value": "10"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Melee Power (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Melee Power",
+      "type": "Profane",
+      "value": "5"
+     }
+    ],
+    "wiki_heroic_value": "5"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Necromancy (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Necromancy Focus",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Necromancy (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Necromancy Focus",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Negative Amplification (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Negative Amplification",
+     "type": "Enhancement",
+     "value": "20"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Negative Amplification (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Negative Amplification",
+      "type": "Enhancement",
+      "value": "10"
+     }
+    ],
+    "wiki_heroic_value": "10"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Pact Dice (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Power in Pact",
+     "type": "Profane",
+     "value": "2"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Pact Dice (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Power in Pact",
+      "type": "Profane",
+      "value": "1"
+     }
+    ],
+    "wiki_heroic_value": "1"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Physical Protection (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Physical Sheltering",
+     "type": "Profane",
+     "value": "20"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Physical Protection (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Physical Sheltering",
+      "type": "Profane",
+      "value": "10"
+     }
+    ],
+    "wiki_heroic_value": "10"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Ranged Power (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Ranged Power",
+     "type": "Profane",
+     "value": "10"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Ranged Power (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Ranged Power",
+      "type": "Profane",
+      "value": "5"
+     }
+    ],
+    "wiki_heroic_value": "5"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Repair Amplification (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Repair Amplification",
+     "type": "Profane",
+     "value": "20"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Repair Amplification (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Repair Amplification",
+      "type": "Profane",
+      "value": "10"
+     }
+    ],
+    "wiki_heroic_value": "10"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Repair and Use Magic Device (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Repair",
+     "type": "Profane",
+     "value": "4"
+    },
+    {
+     "name": "Use Magic Device",
+     "type": "Profane",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Repair and Use Magic Device (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Repair",
+      "type": "Profane",
+      "value": "2"
+     },
+     {
+      "name": "Use Magic Device",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Search and Spot (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Search",
+     "type": "Profane",
+     "value": "4"
+    },
+    {
+     "name": "Spot",
+     "type": "Profane",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Search and Spot (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Search",
+      "type": "Profane",
+      "value": "2"
+     },
+     {
+      "name": "Spot",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Strength (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Strength",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Strength (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Strength",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Swift Charging (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Rune Arm Charge Rate",
+     "type": "Profane",
+     "value": "10"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Swift Charging (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Rune Arm Charge Rate",
+      "type": "Profane",
+      "value": "5"
+     }
+    ],
+    "wiki_heroic_value": "5"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Transmutation (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Transmutation Focus",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Transmutation (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Transmutation Focus",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Moon Augment Slot",
+   "name": "Lunar Gem of Wisdom (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Wisdom",
+     "type": "Profane",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Lunar Gem of Wisdom (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Wisdom",
+      "type": "Profane",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Abjuration (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Abjuration Focus",
+     "type": "Artifact",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Abjuration (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Abjuration Focus",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Alignment Absorption (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Alignment Absorption",
+     "type": "Artifact",
+     "value": "6"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Alignment Absorption (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Alignment Absorption",
+      "type": "Artifact",
+      "value": "3"
+     }
+    ],
+    "wiki_heroic_value": "3"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Arcane Endurance (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Maximum Spell Points (%)",
+     "type": "Legendary",
+     "value": "6"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Arcane Endurance (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Maximum Spell Points (%)",
+      "type": "Legendary",
+      "value": "3"
+     }
+    ],
+    "wiki_heroic_value": "3"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Armor Layers (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Armor Class (%)",
+     "type": "Artifact",
+     "value": "10"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Armor Layers (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Armor Class (%)",
+      "type": "Artifact",
+      "value": "5"
+     }
+    ],
+    "wiki_heroic_value": "5"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Assassination (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Assassinate",
+     "type": "Artifact",
+     "value": "2"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Assassination (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Assassinate",
+      "type": "Artifact",
+      "value": "1"
+     }
+    ],
+    "wiki_heroic_value": "1"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Attack (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Accuracy",
+     "type": "Artifact",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Attack (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Accuracy",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Balance and Tumble (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Balance",
+     "type": "Artifact",
+     "value": "4"
+    },
+    {
+     "name": "Tumble",
+     "type": "Artifact",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Balance and Tumble (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Balance",
+      "type": "Artifact",
+      "value": "2"
+     },
+     {
+      "name": "Tumble",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Blast Dice (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Eldritch Blast Dice",
+     "type": "Artifact",
+     "value": "2"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Blast Dice (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Eldritch Blast Dice",
+      "type": "Artifact",
+      "value": "1"
+     }
+    ],
+    "wiki_heroic_value": "1"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Conjuration (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Conjuration Focus",
+     "type": "Artifact",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Conjuration (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Conjuration Focus",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Critical Confirmation (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Seeker",
+     "type": "Artifact",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Critical Confirmation (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Seeker",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Cruelty (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Damage vs. the Helpless",
+     "type": "Artifact",
+     "value": "10"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Cruelty (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Damage vs. the Helpless",
+      "type": "Artifact",
+      "value": "5"
+     }
+    ],
+    "wiki_heroic_value": "5"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Damage (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Deadly",
+     "type": "Artifact",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Damage (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Deadly",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Disable Device and Open Lock (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Disable Device",
+     "type": "Artifact",
+     "value": "4"
+    },
+    {
+     "name": "Open Lock",
+     "type": "Artifact",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Disable Device and Open Lock (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Disable Device",
+      "type": "Artifact",
+      "value": "2"
+     },
+     {
+      "name": "Open Lock",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Dodge Cap (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Dodge Cap",
+     "type": "Legendary",
+     "value": "2"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Dodge Cap (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Dodge Cap",
+      "type": "Legendary",
+      "value": "1"
+     }
+    ],
+    "wiki_heroic_value": "1"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Doubleshot (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Doubleshot",
+     "type": "Artifact",
+     "value": "10"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Doubleshot (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Doubleshot",
+      "type": "Artifact",
+      "value": "5"
+     }
+    ],
+    "wiki_heroic_value": "5"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Elemental Absorption (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Fire Absorption",
+     "type": "Artifact",
+     "value": "6"
+    },
+    {
+     "name": "Cold Absorption",
+     "type": "Artifact",
+     "value": "6"
+    },
+    {
+     "name": "Electric Absorption",
+     "type": "Artifact",
+     "value": "6"
+    },
+    {
+     "name": "Acid Absorption",
+     "type": "Artifact",
+     "value": "6"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Elemental Absorption (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Fire Absorption",
+      "type": "Artifact",
+      "value": "3"
+     },
+     {
+      "name": "Cold Absorption",
+      "type": "Artifact",
+      "value": "3"
+     },
+     {
+      "name": "Electric Absorption",
+      "type": "Artifact",
+      "value": "3"
+     },
+     {
+      "name": "Acid Absorption",
+      "type": "Artifact",
+      "value": "3"
+     }
+    ],
+    "wiki_heroic_value": "3"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Enchantment (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Enchantment Focus",
+     "type": "Artifact",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Enchantment (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Enchantment Focus",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Evocation (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Evocation Focus",
+     "type": "Artifact",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Evocation (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Evocation Focus",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Force Absorption (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Force Absorption",
+     "type": "Artifact",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Force Absorption (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Force Absorption",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Fortitude (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Fortitude Save",
+     "type": "Artifact",
+     "value": "2"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Fortitude (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Fortitude Save",
+      "type": "Artifact",
+      "value": "1"
+     }
+    ],
+    "wiki_heroic_value": "1"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Haggle and Perform (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Haggle",
+     "type": "Artifact",
+     "value": "4"
+    },
+    {
+     "name": "Perform",
+     "type": "Artifact",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Haggle and Perform (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Haggle",
+      "type": "Artifact",
+      "value": "2"
+     },
+     {
+      "name": "Perform",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Healing Amplification (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Healing Amplification",
+     "type": "Artifact",
+     "value": "20"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Healing Amplification (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Healing Amplification",
+      "type": "Artifact",
+      "value": "10"
+     }
+    ],
+    "wiki_heroic_value": "10"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Hide and Move Silently (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Hide",
+     "type": "Artifact",
+     "value": "4"
+    },
+    {
+     "name": "Move Silently",
+     "type": "Artifact",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Hide and Move Silently (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Hide",
+      "type": "Artifact",
+      "value": "2"
+     },
+     {
+      "name": "Move Silently",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Illusion (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Illusion Focus",
+     "type": "Artifact",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Illusion (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Illusion Focus",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Jump and Swim (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Jump",
+     "type": "Artifact",
+     "value": "4"
+    },
+    {
+     "name": "Swim",
+     "type": "Artifact",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Jump and Swim (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Jump",
+      "type": "Artifact",
+      "value": "2"
+     },
+     {
+      "name": "Swim",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Linguistics (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Diplomacy",
+     "type": "Artifact",
+     "value": "4"
+    },
+    {
+     "name": "Intimidate",
+     "type": "Artifact",
+     "value": "4"
+    },
+    {
+     "name": "Bluff",
+     "type": "Artifact",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Linguistics (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Diplomacy",
+      "type": "Artifact",
+      "value": "2"
+     },
+     {
+      "name": "Intimidate",
+      "type": "Artifact",
+      "value": "2"
+     },
+     {
+      "name": "Bluff",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of MRR Cap (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Magical Sheltering Cap",
+     "type": "Artifact",
+     "value": "20"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of MRR Cap (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Magical Sheltering Cap",
+      "type": "Artifact",
+      "value": "10"
+     }
+    ],
+    "wiki_heroic_value": "10"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Magical Resistance Rating (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Magical Sheltering",
+     "type": "Artifact",
+     "value": "20"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Magical Resistance Rating (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Magical Sheltering",
+      "type": "Artifact",
+      "value": "10"
+     }
+    ],
+    "wiki_heroic_value": "10"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Melee Power (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Melee Power",
+     "type": "Artifact",
+     "value": "10"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Melee Power (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Melee Power",
+      "type": "Artifact",
+      "value": "5"
+     }
+    ],
+    "wiki_heroic_value": "5"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Missile Deflection (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Missile Deflection",
+     "type": "Artifact",
+     "value": "6"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Missile Deflection (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Missile Deflection",
+      "type": "Artifact",
+      "value": "3"
+     }
+    ],
+    "wiki_heroic_value": "3"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Necromancy (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Necromancy Focus",
+     "type": "Artifact",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Necromancy (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Necromancy Focus",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Negative Amplification (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Negative Amplification",
+     "type": "Artifact",
+     "value": "20"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Negative Amplification (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Negative Amplification",
+      "type": "Artifact",
+      "value": "10"
+     }
+    ],
+    "wiki_heroic_value": "10"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Pact Dice (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Power in Pact",
+     "type": "Artifact",
+     "value": "2"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Pact Dice (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Power in Pact",
+      "type": "Artifact",
+      "value": "1"
+     }
+    ],
+    "wiki_heroic_value": "1"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Physical Resistance Rating (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Physical Sheltering",
+     "type": "Artifact",
+     "value": "20"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Physical Resistance Rating (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Physical Sheltering",
+      "type": "Artifact",
+      "value": "10"
+     }
+    ],
+    "wiki_heroic_value": "10"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Ranged Power (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Ranged Power",
+     "type": "Artifact",
+     "value": "10"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Ranged Power (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Ranged Power",
+      "type": "Artifact",
+      "value": "5"
+     }
+    ],
+    "wiki_heroic_value": "5"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Repair Amplification (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Repair Amplification",
+     "type": "Artifact",
+     "value": "20"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Repair Amplification (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Repair Amplification",
+      "type": "Artifact",
+      "value": "10"
+     }
+    ],
+    "wiki_heroic_value": "10"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Repair and Use Magic Device (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Repair",
+     "type": "Artifact",
+     "value": "4"
+    },
+    {
+     "name": "Use Magic Device",
+     "type": "Artifact",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Repair and Use Magic Device (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Repair",
+      "type": "Artifact",
+      "value": "2"
+     },
+     {
+      "name": "Use Magic Device",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Rune Arm DCs (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Rune Arm DCs",
+     "type": "Artifact",
+     "value": "2"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Rune Arm DCs (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Rune Arm DCs",
+      "type": "Artifact",
+      "value": "1"
+     }
+    ],
+    "wiki_heroic_value": "1"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Search and Spot (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Search",
+     "type": "Artifact",
+     "value": "4"
+    },
+    {
+     "name": "Spot",
+     "type": "Artifact",
+     "value": "4"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Search and Spot (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Search",
+      "type": "Artifact",
+      "value": "2"
+     },
+     {
+      "name": "Spot",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Sneak Attack Damage (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Sneak Attack Damage",
+     "type": "Artifact",
+     "value": "2"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Sneak Attack Damage (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Sneak Attack Damage",
+      "type": "Artifact",
+      "value": "1"
+     }
+    ],
+    "wiki_heroic_value": "1"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Sneak Attack Dice (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Sneak Attack Dice",
+     "type": "Artifact",
+     "value": "2"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Sneak Attack Dice (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Sneak Attack Dice",
+      "type": "Artifact",
+      "value": "1"
+     }
+    ],
+    "wiki_heroic_value": "1"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Spell Critical Damage (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Spell Intensity",
+     "type": "Legendary",
+     "value": "10"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Spell Critical Damage (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Spell Intensity",
+      "type": "Legendary",
+      "value": "5"
+     }
+    ],
+    "wiki_heroic_value": "5"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Spell DCs (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Spell Focus Mastery",
+     "type": "Artifact",
+     "value": "2"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Spell DCs (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Spell Focus Mastery",
+      "type": "Artifact",
+      "value": "1"
+     }
+    ],
+    "wiki_heroic_value": "1"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Spell Penetration (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Spell Penetration",
+     "type": "Artifact",
+     "value": "6"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Spell Penetration (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Spell Penetration",
+      "type": "Artifact",
+      "value": "3"
+     }
+    ],
+    "wiki_heroic_value": "3"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Spellpower (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Potency",
+     "type": "Artifact",
+     "value": "20"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Spellpower (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Potency",
+      "type": "Artifact",
+      "value": "15"
+     }
+    ],
+    "wiki_heroic_value": "15"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Swift Charging (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Rune Arm Charge Rate",
+     "type": "Artifact",
+     "value": "10"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Swift Charging (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Rune Arm Charge Rate",
+      "type": "Artifact",
+      "value": "5"
+     }
+    ],
+    "wiki_heroic_value": "5"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Threat Decrease (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Diversion",
+     "type": "Artifact",
+     "value": "15"
+    },
+    {
+     "name": "Distant Diversion",
+     "type": "Artifact",
+     "value": "15"
+    },
+    {
+     "name": "Mystic Diversion",
+     "type": "Artifact",
+     "value": "15"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Threat Decrease (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Diversion",
+      "type": "Artifact",
+      "value": "10"
+     },
+     {
+      "name": "Distant Diversion",
+      "type": "Artifact",
+      "value": "10"
+     },
+     {
+      "name": "Mystic Diversion",
+      "type": "Artifact",
+      "value": "10"
+     }
+    ],
+    "wiki_heroic_value": "10"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Threat Increase (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Incite",
+     "type": "Artifact",
+     "value": "75"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Threat Increase (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Incite",
+      "type": "Artifact",
+      "value": "50"
+     }
+    ],
+    "wiki_heroic_value": "50"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Transmutation (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Transmutation Focus",
+     "type": "Artifact",
+     "value": "3"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Transmutation (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Transmutation Focus",
+      "type": "Artifact",
+      "value": "2"
+     }
+    ],
+    "wiki_heroic_value": "2"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Will (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Will Save",
+     "type": "Artifact",
+     "value": "2"
+    }
+   ],
+   "derived_from": {
+    "sibling": "Solar Gem of Will (Heroic)",
+    "sibling_affixes": [
+     {
+      "name": "Will Save",
+      "type": "Artifact",
+      "value": "1"
+     }
+    ],
+    "wiki_heroic_value": "1"
+   },
+   "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
+   "verified": "2026-08-30"
+  }
+ ]
+}

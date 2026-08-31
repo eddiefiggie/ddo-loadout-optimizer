@@ -39,12 +39,21 @@ class CraftingCatalogError(KeyError):
 
 
 def load_catalog(path: str = CRAFTING_PATH) -> dict:
-    """Load the native crafting catalog (the 83-key dict)."""
+    """Load the native crafting catalog (the 83-key dict).
+
+    #631 — the augment tier-gap shard is merged HERE rather than at a call site,
+    because there are two: the main build and the referential-integrity check that
+    validates every augment name against the frozen registry. Applying it at one
+    would have left the other inspecting a different catalog, which is the shape of
+    bug that takes a day to find. One seam, so no consumer can see a partial view.
+    """
     with open(path, encoding="utf-8") as fh:
         data = json.load(fh)
     if not isinstance(data, dict):
         raise CraftingCatalogError(
             f"crafting catalog at {path!r} is {type(data).__name__}, expected a dict of pools")
+    from src import augment_tier_gap
+    augment_tier_gap.apply(data, augment_tier_gap.load())
     return data
 
 
