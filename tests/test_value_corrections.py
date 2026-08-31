@@ -162,18 +162,25 @@ def _retyped_to(item, affix):
     return None
 
 
-#: #619 — the eight {{Power Store}} carriers, the only live corrections in this
-#: shard. Pinned by name rather than by count so a stray entry fails here instead
-#: of riding in behind a bumped number.
+#: The live corrections in this shard, pinned by NAME rather than by count so a
+#: stray entry fails here instead of riding in behind a bumped number. It has
+#: already caught one arrival it was meant to (#632's three items).
+#:
+#: #619 — the eight {{Power Store}} carriers.
 LIVE_619 = {
     "Cormyrian Green Dragonhide Armor", "Cormyrian Green Dragonplate Armor",
     "Cormyrian Green Dragonscale Armor", "Cormyrian Green Dragonscale Docent",
     "Cormyrian Green Dragonscale Robe", "Green Dragonscale Bracers",
     "Legendary Green Dragonscale Bracers", "Staff of the Petitioner",
 }
+#: #632 — the three carriers whose unconsciousness-range magnitude was Bool-flattened.
+#: `Weighty Asset` (+100) and `Holding On` (+40) are stated on the wiki's Unconscious
+#: page, which also groups them with `Undying` as one stat — hence the merge.
+LIVE_632 = {"Stone Shoes", "Legendary Stone Shoes", "Ward Token"}
+LIVE = LIVE_619 | LIVE_632
 
 
-def test_the_only_live_corrections_are_619_and_the_retirement_is_on_the_record():
+def test_the_only_live_corrections_are_declared_and_the_retirement_is_on_the_record():
     """The #288 payload is still retired; the shard is no longer empty.
 
     It WAS empty, and this test asserted exactly that. #619 landed the first live
@@ -186,9 +193,9 @@ def test_the_only_live_corrections_are_619_and_the_retirement_is_on_the_record()
     reappearing — while admitting the one that has its evidence recorded.
     """
     live = set(value_corrections.load(SHARD))
-    assert live == LIVE_619, (
-        f"unexpected live correction(s): {sorted(live - LIVE_619)}; "
-        f"missing: {sorted(LIVE_619 - live)}. A live correction needs its own "
+    assert live == LIVE, (
+        f"unexpected live correction(s): {sorted(live - LIVE)}; "
+        f"missing: {sorted(LIVE - live)}. A live correction needs its own "
         "wiki evidence and its own entry in this set, not a silent arrival.")
     block = _retired()
     assert (block.get("why") or "").strip(), "a retirement with no stated reason"
@@ -214,7 +221,9 @@ def test_the_shipped_shard_carries_its_wiki_evidence():
             assert str(e["to"]) in e["tooltip"], (
                 f"{item}: the corrected value {e['to']!r} does not appear in the "
                 f"recorded tooltip — the evidence does not support the number")
-    assert seen == 25, seen   # 17 retired (#288) + 8 live (#619)
+    # #632 — 28: 17 retired (#288) + 8 live (#619) + 3 live (#632, the two Stone
+    # Shoes and Ward Token, whose Bool-flattened magnitudes the Unconscious page states).
+    assert seen == 28, seen
 
 
 def test_a_retired_correction_is_one_upstream_actually_adopted():

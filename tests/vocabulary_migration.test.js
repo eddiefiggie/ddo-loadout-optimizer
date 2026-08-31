@@ -106,9 +106,19 @@ const carriersOf = (name) => CHANNEL_INDEX.get(name) || [];
 
 test("#374: the correction roster is the declaration, and every entry is armed", () => {
   assert.ok(CORRECTIONS.length > 0, "the declaration carries entries");
-  assert.strictEqual(CORRECTIONS.length, 13,
-    "13 armed variants — U4 stripped every pending_upstream marker, so a 14th " +
-    "entry (or a retired one) needs its own assertion here, not a silent pass");
+  // #632 — 15, not 13. The two additions are a different KIND of correction and
+  // are declared as such: `Weighty Asset` and `Holding On` are not upstream
+  // misspellings of our canon, they are separate enchantments the wiki says grant
+  // ONE stat ("Extending unconsciousness range"), merged into `Undying` so they
+  // share its bucket instead of summing beside it. They carry
+  // `merge_into_existing` and cite the page; the ordinary #374 entries carry
+  // neither. A 16th entry still needs its own line here rather than a silent pass.
+  assert.strictEqual(CORRECTIONS.length, 15,
+    "15 armed variants — 13 upstream-spelling corrections (#374) plus the two " +
+    "evidence-bound merges (#632); a new entry needs its own assertion, not a bump");
+  assert.strictEqual(CORRECTIONS.filter((c) => c.merge_into_existing).length, 2,
+    "exactly two entries are merges, and a merge must cite the wiki page that " +
+    "says the two names are one stat");
   for (const c of CORRECTIONS) {
     assert.ok(!c.pending_upstream,
       `${c.source_name} still carries a pending_upstream marker — it is not armed`);
@@ -298,7 +308,11 @@ test("#380/#235: the untyped predicate reads upstream's literal `Untyped`", () =
 test("#374: saved priorities in OUR canon still resolve through the load path", () => {
   // A character saved before the refresh ranks `Combustion`. Loading it must
   // pass the name through untouched — not substitute it, not drop it.
-  const canon = CORRECTIONS.map((c) => creditedAs(c.canonical_name));
+  // #632 — DEDUPED. Two entries now share one canonical (`Weighty Asset` and
+  // `Holding On` both merge into `Undying`), and a saved priority list holds each
+  // stat once. Comparing against a list with `Undying` twice would fail on the
+  // load path's correct de-duplication rather than on anything about migration.
+  const canon = [...new Set(CORRECTIONS.map((c) => creditedAs(c.canonical_name)))];
   const { priorities, substitutions } = migratePriorities(canon, vocab);
   assert.deepStrictEqual(priorities, canon, "every canon name survives the load path verbatim");
   assert.deepStrictEqual(substitutions, [], "and none of them is redirected away");

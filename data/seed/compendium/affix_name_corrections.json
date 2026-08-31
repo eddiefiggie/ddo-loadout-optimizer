@@ -132,6 +132,26 @@
    "channel": "sets (one occurrence today); becomes the whole family's channel once U4's refresh consolidates upstream's spellings",
    "evidence": "docs/wiki-evidence/helpless-damage.md (#305): the ddowiki Helpless hub page lists every gear source of the ONE percent-extra-damage-vs-helpless mechanic in a single table, and the canonical spelling is the one carried natively by the Solar Gem of Cruelty affixes. Upstream consolidates the eleven spellings onto this one variant in the refreshed snapshot, which takes our canonical to zero occurrences in raw.",
    "reason": "#374 — the same canon-defence shape as the ten spell-power/lore flips, but a family consolidation rather than a vocabulary generalization. The #305 local_affix_synonyms folds stay: they cover the set-tier free-text channels this rename does not reach, and check_local_synonym_staleness is what makes their retirement visible."
+  },
+  {
+   "source_name": "Weighty Asset",
+   "canonical_name": "Undying",
+   "merge_into_existing": true,
+   "wiki_url": "https://ddowiki.com/page/Unconscious",
+   "verified": "2026-08-30",
+   "issue": 632,
+   "evidence": "https://ddowiki.com/page/Unconscious section 'Extending unconsciousness range' lists all sources together as enhancement bonuses to one range: 'Holding On: +40 enhancement bonus', 'Undying: enhancement bonus scaling with level', 'Undying Sapphire: +65 / +225 enhancement bonus', 'Weighty Asset: +100 enhancement bonus'. `Incapacitation range` (which the Undying enchantment links) REDIRECTS to that same page, so the two spellings are one mechanic. Harvested 2026-08-30.",
+   "note": "#632 — merged INTO the existing `Undying` rather than renaming all three to the mechanic's own name. `Undying` is the name players actually rank and the dominant population (14 records); moving it would change a stat name in saved builds to fix 3 records. The engraved name survives as `via`, so the card still reads 'Weighty Asset'."
+  },
+  {
+   "source_name": "Holding On",
+   "canonical_name": "Undying",
+   "merge_into_existing": true,
+   "wiki_url": "https://ddowiki.com/page/Unconscious",
+   "verified": "2026-08-30",
+   "issue": 632,
+   "evidence": "https://ddowiki.com/page/Unconscious section 'Extending unconsciousness range' lists all sources together as enhancement bonuses to one range: 'Holding On: +40 enhancement bonus', 'Undying: enhancement bonus scaling with level', 'Undying Sapphire: +65 / +225 enhancement bonus', 'Weighty Asset: +100 enhancement bonus'. `Incapacitation range` (which the Undying enchantment links) REDIRECTS to that same page, so the two spellings are one mechanic. Harvested 2026-08-30.",
+   "note": "#632 — merged INTO the existing `Undying` rather than renaming all three to the mechanic's own name. `Undying` is the name players actually rank and the dominant population (14 records); moving it would change a stat name in saved builds to fix 3 records. The engraved name survives as `via`, so the card still reads 'Holding On'."
   }
  ],
  "_pending": "#374/U2 — an entry may carry pending_upstream + pending_reason when it is declared one unit AHEAD of the refreshed gear-planner snapshot that arms it. Pending entries are exempt from assert_all_reached (they reach nothing by construction) and excluded from the KTD3 declared-live set. The exemption is self-retiring: assert_canon_defense fails the build the moment the raw data arms an entry whose marker is still set.",

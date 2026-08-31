@@ -484,5 +484,44 @@
    "issue": 619,
    "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
   }
+ ],
+ "Stone Shoes": [
+  {
+   "name": "Undying",
+   "from": "Bool",
+   "to": "Enhancement",
+   "value": "100",
+   "tooltip": "Weighty Asset: This item is so heavy you find it hard to be dragged anywhere - even to your grave. You benefit from a +100 Enhancement bonus to increased unconsciousness range.",
+   "wiki_url": "https://ddowiki.com/page/Item:Stone_Shoes",
+   "verified": "2026-08-30",
+   "issue": 632,
+   "note": "#632 — keyed on `Undying` because affix_name_corrections runs BEFORE this file and has already merged `Weighty Asset` into it. The engraved name rides on `via`."
+  }
+ ],
+ "Legendary Stone Shoes": [
+  {
+   "name": "Undying",
+   "from": "Bool",
+   "to": "Enhancement",
+   "value": "100",
+   "tooltip": "Weighty Asset: This item is so heavy you find it hard to be dragged anywhere - even to your grave. You benefit from a +100 Enhancement bonus to increased unconsciousness range.",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stone_Shoes",
+   "verified": "2026-08-30",
+   "issue": 632,
+   "note": "#632 — keyed on `Undying` because affix_name_corrections runs BEFORE this file and has already merged `Weighty Asset` into it. The engraved name rides on `via`."
+  }
+ ],
+ "Ward Token": [
+  {
+   "name": "Undying",
+   "from": "Bool",
+   "to": "Enhancement",
+   "value": "40",
+   "tooltip": "Unconscious page, 'Extending unconsciousness range': \"Holding On: +40 enhancement bonus\" (quoted verbatim, lower-case in the source). That is DDO's Enhancement bonus type — the same list types Undying and Weighty Asset identically, which is what makes the three one bucket. The enchantment's own page states the magnitude but no type: \"Your range of unconsciousness extends by 40 hitpoints.\"",
+   "wiki_url": "https://ddowiki.com/page/Item:Ward_Token",
+   "verified": "2026-08-30",
+   "issue": 632,
+   "note": "#632 — keyed on `Undying` because affix_name_corrections runs BEFORE this file and has already merged `Holding On` into it. The engraved name rides on `via`."
+  }
  ]
 }
