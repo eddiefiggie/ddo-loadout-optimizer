@@ -36,6 +36,18 @@ function _overriddenFrom(affix) {
   return from == null ? null : from;
 }
 
+/** #611 — the query's ML cap, from whichever field carries it. `buildModel`
+ *  stamps BOTH `model.mlCap` and `model.query.mlCap`; hand-built models (the test
+ *  suites, and `buildProgram` called directly) carry only the former. Reading one
+ *  field would make the cap silently undefined for half the callers, and an
+ *  undefined cap here does not throw — it quietly crafts at the host's own level,
+ *  which is the pre-#611 behavior and would look like a passing test. */
+function _mlCapOf(model) {
+  if (!model) return undefined;
+  if (model.mlCap != null) return model.mlCap;
+  return model.query ? model.query.mlCap : undefined;
+}
+
 function scaleAt(s, mlCap) {
   if (mlCap <= s.ml_lo) return s.val_lo;
   if (mlCap >= s.ml_hi) return s.val_hi;
@@ -1130,7 +1142,18 @@ function buildProgram(model) {
   for (const xv of xVars) {
     const menus = xv.variant.essence_slots || [];
     if (!menus.length) continue;
-    const hostMl = Number(xv.variant.ml);
+    // #611 — craft at min(host ML, the player's cap). The ML is the CRAFTER's
+    // choice ("Search for the Minimum Level you wish to create"), so a host above
+    // the cap is crafted DOWN to the cap and worn, at that level's values; a host
+    // at or below the cap is crafted at its own ML, which is its ceiling. One
+    // level per host, not a search: every offered curve is monotonic
+    // non-decreasing and peaks at 36 (asserted in tests/test_essence_pool.py), so
+    // the highest reachable ML is optimal and there is never a reason to go
+    // lower. If a curve ever peaks mid-range that reasoning dies and this has to
+    // become a search — which is exactly what that test is there to catch.
+    const nativeMl = Number(xv.variant.ml);
+    const _cap = Number(_mlCapOf(model));
+    const hostMl = Number.isFinite(_cap) ? Math.min(nativeMl, _cap) : nativeMl;
     if (!Number.isFinite(hostMl) || hostMl < 1 || hostMl > 36) continue;
     for (const slot of menus) {
       const slotVars = [];
@@ -3579,9 +3602,28 @@ function essenceReportFor(model, placed) {
   }
   if (!hosts.length) return null;
   const cov = model.essenceCoverage || null;
-  const minMl = Math.min(...hosts.map((h) => Number(h.ml)).filter(Number.isFinite));
+  // #611 — every ML below is the level the build assumes the host is CRAFTED at,
+  // never its printed one. The two differ whenever the cap is under the host's
+  // own ML, and the difference is load-bearing twice over: it is the level whose
+  // curve supplied the values, and it decides the Insight gate. Crafting a
+  // Legendary Gem down to ML 8 to fit an ML-8 character costs it every Insight
+  // effect, and a report reading the printed ML 30 would say the opposite.
+  const _cap = Number(_mlCapOf(model));
+  const craftedOf = (h) => {
+    const n = Number(h.ml);
+    return Number.isFinite(_cap) ? Math.min(n, _cap) : n;
+  };
+  const craftedDown = hosts
+    .filter((h) => Number.isFinite(craftedOf(h)) && craftedOf(h) < Number(h.ml))
+    .map((h) => ({ item: h.variant_id || h.source_item, nativeMl: Number(h.ml),
+                   craftedMl: craftedOf(h) }));
+  const minMl = Math.min(...hosts.map(craftedOf).filter(Number.isFinite));
   return {
     hosts: hosts.length,
+    // The hosts this build can only use by crafting them BELOW their printed ML.
+    // Empty on every solve whose cap clears its hosts, so the notice stays silent
+    // in the ordinary case rather than explaining something that did not happen.
+    craftedDown,
     placed: (placed || []).map((p) => ({ item: p.item, menu: p.menu, effect: p.effect,
                                          stat: p.stat, bonus_type: p.bonus_type, value: p.value })),
     offered: cov ? cov.offered_all : null,

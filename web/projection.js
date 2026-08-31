@@ -907,6 +907,19 @@
         + "without which a crafted effect would either double-count against your gear or wrongly "
         + "replace it.");
     }
+    // #611 — the build is assuming a crafting step the player has not done, on an
+    // item whose printed ML is ABOVE their cap. Said before the Insight line
+    // because it is what explains it: the same crafting-down that admits the item
+    // is what can drop it under the Insight gate.
+    for (const c of r.craftedDown || []) {
+      lines.push(`${c.item} is minimum level ${c.nativeMl}, above your cap, and this build assumes you `
+        + `disjunct it and craft it at minimum level ${c.craftedMl}. Its effect values are read at `
+        + `${c.craftedMl}, not ${c.nativeMl}. The minimum level of an Essence Crafted item is set by the `
+        + "shard you apply, and shards exist for levels 1-36; an item cannot be crafted ABOVE its own "
+        + "level, which is why crafting down is the only direction offered. That an item can be crafted "
+        + "below its printed level follows from the general rule rather than from a sentence about this "
+        + "item, so it is stated here rather than assumed silently.");
+    }
     if (r.insightGated && r.insightMinMl) {
       lines.push(`This host is below minimum level ${r.insightMinMl}, so the Insightful effects in the `
         + "Extra menu are unavailable to it in game — that menu is short for a game reason, not a data one.");

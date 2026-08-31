@@ -10,6 +10,9 @@ const assert = require("assert");
 const path = require("path");
 const S = require("../web/solver.js");
 const M = require("../web/model.js");
+const P = require("../web/projection.js");
+// `craftedMlOf` takes the precomputed gate context `variantConflict` builds.
+const M_gates = (q) => M.queryGates(q);
 
 const vendor = path.join(__dirname, "..", "web", "vendor") + "/";
 const Highs = require(vendor + "highs.js");
@@ -160,6 +163,105 @@ async function solve(model) {
       [], [], [], [], {}, [], [], {}, null, {}, pool);
     assert.strictEqual((model.essenceCrafting || []).length, 0,
       "an option for a stat nobody ranked is a variable the MILP can never use");
+  });
+
+  // ---- #611: the minimum level is the CRAFTER's choice -------------------
+  //
+  // "This shard determines the minimum level of the item, the power level of
+  //  scaling effect shards crafted onto the item"        — Essence Crafting, Steps
+  // "Search for the Minimum Level you wish to create."   — Essence Crafting steps
+  // "Scaling effects vary their values when placed in LOWER or higher Minimum
+  //  Level shard items"                                  — Essence Crafting, Notes
+  //
+  // So a host above the player's cap is not unusable — it is crafted DOWN and worn
+  // at that level's values. Exactly one level is ever considered, min(host, cap):
+  // every curve is monotonic non-decreasing (test_essence_pool.py), so the highest
+  // reachable level is optimal and there is no search.
+
+  await test("#611: a host ABOVE the cap is crafted down to the cap, at the cap's values", async () => {
+    const pool = [opt("Prefix", "Constitution", "Constitution", "Enhancement", ABILITY)];
+    // Legendary-Gem shaped: native ML 30, player capped at 20.
+    const { result } = await solve(modelWith(gem("Gem", 30), pool, ["Constitution"], 20));
+    assert.strictEqual(result.status, "optimal");
+    assert.strictEqual(result.perTarget.Constitution, Number(ABILITY[19]),
+      `the ML 20 value (${ABILITY[19]}), NOT the native ML 30 value (${ABILITY[29]})`);
+    assert.notStrictEqual(Number(ABILITY[19]), Number(ABILITY[29]),
+      "premise: the two levels differ, or this test proves nothing");
+  });
+
+  await test("#611: the CEILING holds — a host below the cap is never crafted UP", async () => {
+    // The direction that is actually forbidden. The wiki's one ML restriction runs
+    // this way ("the Minimum Level cannot be RAISED after disjunction", Rune Arms),
+    // and the maintainer observed it in play: an ML 30 Gem refuses an ML 36 shard.
+    const pool = [opt("Prefix", "Constitution", "Constitution", "Enhancement", ABILITY)];
+    const { result } = await solve(modelWith(gem("Gem", 12), pool, ["Constitution"], 34));
+    assert.strictEqual(result.perTarget.Constitution, Number(ABILITY[11]),
+      `the host's OWN ML 12 value (${ABILITY[11]}), not the cap's (${ABILITY[33]})`);
+  });
+
+  await test("#611: crafting down can drop a host under the Insight gate, and does", async () => {
+    // The sharp edge of the feature. Insight effects need ML 10+; a Legendary Gem
+    // crafted down to ML 8 to fit an ML-8 character LOSES them. Reporting the
+    // printed ML 30 here would state the exact opposite of what the player gets.
+    const pool = [opt("Extra", "Insightful Constitution", "Constitution", "Insight", INS_ABILITY, 10)];
+    const below = await solve(modelWith(gem("Gem", 30), pool, ["Constitution"], 8));
+    assert.strictEqual(below.result.perTarget.Constitution, 0,
+      "crafted at ML 8, the Insight option is not offered at all");
+    const above = await solve(modelWith(gem("Gem", 30), pool, ["Constitution"], 12));
+    assert.strictEqual(above.result.perTarget.Constitution, Number(INS_ABILITY[11]),
+      "and at ML 12 the same host gets it, at the ML 12 value");
+  });
+
+  await test("#611: the crafted-down assumption is DISCLOSED, naming both levels", async () => {
+    const pool = [opt("Prefix", "Constitution", "Constitution", "Enhancement", ABILITY)];
+    const { result } = await solve(modelWith(gem("Gem", 30), pool, ["Constitution"], 20));
+    const cd = (result.essenceReport || {}).craftedDown || [];
+    assert.strictEqual(cd.length, 1, "the host the build silently assumes you re-craft");
+    assert.strictEqual(cd[0].nativeMl, 30);
+    assert.strictEqual(cd[0].craftedMl, 20);
+    const lines = P.essenceNoticeLines(result);
+    const line = lines.find((l) => /craft it at minimum level/.test(l));
+    assert.ok(line, `no crafting-down line among: ${JSON.stringify(lines)}`);
+    assert.ok(line.includes("30") && line.includes("20"),
+      "the player is told BOTH the printed level and the one the build assumes");
+  });
+
+  await test("#611: a host the cap already clears discloses nothing", async () => {
+    // The notice must stay silent in the ordinary case, or it becomes boilerplate.
+    const pool = [opt("Prefix", "Constitution", "Constitution", "Enhancement", ABILITY)];
+    const { result } = await solve(modelWith(gem("Gem", 30), pool, ["Constitution"], 34));
+    assert.deepStrictEqual((result.essenceReport || {}).craftedDown, [],
+      "nothing was crafted down, so nothing is explained");
+    assert.ok(!P.essenceNoticeLines(result).some((l) => /craft it at minimum level/.test(l)));
+  });
+
+  // ---- #611: eligibility -------------------------------------------------
+
+  await test("#611: an essence host above the cap is ELIGIBLE, and a plain item is not", async () => {
+    const q = { targets: ["Constitution"], mlCap: 20, craftingRung: "everything" };
+    // `eligible` gates on verification first, so both items must clear it — or the
+    // control would be excluded for the wrong reason and prove nothing about ML.
+    const G = Object.assign(gem("G", 30), { verification: "verified" });
+    assert.strictEqual(M.craftedMlOf(G, M_gates(q)), 20, "crafted down to the cap");
+    // The control: same ML, same slot, no menus. Nothing licenses lowering ITS level.
+    const plain = item("Plain", "Trinket", [], { ml: 30, verification: "verified" });
+    assert.strictEqual(M.craftedMlOf(plain, M_gates(q)), 30, "not craftable, so still above the cap");
+    assert.strictEqual(M.eligible([plain], { targets: ["Constitution"], mlCap: 34 }).length, 1,
+      "premise: the control is eligible when the cap clears it, so ML is the only difference");
+    const elig = M.eligible([G, plain], q).map((v) => v.variant_id);
+    assert.deepStrictEqual(elig, ["G"], "the Gem is admitted; the plain ML 30 trinket is not");
+  });
+
+  await test("#611: the niche-crafting rung takes the host back OUT of the pool", async () => {
+    // buildModel empties the essence pool on this rung. Admitting an over-cap Gem
+    // anyway would hand the player a blank: the [Crafted] record has no affixes of
+    // its own, so uncrafted it carries literally nothing.
+    const q = { targets: ["Constitution"], mlCap: 20, craftingRung: "no-niche-crafting" };
+    const G = Object.assign(gem("G", 30), { verification: "verified" });
+    assert.strictEqual(M.craftedMlOf(G, M_gates(q)), 30,
+      "with the pool gone there is no crafting step to justify lowering the level");
+    assert.deepStrictEqual(M.eligible([G], q), [],
+      "so the host is above the cap again, exactly as it was before #611");
   });
 
   console.log(`\n  ${passed} passed`);

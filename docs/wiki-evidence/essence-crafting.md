@@ -242,9 +242,75 @@ as a game rule. If it is ever contradicted — a heroic Gem crafted to 30, say �
 this is the paragraph to correct, and nothing about the effect values changes with
 it.
 
-### Known gap: crafting DOWN is not modelled
+### Crafting DOWN — harvested 2026-08-30, and now modelled (#611)
 
-Because the shard sets the ML, a Legendary Gem can presumably be crafted at ML 20
-to be worn by a character capped there, at ML 20 effect values. The optimizer
-currently excludes it outright below ML 30. That is a missing option rather than a
-wrong number, and it is filed separately.
+The earlier version of this section said a Legendary Gem could "presumably" be
+crafted at ML 20. That word was doing too much work for something the optimizer
+was about to act on, so the page was harvested again specifically for this
+question. It is better sourced than "presumably" implied.
+
+**Directly supporting, all from the Essence Crafting page:**
+
+> Minimum Level shards simply determine the ML of the item.
+
+> Scaling effects vary their values when placed in **lower** or higher Minimum
+> Level shard items, increasing with higher ML.
+
+> Material types and Augment Slots are retained on an item after disjunction.
+
+and from `Essence Crafting steps`, in the ML-shard procedure:
+
+> **Search for the Minimum Level you wish to create.**
+
+The second quote is the load-bearing one: the wiki states outright that an effect's
+magnitude varies when placed in a LOWER-ML shard item. That is the mechanic, named,
+in the direction #611 needed. The third matters separately — it is why a Legendary
+Gem crafted down keeps its Green and Yellow augment slots.
+
+**The named-item question, which is real.** The general rule is that named items are
+out:
+
+> In Essence Crafting, only non-named equipment [...] can be deconstructed. Named
+> items [...] cannot be deconstructed.
+
+> Trinkets, which are usually named items, cannot be disjoined.
+
+The Gem is an explicit exception, stated on its own item page — which is also why it
+carries the `Craftable (hidden)` affix:
+
+> This item is also keyed for Essence Crafting, and may be Disjuncted so that it can
+> be crafted upon.  — `Item:Legendary Gem of Many Facets`
+
+So the standard flow applies to this host, and the standard flow lets the crafter
+pick the level.
+
+**Searched for a prohibition and found only the opposite direction.** The single ML
+restriction anywhere on either page is about raising, not lowering:
+
+> Disjunction does not change the Minimum Level [...] of a rune arm, but its other
+> benefits are removed. Note that the Minimum Level cannot be **raised** after
+> disjunction.
+
+That is stated of rune arms, but it is the same direction as the maintainer's play
+observation on the Gem (an ML 30 Gem refuses an ML 36 shard) and the same direction
+the implementation already refused. Nothing found states or implies a floor.
+
+**What remains an inference, and is disclosed as one.** No sentence says *this named
+item* may take a shard below its native level; that follows from the general rule
+plus the Gem's stated exemption. The app therefore does not do it silently — a build
+that crafts a host below its printed ML says so, names both levels, and says the
+permission is general rather than item-specific. See `essenceNoticeLines` in
+`web/projection.js`.
+
+**One loose end, recorded not resolved.** Augment slots are listed as adding to an
+item's minimum level (Colorless 1, Red/Blue 2, Yellow 3, Green 5, Purple/Orange 8),
+and the page hedges on how that interacts with crafting:
+
+> When crafting on an item with an augment slot, after disjuncting the item, it will
+> be listed as having a minimum level, but it appears that a lower level shard can be
+> applied. This may be a holdover from the old crafting system [...]
+
+If those additions are a real floor rather than a holdover, the Legendary Gem's floor
+would be ML 5 (Green) — below every cap at which crafting down is interesting, so it
+changes no result today. Recorded so that a future host with a Purple or Orange slot
+is not assumed to reach ML 1.
