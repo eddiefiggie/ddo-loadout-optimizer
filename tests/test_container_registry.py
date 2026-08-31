@@ -22,6 +22,8 @@ Discovered + run by tests/run_tests.py.
 """
 import contextlib
 import json
+import re
+import copy
 import os
 import sys
 
@@ -585,3 +587,78 @@ def test_viktranium_spell_focus_craft_is_one_option_carrying_seven_schools():
     assert len(schools) == 7, schools
     # And the fan-out signature is absent: no record-level provenance anywhere.
     assert not [r for r in vik if PROVENANCE_KEY in r]
+
+
+# --- #653: a container's records must come from the station it claims ---------
+#
+# The menu keys in the gear-planner dump are GENERIC (`T1 (Weapon)`,
+# `T2 (Equipment)`), so every mapping from a menu to a named crafting system is an
+# inference by whoever wrote the constant. One was wrong for months:
+# `THUNDER_FORGED_KEYS` claimed the `T*(Weapon)` menus, whose every option records
+# a Legendary Altar as its station — Legendary Green Steel weapon recipes.
+# Thunder-Forged is crafted at the Magma Forge in Thunderholme and has no menu in
+# this catalog at all.
+#
+# It cost nothing only because both pools are inert. The moment #194's host
+# surfacing stamped `thunder_forged_tiers` on the 42 `Thunder-Forged Alloy *`
+# weapons in the roster, 42 real endgame weapons would have carried another
+# system's effects.
+
+def test_653_both_pools_declare_and_match_the_legendary_altars():
+    """The standing fact, measured against the shipped data rather than asserted."""
+    with open(DATASET, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    for name in ("green_steel", "thunder_forged"):
+        assert cr.REGISTRY[name]["expects_stations"] == ("Legendary Altar",), name
+        recs = data[name]
+        assert recs, name
+        for r in recs:
+            st = r.get("source_stations")
+            assert st, f"{name}: a record carries no provenance stamp"
+            for one in st:
+                assert "Legendary Altar" in one, (name, one)
+
+
+def test_653_thunder_forged_has_no_menu_in_the_catalog():
+    """The other half of the finding, and the one a refresh could quietly change.
+
+    If upstream ever adds real Magma Forge recipes, this fails and someone looks —
+    which is the moment Thunder-Forged could genuinely be modelled.
+    """
+    cat = crafting_catalog.load_catalog()
+    hits = [k for k in cat if re.search(r"thunder|forge|magma", k, re.I)]
+    assert not hits, (
+        f"a Thunder-Forged menu appeared in the catalog: {hits}. The `thunder_forged` "
+        "container currently holds Legendary Green Steel WEAPON recipes (#653); if "
+        "real Thunder-Forged recipes now exist, they are a different pool and the "
+        "container needs re-homing, not renaming.")
+
+
+def test_653_a_foreign_station_in_the_pool_is_REFUSED():
+    """Corrupt the input this gate exists to reject, and confirm it goes red."""
+    with open(DATASET, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    src = data["metadata"]["container_registry_coverage"]["source_options"]
+    bad = copy.deepcopy(data)
+    # Exactly the defect: a genuine Thunder-Forged recipe landing in this pool.
+    bad["thunder_forged"][0]["source_stations"] = ["Magma Forge"]
+    msg = raises_systemexit(lambda: cr.check(bad, src))
+    assert "Magma Forge" in msg and "thunder_forged[0]" in msg, msg
+    assert "not one of the stations this container declares" in msg, msg
+
+
+def test_653_a_dropped_provenance_stamp_does_not_pass_VACUOUSLY():
+    """The failure mode that let the mislabelling live: a check with nothing to check.
+
+    If the builder stops carrying `source_stations`, the per-record loop has no
+    records to judge and the gate would go quiet while the pool became unverifiable
+    again. It must fail instead.
+    """
+    with open(DATASET, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    src = data["metadata"]["container_registry_coverage"]["source_options"]
+    bad = copy.deepcopy(data)
+    for r in bad["green_steel"]:
+        r.pop("source_stations", None)
+    msg = raises_systemexit(lambda: cr.check(bad, src))
+    assert "passes vacuously" in msg, msg

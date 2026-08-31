@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 08312026.3 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 08312026.4 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 
 ---
@@ -56,7 +56,8 @@ You can also point it at **only the gear you actually own** by importing a Trove
 | **On/off affixes** (Ghost Touch, True Seeing, Freedom of Movement, immunities) | ✅ tracked as present, not as a number |
 | **Utility tier** (on by default, ranked last) | ✅ after your ranked stats are locked, empty slots fill with gear carrying distinct utility effects (worn toggles like Ghostly, True Seeing and Freedom of Movement — not weapon procs, which stay rankable on their own) — drag the tier up if those matter more than a marginal stat |
 | **Minor Artifacts** (build around one, optimizer picks the best) | ✅ opt-in |
-| Green Steel / Thunder-Forged | ⏳ recipes loaded, no craftable hosts in the roster yet |
+| Legendary Green Steel | ⏳ 116 recipes loaded (81 accessory + 35 weapon), no craftable hosts in the roster yet — see [#194](https://github.com/eddiefiggie/ddo-loadout-optimizer/issues/194) |
+| Thunder-Forged | ❌ no recipes loaded. What shipped under this name is Legendary Green Steel's weapon half — the menu keys are generic and the mapping was an inference; see [#653](https://github.com/eddiefiggie/ddo-loadout-optimizer/issues/653) |
 | **Essence Crafting** (Gem of Many Facets) | ✅ partial — the Gem's three Trinket menus are solved, choosing from 25 of the 170 effects those menus offer in game. An effect is offered only once its placement, its bonus type and its level curve are all sourced from the wiki; the result says so. Melee, Ring and Rune Arm menus are ⏳ not yet |
 | Filigrees | ⏳ not yet |
 

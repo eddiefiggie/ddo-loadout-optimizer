@@ -156,6 +156,25 @@ def legacy_affix(affix: dict) -> dict:
     }
 
 
+def source_stations(opt: dict) -> list:
+    """The crafting station(s) a catalog option is offered at, from its own record.
+
+    #653 — the ONE field in the gear-planner dump that says which crafting SYSTEM a
+    menu belongs to. The menu keys do not: they are generic (`T1 (Weapon)`,
+    `T2 (Equipment)`), so every mapping from a menu key to a named system is an
+    inference by whoever wrote the constant. One of those inferences was wrong for
+    months — `THUNDER_FORGED_KEYS` claimed the `T*(Weapon)` menus, which every one
+    of their options records as coming from a **Legendary Altar**, i.e. Legendary
+    Green Steel. Thunder-Forged is crafted at the Magma Forge in Thunderholme and
+    has no menu in this catalog at all.
+
+    Carried onto every record built from these menus so the provenance travels with
+    the data instead of living in a constant's name, and asserted by
+    `container_registry`.
+    """
+    return [q for q in (opt.get("quests") or []) if isinstance(q, str) and q.strip()]
+
+
 # --------------------------------------------------------------------- families
 
 # Green Steel is modeled as a flat single-pick over the three Equipment tiers;
@@ -212,6 +231,8 @@ def green_steel_records(catalog: dict = None) -> list:
                 "tier_key": tier_key,
                 "ml": opt.get("ml"),
                 "affixes": affixes,
+                # #653 — provenance from the option itself, not from the menu key.
+                "source_stations": source_stations(opt),
             })
     return out
 
@@ -295,5 +316,7 @@ def thunder_forged_records(catalog: dict = None) -> list:
                 "name": opt.get("name") or affixes[0].get("stat") or "",
                 "ml": opt.get("ml"),
                 "affixes": affixes,
+                # #653 — provenance from the option itself, not from the menu key.
+                "source_stations": source_stations(opt),
             })
     return out
