@@ -155,3 +155,15 @@ also settled a standing question: the hand-transcribed Arabic switch table had
 been verified against exactly one tooltip. Eight of its nine recorded rows now
 check out. The ninth, `{{Speed|24}}`, appears on no harvested item, so nothing
 renders it and it remains honestly unverified rather than assumed correct.
+
+## Related
+
+`a-templates-magnitude-may-live-on-its-own-page-not-in-the-call.md` is the same
+failure one level deeper, and it was found four separate times before anyone saw
+the shape. Here the number is in the tooltip *behind* the visible cell. There it
+is not on the item page at all — the item names the enchantment and the wiki
+states the magnitude once, on that enchantment's own page. A structural read gets
+a name and no number, which surfaces as a presence flag, a phantom bonus type, or
+an affix filed under a name that is not a stat.
+
+The shared rule: **the visible layer of an item page is not the value layer.**
