@@ -2610,3 +2610,139 @@ test("#442: only boolean true grants it, never a truthy value", () => {
   }
   assert.strictEqual(M.isTwinEligible(_dupRing("Any Ring", { duplicable_ring: false })), false);
 });
+
+// ---- #648: Essence Crafting menus are a choice-slot family too -------------
+//
+// `dominates` already carried six blocks of the same shape — Dino slots,
+// Nearly-Complete, roll groups, Viktranium, seals, per-item NC — each saying the
+// craftable value lives outside `variantBuckets` so a slotted host reads as
+// value-less. Essence menus were simply missing from the list, and a Gem's
+// `[Crafted]` record carries `affixes: []`, so its bucket set was EMPTY.
+//
+// Measured before the fix, on the shipped dataset: at ML caps 30 and 34 all three
+// Gems were eligible and all three were pruned. Essence Crafting reached the
+// solver on no endgame query at all — a feature that shipped, cost build time,
+// and could not be selected.
+
+// A Gem-shaped host: no affixes of its own, essence menus, an ML.
+function _gemHost(id, ml, menus, aug) {
+  const x = v(id, "Trinket", [], { ml, aug: aug || [] });
+  x.essence_slots = (menus || ["Prefix", "Suffix", "Extra"]).map((m) => ({ menu: m }));
+  return x;
+}
+const _essOpt = (menu, stat, bonus_type, min_ml) => ({
+  menu, stat, bonus_type, effect: `${menu}:${stat}`, unit: "flat", min_ml: min_ml || 1,
+  values_by_ml: Array.from({ length: 36 }, (_, i) => String(i + 1)),
+});
+
+test("#648: an item that cannot craft the menus no longer prunes an essence host", () => {
+  const ts = new Set(["Constitution"]);
+  const pool = [_essOpt("Prefix", "Constitution", "Enhancement")];
+  const gem = _gemHost("Gem", 30);
+  const rival = v("PlainTrinket", "Trinket", [["Constitution", "Enhancement", 12]], { ml: 30 });
+  // The pre-#648 state, reproduced by withholding the pool: the rival wins on
+  // buckets and the Gem's menus are invisible.
+  assert.strictEqual(M.dominates(rival, gem, ts, 34, null, null), true,
+    "premise: without the pool the affix-bearing rival dominates the Gem outright");
+  assert.strictEqual(M.dominates(rival, gem, ts, 34, null, pool), false,
+    "with the pool, the rival cannot substitute for a menu it does not have");
+  assert.deepStrictEqual(
+    M.dominanceFilter([rival, gem], ts, 34, 1, null, false, false, null, pool)
+      .map((x) => x.variant_id).sort(),
+    ["Gem", "PlainTrinket"], "both survive the prune");
+});
+
+test("#648: the Gem still cannot dominate an item carrying real affixes", () => {
+  // The guard is PROTECTIVE only — it may return false, never true. A blank host
+  // that started pruning real gear would be a far worse bug than the one fixed.
+  const ts = new Set(["Constitution"]);
+  const pool = [_essOpt("Prefix", "Constitution", "Enhancement")];
+  const gem = _gemHost("Gem", 30);
+  const rival = v("PlainTrinket", "Trinket", [["Constitution", "Enhancement", 12]], { ml: 30 });
+  assert.strictEqual(M.dominates(gem, rival, ts, 34, null, pool), false,
+    "the bucket loop decides this, and the Gem carries no affixes");
+});
+
+test("#648: a host whose every option is OFF-TARGET is still pruned", () => {
+  // The #371 trap, quoted in `dominates`: protecting a host with nothing to craft
+  // keeps a value-less item in the pool, where it ties with the incumbent and wins
+  // or loses the tie-break arbitrarily. Four golden fixtures churned that way once.
+  // The gate is the LIVE pool, never the `essence_slots` marker.
+  const ts = new Set(["Constitution"]);
+  const offTarget = [_essOpt("Prefix", "Haggle", "Competence")];
+  const live = (p) => p.filter((o) => ts.has(o.stat));   // what buildModel does
+  const gem = _gemHost("Gem", 30);
+  const rival = v("PlainTrinket", "Trinket", [["Constitution", "Enhancement", 12]], { ml: 30 });
+  assert.strictEqual(M.dominates(rival, gem, ts, 34, null, live(offTarget)), true,
+    "nothing it can craft advances a ranked stat, so it earns no protection");
+});
+
+test("#648: a lower-ML host does not prune a higher-ML one", () => {
+  // Without the ML test two hosts with identical option sets dominate each other,
+  // and the `i < j` tie-break keeps whichever came first — which can be the weaker.
+  // Every curve is monotonic non-decreasing (#611), so a lower crafted level is
+  // worth strictly less for the same option.
+  const ts = new Set(["Constitution"]);
+  const pool = [_essOpt("Prefix", "Constitution", "Enhancement")];
+  const low = _gemHost("LowGem", 10);
+  const high = _gemHost("HighGem", 30);
+  assert.strictEqual(M.dominates(low, high, ts, 34, null, pool), false,
+    "the ML-10 host crafts strictly weaker values and must not prune the ML-30 one");
+  assert.strictEqual(M.dominates(high, low, ts, 34, null, pool), true,
+    "and the reverse IS a real domination — same options, a better level");
+});
+
+test("#648: a menu whose options are all above the host's crafted ML offers nothing", () => {
+  // `min_ml` is why the key is the OPTION and not the menu: both hosts declare
+  // "Extra", but only one can place anything into it. Matching menu COUNTS would
+  // have called these equivalent.
+  const ts = new Set(["Constitution"]);
+  const pool = [_essOpt("Extra", "Constitution", "Insight", 10)];
+  const tooLow = _gemHost("Ml5Gem", 5, ["Extra"]);
+  const rival = v("PlainTrinket", "Trinket", [["Constitution", "Enhancement", 12]], { ml: 30 });
+  assert.strictEqual(M.dominates(rival, tooLow, ts, 34, null, pool), true,
+    "an ML-5 host cannot place an ML-10 option, so its Extra menu protects nothing");
+  const okHost = _gemHost("Ml12Gem", 12, ["Extra"]);
+  assert.strictEqual(M.dominates(rival, okHost, ts, 34, null, pool), false,
+    "at ML 12 the same menu becomes real and the host is protected");
+});
+
+test("#648/real data: every Gem survives the prune at an endgame cap", () => {
+  // The reported case, against the shipped dataset rather than a synthetic pool.
+  // Before the fix this list was EMPTY at caps 30 and 34.
+  const q = {
+    mlCap: 34, targets: ["Constitution", "Haggle"], armorTypes: ["cloth"],
+    style: "one-hand", weaponTypes: ["Clubs"], offHand: ["Orbs"], race: "Human",
+    craftingRung: "everything", blocklist: [], slotConstraints: {}, targetCaps: {},
+    targetFloors: {}, declaredCredits: {}, overrides: [],
+  };
+  const m = M.buildModel(data.items, q, [], [], [], [], {}, [], [], {}, null, {},
+                         data.essence_crafting);
+  const hosts = [];
+  for (const w of m.worn || []) {
+    for (const x of w.variants || []) if ((x.essence_slots || []).length) hosts.push(x.variant_id);
+  }
+  assert.ok(hosts.length >= 1,
+    "no Essence Crafting host reached the solver — the feature is unreachable again");
+  assert.ok(hosts.some((h) => h.includes("Legendary")),
+    `the best-tier host must be among them, got: ${JSON.stringify(hosts)}`);
+});
+
+test("#648/real data: the niche-crafting rung restores the pre-fix prune", () => {
+  // buildModel empties the essence pool on this rung, and the protection is gated
+  // on the pool, so a player who turned crafting off gets no blank Gems parked in
+  // their Trinket pool.
+  const q = {
+    mlCap: 34, targets: ["Constitution", "Haggle"], armorTypes: ["cloth"],
+    style: "one-hand", weaponTypes: ["Clubs"], offHand: ["Orbs"], race: "Human",
+    craftingRung: "no-niche-crafting", blocklist: [], slotConstraints: {}, targetCaps: {},
+    targetFloors: {}, declaredCredits: {}, overrides: [],
+  };
+  const m = M.buildModel(data.items, q, [], [], [], [], {}, [], [], {}, null, {},
+                         data.essence_crafting);
+  let n = 0;
+  for (const w of m.worn || []) {
+    for (const x of w.variants || []) if ((x.essence_slots || []).length) n++;
+  }
+  assert.strictEqual(n, 0, "no pool, no protection");
+});

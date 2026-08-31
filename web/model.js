@@ -281,6 +281,53 @@ function variantBuckets(variant, targetSet, mlCap) {
   return b;
 }
 
+/** #648 — the Essence Crafting options this host could ACTUALLY place, as
+ *  `menu||stat||type` keys.
+ *
+ *  The craftable value of a Gem lives in this pool, not in `variantBuckets` — the
+ *  `[Crafted]` records carry `affixes: []`, their whole worth being three menus —
+ *  so a Gem's bucket set is EMPTY and an empty set is a subset of every other, i.e.
+ *  any trinket with one ranked affix dominated it outright. Measured before the
+ *  fix: at ML caps 30 and 34 all three Gems were eligible and all three were
+ *  pruned, so Essence Crafting reached the solver on no endgame query at all.
+ *
+ *  Keyed by the OPTION rather than by the menu because the menu alone is not what
+ *  a rival must match — a host whose crafted level is under an option's `min_ml`
+ *  cannot place it, so the heroic Gem's Extra menu offers strictly less than the
+ *  legendary one's despite both declaring "Extra".
+ *
+ *  Takes the LIVE pool, never the marker: `dominates` must not protect a host
+ *  whose every option is off-target. #371 paid for that lesson — four golden
+ *  fixtures swapped in a value-less host that then won or lost the tie-break
+ *  arbitrarily. An empty or absent pool makes this inert, which is also what the
+ *  niche-crafting rung produces, so that rung keeps its pre-#648 prune.
+ */
+function essenceOfferKeys(variant, mlCap, essencePool) {
+  const out = new Set();
+  if (!essencePool || !essencePool.length) return out;
+  const menus = variant.essence_slots || [];
+  if (!menus.length) return out;
+  const ml = craftedEssenceMl(variant, mlCap);
+  if (!Number.isFinite(ml)) return out;
+  const declared = new Set(menus.map((m) => m.menu));
+  for (const o of essencePool) {
+    if (!declared.has(o.menu)) continue;
+    if (ml < (o.min_ml || 1)) continue;
+    out.add(`${o.menu}||${o.stat}||${o.bonus_type}`);
+  }
+  return out;
+}
+
+/** #648/#611 — the level an essence host would be crafted at under this cap, which
+ *  is min(its own ML, the cap): the ceiling is the item's own level and the cap is
+ *  what a lower-level character can wear. Bare here (no rung check) because every
+ *  caller already gates on a non-empty pool, and the pool is what the rung empties. */
+function craftedEssenceMl(variant, mlCap) {
+  const n = Number(variant && variant.ml);
+  const c = Number(mlCap);
+  return Number.isFinite(c) ? Math.min(n, c) : n;
+}
+
 /** Set names this variant belongs to. */
 function variantSets(variant) {
   return new Set((variant.set_bonus || []).map((s) => s.set).filter(Boolean));
@@ -810,7 +857,7 @@ function classifySetPins(query, elig, augmentSetDefs, membershipSetDefs) {
 
 /** Does A dominate B in the same slot? A must be >= on every bucket, superset
  *  of sets, and >= augment colors. Dominated variants are never optimal. */
-function dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts = null) {
+function dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts = null, essencePool = null) {
   const ba = variantBuckets(A, targetSet, mlCap);
   const bb = variantBuckets(B, targetSet, mlCap);
   for (const [key, vb] of bb) {
@@ -877,6 +924,27 @@ function dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts = null) {
   const sealA = countColors((A.seal_slots || []).map((s) => s.seal_type));
   const sealB = countColors((B.seal_slots || []).map((s) => s.seal_type));
   for (const [k, n] of sealB) if ((sealA.get(k) || 0) < n) return false;
+  // #648 — Essence Crafting menus, the seventh member of this family and the one
+  // that was missing. Same shape as the six above, same reason: the craftable
+  // value is outside `variantBuckets`, so the host reads as value-less.
+  //
+  // Two conditions, because a menu is not generic the way an augment color is.
+  // A must offer every option B can place — matching the menu COUNT is not enough
+  // when `min_ml` decides which options a menu actually yields — and A must craft
+  // at a level at least as high, because every curve is monotonic non-decreasing
+  // (#611), so the same option on a lower-ML host is worth strictly less. Without
+  // the second test two hosts with identical option sets dominate each other and
+  // the `i < j` tie-break keeps whichever came first, which can be the weaker one.
+  //
+  // Protective only: it can return false, never true, so it removes prunes and
+  // never creates them. A Gem still cannot dominate a trinket carrying real
+  // affixes, because that comparison is decided by the bucket loop above.
+  const essB = essenceOfferKeys(B, mlCap, essencePool);
+  if (essB.size) {
+    const essA = essenceOfferKeys(A, mlCap, essencePool);
+    for (const k of essB) if (!essA.has(k)) return false;
+    if (craftedEssenceMl(A, mlCap) < craftedEssenceMl(B, mlCap)) return false;
+  }
   // #371 — per-item Nearly Complete ("Nearly Finished" / "Almost There"): the
   // craftable value lives in a pool keyed by the host's OWN NAME, outside
   // variantBuckets, so a slotted host looks value-less to the bucket check. It is
@@ -1089,7 +1157,7 @@ function offHandHasShield(query, variants) {
   return false;
 }
 
-function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinnedIds = null, includeArtifact = false, handMutex = false, ncPerItemLiveHosts = null) {
+function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinnedIds = null, includeArtifact = false, handMutex = false, ncPerItemLiveHosts = null, essencePool = null) {
   const kept = [];
   for (let i = 0; i < slotVariants.length; i++) {
     const A = slotVariants[i];
@@ -1118,8 +1186,8 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
       // the Main Hand slot (handMutex passed true there).
       if (handMutex && isBothHandsWeapon(B) && !isBothHandsWeapon(A)) continue;
       // B dominates A, and to break exact ties keep the lower index
-      if (dominates(B, A, targetSet, mlCap, ncPerItemLiveHosts)
-          && !(dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts) && i < j)) {
+      if (dominates(B, A, targetSet, mlCap, ncPerItemLiveHosts, essencePool)
+          && !(dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts, essencePool) && i < j)) {
         dominated = true;
         break;
       }
@@ -1396,6 +1464,21 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   }
   const ncPerItemLive = new Set(Object.keys(ncPerItemPool));
 
+  // Essence Crafting (#193/#599) — the Gem of Many Facets' three Trinket menus.
+  // Filtered to RANKED stats only, like every other pool: an option nobody asked
+  // for is a variable the MILP carries and can never use. `values_by_ml` rides
+  // along because the magnitude depends on the host's CRAFTED ML, which is not
+  // known until the option is bound to an item in the solver.
+  //
+  // #648 — computed HERE rather than down with the other pools, for exactly the
+  // reason `ncPerItemPool` is: it tells `dominates` which hosts have a craft worth
+  // protecting, and after the prune it would be too late — the host is already
+  // gone. That was not a hypothetical. Before this moved, every Gem was deleted by
+  // the dominance filter at ML caps 30 and 34, so Essence Crafting reached the
+  // solver on no endgame query at all.
+  const essencePool = (essenceCrafting || []).filter((o) => o && targetSet.has(o.stat)
+    && Array.isArray(o.values_by_ml) && o.values_by_ml.length === 36);
+
   const withArt = !!query.includeArtifact;
   const worn = [];
   // #110 (U8/KTD3) — a worn slot whose candidate list empties is OMITTED from
@@ -1419,7 +1502,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     if (!cands.length && !lockedEmpty(slotName) && blocked.some((b) => b.slot === slotName)) {
       blockEmptiedSlots.push(slotName);
     }
-    cands = dominanceFilter(cands, targetSet, mlCap, card, pinnedIds, withArt, false, ncPerItemLive);
+    cands = dominanceFilter(cands, targetSet, mlCap, card, pinnedIds, withArt, false, ncPerItemLive, essencePool);
     if (cands.length) {
       worn.push({ slot: slotName, cardinality: card, variants: cands });
     }
@@ -1447,7 +1530,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const mainHand = dominanceFilter(
     mainHandPool,
     targetSet, mlCap, 1, pinnedIds, withArt, true,   // handMutex: a both-hands weapon must not prune a 1H peer (KTD2)
-    ncPerItemLive);
+    ncPerItemLive, essencePool);
   if (mainHand.length) worn.push({ slot: "Main Hand", cardinality: 1, variants: mainHand });
 
   // U2/B1 — Off Hand slot (at-most-one): orbs, shields (buckler/small/large/tower),
@@ -1482,7 +1565,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
       || (offWeaponAllow != null && b.category === "weapon" && offHandWeaponOk(b, offWeaponAllow)))) {
     blockEmptiedSlots.push("Off Hand");
   }
-  const offHand = dominanceFilter(offHandPool, targetSet, mlCap, 1, pinnedIds, withArt, false, ncPerItemLive);
+  const offHand = dominanceFilter(offHandPool, targetSet, mlCap, 1, pinnedIds, withArt, false, ncPerItemLive, essencePool);
   if (offHand.length) worn.push({ slot: "Off Hand", cardinality: 1, variants: offHand });
 
   // Augment pool: augments (category augment) as a compatible-color-capacity
@@ -1559,14 +1642,6 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // target-advancing options only; the solver attaches them per host via the marker.
   const tfPool = (thunderForged || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
   const gsPool = (greenSteel || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
-  // Essence Crafting (#193/#599) — the Gem of Many Facets' three Trinket menus.
-  // Filtered to RANKED stats only, like every other pool: an option nobody asked
-  // for is a variable the MILP carries and can never use. `values_by_ml` rides
-  // along because the magnitude depends on the HOST's ML, which is not known
-  // until the option is bound to an item in the solver.
-  const essencePool = (essenceCrafting || []).filter((o) => o && targetSet.has(o.stat)
-    && Array.isArray(o.values_by_ml) && o.values_by_ml.length === 36);
-
   // #539 — classify the set pins against the ELIGIBLE pool. Done here, with the
   // pool and both def dicts in scope, so a pin the query cannot satisfy is named
   // as such instead of reaching the solver and coming back as a bare INFEASIBLE.
