@@ -306,8 +306,11 @@ const tradeModel = () => ({
     // U7's guarantee is unchanged: an alternative that says only "activates Alpha"
     // makes the player go and look up what Alpha does.
     assert.ok(/pd-slabel">Gains</.test(html), "the set's grants get a Gains section");
-    assert.ok(/<span class="pd-ln-where">set<\/span><span class="pd-ln-what">Constitution \+3 Insightful/.test(html),
-      "names the set's granted affix as its own row, not just the set");
+    // #240 — the `where` column now states the set's PIECE COST rather than the
+    // bare word "set". The row's job is to say where the gain comes from, and for
+    // a set the load-bearing part of that is how many gear slots it commits.
+    assert.ok(/<span class="pd-ln-where">2 pieces<\/span><span class="pd-ln-what">Constitution \+3 Insightful/.test(html),
+      "names the set's granted affix as its own row, attributed to its piece cost");
   });
 
   await test("U7: renderAltCards omits the grants line for an alt that activates no set", () => {
