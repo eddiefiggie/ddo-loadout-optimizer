@@ -158,29 +158,39 @@ REGISTRY = {
         "plus Fire's and Mist's 6 unique-enchantment procs each, every one "
         "single-affix. Same treatment."),
     "green_steel": _c(
-        FLAT, (), KNOWN_UNSAFE, False,
-        "SPLITS OPTIONS, and the solver constrains this pool Sigma <= 1 per host, so a "
-        "player crafting a multi-affix Green Steel effect would be told they get one "
-        "of its parts — the reported Viktranium symptom verbatim. 81 source options "
-        "-> 108 records; 24 of the 81 are genuinely multi-affix (one grants Charisma "
-        "Skills +22 Competence, UMD +6 Competence and Wizardry +151 Profane, "
-        "flattened into three siblings). Held safe ONLY by being unreachable: no item "
-        "carries `green_steel_slot` (#194). Correcting the builder to ATOMIC is a "
-        "full-stack change (dataset.js, model.js, solver.js, projection.js and the "
-        "exports) to a pool no player can reach and no host exists to test against, "
-        "so it is declared honestly instead, with the trigger keyed to the HOST "
-        "marker: the first item that carries `green_steel_slot` fails this build "
-        "until the builder is made atomic.",
-        host_marker="green_steel_slot", splits_options=True),
+        ATOMIC, (), VERIFIED_SAFE, False,
+        "One record per craftable option, carrying its own `affixes` list. 81 source "
+        "options -> 81 records, no option split. It USED to split: 81 options became "
+        "108 records, and since the solver constrains this pool Sigma <= 1 per host, a "
+        "player crafting a multi-affix Green Steel effect would have been given one "
+        "of its parts — the reported Viktranium symptom verbatim. 24 of the 81 are "
+        "genuinely multi-affix; one grants Charisma Skills +22 Competence, UMD +6 "
+        "Competence and Wizardry +151 Profane, and shipped as three siblings.\n\n"
+        "This entry previously declared that honestly rather than fixing it, on the "
+        "grounds that correcting the builder was 'a full-stack change (dataset.js, "
+        "model.js, solver.js, projection.js and the exports) to a pool no player can "
+        "reach'. That was true when written and is not now: viktranium, dino_inserts "
+        "and nearly_complete are all ATOMIC, so every one of those consumers already "
+        "reads an `affixes` list, through a branch that falls back to the flat shape. "
+        "`solver.js` also keeps the option's leading on-target affix in the legacy "
+        "flat fields for renderers not yet reading `affixes`, which is what made the "
+        "exports a no-op. Converting was a builder change plus two pool filters.\n\n"
+        "Still UNREACHABLE — no item carries `green_steel_slot` (#194) — so the host "
+        "marker stays armed, now on the `reachable` branch: the first host that ships "
+        "asks for a re-audit against a real item instead of failing on the split.",
+        host_marker="green_steel_slot"),
     "thunder_forged": _c(
-        FLAT, (), KNOWN_UNSAFE, False,
-        "SPLITS OPTIONS, same reasoning as green_steel and the same Sigma <= 1 "
-        "per-tier solver constraint. 35 source options -> 36 records; 1 of the 35 is "
-        "multi-affix. Held safe only by being unreachable: no item carries "
-        "`thunder_forged_tiers` (#194). Trigger keyed to the HOST marker, not to "
-        "record count — the pool has been full and inert for months, so a "
-        "record-count trigger was already spent.",
-        host_marker="thunder_forged_tiers", splits_options=True),
+        ATOMIC, (), VERIFIED_SAFE, False,
+        "One record per craftable option carrying its own `affixes` list, tagged with "
+        "its tier. 35 source options -> 35 records, no option split. Converted with "
+        "green_steel and for the same reason (the solver takes one record per TIER "
+        "slot, so a split option hands the player one part of an effect); only 1 of "
+        "the 35 is multi-affix here, which is precisely why it was worth doing at the "
+        "same time — a single quiet case is the one that survives review and ships "
+        "the day a host appears.\n\n"
+        "Still UNREACHABLE — no item carries `thunder_forged_tiers` (#194) — so the "
+        "host marker stays armed on the `reachable` branch.",
+        host_marker="thunder_forged_tiers"),
     "essence_crafting": _c(
         FLAT, (), VERIFIED_SAFE, True,
         "Essence Crafting Trinket menus, the Gem of Many Facets' three (#193/#599). "

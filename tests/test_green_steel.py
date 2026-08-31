@@ -46,4 +46,13 @@ def test_native_build_sources_from_catalog():
     assert out["coverage"]["pending"] is False
     assert "gearplanner_crafting.json" in out["coverage"]["source"]
     r = out["records"][0]
-    assert {"stat", "bonus_type", "value", "unit"} <= set(r), "legacy solver-facing shape preserved"
+    # #194 — ATOMIC: one record per craftable OPTION carrying its own `affixes`
+    # list, so the legacy per-affix keys live one level in. The builder used to
+    # emit one record per affix, which split each multi-affix option into
+    # mutually exclusive siblings the solver could only take one of.
+    assert "affixes" in r and r["affixes"], "atomic: the option carries its affixes"
+    assert "stat" not in r, "the flat per-affix shape must not linger on the record"
+    assert {"stat", "bonus_type", "value", "unit"} <= set(r["affixes"][0]), \
+        "legacy solver-facing affix shape preserved INSIDE the option"
+    assert any(len(x["affixes"]) > 1 for x in out["records"]), \
+        "at least one multi-affix option survives whole — the point of the change"

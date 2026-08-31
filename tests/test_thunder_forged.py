@@ -51,4 +51,11 @@ def test_native_build_sources_from_catalog():
     assert out["coverage"]["tiers_sourced"] == [1, 2, 3], "all three weapon tiers resolve"
     assert "gearplanner_crafting.json" in out["coverage"]["source"]
     r = out["records"][0]
-    assert {"tier", "stat", "bonus_type", "value", "unit"} <= set(r), "legacy solver-facing shape + tier"
+    # #194 — ATOMIC, as green_steel: `tier` stays on the record, the per-affix keys
+    # move into `affixes`. Only one of the 35 options here is multi-affix, which is
+    # exactly why it was worth fixing alongside — one quiet case survives review.
+    assert "tier" in r, "the tier keys the slot, so it stays on the record"
+    assert "affixes" in r and r["affixes"], "atomic: the option carries its affixes"
+    assert "stat" not in r, "the flat per-affix shape must not linger on the record"
+    assert {"stat", "bonus_type", "value", "unit"} <= set(r["affixes"][0]), \
+        "legacy solver-facing affix shape preserved INSIDE the option"

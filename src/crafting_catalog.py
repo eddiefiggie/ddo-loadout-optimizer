@@ -177,19 +177,42 @@ def count_menu_options(keys, catalog: dict = None) -> int:
 
 
 def green_steel_records(catalog: dict = None) -> list:
-    """Flat Green Steel option records sourced natively from the ``T*(Equipment)``
-    menu pools. One record per affix (single-pick model), legacy solver shape +
-    the native tier key. No gate: Bool/Untyped options pass through."""
+    """ATOMIC Green Steel option records (#194) sourced natively from the
+    ``T*(Equipment)`` menu pools: ONE record per craftable option, carrying its own
+    ``affixes`` list. No gate — Bool/Untyped options pass through.
+
+    This used to emit one record per AFFIX, which split each multi-affix option
+    into mutually exclusive siblings. The solver constrains this pool ``Sigma <= 1``
+    per host, so a player crafting an effect that grants three things would have
+    been offered exactly one of them — the reported Viktranium symptom verbatim
+    (`src/container_registry.py` opens with it). 24 of the 81 source options are
+    genuinely multi-affix; one grants Charisma Skills +22 Competence, UMD +6
+    Competence and Wizardry +151 Profane, and shipped as three siblings.
+
+    It was inert, and safe only for that reason: no item carries
+    ``green_steel_slot``. The registry gate held it with a tripwire on the HOST
+    marker rather than on record count, and its failure text names this change
+    exactly — "emit one record per option carrying its own `affixes` list, then
+    drop `splits_options`". Done ahead of the hosts (#194), so the half that needs
+    a wiki harvest lands against a builder that is already correct.
+
+    Shape mirrors `viktranium._record`, the container this repo already models
+    atomically, so `model.js` and `solver.js` read it through the same
+    `affixes`-or-legacy branch they already run for Viktranium.
+    """
     catalog = load_catalog() if catalog is None else catalog
     out = []
     for tier_key in GREEN_STEEL_KEYS:
         for opt in menu_options(tier_key, catalog):
-            for aff in iter_affixes(opt):
-                rec = legacy_affix(aff)
-                rec["name"] = opt.get("name") or aff.get("name") or ""
-                rec["tier_key"] = tier_key
-                rec["ml"] = opt.get("ml")
-                out.append(rec)
+            affixes = [legacy_affix(aff) for aff in iter_affixes(opt)]
+            if not affixes:
+                continue   # an option may be DROPPED (nothing to craft), never split
+            out.append({
+                "name": opt.get("name") or affixes[0].get("stat") or "",
+                "tier_key": tier_key,
+                "ml": opt.get("ml"),
+                "affixes": affixes,
+            })
     return out
 
 
@@ -250,17 +273,27 @@ def augment_pool_records(catalog: dict = None) -> list:
 
 
 def thunder_forged_records(catalog: dict = None) -> list:
-    """Per-tier Thunder-Forged option records sourced natively from the
-    ``T*(Weapon)`` menu pools. One record per affix, tagged with its tier (1/2/3),
-    legacy solver shape. No gate."""
+    """ATOMIC per-tier Thunder-Forged option records (#194) sourced natively from
+    the ``T*(Weapon)`` menu pools: ONE record per craftable option, tagged with its
+    tier (1/2/3) and carrying its own ``affixes`` list. No gate.
+
+    Same change and same reasoning as `green_steel_records` above — the solver
+    takes one record per TIER slot, so a split option offers a player one part of
+    an effect. Only 1 of the 35 source options is multi-affix here, which is
+    exactly why this one is worth fixing alongside the other: a single quiet case
+    is the kind that survives a review and then ships the day a host appears.
+    """
     catalog = load_catalog() if catalog is None else catalog
     out = []
     for tier, tier_key in THUNDER_FORGED_KEYS.items():
         for opt in menu_options(tier_key, catalog):
-            for aff in iter_affixes(opt):
-                rec = legacy_affix(aff)
-                rec["tier"] = tier
-                rec["name"] = opt.get("name") or aff.get("name") or ""
-                rec["ml"] = opt.get("ml")
-                out.append(rec)
+            affixes = [legacy_affix(aff) for aff in iter_affixes(opt)]
+            if not affixes:
+                continue
+            out.append({
+                "tier": tier,
+                "name": opt.get("name") or affixes[0].get("stat") or "",
+                "ml": opt.get("ml"),
+                "affixes": affixes,
+            })
     return out

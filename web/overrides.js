@@ -212,8 +212,13 @@
   // by host item name, so its rows are host-scoped and their keys carry the host.
   var POOL_CHANNELS = [
     { channel: "seal", multi: false, disc: function (e) { return [e.seal_type, e.domain]; } },
-    { channel: "thunder_forged", multi: false, disc: function (e) { return [e.tier]; } },
-    { channel: "green_steel", multi: false, disc: function (e) { return [e.tier_key]; } },
+    // #194 — both became ATOMIC when their builders stopped splitting multi-affix
+    // options into mutually exclusive siblings, so their affixes live one level in
+    // exactly as viktranium's do. `multi` is the flag that already models this;
+    // leaving it false made every row in both channels unaddressable — the walk
+    // treated the option record itself as an affix and found no `stat` on it.
+    { channel: "thunder_forged", multi: true, disc: function (e) { return [e.tier]; } },
+    { channel: "green_steel", multi: true, disc: function (e) { return [e.tier_key]; } },
     { channel: "nearly_complete", multi: true, disc: function (e) { return [e.category, e.tier]; } },
     { channel: "viktranium", multi: true, disc: function (e) { return [e.slot_type, e.category, e.tier]; } },
     { channel: "dino_inserts", multi: true, disc: function (e) { return [e.category, e.dino_type]; } },

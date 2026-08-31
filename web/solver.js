@@ -1065,6 +1065,16 @@ function buildProgram(model) {
     }
   }
 
+  // #194 — one craftable option's affixes, ATOMIC shape with the pre-atomicity
+  // fallback, exactly as the Viktranium loop above reads its pool. Both pools now
+  // emit one record per OPTION carrying an `affixes` list; before that they emitted
+  // one record per AFFIX, and since each loop below takes at most one record per
+  // slot, a player crafting a multi-affix effect would have received one part of
+  // it. The fallback keeps a hand-built or older flat record working.
+  const _craftAffixes = (opt) => ((opt.affixes && opt.affixes.length)
+    ? opt.affixes
+    : (opt.stat ? [{ stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit }] : []));
+
   // Legendary Thunder-Forged — a multi-tier choice-slot. `thunder_forged_tiers` is a
   // list of tier slots [{tier}]; each may craft one option from that tier's pool, an
   // independent Σ n <= 1 per tier (mirrors Viktranium's per-`lamordia_slot` loop). Pool
@@ -1077,18 +1087,32 @@ function buildProgram(model) {
       const slotVars = [];
       for (const opt of model.thunderForged || []) {
         if (opt.tier !== slot.tier) continue;
-        if (!(targetSet.has(opt.stat) && opt.value > 0)) continue;
+        const affixes = _craftAffixes(opt);
+        const onTarget = affixes.filter((a) => targetSet.has(a.stat) && a.value > 0);
+        if (!onTarget.length) continue;
         const n = "tf" + tfc++;
         extraVars.push(n);
+        const lead = onTarget[0];
         tfMeta.set(n, {
-          item: xv.variant.variant_id, tier: slot.tier, stat: opt.stat,
-          bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat", wiki_url: opt.wiki_url,
+          item: xv.variant.variant_id, tier: slot.tier, name: opt.name,
+          // The whole option rides along, so a placement is self-describing and a
+          // multi-affix craft is findable by any affix it grants (Viktranium's rule).
+          affixes: affixes.map((a) => ({
+            stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat",
+            ...(a.via ? { via: a.via } : {}),
+          })),
+          // Legacy flat fields, kept for renderers not yet reading `affixes`: the
+          // option's leading ON-TARGET affix.
+          stat: lead.stat, bonus_type: lead.bonus_type, value: lead.value,
+          unit: lead.unit || "flat", wiki_url: opt.wiki_url,
         });
         slotVars.push(n);
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
-        const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
-        if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push(zOf([n], opt.value, opt, xv.variant.variant_id));
+        for (const a of onTarget) {
+          const k = `${a.stat}||${_equivType(a.bonus_type)}`;
+          if (!zByBucket.has(k)) zByBucket.set(k, []);
+          zByBucket.get(k).push(zOf([n], a.value, a, xv.variant.variant_id));
+        }
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single pick per tier
     }
@@ -1102,18 +1126,29 @@ function buildProgram(model) {
     if (!xv.variant.green_steel_slot) continue;
     const slotVars = [];
     for (const opt of model.greenSteel || []) {
-      if (!(targetSet.has(opt.stat) && opt.value > 0)) continue;
+      const affixes = _craftAffixes(opt);
+      const onTarget = affixes.filter((a) => targetSet.has(a.stat) && a.value > 0);
+      if (!onTarget.length) continue;
       const n = "gs" + gsc++;
       extraVars.push(n);
+      const lead = onTarget[0];
       gsMeta.set(n, {
-        item: xv.variant.variant_id, name: opt.name, stat: opt.stat,
-        bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit || "flat", wiki_url: opt.wiki_url,
+        item: xv.variant.variant_id, name: opt.name,
+        affixes: affixes.map((a) => ({
+          stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat",
+          ...(a.via ? { via: a.via } : {}),
+        })),
+        // Legacy flat fields — the option's leading ON-TARGET affix.
+        stat: lead.stat, bonus_type: lead.bonus_type, value: lead.value,
+        unit: lead.unit || "flat", wiki_url: opt.wiki_url,
       });
       slotVars.push(n);
       extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
-      const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
-      if (!zByBucket.has(k)) zByBucket.set(k, []);
-      zByBucket.get(k).push(zOf([n], opt.value, opt, xv.variant.variant_id));
+      for (const a of onTarget) {
+        const k = `${a.stat}||${_equivType(a.bonus_type)}`;
+        if (!zByBucket.has(k)) zByBucket.set(k, []);
+        zByBucket.get(k).push(zOf([n], a.value, a, xv.variant.variant_id));
+      }
     }
     if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single craft per host
   }

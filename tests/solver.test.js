@@ -3307,6 +3307,109 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.gsPlaced[0].bonus_type, "Quality", "chose the stacking tier");
   });
 
+  // ---- #194: Green Steel / Thunder-Forged options are ATOMIC ---------------
+  //
+  // Both builders used to emit one record per AFFIX, so a multi-affix craft became
+  // several mutually exclusive siblings. Each loop takes at most one record per
+  // slot, so a player crafting an effect that grants three things was offered ONE
+  // of them — the reported Viktranium symptom verbatim (src/container_registry.py
+  // opens with it). 24 of Green Steel's 81 options are genuinely multi-affix.
+  //
+  // The registry declared this honestly instead of fixing it, on the grounds that
+  // it was "a full-stack change ... to a pool no player can reach and no host
+  // exists to test against". The first half stopped being true once viktranium,
+  // dino_inserts and nearly_complete all went ATOMIC — every consumer already
+  // reads an `affixes` list. The second half is answered here: a synthetic host is
+  // exactly the thing that lets an unreachable pool be tested.
+  const gsAtomic = (name, affixes) => ({
+    name, affixes: affixes.map(([stat, bonus_type, value]) =>
+      ({ stat, bonus_type, value, unit: "flat" })),
+  });
+  const tfAtomic = (tier, name, affixes) => ({ ...gsAtomic(name, affixes), tier });
+
+  await test("#194/GS: a multi-affix option grants ALL of its affixes, not one", async () => {
+    // The defect, stated as a test. Under the old shape this option was three
+    // records and the host could take one, reporting 22 / 0 / 0.
+    const model = {
+      targets: ["Charisma Skills", "Use Magic Device", "Wizardry"], mlCap: 34,
+      greenSteel: [gsAtomic("Skills item", [
+        ["Charisma Skills", "Competence", 22],
+        ["Use Magic Device", "Competence", 6],
+        ["Wizardry", "Profane", 151],
+      ])],
+      worn: [slot("Trinket", [gsHost("H", "Trinket")])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual((r.gsPlaced || []).length, 1, "still ONE craft — the slot is single-pick");
+    assert.strictEqual(r.effective["Charisma Skills"], 22);
+    assert.strictEqual(r.effective["Use Magic Device"], 6, "the second affix is not lost");
+    assert.strictEqual(r.effective.Wizardry, 151, "nor the third");
+  });
+
+  await test("#194/GS: the single-pick cap still holds across whole options", async () => {
+    // Atomicity must not become "take everything": two multi-affix options, one slot.
+    const model = {
+      targets: ["Constitution", "Strength"], mlCap: 34,
+      greenSteel: [
+        gsAtomic("A", [["Constitution", "Insightful", 8], ["Strength", "Insightful", 8]]),
+        gsAtomic("B", [["Constitution", "Quality", 4], ["Strength", "Quality", 4]]),
+      ],
+      worn: [slot("Trinket", [gsHost("H", "Trinket")])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual((r.gsPlaced || []).length, 1, "one option, whole — never two");
+    assert.strictEqual(r.effective.Constitution, 8, "option A, both of its affixes");
+    assert.strictEqual(r.effective.Strength, 8);
+  });
+
+  await test("#194/GS: an option is kept when a LATER affix is the one ranked", async () => {
+    // The filter used to read `opt.stat`, i.e. the first affix only. An option
+    // whose leading affix is off-target and whose second is exactly what the player
+    // ranked was dropped entirely.
+    const model = {
+      targets: ["Wizardry"], mlCap: 34,
+      greenSteel: [gsAtomic("Lead is off-target", [
+        ["Fortitude Save Vs Disease", "Insight", 4],
+        ["Wizardry", "Profane", 151],
+      ])],
+      worn: [slot("Trinket", [gsHost("H", "Trinket")])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual((r.gsPlaced || []).length, 1, "the option is offered on its second affix");
+    assert.strictEqual(r.effective.Wizardry, 151);
+    // The off-target affix is carried on the placement for display, but contributes
+    // to no ranked bucket — it is not a target.
+    assert.strictEqual((r.gsPlaced[0].affixes || []).length, 2,
+      "the whole option rides along so the placement is self-describing");
+  });
+
+  await test("#194/TF: a multi-affix tier option grants all of its affixes", async () => {
+    const model = {
+      targets: ["Good Aligned", "Holy"], mlCap: 34,
+      thunderForged: [tfAtomic(1, "Good Aligned", [
+        ["Good Aligned", "Bool", 1], ["Holy", "Bool", 1],
+      ])],
+      worn: [slot("Main Hand", [tfHost("W", "Main Hand", [1])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual((r.tfPlaced || []).length, 1);
+    assert.strictEqual(r.effective["Good Aligned"], 1);
+    assert.strictEqual(r.effective.Holy, 1, "the one multi-affix Thunder-Forged option, whole");
+  });
+
+  await test("#194: a FLAT record still works, so nothing hand-built breaks", async () => {
+    // The back-compat branch, matching the one Viktranium already carries. Fixture
+    // pools and older callers write the flat shape.
+    const model = {
+      targets: ["Constitution"], mlCap: 34,
+      greenSteel: [gsOpt("flat", "Constitution", "Insightful", 8)],
+      worn: [slot("Trinket", [gsHost("H", "Trinket")])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.Constitution, 8, "the pre-atomicity shape still binds");
+  });
+
   // U6 — AE4 end-to-end: slot constraints honored through the real HiGHS solve
   await test("AE4: a pinned (weaker) variant is force-equipped over the optimum", async () => {
     const model = {

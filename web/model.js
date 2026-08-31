@@ -1625,6 +1625,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // schools spends ONE slot, not two. Keep an option when ANY of its affixes
   // advances a ranked target; the solver attaches them per host via the item's
   // `lamordia_slots` at the host's tier and gates the whole option on one binary.
+  // #194 — also used by the Thunder-Forged and Green Steel pools below, which are
+  // the same ATOMIC shape. Named for Viktranium because that is where it started.
   const vikAdvances = (o) => {
     const affixes = (o.affixes && o.affixes.length)
       ? o.affixes
@@ -1638,10 +1640,16 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // Keep only options advancing a ranked target; the solver unseals one option
   // per host seal slot via the item's `seal_slots`.
   const sealPool = (seal || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
-  // Thunder-Forged (tier-keyed) + Green Steel (flat) choice-slot pools, kept to
+  // Thunder-Forged (tier-keyed) + Green Steel choice-slot pools, kept to
   // target-advancing options only; the solver attaches them per host via the marker.
-  const tfPool = (thunderForged || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
-  const gsPool = (greenSteel || []).filter((o) => o && targetSet.has(o.stat) && o.value > 0);
+  // #194 — read through `vikAdvances`, not `o.stat`: both pools are ATOMIC now, one
+  // record per craftable option carrying an `affixes` list, so a multi-affix option
+  // advances a target through ANY of its affixes. Reading only `o.stat` would drop
+  // an option whose first affix is off-target while a later one is exactly what the
+  // player ranked. Shared with Viktranium deliberately — three containers now have
+  // this shape and a fourth reading it differently is how they drift apart.
+  const tfPool = (thunderForged || []).filter((o) => o && vikAdvances(o));
+  const gsPool = (greenSteel || []).filter((o) => o && vikAdvances(o));
   // #539 — classify the set pins against the ELIGIBLE pool. Done here, with the
   // pool and both def dicts in scope, so a pin the query cannot satisfy is named
   // as such instead of reaching the solver and coming back as a bare INFEASIBLE.
