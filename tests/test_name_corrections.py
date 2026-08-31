@@ -65,12 +65,18 @@ def test_other_affixes_are_untouched():
     assert records[0]["affixes"][1]["name"] == "Superior Reinforced Fists"
 
 
-def test_the_rename_reaches_an_untyped_affix_the_registry_gate_cannot_see():
-    # vocabulary.iter_affixes requires name+type+value together, so it does not
-    # yield an untyped affix at all. The rename must not inherit that blindness —
-    # it is the exact gap that hid this enchantment.
+def test_the_rename_reaches_an_untyped_affix_AND_SO_DOES_THE_GATE_NOW():
+    # This used to pin the opposite: `vocabulary.iter_affixes` required
+    # name+type+value together, so it yielded an untyped affix not at all, and the
+    # assertion here was `== []`. The rename deliberately did not inherit that
+    # blindness — which is the only reason this enchantment was reachable.
+    #
+    # #229 closed the gap at the source, so the walk now sees it too. Both halves
+    # are asserted together on purpose: the rename must keep working, AND the gate
+    # must no longer be the one place that cannot see what the rename can.
     records = [_rec("Icewalkers", [{"name": "Ki", "value": "1"}])]
-    assert list(vocabulary.iter_affixes(records)) == []
+    assert [a["name"] for a in vocabulary.iter_affixes(records)] == ["Ki"], \
+        "the registry gate's walk must see an untyped affix (#229)"
     name_corrections.apply(records, [_corr()])
     assert records[0]["affixes"][0]["name"] == "Enhanced Ki"
 

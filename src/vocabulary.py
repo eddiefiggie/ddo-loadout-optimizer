@@ -69,10 +69,36 @@ def _load(path):
 
 
 def iter_affixes(obj):
-    """Yield every ``{name, type, value}`` affix dict found anywhere in a raw structure
-    (items, crafting pools of either the ``"*"`` or per-item shape, and set defs)."""
+    """Yield every affix dict found anywhere in a raw structure (items, crafting
+    pools of either the ``"*"`` or per-item shape, and set defs).
+
+    An affix is ``name`` + ``value``. The TYPE IS OPTIONAL — #229.
+
+    This used to require all three keys, and gear-planner omits ``type`` entirely
+    for an untyped affix (``{"name": "Sunburst", "value": "1"}``). So 90 affix
+    dicts across 23 distinct names were invisible to every consumer of this walk,
+    and the two that matter are integrity gates:
+
+      * ``generate_registries`` builds ``affix_names`` from this walk, so those 23
+        names were absent from the frozen registry;
+      * ``check_referential_integrity`` reads the same walk, so an untyped affix
+        could appear on a re-import with NO new-name event — precisely the thing
+        that gate exists to catch. A gate blind to a whole shape of record does not
+        report a gap; it reports success.
+
+    ``check_referential_integrity`` already tolerates the missing key
+    (``ty = a.get("type")``, guarded by ``isinstance``), so an untyped affix has
+    its NAME validated and its type skipped, which is correct — there is no type
+    to resolve.
+
+    Requiring ``value`` as well as ``name`` is what keeps this from sweeping in
+    item records, which carry a ``name`` of their own. Measured before loosening:
+    across the three raw sources, ZERO dicts carrying ``name`` + ``value`` also
+    contain nested affixes, so nothing is shadowed by yielding at this level
+    instead of recursing past it.
+    """
     if isinstance(obj, dict):
-        if "name" in obj and "type" in obj and "value" in obj:
+        if "name" in obj and "value" in obj:
             yield obj
         else:
             for v in obj.values():

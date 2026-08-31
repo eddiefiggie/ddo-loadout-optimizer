@@ -50,7 +50,15 @@ def test_alias_resolution_and_distinct_whitelist():
 
 def test_integrity_gate_passes_on_real_data_and_fails_on_unknown():
     items, crafting, sets = V._load(V.ITEMS_PATH), V._load(V.CRAFTING_PATH), V._load(V.SETS_PATH)
-    baseline = V.generate_registries(items, crafting, sets)
+    # #229 — the baseline is the CHECKED-IN registry, not a fresh generate over the
+    # same raw file. `check_referential_integrity`'s own docstring says so —
+    # "regenerating from the same raw would be tautological" — but this test passed
+    # it a regenerated baseline, which is exactly the tautology the docstring warns
+    # about: every name in the raw is in a baseline built from that raw, so the gate
+    # could never report drift. Its "fails on unknown" half still worked, because
+    # those cases inject into a fresh list; the half that matters on a real refresh
+    # did not. Reading the frozen file is what gives the gate teeth.
+    baseline = V._load(V.VOCAB_REGISTRIES_PATH)
     alias_map, _ = V.load_affix_aliases()
     # the frozen baseline resolves all current references (aliases cover the collisions)
     n = V.check_referential_integrity(items, crafting, sets, baseline, alias_map)
@@ -805,12 +813,21 @@ def test_374_armed_canon_variants_arms_a_flip_and_only_a_flip():
     assert armed == {"Fire Spell Power": "Combustion"}, armed
 
 
-def test_374_armed_canon_variants_cannot_see_an_untyped_variant():
-    """The predicate uses the same walk the integrity gate uses (name+type+value),
-    so an untyped affix is invisible to both — the `Ki` boundary case."""
+def test_374_armed_canon_variants_NOW_SEES_an_untyped_variant():
+    """#229 inverted this, and the inversion is the fix.
+
+    It used to assert that `armed_canon_variants` could NOT see an untyped affix,
+    because the walk required name+type+value and gear-planner omits `type`
+    entirely for one. That was a recorded blindness, not a desired property: an
+    upstream spelling that arrived untyped would arm no canon defence, so a
+    correction guarding our canonical name would sit `pending_upstream` forever
+    while upstream was already emitting the variant.
+
+    The walk now needs only name+value, so the `Ki` boundary case arms.
+    """
     items = {"items": [{"name": "Icewalkers", "affixes": [{"name": "Ki", "value": "3"}]}]}
-    assert V.armed_canon_variants(items, {}, {},
-                                  alias_map={"Ki": "Enhanced Ki"}) == {}
+    armed = V.armed_canon_variants(items, {}, {}, alias_map={"Ki": "Enhanced Ki"})
+    assert armed == {"Ki": "Enhanced Ki"}, armed
 
 
 def test_374_armed_canon_variants_is_exactly_the_canon_defence_after_the_refresh():
@@ -1024,3 +1041,77 @@ def test_374_the_local_names_union_is_now_load_bearing_not_a_no_op():
     minted = set(V.local_affix_names())
     assert minted, "the section must not be empty"
     assert not (minted & raw), sorted(minted & raw)
+
+
+# --- #229: no affix in the raw data is invisible to the registry gate ---------
+
+def test_229_no_affix_shape_is_invisible_to_the_registry_walk():
+    """The completeness claim, asserted rather than dated.
+
+    `iter_affixes` used to require name+type+value, and gear-planner omits `type`
+    entirely for an untyped affix. 90 affix dicts across 23 distinct names were
+    therefore invisible to `generate_registries` AND to
+    `check_referential_integrity` — so an untyped affix could arrive on a re-import
+    with no new-name event, which is the one thing that gate exists to prevent. A
+    gate blind to a whole SHAPE of record does not report a gap; it reports success.
+
+    This compares the gate's walk against a deliberately looser one over the same
+    raw sources. Any name the loose walk finds and the gate's does not is a shape
+    the registry cannot see, and the answer must be zero — not "zero as of a date".
+    """
+    items, crafting, sets = V._load(V.ITEMS_PATH), V._load(V.CRAFTING_PATH), V._load(V.SETS_PATH)
+
+    def loose(obj):
+        if isinstance(obj, dict):
+            if "name" in obj and "value" in obj:
+                yield obj
+            else:
+                for v in obj.values():
+                    yield from loose(v)
+        elif isinstance(obj, list):
+            for v in obj:
+                yield from loose(v)
+
+    gate, everything = set(), set()
+    for src in (items, crafting, sets):
+        gate.update(a["name"] for a in V.iter_affixes(src) if isinstance(a.get("name"), str))
+        everything.update(a["name"] for a in loose(src) if isinstance(a.get("name"), str))
+
+    assert len(everything) > 1000, "premise: the walk inspects a real population"
+    missing = sorted(everything - gate)
+    assert not missing, (
+        f"{len(missing)} affix name(s) are invisible to the registry gate: {missing[:8]}. "
+        "An affix shape the gate cannot walk is one it cannot validate, so a new name "
+        "in that shape arrives with no new-name event.")
+
+
+def test_229_the_untyped_names_are_actually_in_the_frozen_registry():
+    """The other half: seeing them is worthless if they were never written down.
+
+    Spot-checked against real untyped enchantments rather than the whole set, so
+    this states a fact about the data instead of restating the regenerate.
+    """
+    frozen = set(V._load(V.VOCAB_REGISTRIES_PATH)["affix_names"])
+    for name in ("Sunburst", "Draining", "Stumbling", "Eldritch", "Radiant Glory"):
+        assert name in frozen, f"{name!r} is an untyped affix still missing from the registry"
+
+
+def test_229_the_integrity_gate_reads_the_FROZEN_registry_not_a_fresh_generate():
+    """A baseline regenerated from the raw it is about to validate cannot fail.
+
+    `check_referential_integrity`'s own docstring says so — "regenerating from the
+    same raw would be tautological" — yet the test that exercised it on real data
+    passed exactly that. This asserts the property directly: a name present in the
+    raw but ABSENT from the frozen registry must raise, which is impossible to
+    detect with a self-derived baseline.
+    """
+    frozen = V._load(V.VOCAB_REGISTRIES_PATH)
+    alias_map, _ = V.load_affix_aliases()
+    shrunk = dict(frozen)
+    shrunk["affix_names"] = [n for n in frozen["affix_names"] if n != "Sunburst"]
+    items = {"items": [{"name": "Some Item", "affixes": [{"name": "Sunburst", "value": "1"}]}]}
+    _raises(V.IntegrityError, V.check_referential_integrity,
+            items, {}, {}, shrunk, alias_map)
+    # and with the real frozen registry it resolves, so the failure above is about
+    # the missing entry rather than about untyped affixes being rejected wholesale.
+    assert V.check_referential_integrity(items, {}, {}, frozen, alias_map) == 1
