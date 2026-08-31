@@ -437,6 +437,10 @@ function queryGates(query) {
   return {
     cap: query.mlCap,
     floor: query.mlFloor,                                  // optional item-level floor
+    // #611 — Essence Crafting sets the item's ML, so an essence host's ML is not
+    // the number the cap should be compared against. Live only when the rung
+    // still supplies the pool (see below).
+    essenceLive: !rungExcludesNicheCrafting(craftingRung(query)),
     ceiling: query.augCeiling ?? null,                     // #339 — optional augment-only ML ceiling
     rung: craftingRung(query),                             // #346 — the crafting/augment ladder
     pinnedIds,                                             // R8 — pins bypass the floor
@@ -445,6 +449,48 @@ function queryGates(query) {
     offWeaponAllow: allowedOffHandWeaponTypes(query),      // off-hand weapon set | null
     offHand: offHandGate(query),                           // { blocked } | { allowed }
   };
+}
+
+/** #611 — the minimum level an Essence Crafting host would actually be worn at.
+ *
+ *  For everything else this is just `v.ml`. For a host carrying Essence menus it
+ *  is `min(v.ml, cap)`, because the ML of such an item is set during crafting and
+ *  is not a property it arrives with:
+ *
+ *    "This shard determines the minimum level of the item, the power level of
+ *     scaling effect shards crafted onto the item"        — Essence Crafting, Steps
+ *    "Search for the Minimum Level you wish to create."   — Essence Crafting steps
+ *    "Scaling effects vary their values when placed in LOWER or higher Minimum
+ *     Level shard items"                                  — Essence Crafting, Notes
+ *
+ *  So a Legendary Gem of Many Facets (native ML 30) is wearable by a character
+ *  capped at 20 — crafted at ML 20, with ML-20 effect values, which the solver
+ *  reads from the same harvested curve it already uses. Excluding it outright was
+ *  asking the wrong question of the cap.
+ *
+ *  The `min` is what preserves the CEILING in the same expression: an item is
+ *  never credited above its own ML. That ceiling is a player observation with
+ *  named provenance rather than a wiki rule (a Legendary Gem refuses an ML 36
+ *  shard, maintainer 2026-08-30) — but note the only ML restriction the wiki does
+ *  state runs the same way: "the Minimum Level cannot be RAISED after
+ *  disjunction" (Rune Arms). Nothing found anywhere prohibits lowering it.
+ *
+ *  Gated on `essenceLive` because `buildModel` empties the essence pool on the
+ *  niche-crafting rung. Without that check a player who turned crafting OFF would
+ *  be handed an over-cap Gem carrying nothing at all — its `[Crafted]` record has
+ *  no native affixes, so uncrafted it is a blank.
+ *
+ *  Applied to the FLOOR as well as the cap, and deliberately: if the only way to
+ *  wear this Gem is at ML 25, it is ML-25 gear, and a player who asked to hide
+ *  gear below 29 asked to hide it. That can only change the answer when
+ *  `cap < v.ml`, which is the case this function exists to create, so no existing
+ *  build moves.
+ */
+function craftedMlOf(v, g) {
+  if (v == null || v.ml == null) return v == null ? null : v.ml;
+  if (!g || !g.essenceLive || g.cap == null) return v.ml;
+  if (!((v.essence_slots || []).length)) return v.ml;
+  return Math.min(v.ml, g.cap);
 }
 
 // U1/B4 — THE single per-variant gate list. Returns `null` when the variant is
@@ -458,7 +504,8 @@ function variantConflict(v, query, gates) {
   // Verification: a gate for the solver's filter. Never surfaces from a pin because
   // the picker only offers verified items (KTD3), but kept here for eligible() parity.
   if (v.verification !== "verified") return "this item isn't verified";
-  if (v.ml != null && v.ml > g.cap) return `above your ML ${g.cap} cap`;
+  const _ml = craftedMlOf(v, g);   // #611 — a crafting choice for essence hosts
+  if (_ml != null && _ml > g.cap) return `above your ML ${g.cap} cap`;
   // R8 — the mlFloor is a soft "hide low-ML gear" filter, so an explicit pin overrides
   // it: a pinned variant skips ONLY this floor check (the cap above still applies, and
   // every other gate below still fires). Living in variantConflict means eligible()
@@ -471,7 +518,7 @@ function variantConflict(v, query, gates) {
   // bonus may stack uniquely (Festive is its own bonus type), so a "hide low-ML gear"
   // floor must not drop it. Only the cap (above) constrains an augment: an augment above
   // the ML cap genuinely can't be slotted.
-  if (g.floor != null && v.ml != null && v.ml < g.floor
+  if (g.floor != null && _ml != null && _ml < g.floor
       && v.category !== "augment"
       && !(g.pinnedIds && g.pinnedIds.has(variantKey(v)))) return `below your ML ${g.floor} floor`;
 
@@ -1789,7 +1836,7 @@ function poolStatNames(model) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { poolStatNames, setIntrinsicCaps, setEssenceCoverage, essenceCoverage, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
+  module.exports = { poolStatNames, setIntrinsicCaps, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,

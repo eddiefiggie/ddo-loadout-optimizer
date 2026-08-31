@@ -66,16 +66,24 @@ EXTRA_SLOT_MIN_ML = 10
 # level of scaling effect shards crafted onto the item" (Essence Crafting, Steps).
 # Shards exist for ML 1-36.
 #
-# The solver reads the HOST's ml as the level to craft at, and that is correct
-# only because of two things that are checked rather than assumed:
+# The solver crafts at min(HOST's ml, the player's ML cap) — #611. Not a search:
+# exactly one level is ever considered, and that is correct only because of two
+# things that are checked rather than assumed:
 #
 #   1. Every offered option's ML curve is monotonic non-decreasing and peaks at
-#      36, so crafting at the highest available level is always optimal. Asserted
-#      in tests/test_essence_pool.py.
+#      36, so crafting at the highest reachable level is always optimal. Asserted
+#      in tests/test_essence_pool.py. The moment one curve peaks mid-range, the
+#      single level has to become a search — that test is the tripwire.
 #   2. The highest available level for a named item appears to be its own ML — a
 #      Legendary Gem (ML 30) refuses an ML 36 shard. That is a PLAYER OBSERVATION
 #      (maintainer, 2026-08-30), NOT a wiki statement; see
-#      docs/wiki-evidence/essence-crafting.md for where it was searched for.
+#      docs/wiki-evidence/essence-crafting.md for where it was searched for. It is
+#      the `min`'s upper argument, so the ceiling is enforced by construction.
+#
+# The cap is the LOWER argument, and it is what lets a Legendary Gem be worn by a
+# character capped below 30: "Scaling effects vary their values when placed in
+# lower or higher Minimum Level shard items" (Essence Crafting, Notes). A build
+# that crafts a host below its printed ML discloses it rather than assuming it.
 #
 # Both matter beyond the Gem. When the Rune Arm, Ring and Melee menus are sourced,
 # their hosts are blanks with no meaningful native ML, and reading a host record's
