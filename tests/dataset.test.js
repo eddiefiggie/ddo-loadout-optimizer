@@ -1193,9 +1193,11 @@ test("#228: the word-cap casualty set is pinned, so a new named effect surfaces"
 // the abilities they penalise once the wiki ruled them "-1 Penalty to <ability>",
 // so they are no longer affix names to deny; they are signed penalties the solver
 // subtracts. What remains is the population the harvest did not reach.
-const DENIED_615 = [
-  "Cursed Level Drain", "Mind Drain", "Power Drain", "Metal Fatigue",
-];
+// #639 — down from four. `Mind Drain` and `Power Drain` were ruled real penalties
+// and merged into the spell-point pools they drain, so they are no longer names to
+// deny. These two are ruled UNSCOREABLE — "a small chance" with no number — so they
+// stay presence and stay denied.
+const DENIED_615 = ["Cursed Level Drain", "Metal Fatigue"];
 // Weapon-only carriers in the same population: the on-hit reading stays open, so
 // none of them is denied. `Weaken Undead` is the reason the line cannot be drawn
 // on the name — it is a real thing to seek, on 55 weapons.
@@ -1203,6 +1205,10 @@ const DENIED_615 = [
 // reading stayed open and it was deliberately not denied — and the Cursed page
 // then ruled it a -1 Penalty to Strength like its siblings. Recorded because the
 // caution was right: guessing either way would have been wrong half the time.
+// #639 ruled `Critical Weakening`: it is an ENEMY debuff — "saps the power and
+// might from your enemies, dealing 1 Strength damage on each critical hit" — so
+// leaving it undenied in #622 was right. It sits here with `Weaken Undead`, the
+// other weapon proc that is a thing to WANT rather than a drawback.
 const WEAPON_ONLY_615 = ["Critical Weakening", "Weaken Undead"];
 
 test("#615: wearer drawbacks are not offered as priorities, but stay free-typeable", () => {

@@ -628,10 +628,21 @@ const _PRESENCE_NOISE = /[.%:]|\bchance\b|\bwhen you\b|\byour\b|\bclicky\b|\bupg
 //
 // The four below are the ones the harvest did NOT reach. They stay denied because
 // their valence is still undecided — see the issue.
+// #639 — down to two, and shrinking is the fix each time. `Mind Drain` (-5% max
+// spell points) and `Power Drain` (-30 max SP) were ruled real wearer penalties
+// and merged into the pools they drain, so those names no longer exist to deny.
+//
+// The two below are ruled too, and ruled UNSCOREABLE. Both are genuine wearer
+// drawbacks whose magnitude the wiki does not state:
+//   Cursed Level Drain  "each time the player equipping this item is hit there is
+//                       a small chance it will drain 1 level"
+//   Metal Fatigue       "when you are damaged there is a small chance you will
+//                       become Exhausted"
+// A chance with no number, on a status rather than a stat. They stay presence
+// because never-infer forbids inventing a rate, and they stay DENIED because a
+// drawback offered as a goal is misleading whether or not we can score it.
 const PRESENCE_DENY = new Set([
   "Cursed Level Drain",
-  "Mind Drain",
-  "Power Drain",
   "Metal Fatigue",
 ]);
 // #228 — named effects the word cap drops. The cap is a proxy for "is this a
