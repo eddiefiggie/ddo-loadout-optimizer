@@ -164,7 +164,11 @@ def test_the_shipping_shard_renames_ki_and_cites_the_wiki():
     # entry does not silently re-point the assertion at someone else.
     # #374 added the eleven canon-defence entries (ten spell-power/lore flips plus
     # the helpless-family consolidation), taking the shard to 13.
-    assert len(entries) == 13
+    # #632 took it to 15 with two entries of a different KIND: evidence-bound
+    # merges of `Weighty Asset` and `Holding On` into `Undying`, which the wiki
+    # groups with it as one stat. They are asserted separately below; this count
+    # covers both kinds, which is why it is not the canon-defence count.
+    assert len(entries) == 15
     e = next(x for x in entries if x["source_name"] == "Ki")
     assert e["source_name"] == "Ki"
     assert e["canonical_name"] == "Enhanced Ki"
@@ -190,7 +194,8 @@ def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
     # The refresh vendors it, so upstream's generic spellings are now IN the roster
     # and twelve of the thirteen corrections fire here. Derived, not hand-counted:
     # the hit set must be exactly the shard entries whose source_name occurs in raw.
-    assert cov["names_corrected"] == 13
+    # #632 — 15: the 13 canon-defence renames plus the two merges into `Undying`.
+    assert cov["names_corrected"] == 15
     shard = name_corrections.load(SHARD)
     raw_names = {a.get("name") for a in name_corrections._iter_affix_dicts(
         vocabulary._load(vocabulary.ITEMS_PATH))}
@@ -200,7 +205,12 @@ def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
     # lives in the sets/crafting channels, the per-channel miss #376 made silent.
     assert set(cov["hit_names"]) == {e["source_name"] for e in shard} - \
         {"Damage vs. the Helpless"}
-    assert cov["affixes_renamed"] == 1391, cov["affixes_renamed"]
+    # #632 — 1,394: +3, the two `Weighty Asset` carriers (Stone Shoes, Legendary
+    # Stone Shoes) and the one `Holding On` carrier (Ward Token), merged into
+    # `Undying`. A rename count is the right place to notice a merge reaching more
+    # records than its evidence covers, so it is stated as a derived +3 rather than
+    # a new total.
+    assert cov["affixes_renamed"] == 1394, cov["affixes_renamed"]
     # whatever the count, no source spelling may survive the pass
     for e in shard:
         assert not any(a.get("name") == e["source_name"]
@@ -330,7 +340,22 @@ def _shard():
 
 def test_374_the_shard_declares_thirteen_and_marks_the_canon_defence():
     entries = _shard()
-    assert len(entries) == 13
+    # #632 — 15, not 13. The shard now carries two KINDS of correction and the
+    # distinction is asserted below rather than folded into one number:
+    #   13  upstream-spelling corrections (#374 canon defence) — our canon is the
+    #       in-game name and upstream drifted off it.
+    #    2  evidence-bound MERGES — `Weighty Asset` and `Holding On` are separate
+    #       enchantments the wiki says grant one stat, renamed into `Undying` so
+    #       they share its bucket instead of summing beside it. They carry
+    #       `merge_into_existing`, cite the page, and are NOT canon defence.
+    assert len(entries) == 15
+    merges = [e for e in entries if e.get("merge_into_existing")]
+    assert len(merges) == 2, [e["source_name"] for e in merges]
+    for m in merges:
+        assert m.get("evidence"), f"{m['source_name']}: a merge must cite its wiki evidence"
+        assert not m.get("canon_defense"), (
+            f"{m['source_name']} is a merge, not canon defence — upstream is not "
+            "misspelling our canon, it is keeping two names the game treats as one")
     defence = [e for e in entries if e.get("canon_defense")]
     # #374/U4 — re-ratified 11 -> 13, and the marker assertion inverted.
     #
@@ -361,7 +386,11 @@ def test_374_every_canonical_survives_split_type_with_a_stat_left():
     is a bonus type and which is one word long would be peeled to `stat=""`, minting
     a nameless affix. Checked per canonical, never in aggregate."""
     canonicals = {e["canonical_name"] for e in _shard()}
-    assert canonicals == set(FLIPPED) | {"Enhanced Ki", "Legendary Conditioning"}, \
+    # #632 — `Undying` joins as the target of the two merges. It is the only
+    # canonical in this shard that ALREADY existed natively (14 records), which is
+    # exactly what makes those entries merges rather than renames, and why they
+    # carry `merge_into_existing` to pass the collision guard deliberately.
+    assert canonicals == set(FLIPPED) | {"Enhanced Ki", "Legendary Conditioning", "Undying"}, \
         sorted(canonicals)
     for e in _shard():
         canonical = e["canonical_name"]

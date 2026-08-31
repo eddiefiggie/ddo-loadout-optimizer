@@ -116,11 +116,28 @@ def apply(records: list, corrections: list) -> dict:
         # augment channel impossible to add.
         if source not in present:
             continue
-        if canonical in present:
+        if canonical in present and not corr.get("merge_into_existing"):
             problems.append(
                 f"{canonical!r} is already a native gear-planner name, so "
                 f"renaming {source!r} onto it would merge two affixes upstream "
                 "keeps distinct — adjudicate before reapplying")
+        # #632 — a DELIBERATE merge, which is what the guard above asks for once
+        # somebody has adjudicated. Two enchantments upstream keeps distinct can
+        # be one stat in game, and then keeping them apart is the defect: bucket
+        # keys are `stat||type`, so distinct names mean distinct buckets and the
+        # contributions SUM where the game takes the max. `Weighty Asset` (+100)
+        # and `Undying` (+315 at cap) are both enhancement bonuses to the same
+        # unconsciousness range, so a player wearing both would have been credited
+        # 415 for a game value of 315.
+        #
+        # Opt-in per entry and evidence-bound: the merge must cite the wiki page
+        # that groups the two, because "these look like the same thing" is exactly
+        # the inference this repo does not make.
+        if corr.get("merge_into_existing") and not corr.get("evidence"):
+            problems.append(
+                f"{source!r} -> {canonical!r} is declared as a merge but cites no "
+                "evidence. A merge collapses two upstream-distinct affixes into one "
+                "stacking bucket; it needs the wiki page that says they are one stat.")
 
     if problems:
         raise SystemExit(
@@ -128,12 +145,22 @@ def apply(records: list, corrections: list) -> dict:
             + "\n  ".join(problems))
 
     rename = {c["source_name"]: c["canonical_name"] for c in corrections}
+    #: #632 — sources whose ENGRAVED name must survive the rename. A merge changes
+    #: which bucket an affix scores in; it must not change what the item says it
+    #: has. `via` is the established receipt for exactly that (#205), and every
+    #: item-centric surface already reads it. An ordinary correction (`Ki` ->
+    #: `Enhanced Ki`) stamps nothing, because there the canonical IS what the item
+    #: renders and a `via` would invent a distinction the wiki does not draw.
+    keep_engraved = {c["source_name"] for c in corrections
+                     if c.get("merge_into_existing")}
     renamed = 0
     hit_names = set()
     for a in affixes:
         target = rename.get(a.get("name"))
         if target is not None:
             hit_names.add(a["name"])
+            if a["name"] in keep_engraved and a.get("via") is None:
+                a["via"] = a["name"]
             a["name"] = target
             renamed += 1
 

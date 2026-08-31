@@ -204,6 +204,16 @@
    "variant": "item becomes a Spellcasting Implement",
    "canonical": "Item becomes a Spellcasting Implement",
    "reason": "case-only"
+  },
+  {
+   "variant": "Weighty Asset",
+   "canonical": "Undying",
+   "reason": "#632 — this enchantment was merged into `Undying` because the wiki's `Unconscious` page groups both under 'Extending unconsciousness range' as enhancement bonuses to one stat (and `Incapacitation range`, which Undying links, redirects there). The alias keeps a player who ranked the engraved name — or a saved build that carries it — resolving to the stat that now scores it. The engraved name still shows on the item card, via `via`."
+  },
+  {
+   "variant": "Holding On",
+   "canonical": "Undying",
+   "reason": "#632 — this enchantment was merged into `Undying` because the wiki's `Unconscious` page groups both under 'Extending unconsciousness range' as enhancement bonuses to one stat (and `Incapacitation range`, which Undying links, redirects there). The alias keeps a player who ranked the engraved name — or a saved build that carries it — resolving to the stat that now scores it. The engraved name still shows on the item card, via `via`."
   }
  ],
  "distinct": [
