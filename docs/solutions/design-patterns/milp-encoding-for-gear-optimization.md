@@ -99,6 +99,17 @@ This bug has now recurred **three times in one development arc** — set-piece t
 
 Note the checklist's items 1-8 all audit *decision-side* consumers (pruning, the objective, constraint emission); item 9 exists because a plan followed items 1-8 faithfully and still shipped a claim-side defect — the checklist itself had the blind spot.
 
+**The checklist now has a structural gate behind part of it (#256).** `src/container_registry.py`
+declares every single-pick choice-slot pool and fails the build when one source option becomes
+several records in a slot that takes one — the class of defect item 1 asks you to remember.
+That gate is the "enforce, don't re-document" recommendation above, applied to this specific
+recurrence, and the invariant it enforces is **option→record cardinality rather than record
+shape**: a fan-out wrapped in a one-element `affixes` list wears the right shape and is still
+the bug. Its own limits are worth knowing before relying on it — it cannot see a pool holding
+another crafting system's recipes (provenance catches that), and it cannot see a host pruned
+by `dominates()` for carrying no affixes, which is item 2 above and remains a human step. Full
+pattern: `a-single-pick-pool-is-judged-by-cardinality-not-by-shape.md`.
+
 Better still, make step 2 structurally hard to skip: a single test that asserts every dimension the objective reads (the union of stats/sets/colors/dino-types/nc-categories a variant can carry) is also compared by `dominates()` would fail loudly the next time a fourth source family is added without its guard.
 
 ## When to Apply
