@@ -2104,6 +2104,30 @@ test("#449 U2: a shortfall stat returns maxed:false and the shortfall sentence",
   assert.ok(/sums the best source in each bonus type/.test(c.short), `shortfall sentence: ${c.short}`);
 });
 
+test("#645: an INVERTED saved row renders no fraction at all", () => {
+  // The reporter's own snapshot, verbatim from Xouk.json: ceilingReport is
+  // persisted JSON and a restored character is never re-solved (KTD6), so a build
+  // saved before the penalty fix carries 37 / 36 forever. Null is the designed
+  // silent path — the card falls back to the legacy chip, exactly as a pre-#449
+  // restore does — and it is the ONLY honest answer, because the true ceiling
+  // cannot be recovered from a row that only stores the contaminated sum.
+  const r = _ceilRec([{ stat: "Intelligence", achieved: 37, ceiling: 36,
+    bonusTypes: ["Enhancement", "Insight", "Penalty"], unusedSources: 292, allFilled: true }]);
+  assert.strictEqual(P.ceilingFor(r, "Intelligence"), null,
+    "a ceiling below the achieved value is not a ceiling and must not be rendered");
+});
+
+test("#645: suppression is exact — equality still renders, and other stats are untouched", () => {
+  // The guard must not swallow the maxed case one point away from it, and it is
+  // per-row: a healthy stat beside a corrupt one keeps its fraction.
+  const r = _ceilRec([{ stat: "Intelligence", achieved: 37, ceiling: 36, bonusTypes: ["Penalty"] },
+                      { stat: "Constitution", achieved: 36, ceiling: 36, bonusTypes: ["Insight"] }]);
+  assert.strictEqual(P.ceilingFor(r, "Intelligence"), null, "the inverted row is suppressed");
+  const ok = P.ceilingFor(r, "Constitution");
+  assert.ok(ok && ok.maxed === true, "the equal row is still the maxed case, not suppressed");
+  assert.strictEqual(ok.fraction, "36 / 36");
+});
+
 test("#449 U2 (KTD2): no ceiling sentence carries a counterfactual construction", () => {
   // Every state, not just the shortfall one — a counterfactual is as wrong on a
   // capped stat as on a short one.

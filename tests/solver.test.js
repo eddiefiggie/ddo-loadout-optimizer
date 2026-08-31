@@ -5266,6 +5266,85 @@ async function withCrossAdd(map, fn) {
     assert.ok(!JSON.stringify(r.ceilingReport).includes("zByBucket"));
   });
 
+  // ---- #645: penalties are not part of an upper bound ---------------------
+  //
+  // Reported from a live export: an Intelligence card reading 37 / 36. #614 put
+  // penalties into `zByBucket` so the solver would stop discarding them, and the
+  // census — one blind pass over that map — began summing `best` across a bucket
+  // whose every member is negative. The ceiling is documented as an UPPER BOUND;
+  // a bound BELOW the achieved value is not one, and it is the one number on the
+  // card a player cannot dismiss as a rounding quirk.
+  //
+  // The declined penalty must be LIVE for these to bite: `pen` carries a real
+  // contribution to a second target so the dominance pre-filter keeps it in the
+  // pool, which is exactly how the reported build's curse got there.
+
+  await test("#645: a declined penalty does not lower the ceiling below what the build holds", async () => {
+    const model = {
+      targets: ["INT", "MP"], mlCap: 34,
+      worn: [
+        slot("Helmet", [item("clean", "Helmet", [["INT", "Insight", 7]])]),
+        // The cursed alternative: -1 INT, and 5 MP so it survives dominance.
+        slot("Trinket", [item("pen", "Trinket", [["INT", "Penalty", -1], ["MP", "Quality", 5]]),
+                         item("plain", "Trinket", [["MP", "Quality", 9]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.INT, 7, "premise: the build declines the curse");
+    const e = ceil(r, "INT");
+    assert.strictEqual(e.achieved, 7, "what the build holds");
+    assert.strictEqual(e.ceiling, 7,
+      "the ceiling is the 7 Insight ALONE — before the fix the live -1 made this 6");
+    assert.ok(e.ceiling >= e.achieved, "the invariant the card renders as a fraction");
+    assert.ok(!e.bonusTypes.includes("Penalty"),
+      "a penalty is not a bonus type and must not be listed among them");
+    assert.strictEqual(e.allFilled, true, "the positive bucket took its best");
+    assert.strictEqual(e.unusedSources, 0,
+      "a curse the solver correctly refused is NOT a source left on the table");
+  });
+
+  await test("#645: a WORN penalty stays in achieved, and only in achieved", async () => {
+    // The other half, and why the fix is not simply skipping the bucket: the
+    // numerator is the value the player reads in the card's headline. Drop a
+    // worn penalty from it and the fraction contradicts the number beside it.
+    // MP outranks INT, and the cursed trinket is the only MP in the pool — so the
+    // build wears it and eats the curse. A slot may be left EMPTY, so a lone
+    // penalty item is simply declined; it takes an upside to make one worn.
+    const model = {
+      targets: ["MP", "INT"], mlCap: 34,
+      worn: [
+        slot("Helmet", [item("clean", "Helmet", [["INT", "Insight", 7]])]),
+        slot("Trinket", [item("cursed", "Trinket", [["MP", "Quality", 10],
+                                                    ["INT", "Penalty", -1]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.MP, 10, "premise: the build wears the cursed trinket");
+    const e = ceil(r, "INT");
+    assert.strictEqual(e.achieved, r.effective.INT,
+      "the numerator agrees with the headline the player reads");
+    assert.strictEqual(e.achieved, 6, "7 Insight less the forced -1");
+    assert.strictEqual(e.ceiling, 7,
+      "the ceiling counts the positive bucket only — the gap IS the curse");
+    assert.ok(e.achieved < e.ceiling, "and it reads as headroom, which is honest");
+  });
+
+  await test("#645: a declined penalty does not fabricate a saturation alarm", async () => {
+    // `unusedSources > 0` is the notice's KTD3 gate. Counting refused curses as
+    // unused sources fires it on a build with nothing to gain.
+    const model = {
+      targets: ["INT", "MP"], mlCap: 34,
+      worn: [
+        slot("Helmet", [item("clean", "Helmet", [["INT", "Insight", 7]])]),
+        slot("Trinket", [item("pen", "Trinket", [["INT", "Penalty", -1], ["MP", "Quality", 5]]),
+                         item("plain", "Trinket", [["MP", "Quality", 9]])]),
+      ],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.ok(!(r.saturationReport || []).some((x) => x.stat === "INT"),
+      "INT has no unused source once the curse stops counting as one");
+  });
+
   // ---- #239: the empty-slot report ----------------------------------------
   //
   // These drive a REAL solve. The first version of this feature counted
