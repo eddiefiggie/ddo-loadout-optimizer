@@ -4041,8 +4041,8 @@ test("#475: a set is expanded to the affixes it grants, as set rows", () => {
     { slot: "Ring", variant: { variant_id: "R", set_bonus: [{ set: "Alpha" }], parsed_set_bonuses: [] } },
   ], effective: {} };
   const html = R.renderAltCards([altFixture({ activatedSets: ["Alpha"], sol })]);
-  assert.ok(/<span class="pd-ln-where">set<\/span><span class="pd-ln-what">Melee Power \+15 Artifact</.test(html),
-    "the set's granted affix is a row attributed to the set");
+  assert.ok(/<span class="pd-ln-where">2 pieces<\/span><span class="pd-ln-what">Melee Power \+15 Artifact</.test(html),
+    "the set's granted affix is a row attributed to its piece cost (#240)");
 });
 
 test("#475: a costless candidate states it in the foot, with no empty Costs section", () => {
@@ -4594,4 +4594,68 @@ test("#482: the DOM writers CONSUME the extracted decisions rather than restatin
   assert.ok(/upgradesList\(/.test(render), "the upgrades card composes through the pure function");
   assert.ok(!/\.\.\.altState\.probed, \.\.\.\(altState\.list/.test(render),
     "and does not re-inline the spread it replaced");
+});
+
+// --- #240: a set's PIECE COST is on the alternative card ---------------------
+//
+// The case: two sets grant the identical bonus on every ranked stat and differ
+// only in how many pieces they need. The solver correctly takes the cheaper one —
+// same value, one fewer slot — and that needs no solver change. What was missing
+// is that a player looking at the pricier alternative had no way to see why it was
+// passed over, or to judge whether the freed slot matters to them for reasons the
+// ranking does not capture.
+//
+// Measured before building: the existing machinery ALREADY generates and shows
+// ties. Ranking `Kinetic Lore` at ML 34, `generateAlternatives` returns candidates
+// with `gains: 0, cost: 0` at the identical ranked value, `tradeVerdict` marks
+// them `free`, and `filterUpgrades` keeps them. So no new gain family was needed —
+// the issue's open scope question — and the whole gap was that the piece cost was
+// never stated.
+
+test("#240: a set gain row states how many pieces the set costs", () => {
+  const sol = { setsActive: [{ set: "Cheap", pieces_required: 2 }], chosen: [
+    { slot: "Necklace", variant: { variant_id: "N", set_bonus: [{ set: "Cheap" }],
+      parsed_set_bonuses: [{ set: "Cheap", pieces_required: 2, affixes: [
+        { stat: "Kinetic Lore", bonus_type: "Artifact", name: "Kinetic Lore", type: "Artifact", value: 6, unit: "flat" },
+      ], flagged: [] }] } },
+    { slot: "Ring", variant: { variant_id: "R", set_bonus: [{ set: "Cheap" }], parsed_set_bonuses: [] } },
+  ], effective: {} };
+  const html = R.renderAltCards([altFixture({ activatedSets: ["Cheap"], sol })]);
+  assert.ok(/pd-ln-where">2 pieces</.test(html), html.slice(0, 400));
+});
+
+test("#240: the piece count is the SET's, so a costlier tie reads as costlier", () => {
+  // The comparison the issue is about. Same granted affix, same value, different
+  // slot commitment — and the card is now where that difference is legible.
+  const mk = (name, pieces) => ({
+    setsActive: [{ set: name, pieces_required: pieces }],
+    chosen: [
+      { slot: "Necklace", variant: { variant_id: "N", set_bonus: [{ set: name }],
+        parsed_set_bonuses: [{ set: name, pieces_required: pieces, affixes: [
+          { stat: "Kinetic Lore", bonus_type: "Artifact", name: "Kinetic Lore", type: "Artifact", value: 6, unit: "flat" },
+        ], flagged: [] }] } },
+      { slot: "Ring", variant: { variant_id: "R", set_bonus: [{ set: name }], parsed_set_bonuses: [] } },
+    ],
+    effective: {},
+  });
+  const cheap = R.renderAltCards([altFixture({ activatedSets: ["Cheap"], sol: mk("Cheap", 2) })]);
+  const dear = R.renderAltCards([altFixture({ activatedSets: ["Dear"], sol: mk("Dear", 3) })]);
+  assert.ok(/pd-ln-where">2 pieces</.test(cheap));
+  assert.ok(/pd-ln-where">3 pieces</.test(dear));
+  // Both grant the same thing — the ONLY difference a player can act on is the cost.
+  assert.ok(/Kinetic Lore \+6 Artifact/.test(cheap) && /Kinetic Lore \+6 Artifact/.test(dear),
+    "the tie is real: identical grant on both sides");
+});
+
+test("#240: a set with no recorded piece count falls back rather than printing junk", () => {
+  // `pieces_required` is absent on some tiers. "undefined pieces" would be worse
+  // than the word it replaced, so the old label survives as the fallback.
+  const sol = { setsActive: [{ set: "Alpha" }], chosen: [
+    { slot: "Necklace", variant: { variant_id: "N", set_bonus: [{ set: "Alpha" }],
+      parsed_set_bonuses: [{ set: "Alpha", pieces_required: null, affixes: [
+        { stat: "Dodge", bonus_type: "Artifact", name: "Dodge", type: "Artifact", value: 3, unit: "flat" },
+      ], flagged: [] }] } },
+  ], effective: {} };
+  const html = R.renderAltCards([altFixture({ activatedSets: ["Alpha"], sol })]);
+  assert.ok(!/undefined|null|NaN/.test(html), "no placeholder leaks into the row");
 });

@@ -3202,8 +3202,17 @@ function altGainSection(a) {
   const detail = (a.activatedSets && a.activatedSets.length && a.sol) ? activeSetDetail(a.sol) : [];
   for (const setName of a.activatedSets || []) {
     const d = detail.find((s) => s.set === setName);
+    // #240 — the row says how many gear slots the set COSTS, not just that a set
+    // is the source. Two sets can grant the identical bonus on every ranked stat
+    // and differ only in piece count, and the solver correctly takes the cheaper
+    // one; a player looking at the pricier alternative otherwise has no way to see
+    // why it was passed over. The freed slot is the whole reason the choice can
+    // still matter for reasons the ranking does not capture, so it is the fact
+    // that belongs here. `activeSetDetail` already carries `pieces` — this row
+    // simply stopped short of reading it.
+    const where = (d && d.pieces) ? `${d.pieces} pieces` : "set";
     for (const affix of (d && d.affixes) || []) {
-      rows.push({ where: "set", what: affixLabel(affix) });
+      rows.push({ where, what: affixLabel(affix) });
     }
   }
   for (const g of a.gains || []) rows.push({ where: "stat", what: `${g.stat} +${g.delta}` });
