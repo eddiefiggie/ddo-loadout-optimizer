@@ -93,6 +93,12 @@ def test_shipped_dataset_join_is_complete():
     assert len(stamped) == len(acq) == 675
     assert not (acq - ids), f"seeded names missing from the catalog: {sorted(acq - ids)[:5]}"
     # And the complement is real: most augments are drop-specific.
-    assert len(augs) - len(stamped) == 388, len(augs) - len(stamped)
+    # #631 — re-ratified 388 -> 469. PLUS 81, the Epic (ML 20) Lunar/Solar gems the
+    # tier-gap shard adds. They are unstamped because NO Lunar/Solar gem is stamped:
+    # all 304 of them sit outside the 675-name acquirability seed, the 223 that
+    # predate the shard included. So this delta is the complement growing with the
+    # catalog, not the join shrinking — `stamped` is asserted unchanged at 675 two
+    # lines above, which is what tells the two apart.
+    assert len(augs) - len(stamped) == 469, len(augs) - len(stamped)
     assert d["metadata"]["augment_acquirable_count"] == 675
     assert d["metadata"]["augment_total_count"] == len(augs)

@@ -1,7 +1,7 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-08-28",
- "dataset": "web/data/items.json (9110 items)",
+ "generated": "2026-08-30",
+ "dataset": "web/data/items.json (9191 items)",
  "fixture_count": 24,
  "solves": {
   "heroic-str-melee": {
@@ -1173,11 +1173,11 @@
    "status": "optimal",
    "perTarget": {
     "Sonic Absorption": 20,
-    "Fire Absorption": 37
+    "Fire Absorption": 40
    },
    "effective": {
     "Sonic Absorption": 20,
-    "Fire Absorption": 37
+    "Fire Absorption": 40
    },
    "chosen": [
     {

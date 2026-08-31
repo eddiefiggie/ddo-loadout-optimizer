@@ -155,8 +155,19 @@ def generate_crafting_slot_registry(crafting=None, items=None):
 
 def generate_augment_registry(crafting=None):
     """The augment registry: the augment-stone ``name`` fields drawn from the
-    ``<Color> Augment Slot`` menu pools, sorted. Closed structural set (R14)."""
-    crafting = _load(CRAFTING_PATH) if crafting is None else crafting
+    ``<Color> Augment Slot`` menu pools, sorted. Closed structural set (R14).
+
+    #631 — the default reads the MERGED catalog (`crafting_catalog.load_catalog`),
+    not the raw dump. The registry is the referential-integrity gate for the pools
+    the build actually walks, and since the tier-gap shard merges inside
+    `load_catalog`, generating from the raw file would compare the frozen registry
+    against a catalog no consumer sees — the gate would then fail on every shard
+    entry while claiming the registry was out of date. Same catalog on both sides
+    or the check is meaningless.
+    """
+    if crafting is None:
+        from src import crafting_catalog
+        crafting = crafting_catalog.load_catalog()
     augs = set()
     for key, pool in (crafting or {}).items():
         if key.endswith(_AUGMENT_SLOT_SUFFIX) and isinstance(pool, dict):
