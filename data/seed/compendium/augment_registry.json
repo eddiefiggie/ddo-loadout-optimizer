@@ -1,6 +1,6 @@
 {
  "_source": "generated from the <Color> Augment Slot menu-pool option `name` fields in data/seed/compendium/raw/gearplanner_crafting.json (U2/R14). Closed structural set, integrity-gated, no alias/lint. Regenerate via src.vocabulary.generate_augment_registry.",
- "count": 1081,
+ "count": 1084,
  "augments": [
   "A History of Draconic Interference",
   "A Legendary History of Draconic Interference",
@@ -738,6 +738,9 @@
   "Solar Gem of Alignment Absorption (Epic)",
   "Solar Gem of Alignment Absorption (Heroic)",
   "Solar Gem of Alignment Absorption (Legendary)",
+  "Solar Gem of Arcana (Epic)",
+  "Solar Gem of Arcana (Heroic)",
+  "Solar Gem of Arcana (Legendary)",
   "Solar Gem of Arcane Endurance (Epic)",
   "Solar Gem of Arcane Endurance (Heroic)",
   "Solar Gem of Arcane Endurance (Legendary)",
@@ -1084,5 +1087,6 @@
   "Weaverwisp Melody",
   "Wraithborn Emerald"
  ],
- "_note_631": "#631 — regenerated after the augment tier-gap shard added 81 Epic (ML 20) Lunar/Solar gems the upstream crafting dump does not carry. This registry is the frozen referential-integrity gate: an augment in a pool that is not listed here fails the build as a 'new-augment event', which is exactly what fired when the shard first merged. Regenerating it is therefore a DELIBERATE ratification of those names, not a formality."
+ "_note_631": "#631 — regenerated after the augment tier-gap shard added 81 Epic (ML 20) Lunar/Solar gems the upstream crafting dump does not carry. This registry is the frozen referential-integrity gate: an augment in a pool that is not listed here fails the build as a 'new-augment event', which is exactly what fired when the shard first merged. Regenerating it is therefore a DELIBERATE ratification of those names, not a formality.",
+ "_note_640": "#640 — ratifies the three `Solar Gem of Arcana` tiers, a family upstream carries at NO tier. The registry is the referential-integrity gate: it fired first as a 'new-augment event', which is the gate working."
 }
