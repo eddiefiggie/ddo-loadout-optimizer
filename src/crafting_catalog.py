@@ -196,6 +196,18 @@ def green_steel_records(catalog: dict = None) -> list:
 _AUGMENT_WIKI_URL = "https://ddowiki.com/page/Augment_Slot"
 
 
+def _augment_affix(a: dict) -> dict:
+    """One augment affix, carrying the provenance receipt if the source has one.
+
+    Kept as a named function rather than an inline dict so the `via` carry has
+    somewhere to be explained and cannot be dropped in a reformat.
+    """
+    out = {"name": a.get("name"), "type": a.get("type"), "value": a.get("value")}
+    if a.get("via") is not None:
+        out["via"] = a["via"]
+    return out
+
+
 def augment_pool_records(catalog: dict = None) -> list:
     """The native legendary augment pool, sourced from the `<Color> Augment Slot`
     menu pools (replacing the retired `augments.json` seed). Each stone option
@@ -217,8 +229,17 @@ def augment_pool_records(catalog: dict = None) -> list:
                 "name": name,
                 "category": "augment",
                 "slot": color,
-                "affixes": [{"name": a.get("name"), "type": a.get("type"),
-                             "value": a.get("value")} for a in iter_affixes(opt)],
+                # #649 — `via` rides along, and this is a WHITELIST, so leaving it
+                # out destroys the receipt silently. The crafting records reach
+                # here already name-corrected (build_dataset applies the crafting
+                # channel first), so a merge that stamped the engraved name has
+                # ALREADY stamped it by this point; rebuilding without `via` drops
+                # it, and the augment channel that runs later cannot restore it —
+                # the name it would match on has already changed. That is how two
+                # `Undying Sapphire` augments came out reading `Unconsciousness
+                # Range` with nothing saying what the augment is engraved with.
+                # Same hazard `variants._native_parsed` documents for its rebuild.
+                "affixes": [_augment_affix(a) for a in iter_affixes(opt)],
                 "minimum_level": opt.get("ml"),
                 "ml": opt.get("ml"),
                 "quests": list(opt.get("quests") or []),
