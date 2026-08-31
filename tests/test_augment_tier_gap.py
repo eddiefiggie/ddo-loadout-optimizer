@@ -35,14 +35,14 @@ NO_EPIC_TIER = {"Lunar Gem of Accuracy", "Lunar Gem of Natural Armor",
 #:   Lunar Gem of Weapon Damage  — the wiki's Heroic value (2) disagrees with the
 #:       shipped record (Deadly Profane 1), so this family failed the cross-check
 #:       that validated every other Epic value. Its Epic value is unverified.
-#:   Solar Gem of Arcana         — on the wiki (Artifact 50/100/150), absent from
-#:       upstream at EVERY tier, so there is no sibling to derive a shape from.
-#:       A whole missing family, not a missing tier.
+#:   (`Solar Gem of Arcana` was here and is now ADDED — #640. It had no sibling to
+#:    derive from, so the shard grew a second entry shape that cites the item's own
+#:    wiki page instead. It is deliberately no longer excluded: the tier check now
+#:    covers it like any other family.)
 #:   Solar Gem of Heal and Listen — the reverse: WE ship it (Heroic 2, Legendary 6)
 #:       and the wiki page has no such row under any name, only the Lunar one. So
 #:       no Epic value exists to add, and the discrepancy is upstream's to explain.
-EXCLUDED = {"Lunar Gem of Weapon Damage", "Solar Gem of Arcana",
-            "Solar Gem of Heal and Listen"}
+EXCLUDED = {"Lunar Gem of Weapon Damage", "Solar Gem of Heal and Listen"}
 
 
 def _gems():
@@ -147,3 +147,26 @@ def test_the_shard_is_additive_and_still_needed():
         f"upstream has adopted {adopted} — remove those entries from the shard. It is "
         "ADDITIVE only, and an entry shadowing a live upstream record is exactly what "
         "its contract forbids.")
+
+
+def test_a_sibling_less_addition_cites_its_own_wiki_page():
+    """#640 — an entry with no `derived_from` must name the page it came from.
+
+    Most additions derive their affix names and types from a shipped Heroic
+    sibling, and that derivation IS their stale guard. A family upstream carries at
+    no tier has no sibling, so the guard is replaced by two things: the additive
+    check (the name must still be absent upstream, asserted above) and a recorded
+    wiki page. An entry with neither is indistinguishable from an invented one.
+    """
+    if not os.path.exists(SHARD):
+        return
+    with open(SHARD, encoding="utf-8") as fh:
+        adds = json.load(fh).get("additions") or []
+    sibling_less = [e for e in adds if not e.get("derived_from")]
+    assert sibling_less, (
+        "no sibling-less additions — if that shape is gone, delete the branch in "
+        "src/augment_tier_gap.py that supports it rather than leaving it untested")
+    for e in sibling_less:
+        assert e.get("wiki_source"), f"{e['name']}: no derivation and no wiki_source"
+        assert e.get("verified"), f"{e['name']}: cites a page but records no verified date"
+        assert e.get("evidence"), f"{e['name']}: a sibling-less addition must carry its evidence"

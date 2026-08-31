@@ -1,7 +1,7 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
  "generated": "2026-08-30",
- "dataset": "web/data/items.json (9191 items)",
+ "dataset": "web/data/items.json (9194 items)",
  "fixture_count": 24,
  "solves": {
   "heroic-str-melee": {
@@ -855,12 +855,12 @@
    "perTarget": {
     "Fire Absorption": 57,
     "Electric Absorption": 64,
-    "Wizardry": 620
+    "Wizardry": 720
    },
    "effective": {
     "Fire Absorption": 57,
     "Electric Absorption": 64,
-    "Wizardry": 620
+    "Wizardry": 720
    },
    "chosen": [
     {
@@ -880,10 +880,6 @@
      "variant": "Legendary Downcast Heavy Cloak"
     },
     {
-     "slot": "Gloves",
-     "variant": "Gloves of Tranquility"
-    },
-    {
      "slot": "Goggles",
      "variant": "Ethereal Gaze"
     },
@@ -896,16 +892,12 @@
      "variant": "Echo of Whelm"
     },
     {
-     "slot": "Necklace",
-     "variant": "Amber Pendant"
-    },
-    {
      "slot": "Off Hand",
      "variant": "Legendary Sporesphere"
     },
     {
      "slot": "Ring",
-     "variant": "Duskbone Ring"
+     "variant": "Celestial Topaz Ring"
     },
     {
      "slot": "Trinket",

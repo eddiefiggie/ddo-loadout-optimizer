@@ -336,7 +336,7 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // were RENAMED rather than added, so the delta is the two new components and nothing
   // else — which is the check that the alias widened the match without widening the
   // rewrite.
-  assert.strictEqual(total, 42820, "post-normalize pool size");
+  assert.strictEqual(total, 42823, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -377,7 +377,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // generated component. So the split is itself a check that the umbrella
   // machinery picked the new gems up exactly as it does their Heroic siblings; a
   // clean +121 here would have meant the expansions never fired.
-  assert.strictEqual(eligible, 20750, "engraved, eligible affixes");
+  // 20,753 since #640: +3, one `Wizardry` affix on each `Solar Gem of Arcana`
+  // tier. A clean one-affix-per-record family, so the delta equals the record
+  // count exactly — unlike #631's, where the umbrella expansions made it not.
+  assert.strictEqual(eligible, 20753, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -396,7 +399,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // augment 1,018 since #631: +104, with `item` and `weapon` UNCHANGED — the
   // independent cross-check. Every record the tier-gap shard adds is an augment, so
   // the whole delta must land in one category, and it does.
-  assert.deepStrictEqual(byCat, { item: 13618, weapon: 6114, augment: 1018 });
+  // augment 1,021 since #640: +3, with item and weapon UNCHANGED again — the same
+  // cross-check, and the same reason: every record the tier-gap shard adds is an
+  // augment.
+  assert.deepStrictEqual(byCat, { item: 13618, weapon: 6114, augment: 1021 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {

@@ -89,6 +89,25 @@ def apply(crafting: dict, additions: list) -> dict:
             continue
 
         derived = entry.get("derived_from") or {}
+        # #640 — a family upstream carries at NO tier has no sibling to derive from,
+        # so it cites the item's own wiki page instead. The stale guard that
+        # `derived_from` provides is replaced by the additive check above (the name
+        # must still be absent upstream) plus the recorded page: if upstream ever
+        # scrapes the family, the additive check fires and the entry is removed.
+        #
+        # Deliberately a separate shape rather than an optional sibling, so an entry
+        # cannot lose its derivation silently and look verified.
+        if not derived and entry.get("wiki_source"):
+            if not entry.get("verified"):
+                problems.append(
+                    f"{entry.get('name')!r}: cites a wiki_source but records no `verified` "
+                    "date — an unsourced addition is indistinguishable from an invented one")
+                continue
+            options.append({"affixes": [dict(a) for a in entry.get("affixes") or []],
+                            "ml": entry.get("ml"), "name": entry.get("name")})
+            pools_touched.add(pool_key)
+            added += 1
+            continue
         sib_name = derived.get("sibling")
         sib = by_name.get(sib_name)
         if sib is None:

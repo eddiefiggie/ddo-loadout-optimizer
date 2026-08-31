@@ -75,13 +75,16 @@ def test_no_legacy_affix_keys_at_rest():
     # has no upstream record at any tier to derive a shape from, and `Lunar Gem of
     # Weapon Damage` is deliberately excluded — its Heroic value disagrees with the
     # wiki, so it failed the cross-check that validates every other Epic value.
-    assert len(items) == 9191, f"expected 9191 items, saw {len(items)}"
+    # #640 — 9,194: +3, the `Solar Gem of Arcana` family. Upstream carries it at NO
+    # tier, so unlike #631's Epic-only gap this adds a whole family rather than a
+    # missing tier of an existing one.
+    assert len(items) == 9194, f"expected 9194 items, saw {len(items)}"
     gems = [it for it in items
             if "(Epic)" in (it.get("source_item") or "")
             and (it.get("source_item", "").startswith("Lunar Gem")
                  or it.get("source_item", "").startswith("Solar Gem"))]
-    assert len(gems) == 98, (
-        f"expected 98 Epic Lunar/Solar gems (17 upstream + 81 from the tier-gap "
+    assert len(gems) == 99, (
+        f"expected 99 Epic Lunar/Solar gems (17 upstream + 81 from #631 + 1 from #640) "
         f"shard), saw {len(gems)} — a coincidental count from an unrelated cause "
         "would satisfy the total alone.")
     # the +2 is those 26 items and nothing else — a coincidental +2 from an

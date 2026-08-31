@@ -6,7 +6,7 @@
  "_excluded": {
   "Lunar Gem of Weapon Damage": "the wiki's Heroic value (2) disagrees with the shipped Heroic record (Deadly Profane 1), so this gem's row failed the cross-check that validates every other Epic value. Its Epic value is therefore unverified and the gem is deliberately NOT added. Resolve the Heroic discrepancy first."
  },
- "count": 81,
+ "count": 84,
  "additions": [
   {
    "pool": "Moon Augment Slot",
@@ -2282,6 +2282,57 @@
    },
    "wiki_url": "https://ddowiki.com/page/Lunar_Gem",
    "verified": "2026-08-30"
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Arcana (Heroic)",
+   "ml": 1,
+   "affixes": [
+    {
+     "name": "Wizardry",
+     "type": "Artifact",
+     "value": "50"
+    }
+   ],
+   "wiki_source": "https://ddowiki.com/page/Item:Solar_Gem_of_Arcana_(Heroic)",
+   "verified": "2026-08-30",
+   "issue": 640,
+   "evidence": "https://ddowiki.com/page/Lunar_Gem summary row: 'Arcana | Artifact Bonus to Maximum Spell Points | +50 +100 +150'. The Heroic and Legendary item pages confirm it in the wiki's own enchantment line — Item:Solar_Gem_of_Arcana_(Heroic) reads 'Artifact Wizardry +50' (ML 1, Sun) and (Legendary) reads 'Artifact Wizardry +150' (ML 30, Sun). The Epic item page does not exist, which is NORMAL rather than a signal: 86 of the 103 Epic gem links on that page are redlinks, and the 17 that are not are exactly the 17 Epic gems upstream carries — gear-planner scrapes Item: pages, so it never saw the rest. Epic's +100 therefore comes from the summary row, the same source #631 used for all 81 of its additions, whose value column validated 203/204 against shipped records. Harvested 2026-08-30.",
+   "note": "#640 — the whole family is absent upstream at every tier, so there is no sibling to derive a shape from. `Wizardry` is our name for the flat maximum-spell-point pool (the wiki's own enchantment line for this gem literally reads 'Artifact Wizardry +N'), so it merges into that stat rather than minting a second flat max-SP stat — which would be the bucket split #632 documents, two stats that then SUM."
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Arcana (Epic)",
+   "ml": 20,
+   "affixes": [
+    {
+     "name": "Wizardry",
+     "type": "Artifact",
+     "value": "100"
+    }
+   ],
+   "wiki_source": "https://ddowiki.com/page/Item:Solar_Gem_of_Arcana_(Epic)",
+   "verified": "2026-08-30",
+   "issue": 640,
+   "evidence": "https://ddowiki.com/page/Lunar_Gem summary row: 'Arcana | Artifact Bonus to Maximum Spell Points | +50 +100 +150'. The Heroic and Legendary item pages confirm it in the wiki's own enchantment line — Item:Solar_Gem_of_Arcana_(Heroic) reads 'Artifact Wizardry +50' (ML 1, Sun) and (Legendary) reads 'Artifact Wizardry +150' (ML 30, Sun). The Epic item page does not exist, which is NORMAL rather than a signal: 86 of the 103 Epic gem links on that page are redlinks, and the 17 that are not are exactly the 17 Epic gems upstream carries — gear-planner scrapes Item: pages, so it never saw the rest. Epic's +100 therefore comes from the summary row, the same source #631 used for all 81 of its additions, whose value column validated 203/204 against shipped records. Harvested 2026-08-30.",
+   "note": "#640 — the whole family is absent upstream at every tier, so there is no sibling to derive a shape from. `Wizardry` is our name for the flat maximum-spell-point pool (the wiki's own enchantment line for this gem literally reads 'Artifact Wizardry +N'), so it merges into that stat rather than minting a second flat max-SP stat — which would be the bucket split #632 documents, two stats that then SUM."
+  },
+  {
+   "pool": "Sun Augment Slot",
+   "name": "Solar Gem of Arcana (Legendary)",
+   "ml": 30,
+   "affixes": [
+    {
+     "name": "Wizardry",
+     "type": "Artifact",
+     "value": "150"
+    }
+   ],
+   "wiki_source": "https://ddowiki.com/page/Item:Solar_Gem_of_Arcana_(Legendary)",
+   "verified": "2026-08-30",
+   "issue": 640,
+   "evidence": "https://ddowiki.com/page/Lunar_Gem summary row: 'Arcana | Artifact Bonus to Maximum Spell Points | +50 +100 +150'. The Heroic and Legendary item pages confirm it in the wiki's own enchantment line — Item:Solar_Gem_of_Arcana_(Heroic) reads 'Artifact Wizardry +50' (ML 1, Sun) and (Legendary) reads 'Artifact Wizardry +150' (ML 30, Sun). The Epic item page does not exist, which is NORMAL rather than a signal: 86 of the 103 Epic gem links on that page are redlinks, and the 17 that are not are exactly the 17 Epic gems upstream carries — gear-planner scrapes Item: pages, so it never saw the rest. Epic's +100 therefore comes from the summary row, the same source #631 used for all 81 of its additions, whose value column validated 203/204 against shipped records. Harvested 2026-08-30.",
+   "note": "#640 — the whole family is absent upstream at every tier, so there is no sibling to derive a shape from. `Wizardry` is our name for the flat maximum-spell-point pool (the wiki's own enchantment line for this gem literally reads 'Artifact Wizardry +N'), so it merges into that stat rather than minting a second flat max-SP stat — which would be the bucket split #632 documents, two stats that then SUM."
   }
  ]
 }

@@ -99,6 +99,9 @@ def test_shipped_dataset_join_is_complete():
     # predate the shard included. So this delta is the complement growing with the
     # catalog, not the join shrinking — `stamped` is asserted unchanged at 675 two
     # lines above, which is what tells the two apart.
-    assert len(augs) - len(stamped) == 469, len(augs) - len(stamped)
+    # #640 — 472: +3, the Solar Gem of Arcana tiers. Unstamped like every other
+    # Lunar/Solar gem, so the complement grows with the catalog while `stamped`
+    # holds at 675 — which is what tells growth apart from the join shrinking.
+    assert len(augs) - len(stamped) == 472, len(augs) - len(stamped)
     assert d["metadata"]["augment_acquirable_count"] == 675
     assert d["metadata"]["augment_total_count"] == len(augs)
