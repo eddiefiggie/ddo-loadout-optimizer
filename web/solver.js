@@ -311,6 +311,10 @@ function buildProgram(model) {
   // contributions (augments, sets, crafting) into zByBucket with more gates,
   // alongside their backing extraVars/extraConstraints.
   const buckets = new Map();
+  //: #614 — bucket keys whose contributions are penalties. These are excluded from
+  //: the one-contributor-per-bucket cap (`Σz ≤ 1`) because penalties always stack,
+  //: and their z's are FORCED to their gates rather than merely bounded by them.
+  const penaltyKeys = new Set();
   for (const xv of xVars) {
     // Each entry is {value, via}. `via` (#205) names the enchantment an expanded
     // universal spell-DC affix came from ("Sacred Spell Focus Mastery") and rides
@@ -335,6 +339,34 @@ function buildProgram(model) {
       if (!buckets.has(k)) buckets.set(k, []);
       buckets.get(k).push({ gates: [xv.name], value: b.value, via: b.via, affix: b.affix,
         host: xv.variant.variant_id || xv.variant.source_item });
+    }
+    // #614 — PENALTIES, and they follow none of the rules above.
+    //
+    // The wiki's stacking page states the rule outright, in a list whose other
+    // entries are the bucket rules this function implements:
+    //
+    //     * Bonuses of the same type do not stack ...
+    //     * Penalties always stack.
+    //
+    // So a penalty is not a contribution competing for a bonus-type bucket, and
+    // `best` is exactly the wrong shape for it: max-of-type would report ONE of a
+    // player's penalties and silently drop the rest. Every one applies, additively.
+    // They are collected separately, un-deduped, and each becomes its own forced
+    // term — `encodeStage` skips the `Σz ≤ 1` cap for these keys and pins each z to
+    // its gate instead.
+    //
+    // Forcing is the other half, and it is why removing the `value > 0` clauses
+    // alone would have changed nothing: contributions are OPTIONAL by construction
+    // (`z - gate <= 0`, no lower bound), so a maximising objective sets a negative
+    // z to 0 and the penalty goes unpaid while the item stays equipped. A penalty
+    // is a consequence of wearing the item, never a selection.
+    for (const a of xv.variant.affixes || []) {
+      if (!targetSet.has(a.name) || !(a.value < 0)) continue;
+      const k = `${a.name}||${_equivType(a.type)}`;
+      if (!buckets.has(k)) buckets.set(k, []);
+      penaltyKeys.add(k);
+      buckets.get(k).push({ gates: [xv.name], value: a.value, via: a.via || null, affix: a,
+        host: xv.variant.variant_id || xv.variant.source_item, penalty: true });
     }
   }
 
@@ -1497,7 +1529,7 @@ function buildProgram(model) {
     // tracked stat it also feeds is capped and slack.
     flooredStats: Object.keys(model.floors || {}),
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
-    extraVars, extraConstraints, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
+    extraVars, extraConstraints, penaltyKeys, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
     // #91 (U3) — the Utility tier's stage state: whether the sentinel is
     // ranked, the per-effect indicator binaries, and their name/ceiling meta.
     utilityEnabled, utilityVars, utilityMeta,
@@ -1619,11 +1651,31 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
     if (xv.twinOf) L.push(` c${c++}: ${xv.name} - ${xv.twinOf} <= 0`);
   }
 
-  for (const [, zs] of program.zByBucket) {
-    if (zs.length) L.push(` c${c++}: ${zs.map((z) => z.name).join(" + ")} <= 1`);
+  const _penaltyKeys = program.penaltyKeys || new Set();
+  for (const [key, zs] of program.zByBucket) {
+    // #614 — the `Σz ≤ 1` cap IS max-of-type, and penalties must not have it: the
+    // wiki states "Penalties always stack", so every one applies additively. A
+    // penalty bucket holding three -2s must contribute -6, not -2.
+    const isPenalty = _penaltyKeys.has(key);
+    if (zs.length && !isPenalty) L.push(` c${c++}: ${zs.map((z) => z.name).join(" + ")} <= 1`);
     // A contribution is available only when ALL of its gates are 1: emit one
     // z - gate <= 0 per gate. A worn affix has a single gate (identical to before).
     for (const z of zs) for (const gate of z.gates) L.push(` c${c++}: ${z.name} - ${gate} <= 0`);
+    // #614 — and a penalty is FORCED on, not merely permitted. Without a lower
+    // bound the maximising objective sets a negative z to 0 and the penalty goes
+    // unpaid while the item stays equipped — which is why deleting the `value > 0`
+    // gates alone would have looked like a fix and changed nothing.
+    //
+    // `z >= Σgates - (n-1)` is the standard AND lower bound: it binds only when
+    // every gate is 1, and collapses to `z >= gate` for the single-gate worn case
+    // that is the whole shipping population today.
+    if (isPenalty) {
+      for (const z of zs) {
+        if (!z.gates.length) continue;
+        const n = z.gates.length;
+        L.push(` c${c++}: ${z.name} - ${z.gates.join(" - ")} >= ${1 - n}`);
+      }
+    }
   }
 
   // Structural constraints backing extra binaries (U3 capacity, U5 thresholds,

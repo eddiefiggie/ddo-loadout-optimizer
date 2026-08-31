@@ -741,20 +741,20 @@
   // constant exists to forbid.
   const NO_DROP_SOURCE_WORDING = "no known live drop source";
 
-  // #614 — the unmodelled-penalty disclosure. 36 affixes ship a real signed
-  // magnitude under a `Penalty` bonus type, and the solver discards every one of
-  // them at twelve `value > 0` gates, so an item is scored on its upside alone.
-  // If the penalty lands on a stat the player ranked, the reported total for that
-  // stat is WRONG-HIGH and nothing says so — the class of error this project
-  // treats as worst, because it is indistinguishable from a right number inside a
-  // finished loadout.
+  // #614 — the penalty disclosure. It began life saying penalties were NOT
+  // counted, because they were not: the solver discarded every negative affix and
+  // an item was scored on its upside alone, so a penalty landing on a ranked stat
+  // made that total wrong-high with nothing saying so.
   //
-  // Subtracting it needs an LP change AND a wiki ruling on how penalties stack
-  // (five stats carry co-equippable penalties across different slots, Will Save
-  // across five), so the number cannot be corrected yet. Disclosure is what can
-  // ship without inferring a game rule: a visible gap beats a confident wrong
-  // number. ONE spelling, here, for the same reason NO_DROP_SOURCE_WORDING is.
-  const PENALTY_NOT_COUNTED_WORDING = "not subtracted by the solver";
+  // The solver now subtracts them. The wiki's stacking page ruled the open
+  // question — "Penalties always stack" — so they are forced, additive terms, and
+  // each one appears in the breakdown with its own source. This note therefore
+  // states the opposite of what it first shipped, and its weight dropped from a
+  // warning to a plain remark: nothing on the card is wrong any more, and the note
+  // is here so a player reading an item's upside is not surprised by its cost.
+  //
+  // ONE spelling, here, for the same reason NO_DROP_SOURCE_WORDING is.
+  const PENALTY_COUNTED_WORDING = "subtracted, not ignored";
 
   /** #614 — an equipped item's signed penalties, as [{stat, value}], worst first.
    *  Values are coerced because the raw catalog stores them as strings. */
@@ -778,15 +778,16 @@
     const hit = pens.filter((p) => ranked.has(p.stat));
     const list = pens.map((p) => `${p.value} ${p.stat}`).join(", ");
     if (!hit.length) {
-      return `Carries ${list} \u2014 ${PENALTY_NOT_COUNTED_WORDING}.`
-        + ` ${pens.length > 1 ? "None are" : "It is not"} among your priorities, so no total above is affected.`;
+      return `Carries ${list} \u2014 ${PENALTY_COUNTED_WORDING}.`
+        + ` ${pens.length > 1 ? "None are" : "It is not"} among your priorities.`;
     }
     const names = hit.map((p) => p.stat);
     const named = names.length === 1 ? names[0]
       : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
-    return `Carries ${list} \u2014 ${PENALTY_NOT_COUNTED_WORDING}.`
+    return `Carries ${list} \u2014 ${PENALTY_COUNTED_WORDING}.`
       + ` ${named} ${names.length === 1 ? "is" : "are"} ranked, so`
-      + ` ${names.length === 1 ? "its total" : "those totals"} above ${names.length === 1 ? "is" : "are"} optimistic.`;
+      + ` ${names.length === 1 ? "the total" : "those totals"} above already`
+      + ` ${names.length === 1 ? "accounts for it" : "account for them"}.`;
   }
 
   /** #245 — is this equipped item picked ONLY for its craftable options?
@@ -2755,7 +2756,7 @@
     NO_DROP_SOURCE_WORDING,
     // #614 — the one unmodelled-penalty disclosure wording + its two helpers
     // (results card and every exporter read them from here; never respell)
-    PENALTY_NOT_COUNTED_WORDING, itemPenalties, penaltyDisclosure,
+    PENALTY_COUNTED_WORDING, itemPenalties, penaltyDisclosure,
     // #110 — the blocklist disclosure sentences
     blockNoticeLines, setPinNoticeLines,
     // U10 — the three multi-fact notices, one addressable entry per fired branch
