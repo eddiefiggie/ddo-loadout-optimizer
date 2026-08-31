@@ -39,9 +39,21 @@ NO_EPIC_TIER = {"Lunar Gem of Accuracy", "Lunar Gem of Natural Armor",
 #:    derive from, so the shard grew a second entry shape that cites the item's own
 #:    wiki page instead. It is deliberately no longer excluded: the tier check now
 #:    covers it like any other family.)
-#:   Solar Gem of Heal and Listen — the reverse: WE ship it (Heroic 2, Legendary 6)
-#:       and the wiki page has no such row under any name, only the Lunar one. So
-#:       no Epic value exists to add, and the discrepancy is upstream's to explain.
+#:   Solar Gem of Heal and Listen — RULED (#641), and the first framing was wrong.
+#:       The gem is real and fully documented: Item:Solar_Gem_of_Heal_and_Listen_
+#:       (Heroic) states "+2 Artifact Bonus to Heal, Listen, and Concentration"
+#:       (ML 1, Sun) and (Legendary) states +6 (ML 30), both matching what we ship.
+#:       What is missing is the SUMMARY TABLE row on the Lunar Gem page, not the
+#:       gem — so upstream did NOT invent it, and the crafting dump's integrity is
+#:       intact. That was the reading this file previously implied and it was wrong.
+#:
+#:       It stays excluded for a different reason than the others: its Epic tier has
+#:       NO source. The item page does not exist, which proves nothing (86 of the
+#:       103 Epic gem pages are redlinks — that is how #631's whole gap happened),
+#:       but neither does a summary-table row, and the table is where #631 read all
+#:       81 of its Epic values. The Lunar sibling runs 2/4/6, so 4 is the obvious
+#:       guess — which is exactly why it is not written down. Revisit if the table
+#:       ever gains the row.
 EXCLUDED = {"Lunar Gem of Weapon Damage", "Solar Gem of Heal and Listen"}
 
 
