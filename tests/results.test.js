@@ -4467,3 +4467,131 @@ test("#554: no pins at all renders nothing, control or otherwise", () => {
   assert.strictEqual(R.setPinNotice({}, { canPrice: true }), "");
   assert.strictEqual(R.setPinNotice({ setPinReport: [] }, { canPrice: true }), "");
 });
+
+// --- #482: the concession probe's three terminal states ----------------------
+//
+// #481 shipped three outcomes and only one of them — the priced branch — was ever
+// exercised, by a single live browser pass. The two non-priced ones are exactly
+// the pair R5 says must not blur: "no concession changes anything" means the trade
+// does not exist, "the probe did not run" means we did not look. A player told the
+// first when the second happened has been told a false fact about their build.
+//
+// This suite is deliberately DOM-free, so the decision was extracted out of the
+// DOM writer rather than a DOM harness being introduced (#448's shape).
+
+test("#482: a null probe result says nothing changes, and names the window", () => {
+  const o = R.concessionOutcome("Dodge", null, 40);
+  assert.strictEqual(o.kind, "none");
+  assert.ok(/^No concession of up to \d+ Dodge changes anything ranked beneath it\.$/.test(o.text), o.text);
+  assert.ok(o.live && o.live !== o.text,
+    "the live region gets its own shorter sentence, not the visible one");
+});
+
+test("#482: the window is clamped to the stat's own value", () => {
+  // A stat sitting at 2 cannot give up 3, and offering to is nonsense the player
+  // would have to decode. `Math.min(window, value)` is the clamp.
+  assert.strictEqual(R.concessionOutcome("Dodge", null, 2).window, 2);
+  assert.strictEqual(R.concessionOutcome("Dodge", null, 0).window, 0);
+  assert.ok(R.concessionOutcome("Dodge", null, 100).window > 3, "and it scales up with the stat");
+});
+
+test("#482: a priced concession states the gain AND the price in one sentence", () => {
+  // Per `lexicographic-descent-bounds-the-vector-not-each-stat.md` the priority
+  // after the one that rises can genuinely fall. A sentence naming only the gain
+  // would advertise a trade while hiding what it costs.
+  const o = R.concessionOutcome("Dodge", {
+    concession: 5, cap: 35,
+    deltas: [{ stat: "Dodge", delta: -5 }, { stat: "PRR", delta: 12 }, { stat: "MRR", delta: -3 }],
+  }, 40);
+  assert.strictEqual(o.kind, "priced");
+  assert.ok(o.text.includes("Giving up 5 Dodge"), o.text);
+  assert.ok(o.text.includes("+12 PRR"), "the gain");
+  assert.ok(/costs .?3 MRR/.test(o.text), `the price: ${o.text}`);
+  assert.ok(o.text.includes("Set Max 35 on Dodge"), "and how to take it");
+  assert.ok(!/-5 Dodge/.test(o.text.replace("Giving up 5 Dodge", "")),
+    "the conceded stat is not also listed as a loss — it is the thing being given up");
+});
+
+test("#482: a concession with no losses does not invent a price", () => {
+  const o = R.concessionOutcome("Dodge", {
+    concession: 3, cap: 37, deltas: [{ stat: "Dodge", delta: -3 }, { stat: "PRR", delta: 8 }],
+  }, 40);
+  assert.ok(!/costs/.test(o.text), `a free trade must not read as costing something: ${o.text}`);
+});
+
+test("#482: the three terminal wordings are mutually distinct", () => {
+  // R5 in one assertion. If two of these ever collapse into the same sentence, a
+  // player cannot tell "there is no trade" from "we failed to look for one".
+  const none = R.concessionOutcome("Dodge", null, 40).text;
+  const failed = R.concessionFailedOutcome("Dodge").text;
+  const priced = R.concessionOutcome("Dodge", {
+    concession: 5, cap: 35, deltas: [{ stat: "Dodge", delta: -5 }, { stat: "PRR", delta: 12 }],
+  }, 40).text;
+  const all = [none, failed, priced];
+  assert.strictEqual(new Set(all).size, 3, all);
+  // and each names the stat, so a player with several probes open can tell them apart
+  for (const t of all) assert.ok(t.includes("Dodge"), t);
+  assert.ok(/did not run/.test(failed), "the failure says we did not look");
+  assert.ok(!/did not run/.test(none), "and the empty result does NOT claim that");
+});
+
+test("#482: the failure state carries no live-region announcement", () => {
+  // The other two speak to the screen reader. A thrown probe is not a result about
+  // the build, so it does not get announced as one.
+  assert.strictEqual(R.concessionFailedOutcome("Dodge").live, null);
+});
+
+// --- #482: renderAltPanel across the three altState shapes --------------------
+
+test("#482: a probed candidate shows when the full analysis NEVER RAN (list null)", () => {
+  // The Definition of Done's reason: a control that works only after the
+  // Alternatives tab has been opened is worse than no control — and #499 retired
+  // that tab, so nothing opens it any more. This is the shape that was verified
+  // live; it is pinned here so the other two have a stated baseline.
+  assert.deepStrictEqual(R.upgradesList([{ key: "probed" }], null).map((c) => c.key), ["probed"]);
+});
+
+test("#482: a probed candidate shows when the analysis RAN AND FOUND NOTHING (list [])", () => {
+  // Same answer as `null`, different reason — and this shape had never been
+  // verified at all. An empty analysis must not swallow the answer the player
+  // asked for by name.
+  assert.deepStrictEqual(R.upgradesList([{ key: "probed" }], []).map((c) => c.key), ["probed"]);
+});
+
+test("#482: probed candidates LEAD a populated list", () => {
+  // The player named this trade and asked what it costs; the rest are volunteered.
+  // Order is the whole difference between answering and suggesting.
+  const out = R.upgradesList([{ key: "probed" }], [{ key: "found-a" }, { key: "found-b" }]);
+  assert.deepStrictEqual(out.map((c) => c.key), ["probed", "found-a", "found-b"]);
+});
+
+test("#482: with nothing probed and nothing found, the card has nothing to show", () => {
+  // `renderUpgrades` returns false on an empty list rather than painting an empty
+  // shell, so the empty case must actually be empty.
+  assert.deepStrictEqual(R.upgradesList([], null), []);
+  assert.deepStrictEqual(R.upgradesList(null, null), []);
+});
+
+test("#482: the DOM writers CONSUME the extracted decisions rather than restating them", () => {
+  // An extraction only helps while the writer actually calls it. If `showConcession`
+  // kept its own copy of the wording, these tests would pass forever against a
+  // function nothing renders — which is the failure mode this whole session has
+  // been about: a check that cannot fail.
+  const src = require("fs").readFileSync(
+    require("path").join(__dirname, "..", "web", "results.js"), "utf-8");
+
+  const show = srcFrom(src, "function showConcession(btn, stat, res) {", 700, "showConcession");
+  assert.ok(/concessionOutcome\(/.test(show), "showConcession asks for the outcome");
+  assert.ok(!/No concession of up to/.test(show),
+    "and does not carry its own copy of the empty-result sentence");
+
+  const handler = srcFrom(src, 'q("#rp-cards").addEventListener("click"', 1400, "probe handler");
+  assert.ok(/concessionFailedOutcome\(/.test(handler), "the catch asks for the failure wording");
+  assert.ok(!/the probe did not run`/.test(handler),
+    "and does not carry its own copy of it");
+
+  const render = srcFrom(src, "function renderUpgrades() {", 300, "renderUpgrades");
+  assert.ok(/upgradesList\(/.test(render), "the upgrades card composes through the pure function");
+  assert.ok(!/\.\.\.altState\.probed, \.\.\.\(altState\.list/.test(render),
+    "and does not re-inline the spread it replaced");
+});

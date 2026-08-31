@@ -14,6 +14,15 @@ const affixLabel = Proj.affixLabel;
 // #353 — one presence predicate for the whole app, over the same bridge.
 const _isPresence = Proj.isPresence;
 // #346 (U5) — the ladder's vocabulary, over the same cross-runtime bridge.
+// #482 — the concession window, resolved the same way every other cross-module
+// helper in this file is: a browser global when the script tags loaded solver.js,
+// a require in node. Needed at module scope because the two outcome helpers below
+// were hoisted out of `renderResults`' closure so the DOM-free test suite can
+// reach them.
+const _concessionWindow = (typeof concessionWindow !== "undefined") ? concessionWindow
+  : (typeof require !== "undefined" ? require("./solver.js").concessionWindow
+    : (v) => Math.max(3, Math.round(0.25 * Math.abs(v))));
+
 const _resultsRung = (typeof craftingRung !== "undefined") ? craftingRung
   : (typeof require !== "undefined" ? require("./model.js").craftingRung : () => "everything");
 const _resultsRungExcludesSolarLunar = (typeof rungExcludesSolarLunar !== "undefined") ? rungExcludesSolarLunar
@@ -2568,7 +2577,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   function renderUpgrades() {
     const out = upgOut();
     if (!out) return false;
-    const list = [...altState.probed, ...(altState.list || [])];
+    const list = upgradesList(altState.probed, altState.list);
     if (!list.length) return false;
     out.innerHTML = `<div class="alt-wrap">${renderAltCards(list)}</div>`;
     wireAltCards(out.querySelector(".alt-wrap"), list, setActive);
@@ -2664,7 +2673,7 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
           // "nothing found", and those two must not blur — one means the trade does
           // not exist, the other means we did not look.
           console.error("concession probe failed", err);
-          replaceControl(btn, `Could not price a concession on ${esc(stat)} — the probe did not run.`);
+          replaceControl(btn, esc(concessionFailedOutcome(stat).text));
         });
     }, 0);
   });
@@ -2679,23 +2688,13 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
 
   /** The three terminal states of a probe, kept deliberately distinct (R5). */
   function showConcession(btn, stat, res) {
-    if (!res) {
-      const v = Number((optimum.effective || {})[stat]) || 0;
-      const w = Math.min(concessionWindow(v), v);
-      replaceControl(btn, `No concession of up to ${esc(w)} ${esc(stat)} changes anything ranked beneath it.`);
-      q("#rp-live").textContent = `No concession on ${stat} changes anything beneath it.`;
+    const outcome = concessionOutcome(stat, res, (optimum.effective || {})[stat]);
+    if (outcome.kind === "none") {
+      replaceControl(btn, esc(outcome.text));
+      q("#rp-live").textContent = outcome.live;
       return;
     }
-    const runOf = (ds, sign) => ds.map((d) => `${sign}${Math.abs(d.delta)} ${d.stat}`).join(", ");
-    const gains = res.deltas.filter((d) => d.delta > 0);
-    const losses = res.deltas.filter((d) => d.delta < 0 && d.stat !== stat);
-    // Losses are stated in the same breath as the gain, never as a footnote: per
-    // `lexicographic-descent-bounds-the-vector-not-each-stat.md` the priority after
-    // the one that rises can genuinely fall, and a sentence that mentions only the
-    // gain would advertise a trade while hiding its price.
-    const plain = `Giving up ${res.concession} ${stat} buys ${runOf(gains, "+")}`
-      + (losses.length ? ` and costs ${runOf(losses, "−")}` : "")
-      + `. Set Max ${res.cap} on ${stat} to take it.`;
+    const plain = outcome.text;
     const out = replaceControl(btn,
       `${esc(plain)} <button class="btn ghost concession-view" type="button">See this build</button>`);
     q("#rp-live").textContent = plain;      // the sentence itself, never its escaped form
@@ -3537,8 +3536,72 @@ function wireResultTabs(container, onShow) {
   show(tabs[0].getAttribute("aria-controls"), false);
 }
 
+/** #482 — the concession probe's THREE terminal states, as a pure decision.
+ *
+ *  Extracted from the DOM writer so `tests/results.test.js`, which is
+ *  deliberately DOM-free, can assert them. Only the priced branch had ever been
+ *  exercised — by one live browser pass — and the two non-priced ones are
+ *  exactly the pair that must not blur.
+ *
+ *  R5 (#481): "no concession changes anything" and "the probe did not run" are
+ *  different facts. One means the trade does not exist; the other means we did
+ *  not look. The click handler's own comment says a swallowed failure is
+ *  indistinguishable from a genuine nothing-found — this is where that
+ *  distinction becomes checkable instead of merely intended.
+ *
+ *  Returns `{ kind, text, live }`. `text` is PLAIN — escaping belongs to the
+ *  writer, and the live region deliberately announces the unescaped sentence.
+ */
+function concessionOutcome(stat, res, value, windowOf) {
+  if (!res) {
+    const v = Number(value) || 0;
+    const w = Math.min((windowOf || _concessionWindow)(v), v);
+    return { kind: "none", window: w,
+             text: `No concession of up to ${w} ${stat} changes anything ranked beneath it.`,
+             live: `No concession on ${stat} changes anything beneath it.` };
+  }
+  const runOf = (ds, sign) => ds.map((d) => `${sign}${Math.abs(d.delta)} ${d.stat}`).join(", ");
+  const gains = res.deltas.filter((d) => d.delta > 0);
+  const losses = res.deltas.filter((d) => d.delta < 0 && d.stat !== stat);
+  // Losses are stated in the same breath as the gain, never as a footnote: per
+  // `lexicographic-descent-bounds-the-vector-not-each-stat.md` the priority after
+  // the one that rises can genuinely fall, and a sentence that mentions only the
+  // gain would advertise a trade while hiding its price.
+  const text = `Giving up ${res.concession} ${stat} buys ${runOf(gains, "+")}`
+    + (losses.length ? ` and costs ${runOf(losses, "−")}` : "")
+    + `. Set Max ${res.cap} on ${stat} to take it.`;
+  return { kind: "priced", text, live: text };
+}
+
+/** #482 — the third terminal state, which is not derived from data: the probe
+ *  threw. Kept beside the other two so the three wordings are visibly distinct
+ *  in one place, and so a test can assert they never collapse into each other. */
+function concessionFailedOutcome(stat) {
+  return { kind: "failed",
+           text: `Could not price a concession on ${stat} — the probe did not run.`,
+           live: null };
+}
+
+/** #482 — what the upgrades card shows, over the three shapes `altState.list`
+ *  takes. Pure, so the DOM-free suite can cover all three; only the `null` one
+ *  had ever been verified, by a live pass.
+ *
+ *    null  — the full analysis has never run. A probed candidate must STILL
+ *            appear: the plan's Definition of Done says a control that works
+ *            only after the Alternatives tab was opened is worse than no
+ *            control, and #499 retired that tab, so nothing opens it any more.
+ *    []    — the analysis ran and found nothing. Same answer, different reason.
+ *    [..]  — probed candidates lead, because the player asked for those by name
+ *            and the rest are volunteered.
+ */
+function upgradesList(probed, list) {
+  return [...(probed || []), ...(list || [])];
+}
+
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+  module.exports = { concessionOutcome, concessionFailedOutcome, upgradesList,
+    renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,
