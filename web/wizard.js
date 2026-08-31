@@ -5204,9 +5204,9 @@ ${(() => {
           ${ns === "share" ? `<p class="wz-label">Your data</p>` : ""}
           <p class="wz-help">Back up <strong>everything you have made</strong> — your builds, your saved bundles, and your
             farming progress — to a file, or restore from one. This is how you move your work to another device, and the only way
-            back if you clear your browser data. <strong>Version snapshots are not included:</strong> they are taken automatically
-            on every solve and would make this file far larger, so clearing your browser loses your version history and keeps
-            everything you wrote. Backups stay compatible across the last 3 data versions; a file older than that, or made by a
+            back if you clear your browser data. Version snapshots you <strong>named or imported</strong> come along too, because you
+            made those. <strong>Automatic snapshots do not:</strong> they are taken on every solve without being asked for and would
+            make this file far larger, so clearing your browser loses that automatic history and keeps everything you chose to keep. Backups stay compatible across the last 3 data versions; a file older than that, or made by a
             newer version of the app, is declined so a bad import can't corrupt your saves.
             This is also where you open a <strong>single build somebody shared with you</strong> — drop their
             <code>.json</code> in here and it is added alongside your own. A shared build never replaces one of yours:
@@ -5289,7 +5289,23 @@ ${(() => {
               // #502 — the storage-full message has always told players to delete a
               // version. deleteVersion has existed in versions.js since #500 with no
               // caller anywhere; this is that caller.
-              if (!window.confirm("Delete this version snapshot? It cannot be restored from a backup \u2014 backups do not carry version history.")) return;
+              //
+              // #530 — the warning now depends on the KIND, because the answer
+              // changed for two of the three. A named or imported snapshot is in
+              // the backup, so a player who has one can delete it knowing a restore
+              // brings it back; an auto is still gone for good. Telling everyone it
+              // is unrecoverable would be the same defect in the other direction —
+              // a true sentence for autos, a false one for the kinds a player
+              // actually cares about.
+              // eslint-disable-next-line no-undef
+              const vrec = (typeof Versions !== "undefined")
+                ? Versions.listVersions().find((x) => x && x.id === id) : null;
+              // eslint-disable-next-line no-undef
+              const inBackup = vrec && typeof Versions !== "undefined"
+                && Versions.isAuthoredKind(vrec);
+              if (!window.confirm(inBackup
+                ? "Delete this version snapshot? You can restore it from a backup taken while it still existed."
+                : "Delete this snapshot? It was captured automatically and is not carried in a backup, so it cannot be restored.")) return;
               // eslint-disable-next-line no-undef
               VersionStore.deleteVersion(id);
             } else if (kind === "farming") {
@@ -5312,6 +5328,12 @@ ${(() => {
           bundles: SB ? SB.listBundles() : [],
           // eslint-disable-next-line no-undef
           farming: (typeof FarmingList !== "undefined") ? FarmingList.readProgress() : {},
+          // #530 — the AUTHORED version history only. `authoredVersions` is the
+          // store's own predicate, the same one `pruneAutoList` uses to decide
+          // what it will never reclaim, so the backup and the reclaim ladder
+          // cannot disagree about which snapshots are work.
+          // eslint-disable-next-line no-undef
+          versions: (typeof Versions !== "undefined") ? Versions.authoredVersions() : [],
         });
         downloadFile(`ddo-characters-${new Date().toISOString().slice(0, 10)}.json`,
           JSON.stringify(payload, null, 2), "application/json");
@@ -5391,6 +5413,19 @@ ${(() => {
                 const r = SB.mergeIn(res.bundles);
                 if (r.ok) extra += `, ${res.bundles.length} bundle${res.bundles.length === 1 ? "" : "s"}`;
                 else failed.push("saved bundles");
+              }
+              // #530 — the authored snapshots. Merged like the bundles above and
+              // for the same reason: this path is reached when something already
+              // went wrong, so replacing would delete what the player has made
+              // since their last export.
+              // eslint-disable-next-line no-undef
+              if (typeof Versions !== "undefined" && (res.versions || []).length) {
+                // eslint-disable-next-line no-undef
+                const r = Versions.mergeIn(res.versions);
+                if (r.ok) {
+                  const nv = res.versions.length;
+                  extra += `, ${nv} version snapshot${nv === 1 ? "" : "s"}`;
+                } else failed.push("version snapshots");
               }
               // eslint-disable-next-line no-undef
               if (typeof FarmingList !== "undefined" && Object.keys(res.farming || {}).length) {

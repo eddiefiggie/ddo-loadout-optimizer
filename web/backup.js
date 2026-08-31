@@ -11,7 +11,11 @@
   // payload. v1 files still import: `migrate` fills the new keys with empties, so
   // an older backup restores its builds and simply carries no bundles or farming
   // progress. Refusing them would break the promise this panel makes.
-  const CURRENT_SCHEMA = 2;
+  // #530 — v3 adds the player's AUTHORED version history (`named` and `import`,
+  // never `auto`). v1 and v2 files still import: `migrate` fills the new key with
+  // an empty list, so an older backup restores everything it carried and simply
+  // has no version history, which is what it actually had.
+  const CURRENT_SCHEMA = 3;
   const WINDOW = 3;           // migrate the last 3 schema versions up to current
   const MAX_CHARS = 5000000;  // ~5MB, matched to the localStorage budget
 
@@ -115,13 +119,23 @@
    *  byproducts.
    *
    *  Builds, saved bundles and farming progress are things a player made: losing
-   *  them loses work that exists nowhere else. Version snapshots are taken on
-   *  every solve without being asked for, they are the largest thing in storage,
-   *  and they are the store with the known growth problem (#502) — copying them
-   *  into a file meant to move between devices would make that file the same
-   *  problem. A player who clears their browser loses version history and keeps
-   *  everything they wrote; the panel says so rather than leaving them to find
-   *  out. */
+   *  them loses work that exists nowhere else.
+   *
+   *  #530 — version snapshots are NOT one thing, and treating them as one dropped
+   *  authored work under a principle written to preserve it. `auto` snapshots are
+   *  taken on every solve without being asked for, are the largest thing in
+   *  storage, and are the store with the known growth problem (#502); copying
+   *  those into a file meant to move between devices would move the problem with
+   *  them, so they stay out. A `named` snapshot is one the player pressed save on
+   *  and typed a name for, and an `import` is one they carried in from a file.
+   *
+   *  `versions.js` already draws exactly this line and has since before this
+   *  payload existed: `pruneAutoList` refuses to reclaim a `named` or an `import`
+   *  at any rung of the ladder, on the stated grounds that they are work a player
+   *  cannot reproduce. So the omission here contradicted the STORE's own policy,
+   *  not merely the panel's wording — which is why the fix is to carry them
+   *  rather than to reword the panel. The predicate is imported from that store
+   *  (`authoredVersions`) instead of restated, so the two cannot drift. */
   function serializeAll(characters, opts) {
     const o = opts || {};
     return {
@@ -131,6 +145,7 @@
       characters: characters || {},
       bundles: Array.isArray(o.bundles) ? o.bundles : [],
       farming: (o.farming && typeof o.farming === "object") ? o.farming : {},
+      versions: Array.isArray(o.versions) ? o.versions : [],
     };
   }
 
@@ -141,6 +156,11 @@
     2: (data) => Object.assign({}, data, {
       bundles: Array.isArray(data.bundles) ? data.bundles : [],
       farming: (data.farming && typeof data.farming === "object") ? data.farming : {},
+    }),
+    // #530 — same shape as the v2 step: a v2 file is not missing version history,
+    // it is a file from before the backup could carry any.
+    3: (data) => Object.assign({}, data, {
+      versions: Array.isArray(data.versions) ? data.versions : [],
     }),
   };
 
@@ -158,6 +178,16 @@
 
   // Parse + validate a backup file. Returns { ok:true, characters, schemaVersion }
   // or { ok:false, error, message } — never throws.
+  /** #530 — the version store, resolved at call time for the same reason the
+   *  saved-bundle store is: it may be absent in a test harness, and the restore
+   *  path must sanitize through the store that OWNS the shape rather than trust a
+   *  hand-edited file. */
+  function _versions() {
+    if (typeof globalThis !== "undefined" && globalThis.Versions) return globalThis.Versions;
+    if (typeof require !== "undefined") { try { return require("./versions.js"); } catch (e) { /* absent */ } }
+    return null;
+  }
+
   /** The saved-bundle store, resolved at call time — `saved-bundles.js` loads
    *  after this file in the browser. Same bridge shape used elsewhere. */
   function _savedBundles() {
@@ -174,7 +204,17 @@
    *  handling than a backup by being written later and separately. */
   function readFile(text, maxChars, noun) {
     if (typeof text !== "string" || text.length > maxChars) {
-      return { ok: false, error: "oversized", message: `${noun} file is too large to import.` };
+      // #530 — a backup can now carry named and imported version snapshots, each
+      // holding a full solved loadout, so this limit is reachable in a way it was
+      // not before. The refusal was already visible (#528); it was not actionable,
+      // and a player told only "too large" cannot tell which of their saves to
+      // thin. Named to the one thing that grows without bound, and only for a
+      // backup — a portable file is a single build and can never hit this.
+      const hint = noun === "Backup"
+        ? " If you have many named version snapshots, delete some under Your data and export again."
+        : "";
+      return { ok: false, error: "oversized",
+               message: `${noun} file is too large to import.${hint}` };
     }
     try {
       return { ok: true, data: JSON.parse(text, safeReviver) };
@@ -243,7 +283,22 @@
       for (const item of Object.keys(one)) if (one[item]) acquired[item] = true;
       farming[key] = acquired;
     }
-    return { ok: true, characters: clean, bundles, farming, schemaVersion: current };
+    // #530 — sanitized through `versions.js` and re-filtered to the authored
+    // kinds. Re-filtering on the way IN as well as on the way out is deliberate:
+    // the file is editable, and an `auto` smuggled into the payload would restore
+    // as history the player never asked for, into the one store with a known
+    // growth problem. `makeVersion` also normalizes an unknown `kind` to `auto`,
+    // so a made-up kind is dropped here rather than silently protected from the
+    // reclaim ladder forever.
+    const V = _versions();
+    const versions = V
+      ? (Array.isArray(migrated.versions) ? migrated.versions : [])
+        .filter((r) => r && typeof r === "object" && r.id)
+        .map((r) => V.makeVersion(r))
+        .filter((r) => V.isAuthoredKind(r))
+      : [];
+    return { ok: true, characters: clean, bundles, farming, versions,
+             schemaVersion: current };
   }
 
   /** #190 — read the portable single-build envelope.
