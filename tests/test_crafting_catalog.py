@@ -85,7 +85,8 @@ def test_green_steel_records_resolve_natively():
     # A2: the Green Steel pools DO exist (T1/T2/T3 Equipment) — wired, not deleted.
     recs = CC.green_steel_records()
     assert len(recs) > 50, "Green Steel Equipment pools are populated natively"
-    stats = {r["stat"] for r in recs}
+    # #194 — records are ATOMIC now, so the stats live in each option's `affixes`.
+    stats = {a["stat"] for r in recs for a in r["affixes"]}
     assert "Acid Resistance" in stats or "Acid Intensity" in stats
 
 

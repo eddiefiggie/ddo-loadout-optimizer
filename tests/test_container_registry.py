@@ -371,8 +371,12 @@ def test_registry_declares_every_single_pick_container_with_a_verdict():
         "nearly_complete":          (cr.ATOMIC, ("spell_focus",), cr.CORRECTED,     True),
         "nearly_complete_per_item": (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
         "seal":                     (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
-        "green_steel":              (cr.FLAT,   (),               cr.KNOWN_UNSAFE,  False),
-        "thunder_forged":           (cr.FLAT,   (),               cr.KNOWN_UNSAFE,  False),
+        # #194 — ATOMIC and verified safe since the builders stopped splitting
+        # multi-affix options. Still `reachable=False`: no item carries either host
+        # marker, so the pools remain inert and the markers stay armed for the day
+        # a host ships.
+        "green_steel":              (cr.ATOMIC, (),               cr.VERIFIED_SAFE, False),
+        "thunder_forged":           (cr.ATOMIC, (),               cr.VERIFIED_SAFE, False),
         # #193 — FLAT and verified-safe, which is what separates it from the two
         # above: a crafted Essence effect grants exactly ONE stat by construction,
         # so there is no multi-affix option for a flat shape to split. Reachable,
@@ -493,22 +497,45 @@ def test_the_shipped_dataset_holds_one_record_per_option_wherever_it_claims_to()
             assert len(records) <= source[name], name
 
 
-def test_green_steel_and_thunder_forged_split_options_and_say_so():
-    """The declaration is measured, not asserted: both pools really do split, and
-    both really are unreachable. If either fact changes the gate fires."""
+def test_green_steel_and_thunder_forged_no_longer_split_options():
+    """The declaration is measured, not asserted: neither pool splits an option any
+    more, and both are still unreachable. If either fact changes the gate fires.
+
+    #194 inverted the first half of this test. It used to assert that both pools DID
+    split — 81 source options into 108 records and 35 into 36 — and that the registry
+    said so, because the split was declared honestly rather than fixed while the
+    pools had no hosts. Now each is one record per craftable option carrying its own
+    `affixes` list, so the counts must match EXACTLY. Equality, not `<=`: the ATOMIC
+    contract permits dropping an option that has no affixes, but nothing in these two
+    catalogs does, and a silent drop is as much a defect as a split.
+    """
     with open(DATASET, "r", encoding="utf-8") as fh:
         data = json.load(fh)
     source = _shipped_source_options()
 
     for name in ("green_steel", "thunder_forged"):
-        assert cr.REGISTRY[name]["verdict"] == cr.KNOWN_UNSAFE
-        assert len(data[name]) > source[name], name
+        assert cr.REGISTRY[name]["verdict"] == cr.VERIFIED_SAFE, name
+        assert cr.REGISTRY[name]["shape"] == cr.ATOMIC, name
+        assert not cr.REGISTRY[name]["splits_options"], name
+        assert len(data[name]) == source[name], name
+        # Still hostless, so the marker stays armed — now on the reachability
+        # branch rather than the splitting one.
         marker = cr.REGISTRY[name]["host_marker"]
+        assert marker, name
         assert not [it for it in data["items"] if it.get(marker)], name
 
-    # The measured split, so a change in the catalog shows up as a diff here.
-    assert (len(data["green_steel"]), source["green_steel"]) == (108, 81)
-    assert (len(data["thunder_forged"]), source["thunder_forged"]) == (36, 35)
+    # The measured counts, so a change in the catalog shows up as a diff here.
+    assert (len(data["green_steel"]), source["green_steel"]) == (81, 81)
+    assert (len(data["thunder_forged"]), source["thunder_forged"]) == (35, 35)
+
+    # The multi-affix options are the whole point: these are the records that were
+    # being handed to a player one part at a time.
+    gs_multi = [r for r in data["green_steel"] if len(r.get("affixes") or []) > 1]
+    tf_multi = [r for r in data["thunder_forged"] if len(r.get("affixes") or []) > 1]
+    assert len(gs_multi) == 24, len(gs_multi)
+    assert len(tf_multi) == 1, len(tf_multi)
+    for r in gs_multi + tf_multi:
+        assert all(a.get("stat") for a in r["affixes"]), r
 
 
 def test_build_metadata_discloses_the_gate_coverage():
@@ -522,11 +549,15 @@ def test_build_metadata_discloses_the_gate_coverage():
     # roll_groups is the declared-unreachable one; its zero must not read as coverage.
     assert cov["records"]["roll_groups"] == 0
     assert cov["compared"] == sum(cov["records"].values())
-    # The split is disclosed rather than buried in a VERIFIED_SAFE verdict.
-    assert cov["records"]["green_steel"] > cov["source_options"]["green_steel"]
+    # #194 — the split is GONE, not merely disclosed. This assertion used to read
+    # `>` and was the honest disclosure of a known defect; now every source option
+    # maps to exactly one record.
+    assert cov["records"]["green_steel"] == cov["source_options"]["green_steel"]
+    assert cov["records"]["thunder_forged"] == cov["source_options"]["thunder_forged"]
     # #193 — essence_crafting is the first host-marked container that is actually
     # REACHED: three verified Gem of Many Facets tiers carry `essence_slots`. The
-    # other two stay at zero, which is what holds their KNOWN_UNSAFE split safe.
+    # other two stay at zero, which is now what keeps them out of a solve rather
+    # than what held a split safe.
     assert cov["hosts"] == {"essence_crafting": 3, "green_steel": 0, "thunder_forged": 0}
     # And every declared expansion pass left evidence it ran.
     assert cov["expanded_affixes"]["viktranium"] > 0
