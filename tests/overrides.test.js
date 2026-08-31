@@ -358,7 +358,18 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // expansions and add nothing here. So the total gained 2 while eligible lost 3, which
   // is only coherent if the rename really did convert bare affixes into provenanced
   // ones — the check that the fix expanded rather than merely relabelled.
-  assert.strictEqual(eligible, 20638, "engraved, eligible affixes");
+  // 20,646 not 20,638 since #619: PLUS 8, and the direction is again the point.
+  // Eight `Magical Efficiency` affixes were `Bool` — presence, ineligible by rule 1
+  // and correctly absent from this count. They engrave {{Power Store}}, whose
+  // magnitude lives in the template BODY rather than a parameter, so gear-planner's
+  // structural read had nothing to read and emitted presence. Corrected to
+  // `Enhancement | 10` from the wiki, they become ordinary engraved magnitudes and
+  // therefore override-eligible, exactly as any natively-parsed affix of that shape
+  // is. So this is the same movement #597 made in reverse: there a bare affix became
+  // an expansion and LOST eligibility; here a presence became a magnitude and GAINED
+  // it. A retype that did not move this number would mean the affix never reached the
+  // eligible predicate at all.
+  assert.strictEqual(eligible, 20646, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -368,7 +379,13 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // That is the independent cross-check — the three affixes that lost override
   // eligibility are all on AUGMENTS (the Topaz of Swiftness tiers), so the whole delta
   // must land in this one category. It does.
-  assert.deepStrictEqual(byCat, { item: 13611, weapon: 6113, augment: 914 });
+  // item 13,618 / weapon 6,114 since #619: +7 and +1, augment UNCHANGED — the
+  // independent cross-check on the +8 above. Seven of the eight carriers are worn
+  // items (five Cormyrian Green Dragon* armors, two Green Dragonscale Bracers) and
+  // the eighth is `Staff of the Petitioner`, a weapon. No augment carries the affix,
+  // so `augment` must not move, and it does not. Had the delta landed anywhere else,
+  // the retype would have reached records other than the eight it names.
+  assert.deepStrictEqual(byCat, { item: 13618, weapon: 6114, augment: 914 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {
