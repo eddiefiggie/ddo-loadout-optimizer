@@ -117,12 +117,27 @@ test("#374: the correction roster is the declaration, and every entry is armed",
   // entries join `Weighty Asset` and `Holding On`: each is an enchantment the wiki
   // rules a "-1 Penalty" to a named ability, merged into that ability so the
   // solver subtracts it from the stat a player actually ranks.
-  assert.strictEqual(CORRECTIONS.length, 22,
-    "22 armed variants — 13 upstream-spelling corrections (#374) plus 9 " +
-    "evidence-bound merges (#632, #615); a new entry needs its own assertion, not a bump");
-  assert.strictEqual(CORRECTIONS.filter((c) => c.merge_into_existing).length, 9,
-    "nine entries are merges, and a merge must cite the wiki page that says the " +
+  // #649 — 23, and the 23rd is a kind not seen before: `Undying` ->
+  // `Unconsciousness Range` merges a name that WAS the canonical onto a new one.
+  // Every merge above folds a subordinate spelling into an existing canon; this
+  // one retires the canon itself, because naming the stat after one of the four
+  // enchantments that feed it is what made a priority reading "Undying 225" sit
+  // beside a card reading "Weighty Asset". The alias is what makes it safe — see
+  // the per-entry resolution test below, which now covers `Undying` too.
+  assert.strictEqual(CORRECTIONS.length, 23,
+    "23 armed variants — 13 upstream-spelling corrections (#374) plus 10 " +
+    "evidence-bound merges (#632, #615, #639, #649); a new entry needs its own " +
+    "assertion, not a bump");
+  assert.strictEqual(CORRECTIONS.filter((c) => c.merge_into_existing).length, 10,
+    "ten entries are merges, and a merge must cite the wiki page that says the " +
     "two names are one stat");
+  // The retired canonical, asserted by name: this is the entry a future refresh is
+  // most likely to drop, because `Undying` still looks like a stat name.
+  const retired = CORRECTIONS.find((c) => c.source_name === "Undying");
+  assert.ok(retired, "the retired canonical `Undying` is still declared as a merge");
+  assert.strictEqual(retired.canonical_name, "Unconsciousness Range");
+  assert.ok(retired.merge_into_existing && retired.evidence,
+    "it stamps `via` and cites the page — both, or the card stops saying what the item is");
   for (const c of CORRECTIONS) {
     assert.ok(!c.pending_upstream,
       `${c.source_name} still carries a pending_upstream marker — it is not armed`);

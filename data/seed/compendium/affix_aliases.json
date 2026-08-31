@@ -207,13 +207,18 @@
   },
   {
    "variant": "Weighty Asset",
-   "canonical": "Undying",
-   "reason": "#632 — this enchantment was merged into `Undying` because the wiki's `Unconscious` page groups both under 'Extending unconsciousness range' as enhancement bonuses to one stat (and `Incapacitation range`, which Undying links, redirects there). The alias keeps a player who ranked the engraved name — or a saved build that carries it — resolving to the stat that now scores it. The engraved name still shows on the item card, via `via`."
+   "canonical": "Unconsciousness Range",
+   "reason": "#649 — `Unconsciousness Range` is the canonical for this mechanic (the wiki's own phrase, 'Extending unconsciousness range' on https://ddowiki.com/page/Unconscious). This alias keeps a player who ranked the engraved name — or a saved build that carries it — resolving to the stat that now scores it. The engraved name still shows on the item card, via `via`."
   },
   {
    "variant": "Holding On",
-   "canonical": "Undying",
-   "reason": "#632 — this enchantment was merged into `Undying` because the wiki's `Unconscious` page groups both under 'Extending unconsciousness range' as enhancement bonuses to one stat (and `Incapacitation range`, which Undying links, redirects there). The alias keeps a player who ranked the engraved name — or a saved build that carries it — resolving to the stat that now scores it. The engraved name still shows on the item card, via `via`."
+   "canonical": "Unconsciousness Range",
+   "reason": "#649 — `Unconsciousness Range` is the canonical for this mechanic (the wiki's own phrase, 'Extending unconsciousness range' on https://ddowiki.com/page/Unconscious). This alias keeps a player who ranked the engraved name — or a saved build that carries it — resolving to the stat that now scores it. The engraved name still shows on the item card, via `via`."
+  },
+  {
+   "variant": "Undying",
+   "canonical": "Unconsciousness Range",
+   "reason": "#649 — `Unconsciousness Range` is the canonical for this mechanic (the wiki's own phrase, 'Extending unconsciousness range' on https://ddowiki.com/page/Unconscious). This alias keeps a player who ranked the engraved name — or a saved build that carries it — resolving to the stat that now scores it. The engraved name still shows on the item card, via `via`. This one carries the weight: `Undying` was the CANONICAL until #649, so every build saved before that ranks it by name. Without this entry those priorities resolve to nothing and silently score zero — the failure mode is a build that still loads, still solves, and quietly stops optimising the stat the player asked for."
   },
   {
    "variant": "Curse of Clumsiness",

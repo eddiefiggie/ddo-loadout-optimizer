@@ -135,23 +135,33 @@
   },
   {
    "source_name": "Weighty Asset",
-   "canonical_name": "Undying",
+   "canonical_name": "Unconsciousness Range",
    "merge_into_existing": true,
    "wiki_url": "https://ddowiki.com/page/Unconscious",
    "verified": "2026-08-30",
-   "issue": 632,
+   "issue": 649,
    "evidence": "https://ddowiki.com/page/Unconscious section 'Extending unconsciousness range' lists all sources together as enhancement bonuses to one range: 'Holding On: +40 enhancement bonus', 'Undying: enhancement bonus scaling with level', 'Undying Sapphire: +65 / +225 enhancement bonus', 'Weighty Asset: +100 enhancement bonus'. `Incapacitation range` (which the Undying enchantment links) REDIRECTS to that same page, so the two spellings are one mechanic. Harvested 2026-08-30.",
-   "note": "#632 — merged INTO the existing `Undying` rather than renaming all three to the mechanic's own name. `Undying` is the name players actually rank and the dominant population (14 records); moving it would change a stat name in saved builds to fix 3 records. The engraved name survives as `via`, so the card still reads 'Weighty Asset'."
+   "note": "#649 — REVERSES the #632 note that used to sit here, which declined the rename of `Undying` because \"moving it would change a stat name in saved builds to fix 3 records\". Two things changed. The stat-name objection is answered by the alias in affix_aliases.json: `Undying` resolves to this canonical, so a saved build that ranked it keeps scoring and nothing a player stored is lost. And the cost was never 3 records — it was that `Undying` names ONE of the four enchantments feeding the stat, so the priority list read 'Undying 225' while the item said 'Weighty Asset', and the maintainer asked what the two had to do with each other. That is the confusion a canonical named after one of its members produces. `Unconsciousness Range` is the wiki's own phrase for the mechanic ('Extending unconsciousness range') and is a member of none of them, so it cannot mislead the same way. The engraved name still rides on `via`, so every card reads what the item actually says."
   },
   {
    "source_name": "Holding On",
-   "canonical_name": "Undying",
+   "canonical_name": "Unconsciousness Range",
    "merge_into_existing": true,
    "wiki_url": "https://ddowiki.com/page/Unconscious",
    "verified": "2026-08-30",
-   "issue": 632,
+   "issue": 649,
    "evidence": "https://ddowiki.com/page/Unconscious section 'Extending unconsciousness range' lists all sources together as enhancement bonuses to one range: 'Holding On: +40 enhancement bonus', 'Undying: enhancement bonus scaling with level', 'Undying Sapphire: +65 / +225 enhancement bonus', 'Weighty Asset: +100 enhancement bonus'. `Incapacitation range` (which the Undying enchantment links) REDIRECTS to that same page, so the two spellings are one mechanic. Harvested 2026-08-30.",
-   "note": "#632 — merged INTO the existing `Undying` rather than renaming all three to the mechanic's own name. `Undying` is the name players actually rank and the dominant population (14 records); moving it would change a stat name in saved builds to fix 3 records. The engraved name survives as `via`, so the card still reads 'Holding On'."
+   "note": "#649 — REVERSES the #632 note that used to sit here, which declined the rename of `Undying` because \"moving it would change a stat name in saved builds to fix 3 records\". Two things changed. The stat-name objection is answered by the alias in affix_aliases.json: `Undying` resolves to this canonical, so a saved build that ranked it keeps scoring and nothing a player stored is lost. And the cost was never 3 records — it was that `Undying` names ONE of the four enchantments feeding the stat, so the priority list read 'Undying 225' while the item said 'Weighty Asset', and the maintainer asked what the two had to do with each other. That is the confusion a canonical named after one of its members produces. `Unconsciousness Range` is the wiki's own phrase for the mechanic ('Extending unconsciousness range') and is a member of none of them, so it cannot mislead the same way. The engraved name still rides on `via`, so every card reads what the item actually says."
+  },
+  {
+   "source_name": "Undying",
+   "canonical_name": "Unconsciousness Range",
+   "merge_into_existing": true,
+   "wiki_url": "https://ddowiki.com/page/Unconscious",
+   "verified": "2026-08-30",
+   "issue": 649,
+   "evidence": "https://ddowiki.com/page/Unconscious section 'Extending unconsciousness range' lists all sources together as enhancement bonuses to one range: 'Holding On: +40 enhancement bonus', 'Undying: enhancement bonus scaling with level', 'Undying Sapphire: +65 / +225 enhancement bonus', 'Weighty Asset: +100 enhancement bonus'. `Incapacitation range` (which the Undying enchantment links) REDIRECTS to that same page, so the two spellings are one mechanic. Harvested 2026-08-30.",
+   "note": "#649 — REVERSES the #632 note that used to sit here, which declined this rename because \"moving it would change a stat name in saved builds to fix 3 records\". Two things changed. The stat-name objection is answered by the alias in affix_aliases.json: `Undying` resolves to this canonical, so a saved build that ranked it keeps scoring and nothing a player stored is lost. And the cost was never 3 records — it was that `Undying` names ONE of the four enchantments feeding the stat, so the priority list read 'Undying 225' while the item said 'Weighty Asset', and the maintainer asked what the two had to do with each other. That is the confusion a canonical named after one of its members produces. `Unconsciousness Range` is the wiki's own phrase for the mechanic ('Extending unconsciousness range') and is a member of none of them, so it cannot mislead the same way. The engraved name still rides on `via`, so every card reads what the item actually says."
   },
   {
    "source_name": "Curse of Clumsiness",

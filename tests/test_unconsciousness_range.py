@@ -40,7 +40,16 @@ DATASET = os.path.join(ROOT, "web", "data", "items.json")
 
 #: The engraved names the merge folds in, and the value each states on the wiki.
 MERGED = {"Weighty Asset": "100", "Holding On": "40"}
-CANON = "Undying"
+#: #649 — the canonical is the MECHANIC's name, not any one enchantment's. It was
+#: `Undying` until then, which is the name of one of the four sources feeding the
+#: stat; a priority list reading "Undying 225" beside an item card reading
+#: "Weighty Asset" is what prompted the maintainer to ask what the two had to do
+#: with each other. `Unconsciousness Range` is the wiki's own phrase for the
+#: section that groups them and belongs to none of them.
+CANON = "Unconsciousness Range"
+#: Every engraved name that now folds into it — `Undying` included, which is the
+#: change #649 made.
+ENGRAVED = {"Undying", "Weighty Asset", "Holding On"}
 
 
 def _records():
@@ -98,14 +107,52 @@ def test_the_merged_records_keep_their_engraved_name():
                 "'Extending unconsciousness range' list.")
 
 
-def test_the_unmerged_sources_are_untouched():
-    """The 14 natively-named `Undying` records must carry no `via`.
+def test_every_record_names_the_enchantment_it_is_actually_engraved_with():
+    """No record scoring this stat may be silent about which enchantment it is.
 
-    A merge that stamped provenance onto records it did not move would make every
-    Undying item claim an engraving it does not have.
+    This inverts what it asserted before #649, and the inversion IS the change.
+    While the canonical was `Undying`, the 14 records engraved "Undying" carried
+    no `via` and correctly so — the name on the card was the canonical, and
+    stamping provenance onto records the merge had not moved would have made them
+    claim an engraving they did not have.
+
+    Now the canonical is a mechanic name no item bears, so the situation reverses:
+    a record with no `via` is one whose card cannot say what the player is
+    actually wearing. Every one must carry a receipt, and every receipt must name
+    a real enchantment rather than the canonical echoing itself.
     """
     if not os.path.exists(DATASET):
         return
-    native = [(n, a) for n, a in _records()
-              if a.get("name") == CANON and a.get("via") is None]
-    assert len(native) >= 12, f"only {len(native)} natively-named {CANON} records"
+    rows = [(n, a) for n, a in _records() if a.get("name") == CANON]
+    assert len(rows) >= 15, f"only {len(rows)} {CANON} records — the guard inspects a real population"
+    silent = [n for n, a in rows if not a.get("via")]
+    assert not silent, (
+        f"{len(silent)} record(s) score {CANON} while naming no enchantment: {silent[:6]}. "
+        "The canonical is a mechanic, not a name any item is engraved with, so a "
+        "missing `via` leaves the card unable to say what the player is wearing.")
+    stray = sorted({a["via"] for _, a in rows} - ENGRAVED)
+    assert not stray, f"receipts naming something that is not one of the merged enchantments: {stray}"
+
+
+def test_the_augment_channel_keeps_its_receipt_too():
+    """`Undying Sapphire`'s receipt survives the augment rebuild.
+
+    Its own regression test because it did NOT survive at first, and nothing
+    caught it: `crafting_catalog.augment_pool_records` rebuilds each augment's
+    affixes through a whitelist, the crafting channel has already renamed them by
+    then, and the augment name-correction pass that runs later can no longer match
+    the name it would need to re-stamp. The receipt was destroyed silently between
+    two passes that were each individually correct.
+    """
+    if not os.path.exists(DATASET):
+        return
+    with open(DATASET, encoding="utf-8") as fh:
+        d = json.load(fh)
+    sapphires = [it for it in d.get("items", [])
+                 if "Undying Sapphire" in (it.get("variant_id") or "")]
+    assert len(sapphires) == 2, [it.get("variant_id") for it in sapphires]
+    for it in sapphires:
+        for a in it.get("affixes") or []:
+            assert a.get("name") == CANON, (it["variant_id"], a.get("name"))
+            assert a.get("via") == "Undying", (
+                f"{it['variant_id']} lost its engraved name in the augment rebuild")

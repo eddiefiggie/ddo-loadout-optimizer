@@ -380,7 +380,17 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // 20,753 since #640: +3, one `Wizardry` affix on each `Solar Gem of Arcana`
   // tier. A clean one-affix-per-record family, so the delta equals the record
   // count exactly — unlike #631's, where the umbrella expansions made it not.
-  assert.strictEqual(eligible, 20753, "engraved, eligible affixes");
+  // 20,739 since #649: MINUS 14, and this is the one delta in this census that is
+  // a LOSS of override eligibility rather than a gain. Renaming `Undying` onto the
+  // mechanic name stamps `via` on all 14 records engraved with it (12 items, 2
+  // augments), and rule 5 makes any `via`-carrying affix ineligible. So a player
+  // can no longer hand-override those 14 — the same trade #632, #615 and #639
+  // already made for `Weighty Asset`, the five curses and the two drains, for the
+  // same reason: `via` means "the name on the card is not the name of the stat",
+  // and an override keyed on the engraved name would address a stat that no longer
+  // exists. Worth stating plainly because it is a real, if small, capability the
+  // rename costs.
+  assert.strictEqual(eligible, 20739, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -402,7 +412,11 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // augment 1,021 since #640: +3, with item and weapon UNCHANGED again — the same
   // cross-check, and the same reason: every record the tier-gap shard adds is an
   // augment.
-  assert.deepStrictEqual(byCat, { item: 13618, weapon: 6114, augment: 1021 });
+  // item 13,606 / augment 1,019 since #649: -12 and -2, weapon UNCHANGED — the
+  // independent cross-check on the -14 above. No weapon is engraved `Undying`, so
+  // the whole loss must split across the other two categories, and it does. The
+  // augment half is the two `Undying Sapphire` tiers.
+  assert.deepStrictEqual(byCat, { item: 13606, weapon: 6114, augment: 1019 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {
