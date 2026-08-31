@@ -186,5 +186,110 @@
     }
    ]
   }
- }
+ },
+ "_note_619": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30. This file runs BEFORE affix_type_corrections.json in build_dataset.py, so it corrects 1 -> 10 while the type is still Bool; the type shard then records value 10.",
+ "Cormyrian Green Dragonhide Armor": [
+  {
+   "name": "Magical Efficiency",
+   "type": "Bool",
+   "from": 1,
+   "to": 10,
+   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonhide_Armor",
+   "verified": "2026-08-30",
+   "issue": 619,
+   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+  }
+ ],
+ "Cormyrian Green Dragonplate Armor": [
+  {
+   "name": "Magical Efficiency",
+   "type": "Bool",
+   "from": 1,
+   "to": 10,
+   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonplate_Armor",
+   "verified": "2026-08-30",
+   "issue": 619,
+   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+  }
+ ],
+ "Cormyrian Green Dragonscale Armor": [
+  {
+   "name": "Magical Efficiency",
+   "type": "Bool",
+   "from": 1,
+   "to": 10,
+   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Armor",
+   "verified": "2026-08-30",
+   "issue": 619,
+   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+  }
+ ],
+ "Cormyrian Green Dragonscale Docent": [
+  {
+   "name": "Magical Efficiency",
+   "type": "Bool",
+   "from": 1,
+   "to": 10,
+   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Docent",
+   "verified": "2026-08-30",
+   "issue": 619,
+   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+  }
+ ],
+ "Cormyrian Green Dragonscale Robe": [
+  {
+   "name": "Magical Efficiency",
+   "type": "Bool",
+   "from": 1,
+   "to": 10,
+   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Robe",
+   "verified": "2026-08-30",
+   "issue": 619,
+   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+  }
+ ],
+ "Green Dragonscale Bracers": [
+  {
+   "name": "Magical Efficiency",
+   "type": "Bool",
+   "from": 1,
+   "to": 10,
+   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+   "wiki_url": "https://ddowiki.com/page/Item:Green_Dragonscale_Bracers",
+   "verified": "2026-08-30",
+   "issue": 619,
+   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+  }
+ ],
+ "Legendary Green Dragonscale Bracers": [
+  {
+   "name": "Magical Efficiency",
+   "type": "Bool",
+   "from": 1,
+   "to": 10,
+   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Green_Dragonscale_Bracers",
+   "verified": "2026-08-30",
+   "issue": 619,
+   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+  }
+ ],
+ "Staff of the Petitioner": [
+  {
+   "name": "Magical Efficiency",
+   "type": "Bool",
+   "from": 1,
+   "to": 10,
+   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+   "wiki_url": "https://ddowiki.com/page/Item:Staff_of_the_Petitioner",
+   "verified": "2026-08-30",
+   "issue": 619,
+   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+  }
+ ]
 }

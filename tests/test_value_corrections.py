@@ -162,10 +162,34 @@ def _retyped_to(item, affix):
     return None
 
 
-def test_the_live_shard_is_empty_and_the_retirement_is_on_the_record():
-    """The live payload is gone; the evidence is not."""
-    assert value_corrections.load(SHARD) == {}, \
-        "a live correction reappeared — it needs its own re-verification, not this block"
+#: #619 — the eight {{Power Store}} carriers, the only live corrections in this
+#: shard. Pinned by name rather than by count so a stray entry fails here instead
+#: of riding in behind a bumped number.
+LIVE_619 = {
+    "Cormyrian Green Dragonhide Armor", "Cormyrian Green Dragonplate Armor",
+    "Cormyrian Green Dragonscale Armor", "Cormyrian Green Dragonscale Docent",
+    "Cormyrian Green Dragonscale Robe", "Green Dragonscale Bracers",
+    "Legendary Green Dragonscale Bracers", "Staff of the Petitioner",
+}
+
+
+def test_the_only_live_corrections_are_619_and_the_retirement_is_on_the_record():
+    """The #288 payload is still retired; the shard is no longer empty.
+
+    It WAS empty, and this test asserted exactly that. #619 landed the first live
+    corrections since the #288 batch retired — eight items whose `Magical
+    Efficiency` magnitude gear-planner cannot read, because {{Power Store}} keeps
+    its number in the template body rather than a parameter.
+
+    So the assertion moves from "nothing is live" to "these eight are, by name".
+    That keeps what the original was protecting — an unexplained correction
+    reappearing — while admitting the one that has its evidence recorded.
+    """
+    live = set(value_corrections.load(SHARD))
+    assert live == LIVE_619, (
+        f"unexpected live correction(s): {sorted(live - LIVE_619)}; "
+        f"missing: {sorted(LIVE_619 - live)}. A live correction needs its own "
+        "wiki evidence and its own entry in this set, not a silent arrival.")
     block = _retired()
     assert (block.get("why") or "").strip(), "a retirement with no stated reason"
     assert "767a7f747d0e7d211a702b8c456348e1c36ba699" in (block.get("verified") or ""), \
@@ -190,7 +214,7 @@ def test_the_shipped_shard_carries_its_wiki_evidence():
             assert str(e["to"]) in e["tooltip"], (
                 f"{item}: the corrected value {e['to']!r} does not appear in the "
                 f"recorded tooltip — the evidence does not support the number")
-    assert seen == 17, seen
+    assert seen == 25, seen   # 17 retired (#288) + 8 live (#619)
 
 
 def test_a_retired_correction_is_one_upstream_actually_adopted():

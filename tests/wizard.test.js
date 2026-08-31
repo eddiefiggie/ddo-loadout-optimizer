@@ -1955,10 +1955,22 @@ test("F2: every rankable stat keeps its Advanced control against the REAL vocab"
   // real magnitude AND the 8 `Bool` lines it already had. Gating it on
   // `presence` alone would hide the min/max of a stat that has one — the exact
   // defect this test exists to block, now on a fifth name.
+  // Re-ratified 2026-08-30 (#619): `Magical Efficiency` LEAVES the set, and the
+  // reason is the mirror of why it joined. #374 admitted it as the fifth because
+  // upstream typed its 100 magnitude carriers while it still carried 8 `Bool`
+  // lines — dual nature by accident, not by design. Those 8 engrave
+  // {{Power Store}}, whose magnitude lives in the template body rather than a
+  // parameter, so a structural read emitted presence for an affix that has no
+  // on/off form at all. Corrected to `Enhancement | 10` from the wiki, it is
+  // magnitude-only and its presence membership is gone.
+  //
+  // So the set is back to the original four, and that is the check: a genuinely
+  // dual-nature stat (Deception and the other three really do have both forms)
+  // stays, while one that was only ever dual because of an unread template does
+  // not. A fifth name reappearing here means another template lost its number.
   const leaked = [...rv.presence].filter((x) => rv.magnitude.has(x));
   assert.deepStrictEqual(leaked.sort(),
-    ["Deception", "Magical Efficiency", "Protection from Evil", "Smoke Screen",
-     "Underwater Action"],
+    ["Deception", "Protection from Evil", "Smoke Screen", "Underwater Action"],
     `only the dual-nature stats may escape the presence gate; got ${leaked.length}`);
   for (const stat of realData.metadata.rankable_affixes) {
     assert.strictEqual(isPresenceOnly(stat, rv), false, `${stat} has a magnitude bucket`);
