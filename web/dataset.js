@@ -617,11 +617,18 @@ const _PRESENCE_NOISE = /[.%:]|\bchance\b|\bwhen you\b|\byour\b|\bclicky\b|\bupg
 // recommendation. This is the cheap half of #615; recovering the stat and
 // magnitude each curse actually costs is the harvest half, and #614 is what would
 // then subtract it.
+//
+// #615 (harvest) — FOUR of the original eight entries are gone, and their absence
+// is the fix rather than a regression. `Curse of Clumsiness/Dullness/Foolishness/
+// Repulsiveness` no longer exist as affix names at all: the wiki's `Cursed` page
+// rules each a "-1 Penalty" to a named ability, so they are merged into that
+// ability and carried as real signed penalties the solver subtracts. Denying a
+// name is a stopgap for a drawback we cannot score; scoring it is the cure, and
+// keeping a dead deny entry would be a guard that can never fail.
+//
+// The four below are the ones the harvest did NOT reach. They stay denied because
+// their valence is still undecided — see the issue.
 const PRESENCE_DENY = new Set([
-  "Curse of Clumsiness",
-  "Curse of Dullness",
-  "Curse of Foolishness",
-  "Curse of Repulsiveness",
   "Cursed Level Drain",
   "Mind Drain",
   "Power Drain",

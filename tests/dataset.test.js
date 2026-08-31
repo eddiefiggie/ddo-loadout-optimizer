@@ -1189,15 +1189,21 @@ test("#228: the word-cap casualty set is pinned, so a new named effect surfaces"
 // #615 — wearer drawbacks the priority picker was offering as things to SEEK.
 // The split is carrier-shaped, not name-shaped: a name carried on at least one
 // non-weapon WORN slot cannot be an on-hit effect on an enemy.
+// #615 (harvest) — down from eight. The four `Curse of *` names were merged into
+// the abilities they penalise once the wiki ruled them "-1 Penalty to <ability>",
+// so they are no longer affix names to deny; they are signed penalties the solver
+// subtracts. What remains is the population the harvest did not reach.
 const DENIED_615 = [
-  "Curse of Clumsiness", "Curse of Dullness", "Curse of Foolishness",
-  "Curse of Repulsiveness", "Cursed Level Drain", "Mind Drain",
-  "Power Drain", "Metal Fatigue",
+  "Cursed Level Drain", "Mind Drain", "Power Drain", "Metal Fatigue",
 ];
 // Weapon-only carriers in the same population: the on-hit reading stays open, so
 // none of them is denied. `Weaken Undead` is the reason the line cannot be drawn
 // on the name — it is a real thing to seek, on 55 weapons.
-const WEAPON_ONLY_615 = ["Curse of Weakness", "Critical Weakening", "Weaken Undead"];
+// `Curse of Weakness` has LEFT this list: it was weapon-only, so the on-hit
+// reading stayed open and it was deliberately not denied — and the Cursed page
+// then ruled it a -1 Penalty to Strength like its siblings. Recorded because the
+// caution was right: guessing either way would have been wrong half the time.
+const WEAPON_ONLY_615 = ["Critical Weakening", "Weaken Undead"];
 
 test("#615: wearer drawbacks are not offered as priorities, but stay free-typeable", () => {
   const v = buildPickerVocabulary(realData);

@@ -214,6 +214,31 @@
    "variant": "Holding On",
    "canonical": "Undying",
    "reason": "#632 — this enchantment was merged into `Undying` because the wiki's `Unconscious` page groups both under 'Extending unconsciousness range' as enhancement bonuses to one stat (and `Incapacitation range`, which Undying links, redirects there). The alias keeps a player who ranked the engraved name — or a saved build that carries it — resolving to the stat that now scores it. The engraved name still shows on the item card, via `via`."
+  },
+  {
+   "variant": "Curse of Clumsiness",
+   "canonical": "Dexterity",
+   "reason": "#615 — the wiki's `Cursed` page rules this a '-1 Penalty' to the ability below, so the curse is merged into that ability and no longer exists as its own affix name. The alias keeps a player who typed or saved the engraved curse name resolving to the stat that now carries it; the card still shows the curse, via `via`."
+  },
+  {
+   "variant": "Curse of Dullness",
+   "canonical": "Intelligence",
+   "reason": "#615 — the wiki's `Cursed` page rules this a '-1 Penalty' to the ability below, so the curse is merged into that ability and no longer exists as its own affix name. The alias keeps a player who typed or saved the engraved curse name resolving to the stat that now carries it; the card still shows the curse, via `via`."
+  },
+  {
+   "variant": "Curse of Foolishness",
+   "canonical": "Wisdom",
+   "reason": "#615 — the wiki's `Cursed` page rules this a '-1 Penalty' to the ability below, so the curse is merged into that ability and no longer exists as its own affix name. The alias keeps a player who typed or saved the engraved curse name resolving to the stat that now carries it; the card still shows the curse, via `via`."
+  },
+  {
+   "variant": "Curse of Repulsiveness",
+   "canonical": "Charisma",
+   "reason": "#615 — the wiki's `Cursed` page rules this a '-1 Penalty' to the ability below, so the curse is merged into that ability and no longer exists as its own affix name. The alias keeps a player who typed or saved the engraved curse name resolving to the stat that now carries it; the card still shows the curse, via `via`."
+  },
+  {
+   "variant": "Curse of Weakness",
+   "canonical": "Strength",
+   "reason": "#615 — the wiki's `Cursed` page rules this a '-1 Penalty' to the ability below, so the curse is merged into that ability and no longer exists as its own affix name. The alias keeps a player who typed or saved the engraved curse name resolving to the stat that now carries it; the card still shows the curse, via `via`."
   }
  ],
  "distinct": [
