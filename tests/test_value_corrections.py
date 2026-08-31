@@ -177,7 +177,31 @@ LIVE_619 = {
 #: `Weighty Asset` (+100) and `Holding On` (+40) are stated on the wiki's Unconscious
 #: page, which also groups them with `Undying` as one stat — hence the merge.
 LIVE_632 = {"Stone Shoes", "Legendary Stone Shoes", "Ward Token"}
-LIVE = LIVE_619 | LIVE_632
+#: #615 — the cursed-item carriers. The wiki's `Cursed` page rules each `Curse of
+#: X` a "-1 Penalty" to a named ability, so these 19 items carry a real signed
+#: penalty where they carried an unrankable `Bool | 1`.
+LIVE_615 = {
+    "-1 Quarterstaff of Lesser Halfling Bane",
+    "Accomplice",
+    "Amulet of the Brute",
+    "Black Lace Blindfold",
+    "Brawn's Spirits",
+    "Epic Black Lace Blindfold",
+    "Epic Brawn's Spirits",
+    "Epic Linen Wraps",
+    "Epic Ring of Baphomet",
+    "Epic Stinkpelt's Hide",
+    "Girdle of Giants' Brawn (level 14)",
+    "Legendary Brawn's Spirits",
+    "Legendary Ring of Baphomet",
+    "Legendary Stinkpelt's Hide",
+    "Linen Wraps",
+    "Piledriver",
+    "Ring of Baphomet",
+    "Stinkpelt's Hide",
+    "Tchurvul's Kukri",
+}
+LIVE = LIVE_619 | LIVE_632 | LIVE_615
 
 
 def test_the_only_live_corrections_are_declared_and_the_retirement_is_on_the_record():
@@ -223,7 +247,9 @@ def test_the_shipped_shard_carries_its_wiki_evidence():
                 f"recorded tooltip — the evidence does not support the number")
     # #632 — 28: 17 retired (#288) + 8 live (#619) + 3 live (#632, the two Stone
     # Shoes and Ward Token, whose Bool-flattened magnitudes the Unconscious page states).
-    assert seen == 28, seen
+    # #615 — 54: 17 retired (#288) + 8 live (#619) + 3 (#632) + 26 (#615, the
+    # cursed-item carriers, one entry per curse per item).
+    assert seen == 54, seen
 
 
 def test_a_retired_correction_is_one_upstream_actually_adopted():

@@ -327,5 +327,303 @@
    "verified": "2026-08-30",
    "issue": 632
   }
+ ],
+ "Black Lace Blindfold": [
+  {
+   "name": "Curse of Clumsiness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+   "wiki_url": "https://ddowiki.com/page/Item:Black_Lace_Blindfold",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Epic Black Lace Blindfold": [
+  {
+   "name": "Curse of Clumsiness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Black_Lace_Blindfold",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Epic Linen Wraps": [
+  {
+   "name": "Curse of Clumsiness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Linen_Wraps",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Linen Wraps": [
+  {
+   "name": "Curse of Clumsiness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+   "wiki_url": "https://ddowiki.com/page/Item:Linen_Wraps",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Piledriver": [
+  {
+   "name": "Curse of Clumsiness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+   "wiki_url": "https://ddowiki.com/page/Item:Piledriver",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Amulet of the Brute": [
+  {
+   "name": "Curse of Dullness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+   "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Brute",
+   "verified": "2026-08-30",
+   "issue": 615
+  },
+  {
+   "name": "Curse of Foolishness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Brute",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Brawn's Spirits": [
+  {
+   "name": "Curse of Dullness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+   "wiki_url": "https://ddowiki.com/page/Item:Brawn%27s_Spirits",
+   "verified": "2026-08-30",
+   "issue": 615
+  },
+  {
+   "name": "Curse of Foolishness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Brawn%27s_Spirits",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Epic Brawn's Spirits": [
+  {
+   "name": "Curse of Dullness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn%27s_Spirits",
+   "verified": "2026-08-30",
+   "issue": 615
+  },
+  {
+   "name": "Curse of Foolishness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn%27s_Spirits",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Girdle of Giants' Brawn (level 14)": [
+  {
+   "name": "Curse of Dullness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+   "wiki_url": "https://ddowiki.com/page/Item:Girdle_of_Giants%27_Brawn_(level_14)",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Legendary Brawn's Spirits": [
+  {
+   "name": "Curse of Dullness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn%27s_Spirits",
+   "verified": "2026-08-30",
+   "issue": 615
+  },
+  {
+   "name": "Curse of Foolishness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn%27s_Spirits",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Epic Ring of Baphomet": [
+  {
+   "name": "Curse of Foolishness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
+   "verified": "2026-08-30",
+   "issue": 615
+  },
+  {
+   "name": "Curse of Repulsiveness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Legendary Ring of Baphomet": [
+  {
+   "name": "Curse of Foolishness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
+   "verified": "2026-08-30",
+   "issue": 615
+  },
+  {
+   "name": "Curse of Repulsiveness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Ring of Baphomet": [
+  {
+   "name": "Curse of Foolishness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Baphomet",
+   "verified": "2026-08-30",
+   "issue": 615
+  },
+  {
+   "name": "Curse of Repulsiveness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Baphomet",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Accomplice": [
+  {
+   "name": "Curse of Repulsiveness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Accomplice",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Epic Stinkpelt's Hide": [
+  {
+   "name": "Curse of Repulsiveness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Stinkpelt%27s_Hide",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Legendary Stinkpelt's Hide": [
+  {
+   "name": "Curse of Repulsiveness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stinkpelt%27s_Hide",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Stinkpelt's Hide": [
+  {
+   "name": "Curse of Repulsiveness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Stinkpelt%27s_Hide",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "Tchurvul's Kukri": [
+  {
+   "name": "Curse of Repulsiveness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Tchurvul%27s_Kukri",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
+ ],
+ "-1 Quarterstaff of Lesser Halfling Bane": [
+  {
+   "name": "Curse of Weakness",
+   "type": "Bool",
+   "from": 1,
+   "to": -1,
+   "tooltip": "Cursed: Curse of Weakness: Passive: -1 Penalty to Strength.",
+   "wiki_url": "https://ddowiki.com/page/Item:-1_Quarterstaff_of_Lesser_Halfling_Bane",
+   "verified": "2026-08-30",
+   "issue": 615
+  }
  ]
 }

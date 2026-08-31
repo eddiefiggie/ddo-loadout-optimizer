@@ -113,12 +113,16 @@ test("#374: the correction roster is the declaration, and every entry is armed",
   // share its bucket instead of summing beside it. They carry
   // `merge_into_existing` and cite the page; the ordinary #374 entries carry
   // neither. A 16th entry still needs its own line here rather than a silent pass.
-  assert.strictEqual(CORRECTIONS.length, 15,
-    "15 armed variants — 13 upstream-spelling corrections (#374) plus the two " +
-    "evidence-bound merges (#632); a new entry needs its own assertion, not a bump");
-  assert.strictEqual(CORRECTIONS.filter((c) => c.merge_into_existing).length, 2,
-    "exactly two entries are merges, and a merge must cite the wiki page that " +
-    "says the two names are one stat");
+  // #615 — 20, and the merge count is now the larger half. The five `Curse of X`
+  // entries join `Weighty Asset` and `Holding On`: each is an enchantment the wiki
+  // rules a "-1 Penalty" to a named ability, merged into that ability so the
+  // solver subtracts it from the stat a player actually ranks.
+  assert.strictEqual(CORRECTIONS.length, 20,
+    "20 armed variants — 13 upstream-spelling corrections (#374) plus 7 " +
+    "evidence-bound merges (#632, #615); a new entry needs its own assertion, not a bump");
+  assert.strictEqual(CORRECTIONS.filter((c) => c.merge_into_existing).length, 7,
+    "seven entries are merges, and a merge must cite the wiki page that says the " +
+    "two names are one stat");
   for (const c of CORRECTIONS) {
     assert.ok(!c.pending_upstream,
       `${c.source_name} still carries a pending_upstream marker — it is not armed`);

@@ -152,6 +152,56 @@
    "issue": 632,
    "evidence": "https://ddowiki.com/page/Unconscious section 'Extending unconsciousness range' lists all sources together as enhancement bonuses to one range: 'Holding On: +40 enhancement bonus', 'Undying: enhancement bonus scaling with level', 'Undying Sapphire: +65 / +225 enhancement bonus', 'Weighty Asset: +100 enhancement bonus'. `Incapacitation range` (which the Undying enchantment links) REDIRECTS to that same page, so the two spellings are one mechanic. Harvested 2026-08-30.",
    "note": "#632 — merged INTO the existing `Undying` rather than renaming all three to the mechanic's own name. `Undying` is the name players actually rank and the dominant population (14 records); moving it would change a stat name in saved builds to fix 3 records. The engraved name survives as `via`, so the card still reads 'Holding On'."
+  },
+  {
+   "source_name": "Curse of Clumsiness",
+   "canonical_name": "Dexterity",
+   "merge_into_existing": true,
+   "wiki_url": "https://ddowiki.com/page/Cursed",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "evidence": "https://ddowiki.com/page/Cursed states the whole family in one list: 'Equipping a cursed item bestows a -1 penalty to one of your ability scores: Curse of Clumsiness: Passive: -1 Penalty to Dexterity. Curse of Dullness: Passive: -1 Penalty to Intelligence. Curse of Foolishness: Passive: -1 Penalty to Wisdom. Curse of Frailty: Passive: -1 Penalty to Constitution. Curse of Repulsiveness: Passive: -1 Penalty to Charisma. Curse of Weakness: Passive: -1 Penalty to Strength.' Named carriers use the same definition: Item:Ring of Baphomet renders 'Curse of Foolishness' and 'Curse of Repulsiveness' whose tooltips link that same Cursed page. Harvested 2026-08-30.",
+   "note": "#615 — `Curse of Clumsiness` is not a stat, it is a -1 Penalty to Dexterity. Merged so it lands in the Dexterity total the player actually ranks; the engraved curse name rides on `via`, so the card still names the curse."
+  },
+  {
+   "source_name": "Curse of Dullness",
+   "canonical_name": "Intelligence",
+   "merge_into_existing": true,
+   "wiki_url": "https://ddowiki.com/page/Cursed",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "evidence": "https://ddowiki.com/page/Cursed states the whole family in one list: 'Equipping a cursed item bestows a -1 penalty to one of your ability scores: Curse of Clumsiness: Passive: -1 Penalty to Dexterity. Curse of Dullness: Passive: -1 Penalty to Intelligence. Curse of Foolishness: Passive: -1 Penalty to Wisdom. Curse of Frailty: Passive: -1 Penalty to Constitution. Curse of Repulsiveness: Passive: -1 Penalty to Charisma. Curse of Weakness: Passive: -1 Penalty to Strength.' Named carriers use the same definition: Item:Ring of Baphomet renders 'Curse of Foolishness' and 'Curse of Repulsiveness' whose tooltips link that same Cursed page. Harvested 2026-08-30.",
+   "note": "#615 — `Curse of Dullness` is not a stat, it is a -1 Penalty to Intelligence. Merged so it lands in the Intelligence total the player actually ranks; the engraved curse name rides on `via`, so the card still names the curse."
+  },
+  {
+   "source_name": "Curse of Foolishness",
+   "canonical_name": "Wisdom",
+   "merge_into_existing": true,
+   "wiki_url": "https://ddowiki.com/page/Cursed",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "evidence": "https://ddowiki.com/page/Cursed states the whole family in one list: 'Equipping a cursed item bestows a -1 penalty to one of your ability scores: Curse of Clumsiness: Passive: -1 Penalty to Dexterity. Curse of Dullness: Passive: -1 Penalty to Intelligence. Curse of Foolishness: Passive: -1 Penalty to Wisdom. Curse of Frailty: Passive: -1 Penalty to Constitution. Curse of Repulsiveness: Passive: -1 Penalty to Charisma. Curse of Weakness: Passive: -1 Penalty to Strength.' Named carriers use the same definition: Item:Ring of Baphomet renders 'Curse of Foolishness' and 'Curse of Repulsiveness' whose tooltips link that same Cursed page. Harvested 2026-08-30.",
+   "note": "#615 — `Curse of Foolishness` is not a stat, it is a -1 Penalty to Wisdom. Merged so it lands in the Wisdom total the player actually ranks; the engraved curse name rides on `via`, so the card still names the curse."
+  },
+  {
+   "source_name": "Curse of Repulsiveness",
+   "canonical_name": "Charisma",
+   "merge_into_existing": true,
+   "wiki_url": "https://ddowiki.com/page/Cursed",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "evidence": "https://ddowiki.com/page/Cursed states the whole family in one list: 'Equipping a cursed item bestows a -1 penalty to one of your ability scores: Curse of Clumsiness: Passive: -1 Penalty to Dexterity. Curse of Dullness: Passive: -1 Penalty to Intelligence. Curse of Foolishness: Passive: -1 Penalty to Wisdom. Curse of Frailty: Passive: -1 Penalty to Constitution. Curse of Repulsiveness: Passive: -1 Penalty to Charisma. Curse of Weakness: Passive: -1 Penalty to Strength.' Named carriers use the same definition: Item:Ring of Baphomet renders 'Curse of Foolishness' and 'Curse of Repulsiveness' whose tooltips link that same Cursed page. Harvested 2026-08-30.",
+   "note": "#615 — `Curse of Repulsiveness` is not a stat, it is a -1 Penalty to Charisma. Merged so it lands in the Charisma total the player actually ranks; the engraved curse name rides on `via`, so the card still names the curse."
+  },
+  {
+   "source_name": "Curse of Weakness",
+   "canonical_name": "Strength",
+   "merge_into_existing": true,
+   "wiki_url": "https://ddowiki.com/page/Cursed",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "evidence": "https://ddowiki.com/page/Cursed states the whole family in one list: 'Equipping a cursed item bestows a -1 penalty to one of your ability scores: Curse of Clumsiness: Passive: -1 Penalty to Dexterity. Curse of Dullness: Passive: -1 Penalty to Intelligence. Curse of Foolishness: Passive: -1 Penalty to Wisdom. Curse of Frailty: Passive: -1 Penalty to Constitution. Curse of Repulsiveness: Passive: -1 Penalty to Charisma. Curse of Weakness: Passive: -1 Penalty to Strength.' Named carriers use the same definition: Item:Ring of Baphomet renders 'Curse of Foolishness' and 'Curse of Repulsiveness' whose tooltips link that same Cursed page. Harvested 2026-08-30.",
+   "note": "#615 — `Curse of Weakness` is not a stat, it is a -1 Penalty to Strength. Merged so it lands in the Strength total the player actually ranks; the engraved curse name rides on `via`, so the card still names the curse."
   }
  ],
  "_pending": "#374/U2 — an entry may carry pending_upstream + pending_reason when it is declared one unit AHEAD of the refreshed gear-planner snapshot that arms it. Pending entries are exempt from assert_all_reached (they reach nothing by construction) and excluded from the KTD3 declared-live set. The exemption is self-retiring: assert_canon_defense fails the build the moment the raw data arms an entry whose marker is still set.",

@@ -523,5 +523,329 @@
    "issue": 632,
    "note": "#632 — keyed on `Undying` because affix_name_corrections runs BEFORE this file and has already merged `Holding On` into it. The engraved name rides on `via`."
   }
+ ],
+ "Black Lace Blindfold": [
+  {
+   "name": "Dexterity",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+   "wiki_url": "https://ddowiki.com/page/Item:Black_Lace_Blindfold",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
+  }
+ ],
+ "Epic Black Lace Blindfold": [
+  {
+   "name": "Dexterity",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Black_Lace_Blindfold",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
+  }
+ ],
+ "Epic Linen Wraps": [
+  {
+   "name": "Dexterity",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Linen_Wraps",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
+  }
+ ],
+ "Linen Wraps": [
+  {
+   "name": "Dexterity",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+   "wiki_url": "https://ddowiki.com/page/Item:Linen_Wraps",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
+  }
+ ],
+ "Piledriver": [
+  {
+   "name": "Dexterity",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+   "wiki_url": "https://ddowiki.com/page/Item:Piledriver",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
+  }
+ ],
+ "Amulet of the Brute": [
+  {
+   "name": "Intelligence",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+   "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Brute",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
+  },
+  {
+   "name": "Wisdom",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Brute",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+  }
+ ],
+ "Brawn's Spirits": [
+  {
+   "name": "Intelligence",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+   "wiki_url": "https://ddowiki.com/page/Item:Brawn%27s_Spirits",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
+  },
+  {
+   "name": "Wisdom",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Brawn%27s_Spirits",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+  }
+ ],
+ "Epic Brawn's Spirits": [
+  {
+   "name": "Intelligence",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn%27s_Spirits",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
+  },
+  {
+   "name": "Wisdom",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn%27s_Spirits",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+  }
+ ],
+ "Girdle of Giants' Brawn (level 14)": [
+  {
+   "name": "Intelligence",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+   "wiki_url": "https://ddowiki.com/page/Item:Girdle_of_Giants%27_Brawn_(level_14)",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
+  }
+ ],
+ "Legendary Brawn's Spirits": [
+  {
+   "name": "Intelligence",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn%27s_Spirits",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
+  },
+  {
+   "name": "Wisdom",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn%27s_Spirits",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+  }
+ ],
+ "Epic Ring of Baphomet": [
+  {
+   "name": "Wisdom",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+  },
+  {
+   "name": "Charisma",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+  }
+ ],
+ "Legendary Ring of Baphomet": [
+  {
+   "name": "Wisdom",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+  },
+  {
+   "name": "Charisma",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+  }
+ ],
+ "Ring of Baphomet": [
+  {
+   "name": "Wisdom",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Baphomet",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+  },
+  {
+   "name": "Charisma",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Baphomet",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+  }
+ ],
+ "Accomplice": [
+  {
+   "name": "Charisma",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Accomplice",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+  }
+ ],
+ "Epic Stinkpelt's Hide": [
+  {
+   "name": "Charisma",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Stinkpelt%27s_Hide",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+  }
+ ],
+ "Legendary Stinkpelt's Hide": [
+  {
+   "name": "Charisma",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stinkpelt%27s_Hide",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+  }
+ ],
+ "Stinkpelt's Hide": [
+  {
+   "name": "Charisma",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Stinkpelt%27s_Hide",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+  }
+ ],
+ "Tchurvul's Kukri": [
+  {
+   "name": "Charisma",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+   "wiki_url": "https://ddowiki.com/page/Item:Tchurvul%27s_Kukri",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+  }
+ ],
+ "-1 Quarterstaff of Lesser Halfling Bane": [
+  {
+   "name": "Strength",
+   "from": "Bool",
+   "to": "Penalty",
+   "value": "-1",
+   "tooltip": "Cursed: Curse of Weakness: Passive: -1 Penalty to Strength.",
+   "wiki_url": "https://ddowiki.com/page/Item:-1_Quarterstaff_of_Lesser_Halfling_Bane",
+   "verified": "2026-08-30",
+   "issue": 615,
+   "note": "#615 — keyed on `Strength` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Weakness` into it."
+  }
  ]
 }
