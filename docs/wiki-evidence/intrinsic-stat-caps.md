@@ -1,4 +1,11 @@
-# Wiki evidence — intrinsic in-game stat caps (issue #199)
+# Wiki evidence — intrinsic in-game stat caps
+
+**This file holds two sweeps.** §1–§5 are the #199 harvest of 2026-08-28;
+§6–§12 are the 2026-09-01 sweep of the miss-chance family, Strikethrough, Jump
+and shield bash. The second sweep's table is under its own heading further down —
+do not read the first table as the whole roster.
+
+# First sweep — 2026-08-28 (issue #199)
 
 **Harvested:** 2026-08-28, same-origin from a ddowiki tab per `harvest-method.md`.
 **Outcome: 1 of 5 confirmed.** Four stats that "obviously" cap do not, and the
@@ -174,3 +181,217 @@ epic destinies and past lives — the sources that actually carry a character to
 
 So the cap is correct to record and correct to apply, and it is honest to say that
 it does nothing until the player tells the app what they already have.
+
+---
+
+# Second sweep — 2026-09-01 (miss-chance family, Strikethrough, Jump, shield bash)
+
+**Harvested:** 2026-09-01, same-origin from a ddowiki tab per `harvest-method.md`.
+**Outcome: 2 of 5 confirmed, and both confirmations need a qualifier.**
+
+Prompted by a player report proposing five further ceilings, four of them by
+analogy: that Concealment and Incorporeal share Dodge's 95, and that shield bash
+chance shares off-hand strike chance's 100. Neither analogy survives. This is the
+same failure shape §2 records for Doubleshot — sibling stats, parallel language,
+different rules — so it is recorded here at the same weight.
+
+| Stat | Verdict | Fixed cap? | Recorded as |
+|---|---|---|---|
+| Strikethrough | **CONFIRMED — 400** | yes (effective, not a clamp) | cap |
+| Off-hand strike chance | **CONFIRMED — 100** | yes | neither; see §10 |
+| Jump | CONFIRMED — 40, but only for jump *height* | soft | neither; see §9 |
+| Incorporeal | REFUSED — no numeric cap stated | no | refusal |
+| Secondary shield bash chance | REFUSED — no numeric cap stated | no | refusal |
+
+Dodge (§4) and Concealment (§5) were re-read on the same pass and both rulings
+stand unchanged.
+
+---
+
+## 6. Strikethrough — CONFIRMED, 400
+
+**Filed as #661** (record the cap).
+
+**Source:** https://ddowiki.com/page/Strikethrough
+
+> If your Strikethrough Chance is 400% or higher, you will always attack a fifth target (if in range). Strikethrough effectively caps at 400%, in that while higher values are possible, they do not provide chances to attack sixth or further targets.
+
+**Read the qualifier before recording this.** It is not a clamp. The page says
+higher values "are possible" — they exist, they display, and the game does not
+truncate them; what stops at 400 is the *benefit*. That is the same shape as
+Doublestrike's cap (§1) and the opposite of Doubleshot's wrapping (§2), so 400
+is a correct entry for a table whose semantics are "value above this buys
+nothing".
+
+The tiers below it are stated on the same page and are worth keeping in view,
+because they are what makes 400 the ceiling rather than an arbitrary number:
+over 100% guarantees a second target, over 200% a third, over 300% a fourth,
+and 400% a fifth. There is no sixth target to buy.
+
+Strikethrough begins at 20% while considered Two Handed Fighting, and the page
+lists feats and enhancements well past 400 in combination (Two Handed Fighting
++60, Improved/Greater/Perfect +30 each, Two Handed Specialty +120, Dance of
+Death +50/100/200). So unlike Doublestrike this ceiling is genuinely reachable —
+just not from gear. See §11.
+
+## 7. Incorporeal — REFUSED, no numeric cap
+
+**Filed as #662** (record the refusal), with §8.
+
+**Source:** https://ddowiki.com/page/Incorporeal
+
+The page enumerates every player source by magnitude — sections headed 5%, 10%,
+15%, 20%, 25%, 50%, plus two stacking bands — and states no ceiling anywhere. It
+does state a *reduction*, which is the only number on the page that behaves like
+a limit and is not one:
+
+> However, note that Incorporeality and Concealment have decreased effect in Reaper difficulty. This reduction begins with 10% Concealment and 5% Incorporeal bypass at Reaper 1, with a further 5% Concealment and Incorporeal bypass per Skull difficulty.
+
+That is a difficulty-scaled bypass applied to the attacker's side, not a cap on
+the stat, and it is keyed to content the player selects rather than to the
+character. Recording it as a ceiling would be wrong twice over.
+
+## 8. Secondary shield bash chance — REFUSED, no numeric cap
+
+**Filed as #662** (record the refusal), with §7.
+
+**Source:** https://ddowiki.com/page/Shield_bashing
+
+The page has a whole section headed "Sources of increased secondary shield bash
+chance" listing feats, enhancements and items by magnitude, and never states a
+ceiling. A full-text wiki search for a shield-bash cap returned nothing.
+
+**Why the silence is evidence here.** The wiki writes these ceilings down where
+they exist, and it does so on the *sibling* page: Two Weapon Fighting states the
+off-hand cap outright (§10). Shield bashing is the closest analogue to off-hand
+striking in the game — a second, automatic attack that procs off your main-hand
+swing — and the page that would carry the same sentence does not. Under
+exclude-until-verified that is a refusal, not an assumption of symmetry.
+
+Two adjacent facts on the page are easy to misread as a cap and are not:
+
+- "Doublestrike does not affect shield bashing... the shield will never strike
+  more than once on a single attack." That is a rule about doublestrike, not a
+  ceiling on bash *chance*.
+- The Divine Crusader enhancement Bring Down Wrath lets the shield doublestrike
+  at half the main-hand rate. That is an added mechanic, not a limit.
+
+## 9. Jump — CONFIRMED at 40, for jump height only
+
+**Filed as #663** (disclose the gap; see also §11).
+
+**Source:** https://ddowiki.com/page/Jump_(skill)
+
+> There is a soft cap on the Jump skill at 40 with regard to jumping height. Any higher number makes no difference in the height that you can jump while not using Sneak.
+
+**Not recorded as an intrinsic cap, because the same page states three ways past
+it**, and a flat 40 would be wrong under each:
+
+1. **Fall damage keeps scaling.** "A higher Jump skill decreases the amount of
+   damage you take from falling from great heights much like the Tumble skill,
+   just at a slightly lower percentage. This reduction is not capped at 40 the
+   way that jump height is." So Jump above 40 is dead weight for *height* and
+   live for *falling*. A cap keyed to the stat cannot express that.
+2. **Sneak moves the target to 60.** "When using Sneak, your Jump (and Tumble)
+   skills receive a −20 penalty, so this soft cap becomes an effective 60."
+   The page adds that "no Jump bonus will be applied to Sneaking characters until
+   the Jump total is +21".
+3. **Armor check penalty eats into it.** Jump is an ACP skill
+   (https://ddowiki.com/page/Armor_check_penalty), and armor and shield ACP stack.
+
+### ACP magnitudes, since the buffer argument depends on them
+
+The player report that prompted this sweep cited "up to 6 from armor, 9 from
+shield, and 6 from heavy encumbrance". Two of the three are off. Verbatim from
+the wiki:
+
+| Source | ACP | Page |
+|---|---|---|
+| Heavy encumbrance | −6 | Armor check penalty |
+| Medium encumbrance | −3 | Armor check penalty |
+| Armor, current progression tables | up to −5 (Full Plate line) | Armor by Proficiency |
+| Armor, legacy low-level vendor table | up to −7 (Splint Mail, Half-plate) | Armor by Proficiency |
+| Tower shield | −10, every variant | Category:Shields |
+| Heavy shield | −2 | Category:Shields |
+| Light shield | −1 | Category:Shields |
+| Buckler | 0 | Category:Shields |
+
+Note the two armor tables disagree by design — the vendor table is flagged on the
+page as an older algorithm — so "the armor ACP" is not one number and must not be
+recorded as one. Mithral reduces ACP by 3; Nimbleness by 2 or 4.
+
+## 10. Off-hand strike chance — CONFIRMED 100, deliberately not recorded
+
+**Source:** https://ddowiki.com/page/Two_Weapon_Fighting
+
+> There's no benefit of having more than a 100% off-hand strike chance.
+
+Stated outright. The same page restates the off-hand doublestrike rule that §1
+already declines to model:
+
+> Off-hand attacks Doublestrike at a rate of 50% of your main-hand weapon (handwraps have no offhand penalty). Perfect Two Weapon Fighting increases this chance to 65%. There's no benefit of having more than 100% doublestrike.
+
+**Confirmed but not recorded, for the §1 reason.** A cap on off-hand strike chance
+is a cap that only exists while dual-wielding, which is the Two Weapon Fighting
+penalty — an `AGENTS.md` non-goal that is disclosed to the player rather than
+modelled numerically. It is written down here so the next reader does not have to
+re-harvest it to rediscover that it is out of scope, and so the refusal is not
+mistaken for an oversight.
+
+## 11. What binds, measured against the built catalog
+
+Same method as the Doublestrike bound above: sum the best value in each
+bonus-type bucket across worn-item affixes, ignoring slot conflicts, so these are
+loose upper bounds. The method reproduces this document's existing Doublestrike
+figure of 45 exactly, which is the cross-check that it is the same measurement.
+
+| Stat | Gear-only upper bound | Ceiling | Can gear alone reach it? |
+|---|---|---|---|
+| Strikethrough | 15 (Artifact only) | 400 | No |
+| Dodge | 36 (Enh 16, Artifact 10, Insight 7, Quality 3) | 95 | No |
+| Shield Bashing | 36 (Enh 25, Insight 11) | none stated | n/a |
+| Jump | 46 (Comp 22, Profane 6, Artifact 6, Enh 5, Quality 5, Exc 2) | 40 soft | **Yes** |
+
+Two readings follow.
+
+**Strikethrough behaves exactly like Doublestrike.** The cap is real and cannot
+fire from gear; it binds through declared credits, which is the mechanism for a
+player asserting the Strikethrough they hold from feats and enhancements — and
+unlike Doublestrike, the feat lines alone clear 400 in combination, so this one
+will actually be hit by real characters.
+
+**Jump is the outlier in this whole document.** It is the only ceiling harvested
+across both sweeps that gear alone can exceed, so it is the only one where a
+solve could hand a player points that buy nothing without any declared credit
+involved. It is also the one least suited to a cap constant, for the three
+reasons in §9. That gap is a disclosure question, not a cap question — #663.
+
+## 12. Open discrepancy — a field report the wiki does not predict
+
+**Filed as #664** (needs an in-game test).
+
+Recorded because it is unresolved, and because resolving it by inference is
+exactly what this document exists to prevent.
+
+A player reports observing 170% concealment on the character sheet with three
+sources active: Shadowdancer's Depths of Darkness (25%), Displacement (50%), and
+Feydark Illusionist's Master Illusionist capstone (95%) — an exact sum of the
+three.
+
+The Concealment page predicts **120**, not 170. It lists Displacement and Master
+Illusionist as *both* enhancement bonuses, rules that "only the greatest
+concealment number applies" within a type, and names Depths of Darkness as the
+documented exception: "This stacks with your highest enhancement bonus to
+concealment." So 95 should suppress the 50, and only the 25 should add.
+
+Three candidate explanations, none of them checkable from the wiki:
+
+1. The character sheet sums sources rather than displaying what is applied.
+2. One of the 50/95 sources is not actually enhancement-typed despite the listing.
+3. The page is stale with respect to a patch.
+
+**Do not resolve this by picking one** (#664). The distinguishing test is in-game and
+cheap: drop Displacement alone and see whether the displayed number falls by 50
+or holds at 120. Until someone runs it, the ruling on record is §5 — no numeric
+cap — which this observation supports either way, and the stacking question stays
+open.
