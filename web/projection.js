@@ -1116,6 +1116,49 @@
       + "your Dodge priority.";
   }
 
+  /** #663 — the Jump soft cap, DISCLOSED rather than clamped.
+   *
+   *  Jump is the only ceiling in `docs/wiki-evidence/intrinsic-stat-caps.md` that
+   *  gear alone can exceed: the built catalog reaches 46 against a soft cap of 40,
+   *  so a ranked Jump can spend slots on points that buy nothing WITHOUT any
+   *  declared credit involved. Every other recorded ceiling sits far above gear.
+   *
+   *  It is nonetheless not an entry in `intrinsic_stat_caps.json`, because the wiki
+   *  states three escapes from 40 in the same breath and a constant can express
+   *  none of them:
+   *
+   *    1. Fall-damage reduction keeps scaling past 40 ("This reduction is not
+   *       capped at 40 the way that jump height is"), so the excess is dead for
+   *       HEIGHT and live for FALLING.
+   *    2. Sneak applies -20, moving the useful target to 60.
+   *    3. Armor check penalty eats into it, and armor and shield ACP stack.
+   *
+   *  So a clamp at 40 would truncate a real stat for anyone sneaking, anyone in ACP
+   *  gear, and anyone who cares about falling. The player is told instead, and left
+   *  to set their own Max — the same shape as `dodgeMaxDexLine` above and for the
+   *  same underlying reason: the limit is real, and it is not ours to guess.
+   *
+   *  Fires only when the solve actually cleared 40. Below it nothing is wasted and
+   *  the sentence is boilerplate; the repeated-notice failure #449 R15 records is
+   *  that a line under every card stops being read. */
+  function jumpSoftCapLine(rec) {
+    const snap = (rec && rec.snapshot) || rec || {};
+    const q = (rec && rec.query) || snap.query || {};
+    const targets = Array.isArray(q.targets) ? q.targets : [];
+    if (!targets.includes("Jump")) return null;
+    const caps = q.targetCaps || {};
+    if (caps.Jump != null) return null;              // they supplied their own limit
+    const total = (snap.effective && snap.effective.Jump != null) ? snap.effective.Jump : 0;
+    if (!(total > 40)) return null;                  // nothing is being wasted yet
+    return `This build reaches Jump ${total}, and jump HEIGHT stops improving at 40 — `
+      + `the ${total - 40} above that buys no extra height. It is not necessarily wasted: `
+      + "falling damage keeps decreasing past 40, Sneak applies −20 so a sneaking "
+      + "character needs 60 for the same height, and armor check penalty (armor and shield "
+      + "stack, plus −3 medium or −6 heavy encumbrance) is subtracted before the cap "
+      + "applies. If none of those apply to you, set a Max of 40 on your Jump priority and "
+      + "the slots spent above it will go to your next priority.";
+  }
+
   /** Variant_ids of host items that carry a solver-placed Set Augment. A Set Augment
    *  overrides ("suppresses") the host item's OWN named set(s) — the solver already
    *  dropped that set from setsActive/totals, so the set-satisfaction primitives must
@@ -2124,6 +2167,10 @@
         // reason as the two above: a recipient must not read a Dodge total as
         // in-game-accurate when the reduction was never applied to it.
         dodgeMaxDexNotice: dodgeMaxDexLine(rec),
+        // #663 — the Jump soft cap (null unless Jump was ranked, no Max was set,
+        // and the solve cleared 40). Same channel and same reason: a recipient must
+        // not read a Jump total as all-useful when part of it buys no height.
+        jumpSoftCapNotice: jumpSoftCapLine(rec),
         // #110 (U7/U9) — the blocklist disclosure: empty array when no block
         // touched the solve. A shared build asserting optimality with silent
         // exclusions is the solve-visible-but-share-invisible failure.
@@ -2773,7 +2820,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine, dodgeMaxDexLine, packFilterNoticeLines, setFilterNoticeLines,
+    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, packFilterNoticeLines, setFilterNoticeLines,
     essenceNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)

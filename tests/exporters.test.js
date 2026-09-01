@@ -2004,3 +2004,32 @@ test("#603: the gearset label stays self-describing, because it prints with no c
 });
 
 console.log(`\n  ${passed} passed`);
+
+test("#663: the Jump soft-cap disclosure reaches ALL FOUR export surfaces", () => {
+  // The reason this test exists in this shape. Every exporter HAND-ENUMERATES the
+  // notice names it renders, so a notice added to the projection bag is invisible
+  // in exports unless four separate call sites are also edited. Five notices are
+  // currently in the bag and wired to none of them — including the #573 Dodge
+  // disclosure, whose own evidence doc claims it "rides the export notices bag".
+  // That is #668. This asserts #663 did not become the sixth.
+  const jumper = { name: "Jumper", query: { targets: ["Jump"] },
+    inputs: { ml: 34, pool: "all", priorities: ["Jump"] },
+    snapshot: { status: "optimal", chosen: [], setsActive: [],
+      effective: { Jump: 46 }, query: { targets: ["Jump"] } } };
+  const under = { ...jumper,
+    snapshot: { ...jumper.snapshot, effective: { Jump: 38 } } };
+
+  for (const [name, fn] of [["markdown", toMarkdown], ["BBCode", toBBCode],
+                            ["CSV", toCsv], ["print HTML", toPrintHtml]]) {
+    assert.ok(/stops improving at 40/.test(fn(jumper) || ""),
+      `${name} must carry the Jump disclosure — a shared build cannot report 46 as all-useful`);
+    assert.ok(!/stops improving at 40/.test(fn(under) || ""),
+      `${name} must stay silent under the cap, or the note becomes boilerplate`);
+  }
+
+  // Regression on a real slip: the CSV row was first nested inside the ceiling
+  // section, which is gated on some stat carrying a ceiling row. It silently never
+  // fired for a build with no ceiling rows — exactly this fixture.
+  assert.ok(/Jump soft cap/.test(toCsv(jumper) || ""),
+    "the CSV row is independent of whether any stat carries a ceiling row");
+});
