@@ -140,6 +140,15 @@ not apply it, and that the Dodge total shown is therefore the un-reduced gear su
 rides the export notices bag as well as the results panel, so a shared build cannot
 report the total without the caveat.
 
+> **Correction, 2026-09-01 (#668).** The second half of that last sentence is not
+> true today. `dodgeMaxDexNotice` is built into the projection bag and **no exporter
+> renders it** — every exporter hand-enumerates the notice names it prints, and this
+> one (with four others) was never added. Verified by running all four export
+> surfaces against a heavy-armor, ranked-Dodge record: none mention Max Dex Bonus.
+> So a shared build DOES currently report the Dodge total without the caveat. The
+> §4 ruling is unaffected; the disclosure's REACH is what was overstated. #663 wired
+> its own notice to all four surfaces rather than copying this precedent.
+
 **If someone revisits this:** the honest fix remains a per-item `max_dex_bonus` field
 fed by a paced harvest, plus a clamp that reads the equipped armor's real value *and*
 adds the player's `Dodge Cap` / `Max Dex Bonus` gear. Do not reintroduce a
@@ -299,6 +308,27 @@ it**, and a flat 40 would be wrong under each:
 3. **Armor check penalty eats into it.** Jump is an ACP skill
    (https://ddowiki.com/page/Armor_check_penalty), and armor and shield ACP stack.
 
+### RESOLVED 2026-09-01 (#663) — disclosed, not clamped
+
+`jumpSoftCapLine` (web/projection.js) fires when Jump is ranked, the player has set
+no Max of their own, and **the solve actually cleared 40**. It names the total
+reached, the surplus above 40, and all three escapes above, then points at the one
+control that resolves it — a Max of 40 on the Jump priority, which frees those slots
+for the next priority.
+
+Three choices worth the record:
+
+- **It fires on the RESULT, not the query.** `dodgeMaxDexLine` fires on the query
+  alone, which is right there: the armor reduction exists whatever the total. Here
+  nothing is wasted below 40, and a sentence under every Jump solve is the
+  boilerplate failure #449 R15 records — a line repeated everywhere stops being read.
+- **Classified ACTIONABLE, where the Dodge notice beside it is QUALIFYING.** The two
+  look alike and are not. There the number is unknown to us and to the wiki, so the
+  player can only be told; here the ceiling is known and a Max of 40 fully resolves
+  it. What we cannot decide for them is whether 40 is right for their character.
+- **Wired to all four export surfaces**, deliberately not following the precedent
+  above. See the #668 correction in §4.
+
 ### ACP magnitudes, since the buffer argument depends on them
 
 The player report that prompted this sweep cited "up to 6 from armor, 9 from
@@ -364,7 +394,8 @@ will actually be hit by real characters.
 across both sweeps that gear alone can exceed, so it is the only one where a
 solve could hand a player points that buy nothing without any declared credit
 involved. It is also the one least suited to a cap constant, for the three
-reasons in §9. That gap is a disclosure question, not a cap question — #663.
+reasons in §9. That gap is a disclosure question, not a cap question — resolved
+that way by #663; see the block at the end of §9.
 
 ## 12. Open discrepancy — a field report the wiki does not predict
 

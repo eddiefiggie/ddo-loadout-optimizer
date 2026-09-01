@@ -297,6 +297,10 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // renderer — so this site, and the three below it, are what make the
       // fraction shared rather than app-only.
       if (view.character.ceilingStatement) out += `_${mdEsc(view.character.ceilingStatement)}_\n\n`;
+      // #663 — the Jump soft cap travels with the shared build. A recipient who
+      // cannot re-solve must not read a Jump total as all-useful. (The five
+      // notices at #668 are NOT wired here, which is a bug, not a precedent.)
+      if (view.character.jumpSoftCapNotice) out += `> ${mdEsc(view.character.jumpSoftCapNotice)}\n\n`;
       for (const stat of stats) {
         const a = view.attribution[stat];
         out += `- **${mdEsc(stat)}** → +${mdEsc(a.total)}${capNote(a, mdEsc)}\n`;
@@ -375,6 +379,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // #449 (U2) — same two writes as the Markdown site: statement once, short
       // form per stat.
       if (view.character.ceilingStatement) out += `[i]${bbEsc(view.character.ceilingStatement)}[/i]\n`;
+      if (view.character.jumpSoftCapNotice) out += `[i]${bbEsc(view.character.jumpSoftCapNotice)}[/i]\n\n`;
       out += `[list]\n`;
       for (const stat of stats) {
         const a = view.attribution[stat];
@@ -460,6 +465,11 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         rows.push(csvRow([stat, a.total, capped, a.sources.map((p) => sourceStr(p, (s) => s)).join(" | ")]));
       }
     }
+    // #663 — the Jump soft cap. OUTSIDE the ceiling block below: that block is
+    // gated on some stat carrying a ceiling row, and this disclosure is independent
+    // of whether any does. A first draft nested it there and it silently never fired.
+    if (view.character.jumpSoftCapNotice)
+      rows.push(csvRow(["Jump soft cap", view.character.jumpSoftCapNotice]));
     // #449 (U2, R15/R18) — the achieved/ceiling fraction. Its OWN section, in the
     // Utility section's shape (banner row, header row, one row per entry), rather
     // than two more columns on the stat table: the same reason #245/#262 folded
@@ -541,6 +551,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // #449 (U2) — same two writes as the Markdown site: statement once, short
       // form per stat.
       if (view.character.ceilingStatement) h += `<p class="declared-note"><em>${htmlEsc(view.character.ceilingStatement)}</em></p>`;
+      if (view.character.jumpSoftCapNotice) h += `<p class="declared-note"><em>${htmlEsc(view.character.jumpSoftCapNotice)}</em></p>`;
       h += `<ul>`;
       for (const stat of stats) {
         const a = view.attribution[stat];

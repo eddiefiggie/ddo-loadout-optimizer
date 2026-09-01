@@ -1659,6 +1659,31 @@ test("#573: the Max Dex Bonus disclosure fires on armor + ranked Dodge, and only
     "and silent once the player set their own Max: they have supplied the limit");
 });
 
+test("#663: the Jump soft-cap disclosure fires only when the solve actually cleared 40", () => {
+  const fire = (q, jump) => R.jumpSoftCapNotice(q, { status: "optimal", effective: { Jump: jump } });
+
+  const on = fire({ targets: ["Jump"] }, 46);
+  assert.ok(/Jump 46/.test(on), "names the total the player actually reached");
+  assert.ok(/stops improving at 40/.test(on), "and the ceiling that stopped paying");
+  assert.ok(/6 above that/.test(on), "quantifying the surplus rather than leaving it to be worked out");
+
+  // The three escapes are the reason this is a disclosure and not a cap entry in
+  // intrinsic_stat_caps.json. Dropping any of them turns an honest note into advice
+  // to throw away a stat that is still doing work.
+  assert.ok(/falling damage keeps decreasing past 40/i.test(on), "fall damage is uncapped");
+  assert.ok(/Sneak applies −20/.test(on) && /needs 60/.test(on), "Sneak moves the target to 60");
+  assert.ok(/armor check penalty/i.test(on), "and ACP is subtracted before the cap applies");
+
+  assert.strictEqual(fire({ targets: ["Jump"] }, 38), "",
+    "silent under the cap — nothing is being wasted, and a line under every Jump solve is boilerplate");
+  assert.strictEqual(fire({ targets: ["Jump"] }, 40), "",
+    "silent AT the cap: 40 is the last point that buys height, not the first that does not");
+  assert.strictEqual(fire({ targets: ["Strength"] }, 46), "",
+    "silent when Jump is not ranked");
+  assert.strictEqual(fire({ targets: ["Jump"], targetCaps: { Jump: 40 } }, 46), "",
+    "and silent once the player set their own Max: they have already answered this");
+});
+
 test("U7/#110: the banner qualifies optimality only when a block removed a candidate", () => {
   const on = R.blockNotice({ blockReport: [{ id: "X", name: "X", pool: "Ring", bestAvailable: false }] });
   assert.ok(/block-note/.test(on) && /optimal given those exclusions/.test(on));
@@ -2646,6 +2671,11 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       // Max Dex Bonus (neither can we, per item), so the card can only disclose
       // that the headline Dodge total is un-reduced.
       dodgeMaxDexNotice: ["DODGE NOT REDUCED BY ARMOR", "qualifying"],
+      // #663 — ACTIONABLE where the notice above it is qualifying, and the split is
+      // deliberate: there the number is unknown to us AND to the wiki, here the
+      // ceiling is known (40) and a Max of 40 fully resolves it. What we cannot
+      // decide for the player is whether 40 is right for their character.
+      jumpSoftCapNotice: ["JUMP ABOVE 40", "actionable"],
       // #193/#599 — qualifying for the same reason: there is nothing to press.
       // It reports that the Gem's menus were solved over 25 of the 170 effects
       // the game offers, which is a fact about the DATA, not about the query.
@@ -2664,7 +2694,7 @@ test("#448: the registry is the ONLY source — nothing classifies a notice but 
 
   assert.deepStrictEqual(Object.keys(R.NOTICE_TABLE), single.map((n) => n.name),
     "NOTICE_TABLE is derived from the registry, in registry order");
-  assert.strictEqual(single.length, 14, "the fourteen single-fact notices");
+  assert.strictEqual(single.length, 15, "the fifteen single-fact notices (#663 added the Jump soft cap)");
   assert.deepStrictEqual(split.map((n) => n.name),
     ["artifactNotice", "boundNotice", "zeroSourceNotice"],
     "and the three multi-fact notices come through their U10 entry functions");
@@ -2695,7 +2725,7 @@ test("#448: registry ORDER is the on-screen order within a class, and splits lea
     "artifactNotice", "boundNotice", "zeroSourceNotice",
     "staleSnapshotNotice", "outbidNotice", "saturationNotice", "emptySlotNotice",
     "absorptionQuarantineNotice", "craftingExcludedNotice", "augCeilingNotice",
-    "dodgeMaxDexNotice", "essenceNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
+    "dodgeMaxDexNotice", "jumpSoftCapNotice", "essenceNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
   ]);
 });
 
