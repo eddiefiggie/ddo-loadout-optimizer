@@ -7136,10 +7136,10 @@ async function withCrossAdd(map, fn) {
       "the old collapse-everything-into-infeasible returns are gone");
   });
 
-  // --- #199: wiki-sourced intrinsic in-game stat caps ---------------------------
-  // The table ships one entry: Doublestrike 100 ("Doublestrike above 100% has no
-  // effect on main-hand weapons"). Evidence and the four refusals are in
-  // docs/wiki-evidence/intrinsic-stat-caps.md.
+  // --- #199/#661: wiki-sourced intrinsic in-game stat caps ----------------------
+  // The table ships two entries: Doublestrike 100 ("Doublestrike above 100% has no
+  // effect on main-hand weapons") and Strikethrough 400. Evidence and the six
+  // refusals are in docs/wiki-evidence/intrinsic-stat-caps.md.
 
   await test("#199: an intrinsic cap clamps the credited total, and is reported", async () => {
     // Gear alone tops out around 45 in the real catalog, so the cap can only bind
@@ -7158,6 +7158,58 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.capped.Doublestrike, 100, "and the cap is reported for disclosure");
     assert.strictEqual(r.intrinsicCaps.Doublestrike, 100,
       "as INTRINSIC, so results.js can say 'game cap' rather than blaming the player");
+  });
+
+  // The ceiling below is read from the SHIPPED dataset, never written as a literal.
+  // A test that hands the solver `{ Strikethrough: 400 }` asserts only that the
+  // clamp arithmetic works — and it already did, for Doublestrike, before this stat
+  // was ever harvested. Sourcing it from `metadata.intrinsic_stat_caps` is what
+  // makes these cover the #661 diff rather than re-covering #199.
+  const _shippedCaps = () => JSON.parse(require("fs").readFileSync(
+    path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
+  ).metadata.intrinsic_stat_caps || {};
+
+  await test("#661: the shipped table clamps Strikethrough at the game's 400, not at 100", async () => {
+    // The number this is most likely to be got wrong AS: 400 sits four tiers above
+    // the 100 that Doublestrike caps at, and the tiers between are real (over 100%
+    // guarantees a second target, 200% a third, 300% a fourth). Clamping
+    // Strikethrough at 100 by analogy with its melee neighbour would delete three
+    // whole targets' worth of a two-handed build.
+    //
+    // Gear alone reaches 15 in the real catalog, so this can only bind alongside a
+    // declared credit — but unlike Doublestrike the feat lines clear 400 on their
+    // own (base 20, THF +60, Improved/Greater/Perfect +30 each, Two Handed
+    // Specialty +120, Dance of Death up to +200), so real builds arrive here.
+    const intrinsicCaps = _shippedCaps();
+    assert.strictEqual(intrinsicCaps.Strikethrough, 400,
+      "the built dataset must carry the wiki's 400 — see intrinsic_stat_caps.json");
+    const model = {
+      targets: ["Strikethrough"], mlCap: 34, intrinsicCaps,
+      credits: [{ stat: "Strikethrough", bonus_type: "Profane", value: 390 }],
+      worn: [slot("Ring", [item("st", "Ring", [["Strikethrough", "Artifact", 15]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.Strikethrough, 400,
+      "390 declared + 15 worn = 405 raw, credited at the game ceiling of 400 — NOT at 100");
+    assert.strictEqual(r.capped.Strikethrough, 400, "and the cap is reported for disclosure");
+    assert.strictEqual(r.intrinsicCaps.Strikethrough, 400,
+      "as INTRINSIC, so results.js says 'game cap' rather than blaming the player");
+  });
+
+  await test("#661: below 400 Strikethrough accrues in full, including past 100", async () => {
+    // The other half of the same mistake, and the one a too-low cap hides: every
+    // point between 100 and 400 must survive the solve untouched.
+    const model = {
+      targets: ["Strikethrough"], mlCap: 34, intrinsicCaps: _shippedCaps(),
+      credits: [{ stat: "Strikethrough", bonus_type: "Profane", value: 300 }],
+      worn: [slot("Ring", [item("st", "Ring", [["Strikethrough", "Artifact", 15]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.Strikethrough, 315,
+      "315 is under the ceiling, so all of it is credited");
+    assert.strictEqual(r.capped.Strikethrough, 400,
+      "the ceiling is still reported — it exists whether or not it bound");
   });
 
   await test("#199: a stat with no intrinsic cap is not clamped", async () => {
