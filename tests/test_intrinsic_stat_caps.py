@@ -1,4 +1,4 @@
-"""The intrinsic stat-cap shard must stay sourced, and its refusals must stay recorded (#199, #661).
+"""The intrinsic stat-cap shard must stay sourced, and its refusals must stay recorded (#199, #661, #662).
 
 Two halves, and the second is the one that is easy to lose.
 
@@ -30,17 +30,18 @@ SHARD_PATH = build_dataset.INTRINSIC_STAT_CAPS_PATH
 # can tell "checked, has no ceiling" from "never looked".
 #
 # NOT the full roster of what has been harvested, and deliberately so. The
-# 2026-09-01 sweep also ruled on Incorporeal and secondary shield bash chance
-# (both refused, landing in the shard under #662) and on Jump and off-hand strike
-# chance (both CONFIRMED and deliberately not recorded here — Jump is a disclosure
-# question, #663, and off-hand strike chance is the Two Weapon Fighting non-goal).
-# A stat joins this set when the shard is expected to rule it, not when the wiki
-# has been read. docs/wiki-evidence/intrinsic-stat-caps.md carries all ten.
+# 2026-09-01 sweep also confirmed ceilings for Jump and off-hand strike chance
+# that are deliberately NOT recorded — Jump caps at 40 for jump HEIGHT only and is
+# a disclosure question (#663), and off-hand strike chance caps at 100 but is the
+# Two Weapon Fighting non-goal. A stat joins this set when the shard is expected
+# to rule it, not when the wiki has been read; those two would fail this guard for
+# the right reason if added. docs/wiki-evidence/intrinsic-stat-caps.md carries all
+# ten stats across both sweeps.
 HARVESTED = {
     # 2026-08-28 (#199)
     "Doublestrike", "Doubleshot", "Fortification", "Dodge", "Concealment",
-    # 2026-09-01 (#661)
-    "Strikethrough",
+    # 2026-09-01 (#661, #662)
+    "Strikethrough", "Incorporeal", "Shield Bashing",
 }
 
 
@@ -115,6 +116,56 @@ def test_strikethrough_is_capped_at_400_and_the_reading_stays_intact():
         "the entry reads as a hard ceiling on the number, which the wiki does not say.")
 
 
+def test_the_two_analogy_refusals_stay_refused():
+    """The 2026-09-01 pair, and the reasoning that has to survive with them.
+
+    Both were proposed by ANALOGY — the same shape as `test_doubleshot_stays_refused`
+    guards, one sweep later, which is why they get a named guard rather than relying
+    on the generic "every refusal carries a quote" rule.
+
+      Incorporeal      <- proposed as sharing Dodge's 95.
+      Shield Bashing   <- proposed as sharing off-hand strike chance's 100.
+
+    Neither transfers. The three miss chances are rolled SEPARATELY and combined
+    multiplicatively, so there is no shared pool for a shared cap; and the wiki
+    states the off-hand ceiling outright on the sibling page while saying nothing
+    on the shield bashing page, which is evidence precisely because the wiki writes
+    these down where they exist.
+    """
+    shard = _shard()
+    capped = {c["stat"] for c in shard["caps"]}
+    by_stat = {r["stat"]: r for r in shard["refused"]}
+
+    for stat, why in (
+        ("Incorporeal", "the wiki states no ceiling; Dodge's 95 does not transfer because the "
+                        "three miss chances are rolled separately and combined multiplicatively"),
+        ("Shield Bashing", "the wiki states no ceiling; off-hand strike chance's 100 is stated on "
+                           "the SIBLING page and deliberately not on this one"),
+    ):
+        assert stat not in capped, f"{stat} must not be capped — {why}. See intrinsic-stat-caps.md."
+        assert stat in by_stat, (
+            f"{stat}'s refusal is gone. Without it the analogy is one hop away and nothing "
+            "records that it was checked and rejected.")
+
+
+def test_the_shield_bash_refusal_is_not_vacuous():
+    """A refusal only protects a stat a player can actually rank.
+
+    `Shield Bashing` is in `metadata.rankable_affixes`, so a wrong cap there would
+    silently truncate a real Vanguard build. Asserting that keeps this guard from
+    passing on a stat the app stopped offering — at which point the refusal still
+    belongs in the shard, but this test is no longer the thing protecting anyone
+    and should say so out loud rather than staying quietly green.
+
+    Its sibling `Incorporeal` is deliberately NOT asserted here: it is not rankable
+    today, and its refusal is prospective by design. See that entry's note.
+    """
+    rankable = set(build_dataset.build()["metadata"]["rankable_affixes"])
+    assert "Shield Bashing" in rankable, (
+        "Shield Bashing is no longer rankable, so its refusal now guards nothing reachable. "
+        "Re-read the entry's note before deleting either the stat or this assertion.")
+
+
 def test_every_harvested_stat_is_ruled_one_way_or_the_other():
     shard = _shard()
     ruled = {c["stat"] for c in shard["caps"]} | {r["stat"] for r in shard["refused"]}
@@ -134,8 +185,8 @@ def test_the_shard_is_actually_populated():
     assert len(shard["caps"]) >= 2, (
         "fewer than the two recorded caps (Doublestrike 100, Strikethrough 400) — "
         "an emptied list turns every assertion above green while covering nothing")
-    assert len(shard["refused"]) >= 4, (
-        "fewer than the four recorded refusals — the half that prevents a re-guess is being lost")
+    assert len(shard["refused"]) >= 6, (
+        "fewer than the six recorded refusals — the half that prevents a re-guess is being lost")
 
 
 def test_the_build_emits_exactly_the_shard_caps():

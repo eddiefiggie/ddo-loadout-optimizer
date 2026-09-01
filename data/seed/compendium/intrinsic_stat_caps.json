@@ -4,7 +4,7 @@
     "note": "A stat whose in-game value stops counting past a fixed ceiling. Applied as a SECOND source of truth into the solver's cappedStats, beside the player's own per-stat caps; the tighter of the two wins, per the Stat cap clause in CONCEPTS.md. This said THIRD until #661, counting an armor dodge cap that #573 deleted \u2014 there is no longer a category-keyed armor clamp, and Dodge is disclosed rather than clamped.",
     "evidence_rule": "Every entry carries the verbatim wiki sentence stating the ceiling, and the page it was read from. A stat whose ceiling the wiki does not state outright gets NO entry — see `refused` below, which exists so the same four stats are not re-guessed.",
     "why_refusals_are_recorded": "Four of the five stats harvested for #199 have no ceiling, and three of those four look like they should. Doubleshot in particular is Doublestrike's documented sibling and behaves in the OPPOSITE way past 100%. Recording only the confirmation would leave the next reader to re-derive the refusals, and the cheap wrong answer is one analogy away.",
-    "sweeps": "Two, both in the evidence file. 2026-08-28 (#199) harvested Doublestrike, Doubleshot, Fortification, Dodge, Concealment. 2026-09-01 harvested Strikethrough, off-hand strike chance, Jump, Incorporeal, secondary shield bash chance; only Strikethrough is recorded here so far. Off-hand strike chance is confirmed at 100 and deliberately NOT recorded (the Two Weapon Fighting non-goal, same reasoning as the Doublestrike note); Jump is confirmed at 40 and is a disclosure question rather than a cap (#663); the two refusals are #662.",
+    "sweeps": "Two, both in the evidence file. 2026-08-28 (#199) harvested Doublestrike, Doubleshot, Fortification, Dodge, Concealment. 2026-09-01 (#661, #662) harvested Strikethrough, off-hand strike chance, Jump, Incorporeal, secondary shield bash chance. Eight of the ten are recorded here. The two that are not are both CONFIRMED ceilings deliberately left out, which is the case most likely to be misread as an oversight: off-hand strike chance caps at 100 and is the Two Weapon Fighting non-goal (same reasoning as the Doublestrike note), and Jump caps at 40 for jump HEIGHT only \u2014 fall-damage reduction keeps scaling, Sneak moves the target to 60, and armor check penalty eats into it, so no constant can express it and it is a disclosure question instead (#663).",
     "evidence": "docs/wiki-evidence/intrinsic-stat-caps.md"
   },
   "caps": [
@@ -49,7 +49,7 @@
       "quote": "The Maximum Dodge Bonus begins at 25%. This Maximum Dodge Bonus amount can be increased through various means (see Increasing Maximum Dodge).",
       "wiki_url": "https://ddowiki.com/page/Dodge_bonus",
       "verified": "2026-08-28",
-      "note": "The armor-type reduction is modelled separately and approximately by ARMOR_DODGE_CAP in web/model.js; that constant's own unsourced numbers are #573."
+      "note": "The armor-type reduction is NOT modelled. This said it was modelled approximately by ARMOR_DODGE_CAP in web/model.js until #573 deleted that constant and its clamp: Max Dex Bonus is a property of the individual armor, not of its category, so no four-number table could be right. Dodge is now disclosed rather than clamped, via dodgeMaxDexLine in web/projection.js."
     },
     {
       "stat": "Concealment",
@@ -58,6 +58,22 @@
       "wiki_url": "https://ddowiki.com/page/Concealment",
       "verified": "2026-08-28",
       "note": "Checked because #140's U5 made Concealment a credited stat for the first time."
+    },
+    {
+      "stat": "Incorporeal",
+      "reason": "No numeric cap stated. The page enumerates every player source by magnitude (sections headed 5/10/15/20/25/50%, plus two stacking bands) and states no ceiling anywhere.",
+      "quote": "However, note that Incorporeality and Concealment have decreased effect in Reaper difficulty. This reduction begins with 10% Concealment and 5% Incorporeal bypass at Reaper 1, with a further 5% Concealment and Incorporeal bypass per Skull difficulty.",
+      "wiki_url": "https://ddowiki.com/page/Incorporeal",
+      "verified": "2026-09-01",
+      "note": "The quote is the ONLY number on the page that behaves like a limit, and it is not one: a difficulty-scaled bypass applied on the attacker's side, keyed to content the player selects rather than to the character. Recording it as a ceiling would be wrong twice over. PROPOSED BY ANALOGY with Dodge's 95, which does not transfer \u2014 https://ddowiki.com/page/Miss_chance shows Dodge, Incorporeal and Concealment are rolled SEPARATELY in order and combined multiplicatively (1-(D*C*I)), so there is no shared pool for a shared cap to sit on. NOT CURRENTLY RANKABLE: `Incorporeal` is absent from metadata.rankable_affixes (the app carries Ghostly and Enhanced Ghostly as utility procs, not as a miss-chance magnitude), so this refusal is prospective. That is deliberate and has precedent \u2014 Concealment was checked only once #140 made it credited, and filing the ruling ahead of the vocabulary is what stops the analogy being made in the same commit that makes the stat rankable."
+    },
+    {
+      "stat": "Shield Bashing",
+      "reason": "No numeric cap stated. The page has a whole section listing sources of increased secondary shield bash chance by magnitude and never states a ceiling; a full-text wiki search found none either.",
+      "quote": "Improved Shield Bash for +20%",
+      "wiki_url": "https://ddowiki.com/page/Shield_bashing",
+      "verified": "2026-09-01",
+      "note": "The quote is a source line, not a ceiling \u2014 there is no ceiling sentence to quote, which IS the finding. Silence is evidence here because the wiki writes these ceilings down where they exist, and does so on the sibling page: Two Weapon Fighting states 'There is no benefit of having more than a 100% off-hand strike chance' outright. Shield bashing is the closest analogue in the game (a second, automatic attack procced off the main-hand swing) and the page that would carry the same sentence does not. PROPOSED BY ANALOGY with that 100; refused under exclude-until-verified. Two adjacent facts read as caps and are not: 'Doublestrike does not affect shield bashing... the shield will never strike more than once on a single attack' is a rule about doublestrike rather than a ceiling on bash CHANCE, and Divine Crusader's Bring Down Wrath adds a mechanic rather than a limit. This stat IS rankable (metadata.rankable_affixes), gear-only bound 36 \u2014 Enhancement 25, Insight 11."
     }
   ]
 }

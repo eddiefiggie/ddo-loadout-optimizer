@@ -597,8 +597,11 @@ test("#661: the shipped intrinsic table reaches the model for Strikethrough, at 
     "an unranked Strikethrough mints no cap");
 
   // And the refusal next door stays refused, through the same path. Shield bash
-  // chance is the stat proposed as sharing off-hand's 100 (#662); the wiki states
-  // no ceiling for it, so no key may appear.
+  // chance was proposed as sharing off-hand strike chance's 100; the wiki states
+  // that ceiling on the SIBLING page and not on this one, so #662 recorded a
+  // refusal and no key may appear here. The shard-side guard is
+  // tests/test_intrinsic_stat_caps.py::test_the_two_analogy_refusals_stay_refused;
+  // this is the end of the same wire, where a wrong cap would actually bind.
   const bash = M.buildModel(data.items, { mlCap: 34, targets: ["Shield Bashing"] });
   assert.ok(!("Shield Bashing" in (bash.intrinsicCaps || {})),
     "a stat the wiki states no ceiling for is not capped by analogy");
