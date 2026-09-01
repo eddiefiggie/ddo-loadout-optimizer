@@ -581,6 +581,29 @@ test("#573: no armor-category dodge clamp is minted, and the constant is gone", 
     "and Dodge did not reappear via the #199 intrinsic table, which refused it");
 });
 
+test("#661: the shipped intrinsic table reaches the model for Strikethrough, at 400", () => {
+  // The end-to-end path this issue actually changed: seed shard -> build_dataset
+  // -> metadata.intrinsic_stat_caps -> normalizeDataset's installIntrinsicCaps ->
+  // buildModel narrowing to ranked targets. Nothing in web/ was edited for #661,
+  // so this is the only place a JS test can fail if the data half regresses.
+  const m = M.buildModel(data.items, { mlCap: 34, targets: ["Strikethrough"] });
+  assert.strictEqual(m.intrinsicCaps.Strikethrough, 400,
+    "Strikethrough caps at 400 in game — see intrinsic-stat-caps.md section 6");
+
+  // Narrowing is the other half: the table must not mint buckets for stats nobody
+  // ranked, or every solve carries a ceiling it will never consult.
+  const other = M.buildModel(data.items, { mlCap: 34, targets: ["Constitution"] });
+  assert.ok(!("Strikethrough" in (other.intrinsicCaps || {})),
+    "an unranked Strikethrough mints no cap");
+
+  // And the refusal next door stays refused, through the same path. Shield bash
+  // chance is the stat proposed as sharing off-hand's 100 (#662); the wiki states
+  // no ceiling for it, so no key may appear.
+  const bash = M.buildModel(data.items, { mlCap: 34, targets: ["Shield Bashing"] });
+  assert.ok(!("Shield Bashing" in (bash.intrinsicCaps || {})),
+    "a stat the wiki states no ceiling for is not capped by analogy");
+});
+
 test("dominates: an affix item does NOT dominate a Dino blank offering slots it lacks", () => {
   // Regression (U4): a Dinosaur Bone blank's value is its typed Dino slots; if
   // dominance ignored them, any affix-bearing item in the slot would prune the

@@ -1,4 +1,4 @@
-"""The intrinsic stat-cap shard must stay sourced, and its refusals must stay recorded (#199).
+"""The intrinsic stat-cap shard must stay sourced, and its refusals must stay recorded (#199, #661).
 
 Two halves, and the second is the one that is easy to lose.
 
@@ -26,9 +26,22 @@ import build_dataset  # noqa: E402
 
 SHARD_PATH = build_dataset.INTRINSIC_STAT_CAPS_PATH
 
-# The stats harvested on 2026-08-28. Every one must be ruled — as a cap or as a
-# refusal — so a later reader can tell "checked, has no ceiling" from "never looked".
-HARVESTED = {"Doublestrike", "Doubleshot", "Fortification", "Dodge", "Concealment"}
+# Every one of these must be ruled — as a cap or as a refusal — so a later reader
+# can tell "checked, has no ceiling" from "never looked".
+#
+# NOT the full roster of what has been harvested, and deliberately so. The
+# 2026-09-01 sweep also ruled on Incorporeal and secondary shield bash chance
+# (both refused, landing in the shard under #662) and on Jump and off-hand strike
+# chance (both CONFIRMED and deliberately not recorded here — Jump is a disclosure
+# question, #663, and off-hand strike chance is the Two Weapon Fighting non-goal).
+# A stat joins this set when the shard is expected to rule it, not when the wiki
+# has been read. docs/wiki-evidence/intrinsic-stat-caps.md carries all ten.
+HARVESTED = {
+    # 2026-08-28 (#199)
+    "Doublestrike", "Doubleshot", "Fortification", "Dodge", "Concealment",
+    # 2026-09-01 (#661)
+    "Strikethrough",
+}
 
 
 def _shard():
@@ -73,12 +86,41 @@ def test_doubleshot_stays_refused():
     assert "Doubleshot" in refused, "and the refusal must stay recorded, with its quote"
 
 
+def test_strikethrough_is_capped_at_400_and_the_reading_stays_intact():
+    """The specific right answer, and the specific way it gets rewritten wrong.
+
+    400 is not a clamp. The wiki says higher values "are possible" — the game does
+    not truncate them, it stops paying for them, because there is no sixth target
+    to buy. That is this table's semantics exactly, and it is also one careless
+    paraphrase away from "Strikethrough is hard-capped at 400", which is the
+    Fortification error in reverse: a sentence that reads as a ceiling on the
+    NUMBER rather than on the BENEFIT.
+
+    So the quote is pinned verbatim, not merely required to exist. `cap` alone
+    cannot record the distinction, and the note that carries it is prose nobody
+    diffs.
+    """
+    shard = _shard()
+    entry = next((c for c in shard["caps"] if c["stat"] == "Strikethrough"), None)
+    assert entry is not None, (
+        "Strikethrough has a wiki-stated ceiling of 400 and must stay recorded. See "
+        "docs/wiki-evidence/intrinsic-stat-caps.md section 6.")
+    assert entry["cap"] == 400, f"the wiki states 400, shard says {entry['cap']}"
+    assert entry["wiki_url"] == "https://ddowiki.com/page/Strikethrough"
+    assert "effectively caps at 400%" in entry["quote"], (
+        "the quote no longer carries the word the whole reading turns on. "
+        "'Effectively' is what makes this a benefit ceiling and not a clamp.")
+    assert "while higher values are possible" in entry["quote"], (
+        "the quote no longer states that values above 400 EXIST. Drop that clause and "
+        "the entry reads as a hard ceiling on the number, which the wiki does not say.")
+
+
 def test_every_harvested_stat_is_ruled_one_way_or_the_other():
     shard = _shard()
     ruled = {c["stat"] for c in shard["caps"]} | {r["stat"] for r in shard["refused"]}
     missing = HARVESTED - ruled
     assert not missing, (
-        f"{sorted(missing)} were harvested for #199 but are now neither capped nor refused. "
+        f"{sorted(missing)} were harvested and ruled once but are now neither capped nor refused. "
         "A stat that drops out of both lists is indistinguishable from one nobody ever checked.")
 
 
@@ -89,7 +131,9 @@ def test_the_shard_is_actually_populated():
     this whole module green while covering nothing.
     """
     shard = _shard()
-    assert len(shard["caps"]) >= 1, "no caps in the shard — the guard would assert nothing"
+    assert len(shard["caps"]) >= 2, (
+        "fewer than the two recorded caps (Doublestrike 100, Strikethrough 400) — "
+        "an emptied list turns every assertion above green while covering nothing")
     assert len(shard["refused"]) >= 4, (
         "fewer than the four recorded refusals — the half that prevents a re-guess is being lost")
 
