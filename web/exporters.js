@@ -32,6 +32,49 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
 
   // ---- escapers (one per format, each self-contained) ----
 
+  /** #668 — the ONE roster of character-level notices every export surface renders.
+   *
+   *  This replaces four hand-enumerated lists. Hand-enumeration was not a style
+   *  problem: FIVE notices — dodgeMaxDexNotice, packFilterNotice, setFilterNotice,
+   *  setPinNotice, essenceNotice — sat in the projection bag and reached NONE of the
+   *  four surfaces, because adding a notice needed four separate edits nobody made.
+   *  Two of them (#246 packFilter, setFilter) exist specifically so a recipient does
+   *  not read a shared build as a full-roster optimum after a filter narrowed the
+   *  pool, and one (#573 dodgeMaxDex) had an evidence doc asserting it rode the
+   *  export bag. It did not. A build shared before this fix carried the claim and
+   *  dropped the caveat.
+   *
+   *  `csv` is the CSV row label. Order is the on-page order and is load-bearing;
+   *  `noticeRosterCoversProjection` in tests/exporters.test.js fails if a key the
+   *  projection bag can populate is missing here, so the SIXTH omission cannot ship.
+   *
+   *  Values may be a string or an array of lines; `noticeLines` normalizes both, so
+   *  a new notice needs one row here and no renderer change at all. */
+  const CHARACTER_NOTICES = [
+    { key: "creditNotice", csv: "Declared" },
+    { key: "saturationNotice", csv: "Saturated" },
+    { key: "outbidNotice", csv: "Outbid" },
+    { key: "emptySlotNotice", csv: "Free slots" },
+    { key: "absorptionQuarantineNotice", csv: "Excluded" },
+    { key: "craftingExcludedNotice", csv: "Scope" },
+    { key: "augCeilingNotice", csv: "Scope" },
+    { key: "dodgeMaxDexNotice", csv: "Dodge scope" },
+    { key: "jumpSoftCapNotice", csv: "Jump soft cap" },
+    { key: "blockNotice", csv: "Blocked" },
+    { key: "packFilterNotice", csv: "Content not owned" },
+    { key: "setFilterNotice", csv: "Excluded sets" },
+    { key: "setPinNotice", csv: "Required sets" },
+    { key: "essenceNotice", csv: "Essence crafting" },
+  ];
+
+  /** Every line a character notice carries, whether it is stored as one string or
+   *  an array of them. Empty array when absent, so callers never branch on shape. */
+  function noticeLines(character, key) {
+    const v = character && character[key];
+    if (Array.isArray(v)) return v.filter(Boolean);
+    return v ? [v] : [];
+  }
+
   function mdEsc(s) {
     // Escape HTML (blocks raw <script>/<img>) AND markdown link/emphasis
     // metacharacters, so a name from an imported backup can't inject a live
@@ -246,22 +289,12 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     // U4 (R9) — the qualifier must ride with the claim it qualifies. A shared build
     // asserting an optimal loadout, with a player-typed number folded into its
     // totals and no statement that it was unverified, is exactly the
-    // solve-visible-but-share-invisible failure this repo forbids.
-    for (const line of view.character.creditNotice || []) out += `> ${mdEsc(line)}\n\n`;
-    // #239 — same channel as the credit qualifier: solve-visible must not mean
-    // share-invisible. Carrying them through the model is necessary, not
-    // sufficient; each renderer has to print them.
-    for (const line of view.character.saturationNotice || []) out += `> ${mdEsc(line)}\n\n`;
-    for (const line of view.character.outbidNotice || []) out += `> ${mdEsc(line)}\n\n`;
-    for (const line of view.character.emptySlotNotice || []) out += `> ${mdEsc(line)}\n\n`;
-    // U6/#249 — the third disclosure on the same channel.
-    for (const line of view.character.absorptionQuarantineNotice || []) out += `> ${mdEsc(line)}\n\n`;
-    // #245 — the opt-out scope disclosure rides with the claim it scopes.
-    if (view.character.craftingExcludedNotice) out += `> ${mdEsc(view.character.craftingExcludedNotice)}\n\n`;
-    // #339 — the augment-ceiling scope disclosure, same channel and reason.
-    if (view.character.augCeilingNotice) out += `> ${mdEsc(view.character.augCeilingNotice)}\n\n`;
-    // #110 (U7) — the blocklist disclosure: exclusions qualify the optimality claim.
-    for (const line of view.character.blockNotice || []) out += `> ${mdEsc(line)}\n\n`;
+    // solve-visible-but-share-invisible failure this repo forbids. #239, U6/#249,
+    // #245, #339, #110 and #246 are all the same channel and the same reason:
+    // carrying a notice through the model is necessary, not sufficient — each
+    // renderer has to print it. #668 made that one loop instead of four lists.
+    for (const n of CHARACTER_NOTICES)
+      for (const line of noticeLines(view.character, n.key)) out += `> ${mdEsc(line)}\n\n`;
     out += view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `**${mdEsc(k)}:** ${mdEsc(v)}`).join("  \n") + "\n\n";
     out += `_${mdEsc(legendText("md"))}_\n\n`;
     out += `## Loadout\n\n`;
@@ -297,10 +330,6 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // renderer — so this site, and the three below it, are what make the
       // fraction shared rather than app-only.
       if (view.character.ceilingStatement) out += `_${mdEsc(view.character.ceilingStatement)}_\n\n`;
-      // #663 — the Jump soft cap travels with the shared build. A recipient who
-      // cannot re-solve must not read a Jump total as all-useful. (The five
-      // notices at #668 are NOT wired here, which is a bug, not a precedent.)
-      if (view.character.jumpSoftCapNotice) out += `> ${mdEsc(view.character.jumpSoftCapNotice)}\n\n`;
       for (const stat of stats) {
         const a = view.attribution[stat];
         out += `- **${mdEsc(stat)}** → +${mdEsc(a.total)}${capNote(a, mdEsc)}\n`;
@@ -336,14 +365,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const view = Proj.project(rec);
     let out = `[b]${bbEsc(view.character.name)}[/b]\n`;
     out += `[i]Optimal loadout — built with the DDO Loadout Optimizer.[/i]\n\n`;
-    for (const line of view.character.creditNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
-    for (const line of view.character.saturationNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
-    for (const line of view.character.outbidNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
-    for (const line of view.character.emptySlotNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
-    for (const line of view.character.absorptionQuarantineNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
-    if (view.character.craftingExcludedNotice) out += `[i]${bbEsc(view.character.craftingExcludedNotice)}[/i]\n\n`;
-    if (view.character.augCeilingNotice) out += `[i]${bbEsc(view.character.augCeilingNotice)}[/i]\n\n`;
-    for (const line of view.character.blockNotice || []) out += `[i]${bbEsc(line)}[/i]\n\n`;
+    for (const n of CHARACTER_NOTICES)
+      for (const line of noticeLines(view.character, n.key)) out += `[i]${bbEsc(line)}[/i]\n\n`;
     out += view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `[b]${bbEsc(k)}:[/b] ${bbEsc(v)}`).join(" | ") + "\n\n";
     out += `[i]${legendText("bb")}[/i]\n\n`;
     out += `[b]Loadout[/b]\n[list]\n`;
@@ -379,7 +402,6 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // #449 (U2) — same two writes as the Markdown site: statement once, short
       // form per stat.
       if (view.character.ceilingStatement) out += `[i]${bbEsc(view.character.ceilingStatement)}[/i]\n`;
-      if (view.character.jumpSoftCapNotice) out += `[i]${bbEsc(view.character.jumpSoftCapNotice)}[/i]\n\n`;
       out += `[list]\n`;
       for (const stat of stats) {
         const a = view.attribution[stat];
@@ -416,14 +438,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const view = Proj.project(rec);
     const rows = [];
     for (const [k, v] of view.character.constraints) rows.push(csvRow([k, v]));
-    for (const line of view.character.creditNotice || []) rows.push(csvRow(["Declared", line]));
-    for (const line of view.character.saturationNotice || []) rows.push(csvRow(["Saturated", line]));
-    for (const line of view.character.outbidNotice || []) rows.push(csvRow(["Outbid", line]));
-    for (const line of view.character.emptySlotNotice || []) rows.push(csvRow(["Free slots", line]));
-    for (const line of view.character.absorptionQuarantineNotice || []) rows.push(csvRow(["Excluded", line]));
-    if (view.character.craftingExcludedNotice) rows.push(csvRow(["Scope", view.character.craftingExcludedNotice]));
-    if (view.character.augCeilingNotice) rows.push(csvRow(["Scope", view.character.augCeilingNotice]));
-    for (const line of view.character.blockNotice || []) rows.push(csvRow(["Blocked", line]));
+    for (const n of CHARACTER_NOTICES)
+      for (const line of noticeLines(view.character, n.key)) rows.push(csvRow([n.csv, line]));
     rows.push("");
     rows.push(csvRow(["Legend", legendText("csv")]));
     rows.push("");
@@ -465,11 +481,6 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         rows.push(csvRow([stat, a.total, capped, a.sources.map((p) => sourceStr(p, (s) => s)).join(" | ")]));
       }
     }
-    // #663 — the Jump soft cap. OUTSIDE the ceiling block below: that block is
-    // gated on some stat carrying a ceiling row, and this disclosure is independent
-    // of whether any does. A first draft nested it there and it silently never fired.
-    if (view.character.jumpSoftCapNotice)
-      rows.push(csvRow(["Jump soft cap", view.character.jumpSoftCapNotice]));
     // #449 (U2, R15/R18) — the achieved/ceiling fraction. Its OWN section, in the
     // Utility section's shape (banner row, header row, one row per entry), rather
     // than two more columns on the stat table: the same reason #245/#262 folded
@@ -510,14 +521,9 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const view = Proj.project(rec);
     let h = `<h1>${htmlEsc(view.character.name)}</h1>`;
     h += `<p class="pc">${view.character.constraints.filter(([k]) => k !== "Character").map(([k, v]) => `<strong>${htmlEsc(k)}:</strong> ${htmlEsc(v)}`).join(" &middot; ")}</p>`;
-    for (const line of view.character.creditNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
-    for (const line of view.character.saturationNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
-    for (const line of view.character.outbidNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
-    for (const line of view.character.emptySlotNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
-    for (const line of view.character.absorptionQuarantineNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
-    if (view.character.craftingExcludedNotice) h += `<p class="declared-note"><em>${htmlEsc(view.character.craftingExcludedNotice)}</em></p>`;
-    if (view.character.augCeilingNotice) h += `<p class="declared-note"><em>${htmlEsc(view.character.augCeilingNotice)}</em></p>`;
-    for (const line of view.character.blockNotice || []) h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
+    for (const n of CHARACTER_NOTICES)
+      for (const line of noticeLines(view.character, n.key))
+        h += `<p class="declared-note"><em>${htmlEsc(line)}</em></p>`;
     h += `<p class="legend">${htmlEsc(legendText("md"))}</p>`;
     h += `<table><thead><tr><th>Slot</th><th>Item</th><th>ML</th><th>Affixes</th><th>Augments</th><th>Crafting</th></tr></thead><tbody>`;
     for (const it of view.loadout) {
@@ -551,7 +557,6 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // #449 (U2) — same two writes as the Markdown site: statement once, short
       // form per stat.
       if (view.character.ceilingStatement) h += `<p class="declared-note"><em>${htmlEsc(view.character.ceilingStatement)}</em></p>`;
-      if (view.character.jumpSoftCapNotice) h += `<p class="declared-note"><em>${htmlEsc(view.character.jumpSoftCapNotice)}</em></p>`;
       h += `<ul>`;
       for (const stat of stats) {
         const a = view.attribution[stat];
@@ -836,6 +841,9 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, toGearset,
     setBonusDetail, csvSafe, csvRow, htmlEsc, bbEsc, mdEsc,
     constraintPairs, constraintLines, fmtAffix, cue, legendText,
+    // #668 — exported so the coverage guard can compare the roster against the
+    // projection bag structurally, rather than grepping this file for call sites.
+    CHARACTER_NOTICES, noticeLines,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof window !== "undefined") window.LoadoutExport = api;

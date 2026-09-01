@@ -1,6 +1,6 @@
 // U12 — Markdown + CSV loadout exporters. Run: node tests/exporters.test.js
 const assert = require("assert");
-const { toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, toGearset, setBonusDetail, bbEsc, mdEsc, htmlEsc, csvSafe, constraintLines, cue, legendText } = require("../web/exporters.js");
+const { toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, toGearset, setBonusDetail, bbEsc, mdEsc, htmlEsc, csvSafe, constraintLines, cue, legendText, CHARACTER_NOTICES } = require("../web/exporters.js");
 const Proj = require("../web/projection.js");
 
 let passed = 0;
@@ -2032,4 +2032,85 @@ test("#663: the Jump soft-cap disclosure reaches ALL FOUR export surfaces", () =
   // fired for a build with no ceiling rows — exactly this fixture.
   assert.ok(/Jump soft cap/.test(toCsv(jumper) || ""),
     "the CSV row is independent of whether any stat carries a ceiling row");
+});
+
+// ---------------------------------------------------------------------------
+// #668 — the export notice roster. The defect this replaces was not a typo: FIVE
+// notices sat in the projection bag and reached NONE of the four export surfaces,
+// because every surface hand-enumerated the names it printed and adding a notice
+// meant four edits nobody made. These two tests are the guard that a sixth cannot.
+
+/** A record that populates EVERY character notice at once. Deliberately not
+ *  minimal: a fixture that leaves a notice empty makes the coverage test below
+ *  silently skip it, which is the same vacuity that let five notices rot. */
+const ALL_NOTICES_REC = {
+  name: "Every notice",
+  query: { targets: ["Dodge", "Jump"], armorType: "heavy", craftingRung: "no-niche-crafting", augCeiling: 30 },
+  inputs: { ml: 34, armor: "heavy", pool: "all", priorities: ["Dodge", "Jump"], craftingRung: "no-niche-crafting" },
+  snapshot: {
+    status: "optimal", chosen: [], setsActive: [],
+    query: { targets: ["Dodge", "Jump"], armorType: "heavy", craftingRung: "no-niche-crafting", augCeiling: 30 },
+    effective: { Jump: 46, Dodge: 20 },
+    creditReport: [{ stat: "Dodge", bonus_type: "Profane", value: 5 }],
+    saturationReport: [{ stat: "Dodge", cap: 20, bonusTypes: ["Enhancement"] }],
+    outbidReport: ["Strength"],
+    emptySlots: { count: 1, slots: ["Trinket"] },
+    absorptionQuarantine: [{ item: "Q", effect: "E", reason: "unconfirmed" }],
+    blockReport: [{ id: "X", name: "X", pool: "Ring", bestAvailable: false }],
+    packFilter: { owned: ["A"], excluded: 3, uncheckable: 2, packsExcluded: ["Ruins of Gianthold"] },
+    setFilter: { excluded: 2, sets: ["Alpha"] },
+    setPinReport: [{ set: "Beta", verdict: "pinned" }, { set: "Gamma", verdict: "conflict" }],
+    essenceReport: { placed: [{ menu: "Menu", effect: "Effect", value: 2 }], coverage: { solved: 25, total: 170 } },
+  },
+};
+
+test("#668: the roster covers every notice the projection bag can populate", () => {
+  // The structural half. `CHARACTER_NOTICES` is the single list all four surfaces
+  // loop, so a notice added to projection and not to the roster is invisible in
+  // every export — which is exactly what happened five times.
+  const view = Proj.project(ALL_NOTICES_REC);
+  const inBag = Object.keys(view.character).filter((k) => /Notice$/.test(k)).sort();
+  const inRoster = CHARACTER_NOTICES.map((n) => n.key).sort();
+  assert.deepStrictEqual(inBag, inRoster,
+    "every *Notice key in the projection bag needs a CHARACTER_NOTICES row, and vice versa. "
+    + "Add the row; no renderer change is needed.");
+  assert.ok(inRoster.length >= 14, "refuse to inspect zero records — the roster is populated");
+});
+
+test("#668: every notice actually reaches all four export surfaces", () => {
+  // The behavioural half, and the one that would have caught the original bug: the
+  // structural test above passes on a roster that no renderer reads.
+  const view = Proj.project(ALL_NOTICES_REC);
+  const surfaces = [["markdown", toMarkdown, mdEsc], ["BBCode", toBBCode, bbEsc],
+                    ["CSV", toCsv, csvSafe], ["print HTML", toPrintHtml, htmlEsc]];
+
+  let checked = 0;
+  for (const { key } of CHARACTER_NOTICES) {
+    const v = view.character[key];
+    const lines = Array.isArray(v) ? v : (v ? [v] : []);
+    assert.ok(lines.length, `${key} is EMPTY in the all-notices fixture, so the coverage below `
+      + "skips it silently. Populate it in ALL_NOTICES_REC rather than deleting this assertion.");
+    for (const [name, fn, esc] of surfaces) {
+      const out = fn(ALL_NOTICES_REC) || "";
+      // Compare against the ESCAPED line: mdEsc turns "(Alpha)" into "\(Alpha\)",
+      // so a raw substring match reports a false miss. That cost a debug cycle.
+      assert.ok(out.includes(esc(lines[0])),
+        `${key} does not reach the ${name} export. A shared build would carry the claim `
+        + "and drop the caveat, which is the failure the notice channel exists to prevent.");
+    }
+    checked++;
+  }
+  assert.strictEqual(checked, CHARACTER_NOTICES.length, "every roster row was exercised");
+});
+
+test("#668: the five notices that were orphaned are specifically covered", () => {
+  // A named guard for the named regression, in the shape test_doubleshot_stays_refused
+  // uses on the Python side. The generic tests above would catch a re-orphaning, but
+  // not name it, and these five are the ones with a history.
+  const md = toMarkdown(ALL_NOTICES_REC);
+  assert.ok(/Maximum Dexterity Bonus/.test(md), "#573 dodgeMaxDexNotice");
+  assert.ok(/not marked as owned/.test(md), "#246 packFilterNotice");
+  assert.ok(/You excluded 1 set/.test(md), "setFilterNotice");
+  assert.ok(/You required this set/.test(md), "#539 setPinNotice");
+  assert.ok(/Menu: Effect/.test(md), "#193/#599 essenceNotice");
 });

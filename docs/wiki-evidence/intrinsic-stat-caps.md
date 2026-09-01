@@ -140,14 +140,15 @@ not apply it, and that the Dodge total shown is therefore the un-reduced gear su
 rides the export notices bag as well as the results panel, so a shared build cannot
 report the total without the caveat.
 
-> **Correction, 2026-09-01 (#668).** The second half of that last sentence is not
-> true today. `dodgeMaxDexNotice` is built into the projection bag and **no exporter
-> renders it** — every exporter hand-enumerates the notice names it prints, and this
-> one (with four others) was never added. Verified by running all four export
-> surfaces against a heavy-armor, ranked-Dodge record: none mention Max Dex Bonus.
-> So a shared build DOES currently report the Dodge total without the caveat. The
-> §4 ruling is unaffected; the disclosure's REACH is what was overstated. #663 wired
-> its own notice to all four surfaces rather than copying this precedent.
+> **Was false, fixed 2026-09-01 (#668).** For a time the second half of that last
+> sentence was not true. `dodgeMaxDexNotice` was built into the projection bag and
+> **no exporter rendered it** — every exporter hand-enumerated the notice names it
+> printed, and this one (with four others) was never added, so a build shared in
+> that window carried the Dodge total and dropped the caveat. #668 replaced the four
+> hand-written lists with one `CHARACTER_NOTICES` roster that all four surfaces
+> loop, and added the guard that fails when a notice in the bag has no roster row.
+> The sentence above is true again. The §4 ruling was never affected; only the
+> disclosure's REACH was overstated.
 
 **If someone revisits this:** the honest fix remains a per-item `max_dex_bonus` field
 fed by a paced harvest, plus a clamp that reads the equipped armor's real value *and*
@@ -327,7 +328,8 @@ Three choices worth the record:
   player can only be told; here the ceiling is known and a Max of 40 fully resolves
   it. What we cannot decide for them is whether 40 is right for their character.
 - **Wired to all four export surfaces**, deliberately not following the precedent
-  above. See the #668 correction in §4.
+  above — which was broken, and is what surfaced #668. Since that fix, all four
+  surfaces loop one roster, so this notice needs no per-surface wiring at all.
 
 ### ACP magnitudes, since the buffer argument depends on them
 
