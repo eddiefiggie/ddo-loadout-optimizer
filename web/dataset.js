@@ -909,8 +909,21 @@ function _craftingAffixTriples(ds) {
       for (const a of affs) push(a.stat, a.bonus_type, a.value);
     }
   }
-  for (const def of Object.values(ds.membership_set_defs || {})) {
-    for (const tier of (def.tiers || [])) for (const a of tier.affixes || []) push(a.stat, a.bonus_type, a.value);
+  // #672 — BOTH set-definition containers, for the reason `normalizeDataset`
+  // already pairs them: a Set Augment's tier affixes live only in
+  // `augment_set_defs`, never on an item and never in `parsed_set_bonuses`, so
+  // omitting it here left three stats the SOLVER scores perfectly well
+  // (`Assassinate DCs`, `Magical Resistance Rating Cap`, `Maximum Hit Points`)
+  // absent from `known` — not merely unsuggested, but impossible to type, which
+  // is the one state the picker treats as "no such affix". Measured: ranking
+  // `Magical Resistance Rating Cap` solves to 30 via Arcane Barrier and
+  // `Maximum Hit Points` to 10 via Legendary Bulwark, so the gap was purely the
+  // vocabulary's, and the crafting union is where it belongs — a Set Augment is
+  // reached by slotting it, exactly like every other pool in this function.
+  for (const defs of [ds.membership_set_defs, ds.augment_set_defs]) {
+    for (const def of Object.values(defs || {})) {
+      for (const tier of (def.tiers || [])) for (const a of tier.affixes || []) push(a.stat, a.bonus_type, a.value);
+    }
   }
   return out;
 }
