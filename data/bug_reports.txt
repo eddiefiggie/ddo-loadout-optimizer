@@ -394,3 +394,45 @@ priorities, Intelligence at priority 1.)
   The fix keeps a WORN penalty in `achieved` and nowhere else: `achieved` is the
   number the card's headline shows, so dropping it there would have traded one
   self-contradicting card for another.
+
+================================================================================
+2026-09-02 — user report (Legendary Gem of Many Facets at ML 25) — #679
+================================================================================
+
+Verbatim: "With Max level 25 selected, Legendary Gem of Many Facets is recommended
+as the trinket. and counted towards an epic set bonus"
+
+Two claims, and they resolve differently. Investigated 2026-09-02 on build
+09022026.2; no reproduction of the second half, so the report is filed rather than
+diagnosed.
+
+- The ML half is BY DESIGN and should not be re-investigated. #611 rules that
+  Essence Crafting sets a host's minimum level during crafting, so `craftedMlOf`
+  compares the cap against `min(v.ml, cap)` for a variant carrying essence menus.
+  The `Legendary Gem of Many Facets [Crafted]` record carries three (Prefix/Suffix/
+  Extra), so at a cap of 25 it is admitted at an effective ML 25. The rationale
+  comment in `web/model.js` names this exact item as its worked example. Confirmed:
+  the base record (no essence menus) is still refused with "above your ML 25 cap";
+  only the `[Crafted]` one is admitted.
+
+- The set half did NOT reproduce, and every tier boundary checked is correct:
+    * `joker_set_groups` is tier-scoped per gem. The Legendary gem offers only
+      Legendary sets (Legendary Divine Blessing, Legendary Elder's Knowledge, ...);
+      the Epic gem offers only Epic ones. No Epic set appears in the Legendary
+      gem's pools, in either group.
+    * The groups are minted in `build_dataset.py` from the wiki-sourced joker seed,
+      keyed on the exact `source_item` with a ` [Crafted]` suffix stripped — not by
+      a family/name prefix match, so a tier cannot pick up a sibling's pools.
+    * The gem contributes no fixed membership to collide with: its `set_bonus` is
+      cleared to `[]` at minting time, and "Random set 1/2" is on the UNSERVABLE
+      crafting-label list in `src/crafting_coverage.py`, so nothing mints set
+      membership from the crafting prose.
+    * A 12-target sweep at mlCap 25 (each ability, Spell Critical Damage,
+      Doublestrike, Melee Power, Physical Sheltering, and two multi-priority
+      combinations) placed the gem zero times and produced an empty `jokerPlaced`
+      every time.
+
+  So the reported pairing needs the reporter's actual query to reproduce — the
+  priority list, and whatever is set for crafting rung, pins, and inventory
+  filters. Worth asking specifically whether the set named on screen was an Epic
+  one or a Legendary one, since only the latter is reachable through this gem.
