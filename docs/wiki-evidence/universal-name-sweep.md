@@ -19,7 +19,7 @@ Classification key:
 | `Universal Spell Power` | **cross-add** (#291) | `Spell_power` §Universal Spell Power: "Fully stacking. It flat adds to all of your other Spell Powers"; see `spellpower-universal.md` §3 |
 | `Spell Lore` (universal) | **cross-add** (#290) | `Spell_Lore` "Spell Lore - all spell types" + `Universal_Spell_Lore` "separate and stacking source ... will stack with another item with a Spell Lore or Acid Lore Equipment bonus"; see `spell-lore.md` §#290 |
 | `Universal Spell Lore` | **cross-add** (#290) | same USL quote, stated outright for this name; see `spell-lore.md` §#290 |
-| `Spell Intensity` | **record-only** | `Intensity` page's affected-damage-types table lists ONLY the ten element intensities — no "Spell Intensity → All Spells" row (contrast Potency). The two dataset carriers (Solar Gem of Spell Critical Damage) are "**Legendary** Bonus to Spell Critical Damage" (`Lunar_and_Solar_Gems` table) — a distinct bonus type from the Enhancement/Insight/Quality element-intensity channels, so by the type rule it stacks with them regardless; but no page states the universal-name-to-element crediting rule, so no map entry. Stays rankable as its own stat. | **Re-verified 2026-08-20 on a player report (#402) — ruling UPHELD and upgraded from an evidence gap to a positive finding; see the section below.**
+| `Spell Critical Damage` (was `Spell Intensity`) | **record-only** | `Intensity` page's affected-damage-types table lists ONLY the ten element intensities — no universal → All Spells row (contrast Potency). The three dataset carriers (Solar Gem of Spell Critical Damage, Heroic/Epic/Legendary) are "**Legendary** Bonus to Spell Critical Damage" (`Lunar_and_Solar_Gems` table) — a distinct bonus type from the Enhancement/Insight/Quality element-intensity channels, so by the type rule it stacks with them regardless; but no page states the universal-name-to-element crediting rule, so no map entry. Stays rankable as its own stat. | **Re-verified 2026-08-20 on a player report (#402) — ruling UPHELD and upgraded from an evidence gap to a positive finding; see the section below. RENAMED 2026-09-02 (#672) — see §Rename below; the crediting ruling is unchanged.**
 | Element Intensities (Fire/Acid/Healing/Ice/Kinetic/Lightning/Void/Radiance/Repair/Sonic) | targets only | The `Intensity` roster; potential future cross-add targets if a universal crit-damage statement ever lands. |
 | `Elemental Spell Power` | **record-only** (misnomer) | Its page: "gives you a +50 bonus to your **maximum spell points**. This stacks with all bonuses except Elemental Spell Power." Not spellpower at all — a self-excepting spell-points bonus. |
 | `Greater Elemental Spell Power` | **record-only** (misnomer) | Same page: "+100 bonus to your maximum spell points. This stacks with all bonuses except Greater Elemental Spell Power." |
@@ -28,9 +28,59 @@ Classification key:
 | Flavored spellpowers (`Power of the Flames of Purity`, `Power of the Moonlit Haunt`, ...) | excluded targets | Same reasoning on the spellpower side: not in the `Spell_power` ten-name roster; no wiki statement ties a universal name to them. |
 | `Laceration Lore` | excluded (removed) | `Spell_Lore`: removed from the game pre-U19. |
 
-**Residual disclosure:** `Spell Intensity` remains the known case where a universal-looking
-name gives an element-ranked priority no credit. That is the wiki's shape today, not a
-solver gap; the map gains an entry the day a page states the rule outright.
+**Residual disclosure:** `Spell Critical Damage` remains the known case where a
+universal-looking name gives an element-ranked priority no credit. That is the wiki's
+shape today, not a solver gap; the map gains an entry the day a page states the rule
+outright.
+
+## Rename 2026-09-02 (#672): `Spell Intensity` -> `Spell Critical Damage`
+
+**The crediting ruling above is untouched.** That ruling is about the universal-name-to-
+element axis and stays closed. This section records a different question, asked and
+answered separately: whether the name we stored on the Solar Gems was the right name.
+
+It was not. Two stored names were one stat:
+
+| stored name | carriers before the fold | bonus type |
+|---|---|---|
+| `Spell Intensity` | 3 Solar Gems (Heroic/Epic/Legendary, 5/10/15) | Legendary |
+| `Spell Critical Damage` | 8 distinct sets, 0 item affixes | Legendary |
+
+The eight sets span BOTH containers, which is why they are easy to miscount:
+`membership_set_defs` holds Delight of the Devourer, Vol's Influence, their Legendary
+variants and Deacon of the Auricular Sacrarium; the per-item `parsed_set_bonuses` copy
+holds Deacon again plus the whole Elder's Knowledge chain (Elder's / Epic / Legendary,
+5/10/15). Reading one container and calling it the population produced a wrong count
+three separate times on #672 — twice in the issue's own comments and once in the
+write-up of this fix. A `parsed_set_bonuses` entry is a TIER whose `affixes[]` carry
+`stat`; looking for `name` on the tier itself returns nothing and reads as zero.
+
+`Lunar_and_Solar_Gems` states the gem's effect as a "Legendary Bonus to Spell Critical
+Damage" at +5/+10/+15 for ML1/ML20/ML30. gear-planner attaches `Spell Intensity` to items
+titled exactly `Solar Gem of Spell Critical Damage`. Both sources describe the same three
+named objects at the same bonus type and the same magnitudes, so the names are two
+spellings of one stat. The population closes: `Spell Intensity` had exactly three
+carriers and all three were those gems, so no occurrence meant anything else.
+
+Same bonus type on both sides made the split a live defect rather than a cosmetic one.
+Bucket keys are `stat||type`, so two names meant two buckets and the contributions would
+SUM — against the same page's rule that same-typed effects do not stack. The gems were
+also invisible to a player who ranked the set name: measured at ML5, where the Heroic
+gem is the only reachable source, the pre-fold solve credited 0.
+
+`affix_name_corrections.json` mints the wiki name; `affix_aliases.json` keeps
+`Spell Intensity` resolving for builds saved before the fold, where it was the rankable
+canonical. The `COMPANION_STATS` hint in `web/dataset.js` moved to the new name.
+
+**Note on the read that settled it.** #672 specified enumerating
+`Category:Legendary Spell Critical Damage +15% items` and checking membership. That
+category is empty and no per-variant gem item page exists — the gems are documented only
+as rows on `Lunar_and_Solar_Gems`, so the specified read could never have returned
+anything. Worth remembering when a category page is proposed as evidence.
+
+**And the sentence was already here.** The row above has quoted the decisive gem
+phrasing since the 2026-08-20 harvest. #672 was filed asking for a fresh wiki read whose
+answer was already in this file. Check the evidence store before scheduling a harvest.
 
 ## Vocabulary-side enumeration result (2026-08-13, run against the built registry)
 
@@ -42,7 +92,7 @@ page-side pass had not, each now dispositioned:
 | Candidate | Disposition | Evidence |
 |---|---|---|
 | `Arcane Lore` | **record-only** (legacy presence-only) | The `Spell_Lore` page: "The universal Spell Lore (formerly Arcane Lore)". In the dataset it is NOT rankable and its 5 carriers store it as `Bool 1` (magnitude-less legacy parse), so adding it as a cross-add source would inject a bogus +1. If those items are ever re-parsed with magnitudes, it becomes a wiki-backed `cross_add` source candidate under the same USL quote. |
-| `Universal Spell Critical Damage` | **record-only** | Not rankable, zero worn-affix carriers; 20 occurrences all live in `parsed_set_bonuses` tiers. Same evidence gap as `Spell Intensity`: no wiki page states a universal-to-element crit-damage crediting rule (the `Intensity` table has no universal row), so no map entry. |
+| `Universal Spell Critical Damage` | **record-only** | Not rankable, zero worn-affix carriers; 20 occurrences all live in `parsed_set_bonuses` tiers. Same evidence gap as `Spell Critical Damage` (renamed from `Spell Intensity`, #672): no wiki page states a universal-to-element crit-damage crediting rule (the `Intensity` table has no universal row), so no map entry. |
 | `Spell Power` (bare) | **record-only** (noise) | Registry-only: zero carriers anywhere in the built data. |
 
 Combined/flavored lores surfaced by the same filter (`Frozen Depths/Storm/
@@ -57,6 +107,11 @@ expansion entries, every candidate carries a recorded disposition.**
 ---
 
 ## 2026-08-20 re-verification: `Spell Intensity` (#402)
+
+> **Naming note.** This section is the 2026-08-20 record and uses the name as it
+> stood then. The stat was renamed to `Spell Critical Damage` on 2026-09-02 (#672,
+> §Rename above); read every `Spell Intensity` below as that name. The ruling this
+> section upholds is unaffected — it is about element crediting, not spelling.
 
 A player reported the consequence of this ruling as a bug:
 

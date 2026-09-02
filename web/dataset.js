@@ -733,12 +733,18 @@ const UTILITY_TIER1_PRESENCE = new Set([
 /** #404 — COMPANION STATS: a second, differently-named source of the same in-game
  *  number that a player ranking the obvious name will never find on their own.
  *
- *  `Spell Intensity` and the ten element Intensities are separate rankable stats,
- *  and the wiki says they should be — `docs/wiki-evidence/universal-name-sweep.md`
+ *  `Spell Critical Damage` and the ten element Intensities are separate rankable
+ *  stats, and the wiki says they should be — `docs/wiki-evidence/universal-name-sweep.md`
  *  upheld that on re-harvest (#402), against three independent reads. But a player
- *  ranking `Void Intensity`, watching an augment labelled "Spell Critical Damage"
- *  not get slotted, has no way to learn that a second name carries it. Two reports
- *  arrived by that route before this hint existed.
+ *  ranking `Void Intensity`, watching the Solar Gem of Spell Critical Damage not get
+ *  slotted, has no way to learn that a second stat carries it. Two reports arrived by
+ *  that route before this hint existed.
+ *
+ *  #672 renamed the companion from `Spell Intensity` to the wiki's `Spell Critical
+ *  Damage`, which removes half of what made those reports possible: the stat is now
+ *  named after the augment the player is looking at. The hint still earns its place —
+ *  the two are genuinely different stats, so ranking one never scores the other — but
+ *  it no longer has to bridge a naming gap as well as a modelling one.
  *
  *  Advisory ONLY. The hint never adds, reorders or substitutes anything — the
  *  player decides. That is the difference between this and the expanded-away path,
@@ -749,7 +755,7 @@ const UTILITY_TIER1_PRESENCE = new Set([
  *  neither expanded away into a family nor a cross-add source for one is, by
  *  definition, a stat a player can only reach by knowing its name. The guard in
  *  `tests/dataset.test.js` recomputes that population and fails when a name in it
- *  is undeclared here — so the next `Spell Intensity` cannot arrive silently. The
+ *  is undeclared here — so the next `Spell Critical Damage` cannot arrive silently. The
  *  current population is exactly one: `Universal Spell Power` and `Universal Spell
  *  Lore` cross-add into their elements, and `Potency` / `Spell Lore` expand away.
  *
@@ -758,13 +764,13 @@ const UTILITY_TIER1_PRESENCE = new Set([
  */
 const COMPANION_STATS = [
   {
-    companion: "Spell Intensity",
+    companion: "Spell Critical Damage",
     members: ["Fire Intensity", "Acid Intensity", "Healing Intensity", "Ice Intensity",
               "Kinetic Intensity", "Lightning Intensity", "Void Intensity",
               "Radiance Intensity", "Repair Intensity", "Sonic Intensity"],
     reason: "a separately-named enchantment that also raises spell critical damage "
-          + "(the Solar Gem of Spell Critical Damage carries it) — rank it too if you "
-          + "want items that grant it",
+          + "(the Solar Gem of Spell Critical Damage carries it, as do five named sets) "
+          + "— rank it too if you want items that grant it",
   },
 ];
 

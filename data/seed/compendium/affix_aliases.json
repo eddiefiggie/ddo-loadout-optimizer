@@ -254,6 +254,11 @@
    "variant": "Power Drain",
    "canonical": "Wizardry",
    "reason": "#639 — this enchantment drains the spell-point pool rather than being a stat of its own, so it is merged into that pool and no longer exists as its own affix name. The alias keeps a player who typed or saved the engraved name resolving to the stat that now carries it."
+  },
+  {
+   "variant": "Spell Intensity",
+   "canonical": "Spell Critical Damage",
+   "reason": "#672 - the picker half of the pipeline rename. name_corrections mints the wiki name `Spell Critical Damage` on the three Solar Gems (gear-planner engraves them `Spell Intensity`), and this alias keeps the gear-planner spelling resolving in the search box - and, more importantly, keeps every build saved before this fold resolving: `Spell Intensity` was the RANKABLE canonical until now, so a saved priority naming it would otherwise score zero silently. Same shape as the `Undying` entry."
   }
  ],
  "distinct": [
