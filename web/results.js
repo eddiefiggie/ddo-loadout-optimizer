@@ -53,6 +53,13 @@ var saturationLineFor = Proj.saturationLineFor;
 const satisfiedSets = Proj.satisfiedSets;
 const suppressedHostIds = Proj.suppressedHostIds;
 const slotSetNames = Proj.slotSetNames;
+// #681 — the worn (possibly crafted-down) ML. Bound from the projection like every
+// other primitive, so the live card and the exports cannot disagree about what
+// level an item is worn at. The INDEX comes from the solve result
+// (`essenceReport.craftedDown`), so a render path with no result in hand simply
+// passes none and gets the native ML, which is correct for it.
+const wornMl = Proj.wornMl;
+const craftedMlIndex = Proj.craftedMlIndex;
 const activeSetDetail = Proj.activeSetDetail;
 const satisfiedSetDetail = Proj.satisfiedSetDetail;
 
@@ -62,6 +69,21 @@ const satisfiedSetDetail = Proj.satisfiedSetDetail;
 // share one global scope as plain browser scripts; `var` tolerates the redeclaration
 // while each file keeps its own copy for node's module-scoped `require`.
 var itemMl = (v) => (v && v.ml != null) ? v.ml : (v && v.minimum_level);
+
+// #681 — the ML chip, in ONE place for both card layouts. An essence host crafted
+// below its printed level shows the level it is WORN at, marked "crafted" so the
+// number is not read as a contradiction of a name like "Legendary Gem of Many
+// Facets". The full explanation is the #611 essence notice, which already spells
+// out the disjunct-and-recraft step; this chip is the per-item pointer to it, not a
+// second copy of the argument.
+function mlChipHtml(v, craftedIdx, cls) {
+  const worn = wornMl(v, craftedIdx);
+  const native = itemMl(v);
+  const down = worn != null && native != null && worn !== native;
+  const title = down ? ` title="Essence Crafted at ML ${esc(worn)}, below its printed ML ${esc(native)}"` : "";
+  return `<span class="${cls || "pd-ml"}"${title}>ML ${esc(worn ?? "?")}`
+    + `${down ? ` <span class="pd-crafted">crafted</span>` : ""}</span>`;
+}
 
 // #91 (U5, KTD1) — the Utility tier's sentinel priority token, owned by
 // model.js (single definition). Browser global; Node require — the same bridge
@@ -262,7 +284,11 @@ function contribSetLabel(contribs) {
 // One paperdoll slot cell: uniform, fixed-size, showing only the item name, ML,
 // and the set it belongs to. A set piece gets a themed highlight frame (.is-set).
 // Full affixes/crafts live in the gear card below the doll, not on the cell.
-function paperdollSlot(label, pos, pick, satisfied, contributors) {
+// #681 — `craftedIdx` is an optional trailing argument: a caller with the solve
+// result in hand passes `Proj.craftedMlIndex(result)`; one without passes nothing
+// and every item reports its native ML, which is the right answer when there is no
+// solve to have crafted anything.
+function paperdollSlot(label, pos, pick, satisfied, contributors, craftedIdx) {
   if (!pick) {
     return `<div class="pd-slot empty pos-${pos}"><div class="pd-label">${esc(label)}</div><div class="pd-item muted">empty</div></div>`;
   }
@@ -273,7 +299,7 @@ function paperdollSlot(label, pos, pick, satisfied, contributors) {
   return `<div class="pd-slot occupied pos-${pos}${glow ? " is-set" : ""}">
     <div class="pd-label">${esc(label)}</div>
     <div class="pd-item" title="${esc(v.variant_id)}">${esc(v.variant_id)}</div>
-    <div class="pd-foot"><span class="pd-ml">ML ${esc(itemMl(v) ?? "?")}</span>${setLine}</div>
+    <div class="pd-foot">${mlChipHtml(v, craftedIdx)}${setLine}</div>
   </div>`;
 }
 
@@ -284,6 +310,9 @@ function paperdollSlot(label, pos, pick, satisfied, contributors) {
 // `prioCtx` ({ result, attr, targets }) is optional (plan 2026-08-12-001 U3):
 // pure-test callers omit it and render no summary, matching the maps tolerance.
 function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, ownedInfo, contributors, prioCtx) {
+  // #681 — derived from the result this row already receives, so the crafted level
+  // reaches the chip without widening the signature.
+  const craftedIdx = craftedMlIndex(prioCtx && prioCtx.result);
   const c = (slotConstraints || {})[label];
   const locked = c && c.type === "empty";
   const owned = ownedInfo || { mode: false, augments: false, slotsCovered: new Set() };
@@ -323,7 +352,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   // of the card: "pinned" / "locked empty" / "Artifact" describe the slot, not
   // the notes, and leaving them below the craft chips put the card's identity
   // after its detail.
-  const mlChip = (v && !locked) ? `<span class="pd-rml">ML ${esc(itemMl(v) ?? "?")}</span>` : "";
+  const mlChip = (v && !locked) ? mlChipHtml(v, craftedIdx, "pd-rml") : "";
   const meta = `<div class="pd-rmeta">${mlChip}${setLine}${artifactBadge}${badge}</div>`;
   // R8/AE5/AE5a — empty-slot reason note. ONLY for an optimizer-left-empty slot,
   // never for a user-locked-empty slot (that state is shown by the "locked empty"

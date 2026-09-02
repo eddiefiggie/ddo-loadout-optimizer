@@ -279,6 +279,11 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
   // sentence or nothing. Trusted constant text, no user-derived parts, so no
   // per-format escaping is needed.
   function noDropStr(it) { return it.noDropSource || ""; }
+  // #681 — the crafted-down disclosure, same shape and same rule as #262: a
+  // per-item note rides with the item it qualifies, in EVERY format. Without it an
+  // export reads "Legendary Gem of Many Facets (ML 25)", which is the exact
+  // contradiction the app card now explains and the export would not.
+  function craftedStr(it) { return it.craftedNote || ""; }
 
   // ---- Markdown ----
 
@@ -309,6 +314,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // #262 — the disclosure rides with the item it qualifies, in every format.
       const nd = noDropStr(it);
       if (nd) out += `  - ⚠ ${nd}\n`;
+      const cd = craftedStr(it);
+      if (cd) out += `  - ⚒ ${mdEsc(cd)}\n`;
     }
     if (view.sets.length) {
       out += `\n## Set bonuses\n\n`;
@@ -381,6 +388,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // #262 — the disclosure rides with the item it qualifies, in every format.
       const nd = noDropStr(it);
       if (nd) out += `\n  [*]⚠ ${nd}`;
+      const cd = craftedStr(it);
+      if (cd) out += `\n  [*]⚒ ${bbEsc(cd)}`;
       out += `\n`;
     }
     out += `[/list]\n`;
@@ -451,6 +460,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       const craftCell = it.crafting.map((cr) => craftStr(cr, (s) => s, "csv"))
         .concat(carriedStr(it, (s) => s) || [])
         .concat(noDropStr(it) || [])
+        .concat(craftedStr(it) || [])
         .join(" | ");
       rows.push(csvRow([
         it.slot, it.item, it.ml,
@@ -534,6 +544,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       const craftCell = it.crafting.map((cr) => craftStr(cr, htmlEsc, "md"))
         .concat(carried ? [`⚒ ${carried}`] : [])
         .concat(nd ? [`⚠ ${nd}`] : [])
+        .concat(craftedStr(it) ? [`⚒ ${htmlEsc(craftedStr(it))}`] : [])
         .join("<br>");
       h += `<tr><td>${htmlEsc(it.slot)}</td><td>${htmlEsc(it.item)}</td><td>${htmlEsc(it.ml)}</td>`
         + `<td>${affixList(it.affixes, htmlEsc)}</td>`

@@ -306,6 +306,41 @@
   // Item-level ML read native-first (`ml`), legacy `minimum_level` fallback.
   function itemMl(v) { return (v && v.ml != null) ? v.ml : (v && v.minimum_level); }
 
+  /** #681 — `variant_id` -> the ML that host is CRAFTED at, for the hosts a build
+   *  can only use by crafting them below their printed level.
+   *
+   *  Read from `essenceReport.craftedDown`, which the SOLVER already computes and
+   *  which `essenceNoticeLines` already explains in prose. Deliberately not a
+   *  second computation of `min(ml, cap)`: the render layer has neither the cap nor
+   *  the crafting rung, the rule is inert unless the rung keeps the essence pool
+   *  alive, and #611 already put the answer on the result. The bug this fixes was
+   *  never a missing calculation — it was every per-item surface ignoring one the
+   *  solve had already made. */
+  function craftedMlIndex(result) {
+    const idx = new Map();
+    const r = result && result.essenceReport;
+    for (const c of (r && r.craftedDown) || []) {
+      if (c && c.item != null && c.craftedMl != null) idx.set(c.item, c.craftedMl);
+    }
+    return idx;
+  }
+
+  /** #681 — the ML a chosen item is actually WORN at, given that index.
+   *
+   *  For every ordinary item this is `itemMl(v)`. For an essence host crafted down
+   *  it is the crafted level — which is also the level whose row of the effect
+   *  curve the solve read, so the number shown and the numbers computed agree.
+   *
+   *  `browse.js` keeps showing native ML and should: browsing the catalog has no
+   *  solve, no cap, and nothing to craft against. */
+  function wornMl(v, craftedIdx) {
+    const native = itemMl(v);
+    if (!craftedIdx || !v) return native;
+    const id = v.variant_id || v.source_item;
+    const c = craftedIdx.get(id);
+    return (c != null) ? c : native;
+  }
+
   /** #469 — the name a gear card SHOWS, which is not the item's identity.
    *
    *  `variant_id` is the identity: the pin/block key, the export column, and the
@@ -2029,12 +2064,21 @@
     const priorities = (rec && rec.inputs && rec.inputs.priorities) || [];
 
     const suppressed = suppressedHostIds(snap);
+    const craftedIdx = craftedMlIndex(snap);
     const loadout = chosen.map((c, idx) => {
       const v = c.variant || {};
       return {
         slot: c.slot,
         item: v.variant_id,
-        ml: itemMl(v),
+        // #681 — the level this item is WORN at. For an essence host crafted below
+        // its native ML that is the crafted level, and every export inherits it
+        // because they all read this one field.
+        ml: wornMl(v, craftedIdx),
+        ...(wornMl(v, craftedIdx) !== itemMl(v)
+          ? { nativeMl: itemMl(v),
+              craftedNote: `Essence Crafted at ML ${wornMl(v, craftedIdx)}, below its printed `
+                         + `ML ${itemMl(v)} — its effect values are read at the crafted level.` }
+          : {}),
         // U8 (R10) — collapsed HERE, in the single content source every export
         // reads, so no export can print the expanded shape while the app prints
         // the collapsed one. `results.js` calls the same primitive on its own
@@ -2805,7 +2849,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, utilityPriceLine, utilityUnsecuredLines, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, affixStatCoverage, affixCoverageKey, affixOwnName, craftStepLabel, craftAffixRecords, itemMl, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, affixStatCoverage, affixCoverageKey, affixOwnName, craftStepLabel, craftAffixRecords, itemMl, wornMl, craftedMlIndex, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     // #449 (U2) — the achieved/ceiling fraction: numbers, state and wording from
     // one place, plus the once-per-document full statement.

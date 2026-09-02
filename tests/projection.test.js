@@ -2408,3 +2408,81 @@ test("#539: no pins says nothing at all", () => {
   assert.deepStrictEqual(P.setPinNoticeLines({}), []);
   assert.deepStrictEqual(P.setPinNoticeLines({ setPinReport: [] }), []);
 });
+
+// --- #681: an essence host crafted below its native ML ----------------------
+//
+// #611 lets an Essence Crafting host above the cap be crafted DOWN and worn, reads
+// the effect curve at the crafted level, and ALREADY reports both levels on
+// `essenceReport.craftedDown` with a prose notice explaining the disjunct-and-recraft
+// step. What was missing was narrower and worse than "no disclosure": every PER-ITEM
+// surface ignored the answer the solve had already made and printed the native ML. A
+// player capped at 25 read "Legendary Gem of Many Facets — ML 30" on the card while
+// the build was computed at ML 25.
+
+function craftedRec() {
+  return {
+    name: "Crafted host",
+    inputs: { ml: 25, priorities: ["Charisma"] },
+    snapshot: {
+      status: "optimal",
+      chosen: [
+        { slot: "Trinket",
+          variant: { variant_id: "Legendary Gem of Many Facets [Crafted]", ml: 30,
+            affixes: [], essence_slots: [{ menu: "Prefix" }, { menu: "Suffix" }, { menu: "Extra" }] } },
+        { slot: "Necklace",
+          variant: { variant_id: "Astral Spore Pendant", ml: 11,
+            affixes: [{ name: "Charisma", type: "Enhancement", value: 8 }] } },
+      ],
+      // The solver's own record — the source this feature reads rather than recomputing.
+      essenceReport: { hosts: 1, craftedDown: [
+        { item: "Legendary Gem of Many Facets [Crafted]", nativeMl: 30, craftedMl: 25 }], placed: [] },
+      effective: { Charisma: 27 },
+    },
+  };
+}
+
+test("#681: the worn ML is the crafted one, and the native one for everything else", () => {
+  const rec = craftedRec();
+  const idx = P.craftedMlIndex(rec.snapshot);
+  const [host, plain] = rec.snapshot.chosen;
+  assert.strictEqual(P.wornMl(host.variant, idx), 25, "the host is worn at the level it was crafted at");
+  assert.strictEqual(P.wornMl(plain.variant, idx), 11, "an ordinary item is unaffected");
+  // The index is built from the SOLVER's report, not recomputed from ml and a cap.
+  assert.deepStrictEqual([...idx.entries()], [["Legendary Gem of Many Facets [Crafted]", 25]]);
+  // itemMl still reports the catalog's native ML — that is its job, and browse.js
+  // wants exactly that: browsing has no solve and nothing to craft against.
+  assert.strictEqual(P.itemMl(host.variant), 30);
+  // No result in hand => native ML, which is right for a surface with no solve.
+  assert.strictEqual(P.wornMl(host.variant, null), 30);
+  assert.strictEqual(P.wornMl(host.variant, P.craftedMlIndex(null)), 30);
+});
+
+test("#681: the projected loadout carries the crafted ML, not the native one", () => {
+  // `project()` is the single content source every export reads, so this covers
+  // Markdown, BBCode, CSV and the print HTML at once.
+  const view = P.project(craftedRec());
+  const row = view.loadout.find((r) => /Many Facets/.test(r.item));
+  assert.strictEqual(row.ml, 25, "the export column shows the level it is worn at");
+  assert.strictEqual(row.nativeMl, 30, "and still carries the native ML for context");
+  assert.ok(/ML 25/.test(row.craftedNote || "") && /ML 30/.test(row.craftedNote || ""),
+    `the per-item note names both levels; got ${JSON.stringify(row.craftedNote)}`);
+  const plain = view.loadout.find((r) => /Astral/.test(r.item));
+  assert.strictEqual(plain.ml, 11);
+  assert.ok(!("craftedNote" in plain) && !("nativeMl" in plain),
+    "an ordinary item gets neither — the disclosure fires only where the two disagree");
+});
+
+// A deliberate NO-REGRESSION guard: passes on both trees by design. It exists to go
+// red if the disclosure ever becomes boilerplate, not to witness the fix.
+test("#681: a build that crafted nothing down is untouched", () => {
+  // The notice must stay silent in the ordinary case or it becomes boilerplate —
+  // the same rule the #611 prose notice already follows.
+  const rec = craftedRec();
+  rec.snapshot.essenceReport = { hosts: 1, craftedDown: [], placed: [] };
+  const view = P.project(rec);
+  for (const row of view.loadout) {
+    assert.ok(!("craftedNote" in row), `${row.item} should carry no crafted note`);
+  }
+  assert.strictEqual(view.loadout.find((r) => /Many Facets/.test(r.item)).ml, 30,
+    "with nothing crafted down, the host reports its printed ML");
+});
