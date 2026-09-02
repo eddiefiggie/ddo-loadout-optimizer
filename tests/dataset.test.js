@@ -700,7 +700,17 @@ test("picker: no dropdown suggestion is unsourced (dead-entry guard)", () => {
   for (const it of realData.items || []) {
     for (const a of it.affixes || []) add(a.name || a.stat);
     for (const sc of it.scaling || []) add(sc.stat);
+    // #675 — BOTH set-bonus fields. `set_bonus` is the RAW gear-planner form: its
+    // per-tier text lives under `piece_bonuses` as prose, and it carries no
+    // `affixes` at all, so this loop has been reading nothing since it was written
+    // and the set-bonus channel was never actually covered. The parsed affixes are
+    // in `parsed_set_bonuses`, keyed by tier. Without it, seven stats that real
+    // solves DO score (Melee Diversion 40, Ranged Diversion 40, Sneak Attack 5,
+    // Turn Undead Charge 3) read as unsourced dead entries.
     for (const sb of it.set_bonus || []) for (const a of sb.affixes || []) add(a.name || a.stat);
+    for (const sb of it.parsed_set_bonuses || []) {
+      for (const t of (sb.tiers || [sb])) for (const a of t.affixes || []) add(a.stat || a.name);
+    }
   }
   // Crafting/insert pools carry their stat under `stat`, or `name` when they also
   // carry a magnitude; walk them generically so a new pool is covered automatically.

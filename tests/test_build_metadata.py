@@ -180,3 +180,48 @@ def test_374_the_minted_union_moves_exactly_the_minted_names_and_nothing_else():
         "a minted name reappeared in the frozen section — the union would be a no-op"
     expected = sorted({n for n in frozen if not B.is_noise_affix_name(n)} | set(minted))
     assert _build()["metadata"]["affix_registry"] == expected
+
+
+def test_675_a_stat_two_sets_grant_is_rankable_even_with_no_item_carrier():
+    """#675 — the set-bonus half of `rankable_affixes`, which the vocabulary has
+    always claimed to carry.
+
+    `web/dataset.js` calls this list the "curated item/scaling/set-bonus
+    vocabulary", but only item affix blocks were counted. A stat carried by named
+    sets alone reached the picker's `known` (via `_itemAffixTriples`) and never its
+    `suggestions`, so a player had to already know the name to rank it — 16 of
+    them, `Melee Diversion` at ten sets and `Sneak Attack` at five among them.
+
+    Asserted as the property rather than against those names, so the guard still
+    means something after the next catalog refresh moves the population. Counting
+    is by DISTINCT SET: a set grants its bonus on every piece, so per-item counting
+    would let one set clear the two-source bar on its own pieces alone.
+    """
+    import collections
+    ds = _build()
+    ra = set(ds["metadata"]["rankable_affixes"])
+    sets_by_stat = collections.defaultdict(set)
+    for v in ds["items"]:
+        for tier in v.get("parsed_set_bonuses") or []:
+            set_name = tier.get("set")
+            if not set_name:
+                continue
+            for a in tier.get("affixes") or []:
+                bt = a.get("bonus_type")
+                if bt in (None, "", "Untyped", "boolean", "Bool") or bt in build_dataset.NON_RANKABLE_TYPES:
+                    continue
+                if not build_dataset._is_numeric(a.get("value")):
+                    continue
+                stat = a.get("stat")
+                if stat and build_dataset._well_formed_stat(stat):
+                    sets_by_stat[stat].add(set_name)
+
+    multi = {s: n for s, n in sets_by_stat.items() if len(n) >= 2}
+    # Refuse to inspect nothing: a set-bonus channel that stopped parsing would
+    # empty this map and leave the assertion below passing over zero stats.
+    assert len(multi) > 30, \
+        f"only {len(multi)} stats are granted by two or more sets — the scan is broken, not the data"
+    missing = sorted(s for s in multi if s not in ra)
+    assert missing == [], (
+        "a stat two or more distinct sets grant is not rankable, so the picker will "
+        f"never suggest it: {missing}")

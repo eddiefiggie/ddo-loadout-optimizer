@@ -531,7 +531,7 @@ def _well_formed_stat(name: str) -> bool:
     return name.count("(") == name.count(")") and name.count("[") == name.count("]")
 
 
-def rankable_affixes(planner_records, untyped_allow=frozenset()) -> list:
+def rankable_affixes(planner_records, untyped_allow=frozenset(), variants=None) -> list:
     """Rankable-affix vocabulary: the affix names a user meaningfully ranks as a
     priority, read from the NATIVE gear-planner affix block. Filters: a magnitude
     bonus type (not Bool/boolean presence, not a non-rankable weapon/penalty
@@ -541,7 +541,19 @@ def rankable_affixes(planner_records, untyped_allow=frozenset()) -> list:
 
     `untyped_allow` (#227) is the adjudicated exception to the untyped skip below —
     names verified against the wiki as real worn-gear magnitudes. They still have to
-    clear every other filter; the allow-list only buys them past the type check."""
+    clear every other filter; the allow-list only buys them past the type check.
+
+    `variants` (#675) adds the SET-BONUS half this list has always claimed to carry.
+    The docstring at `web/dataset.js` calls this the "curated item/scaling/set-bonus
+    vocabulary", but only item affix blocks were ever counted, so a stat carried by
+    named sets alone reached `known` (via `_itemAffixTriples`) and never
+    `suggestions` — 16 of them, including `Melee Diversion` at ten sets and
+    `Sneak Attack` at five. A player had to already know the name to rank it.
+
+    Set occurrences are counted by DISTINCT SET, never per item. A set grants its
+    bonus on every piece, so per-item counting would let a single set clear the
+    two-source bar three times over on its own pieces and re-admit exactly the
+    one-off names the bar exists to keep out."""
     counts = collections.Counter()
     for r in planner_records or []:
         seen = set()
@@ -576,6 +588,29 @@ def rankable_affixes(planner_records, untyped_allow=frozenset()) -> list:
             if stat and _well_formed_stat(stat):
                 seen.add(stat)
         counts.update(seen)
+    # #675 — the set-bonus half, counted by distinct SET name so a set's own pieces
+    # cannot vote more than once. Same filters as the item pass above: these tiers
+    # are legacy-shaped ({stat, bonus_type}), so read that shape rather than the
+    # native one. Deliberately no untyped_allow branch here: that exception was
+    # adjudicated against worn-gear affix blocks, and widening it to a channel it
+    # was never reviewed for is exactly the silent scope creep it guards against.
+    sets_by_stat = collections.defaultdict(set)
+    for v in variants or []:
+        for tier in v.get("parsed_set_bonuses") or []:
+            set_name = tier.get("set")
+            if not set_name:
+                continue
+            for a in tier.get("affixes") or []:
+                bt = a.get("bonus_type")
+                if bt in (None, "", "Untyped") or bt in ("boolean", "Bool") or bt in NON_RANKABLE_TYPES:
+                    continue
+                if not _is_numeric(a.get("value")):
+                    continue
+                stat = a.get("stat")
+                if stat and _well_formed_stat(stat):
+                    sets_by_stat[stat].add(set_name)
+    for stat, set_names in sets_by_stat.items():
+        counts[stat] += len(set_names)
     names = {s for s, c in counts.items() if c >= 2}
     names |= set(CORE_STATS)
     # U1 (#136) — drop umbrella names. `src/umbrella.py` expands them into the six
@@ -1310,7 +1345,7 @@ def build() -> dict:
             "set-bonus affixes name an expanded-away stat no player can rank:\n  " +
             "\n  ".join(f"{s} — {stat} {val}" for s, stat, val in _set_orphans))
 
-    _rankable_list = rankable_affixes(planner_records, _untyped_allow)
+    _rankable_list = rankable_affixes(planner_records, _untyped_allow, variants)
     # #381 — the fold entries no channel fired this build. Upstream ADOPTED four
     # of the five `Legendary <stat>` folds in the 2026-08-18 refresh: they now
     # arrive already folded, so nothing is left to fold, no affix carries the
