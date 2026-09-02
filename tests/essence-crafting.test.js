@@ -264,5 +264,62 @@ async function solve(model) {
       "so the host is above the cap again, exactly as it was before #611");
   });
 
+  // ---- #681: the crafted level reaches the per-item surfaces ---------------
+  //
+  // #611 computed the crafted level, put it on `essenceReport.craftedDown`, and
+  // explained it in prose — and every per-item surface still printed the NATIVE ml.
+  // So a player capped at 25 read "Legendary Gem of Many Facets — ML 30" on the card
+  // while the solve had valued it at 25. The prose notice was doing its job; nothing
+  // carried the answer down to the item.
+
+  await test("#681: the projected item reports the level it is WORN at", async () => {
+    const pool = [opt("Prefix", "Constitution", "Constitution", "Enhancement", ABILITY)];
+    const { result } = await solve(modelWith(gem("Gem", 30), pool, ["Constitution"], 20));
+    const view = P.project({ inputs: { priorities: ["Constitution"] }, snapshot: result });
+    const row = view.loadout.find((r) => r.item === "Gem");
+    assert.strictEqual(row.ml, 20, "the card and every export show the crafted level");
+    assert.strictEqual(row.nativeMl, 30, "the printed level survives as context");
+    assert.ok(row.craftedNote, "and the item carries its own one-line disclosure");
+  });
+
+  await test("#681 GUARD: every crafted-down host agrees with the solver, by rule", async () => {
+    // Asserted over the RULE, not over the one item that prompted it. The population
+    // is a single record today (`Legendary Gem of Many Facets [Crafted]`); host number
+    // two must not be able to arrive with the display silently reverting to native ML.
+    const pool = [opt("Prefix", "Constitution", "Constitution", "Enhancement", ABILITY)];
+    const { result } = await solve(modelWith(gem("Gem", 30), pool, ["Constitution"], 20));
+    const view = P.project({ inputs: { priorities: ["Constitution"] }, snapshot: result });
+    const craftedDown = (result.essenceReport || {}).craftedDown || [];
+    assert.ok(craftedDown.length > 0, "premise: this solve DID craft a host down");
+    const byItem = new Map(view.loadout.map((r) => [r.item, r]));
+    for (const c of craftedDown) {
+      const row = byItem.get(c.item);
+      assert.ok(row, `${c.item} was crafted down but is absent from the projected loadout`);
+      assert.strictEqual(row.ml, c.craftedMl,
+        `${c.item}: the surface shows ML ${row.ml} where the solver crafted at ${c.craftedMl}`);
+      assert.notStrictEqual(row.ml, c.nativeMl,
+        `${c.item}: the surface fell back to the native ML, which is the #681 regression`);
+    }
+    // And the converse: nothing NOT in the report may claim a crafted level.
+    const downIds = new Set(craftedDown.map((c) => c.item));
+    for (const row of view.loadout) {
+      if (!downIds.has(row.item)) {
+        assert.ok(!("craftedNote" in row),
+          `${row.item} claims a crafted level the solver never reported`);
+      }
+    }
+  });
+
+  // A deliberate NO-REGRESSION guard: it passes against the pre-change tree too, and
+  // is meant to. The ordinary case must not gain a marker or change its number.
+  await test("#681: a host the cap already clears shows its printed ML, unmarked", async () => {
+    const pool = [opt("Prefix", "Constitution", "Constitution", "Enhancement", ABILITY)];
+    const { result } = await solve(modelWith(gem("Gem", 30), pool, ["Constitution"], 34));
+    const view = P.project({ inputs: { priorities: ["Constitution"] }, snapshot: result });
+    const row = view.loadout.find((r) => r.item === "Gem");
+    assert.strictEqual(row.ml, 30);
+    assert.ok(!("craftedNote" in row), "nothing was crafted down, so nothing is explained");
+  });
+
   console.log(`\n  ${passed} passed`);
 })();

@@ -590,6 +590,11 @@ details.saturation-note .sat-sentences p { margin: var(--sp-1) 0 0; }
 .pd-item.muted { color: var(--faint); font-weight: 400; }
 .pd-foot { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); }
 .pd-ml { color: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; flex: none; }
+/* #681 — the "crafted" marker beside a worn ML that is NOT the item's native one
+   (an Essence Crafting host crafted down to the cap). Deliberately quiet: the
+   number is the fact, this only says why it differs from the name on the card.
+   The full sentence rides the chip's title attribute. */
+.pd-crafted { font-size: 0.85em; opacity: 0.75; border-bottom: 1px dotted currentColor; cursor: help; }
 .pd-setname { color: var(--set); font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ============================================================================
