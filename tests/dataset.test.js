@@ -101,6 +101,48 @@ test("R13 invariant: every stamped label is admitted by the picker", () => {
     "a name the item surfaces display must be one the picker offers or resolves");
 });
 
+// #672 — a stat the SOLVER can score must be a stat the picker will accept.
+//
+// `known` is the free-typing gate: a target absent from it is rejected outright,
+// which is a harder failure than merely not being suggested (16 set-granted stats
+// are deliberately unsuggested — below the two-source threshold, or prose-shaped
+// like "hit and damage vs. Evil creatures" — and that is a curation choice, not a
+// defect). Being untypeable is never a choice: the set bonus is reachable, the
+// solver scores it, and the UI says no such affix.
+//
+// The gap this catches was `augment_set_defs`. A Set Augment's tier affixes live
+// ONLY in that container — never on an item, never in `parsed_set_bonuses` — and
+// the vocabulary's crafting union read `membership_set_defs` alone, so
+// `Assassinate DCs`, `Magical Resistance Rating Cap` and `Maximum Hit Points`
+// were unreachable through the UI while solving to 30 and 10 respectively when
+// ranked directly. Asserted over BOTH containers rather than against those three
+// names, so a future container added to one union and not the other fails here.
+test("#672: every magnitude stat a set definition grants is typeable", () => {
+  const v = buildPickerVocabulary(realData);
+  const known = new Set(v.known);
+  const NON_MAGNITUDE = new Set(["Bool", "boolean", "Untyped", "", null, undefined]);
+  const granted = new Map();                       // stat -> a set that grants it
+  for (const defs of [realData.membership_set_defs, realData.augment_set_defs]) {
+    for (const [setName, def] of Object.entries(defs || {})) {
+      for (const tier of (def.tiers || [])) {
+        for (const a of (tier.affixes || [])) {
+          if (!a || !a.stat || NON_MAGNITUDE.has(a.bonus_type)) continue;
+          if (!Number.isFinite(parseFloat(a.value))) continue;
+          if (!granted.has(a.stat)) granted.set(a.stat, setName);
+        }
+      }
+    }
+  }
+  // Refuse to inspect nothing: a container that stops parsing would empty this
+  // map and the assertion below would pass while checking zero stats.
+  assert.ok(granted.size > 20,
+    `only ${granted.size} set-granted magnitude stats found -- the scan itself is broken`);
+  const untypeable = [...granted].filter(([stat]) => !known.has(stat))
+    .map(([stat, setName]) => `${stat} (${setName})`).sort();
+  assert.deepStrictEqual(untypeable, [],
+    "a set grants these, and the solver scores them, but the picker rejects them as typed targets");
+});
+
 // #253 — the set-bonus half of the same expansion. A tier's affixes are
 // legacy-shaped ({stat, bonus_type}); the solver reads them via setTiers, so a
 // bare `Sheltering` here named a stat no target matches and granted nothing.
