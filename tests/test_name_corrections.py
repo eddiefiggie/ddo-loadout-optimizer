@@ -174,7 +174,12 @@ def test_the_shipping_shard_renames_ki_and_cites_the_wiki():
     # merges of `Weighty Asset` and `Holding On` into `Undying`, which the wiki
     # groups with it as one stat. They are asserted separately below; this count
     # covers both kinds, which is why it is not the canon-defence count.
-    assert len(entries) == 23
+    # #672 — 24. `Spell Intensity` -> `Spell Critical Damage`: the wiki's name for the
+    # enchantment the three Solar Gems carry, which five set tiers already stored under
+    # the canonical. Not canon defence (upstream did not drift off our canon; we were
+    # never on the wiki name here) and not a merge_into_existing (the two names live in
+    # different channels, so the collision guard never fires).
+    assert len(entries) == 24
     e = next(x for x in entries if x["source_name"] == "Ki")
     assert e["source_name"] == "Ki"
     assert e["canonical_name"] == "Enhanced Ki"
@@ -201,7 +206,12 @@ def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
     # and twelve of the thirteen corrections fire here. Derived, not hand-counted:
     # the hit set must be exactly the shard entries whose source_name occurs in raw.
     # #632 — 15: the 13 canon-defence renames plus the two merges into `Undying`.
-    assert cov["names_corrected"] == 23
+    # #672 — 24. `Spell Intensity` -> `Spell Critical Damage`: the wiki's name for the
+    # enchantment the three Solar Gems carry, which five set tiers already stored under
+    # the canonical. Not canon defence (upstream did not drift off our canon; we were
+    # never on the wiki name here) and not a merge_into_existing (the two names live in
+    # different channels, so the collision guard never fires).
+    assert cov["names_corrected"] == 24
     shard = name_corrections.load(SHARD)
     raw_names = {a.get("name") for a in name_corrections._iter_affix_dicts(
         vocabulary._load(vocabulary.ITEMS_PATH))}
@@ -209,8 +219,11 @@ def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
         e["source_name"] for e in shard if e["source_name"] in raw_names)
     # `Damage vs. the Helpless` is the one entry with no ITEM-roster carrier — it
     # lives in the sets/crafting channels, the per-channel miss #376 made silent.
+    # #672 — `Spell Intensity` joins it: the three Solar Gems it renames live in the
+    # crafting/augment channel, so like `Damage vs. the Helpless` it legitimately
+    # reaches nothing in the ITEM roster.
     assert set(cov["hit_names"]) == {e["source_name"] for e in shard} - \
-        {"Damage vs. the Helpless"}
+        {"Damage vs. the Helpless", "Spell Intensity"}
     # #632 — 1,394: +3, the two `Weighty Asset` carriers (Stone Shoes, Legendary
     # Stone Shoes) and the one `Holding On` carrier (Ward Token), merged into
     # `Undying`. A rename count is the right place to notice a merge reaching more
@@ -361,7 +374,12 @@ def test_374_the_shard_declares_thirteen_and_marks_the_canon_defence():
     #       enchantments the wiki says grant one stat, renamed into `Undying` so
     #       they share its bucket instead of summing beside it. They carry
     #       `merge_into_existing`, cite the page, and are NOT canon defence.
-    assert len(entries) == 23
+    # #672 — 24. `Spell Intensity` -> `Spell Critical Damage`: the wiki's name for the
+    # enchantment the three Solar Gems carry, which five set tiers already stored under
+    # the canonical. Not canon defence (upstream did not drift off our canon; we were
+    # never on the wiki name here) and not a merge_into_existing (the two names live in
+    # different channels, so the collision guard never fires).
+    assert len(entries) == 24
     merges = [e for e in entries if e.get("merge_into_existing")]
     # #649 added `Undying` itself, so the three unconsciousness sources are all
     # merges now rather than two merges into a native third.
@@ -422,8 +440,12 @@ def test_374_every_canonical_survives_split_type_with_a_stat_left():
     # cannot be mistaken for one of the four sources feeding it. The three
     # engraved names all merge into it, so all three still carry
     # `merge_into_existing` and all three still stamp `via`.
+    # #672 — `Spell Critical Damage` is the wiki's name for the Solar Gem enchantment
+    # gear-planner engraves `Spell Intensity`. It already existed natively in the SETS
+    # channel, which is the point of the fold: five set tiers and three gems now share
+    # one bucket instead of summing at the same bonus type.
     assert canonicals == (set(FLIPPED) | {"Enhanced Ki", "Legendary Conditioning",
-                                          "Unconsciousness Range"}
+                                          "Unconsciousness Range", "Spell Critical Damage"}
                           | ABILITY_MERGES | SP_MERGES), sorted(canonicals)
     for e in _shard():
         canonical = e["canonical_name"]

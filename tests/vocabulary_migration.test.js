@@ -124,10 +124,17 @@ test("#374: the correction roster is the declaration, and every entry is armed",
   // enchantments that feed it is what made a priority reading "Undying 225" sit
   // beside a card reading "Weighty Asset". The alias is what makes it safe — see
   // the per-entry resolution test below, which now covers `Undying` too.
-  assert.strictEqual(CORRECTIONS.length, 23,
-    "23 armed variants — 13 upstream-spelling corrections (#374) plus 10 " +
-    "evidence-bound merges (#632, #615, #639, #649); a new entry needs its own " +
-    "assertion, not a bump");
+  // #672 — 24, and the 24th is yet another kind: not an upstream misspelling of our
+  // canon and not a merge, but a case where OUR stored name was simply never the
+  // wiki's. gear-planner engraves `Spell Intensity` on three items titled `Solar Gem
+  // of Spell Critical Damage`, and the wiki's own table calls the effect a Legendary
+  // bonus to Spell Critical Damage — the name five set tiers already used. It carries
+  // no `merge_into_existing` because the two names sit in different channels, so the
+  // collision guard never fires; it is asserted by name below for that reason.
+  assert.strictEqual(CORRECTIONS.length, 24,
+    "24 armed variants — 13 upstream-spelling corrections (#374), 10 " +
+    "evidence-bound merges (#632, #615, #639, #649) and 1 wiki-name correction " +
+    "(#672); a new entry needs its own assertion, not a bump");
   assert.strictEqual(CORRECTIONS.filter((c) => c.merge_into_existing).length, 10,
     "ten entries are merges, and a merge must cite the wiki page that says the " +
     "two names are one stat");
@@ -138,6 +145,17 @@ test("#374: the correction roster is the declaration, and every entry is armed",
   assert.strictEqual(retired.canonical_name, "Unconsciousness Range");
   assert.ok(retired.merge_into_existing && retired.evidence,
     "it stamps `via` and cites the page — both, or the card stops saying what the item is");
+  // #672, asserted by name for the same reason `Undying` is: this entry is the one a
+  // future refresh could quietly drop, because `Spell Intensity` still reads like a
+  // stat name and its canonical is carried mostly by set tiers rather than items.
+  const wikiName = CORRECTIONS.find((c) => c.source_name === "Spell Intensity");
+  assert.ok(wikiName, "the wiki-name correction for the Solar Gem stat is declared");
+  assert.strictEqual(wikiName.canonical_name, "Spell Critical Damage");
+  assert.ok(wikiName.evidence && /Lunar_and_Solar_Gems/.test(wikiName.wiki_url || ""),
+    "it cites the page that states the gem's effect, not a category listing");
+  assert.ok(!wikiName.merge_into_existing,
+    "it is NOT a merge — the two names never collide in one channel, so stamping " +
+    "`via` would invent a distinction the wiki does not draw");
   for (const c of CORRECTIONS) {
     assert.ok(!c.pending_upstream,
       `${c.source_name} still carries a pending_upstream marker — it is not armed`);
@@ -466,6 +484,118 @@ const MIGRATED = new Set([
     assert.strictEqual(combustion.solve.status, "optimal", "the solve succeeds");
     assert.ok((combustion.solve.perTarget || {}).Combustion > 0,
       `Combustion must score (got ${(combustion.solve.perTarget || {}).Combustion})`);
+  });
+
+  // --- #672: the Solar Gem stat folds onto the wiki's name --------------------
+  //
+  // `Spell Intensity` was gear-planner's name for the affix on three items titled
+  // `Solar Gem of Spell Critical Damage`; `Lunar_and_Solar_Gems` states the effect as
+  // a Legendary bonus to Spell Critical Damage, which is the name five set tiers
+  // already used. Two names, one stat, SAME bonus type — and bucket keys are
+  // `stat||type`, so before the fold the two sat in separate buckets and would SUM
+  // where the game takes the max. The five sets also scored nothing for a player who
+  // ranked the gem's stat, because that name was not rankable.
+
+  const SCD = "Spell Critical Damage";
+
+  test("#672: every source of the folded stat shares ONE bucket", () => {
+    // The mechanism, asserted directly rather than inferred from a solve: same stat
+    // name AND same bonus type is what makes the solver take the max. A future
+    // source arriving at a different type would silently restore the summing bug,
+    // and this is the assertion that goes red for it.
+    // Walked directly rather than through CHANNEL_INDEX, which drops the bonus type —
+    // and the type is half of the bucket key, so it is the half that matters here.
+    const gems = [];
+    for (const it of realData.items || []) {
+      for (const a of it.affixes || []) {
+        if (a.name === SCD) gems.push([it.source_item, a.type, a.value]);
+      }
+    }
+    assert.strictEqual(gems.length, 3,
+      `the three Solar Gems carry ${SCD}; got ${JSON.stringify(gems)}`);
+    // BOTH set containers. `membership_set_defs` is the standalone catalog;
+    // `parsed_set_bonuses` is the per-item copy, and the Elder's Knowledge chain
+    // lives ONLY there. Reading one container and calling it the population is the
+    // exact mistake this issue collected three times — including once in the write-up
+    // of this fix, which reported five sets when there are eight.
+    const setTiers = [];
+    for (const [setName, def] of Object.entries(realData.membership_set_defs || {})) {
+      for (const tier of (def.tiers || [])) {
+        for (const a of tier.affixes || []) {
+          if (a.stat === SCD) setTiers.push([setName, a.bonus_type, a.value]);
+        }
+      }
+    }
+    for (const it of realData.items || []) {
+      for (const tier of (it.parsed_set_bonuses || [])) {
+        for (const a of tier.affixes || []) {
+          if (a.stat === SCD) setTiers.push([tier.set, a.bonus_type, a.value]);
+        }
+      }
+    }
+    const setNames = new Set(setTiers.map(([n]) => n));
+    assert.strictEqual(setNames.size, 8,
+      `eight distinct sets grant ${SCD}; got ${JSON.stringify([...setNames].sort())}`);
+    for (const chain of ["Elder's Knowledge", "Epic Elder's Knowledge",
+                         "Legendary Elder's Knowledge", "Deacon of the Auricular Sacrarium"]) {
+      assert.ok(setNames.has(chain), `${chain} grants ${SCD}`);
+    }
+    for (const [where, type] of [...gems, ...setTiers]) {
+      assert.strictEqual(type, "Legendary",
+        `${where} grants ${SCD} at bonus type ${type}, not Legendary — that is a ` +
+        "second bucket, and two buckets SUM where the game takes the max");
+    }
+  });
+
+  test("#672: the gear-planner spelling survives nowhere in the data", () => {
+    // A saved build may still NAME it (the alias covers that), but no channel may
+    // still CARRY it, or the fold left half the sources in the old bucket.
+    assert.deepStrictEqual(carriersOf("Spell Intensity").map((x) => x.chan), [],
+      "`Spell Intensity` is renamed in every channel the solver reads");
+  });
+
+  test("#672: a build saved before the fold still resolves its priority", () => {
+    // `Spell Intensity` was the RANKABLE canonical until now, so every build saved
+    // before this change ranks it by name. Without the alias those priorities score
+    // zero silently — the build still loads and still solves, which is the failure
+    // mode that makes this worth its own assertion.
+    assert.strictEqual(vocab.canonical("Spell Intensity"), SCD);
+    assert.deepStrictEqual(migratePriorities(["Spell Intensity", "Constitution"], vocab).priorities,
+      [SCD, "Constitution"]);
+  });
+
+  // mlCap 5, deliberately. This is the ONE cap that isolates the gem channel: the
+  // Heroic Solar Gem is ML1, and the lowest set granting the stat (Elder's Knowledge)
+  // is out of reach, so the only way to score here is the affix the fold renamed.
+  // A cap of 34 does NOT witness anything — measured against the pre-change tree, it
+  // returns 15 there too, from the Elder's Knowledge set, because the canonical was
+  // already typeable and already scored through the set channel. That version of this
+  // test passed against the base commit; this one goes red on it.
+  const scdGem = await solveFixture(
+    { name: "ad-hoc: a player ranks Spell Critical Damage at ML5", query: { mlCap: 5, targets: [SCD] } },
+    env);
+  test("#672: the wiki name now reaches the Solar Gem, not just the set channel", () => {
+    assert.strictEqual(scdGem.solve.status, "optimal", "the solve succeeds");
+    const got = (scdGem.solve.perTarget || {})[SCD];
+    assert.strictEqual(got, 5,
+      `at ML5 only the Heroic Solar Gem can supply ${SCD}; before the fold it carried ` +
+      `the gear-planner name and this solve scored 0 (got ${got})`);
+  });
+
+  const scdTop = await solveFixture(
+    { name: "ad-hoc: a player ranks Spell Critical Damage", query: { mlCap: 34, targets: [SCD] } },
+    env);
+  // A deliberate NO-REGRESSION guard: it passes against the pre-change tree too, and
+  // is meant to. The top-end number was 15 before the fold (via the set channel) and
+  // must still be 15 after it (now via either channel, one bucket). It is here to go
+  // red if the fold ever double-counts, not to witness the fold.
+  test("#672: gem and set share a bucket — the credit is the max, never the sum", () => {
+    assert.strictEqual(scdTop.solve.status, "optimal", "the solve succeeds");
+    const got = (scdTop.solve.perTarget || {})[SCD];
+    // 15 is the ceiling of the richest single Legendary source. 30 is what the two
+    // buckets would have produced had the names stayed apart.
+    assert.strictEqual(got, 15,
+      `${SCD} must credit the max of its Legendary sources, not their sum (got ${got})`);
   });
 
   console.log(`\n${passed} passed`);

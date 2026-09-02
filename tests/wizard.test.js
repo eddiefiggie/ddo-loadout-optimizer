@@ -3380,7 +3380,7 @@ test("#404: a successful plain add carries the companion hint", () => {
   const out = resolvePriorityAdd("Void Intensity", vocab, ["Constitution"]);
   assert.strictEqual(out.ok, true);
   assert.deepStrictEqual(out.priorities, ["Constitution", "Void Intensity"], "the add still happens");
-  assert.ok(out.companionHint && /Spell Intensity/.test(out.companionHint),
+  assert.ok(out.companionHint && /Spell Critical Damage/.test(out.companionHint),
     "and the hint rides out with it");
 });
 
@@ -3388,7 +3388,7 @@ test("#404: the hint is computed against the POST-add list", () => {
   // Adding the companion itself must not then suggest it back. Computing against
   // the pre-add list would do exactly that on the second of the two adds.
   const vocab = buildPickerVocabulary(realData);
-  const out = resolvePriorityAdd("Spell Intensity", vocab, ["Void Intensity"]);
+  const out = resolvePriorityAdd("Spell Critical Damage", vocab, ["Void Intensity"]);
   assert.strictEqual(out.ok, true);
   assert.ok(!out.companionHint, "no hint once both are ranked");
 });

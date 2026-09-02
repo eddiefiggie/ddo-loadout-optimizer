@@ -2232,23 +2232,28 @@ test("#364: the six Dinosaur Bone accessory blanks are flagged Artifacts", () =>
 
 // --- #404: companion stats -------------------------------------------------
 //
-// `Spell Intensity` and the element Intensities are separate rankable stats (the
-// wiki ruling, upheld on re-harvest in #402). Two players reported the gap by the
-// same route: rank `Void Intensity`, watch an augment labelled "Spell Critical
+// `Spell Critical Damage` and the element Intensities are separate rankable stats
+// (the wiki ruling, upheld on re-harvest in #402). Two players reported the gap by
+// the same route: rank `Void Intensity`, watch an augment labelled "Spell Critical
 // Damage" not get slotted, conclude the tool missed it. The hint closes that dead
 // end at the moment of the decision.
+//
+// #672 renamed the companion from `Spell Intensity` to the wiki's own name, so the
+// hint now names the stat the augment label already says. That removes the naming
+// half of the reported confusion; the modelling half — two genuinely different
+// stats — is what the hint still exists for.
 
 test("#404: adding an element Intensity suggests its companion by name", () => {
   const hint = companionHintFor("Void Intensity", ["Void Intensity"]);
   assert.ok(hint, "a hint is produced");
-  assert.ok(/Spell Intensity/.test(hint), "it names the companion");
+  assert.ok(/Spell Critical Damage/.test(hint), "it names the companion");
   assert.ok(/spell critical damage/i.test(hint), "and says why the two are related");
 });
 
 test("#404: every declared member produces the hint, not just the reported one", () => {
   // The reported case was Void; a fix that only covered Void would pass a
   // single-name test and leave nine identical dead ends.
-  const entry = COMPANION_STATS.find((e) => e.companion === "Spell Intensity");
+  const entry = COMPANION_STATS.find((e) => e.companion === "Spell Critical Damage");
   assert.strictEqual(entry.members.length, 10, "all ten element Intensities are declared");
   for (const m of entry.members) {
     assert.ok(companionHintFor(m, [m]), `no hint for ${m}`);
@@ -2256,10 +2261,10 @@ test("#404: every declared member produces the hint, not just the reported one",
 });
 
 test("#404: the hint is silent once the companion is ranked, and for unrelated stats", () => {
-  assert.strictEqual(companionHintFor("Void Intensity", ["Void Intensity", "Spell Intensity"]), null,
+  assert.strictEqual(companionHintFor("Void Intensity", ["Void Intensity", "Spell Critical Damage"]), null,
     "it closes a dead end; it does not nag");
   assert.strictEqual(companionHintFor("Constitution", ["Constitution"]), null);
-  assert.strictEqual(companionHintFor("Spell Intensity", ["Spell Intensity"]), null,
+  assert.strictEqual(companionHintFor("Spell Critical Damage", ["Spell Critical Damage"]), null,
     "the companion itself is not its own companion");
 });
 
