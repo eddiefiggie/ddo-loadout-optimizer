@@ -61,6 +61,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     { key: "dodgeMaxDexNotice", csv: "Dodge scope" },
     { key: "jumpSoftCapNotice", csv: "Jump soft cap" },
     { key: "splitMechanicNotice", csv: "Split mechanic" },
+    { key: "capSurplusNotice", csv: "Cap surplus" },
     { key: "blockNotice", csv: "Blocked" },
     { key: "packFilterNotice", csv: "Content not owned" },
     { key: "setFilterNotice", csv: "Excluded sets" },

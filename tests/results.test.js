@@ -2681,6 +2681,10 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       // spelling) but whether that is correct is the unverified question itself, so
       // offering it as the fix would take the side the app declined to take.
       splitMechanicNotice: ["ONE MECHANIC, TWO WIKI NAMES", "qualifying"],
+      // #459 — ACTIONABLE, unlike the two qualifying entries around it: the player
+      // can act and the action is well defined (give up at most the stated surplus
+      // ACROSS these picks, or raise the Max).
+      capSurplusNotice: ["GEAR ABOVE YOUR CAP", "actionable"],
       // #193/#599 — qualifying for the same reason: there is nothing to press.
       // It reports that the Gem's menus were solved over 25 of the 170 effects
       // the game offers, which is a fact about the DATA, not about the query.
@@ -2699,7 +2703,7 @@ test("#448: the registry is the ONLY source — nothing classifies a notice but 
 
   assert.deepStrictEqual(Object.keys(R.NOTICE_TABLE), single.map((n) => n.name),
     "NOTICE_TABLE is derived from the registry, in registry order");
-  assert.strictEqual(single.length, 16, "the sixteen single-fact notices (#683 added the split-mechanic disclosure)");
+  assert.strictEqual(single.length, 17, "the seventeen single-fact notices (#459 added the cap-surplus disclosure)");
   assert.deepStrictEqual(split.map((n) => n.name),
     ["artifactNotice", "boundNotice", "zeroSourceNotice"],
     "and the three multi-fact notices come through their U10 entry functions");
@@ -2730,7 +2734,7 @@ test("#448: registry ORDER is the on-screen order within a class, and splits lea
     "artifactNotice", "boundNotice", "zeroSourceNotice",
     "staleSnapshotNotice", "outbidNotice", "saturationNotice", "emptySlotNotice",
     "absorptionQuarantineNotice", "craftingExcludedNotice", "augCeilingNotice",
-    "dodgeMaxDexNotice", "jumpSoftCapNotice", "splitMechanicNotice", "essenceNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
+    "dodgeMaxDexNotice", "jumpSoftCapNotice", "splitMechanicNotice", "capSurplusNotice", "essenceNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
   ]);
 });
 
