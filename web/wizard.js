@@ -46,6 +46,11 @@ const CHARACTER_REQUIRED = [
   { key: "ml", label: "Minimum level (ML) cap" },
   { key: "race", label: "Race" },
   { key: "armor", label: "Armor type" },
+  // #689 — style joins the required set. It sits AFTER armor because that is the
+  // on-screen order, and `missingRequired` doubles as the scroll-to-first-missing
+  // order. Unlike armor there is no exemption: all six styles are offered to every
+  // race, so this is a gate every player can satisfy.
+  { key: "style", label: "Combat style" },
 ];
 
 /** #428 U6 (R7/R12/KD6) — which required fields are unanswered, in field order.
@@ -69,6 +74,12 @@ function missingRequired(state) {
   if (!(Number(s.ml) > 0)) out.push("ml");
   if (!s.race) out.push("race");
   if (!s.armor && !wizIsForged(s.race)) out.push("armor");
+  // #689 — an unset style meant UNCONSTRAINED, which `buildQuery`'s own comment
+  // documents. A player who declared Two Weapon Fighting and picked no style was
+  // therefore handed whatever fit, tower shields included — a loadout identical to
+  // an explicit Sword & Board request, and one the declared feat cannot be used
+  // with. Reported 2026-09-03; measured in data/bug_reports.txt.
+  if (!s.style) out.push("style");
   return out;
 }
 
@@ -139,6 +150,9 @@ function resolveBannerPrimary(state) {
   const s = state || {};
   if (staleNote(s)) return "wz-stale";
   if (s.twfMigrated) return "wz-twfmig";
+  // #689 — below the TWF migration because that one also changes the off hand and
+  // is the more specific statement when both apply.
+  if (s.styleMissing) return "wz-stylemig";
   if (s.constraintsDirty) return "wz-cbar";
   return null;
 }
@@ -169,6 +183,12 @@ function missingRequiredMessage(state) {
 function weaponGroupSummary(state, styleLabel) {
   const s = state || {};
   const bits = [];
+  // #689 — the combat style is now REQUIRED and lives in this group, which is
+  // collapsible. A collapsed group that hides a blocking field is the same defect
+  // this helper's own docstring names one level up: an unopened group must not
+  // hide whether it has anything, and it must not hide that it is what Continue
+  // is waiting for. Leads the summary, because it is the only blocking item here.
+  if (!s.style) bits.push("combat style needed");
   if (s.twoWeaponFighting) bits.push("Two Weapon Fighting");
   if (s.style) bits.push(String(styleLabel || s.style));
   const wt = (s.weaponTypes || []).length;
@@ -1189,6 +1209,23 @@ function twfMigrationNeeded(inputs) {
   const i = inputs || {};
   if (i.twoWeaponFighting !== undefined) return false;
   return Array.isArray(i.offHandWeapons) && i.offHandWeapons.length > 0;
+}
+
+/** #689 — does this loaded record predate the required-style gate?
+ *
+ *  Loading a saved build lands on `priorities` or `results` (see `stepOnLoad`), so
+ *  it never passes through `canAdvance("character")`. The new gate therefore does
+ *  nothing for a record saved without a style: it would go on solving unconstrained
+ *  forever, which is exactly the reported defect. This is what the results banner
+ *  keys on, mirroring `twfMigrationNeeded` and for the same reason — a constraint
+ *  that changed under a saved character must be disclosed, not applied silently.
+ *
+ *  Deliberately NOT auto-filled with a style. Picking one for the player would
+ *  change their loadout without being asked and would be inferring intent; the six
+ *  styles are not interchangeable. Pure; unit-tested. */
+function styleMissingOnLoad(inputs) {
+  const i = inputs || {};
+  return !i.style;
 }
 function pinIdOf(v) { return v.variant_id || v.source_item; }
 
@@ -2302,7 +2339,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict,
+  module.exports = { WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -2444,6 +2481,7 @@ if (typeof window !== "undefined" && window.App) {
       characterName: "", loadedStale: false,
       // plan 003 U4 — set on load when a pre-U1 save is migrated to declared.
       twfMigrated: false,
+      styleMissing: false,
       // #169 — set on load when a saved character ranked an expanded-away name;
       // holds the disclosure sentence, or null when nothing was substituted.
       expandedAwayMigrated: null };
@@ -2581,7 +2619,7 @@ if (typeof window !== "undefined" && window.App) {
 
             </div>
           </fieldset>
-          <details class="wz-group wz-group-fold" data-group="weapons" id="wz-weapons"${state.weaponsOpen ? " open" : ""}>
+          <details class="wz-group wz-group-fold" data-group="weapons" id="wz-weapons"${state.weaponsOpen || !state.style ? " open" : ""}>
             <summary class="wz-group-legend">Weapon setup <span class="wz-sub">· ${esc(weaponsSet)}</span></summary>
             <div class="wz-grid">
               ${(() => {
@@ -3353,6 +3391,13 @@ ${(() => {
           <strong>Two Weapon Fighting</strong> is now declared on the character step. The build below was solved
           under the old rules; re-solve to apply it, or turn the declaration off.
           <button class="btn ${resolveBannerPrimary(state) === "wz-twfmig" ? "primary" : "ghost"}" id="wz-twfmigresolve">Re-solve ⚡</button>
+        </div>
+        <div id="wz-stylemig" class="wz-cbar${state.styleMissing ? "" : " wz-hidden"}">
+          This build was saved without a <strong>combat style</strong>, which used to mean
+          <em>unconstrained</em> \u2014 the solver was free to fill your hands with anything that
+          scored, including a shield.${state.twoWeaponFighting ? " Two Weapon Fighting is declared on this character, and a shield cannot be used with it." : ""}
+          Pick a style on the character step and re-solve.
+          <button class="btn ${resolveBannerPrimary(state) === "wz-stylemig" ? "primary" : "ghost"}" id="wz-stylemigresolve">Go to character \u2192</button>
         </div>
         <div id="wz-cbar" class="wz-cbar${state.constraintsDirty ? "" : " wz-hidden"}">
           Slot constraints changed. <button class="btn ${resolveBannerPrimary(state) === "wz-cbar" ? "primary" : "ghost"}" id="wz-cresolve">Re-solve ⚡</button>
@@ -4728,6 +4773,9 @@ ${(() => {
       // that character and staying undeclared would silently put a shield back in
       // their off hand. Migrate, and record it so the load discloses it: a feat must
       // never appear on a character sheet without the player being told.
+      // #689 — a record saved before the style gate. Recorded so the results banner
+      // can say the build was solved with no style, which meant "unconstrained".
+      state.styleMissing = styleMissingOnLoad(i);
       state.twfMigrated = twfMigrationNeeded(i);
       state.twoWeaponFighting = state.twfMigrated || !!i.twoWeaponFighting;
       state.includeArtifact = !!i.includeArtifact;
@@ -5078,6 +5126,7 @@ ${(() => {
       let claimed = false;
       for (const [barId, btnId] of [["wz-stale", "wz-staleresolve"],
                                     ["wz-twfmig", "wz-twfmigresolve"],
+                                    ["wz-stylemig", "wz-stylemigresolve"],
                                     ["wz-cbar", "wz-cresolve"]]) {
         const bar = document.getElementById(barId);
         const b = document.getElementById(btnId);
@@ -6179,6 +6228,13 @@ ${(() => {
           refreshResultsEmphasis();
           solve(false);
         };
+        // #689 — unlike the TWF banner above, this one does NOT re-solve: there is
+        // nothing to re-solve WITH until the player picks a style, and re-solving
+        // without one would reproduce the very build the banner is warning about.
+        // It navigates to the character step instead, where the now-required field
+        // is, and leaves the banner up until a style is actually chosen.
+        const styleBtn = document.getElementById("wz-stylemigresolve");
+        if (styleBtn) styleBtn.onclick = () => { go("character"); };
         // Per-slot constraint controls (U6), wired by delegation so they survive
         // renderResults re-rendering the box contents.
         if (box) box.addEventListener("click", (e) => {
