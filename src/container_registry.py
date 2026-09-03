@@ -70,8 +70,9 @@ that empties fails, and an UNREACHABLE container that starts carrying records
 also fails — forcing the re-audit that "we'll check it when it ships" never gets.
 For a pool whose records exist but which no item can reach, reachability is keyed
 to the HOST marker instead (`host_marker`), because record count is the wrong
-trigger: Green Steel has carried 108 records for months while no item carries
-`green_steel_slot`, so a record-count trigger was already spent.
+trigger: Green Steel carried 108 records for months while no item carried its
+marker, so a record-count trigger was already spent. (#194 has since shipped its
+hosts; the marker trigger stays, so a refresh that loses the `T<n>` labels fails.)
 """
 from __future__ import annotations
 
@@ -159,43 +160,41 @@ REGISTRY = {
         "plus Fire's and Mist's 6 unique-enchantment procs each, every one "
         "single-affix. Same treatment."),
     "green_steel": _c(
-        ATOMIC, (), VERIFIED_SAFE, False,
+        ATOMIC, ("spell_focus",), VERIFIED_SAFE, True,
         "One record per craftable option, carrying its own `affixes` list. 81 source "
         "options -> 81 records, no option split. It USED to split: 81 options became "
-        "108 records, and since the solver constrains this pool Sigma <= 1 per host, a "
-        "player crafting a multi-affix Green Steel effect would have been given one "
-        "of its parts — the reported Viktranium symptom verbatim. 24 of the 81 are "
-        "genuinely multi-affix; one grants Charisma Skills +22 Competence, UMD +6 "
-        "Competence and Wizardry +151 Profane, and shipped as three siblings.\n\n"
-        "This entry previously declared that honestly rather than fixing it, on the "
-        "grounds that correcting the builder was 'a full-stack change (dataset.js, "
-        "model.js, solver.js, projection.js and the exports) to a pool no player can "
-        "reach'. That was true when written and is not now: viktranium, dino_inserts "
-        "and nearly_complete are all ATOMIC, so every one of those consumers already "
-        "reads an `affixes` list, through a branch that falls back to the flat shape. "
-        "`solver.js` also keeps the option's leading on-target affix in the legacy "
-        "flat fields for renderers not yet reading `affixes`, which is what made the "
-        "exports a no-op. Converting was a builder change plus two pool filters.\n\n"
-        "Still UNREACHABLE — no item carries `green_steel_slot` (#194) — so the host "
-        "marker stays armed, now on the `reachable` branch: the first host that ships "
-        "asks for a re-audit against a real item instead of failing on the split.\n\n"
+        "108 records, and since the solver constrains this pool Sigma <= 1 per host "
+        "tier, a player crafting a multi-affix Green Steel effect would have been "
+        "given one of its parts — the reported Viktranium symptom verbatim. 24 of the "
+        "81 are genuinely multi-affix; one grants Charisma Skills +22 Competence, UMD "
+        "+6 Competence and Wizardry +151 Profane, and shipped as three siblings.\n\n"
+        "REACHABLE since #194 landed its hosts: the 8 ML-26 `Legendary Green Steel *` "
+        "accessory blanks declare `T1/T2/T3 (Equipment)` in their own `crafting[]`, "
+        "and `planner_items` surfaces that as `green_steel_tiers` — the same "
+        "structural read `essence_slots` uses, nothing inferred from a name. Each "
+        "record now carries an integer `tier` (1/2/3 from its `tier_key`) and the "
+        "solver takes ONE option per declared tier, mirroring the weapon half: three "
+        "Legendary Altars are three tiers, and an accessory takes one effect at each. "
+        "Reachability also ended the pool's exemption from the universal-name walk: "
+        "18 options are ability-skills umbrellas (`Charisma Skills`, ...), expanded "
+        "INSIDE each option by the spell_focus pass declared here, as the Nearly "
+        "Complete Skill menus are.\n\n"
+        "The old single-pick-over-all-three shape under-credited every host by two "
+        "effects and is gone with the old truthy `green_steel_slot` marker.\n\n"
         "#653 — WHAT THIS POOL ACTUALLY IS. The `T*(Equipment)` menus are **Legendary "
         "Green Steel** accessory recipes: every option records a Legendary Altar "
-        "(Invasion / Subjugation / Devastation) as its station. So the correct hosts "
-        "are the 48 ML-26 `Legendary Green Steel *` items in the roster, NOT the 47 "
-        "heroic ML-11/12 `Green Steel *` blanks — heroic Green Steel upgrades at the "
-        "non-Legendary altars of the same names and has no pool here. The container "
-        "name is kept for now because renaming it churns 34 files for a pool nobody "
-        "can reach; `expects_stations` is what holds the truth, and it is checked.\n\n"
-        "The three altars are also three TIERS, so single-pick is the wrong shape for "
-        "this system — a Legendary Green Steel accessory takes one effect per altar, "
-        "not one in total. Recorded, not fixed: it is inert, and fixing it properly "
-        "runs into the combinatorial set bonuses (Dominion / Opposition / "
-        "Ethereal-Material) that AGENTS.md lists as a non-goal.",
-        host_marker="green_steel_slot",
+        "(Invasion / Subjugation / Devastation) as its station. The 47 heroic "
+        "ML-11/12 `Green Steel *` blanks declare NO tier label and get no marker — "
+        "heroic Green Steel upgrades at the non-Legendary altars of the same names "
+        "and has no pool here.\n\n"
+        "NOT modelled, and disclosed per result: the bonus a MATCHED combination of "
+        "tiers unlocks (the Dominion / Opposition / Ethereal / Material aspects). "
+        "AGENTS.md lists the exhaustive Green Steel combinatorial space as a "
+        "non-goal; each tier's own effect is what is offered.",
+        host_marker="green_steel_tiers",
         expects_stations=("Legendary Altar",)),
     "thunder_forged": _c(
-        ATOMIC, (), VERIFIED_SAFE, False,
+        ATOMIC, (), VERIFIED_SAFE, True,
         "One record per craftable option carrying its own `affixes` list, tagged with "
         "its tier. 35 source options -> 35 records, no option split. Converted with "
         "green_steel and for the same reason (the solver takes one record per TIER "
@@ -203,8 +202,12 @@ REGISTRY = {
         "the 35 is multi-affix here, which is precisely why it was worth doing at the "
         "same time — a single quiet case is the one that survives review and ships "
         "the day a host appears.\n\n"
-        "Still UNREACHABLE — no item carries `thunder_forged_tiers` (#194) — so the "
-        "host marker stays armed on the `reachable` branch.\n\n"
+        "REACHABLE since #194 landed its hosts: the 40 ML-26 `Legendary Green Steel *` "
+        "WEAPON blanks declare `T1/T2/T3 (Weapon)` in their own `crafting[]`, "
+        "surfaced by `planner_items` as `thunder_forged_tiers`. The container keeps "
+        "its legacy name because renaming it churns 34 files including player-facing "
+        "display code; what it IS is asserted by `expects_stations`, and every "
+        "player-facing label reads Legendary Green Steel.\n\n"
         "#653 — THIS POOL IS NOT THUNDER-FORGED. The `T*(Weapon)` menus are "
         "**Legendary Green Steel weapon** recipes: every option records a Legendary "
         "Altar as its station, and the Legendary Green Steel wiki page lists exactly "
@@ -214,11 +217,10 @@ REGISTRY = {
         "Equipment (ours reads 139), and it has NO menu in this 83-key catalog. The "
         "mapping was an inference: the menu keys are generic and never named a "
         "system.\n\n"
-        "So Thunder-Forged has no recipe data at all, and #194's premise — 'recipes "
-        "loaded, no craftable hosts' — is true only for Green Steel. DO NOT stamp "
-        "`thunder_forged_tiers` on the 42 `Thunder-Forged Alloy *` weapons in the "
-        "roster: they would be credited another system's effects. That is what "
-        "`expects_stations` now guards.",
+        "So Thunder-Forged has no recipe data at all. The 42 `Thunder-Forged Alloy *` "
+        "weapons in the roster declare no `T<n> (Weapon)` label, so the structural "
+        "read cannot stamp them; `expects_stations` is the guard that a relabelled "
+        "pool would trip.",
         host_marker="thunder_forged_tiers",
         expects_stations=("Legendary Altar",)),
     "essence_crafting": _c(
@@ -432,7 +434,7 @@ def discover(dataset: dict) -> dict:
 
 
 def _count_hosts(items, marker) -> int:
-    """Variants carrying a choice-slot host marker (`green_steel_slot`, …)."""
+    """Variants carrying a choice-slot host marker (`green_steel_tiers`, …)."""
     return sum(1 for it in items or [] if isinstance(it, dict) and it.get(marker))
 
 

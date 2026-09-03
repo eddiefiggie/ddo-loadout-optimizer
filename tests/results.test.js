@@ -2689,6 +2689,9 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       // It reports that the Gem's menus were solved over 25 of the 170 effects
       // the game offers, which is a fact about the DATA, not about the query.
       essenceNotice: ["ESSENCE CRAFTING", "qualifying"],
+      // #194 — qualifying for the same reason: it states what the altars did and
+      // that matched-aspect bonuses are out of scope, a fact about the model.
+      greenSteelNotice: ["LEGENDARY GREEN STEEL", "qualifying"],
       saturationNotice: ["AT CEILING", "informational"],
       upgradeNotice: ["UPGRADES", "informational"],
     });
@@ -2703,7 +2706,7 @@ test("#448: the registry is the ONLY source — nothing classifies a notice but 
 
   assert.deepStrictEqual(Object.keys(R.NOTICE_TABLE), single.map((n) => n.name),
     "NOTICE_TABLE is derived from the registry, in registry order");
-  assert.strictEqual(single.length, 17, "the seventeen single-fact notices (#459 added the cap-surplus disclosure)");
+  assert.strictEqual(single.length, 18, "the eighteen single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one)");
   assert.deepStrictEqual(split.map((n) => n.name),
     ["artifactNotice", "boundNotice", "zeroSourceNotice"],
     "and the three multi-fact notices come through their U10 entry functions");
@@ -2734,7 +2737,7 @@ test("#448: registry ORDER is the on-screen order within a class, and splits lea
     "artifactNotice", "boundNotice", "zeroSourceNotice",
     "staleSnapshotNotice", "outbidNotice", "saturationNotice", "emptySlotNotice",
     "absorptionQuarantineNotice", "craftingExcludedNotice", "augCeilingNotice",
-    "dodgeMaxDexNotice", "jumpSoftCapNotice", "splitMechanicNotice", "capSurplusNotice", "essenceNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
+    "dodgeMaxDexNotice", "jumpSoftCapNotice", "splitMechanicNotice", "capSurplusNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
   ]);
 });
 

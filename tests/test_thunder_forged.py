@@ -40,7 +40,19 @@ def test_dataset_exposes_pool_and_hosts_survive():
     # build_dataset exposes the pool key; the marker survives expand_dataset onto variants.
     data = json.load(open(ITEMS, encoding="utf-8"))
     assert "thunder_forged" in data, "items.json exposes the thunder_forged pool"
-    assert "thunder_forged_coverage" in data["metadata"]
+    cov = data["metadata"]["thunder_forged_coverage"]
+    # #194 — the 40 Legendary Green Steel WEAPON blanks (#653: this pool is the
+    # weapon half of Legendary Green Steel) carry one slot per altar tier.
+    assert cov["hosts_active"] == 40, cov
+    assert cov["tier_slots_active"] == 120, cov
+    assert cov["hosts_pending"] == [], cov
+    hosts = [it for it in data["items"] if it.get("thunder_forged_tiers")]
+    assert len(hosts) == 40
+    assert all(it["category"] == "weapon" for it in hosts)
+    assert all(it["source_item"].startswith("Legendary Green Steel") for it in hosts)
+    # And no real Thunder-Forged item was stamped — the registry's standing warning.
+    assert not any(it.get("thunder_forged_tiers") for it in data["items"]
+                   if "Thunder-Forged" in it["source_item"])
 
 
 def test_native_build_sources_from_catalog():

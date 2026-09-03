@@ -186,11 +186,15 @@ def _make_variant(item, ml, tier_label, parsed):
         # Vecna "Lost Purpose" tier marker ('heroic'|'legendary') — propagated so the
         # build attaches the chosen-set-membership slot (pool = same-tier Vecna sets).
         "lost_purpose": item.get("lost_purpose"),
-        # Legendary Thunder-Forged multi-tier choice-slot marker: a list of tier slots
-        # [{tier:1},{tier:2},{tier:3}] the solver crafts one option per (mirrors lamordia_slots).
+        # #194 — Legendary Green Steel tier markers, one list per pool: a list of
+        # tier slots [{tier:1},{tier:2},{tier:3}] the solver crafts one option per
+        # (mirrors lamordia_slots). `thunder_forged_tiers` is the WEAPON half —
+        # the pool under that name is Legendary Green Steel weapon recipes (#653).
         "thunder_forged_tiers": item.get("thunder_forged_tiers"),
-        # Legendary Green Steel single-pick choice-slot marker (truthy = host).
-        "green_steel_slot": item.get("green_steel_slot"),
+        # The accessory half. Was `green_steel_slot`, a truthy single-pick marker;
+        # a Legendary Green Steel accessory takes one effect PER altar, so the
+        # marker is now the same per-tier list shape as the weapon half.
+        "green_steel_tiers": item.get("green_steel_tiers"),
         # Essence Crafting Trinket menus [{menu:"Prefix"},…] — one single-pick
         # choice slot each, the Gem of Many Facets' three (#193/#599).
         "essence_slots": item.get("essence_slots"),

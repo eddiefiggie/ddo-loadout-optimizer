@@ -995,8 +995,14 @@ function craftRowsFor(v, idx, maps) {
       : { family: "vikEmpty", o: { slot_type: r.slot_type, category: r.category }, empty: true });
   }
   push(maps.sealByItem && maps.sealByItem.get(v.variant_id), "seal");
-  push(maps.tfByItem && maps.tfByItem.get(v.variant_id), "tf");
-  push(maps.gsByItem && maps.gsByItem.get(v.variant_id), "gs");
+  // #194 — Legendary Green Steel tiers, declared and filled-or-empty, in tier
+  // order, for both halves (the weapon pool keeps its legacy `tf` key).
+  for (const r of Proj.tierSlotRows(v.thunder_forged_tiers, (maps.tfByItem && maps.tfByItem.get(v.variant_id)) || [])) {
+    rows.push(r.placement ? { family: "tf", o: r.placement } : { family: "tfEmpty", o: { tier: r.tier }, empty: true });
+  }
+  for (const r of Proj.tierSlotRows(v.green_steel_tiers, (maps.gsByItem && maps.gsByItem.get(v.variant_id)) || [])) {
+    rows.push(r.placement ? { family: "gs", o: r.placement } : { family: "gsEmpty", o: { tier: r.tier }, empty: true });
+  }
   push(maps.essByItem && maps.essByItem.get(v.variant_id), "essence");
   return rows;
 }
@@ -1581,6 +1587,16 @@ function essenceNotice(result) {
     : "";
 }
 
+/** #194 — Legendary Green Steel's disclosure: what was crafted at which altar, which
+ *  declared altars stayed empty, and that matched-aspect bonuses are out of scope.
+ *  Pure (result), identical on a restored snapshot. */
+function greenSteelNotice(result) {
+  const lines = (Proj && Proj.greenSteelNoticeLines) ? Proj.greenSteelNoticeLines(result) : [];
+  return lines.length
+    ? `<p class="scope-note green-steel-note" role="status">${lines.map(esc).join(" ")}</p>`
+    : "";
+}
+
 function packFilterNotice(result) {
   const lines = (Proj && Proj.packFilterNoticeLines) ? Proj.packFilterNoticeLines(result) : [];
   return lines.length
@@ -1810,6 +1826,12 @@ const NOTICES = [
   { name: "essenceNotice", id: "essence-crafting", title: "ESSENCE CRAFTING",
     subject: "essence crafting menus", cls: NOTICE_QUALIFYING,
     render: (c) => essenceNotice(c.result) },
+  // #194 — qualifying for the same reason as Essence Crafting: it states what the
+  // altars did and what is out of scope (matched-aspect bonuses), a fact about
+  // the model rather than about the player's query.
+  { name: "greenSteelNotice", id: "legendary-green-steel", title: "LEGENDARY GREEN STEEL",
+    subject: "legendary green steel altars", cls: NOTICE_QUALIFYING,
+    render: (c) => greenSteelNotice(c.result) },
   { name: "blockNotice", id: "blocked-gear", title: "BLOCKED GEAR", subject: "blocked gear",
     cls: NOTICE_ACTIONABLE, jump: { label: "Review block list →", step: "pool", anchor: null },
     render: (c) => blockNotice(c.result) },

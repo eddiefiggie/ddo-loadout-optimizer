@@ -104,12 +104,13 @@ def build_thunder_forged(catalog=None):
         "by_tier": by_tier,
         "source": "gearplanner_crafting.json: "
                   + ", ".join(crafting_catalog.THUNDER_FORGED_KEYS.values()),
-        "note": "multi-tier choice-slot (1/2/3) over the native Thunder-Forged "
-                "Weapon pools. Sourced from the gear-planner crafting catalog; "
-                "host-marker surfacing lands with the native reader (U3). "
-                "KNOWN-UNSAFE: one record per AFFIX splits multi-affix options into "
-                "mutually exclusive siblings; inert only while no item carries "
-                "thunder_forged_tiers (#194).",
+        "note": "multi-tier choice-slot (1/2/3) over the native T*(Weapon) pools, "
+                "which are LEGENDARY GREEN STEEL weapon recipes (#653), not "
+                "Thunder-Forged — the container keeps its legacy name. Sourced from "
+                "the gear-planner crafting catalog; hosts are the ML-26 `Legendary "
+                "Green Steel *` weapon blanks, whose own crafting[] declares the three "
+                "tiers (`thunder_forged_tiers`, #194). One record per OPTION carrying "
+                "its `affixes` list; the solver takes one option per declared tier.",
     }
     return {"records": records, "quarantined": [], "coverage": coverage,
             "source_options": source_options}

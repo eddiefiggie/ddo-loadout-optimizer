@@ -910,9 +910,7 @@ function _isMagnitude(v) {
 function _craftingAffixTriples(ds) {
   const out = [];
   const push = (n, t, v) => { if (n != null && n !== "") out.push([n, t, v]); };
-  for (const pool of [ds.seal, ds.thunder_forged, ds.green_steel]) {
-    for (const o of pool || []) push(o.stat, o.bonus_type, o.value);
-  }
+  for (const o of ds.seal || []) push(o.stat, o.bonus_type, o.value);
   for (const arr of Object.values(ds.nearly_complete_per_item || {})) {
     for (const o of arr || []) push(o.stat, o.bonus_type, o.value);
   }
@@ -921,7 +919,12 @@ function _craftingAffixTriples(ds) {
   // affix of a multi-affix option (the universal spell-DC craft's seven
   // schools, a Skill-menu craft's six skills) out of the picker vocabulary.
   // Flat single-affix records still read, for back-compat.
-  for (const pool of [ds.viktranium, ds.dino_inserts, ds.nearly_complete]) {
+  // #194 — `green_steel` and `thunder_forged` (the two Legendary Green Steel
+  // halves) are ATOMIC too, and have been since #652; reading them through the
+  // flat `o.stat` above left every one of their 116 options out of the picker,
+  // which cost nothing only while no host could reach them. Now 48 blanks can.
+  for (const pool of [ds.viktranium, ds.dino_inserts, ds.nearly_complete,
+                      ds.green_steel, ds.thunder_forged]) {
     for (const o of pool || []) {
       const affs = (o.affixes && o.affixes.length) ? o.affixes : [o];
       for (const a of affs) push(a.stat, a.bonus_type, a.value);

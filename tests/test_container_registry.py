@@ -374,11 +374,10 @@ def test_registry_declares_every_single_pick_container_with_a_verdict():
         "nearly_complete_per_item": (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
         "seal":                     (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
         # #194 — ATOMIC and verified safe since the builders stopped splitting
-        # multi-affix options. Still `reachable=False`: no item carries either host
-        # marker, so the pools remain inert and the markers stay armed for the day
-        # a host ships.
-        "green_steel":              (cr.ATOMIC, (),               cr.VERIFIED_SAFE, False),
-        "thunder_forged":           (cr.ATOMIC, (),               cr.VERIFIED_SAFE, False),
+        # multi-affix options, and REACHABLE now that the 48 Legendary Green Steel
+        # blanks carry their tier markers (8 accessories / 40 weapons).
+        "green_steel":              (cr.ATOMIC, ("spell_focus",), cr.VERIFIED_SAFE, True),
+        "thunder_forged":           (cr.ATOMIC, (),               cr.VERIFIED_SAFE, True),
         # #193 — FLAT and verified-safe, which is what separates it from the two
         # above: a crafted Essence effect grants exactly ONE stat by construction,
         # so there is no multi-affix option for a flat shape to split. Reachable,
@@ -501,7 +500,8 @@ def test_the_shipped_dataset_holds_one_record_per_option_wherever_it_claims_to()
 
 def test_green_steel_and_thunder_forged_no_longer_split_options():
     """The declaration is measured, not asserted: neither pool splits an option any
-    more, and both are still unreachable. If either fact changes the gate fires.
+    more, and both are reachable through their Legendary Green Steel blanks. If
+    either fact changes the gate fires.
 
     #194 inverted the first half of this test. It used to assert that both pools DID
     split — 81 source options into 108 records and 35 into 36 — and that the registry
@@ -515,16 +515,24 @@ def test_green_steel_and_thunder_forged_no_longer_split_options():
         data = json.load(fh)
     source = _shipped_source_options()
 
+    # #194 — REACHABLE now: the Legendary Green Steel blanks declare their altar
+    # tiers in crafting[], and the build stamps the marker from that. The marker
+    # trigger stays armed in the other direction — a refresh that drops the labels
+    # leaves a reachable pool with no host, which `check()` refuses.
+    expected_hosts = {"green_steel": 8, "thunder_forged": 40}
     for name in ("green_steel", "thunder_forged"):
         assert cr.REGISTRY[name]["verdict"] == cr.VERIFIED_SAFE, name
         assert cr.REGISTRY[name]["shape"] == cr.ATOMIC, name
         assert not cr.REGISTRY[name]["splits_options"], name
+        assert cr.REGISTRY[name]["reachable"], name
         assert len(data[name]) == source[name], name
-        # Still hostless, so the marker stays armed — now on the reachability
-        # branch rather than the splitting one.
         marker = cr.REGISTRY[name]["host_marker"]
         assert marker, name
-        assert not [it for it in data["items"] if it.get(marker)], name
+        hosts = [it for it in data["items"] if it.get(marker)]
+        assert len(hosts) == expected_hosts[name], (name, len(hosts))
+        for it in hosts:
+            assert it["source_item"].startswith("Legendary Green Steel"), it["source_item"]
+            assert it[marker] == [{"tier": 1}, {"tier": 2}, {"tier": 3}], it["source_item"]
 
     # The measured counts, so a change in the catalog shows up as a diff here.
     assert (len(data["green_steel"]), source["green_steel"]) == (81, 81)
@@ -556,14 +564,15 @@ def test_build_metadata_discloses_the_gate_coverage():
     # maps to exactly one record.
     assert cov["records"]["green_steel"] == cov["source_options"]["green_steel"]
     assert cov["records"]["thunder_forged"] == cov["source_options"]["thunder_forged"]
-    # #193 — essence_crafting is the first host-marked container that is actually
-    # REACHED: three verified Gem of Many Facets tiers carry `essence_slots`. The
-    # other two stay at zero, which is now what keeps them out of a solve rather
-    # than what held a split safe.
-    assert cov["hosts"] == {"essence_crafting": 3, "green_steel": 0, "thunder_forged": 0}
+    # #193 — essence_crafting: three verified Gem of Many Facets tiers carry
+    # `essence_slots`. #194 — the two Legendary Green Steel halves are reached by
+    # their 8 accessory and 40 weapon blanks.
+    assert cov["hosts"] == {"essence_crafting": 3, "green_steel": 8, "thunder_forged": 40}
     # And every declared expansion pass left evidence it ran.
     assert cov["expanded_affixes"]["viktranium"] > 0
     assert cov["expanded_affixes"]["dino_inserts"] > 0
+    # #194 — the accessory pool's 18 ability-skills umbrellas expand in place.
+    assert cov["expanded_affixes"]["green_steel"] > 0
 
 
 def test_viktranium_spell_focus_craft_is_one_option_carrying_seven_schools():

@@ -67,6 +67,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     { key: "setFilterNotice", csv: "Excluded sets" },
     { key: "setPinNotice", csv: "Required sets" },
     { key: "essenceNotice", csv: "Essence crafting" },
+    { key: "greenSteelNotice", csv: "Legendary Green Steel" },
   ];
 
   /** Every line a character notice carries, whether it is stored as one string or
@@ -119,8 +120,13 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     moon: { Lunar: ["🌙", "Lunar"], Solar: ["☀️", "Solar"] },
     craft: {
       dino: ["🦴", "Dino Bone"], nc: ["✨", "Nearly Completed"], roll: ["🎲", "Choice"],
-      vik: ["⚗️", "Viktranium"], seal: ["🔮", "Sealed"], tf: ["⚡", "Thunder-Forged"],
-      gs: ["💠", "Green Steel"], joker: ["🃏", "Wildcard set"], membership: ["🔗", "Set craft"],
+      vik: ["⚗️", "Viktranium"], seal: ["🔮", "Sealed"],
+      // #194/#653 — one system, two pools: `tf` is the WEAPON half's legacy key.
+      // Both label rows open with the cue word, so the de-stutter below names the
+      // system once. `tfEmpty`/`gsEmpty` deliberately carry no cue (the `vikEmpty`
+      // rule: an empty altar is not a craft to go and apply).
+      tf: ["💠", "Legendary Green Steel"], gs: ["💠", "Legendary Green Steel"],
+      joker: ["🃏", "Wildcard set"], membership: ["🔗", "Set craft"],
       // #193 — without an entry here `craftStr` renders the row bare, so an
       // Essence craft read as an ordinary affix line in every text export while
       // its siblings carried a cue. The legend below lists it for the same reason.
@@ -160,7 +166,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const colors = ["red", "yellow", "blue", "green", "orange", "purple", "colorless"]
       .map((k) => cue("color", k, fmt)).join("  ");
     const moon = ["Lunar", "Solar"].map((k) => cue("moon", k, fmt)).join("  ");
-    const craft = ["dino", "nc", "roll", "vik", "seal", "tf", "gs", "essence", "joker",
+    // `tf` and `gs` share one cue (#194), so the legend lists it once.
+    const craft = ["dino", "nc", "roll", "vik", "seal", "gs", "essence", "joker",
       "membership", "augmentset"]
       .map((k) => cue("craft", k, fmt)).join("  ");
     return `Legend — augment slots: ${colors} · ${moon} · crafting: ${craft}`;

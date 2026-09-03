@@ -1,6 +1,6 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-08-30",
+ "generated": "2026-09-03",
  "dataset": "web/data/items.json (9194 items)",
  "fixture_count": 24,
  "solves": {
@@ -78,14 +78,14 @@
   "mid-caster": {
    "status": "optimal",
    "perTarget": {
-    "Intelligence": 34,
+    "Intelligence": 35,
     "Universal Spell Power": 94,
-    "Wisdom": 28
+    "Wisdom": 29
    },
    "effective": {
-    "Intelligence": 34,
+    "Intelligence": 35,
     "Universal Spell Power": 94,
-    "Wisdom": 28
+    "Wisdom": 29
    },
    "chosen": [
     {
@@ -122,7 +122,7 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "Echo of Whelm"
+     "variant": "Legendary Green Steel Bastard Sword"
     },
     {
      "slot": "Necklace",
@@ -351,33 +351,33 @@
    "status": "optimal",
    "perTarget": {
     "Universal Spell Power": 104,
-    "Combustion": 439,
-    "Corrosion": 437,
-    "Devotion": 394,
-    "Glaciation": 359,
-    "Impulse": 329,
-    "Magnetism": 359,
-    "Nullification": 329,
-    "Radiance": 329,
-    "Reconstruction": 329,
-    "Resonance": 329,
-    "Wisdom": 27,
-    "Charisma": 25
+    "Combustion": 461,
+    "Corrosion": 416,
+    "Devotion": 349,
+    "Glaciation": 321,
+    "Impulse": 203,
+    "Magnetism": 182,
+    "Nullification": 152,
+    "Radiance": 152,
+    "Reconstruction": 301,
+    "Resonance": 152,
+    "Wisdom": 24,
+    "Charisma": 24
    },
    "effective": {
     "Universal Spell Power": 104,
-    "Combustion": 439,
-    "Corrosion": 437,
-    "Devotion": 394,
-    "Glaciation": 359,
-    "Impulse": 329,
-    "Magnetism": 359,
-    "Nullification": 329,
-    "Radiance": 329,
-    "Reconstruction": 329,
-    "Resonance": 329,
-    "Wisdom": 27,
-    "Charisma": 25
+    "Combustion": 461,
+    "Corrosion": 416,
+    "Devotion": 349,
+    "Glaciation": 321,
+    "Impulse": 203,
+    "Magnetism": 182,
+    "Nullification": 152,
+    "Radiance": 152,
+    "Reconstruction": 301,
+    "Resonance": 152,
+    "Wisdom": 24,
+    "Charisma": 24
    },
    "chosen": [
     {
@@ -386,7 +386,7 @@
     },
     {
      "slot": "Belt",
-     "variant": "Belt of the Burrower"
+     "variant": "Jetscale Belt"
     },
     {
      "slot": "Boots",
@@ -394,31 +394,31 @@
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary World-Weary Wrappings"
+     "variant": "Legendary Bronzed Bracers"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary University Researcher's Cloak"
+     "variant": "Dinosaur Bone Cloak"
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Absorption Gauntlet"
+     "variant": "Legendary Birchlore Gauntlets"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Eyes of Enlightenment"
+     "variant": "Legendary Corroded Iron Lenses"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary University Mage's Hat"
+     "variant": "Dinosaur Bone Helmet"
     },
     {
      "slot": "Main Hand",
-     "variant": "Mori's Focus"
+     "variant": "Legendary Green Steel Bastard Sword"
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Shaman's Beads"
+     "variant": "Legendary Pendant of the Earth"
     },
     {
      "slot": "Off Hand",
@@ -426,11 +426,11 @@
     },
     {
      "slot": "Ring",
-     "variant": "Clouded Dreams"
+     "variant": "Legendary Ring of the Red Abishai"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Ring of the Red Abishai"
+     "variant": "Legendary Shaman's Band"
     },
     {
      "slot": "Trinket",
@@ -583,23 +583,23 @@
   "trance-credit-additive-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 448,
-    "Wisdom": 30,
+    "Devotion": 472,
+    "Wisdom": 31,
     "Universal Spell Power": 104
    },
    "effective": {
-    "Devotion": 448,
-    "Wisdom": 30,
+    "Devotion": 472,
+    "Wisdom": 31,
     "Universal Spell Power": 104
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Dinosaur Bone Armor"
+     "variant": "Legendary Darkmoss"
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Many-Pouched Belt of the Healer"
+     "variant": "Legendary Belt of the Black Sands"
     },
     {
      "slot": "Boots",
@@ -611,7 +611,7 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Cloak of Autumn"
+     "variant": "Dread Pirate's Cloak (level 12)"
     },
     {
      "slot": "Gloves",
@@ -619,7 +619,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Agony's Eyes"
+     "variant": "Legendary Goggles of Dusk"
     },
     {
      "slot": "Helmet",
@@ -627,7 +627,7 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "Attuned Bone Bastard Sword"
+     "variant": "Legendary Green Steel Bastard Sword"
     },
     {
      "slot": "Necklace",
@@ -647,30 +647,30 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Epic Dragon's Eye"
+     "variant": "Legendary Red Raptor Feather"
     }
    ]
   },
   "trance-credit-additive-ml32-baseline": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 436,
-    "Wisdom": 30,
+    "Devotion": 460,
+    "Wisdom": 31,
     "Universal Spell Power": 104
    },
    "effective": {
-    "Devotion": 436,
-    "Wisdom": 30,
+    "Devotion": 460,
+    "Wisdom": 31,
     "Universal Spell Power": 104
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Dinosaur Bone Armor"
+     "variant": "Legendary Darkmoss"
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Many-Pouched Belt of the Healer"
+     "variant": "Legendary Belt of the Black Sands"
     },
     {
      "slot": "Boots",
@@ -682,7 +682,7 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Cloak of Autumn"
+     "variant": "Dread Pirate's Cloak (level 12)"
     },
     {
      "slot": "Gloves",
@@ -690,7 +690,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Agony's Eyes"
+     "variant": "Legendary Goggles of Dusk"
     },
     {
      "slot": "Helmet",
@@ -698,7 +698,7 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "Attuned Bone Bastard Sword"
+     "variant": "Legendary Green Steel Bastard Sword"
     },
     {
      "slot": "Necklace",
@@ -718,7 +718,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Epic Dragon's Eye"
+     "variant": "Legendary Red Raptor Feather"
     }
    ]
   },
@@ -855,12 +855,12 @@
    "perTarget": {
     "Fire Absorption": 57,
     "Electric Absorption": 64,
-    "Wizardry": 720
+    "Wizardry": 871
    },
    "effective": {
     "Fire Absorption": 57,
     "Electric Absorption": 64,
-    "Wizardry": 720
+    "Wizardry": 871
    },
    "chosen": [
     {
@@ -881,7 +881,7 @@
     },
     {
      "slot": "Goggles",
-     "variant": "Ethereal Gaze"
+     "variant": "Legendary Green Steel Goggles"
     },
     {
      "slot": "Helmet",
@@ -890,6 +890,10 @@
     {
      "slot": "Main Hand",
      "variant": "Echo of Whelm"
+    },
+    {
+     "slot": "Necklace",
+     "variant": "Hypnotic Pendant"
     },
     {
      "slot": "Off Hand",
@@ -901,7 +905,7 @@
     },
     {
      "slot": "Trinket",
-     "variant": "Symbol of the Slave Lords"
+     "variant": "Legendary Symbol of the Slave Lords"
     }
    ]
   },
@@ -1067,11 +1071,11 @@
    "status": "optimal",
    "perTarget": {
     "Melee Power": 44,
-    "Balance": 59
+    "Balance": 71
    },
    "effective": {
     "Melee Power": 44,
-    "Balance": 59
+    "Balance": 71
    },
    "chosen": [
     {
@@ -1088,7 +1092,7 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Earthen Mantle"
+     "variant": "Legendary Green Steel Weave Cloak"
     },
     {
      "slot": "Goggles",
@@ -1116,11 +1120,11 @@
    "status": "optimal",
    "perTarget": {
     "Melee Power": 42,
-    "Balance": 59
+    "Balance": 71
    },
    "effective": {
     "Melee Power": 42,
-    "Balance": 59
+    "Balance": 71
    },
    "chosen": [
     {
@@ -1137,7 +1141,7 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Earthen Mantle"
+     "variant": "Legendary Green Steel Weave Cloak"
     },
     {
      "slot": "Goggles",
@@ -1213,21 +1217,21 @@
   "cross-add-combustion-usp-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Combustion": 440,
-    "Universal Spell Power": 101
+    "Combustion": 461,
+    "Universal Spell Power": 104
    },
    "effective": {
-    "Combustion": 440,
-    "Universal Spell Power": 101
+    "Combustion": 461,
+    "Universal Spell Power": 104
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Medium Armor of the Eternal Flame"
+     "variant": "Legendary Darkmoss"
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Bladesworn Bandolier"
+     "variant": "Legendary Belt of the Black Sands"
     },
     {
      "slot": "Boots",
@@ -1239,15 +1243,15 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Cloak of Autumn"
+     "variant": "Cloak of Autumn"
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Absorption Gauntlet"
+     "variant": "Alaric's Grim Gauntlets"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Eyes of Enlightenment"
+     "variant": "Legendary Blazing Sniper's Sights"
     },
     {
      "slot": "Helmet",
@@ -1255,27 +1259,27 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "Epic Locked and Loaded"
+     "variant": "Legendary Green Steel Bastard Sword"
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Blademark Amulet"
+     "variant": "Legendary Pendant of the Earth"
     },
     {
      "slot": "Off Hand",
-     "variant": "The Demon Engine"
-    },
-    {
-     "slot": "Ring",
-     "variant": "Clouded Dreams"
+     "variant": "Dethek Runestone"
     },
     {
      "slot": "Ring",
      "variant": "Legendary Ring of the Red Abishai"
     },
     {
+     "slot": "Ring",
+     "variant": "Legendary Signet Ring of the Earth"
+    },
+    {
      "slot": "Trinket",
-     "variant": "Epic Dragon's Eye"
+     "variant": "Legendary Red Raptor Feather"
     }
    ]
   },
@@ -1353,11 +1357,11 @@
    "status": "optimal",
    "perTarget": {
     "Melee Power": 42,
-    "Balance": 59
+    "Balance": 71
    },
    "effective": {
     "Melee Power": 42,
-    "Balance": 59
+    "Balance": 71
    },
    "chosen": [
     {
@@ -1373,12 +1377,12 @@
      "variant": "Fabricator's Bracers"
     },
     {
-     "slot": "Cloak",
-     "variant": "Legendary Earthen Mantle"
-    },
-    {
      "slot": "Goggles",
      "variant": "Legendary Drider's Vision"
+    },
+    {
+     "slot": "Helmet",
+     "variant": "Legendary Green Steel Helm"
     },
     {
      "slot": "Necklace",
@@ -1405,7 +1409,7 @@
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Buckle of Secrets"
+     "variant": "Legendary Belt of the Black Sands"
     },
     {
      "slot": "Boots",
@@ -1437,7 +1441,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Celestial Insignia"
+     "variant": "Legendary Climber's Remembrance"
     },
     {
      "slot": "Off Hand",
@@ -1449,7 +1453,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Signet Ring of the Earth"
+     "variant": "Legendary Duskbone Ring"
     },
     {
      "slot": "Trinket",
@@ -1461,15 +1465,15 @@
    "status": "optimal",
    "perTarget": {
     "Armor Class": 171,
-    "Reflex Save": 29,
-    "Will Save": 29,
+    "Reflex Save": 30,
+    "Will Save": 30,
     "Fortitude Save": 29,
     "Physical Sheltering": 124
    },
    "effective": {
     "Armor Class": 171,
-    "Reflex Save": 29,
-    "Will Save": 29,
+    "Reflex Save": 30,
+    "Will Save": 30,
     "Fortitude Save": 29,
     "Physical Sheltering": 124
    },
@@ -1488,19 +1492,19 @@
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Surreptitious Shackles"
+     "variant": "Legendary Green Steel Bracers"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Mantle of the Dwarven Commander"
+     "variant": "Legendary Green Steel Weave Cloak"
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Gloves of the Resilient"
+     "variant": "Legendary Gloves of the Nimble"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Mining Lenses"
+     "variant": "Legendary Green Steel Goggles"
     },
     {
      "slot": "Helmet",
@@ -1520,11 +1524,11 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Frost Worm Tooth Ring"
+     "variant": "Legendary Band of Faith and Fortress"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Trapmaker's Mark"
+     "variant": "Legendary Chieftain"
     },
     {
      "slot": "Trinket",

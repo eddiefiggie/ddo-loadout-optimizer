@@ -498,6 +498,92 @@ test("#370: an item with no Lamordia slots discloses nothing", () => {
   assert.deepStrictEqual(P.unfilledVikSlots({ variant_id: "Plain Ring", lamordia_slots: [] }, []), []);
 });
 
+// ---- #194: Legendary Green Steel tiers are declared structure too -------------
+// A blank ships with three altars. The same #370 rule: declared == placed + empty,
+// as a multiset difference on the tier, on every surface.
+
+test("#194: declared Legendary Green Steel tiers equal placed plus disclosed-empty, in tier order", () => {
+  const declared = [{ tier: 3 }, { tier: 1 }, { tier: 2 }];
+  const placed = [{ item: "Legendary Green Steel Belt", tier: 2, name: "Insight Wizardry" }];
+  const rows = P.tierSlotRows(declared, placed);
+  assert.deepStrictEqual(rows.map((r) => r.tier), [1, 2, 3], "tier order, whatever the declaration order");
+  assert.deepStrictEqual(rows.map((r) => !!r.placement), [false, true, false]);
+  assert.strictEqual(rows[1].placement.name, "Insight Wizardry");
+});
+
+test("#194: the empty set is a MULTISET difference on tier", () => {
+  const rows = P.tierSlotRows([{ tier: 1 }, { tier: 1 }], [{ item: "X", tier: 1 }]);
+  assert.strictEqual(rows.filter((r) => !r.placement).length, 1, "one filled, one still open");
+});
+
+test("#194: a placement matching no declared tier is still reported, and an undeclared item discloses nothing", () => {
+  const rows = P.tierSlotRows([{ tier: 1 }], [{ item: "X", tier: 1 }, { item: "X", tier: 2 }]);
+  assert.strictEqual(rows.length, 2, "the odd placement is kept rather than dropped");
+  assert.deepStrictEqual(P.tierSlotRows(undefined, []), []);
+  assert.deepStrictEqual(P.tierSlotRows([], [{ item: "X", tier: 1 }]).length, 1, "no declaration: placements pass through");
+});
+
+test("#194: both halves label as Legendary Green Steel with the tier, and an empty tier says why", () => {
+  const o = { tier: 2, stat: "Wizardry", bonus_type: "Insight", value: 151, unit: "flat" };
+  for (const family of ["tf", "gs"]) {
+    const label = P.craftLabel(o, family);
+    assert.ok(label.startsWith("Legendary Green Steel T2: "), `${family}: ${label}`);
+    assert.ok(!/Thunder/.test(label), "#653 — the weapon half is not Thunder-Forged");
+    assert.strictEqual(P.craftStepLabel(o, family), "Legendary Green Steel T2");
+    const row = P.craftRowLabel(o, family);
+    assert.strictEqual(row.where, "Tier 2");
+    assert.strictEqual(P.CRAFT_SECTION_LABEL[family], "Legendary Green Steel");
+  }
+  for (const family of ["tfEmpty", "gsEmpty"]) {
+    const label = P.craftLabel({ tier: 3 }, family);
+    assert.ok(/^Legendary Green Steel T3: left empty — no option adds to your ranked stats$/.test(label), label);
+    assert.strictEqual(P.craftRowLabel({ tier: 3 }, family).what, "left empty");
+    assert.strictEqual(P.CRAFT_SECTION_LABEL[family], "Legendary Green Steel");
+  }
+});
+
+test("#194: an equipped blank's empty altars reach the shared content model, filled and empty interleaved", () => {
+  const rec = {
+    name: "LGS", inputs: { ml: 34, priorities: ["Wizardry"], pool: "all" },
+    snapshot: {
+      status: "optimal", perTarget: { Wizardry: 151 },
+      chosen: [{ slot: "Belt", variant: { variant_id: "Legendary Green Steel Belt", source_item: "Legendary Green Steel Belt",
+        minimum_level: 26, affixes: [], green_steel_tiers: [{ tier: 1 }, { tier: 2 }, { tier: 3 }] } }],
+      gsPlaced: [{ item: "Legendary Green Steel Belt", tier: 2, name: "Insight Wizardry", stat: "Wizardry", bonus_type: "Insight", value: 151, unit: "flat" }],
+    },
+  };
+  const view = P.project(rec);
+  const belt = view.loadout.find((it) => it.item === "Legendary Green Steel Belt");
+  assert.ok(belt, "the belt is in the loadout view");
+  const fams = belt.crafting.map((c) => c.family);
+  assert.deepStrictEqual(fams, ["gsEmpty", "gs", "gsEmpty"], "three declared altars, in tier order, one filled");
+  assert.strictEqual(belt.crafting[1].label, "Legendary Green Steel T2: Wizardry +151 Insight");
+  // The results card reads the same rows.
+  const maps = P.buildCraftMaps(rec.snapshot);
+  const rows = R.craftRowsFor(rec.snapshot.chosen[0].variant, 0, maps);
+  assert.deepStrictEqual(rows.map((r) => r.family), ["gsEmpty", "gs", "gsEmpty"]);
+  assert.ok(rows[0].empty && rows[2].empty && !rows[1].empty);
+});
+
+test("#194: the Legendary Green Steel notice states the crafts, the empty altars, and the scope limit", () => {
+  const result = { greenSteelReport: { hosts: 1,
+    placed: [{ item: "Legendary Green Steel Belt", tier: 2, name: "Insight Wizardry", half: "accessory" },
+             { item: "Legendary Green Steel Belt", tier: 1, name: "Competence Charisma Skills", half: "accessory" }],
+    unfilled: [{ item: "Legendary Green Steel Belt", tier: 3, half: "accessory" }] } };
+  const lines = P.greenSteelNoticeLines(result);
+  assert.strictEqual(lines.length, 3);
+  assert.ok(/crafts 2 effects at the Legendary Altars — Legendary Green Steel Belt \(T1 Competence Charisma Skills, T2 Insight Wizardry\)/.test(lines[0]), lines[0]);
+  assert.ok(/1 declared tier was left empty .* \(Legendary Green Steel Belt T3\)/.test(lines[1]), lines[1]);
+  assert.ok(/matched tier combination .* Dominion, Opposition, Ethereal and Material .* not modelled/.test(lines[2]), lines[2]);
+  // Silent when no blank is equipped: the scope line alone would be boilerplate.
+  assert.deepStrictEqual(P.greenSteelNoticeLines({}), []);
+  assert.deepStrictEqual(P.greenSteelNoticeLines({ greenSteelReport: null }), []);
+  // A blank equipped for its own sake, nothing crafted: the scope limit is still said.
+  const bare = P.greenSteelNoticeLines({ greenSteelReport: { hosts: 1, placed: [], unfilled: [] } });
+  assert.strictEqual(bare.length, 1);
+  assert.ok(/not modelled/.test(bare[0]));
+});
+
 test("#370: a fully crafted item discloses nothing (the notice is not unconditional)", () => {
   const v = { variant_id: "Sorrowblade", lamordia_slots: LAM4 };
   const placed = LAM4.map((s) => ({ item: "Sorrowblade", slot_type: s.type }));

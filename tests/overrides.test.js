@@ -582,8 +582,15 @@ test("#88 U6: every eligible pool row is addressable, and keys are unique across
   // expansions, which R7 excludes. Attributed by rebuilding the population with
   // the four records removed: it returns to 698 / 678 exactly, so nothing else
   // moved.
-  assert.strictEqual(rows, 705, "the eligible pool-row population");
-  assert.strictEqual(seen.size, 682, "distinct keys");
+  // #194 re-ratification — was 705 / 682. Making the green_steel pool reachable
+  // ended its exemption from the in-option expansion pass: its 18 ability-skills
+  // umbrella affixes (`Charisma Skills +22 Competence`, ...) now expand into
+  // `via`-stamped component skills, which R7 excludes exactly as it excludes the
+  // 278 Viktranium / dino / Nearly Complete receipts above. Measured per channel:
+  // green_steel 100 -> 82 eligible rows, every other channel unchanged, and the 18
+  // umbrella-named rows are the whole difference (0 `* Skills` stats remain).
+  assert.strictEqual(rows, 687, "the eligible pool-row population");
+  assert.strictEqual(seen.size, 664, "distinct keys");
 });
 
 test("#88 U6: three same-stat seal entries at different bonus types get three distinct keys", () => {
