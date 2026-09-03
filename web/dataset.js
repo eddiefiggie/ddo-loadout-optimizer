@@ -458,6 +458,14 @@ function installIntrinsicCaps(map) {
   }
 }
 
+// #683 — same two-runtime bridge for the disclosed name splits.
+function installSplitMechanics(list) {
+  if (typeof setSplitMechanics !== "undefined") { setSplitMechanics(list); return; }
+  if (typeof require !== "undefined") {
+    try { require("./model.js").setSplitMechanics(list); } catch (e) { /* model.js absent: no-op */ }
+  }
+}
+
 // #193/#599 — same two-runtime bridge for the Essence Crafting coverage numbers.
 function installEssenceCoverage(cov) {
   if (typeof setEssenceCoverage !== "undefined") { setEssenceCoverage(cov); return; }
@@ -495,6 +503,10 @@ function normalizeDataset(dataset) {
   // a verified ceiling", which is exactly the pre-#199 behavior.
   installIntrinsicCaps(meta.intrinsic_stat_caps || {});
   installEssenceCoverage(meta.essence_crafting_coverage || null);
+  // #683 — an older cached dataset has no such key; installing [] is correct
+  // there, because the table's absence means "no family is disclosed as split",
+  // which is exactly the pre-#683 behavior.
+  installSplitMechanics(meta.split_mechanic_disclosures || []);
   const crossAdd = meta.cross_add || {};
   dataset._crossAdd = crossAdd;
   installCrossAdd(crossAdd);
