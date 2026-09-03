@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice } = require("../web/wizard.js");
+const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -60,13 +60,17 @@ test("WIZARD_STEPS order", () => {
 // positive ML are enough") is superseded, not merely extended: a player who
 // advanced without armor could solve for a loadout they cannot wear, because
 // armor drives the dodge cap and filters what is equippable.
-test("canAdvance(character): needs a race, a positive ML, and an armor type", () => {
-  assert.ok(!canAdvance("character", { characterName: "Sook", race: "", ml: 34, armor: "light" }));
-  assert.ok(!canAdvance("character", { characterName: "Sook", race: "Human", ml: 0, armor: "light" }));
-  assert.ok(!canAdvance("character", { characterName: "Sook", race: "Human", ml: 34, armor: "" }));
-  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 34, armor: "light" }));
+test("canAdvance(character): needs a race, a positive ML, an armor type and a style", () => {
+  const ok = { characterName: "Sook", race: "Human", ml: 34, armor: "light", style: "one-hand" };
+  assert.ok(!canAdvance("character", { ...ok, race: "" }));
+  assert.ok(!canAdvance("character", { ...ok, ml: 0 }));
+  assert.ok(!canAdvance("character", { ...ok, armor: "" }));
+  // #689 — style joined this gate. An unset style meant UNCONSTRAINED, which handed
+  // a player who declared Two Weapon Fighting a tower shield.
+  assert.ok(!canAdvance("character", { ...ok, style: "" }));
+  assert.ok(canAdvance("character", ok));
   // …except for the Forged, who wear a docent and have no armor pick to make.
-  assert.ok(canAdvance("character", { characterName: "Sook", race: "Warforged", ml: 34, armor: "" }));
+  assert.ok(canAdvance("character", { ...ok, race: "Warforged", armor: "" }));
 });
 
 test("canAdvance(pool): owned mode requires an uploaded inventory", () => {
@@ -4118,26 +4122,32 @@ test("#428 U5: the guard gates player navigation, not the app's own step changes
 // stopped. The Forged exemption below is why that gate is satisfiable at all.
 // ---------------------------------------------------------------------------
 
-test("#428 U6 (R2a): the required set is race, ML cap and armor", () => {
+test("#428 U6 (R2a): the required set is race, ML cap, armor and (#689) style", () => {
   assert.deepStrictEqual(missingRequired({ characterName: "Sook", race: "", ml: 0, armor: "" }).sort(),
-    ["armor", "ml", "race"]);
-  assert.deepStrictEqual(missingRequired({ characterName: "Sook", race: "Human", ml: 30, armor: "light" }), []);
+    ["armor", "ml", "race", "style"]);
+  assert.deepStrictEqual(missingRequired({ characterName: "Sook", race: "Human", ml: 30, armor: "light",
+    style: "one-hand" }), []);
 });
 
 test("#428 U6 (AE1): race blank is reported as missing", () => {
-  assert.deepStrictEqual(missingRequired({ characterName: "Sook", race: "", ml: 30, armor: "light" }), ["race"]);
+  assert.deepStrictEqual(missingRequired({ characterName: "Sook", race: "", ml: 30, armor: "light",
+    style: "one-hand" }), ["race"]);
 });
 
 test("#428 U6 (AE2a): armor blank blocks even with race and ML cap set", () => {
-  const st = { characterName: "Sook", race: "Human", ml: 30, armor: "" };
+  const st = { characterName: "Sook", race: "Human", ml: 30, armor: "", style: "one-hand" };
   assert.deepStrictEqual(missingRequired(st), ["armor"]);
   assert.ok(!canAdvance("character", st), "the gate armor newly joins is ENFORCED, not merely displayed");
 });
 
-test("#428 U6 (AE2): all three set advances regardless of optional fields", () => {
-  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 30, armor: "cloth" }));
+test("#428 U6 (AE2): the required set advances regardless of optional fields", () => {
   assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 30, armor: "cloth",
-    alignment: "", oath: "", style: "", weaponTypes: [] }));
+    style: "sword-board" }));
+  // #689 — `style: ""` moved from this list of optional fields to the gate itself,
+  // which is the whole point of the change; the remaining optional ones still do
+  // not block.
+  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 30, armor: "cloth",
+    style: "sword-board", alignment: "", oath: "", weaponTypes: [] }));
 });
 
 test("#428 U6 (KD6): a Forged race is exempt from the armor requirement", () => {
@@ -4145,9 +4155,10 @@ test("#428 U6 (KD6): a Forged race is exempt from the armor requirement", () => 
   // the race handler CLEARS state.armor. Requiring it of them would be a gate no
   // player could satisfy — the step would simply never advance.
   for (const race of ["Warforged", "Bladeforged"]) {
-    assert.deepStrictEqual(missingRequired({ characterName: "Sook", race, ml: 30, armor: "" }), [],
-      `${race} needs no armor pick`);
-    assert.ok(canAdvance("character", { characterName: "Sook", race, ml: 30, armor: "" }));
+    assert.deepStrictEqual(missingRequired({ characterName: "Sook", race, ml: 30, armor: "",
+      style: "one-hand" }), [], `${race} needs no armor pick`);
+    assert.ok(canAdvance("character", { characterName: "Sook", race, ml: 30, armor: "",
+      style: "one-hand" }));
   }
 });
 
@@ -4158,30 +4169,35 @@ test("#428 U6 (KD6): a Forged race is exempt from the armor requirement", () => 
 // the wrong reason. These pin the `name` key on its own.
 // ---------------------------------------------------------------------------
 
-test("#431 U1 (AE2): all four required fields set advances", () => {
-  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 30, armor: "cloth" }));
+test("#431 U1 (AE2): all required fields set advances", () => {
+  assert.ok(canAdvance("character", { characterName: "Sook", race: "Human", ml: 30, armor: "cloth",
+    style: "one-hand" }));
 });
 
 test("#431 U1 (AE1): a blank name blocks, on the name key alone", () => {
-  const st = { characterName: "", race: "Human", ml: 30, armor: "cloth" };
+  const st = { characterName: "", race: "Human", ml: 30, armor: "cloth", style: "one-hand" };
   assert.deepStrictEqual(missingRequired(st), ["name"]);
   assert.ok(!canAdvance("character", st), "the name gate is ENFORCED, not merely displayed");
 });
 
 test("#431 U1: a name that is only whitespace counts as absent", () => {
   assert.deepStrictEqual(
-    missingRequired({ characterName: "   ", race: "Human", ml: 30, armor: "cloth" }), ["name"]);
+    missingRequired({ characterName: "   ", race: "Human", ml: 30, armor: "cloth",
+      style: "one-hand" }), ["name"]);
 });
 
 test("#431 U1 (KTD1): the name leads the missing list, so it leads the message and the scroll", () => {
   assert.deepStrictEqual(
-    missingRequired({ characterName: "", race: "", ml: 30, armor: "cloth" }), ["name", "race"]);
+    missingRequired({ characterName: "", race: "", ml: 30, armor: "cloth",
+      style: "one-hand" }), ["name", "race"]);
 });
 
 test("#431 U1 (AE1): the message names the build name, and names it alongside a second field", () => {
-  const one = missingRequiredMessage({ characterName: "", race: "Human", ml: 30, armor: "cloth" });
+  const one = missingRequiredMessage({ characterName: "", race: "Human", ml: 30, armor: "cloth",
+    style: "one-hand" });
   assert.ok(/[Bb]uild name/.test(one), one);
-  const both = missingRequiredMessage({ characterName: "", race: "", ml: 30, armor: "cloth" });
+  const both = missingRequiredMessage({ characterName: "", race: "", ml: 30, armor: "cloth",
+    style: "one-hand" });
   assert.ok(/[Bb]uild name/.test(both), both);
   assert.ok(/[Rr]ace/.test(both), both);
 });
@@ -4189,19 +4205,20 @@ test("#431 U1 (AE1): the message names the build name, and names it alongside a 
 test("#431 U1: the Forged armor exemption still holds once a name is present", () => {
   for (const race of ["Warforged", "Bladeforged"]) {
     assert.deepStrictEqual(
-      missingRequired({ characterName: "Sook", race, ml: 30, armor: "" }), [], race);
-    assert.ok(canAdvance("character", { characterName: "Sook", race, ml: 30, armor: "" }));
+      missingRequired({ characterName: "Sook", race, ml: 30, armor: "", style: "one-hand" }), [], race);
+    assert.ok(canAdvance("character", { characterName: "Sook", race, ml: 30, armor: "",
+      style: "one-hand" }));
   }
 });
 
 test("#428 U6 (AE3): a loaded build carrying all three marks nothing as needing an answer", () => {
-  const loaded = { characterName: "Sook", race: "Elf", ml: 34, armor: "medium" };
+  const loaded = { characterName: "Sook", race: "Elf", ml: 34, armor: "medium", style: "one-hand" };
   assert.deepStrictEqual(missingRequired(loaded), []);
   assert.strictEqual(missingRequiredMessage(loaded), null);
 });
 
 test("#428 U6 (AE3a): a build saved before KD6 carries no armor and is marked", () => {
-  const preKd6 = { characterName: "Sook", race: "Elf", ml: 34, armor: "" };
+  const preKd6 = { characterName: "Sook", race: "Elf", ml: 34, armor: "", style: "one-hand" };
   assert.deepStrictEqual(missingRequired(preKd6), ["armor"]);
   assert.ok(/[Aa]rmor/.test(missingRequiredMessage(preKd6)));
 });
@@ -4225,8 +4242,15 @@ test("#428 U6: missingRequired treats a non-positive or non-numeric ML cap as un
 });
 
 test("#428 U6 (R6a): a collapsed weapon group states whether it holds set values", () => {
+  // #689 — with a style now REQUIRED and living in this group, an empty group is no
+  // longer merely "nothing set": it is what Continue is waiting for, and a collapsed
+  // group must say so.
   const empty = weaponGroupSummary({ weaponTypes: [], offHand: [], offHandWeapons: [] }, "");
-  assert.ok(/nothing set/i.test(empty), "an unopened group is never mistaken for an empty one");
+  assert.ok(/combat style needed/i.test(empty),
+    "a collapsed group must not hide the field that is blocking the step");
+  const styledButEmpty = weaponGroupSummary(
+    { style: "unarmed", weaponTypes: [], offHand: [], offHandWeapons: [] }, "Unarmed");
+  assert.ok(!/needed/i.test(styledButEmpty), "answered means answered");
   const set = weaponGroupSummary({ twoWeaponFighting: true, style: "one-hand",
     weaponTypes: ["Dagger", "Rapier"], offHand: ["empty"], offHandWeapons: [] }, "One-hand / Dual-wield");
   assert.ok(!/nothing set/i.test(set));
@@ -5152,4 +5176,71 @@ test("#539: the slow warning fires on Set Augments, and only from two", () => {
     "the point of the warning is that a long solve is not a hang");
   assert.ok(/3 pinned Set Augments/.test(
     setPinSlowNotice(["Cruel Cut", "Quickblade", "Dusk Raider"], _ds539)));
+});
+
+// ---------------------------------------------------------------------------
+// #689 — combat style JOINS the character gate.
+//
+// An unset style meant UNCONSTRAINED (`buildQuery`: "Empty arrays / unset style
+// => unconstrained"), and every off-hand gate in web/weapon-taxonomy.js keys on
+// the style. So a player who declared Two Weapon Fighting and picked no style was
+// handed whatever scored, tower shields included — a loadout byte-identical to an
+// explicit Sword & Board request, and one the declared feat cannot be used with.
+// Reported 2026-09-03; the reproduction is in data/bug_reports.txt.
+// ---------------------------------------------------------------------------
+
+test("#689: an unset style blocks the character step, on the style key alone", () => {
+  const st = { characterName: "Sook", race: "Human", ml: 34, armor: "light" };
+  assert.deepStrictEqual(missingRequired(st), ["style"],
+    "isolated: every other required field is answered, so only style can be reported");
+  assert.ok(!canAdvance("character", st), "the gate is ENFORCED, not merely displayed");
+  assert.ok(/[Cc]ombat style/.test(missingRequiredMessage(st)), missingRequiredMessage(st));
+});
+
+test("#689: every offered style satisfies the gate", () => {
+  // No exemption exists for style, unlike armor's Forged one, so the gate must be
+  // satisfiable by every option the wizard actually offers — otherwise it is a gate
+  // some player can never pass.
+  const WT = require("../web/weapon-taxonomy.js");
+  const styles = (WT.STYLES || WT.WeaponTaxonomy && WT.WeaponTaxonomy.STYLES) || [];
+  assert.ok(styles.length >= 6, `expected the six styles, got ${styles.length}`);
+  for (const s of styles) {
+    assert.ok(canAdvance("character",
+      { characterName: "Sook", race: "Human", ml: 34, armor: "light", style: s.id }),
+      `${s.id} must satisfy the gate`);
+  }
+});
+
+test("#689: style is required of the Forged too — only ARMOR carries an exemption", () => {
+  for (const race of ["Warforged", "Bladeforged"]) {
+    assert.deepStrictEqual(
+      missingRequired({ characterName: "Sook", race, ml: 34, armor: "" }), ["style"],
+      `${race} is exempt from armor and NOT from style`);
+  }
+});
+
+test("#689: style is reported after armor, matching the on-screen order", () => {
+  // `missingRequired` doubles as the scroll-to-first-missing order.
+  assert.deepStrictEqual(
+    missingRequired({ characterName: "", race: "", ml: 0, armor: "", style: "" }),
+    ["name", "ml", "race", "armor", "style"]);
+});
+
+test("#689: a record saved without a style is flagged on load", () => {
+  // Loading lands on `priorities` or `results` (stepOnLoad), so a saved build never
+  // passes through the character gate. Without this flag the new requirement would
+  // do nothing at all for existing characters — they would go on solving
+  // unconstrained forever, which is the reported defect.
+  assert.strictEqual(styleMissingOnLoad({ ml: 34, armor: "light" }), true);
+  assert.strictEqual(styleMissingOnLoad({ ml: 34, style: "" }), true);
+  assert.strictEqual(styleMissingOnLoad({ ml: 34, style: "sword-board" }), false);
+  assert.strictEqual(styleMissingOnLoad(undefined), true, "an absent record reads as missing");
+});
+
+test("#689: the load flag raises a banner, ranked below the TWF migration", () => {
+  assert.strictEqual(resolveBannerPrimary({ styleMissing: true }), "wz-stylemig");
+  assert.strictEqual(resolveBannerPrimary({ styleMissing: true, twfMigrated: true }), "wz-twfmig",
+    "the TWF migration also changes the off hand and is the more specific statement");
+  assert.strictEqual(resolveBannerPrimary({ styleMissing: false }), null);
+  assert.ok(resolveBannerShowing({ styleMissing: true }));
 });
