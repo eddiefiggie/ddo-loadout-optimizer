@@ -1148,6 +1148,15 @@ input.wz-ml { width: 120px; }
 .wz-adv-lead { color: var(--text); }
 .wz-adv-note { color: var(--muted); }
 .wz-adv-lead strong, .wz-adv-note strong { color: var(--text); }
+/* #677 — read-only ceiling context beside the Max input. Deliberately NOT an
+   input: nothing here is ever written into the Max box, so it must not look
+   editable. The two kinds are tinted apart because they mean opposite things —
+   a confirmed ceiling IS applied to the solve, a disclosed one is deliberately
+   refused and the player is being invited to decide. */
+.wz-adv-ceiling { flex-basis: 100%; margin: 0; line-height: 1.45; color: var(--muted);
+  border-left: 2px solid var(--qualify); padding-left: var(--sp-2); }
+.wz-adv-ceiling.is-confirmed { border-left-color: var(--accent); }
+.wz-adv-ceiling.is-disclosed { border-left-color: var(--qualify); }
 /* U2 — declared stat credits. Repeatable, unlike the fixed min/max pair, so the
    group takes a full-width line inside the panel rather than competing for space
    with the bound inputs. */
