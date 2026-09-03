@@ -436,3 +436,50 @@ diagnosed.
   priority list, and whatever is set for crafting rung, pins, and inventory
   filters. Worth asking specifically whether the set named on screen was an Epic
   one or a Legendary one, since only the latter is reachable through this gem.
+
+---
+2026-09-03 — user report (combat style)
+
+Verbatim:
+
+  "Did not select Sword & Board. Asked for two weapon fighting and was given
+   sword and board."
+
+REPRODUCED. Filed as #689.
+
+Root cause: "Two Weapon Fighting" is a character-level DECLARATION, not a combat
+style. The styles are a separate control (One-hand / Dual-wield, Sword & Board,
+Two Handed Fighting, Bow, Crossbow + Rune Arm, Unarmed), and `CHARACTER_REQUIRED`
+in `web/wizard.js` requires only build name, ML, race and armor — **style is not
+required**. So a player can press the Two Weapon Fighting chip, never pick a
+style, and continue.
+
+`buildQuery` then emits `style: null`, which its own comment documents as
+"unset style => unconstrained". With no style, none of the taxonomy's off-hand
+gates apply (`offHandEnabledForStyle`, `offHandTypesForStyle`,
+`twfWeaponAllowedForStyle` in `web/weapon-taxonomy.js` all key on the style), so
+every off-hand item is eligible — including a tower shield.
+
+Measured on build `09022026.7`, via the parity harness (`tests/parity/
+capture_golden.js`'s own solveEnv/solveFixture), priorities Physical Sheltering
+then Armor Class, ML 34, heavy armor:
+
+  twoWeaponFighting: true, style: null   -> Off Hand: Legendary Cataclysmic Tower Shield
+  style: "sword-board" (control)         -> Off Hand: Legendary Cataclysmic Tower Shield  (IDENTICAL loadout)
+  twoWeaponFighting: true, style: "one-hand" -> no shield; a Ring is placed instead
+
+So the reported build is byte-identical to the one an explicit Sword & Board
+request produces, which is exactly what the reporter described.
+
+The wizard DOES render an inert-declaration note when TWF is declared with no
+style ("Declared. It has no effect until you pick a combat style that wields a
+second weapon"), but it is a passive note on the character step, nothing blocks
+advancing past it, and NOTHING says so after the solve — `twoWeaponFighting`
+reaches the projection only as a row reading "Declared", which is precisely the
+claim the loadout contradicts.
+
+Not decided here (product question, see #689): whether the fix is to require a
+style, to refuse a shield whenever TWF is declared, or to disclose the inert
+declaration on the results. The third is the only one that is certainly correct;
+the second conflicts with the deliberate design that lets a player declare TWF
+while on Sword & Board and have it read as inert rather than contradictory.
