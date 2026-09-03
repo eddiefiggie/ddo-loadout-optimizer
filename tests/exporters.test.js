@@ -2059,12 +2059,23 @@ test("#663: the Jump soft-cap disclosure reaches ALL FOUR export surfaces", () =
  *  silently skip it, which is the same vacuity that let five notices rot. */
 const ALL_NOTICES_REC = {
   name: "Every notice",
-  query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20"], armorType: "heavy", craftingRung: "no-niche-crafting", augCeiling: 30 },
-  inputs: { ml: 34, armor: "heavy", pool: "all", priorities: ["Dodge", "Jump", "Critical Multiplier on a 19-20"], craftingRung: "no-niche-crafting" },
+  query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike"], armorType: "heavy", craftingRung: "no-niche-crafting", augCeiling: 30 },
+  inputs: { ml: 34, armor: "heavy", pool: "all", priorities: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike"], craftingRung: "no-niche-crafting" },
   snapshot: {
     status: "optimal", chosen: [], setsActive: [],
-    query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20"], armorType: "heavy", craftingRung: "no-niche-crafting", augCeiling: 30 },
-    effective: { Jump: 46, Dodge: 20 },
+    query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike"], armorType: "heavy", craftingRung: "no-niche-crafting", augCeiling: 30 },
+    effective: { Jump: 46, Dodge: 20, Doublestrike: 20 },
+    // #459 — a real cap surplus: 15 + 9 supplied against a Max of 20. Chosen for
+    // the shape the pattern doc warns about — NEITHER pick is individually
+    // droppable (15 and 9 each fall under 20) while 4 points really are wasted.
+    capped: { Doublestrike: 20 },
+    intrinsicCaps: {},
+    breakdown: {
+      Doublestrike: [
+        { source: "Legendary Swordcrossed Topaz", sourceKind: "augment", bonus_type: "Enhancement", value: 15, slot: "Necklace" },
+        { source: "Solar Gem of Doublestrike", sourceKind: "augment", bonus_type: "Artifact", value: 9, slot: "Armor" },
+      ],
+    },
     creditReport: [{ stat: "Dodge", bonus_type: "Profane", value: 5 }],
     saturationReport: [{ stat: "Dodge", cap: 20, bonusTypes: ["Enhancement"] }],
     outbidReport: ["Strength"],

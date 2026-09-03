@@ -1201,6 +1201,88 @@
       + "the slots spent above it will go to your next priority.";
   }
 
+  /** #459 — where a capped stat's surplus is, and which picks carry it.
+   *
+   *  A stat held at a cap credits nothing past that point, so gear supplying more
+   *  than the cap is farm effort for no displayed value. The existing `.stat-cap`
+   *  chip already shows THAT there is a surplus ("capped at 20 · raw 24"); this
+   *  names the picks carrying it, which is what a player needs to act.
+   *
+   *  STATED OVER THE SET, NEVER PER PICK — this is the whole correctness story.
+   *  `docs/solutions/design-patterns/redundancy-under-a-shared-cap-must-be-judged-
+   *  set-consistently.md` records the same test going wrong twice in one day at two
+   *  aggregation levels: contributors that are each individually slack against the
+   *  intact total can be jointly necessary. Measured here, at cap 20 with 24
+   *  supplied by 15 + 9, NEITHER pick is individually droppable (15 alone and 9
+   *  alone both fall under 20) and yet 4 points really are wasted. A per-pick
+   *  sentence would have to say either "drop this" (false for both) or nothing
+   *  (false about the surplus).
+   *
+   *  So the sentence quotes ONE number — the total surplus — and says any mix of
+   *  reductions up to that total still reaches the cap. That is correct by
+   *  construction for every combination, which is exactly what a per-item claim
+   *  cannot be.
+   *
+   *  Uses the SAME sum the chip does (the attribution list, which
+   *  `breakdownByTarget` has already stripped of cap-clamped invisible placements),
+   *  so the notice and the chip cannot quote different numbers at the player.
+   *
+   *  Not blocked on an intrinsic cap. Measured 2026-09-02: neither confirmed
+   *  intrinsic ceiling is reachable from gear (Doublestrike tops out near 48 against
+   *  100, Strikethrough near 15 against 400), so a player-set Max is the only cap
+   *  that binds anything today. This reads whichever cap is in force, so it covers
+   *  that case now and an intrinsic one for free if a ceiling ever becomes
+   *  reachable. */
+  function capSurplusLines(rec) {
+    const snap = (rec && rec.snapshot) || rec || {};
+    const q = (rec && rec.query) || snap.query || {};
+    const targets = Array.isArray(q.targets) ? q.targets : [];
+    const capped = snap.capped || {};
+    const intrinsic = snap.intrinsicCaps || {};
+    const effective = snap.effective || {};
+    // Cheap exits BEFORE attribution: no ranked stat carries a cap, or the record
+    // has no loadout to attribute (a hand-edited backup, a partial snapshot).
+    //
+    // The `chosen` check is a readable fast path for the shape we EXPECT to hit;
+    // the try/catch below it is what actually makes this fail open, and mutation
+    // testing says so — removing the check alone changes nothing, removing both
+    // turns a partial record into a throw. `attributionByTarget` walks `chosen`,
+    // and a throw here would take down the projection every surface reads from,
+    // the failure mode the `_rungOf` and `_splitMechanicFor` bridges are each
+    // written to avoid.
+    const cappedRanked = targets.filter((t) => capped[t] != null);
+    if (!cappedRanked.length || !Array.isArray(snap.chosen)) return [];
+    let attr;
+    try { attr = attributionByTarget(snap); } catch (e) { return []; }
+    const out = [];
+    for (const stat of cappedRanked) {
+      const cap = capped[stat];
+      const parts = attr[stat] || [];
+      if (!parts.length) continue;
+      const rawSum = parts.reduce((n, p) => n + (p.value || 0), 0);
+      const shown = effective[stat];
+      if (shown == null || !(rawSum > shown)) continue;   // no surplus to report
+      const surplus = rawSum - shown;
+      const byGame = intrinsic[stat] != null && intrinsic[stat] === cap;
+      // Deterministic order, and the biggest carriers first: a player scanning
+      // this wants the pick with the most room to give.
+      const named = parts.slice()
+        .sort((a, b) => (b.value - a.value) || String(a.source).localeCompare(String(b.source)))
+        .map((p) => {
+          const where = (p.slots && p.slots.length) ? ` \u2014 ${p.slots.join(", ")}` : "";
+          return `${p.source} (+${p.value}${where})`;
+        });
+      out.push(`${stat} is ${byGame ? "capped by the game" : "capped by you"} at ${shown}, `
+        + `and your picks supply ${rawSum} \u2014 a surplus of ${surplus} that buys nothing. `
+        + `Carried by: ${named.join("; ")}. `
+        + `Any mix of lower tiers giving up ${surplus} in TOTAL still reaches ${shown} `
+        + `\u2014 stated as a total because no single one of these is necessarily `
+        + `droppable on its own. Check your other priorities first: a pick may be `
+        + `carrying them too.`);
+    }
+    return out;
+  }
+
   /** #683 — one mechanic, two wiki spellings, stacking unsettled.
    *
    *  Fires when the player has ranked at least one spelling of a disclosed family.
@@ -2278,6 +2360,11 @@
         // recipient must not read the mechanic's total as settled when the wiki
         // states two readings and this app committed to neither.
         splitMechanicNotice: splitMechanicLine(rec),
+        // #459 — where a capped stat's surplus is and which picks carry it. Empty
+        // array when no ranked stat is over its cap. Same channel and same reason:
+        // a recipient reading a shared build cannot otherwise tell that some of the
+        // gear it prescribes is buying nothing.
+        capSurplusNotice: capSurplusLines(rec),
         // #110 (U7/U9) — the blocklist disclosure: empty array when no block
         // touched the solve. A shared build asserting optimality with silent
         // exclusions is the solve-visible-but-share-invisible failure.
@@ -2927,7 +3014,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, splitMechanicLine, packFilterNoticeLines, setFilterNoticeLines,
+    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, splitMechanicLine, capSurplusLines, packFilterNoticeLines, setFilterNoticeLines,
     essenceNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)

@@ -1795,6 +1795,14 @@ const NOTICES = [
     subject: "split mechanic spelling", cls: NOTICE_QUALIFYING,
     jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
     render: (c) => splitMechanicNotice(c.query, c.result) },
+  // #459 — ACTIONABLE, unlike the two disclosures above it: the player CAN act,
+  // and the action is well defined (give up at most the stated surplus across these
+  // picks). The jump goes to priorities because raising or clearing the Max is the
+  // other way to resolve it.
+  { name: "capSurplusNotice", id: "cap-surplus", title: "GEAR ABOVE YOUR CAP",
+    subject: "cap surplus", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
+    render: (c) => capSurplusNotice(c.query, c.result) },
   // #193/#599 — qualifying for the same reason as the notice above: there is
   // nothing for the player to press. It reports that the Gem's menus were solved
   // over 25 of the 170 effects the game offers, which is a fact about the DATA
@@ -2048,6 +2056,16 @@ function jumpSoftCapNotice(query, result) {
   return line
     ? `<p class="scope-note jump-softcap-note" role="status">${esc(line)}</p>`
     : "";
+}
+
+/** #459 — where a capped stat's surplus is, and which picks carry it. Reads the
+ *  SHARED sentences from projection, never a second wording. */
+function capSurplusNotice(query, result) {
+  const lines = (Proj && Proj.capSurplusLines)
+    ? Proj.capSurplusLines({ snapshot: result, query }) : [];
+  if (!lines || !lines.length) return "";
+  return lines.map((l) =>
+    `<p class="scope-note cap-surplus-note" role="status">${esc(l)}</p>`).join("");
 }
 
 /** #683 — the disclosed name split. Same contract as the two notices above: reads
