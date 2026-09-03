@@ -56,3 +56,24 @@ def test_native_build_sources_from_catalog():
         "legacy solver-facing affix shape preserved INSIDE the option"
     assert any(len(x["affixes"]) > 1 for x in out["records"]), \
         "at least one multi-affix option survives whole — the point of the change"
+    # #194 — the altar is the slot. Every record carries an integer tier derived
+    # from its menu key, so the solver keys the accessory pool per tier exactly as
+    # it keys the weapon pool, and all three altars are represented.
+    assert all(x["tier"] == int(x["tier_key"][1]) for x in out["records"])
+    assert {x["tier"] for x in out["records"]} == {1, 2, 3}
+
+
+def test_194_hosts_reach_the_pool():
+    """The built dataset reports the accessory blanks the pool attaches to, and the
+    per-host tier count is three — one slot per Legendary Altar."""
+    data = json.load(open(ITEMS, encoding="utf-8"))
+    cov = data["metadata"]["green_steel_coverage"]
+    assert cov["hosts_active"] == 8, cov
+    assert cov["tier_slots_active"] == 24, cov
+    assert cov["hosts_pending"] == [], cov
+    hosts = [it for it in data["items"] if it.get("green_steel_tiers")]
+    assert len(hosts) == 8
+    assert {it["slot"] for it in hosts} == {"Belt", "Boots", "Bracers", "Cloak",
+                                            "Gloves", "Goggles", "Helmet", "Necklace"}
+    assert not any(it.get("green_steel_slot") for it in data["items"]), \
+        "the truthy single-pick marker is retired; a tier list is the only shape"

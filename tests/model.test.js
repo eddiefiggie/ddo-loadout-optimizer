@@ -813,13 +813,28 @@ test("dominates: an affix item does NOT dominate a Thunder-Forged host it can't 
 });
 
 test("dominates: an affix item does NOT dominate a Green Steel host it can't match", () => {
-  const real = v("Real", "Trinket", [["Constitution", "Enhancement", 12]]);
-  const host = v("Host", "Trinket", [["Constitution", "Enhancement", 8]]);
-  host.green_steel_slot = true;
+  // #194 — the accessory marker is a per-tier list, like the weapon half's. The 8
+  // real hosts carry NO affix at all (only a Bool drawback), so this clause is the
+  // only thing between them and the Blank-host prune.
+  const real = v("Real", "Belt", [["Constitution", "Enhancement", 12]]);
+  const host = v("Host", "Belt", []);
+  host.green_steel_tiers = [{ tier: 1 }, { tier: 2 }, { tier: 3 }];
   const targets = new Set(["Constitution"]);
   assert.strictEqual(M.dominates(real, host, targets, 34), false,
-    "a rival lacking the Green Steel slot cannot dominate the host");
+    "a rival lacking the Green Steel tier slots cannot dominate the host");
   assert.strictEqual(M.dominanceFilter([real, host], targets, 34, 1).length, 2, "the GS host survives");
+  // A rival offering FEWER tiers cannot dominate either; one offering the same set can.
+  const twoTier = v("Two", "Belt", [["Constitution", "Enhancement", 12]]);
+  twoTier.green_steel_tiers = [{ tier: 1 }, { tier: 2 }];
+  assert.strictEqual(M.dominates(twoTier, host, targets, 34), false, "two tiers do not cover three");
+  const peer = v("Peer", "Belt", [["Constitution", "Enhancement", 12]]);
+  peer.green_steel_tiers = [{ tier: 1 }, { tier: 2 }, { tier: 3 }];
+  assert.strictEqual(M.dominates(peer, host, targets, 34), true, "same tiers plus a real affix dominates");
+  // The retired truthy marker is inert: nothing reads it any more.
+  const legacy = v("Legacy", "Belt", []);
+  legacy.green_steel_slot = true;
+  assert.strictEqual(M.dominates(real, legacy, targets, 34), true,
+    "`green_steel_slot` is retired — a record still carrying it gets no protection");
 });
 
 test("dominates: an affix item does NOT dominate a chosen set-membership host it can't match", () => {

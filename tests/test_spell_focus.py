@@ -288,23 +288,17 @@ def test_no_universal_stat_survives_anywhere_in_the_built_dataset():
     for key, value in data.items():
         if key == "metadata":
             continue        # expanded_away_names legitimately NAMES them
-        if key == "green_steel":
-            # #211/#194 — the Green Steel pool carries ability-skills umbrella
-            # options, but the channel is UNREACHABLE: no item carries
-            # `green_steel_slot`, so no option can ever be offered or granted.
-            # Expanding it would also violate the fan-out gate (FLAT + an
-            # expansion pass is a build failure) — the real fix is #194's
-            # ATOMIC conversion when hosts arrive. The tripwire below breaks
-            # this exemption the moment the channel becomes reachable.
-            continue
         walk(value, key)
 
-    # The exemption above is valid ONLY while green_steel is unreachable.
+    # #194 — green_steel is REACHABLE now (48 Legendary Green Steel blanks), so
+    # it is walked like every other pool: the exemption that once stood here was
+    # valid only while no host could reach the channel, and its tripwire fired
+    # the day the hosts shipped. The pool is ATOMIC, so any universal name it
+    # ever carries is expanded INSIDE the option, never across the record list.
     from src import container_registry as _cr
-    assert _cr.REGISTRY["green_steel"]["reachable"] is False, (
-        "green_steel became reachable — its universal-name options are now "
-        "live and the channel needs the ATOMIC conversion (#194) before the "
-        "exemption above may stand")
+    assert _cr.REGISTRY["green_steel"]["reachable"] is True, (
+        "green_steel is declared unreachable again — if the hosts really went "
+        "away, the walk above is still correct; if not, the registry is stale")
 
     assert not offenders, (
         f"{len(offenders)} affix(es) still name an expanded-away universal spell "

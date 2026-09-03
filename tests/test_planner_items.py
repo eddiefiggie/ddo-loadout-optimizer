@@ -133,6 +133,48 @@ def test_marker_host_counts_reported():
     assert stats["planner_lost_purpose_hosts"] >= 40
 
 
+# --- #194: Legendary Green Steel tier markers, read from crafting[] -------------
+
+def test_lgs_tiers_extracted_by_item_class():
+    """`T<n> (Equipment)` -> green_steel_tiers, `T<n> (Weapon)` -> thunder_forged_tiers.
+    One slot per DECLARED tier, in tier order, and the two classes never cross."""
+    acc = P._record({"name": "A", "slot": "Belt", "ml": 26, "affixes": [],
+                     "crafting": ["T3 (Equipment)", "T1 (Equipment)", "T2 (Equipment)"]}, set())
+    assert acc["green_steel_tiers"] == [{"tier": 1}, {"tier": 2}, {"tier": 3}]
+    assert "thunder_forged_tiers" not in acc
+    wpn = P._record({"name": "W", "slot": "Weapon", "ml": 26, "affixes": [],
+                     "crafting": ["T1 (Weapon)", "T2 (Weapon)", "T3 (Weapon)", "T1 (Weapon)"]}, set())
+    assert wpn["thunder_forged_tiers"] == [{"tier": 1}, {"tier": 2}, {"tier": 3}]
+    assert "green_steel_tiers" not in wpn
+    # Only the tiers the item declares — never all three on the strength of one.
+    two = P._record({"name": "T", "slot": "Belt", "ml": 26, "affixes": [],
+                     "crafting": ["T1 (Equipment)", "T2 (Equipment)"]}, set())
+    assert two["green_steel_tiers"] == [{"tier": 1}, {"tier": 2}]
+    # A real Thunder-Forged item declares no tier label and must get nothing.
+    tfa = P._record({"name": "Thunder-Forged Alloy Longsword", "slot": "Weapon", "ml": 22,
+                     "affixes": [], "crafting": ["Red Augment Slot"]}, set())
+    assert "thunder_forged_tiers" not in tfa and "green_steel_tiers" not in tfa
+
+
+def test_lgs_hosts_are_the_legendary_blanks_and_counted():
+    """The population, measured: 8 accessory blanks and 40 weapon blanks, all ML 26,
+    all named `Legendary Green Steel *`. The 47 heroic `Green Steel *` blanks
+    declare no tier label and carry no marker."""
+    recs, stats = _records()
+    gs = [r for r in recs if r.get("green_steel_tiers")]
+    tf = [r for r in recs if r.get("thunder_forged_tiers")]
+    assert stats["planner_green_steel_hosts"] == len(gs) == 8
+    assert stats["planner_lgs_weapon_hosts"] == len(tf) == 40
+    for r in gs + tf:
+        assert r["name"].startswith("Legendary Green Steel"), r["name"]
+        assert r["ml"] == 26, (r["name"], r["ml"])
+    assert all(r["green_steel_tiers"] == [{"tier": 1}, {"tier": 2}, {"tier": 3}] for r in gs)
+    assert all(r["thunder_forged_tiers"] == [{"tier": 1}, {"tier": 2}, {"tier": 3}] for r in tf)
+    heroic = [r for r in recs if r["name"].startswith("Green Steel")]
+    assert len(heroic) >= 40
+    assert not any(r.get("green_steel_tiers") or r.get("thunder_forged_tiers") for r in heroic)
+
+
 # --- #371: the per-item Nearly Complete host gate ------------------------------
 
 _NF_ITEM = {"name": "Legendary Alchemist's Crown", "slot": "Helm", "ml": 29,

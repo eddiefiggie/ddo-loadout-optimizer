@@ -208,12 +208,12 @@ def green_steel_records(catalog: dict = None) -> list:
     genuinely multi-affix; one grants Charisma Skills +22 Competence, UMD +6
     Competence and Wizardry +151 Profane, and shipped as three siblings.
 
-    It was inert, and safe only for that reason: no item carries
-    ``green_steel_slot``. The registry gate held it with a tripwire on the HOST
-    marker rather than on record count, and its failure text names this change
-    exactly — "emit one record per option carrying its own `affixes` list, then
-    drop `splits_options`". Done ahead of the hosts (#194), so the half that needs
-    a wiki harvest lands against a builder that is already correct.
+    It was inert then, and safe only for that reason: no item carried a host
+    marker. The registry gate held it with a tripwire on the HOST marker rather
+    than on record count, and its failure text named this change exactly — "emit
+    one record per option carrying its own `affixes` list, then drop
+    `splits_options`". Done ahead of the hosts, which #194 then stamped from each
+    blank's own ``crafting[]`` (``green_steel_tiers``) — no harvest was needed.
 
     Shape mirrors `viktranium._record`, the container this repo already models
     atomically, so `model.js` and `solver.js` read it through the same
@@ -229,6 +229,10 @@ def green_steel_records(catalog: dict = None) -> list:
             out.append({
                 "name": opt.get("name") or affixes[0].get("stat") or "",
                 "tier_key": tier_key,
+                # #194 — the altar this option is crafted at, as an integer, so the
+                # solver can key the accessory pool per TIER exactly as it keys the
+                # weapon pool: a host takes one effect per altar, not one in total.
+                "tier": GREEN_STEEL_KEYS.index(tier_key) + 1,
                 "ml": opt.get("ml"),
                 "affixes": affixes,
                 # #653 — provenance from the option itself, not from the menu key.

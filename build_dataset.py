@@ -1546,7 +1546,7 @@ def build() -> dict:
 
     # Legendary Thunder-Forged (multi-tier choice-slot) + Green Steel (single-pick
     # choice-slot): expose the craftable option pools. Hosts carry the marker
-    # (thunder_forged_tiers / green_steel_slot); the solver crafts the best option.
+    # (thunder_forged_tiers / green_steel_tiers); the solver crafts the best option.
     # U2 (R6/A2): these pools DO exist in gearplanner_crafting.json (the earlier
     # "no pool / pending harvest" claim was wrong) — source them NATIVELY from the
     # crafting catalog (T*(Weapon) / T*(Equipment)). No wiki_url gate, no type
@@ -1564,6 +1564,55 @@ def build() -> dict:
     # and thunder-forged; it did not, because of these two argument-less calls.
     tf = tf_mod.build_thunder_forged(crafting)
     gs = gs_mod.build_green_steel(crafting)
+    # #194 — the accessory pool is ATOMIC and, now that it is reachable, expanded
+    # exactly as the Nearly Complete and Viktranium channels above: one level IN,
+    # inside the option's own affix list. 18 of its 81 options are the
+    # ability-skills umbrellas ("Charisma Skills +22 Competence") that
+    # `spell_focus` expands into their component skills, and one craft grants
+    # every component together. Expanding ACROSS the record list would turn one
+    # craft into N mutually exclusive ones — the fan-out defect the registry gate
+    # exists to catch. The weapon pool carries no universal name, so it declares
+    # no pass (a declared pass that leaves no stamp fails the gate).
+    for _opt in gs["records"]:
+        if _opt.get("affixes"):
+            _opt["affixes"] = spell_focus_mod.expand_affixes(_opt["affixes"])
+            # The gear-planner recipe name IS the umbrella ("Charisma Skills"), and
+            # the universal-name walk in tests/test_spell_focus.py reads a record's
+            # `name` as well as its stats. Name the option by its engraved label
+            # instead ("Competence Charisma Skills"), which is what the expanded
+            # affixes already carry as `via` and how the Viktranium pool names its
+            # own universal options — the craft instruction the player sees is the
+            # affix list, so nothing is lost.
+            _via = next((a.get(spell_focus_mod.PROVENANCE_KEY) for a in _opt["affixes"]
+                         if a.get(spell_focus_mod.PROVENANCE_KEY)), None)
+            if _via and spell_focus_mod.is_universal(_opt.get("name")):
+                _opt["name"] = _via
+    # #194 — the hosts. `planner_items` surfaces `green_steel_tiers` (the 8 ML-26
+    # accessory blanks, `T<n> (Equipment)`) and `thunder_forged_tiers` (the 40
+    # weapon blanks, `T<n> (Weapon)`) from each item's own `crafting[]`. Only a
+    # `verified` host keeps its tiers, for the reason the Essence gate below gives:
+    # crafting real numbers onto a record we do not trust is how an unverified item
+    # becomes a recommendation. Counted here so the coverage can say how many hosts
+    # each pool actually reaches, and so the registry's host-marker trigger sees them.
+    for _marker, _cov in (("green_steel_tiers", gs["coverage"]),
+                          ("thunder_forged_tiers", tf["coverage"])):
+        _active, _pending = {}, {}
+        for v in variants:
+            if not v.get(_marker):
+                continue
+            if v.get("verification") == essence_mod.REQUIRED_VERIFICATION:
+                _active[v["source_item"]] = len(v[_marker])
+            else:
+                _pending[v["source_item"]] = len(v[_marker])
+                v[_marker] = None
+        _cov["hosts_active"] = len(_active)
+        _cov["tier_slots_active"] = sum(_active.values())
+        _cov["hosts_pending"] = sorted(_pending)
+        if not _active:
+            raise SystemExit(
+                f"Legendary Green Steel ({_marker}): the pool has options but NO verified "
+                f"host carries a tier. The pool would be inert while the coverage gate "
+                f"reports the labels served — the overstatement this gate exists to prevent.")
 
     # Essence Crafting — the Gem of Many Facets' three Trinket menus (#193/#599).
     # An option is offered only when its PLACEMENT, BONUS TYPE and ML CURVE are all

@@ -1078,17 +1078,19 @@ function dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts = null, essencePoo
       && (A.source_item || A.variant_id) !== (B.source_item || B.variant_id)) {
     return false;
   }
-  // Thunder-Forged multi-tier choice-slot: the craftable value lives in
-  // thunder_forged_tiers (a list of tier slots), outside variantBuckets — so a
-  // slot-only TF host would be pruned by any affix rival. A must offer at least as
-  // many of each tier slot as B (same trap as Viktranium/Seal hosts).
+  // Legendary Green Steel multi-tier choice-slots (#194), both halves: the
+  // craftable value lives in `thunder_forged_tiers` (the weapon pool's legacy
+  // marker) / `green_steel_tiers` (accessories) — a list of tier slots — outside
+  // variantBuckets, so a slot-only blank would be pruned by any affix rival. A must
+  // offer at least as many of each tier slot as B (same trap as Viktranium/Seal
+  // hosts, and the Blank-host trap CONCEPTS.md describes: the 8 accessory blanks
+  // carry NO affix but a drawback, so this clause is the only thing keeping them).
   const tfA = countColors((A.thunder_forged_tiers || []).map((s) => s.tier));
   const tfB = countColors((B.thunder_forged_tiers || []).map((s) => s.tier));
   for (const [k, n] of tfB) if ((tfA.get(k) || 0) < n) return false;
-  // Green Steel single-pick choice-slot: its craftable value lives in green_steel_slot
-  // (a presence marker), outside variantBuckets — a GS host must not be pruned by an
-  // affix rival that lacks the slot.
-  if (B.green_steel_slot && !A.green_steel_slot) return false;
+  const gsA = countColors((A.green_steel_tiers || []).map((s) => s.tier));
+  const gsB = countColors((B.green_steel_tiers || []).map((s) => s.tier));
+  for (const [k, n] of gsB) if ((gsA.get(k) || 0) < n) return false;
   // Wildcard set-piece (Gem of Many Facets) joker: its set-completion value lives in
   // joker_set_groups (pools of sets it can complete toward a threshold), outside
   // variantBuckets AND outside set_bonus (the build clears the Gem's fixed set). So a

@@ -1896,6 +1896,10 @@ const CUELESS_ON_PURPOSE = {
   // under a crafting family in the legend and read as a craft to go apply.
   // #603 closed the other entry (`augmentset`) — it was a gap, not a decision.
   vikEmpty: "an empty declared slot, not a craft",
+  // #194 — the same rule for a declared Legendary Green Steel altar the solve
+  // left empty, on either half.
+  tfEmpty: "an empty declared altar tier, not a craft",
+  gsEmpty: "an empty declared altar tier, not a craft",
 };
 
 test("#193: every craft family the loadout can emit carries an export cue", () => {
@@ -1960,15 +1964,17 @@ test("#603: a Set Augment is cued, and the legend explains it", () => {
 
 test("#603: the cue's word is dropped when the label already opens with it", () => {
   const md = toMarkdown(craftRec("gs", "gsPlaced", [{
-    item: "Widget", name: "GS", stat: "Constitution", bonus_type: "Insight",
+    item: "Widget", tier: 1, name: "GS", stat: "Constitution", bonus_type: "Insight",
     value: 6, unit: "flat",
   }]));
   // Skip the legend, which lists every cue by definition.
-  const line = md.split("\n").find((l) => l.includes("💠") && !l.includes("Legend"));
+  const line = md.split("\n").find((l) => l.includes("💠") && !/^_?Legend —/.test(l));
   assert.ok(line, "the Green Steel craft did not render at all");
-  assert.ok(!/Green Steel:\s*Green Steel/.test(line),
+  assert.ok(!/Green Steel T1:\s*(Legendary )?Green Steel/.test(line),
     `the system is named twice: ${line}`);
-  assert.ok(line.includes("💠 Green Steel:"), `the cue emoji and system are lost: ${line}`);
+  // #194 — the label names the tier (the altar the player goes to), and both
+  // Legendary Green Steel halves share the one cue word.
+  assert.ok(line.includes("💠 Legendary Green Steel T1:"), `the cue emoji and system are lost: ${line}`);
 });
 
 test("#603: a family whose label does NOT open with its system keeps the full cue", () => {
@@ -1980,7 +1986,7 @@ test("#603: a family whose label does NOT open with its system keeps the full cu
     item: "Widget", slot_type: "Dolorous", category: "Accessory",
     stat: "Constitution", bonus_type: "Insight", value: 6, unit: "flat",
   }]));
-  const line = md.split("\n").find((l) => l.includes("⚗️") && !l.includes("Legend"));
+  const line = md.split("\n").find((l) => l.includes("⚗️") && !/^_?Legend —/.test(l));
   assert.ok(line, "the Viktranium craft did not render at all");
   assert.ok(/⚗️ Viktranium: Slot Dolorous/.test(line),
     `vik must keep its cue word — its label names the slot, not the system: ${line}`);
@@ -1993,7 +1999,7 @@ test("#603: the de-stutter fires on every family whose label opens with its syst
     item: "Widget", name: "Widget", stat: "Constitution",
     bonus_type: "Insight", value: 6, unit: "flat",
   }]));
-  const line = md.split("\n").find((l) => l.includes("✨") && !l.includes("Legend"));
+  const line = md.split("\n").find((l) => l.includes("✨") && !/^_?Legend —/.test(l));
   assert.ok(line, "the Nearly Complete craft did not render at all");
   assert.ok(!/Nearly Completed:\s*Nearly Completed/.test(line), `named twice: ${line}`);
   assert.ok(line.includes("✨ Nearly Completed:"), line);
@@ -2004,11 +2010,13 @@ test("#603: the gearset label stays self-describing, because it prints with no c
   // rather than out of the cue would have left that export saying only
   // "Prefix: Strength +13", with nothing naming the system.
   const cases = {
-    gs: [{ stat: "Constitution", bonus_type: "Insight", value: 6, unit: "flat" }, "Green Steel"],
+    gs: [{ tier: 2, stat: "Constitution", bonus_type: "Insight", value: 6, unit: "flat" }, "Legendary Green Steel"],
     essence: [{ menu: "Prefix", effect: "Strength", stat: "Strength",
                 bonus_type: "Enhancement", value: 13, unit: "flat" }, "Essence Crafting"],
+    // #194/#653 — the weapon half is Legendary Green Steel too; the legacy `tf`
+    // key stays in the data, the player-facing word does not.
     tf: [{ tier: 1, stat: "Constitution", bonus_type: "Insight", value: 6, unit: "flat" },
-         "Thunder-Forged"],
+         "Legendary Green Steel"],
   };
   for (const [family, [o, word]] of Object.entries(cases)) {
     const label = Proj.craftLabel(o, family);
@@ -2086,6 +2094,10 @@ const ALL_NOTICES_REC = {
     setFilter: { excluded: 2, sets: ["Alpha"] },
     setPinReport: [{ set: "Beta", verdict: "pinned" }, { set: "Gamma", verdict: "conflict" }],
     essenceReport: { placed: [{ menu: "Menu", effect: "Effect", value: 2 }], coverage: { solved: 25, total: 170 } },
+    // #194 — one equipped blank, one altar crafted, one declared altar left empty.
+    greenSteelReport: { hosts: 1,
+      placed: [{ item: "Legendary Green Steel Belt", tier: 2, name: "Insight Wizardry", half: "accessory" }],
+      unfilled: [{ item: "Legendary Green Steel Belt", tier: 3, half: "accessory" }] },
   },
 };
 
@@ -2138,4 +2150,7 @@ test("#668: the five notices that were orphaned are specifically covered", () =>
   assert.ok(/You excluded 1 set/.test(md), "setFilterNotice");
   assert.ok(/You required this set/.test(md), "#539 setPinNotice");
   assert.ok(/Menu: Effect/.test(md), "#193/#599 essenceNotice");
+  // #194 — added with the notice, not after a re-orphaning: the disclosure that
+  // matched-aspect bonuses are out of scope is the one a shared build must carry.
+  assert.ok(/matched tier combination/.test(md), "#194 greenSteelNotice");
 });

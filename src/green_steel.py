@@ -13,8 +13,10 @@ its rationale live in the seed metadata and are disclosed per result.
 Strict wiki provenance: an option is solver-eligible only with a canonical
 ``bonus_type`` (in ``affix_parser.BONUS_TYPES``), a present ``stat`` (normalized
 via the item pipeline stat name), an integer ``value``, and a non-empty ``wiki_url``.
-Anything else is quarantined with a reason, never inferred. The pool is empty
-until harvested; the machinery is complete.
+Anything else is quarantined with a reason, never inferred. That legacy seed path
+is retained for its parser tests; the shipped pool comes from the gear-planner
+crafting catalog (`build_green_steel`), and its hosts are stamped structurally
+from each blank's own `crafting[]` (#194).
 """
 from __future__ import annotations
 
@@ -93,12 +95,13 @@ def build_green_steel(catalog=None):
         "pending": len(records) == 0,
         "cutline": None,
         "source": "gearplanner_crafting.json: " + ", ".join(crafting_catalog.GREEN_STEEL_KEYS),
-        "note": "single-pick choice-slot over the native Green Steel effect pool "
-                "(T1/T2/T3 Equipment). Sourced from the gear-planner crafting "
-                "catalog; host-marker surfacing lands with the native reader (U3). "
-                "KNOWN-UNSAFE: one record per AFFIX splits multi-affix options into "
-                "mutually exclusive siblings; inert only while no item carries "
-                "green_steel_slot (#194).",
+        "note": "per-tier single-pick choice-slot over the native Legendary Green "
+                "Steel ACCESSORY effect pool (T1/T2/T3 Equipment — the Altars of "
+                "Invasion / Subjugation / Devastation). Sourced from the gear-planner "
+                "crafting catalog; hosts are the ML-26 `Legendary Green Steel *` "
+                "accessory blanks, whose own crafting[] declares the three tiers "
+                "(`green_steel_tiers`, #194). One record per OPTION carrying its "
+                "`affixes` list; the solver takes one option per declared tier.",
     }
     return {"records": records, "quarantined": [], "coverage": coverage,
             "source_options": source_options}
