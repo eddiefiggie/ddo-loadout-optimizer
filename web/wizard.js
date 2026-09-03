@@ -538,6 +538,14 @@ var _rungExcludesAllAugments = (typeof rungExcludesAllAugments !== "undefined")
   ? rungExcludesAllAugments
   // eslint-disable-next-line global-require
   : require("./model.js").rungExcludesAllAugments;
+// #677 — the read-only ceiling context for a priority's Advanced panel, over the
+// same bridge. The wizard never reaches into model.js's `_INTRINSIC_CAPS`: the
+// accessor is what decides "no ceiling known" vs zero, and an older cached dataset
+// must render nothing rather than a ceiling of 0.
+var _statCeilingHintFor = (typeof statCeilingHintFor !== "undefined")
+  ? statCeilingHintFor
+  // eslint-disable-next-line global-require
+  : require("./model.js").statCeilingHintFor;
 /** #346 (U3, KTD3) — which rung a saved character loads at.
  *
  *  Extracted and exported because this is the highest-consequence line in the
@@ -933,7 +941,13 @@ function advancedRowModel(stat, state, vocab) {
 const ADVANCED_PANEL_HELP = {
   lead: "<strong>Nothing set is the default.</strong> With no min and no max, the solver takes as much of this stat as it can fit without giving up anything ranked above it. Leave both blank unless you have a specific number in mind.",
   min: "<strong>Min is a hard floor.</strong> The solver sacrifices your lower priorities to reach it, and if it can't, it chases that stat above everything else. Use it only for a number you truly must hit (e.g. a survivability threshold like PRR).",
-  max: "<strong>Max is a cap.</strong> Stop valuing a stat past a breakpoint you know is real (e.g. 100% doublestrike). The tool can't verify in-game caps for you — set one only when you know the breakpoint.",
+  // #677 — this used to say "The tool can't verify in-game caps for you", with
+  // 100% doublestrike as its example. Both halves were wrong once #199 landed the
+  // wiki-confirmed cap table: Doublestrike is exactly the stat the tool DOES
+  // verify, and it applies that ceiling whether or not anything is typed here. The
+  // panel now states any known ceiling beside the box, so this text no longer has
+  // to stand in for it.
+  max: "<strong>Max is a cap.</strong> Stop valuing a stat past a breakpoint you know is real. Where this tool knows a stat's ceiling it says so below and already applies it — set a Max here to stop somewhere tighter than that, or when you know a breakpoint the tool does not.",
   // R7 — the sources this covers, on screen rather than only in a tooltip. The
   // feature exists because these bonuses are invisible to the tool, so a label
   // that does not name them cannot be found by the player who needs it.
@@ -2288,7 +2302,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict,
+  module.exports = { WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -3614,6 +3628,20 @@ ${(() => {
       return `Advanced${req}${t ? ` <span class="wz-adv-badge">${esc(t)}</span>` : ""}`;
     }
 
+    /** #677 — read-only ceiling context under the bounds pair. NEVER written into
+     *  the Max box: `adv.cap` stays null by default and the badge count is
+     *  untouched, so this adds information without adding a setting.
+     *
+     *  The two kinds are visually distinct because they mean opposite things — a
+     *  confirmed ceiling IS being applied, a disclosed one is deliberately NOT —
+     *  and `statCeilingHintFor` guarantees a stat can never be both. */
+    function ceilingHintHTML(stat) {
+      const hint = _statCeilingHintFor ? _statCeilingHintFor(stat) : null;
+      if (!hint) return "";
+      return `<p class="wz-adv-ceiling is-${esc(hint.kind)}" data-ceiling="${esc(stat)}">`
+        + `${esc(hint.line)}</p>`;
+    }
+
     function advancedHTML(stat, i, adv) {
       return `<details class="wz-adv" data-adv="${esc(stat)}"${panelOpenAttr(stat)}>
         <summary>${advSummaryHTML(adv)}</summary>
@@ -3622,6 +3650,7 @@ ${(() => {
           <span class="wz-bounds">
             <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-min="${i}" value="${esc(adv.floor == null ? "" : adv.floor)}" placeholder="min" aria-label="${esc(stat)} minimum (floor)" draggable="false">
             <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-max="${i}" value="${esc(adv.cap == null ? "" : adv.cap)}" placeholder="max" aria-label="${esc(stat)} maximum (cap)" draggable="false"></span>
+          ${ceilingHintHTML(stat)}
           ${adv.required ? `<p class="wz-adv-req-note">This effect is required: the solve must include it, giving up higher-ranked stats if that is what it takes. <button type="button" class="wz-clear-req" data-clearreq="${i}">Clear requirement</button></p>` : ""}
           <p class="wz-adv-note">${ADVANCED_PANEL_HELP.min}</p>
           <p class="wz-adv-note">${ADVANCED_PANEL_HELP.max}</p>

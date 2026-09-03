@@ -224,6 +224,81 @@ let _ESSENCE_COVERAGE = null;
 function setEssenceCoverage(cov) { _ESSENCE_COVERAGE = cov || null; }
 function essenceCoverage() { return _ESSENCE_COVERAGE; }
 
+// #677 — ceilings the app KNOWS about, as one table both the pre-solve wizard and
+// the post-solve projection read.
+//
+// Two kinds, and the distinction is the whole point:
+//
+//   * a CONFIRMED cap lives in `intrinsic_stat_caps.json`, is installed above, and
+//     is applied by the solver whether or not the player types anything. There is
+//     no entry here for those — `intrinsicCapFor` reads the installed table, so a
+//     stat added by a future harvest gets the wizard line for free and nobody has
+//     to remember to add it in two places.
+//   * a DISCLOSED ceiling is one this repo deliberately REFUSED to clamp: #573's
+//     armor Dodge limit (per item, not per category, and the wiki does not state
+//     it) and #663's Jump soft cap (40 is height-only; Sneak, ACP and fall-damage
+//     reduction each escape it). Those two get an entry, because there is no
+//     number in the data to derive one from.
+//
+// NEVER PRE-FILL either kind into the Max box. Pre-filling a confirmed cap turns an
+// unconditional guarantee into an editable preference (CONCEPTS.md: a user cap may
+// only bind TIGHTER), and pre-filling a refused ceiling is inferring a value, which
+// is the standing rule in AGENTS.md. These lines are read-only context.
+//
+// `ceiling` is the shared NUMBER. `tests/stat-ceilings.test.js` asserts that where
+// one exists it also appears in the post-solve sentence in projection.js, so the
+// two surfaces cannot come to quote different numbers at the player — the silent
+// drift #677 asked to be designed out.
+const CEILING_DISCLOSURES = {
+  Dodge: {
+    ceiling: null,               // per ARMOR, and the wiki does not state it per item
+    line: "In game, your armor's Maximum Dexterity Bonus can reduce your Maximum Dodge "
+        + "Bonus. That limit belongs to the individual armor, not to its category, and "
+        + "the wiki does not state it per item — so this solve does not apply it, and "
+        + "the Dodge total you get back will be the gear sum. If you know your armor's "
+        + "limit, set it as the Max here.",
+  },
+  Jump: {
+    ceiling: 40,
+    line: "Jump HEIGHT stops improving at 40 — but Sneak applies \u221220, armor check "
+        + "penalty is subtracted first, and falling-damage reduction keeps scaling past "
+        + "40. Because those three escape the cap, this solve does not apply it. Set a "
+        + "Max of 40 if none of them apply to you, and the slots above it go to your "
+        + "next priority.",
+  },
+};
+
+/** The read-only ceiling context for `stat`, or null when there is nothing to say.
+ *
+ *  Shape: `{ kind: "confirmed"|"disclosed", ceiling, line }`. A stat can never be
+ *  both — a confirmed cap is applied and a disclosed one is refused, and rendering
+ *  both would tell the player the same number is and is not in force. The confirmed
+ *  branch is checked first and returns, which is that guarantee.
+ *
+ *  Returns null when no dataset is installed (an older cached items.json carries no
+ *  `intrinsic_stat_caps` key), so the panel renders exactly as it did pre-#677
+ *  rather than showing an empty or zero ceiling. */
+function statCeilingHintFor(stat) {
+  if (stat == null) return null;
+  const cap = intrinsicCapFor(stat);
+  if (typeof cap === "number") {
+    return { kind: "confirmed", ceiling: cap,
+      line: `Wiki-confirmed ceiling: ${cap}. It is already applied to this solve — `
+          + "set a Max only if you want to stop BELOW it." };
+  }
+  const d = CEILING_DISCLOSURES[stat];
+  return d ? { kind: "disclosed", ceiling: d.ceiling, line: d.line } : null;
+}
+
+/** #677 — the accessor the wizard reads, so nothing outside this file reaches into
+ *  `_INTRINSIC_CAPS`. Returns null for an unknown stat AND for the uninstalled
+ *  state, which the caller must treat as "no ceiling is known", never as zero. */
+function intrinsicCapFor(stat) {
+  if (stat == null) return null;
+  const v = _INTRINSIC_CAPS[stat];
+  return typeof v === "number" ? v : null;
+}
+
 // #683 — DISCLOSED name splits: one wiki mechanic under more than one spelling,
 // with the stacking axis unsettled. Installed from dataset.js on load, same
 // two-runtime bridge as the tables above.
@@ -1942,7 +2017,8 @@ function poolStatNames(model) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { poolStatNames, setIntrinsicCaps, setSplitMechanics, splitMechanicFor, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
+  module.exports = { poolStatNames, setIntrinsicCaps, setSplitMechanics, splitMechanicFor,
+    intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
