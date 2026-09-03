@@ -3,6 +3,20 @@ const assert = require("assert");
 const { toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, toGearset, setBonusDetail, bbEsc, mdEsc, htmlEsc, csvSafe, constraintLines, cue, legendText, CHARACTER_NOTICES } = require("../web/exporters.js");
 const Proj = require("../web/projection.js");
 
+// #683 — the disclosed name split is dataset-installed state, so the all-notices
+// fixture below cannot populate `splitMechanicNotice` without it. Installed from a
+// fixture rather than the built dataset because web/data/items.json is gitignored
+// and this file must run without it.
+require("../web/model.js").setSplitMechanics([{
+  mechanic: "Critical Multiplier on a 19-20",
+  spellings: ["Critical Multiplier on a 19-20", "Critical Multiplier on a roll of 19-20"],
+  sets_per_spelling: { "Critical Multiplier on a 19-20": 2, "Critical Multiplier on a roll of 19-20": 3 },
+  total_sets: 5,
+  contested_summary: "one wiki page says these stack, another types them so they cannot",
+  wiki_url: "https://ddowiki.com/page/Critical_hit_multiplier",
+  issue: 683,
+}]);
+
 let passed = 0;
 function test(name, fn) {
   try { fn(); console.log(`PASS ${name}`); passed++; }
@@ -2045,11 +2059,11 @@ test("#663: the Jump soft-cap disclosure reaches ALL FOUR export surfaces", () =
  *  silently skip it, which is the same vacuity that let five notices rot. */
 const ALL_NOTICES_REC = {
   name: "Every notice",
-  query: { targets: ["Dodge", "Jump"], armorType: "heavy", craftingRung: "no-niche-crafting", augCeiling: 30 },
-  inputs: { ml: 34, armor: "heavy", pool: "all", priorities: ["Dodge", "Jump"], craftingRung: "no-niche-crafting" },
+  query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20"], armorType: "heavy", craftingRung: "no-niche-crafting", augCeiling: 30 },
+  inputs: { ml: 34, armor: "heavy", pool: "all", priorities: ["Dodge", "Jump", "Critical Multiplier on a 19-20"], craftingRung: "no-niche-crafting" },
   snapshot: {
     status: "optimal", chosen: [], setsActive: [],
-    query: { targets: ["Dodge", "Jump"], armorType: "heavy", craftingRung: "no-niche-crafting", augCeiling: 30 },
+    query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20"], armorType: "heavy", craftingRung: "no-niche-crafting", augCeiling: 30 },
     effective: { Jump: 46, Dodge: 20 },
     creditReport: [{ stat: "Dodge", bonus_type: "Profane", value: 5 }],
     saturationReport: [{ stat: "Dodge", cap: 20, bonusTypes: ["Enhancement"] }],

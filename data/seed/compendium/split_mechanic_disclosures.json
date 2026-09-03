@@ -1,0 +1,35 @@
+{
+  "_README": "#683 — curated families where the DDO Wiki uses MORE THAN ONE SPELLING for ONE mechanic AND the repo has not ruled on whether the sources stack. The dataset keeps every spelling exactly as harvested; this shard only DISCLOSES the split to the player.",
+  "_why_not_folded": "A fold (src/set_parser.py's parse seam, the #305 shape) collapses the spellings into one `stat||type` bucket, which takes the MAX — that asserts the sources do not stack. A cross-add entry (web/cross-add.js) flat-adds them across buckets — that asserts they do. Both are answers to a question the wiki has not settled here, so this shard takes neither. Disclosure is the conservative direction, the same one #573 took for the armor Dodge limit and #663 for the Jump soft cap: a visible gap beats a confident wrong number.",
+  "_discipline": "An entry is a statement that the mechanic is ONE THING (which needs a wiki page naming it once) and that its STACKING is unsettled (which needs the two readings quoted). When a later ruling settles the stacking axis, the entry does not gain a value — it is DELETED, and the family moves to a fold or a cross-add. This shard must never grow a number the solver reads.",
+  "_stale_guard": "Every entry declares, per set channel, the distinct-set count each spelling carries today. The build FAILS when a count moves, because the disclosure quotes those counts to the player: a refresh that adds a sixth granting set would otherwise leave the notice quietly lying. Zero counts are declared too — `membership_set_defs: 0` asserts the spelling is ABSENT there, so a refresh that starts emitting it fires the guard instead of silently widening the population.",
+  "disclosures": [
+    {
+      "mechanic": "Critical Multiplier on a 19-20",
+      "issue": 683,
+      "spellings": [
+        "Critical Multiplier on a 19-20",
+        "Critical Multiplier on a roll of 19-20"
+      ],
+      "bonus_type": "Artifact",
+      "value": 1,
+      "expected_sets": {
+        "parsed_set_bonuses": {
+          "Critical Multiplier on a 19-20": 2,
+          "Critical Multiplier on a roll of 19-20": 3
+        },
+        "membership_set_defs": {
+          "Critical Multiplier on a 19-20": 0,
+          "Critical Multiplier on a roll of 19-20": 0
+        }
+      },
+      "wiki_url": "https://ddowiki.com/page/Critical_hit_multiplier",
+      "one_mechanic_evidence": "ddowiki Critical_hit_multiplier (Critical multiplier redirects to it) carries a section headed 'Ways to increase multiplier on 19 and 20' whose Items subsection lists 'Renegade Champion item set: +1', 'Fried & Frozen Frenzy item set: +1' and 'Last Line of Defense item set: +1' — all five granting sets of both spellings, under one mechanic heading. Harvested 2026-09-02.",
+      "contested_stacking": "The same section opens 'Multiple ways exist now to increase critical multiplier on the rolls of 19 and 20. All of these fully stack.' — with the three item sets listed inside it. But Named_item_sets writes every one of them as an ARTIFACT bonus ('+1 Artifact Bonus to Critical Multiplier on a 19-20'), and same-type bonuses do not stack. The two readings give different totals for a player wearing two of these sets, and no third wiki page adjudicates them.",
+      "no_source_authority": "Both spellings are on the SAME page, Named_item_sets, which is already every one of these tiers' wiki_url. There is no cross-source tiebreak of the kind that settled #672, because there is only one source.",
+      "settling_test": "Wear Renegade Champion (3 pieces) together with Fried & Frozen Frenzy (2 pieces) and read the critical multiplier on a 19-20. +2 means the mechanics page governs and these must never be folded; +1 means the Artifact typing governs and the fold described in #683 is correct.",
+      "contested_summary": "the wiki's Critical hit multiplier page says these sources \"fully stack\", while Named item sets types every one of them as the same Artifact bonus, and same-type bonuses do not stack"
+    }
+  ],
+  "_player_sentence": "Every entry carries `contested_summary`: the ONE sentence the player is shown explaining why the app declined to resolve the split. It lives here, beside the wiki quotes it compresses, rather than inside web/projection.js — a second family would otherwise inherit this family's reasoning verbatim, which is the silent drift `advSummaryHTML` already carries a comment about."
+}

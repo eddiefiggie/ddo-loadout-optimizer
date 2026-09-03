@@ -224,6 +224,29 @@ let _ESSENCE_COVERAGE = null;
 function setEssenceCoverage(cov) { _ESSENCE_COVERAGE = cov || null; }
 function essenceCoverage() { return _ESSENCE_COVERAGE; }
 
+// #683 — DISCLOSED name splits: one wiki mechanic under more than one spelling,
+// with the stacking axis unsettled. Installed from dataset.js on load, same
+// two-runtime bridge as the tables above.
+//
+// This is deliberately NOT `_STACK_EQUIV` and NOT `_CROSS_ADD`. Folding the
+// spellings into one bucket takes the max, which asserts they do not stack;
+// cross-adding them asserts they do. The wiki states both readings for this
+// family on two different pages, so the app takes neither and tells the player
+// instead. Nothing the solver reads may ever be derived from this table.
+// docs/wiki-evidence/critical-multiplier-19-20.md.
+let _SPLIT_MECHANICS = [];
+function setSplitMechanics(list) {
+  _SPLIT_MECHANICS = Array.isArray(list) ? list.slice() : [];
+}
+/** The disclosed family containing `stat`, or null. */
+function splitMechanicFor(stat) {
+  if (stat == null) return null;
+  for (const fam of _SPLIT_MECHANICS) {
+    if (Array.isArray(fam.spellings) && fam.spellings.includes(stat)) return fam;
+  }
+  return null;
+}
+
 function setIntrinsicCaps(map) {
   _INTRINSIC_CAPS = Object.create(null);
   if (map && typeof map === "object") {
@@ -1919,7 +1942,7 @@ function poolStatNames(model) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { poolStatNames, setIntrinsicCaps, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
+  module.exports = { poolStatNames, setIntrinsicCaps, setSplitMechanics, splitMechanicFor, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,

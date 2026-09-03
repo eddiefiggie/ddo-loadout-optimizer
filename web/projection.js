@@ -32,6 +32,13 @@
   // than throwing inside the projection every surface reads from.
   const _rungOf = (typeof craftingRung !== "undefined") ? craftingRung
     : (typeof require !== "undefined" ? require("./model.js").craftingRung : () => "everything");
+  // #683 — the disclosed-name-split lookup, over the same bridge. Fails open to
+  // "no family" so a hand-edited backup renders no notice rather than throwing
+  // inside the projection every surface reads from.
+  const _splitMechanicFor = (typeof splitMechanicFor !== "undefined") ? splitMechanicFor
+    : (typeof require !== "undefined" ? require("./model.js").splitMechanicFor
+      : () => null);
+
   const _isSolarLunarColor = (typeof isSolarLunarColor !== "undefined") ? isSolarLunarColor
     : (typeof require !== "undefined" ? require("./model.js").isSolarLunarColor
       : (c) => c === "Sun" || c === "Moon");
@@ -1194,6 +1201,57 @@
       + "the slots spent above it will go to your next priority.";
   }
 
+  /** #683 — one mechanic, two wiki spellings, stacking unsettled.
+   *
+   *  Fires when the player has ranked at least one spelling of a disclosed family.
+   *  Deliberately changes NO number: folding the spellings into one bucket would
+   *  take the max (asserting they do not stack) and cross-adding them would sum
+   *  (asserting they do). The wiki states both readings on two different pages,
+   *  so the split is disclosed rather than resolved — the same conservative
+   *  direction #573 took for the armor Dodge limit and #663 for the Jump soft cap.
+   *
+   *  Reads the stamped family, never a hardcoded name or count: the counts are
+   *  quoted to the player, so a refresh that adds a granting set must move this
+   *  sentence. `src/split_mechanics.py`'s population guard fails the build if the
+   *  data moves without the declaration following it. */
+  function splitMechanicLine(rec) {
+    const snap = (rec && rec.snapshot) || rec || {};
+    const q = (rec && rec.query) || snap.query || {};
+    const targets = Array.isArray(q.targets) ? q.targets : [];
+    if (!targets.length) return null;
+
+    for (const stat of targets) {
+      const fam = _splitMechanicFor(stat);
+      if (!fam) continue;
+      const spellings = Array.isArray(fam.spellings) ? fam.spellings : [];
+      const per = fam.sets_per_spelling || {};
+      const total = fam.total_sets || 0;
+      const others = spellings.filter((s) => s !== stat);
+      if (!others.length) continue;
+      const bothRanked = spellings.every((s) => targets.includes(s));
+      const mine = per[stat];
+      // A family whose counts did not ship is not disclosable: the sentence quotes
+      // them, and "granted by undefined of the 0 sets" is worse than silence.
+      if (typeof mine !== "number" || !(total > 0)) continue;
+      if (others.some((s) => typeof per[s] !== "number")) continue;
+      const otherList = others
+        .map((s) => `"${s}" (${per[s]} of them)`)
+        .join(", ");
+      return `The DDO wiki writes this mechanic two ways, and this app keeps both `
+        + `exactly as the wiki has them. "${stat}" is granted by ${mine} of the `
+        + `${total} sets carrying this mechanic; the rest carry ${otherList}. `
+        + (bothRanked
+          ? `You have ranked both, so this solve ADDS them. `
+          : `You have ranked one, so this solve reaches only those ${mine}. `)
+        + `Which is right is unverified: ${fam.contested_summary}. Rather than guess, `
+        + `the app leaves the two names separate and tells you. `
+        + (bothRanked
+          ? `If they turn out not to stack, this build is counting the same bonus more than once.`
+          : `If they turn out to stack, ranking the other name too would reach the remaining sets.`);
+    }
+    return null;
+  }
+
   /** Variant_ids of host items that carry a solver-placed Set Augment. A Set Augment
    *  overrides ("suppresses") the host item's OWN named set(s) — the solver already
    *  dropped that set from setsActive/totals, so the set-satisfaction primitives must
@@ -2215,6 +2273,11 @@
         // and the solve cleared 40). Same channel and same reason: a recipient must
         // not read a Jump total as all-useful when part of it buys no height.
         jumpSoftCapNotice: jumpSoftCapLine(rec),
+        // #683 — the disclosed name split (null unless a spelling of a disclosed
+        // family was ranked). Same channel and same reason as the two above: a
+        // recipient must not read the mechanic's total as settled when the wiki
+        // states two readings and this app committed to neither.
+        splitMechanicNotice: splitMechanicLine(rec),
         // #110 (U7/U9) — the blocklist disclosure: empty array when no block
         // touched the solve. A shared build asserting optimality with silent
         // exclusions is the solve-visible-but-share-invisible failure.
@@ -2864,7 +2927,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, packFilterNoticeLines, setFilterNoticeLines,
+    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, splitMechanicLine, packFilterNoticeLines, setFilterNoticeLines,
     essenceNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)

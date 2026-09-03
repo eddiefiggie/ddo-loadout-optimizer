@@ -1785,6 +1785,16 @@ const NOTICES = [
     subject: "jump soft cap", cls: NOTICE_ACTIONABLE,
     jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
     render: (c) => jumpSoftCapNotice(c.query, c.result) },
+  // #683 — QUALIFYING, like the #573 disclosure and unlike the #663 one directly
+  // above. The player CAN press something — rank the other spelling and reach the
+  // remaining sets — but whether that is correct is exactly the unverified
+  // question, so presenting it as the fix would take the side the app declined to
+  // take. The jump is offered because the choice, if they want it, lives on the
+  // priorities step. docs/wiki-evidence/critical-multiplier-19-20.md.
+  { name: "splitMechanicNotice", id: "split-mechanic", title: "ONE MECHANIC, TWO WIKI NAMES",
+    subject: "split mechanic spelling", cls: NOTICE_QUALIFYING,
+    jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
+    render: (c) => splitMechanicNotice(c.query, c.result) },
   // #193/#599 — qualifying for the same reason as the notice above: there is
   // nothing for the player to press. It reports that the Gem's menus were solved
   // over 25 of the 170 effects the game offers, which is a fact about the DATA
@@ -2037,6 +2047,17 @@ function jumpSoftCapNotice(query, result) {
     ? Proj.jumpSoftCapLine({ snapshot: result, query }) : null;
   return line
     ? `<p class="scope-note jump-softcap-note" role="status">${esc(line)}</p>`
+    : "";
+}
+
+/** #683 — the disclosed name split. Same contract as the two notices above: reads
+ *  the SHARED sentence from projection, never a second wording, so the app and a
+ *  shared build cannot come to disagree about the same solve. */
+function splitMechanicNotice(query, result) {
+  const line = (Proj && Proj.splitMechanicLine)
+    ? Proj.splitMechanicLine({ snapshot: result, query }) : null;
+  return line
+    ? `<p class="scope-note split-mechanic-note" role="status">${esc(line)}</p>`
     : "";
 }
 

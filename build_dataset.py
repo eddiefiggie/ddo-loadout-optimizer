@@ -56,6 +56,7 @@ from src import provenance as provenance_mod
 from src import value_corrections as value_corrections_mod
 from src import name_corrections as name_corrections_mod
 from src import helpless_fold as helpless_fold_mod
+from src import split_mechanics as split_mechanics_mod
 from src import untyped_rankable as untyped_rankable_mod
 from src import utility_procs as utility_procs_mod
 from src import dr_qualifiers as dr_qualifiers_mod
@@ -311,6 +312,8 @@ VALUE_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "item_value_corrections.json")
 NAME_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "affix_name_corrections.json")
+SPLIT_MECHANICS_PATH = os.path.join(
+    HERE, "data", "seed", "compendium", "split_mechanic_disclosures.json")
 TYPE_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "affix_type_corrections.json")
 ACQUIRABILITY_PATH = os.path.join(
@@ -1413,6 +1416,29 @@ def build() -> dict:
         (a.get("stat")
          for _d in membership_defs.values() for _t in _d.get("tiers") or []
          for a in _t.get("affixes") or []))
+
+    # #683 — the DISCLOSED name splits. Measured here, beside the fold guards,
+    # because it is the same question asked the other way: `helpless_fold`
+    # asserts a family IS folded, this asserts a family is still exactly as
+    # fragmented as the disclosure tells the player it is. Both set channels are
+    # measured, and the entry declares a count for each — a spelling absent from
+    # `membership_set_defs` declares 0 there, so a refresh that starts emitting
+    # it fails the build instead of silently widening the population the notice
+    # quotes. docs/wiki-evidence/critical-multiplier-19-20.md.
+    _split_mechanics = split_mechanics_mod.load(SPLIT_MECHANICS_PATH)
+    _split_spellings = [sp for _e in _split_mechanics for sp in _e.get("spellings") or []]
+    _split_measured = split_mechanics_mod.measure(_split_spellings, {
+        "parsed_set_bonuses": ((a.get("stat"), t.get("set"))
+                               for v in variants
+                               for t in v.get("parsed_set_bonuses") or []
+                               for a in t.get("affixes") or []),
+        "membership_set_defs": ((a.get("stat"), _name)
+                                for _name, _d in membership_defs.items()
+                                for _t in _d.get("tiers") or []
+                                for a in _t.get("affixes") or []),
+    })
+    split_mechanics_mod.assert_population(
+        _split_mechanics, _split_measured, inspected=len(variants))
     membership_mod.attach_lost_purpose_slots(variants, membership_defs)
     variants, cov = verify_mod.apply(variants)          # per-affix verification gate
 
@@ -2084,6 +2110,13 @@ def build() -> dict:
     out["metadata"]["intrinsic_stat_caps"] = _intrinsic_caps
     out["metadata"]["intrinsic_stat_caps_refused"] = sorted(
         r["stat"] for r in (_caps_shard.get("refused") or []) if r.get("stat"))
+
+    # #683 — what the player-facing disclosure needs, and nothing the solver can
+    # read: the family, the per-spelling distinct-set counts the sentence quotes,
+    # and the issue. The stacking axis is deliberately absent — it is unsettled,
+    # so there is no number here for anything to consume by accident.
+    out["metadata"]["split_mechanic_disclosures"] = split_mechanics_mod.stamp(
+        _split_mechanics, _split_measured)
 
     out["metadata"]["crafted_twin_identity"] = _twins["identity"]
     out["metadata"]["crafted_twin_coverage"] = {
