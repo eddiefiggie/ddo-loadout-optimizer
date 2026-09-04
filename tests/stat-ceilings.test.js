@@ -58,6 +58,30 @@ test("#677 a disclosed ceiling says it is NOT applied, and why", () => {
   assert.ok(/does not apply it/i.test(dodge.line), dodge.line);
 });
 
+test("#701 Magical Sheltering is disclosed per armor type, from the one shared table", () => {
+  M.setIntrinsicCaps(CAPS);
+  assert.deepStrictEqual(M.MRR_CAP_BY_ARMOR, { cloth: 50, light: 100 },
+    "the wiki's MRR cap table (Magical_Resistance_Rating § MRR cap); medium and heavy ABSENT, meaning no ceiling");
+  assert.strictEqual(M.MRR_CAP_BY_ARMOR.medium, undefined);
+  const h = M.statCeilingHintFor("Magical Sheltering");
+  assert.strictEqual(h.kind, "disclosed");
+  assert.strictEqual(h.ceiling, null, "armor-keyed, so it carries no single number");
+  assert.ok(/does not apply the cap/.test(h.line), h.line);
+  for (const n of Object.values(M.MRR_CAP_BY_ARMOR)) {
+    assert.ok(h.line.includes(String(n)), `the hint quotes the table's ${n}`);
+  }
+  assert.ok(/MRR Cap/.test(h.line) && /Magical Sheltering Cap/.test(h.line),
+    "names the raiser under the wiki's name AND the catalog's — the 2026-09-04 report found it under the first");
+  // #677's drift rule, applied by hand since the ceiling is a table not a number:
+  // the post-solve sentence reads the SAME table, so the two cannot quote
+  // different caps at the player.
+  const proj = fs.readFileSync(path.join(__dirname, "..", "web", "projection.js"), "utf8");
+  const start = proj.indexOf("function mrrCapLine(");
+  assert.ok(start > -1, "mrrCapLine is gone from projection.js");
+  const body = proj.slice(start, proj.indexOf("\n  }", start));
+  assert.ok(body.includes("MRR_CAP_BY_ARMOR"), "the notice reads the shared table, not its own copy");
+});
+
 test("#677 a stat is never BOTH confirmed and disclosed", () => {
   // The guarantee matters because the two lines contradict each other: one says
   // the ceiling is in force, the other says it deliberately is not.

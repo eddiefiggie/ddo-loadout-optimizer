@@ -60,6 +60,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     { key: "augCeilingNotice", csv: "Scope" },
     { key: "dodgeMaxDexNotice", csv: "Dodge scope" },
     { key: "jumpSoftCapNotice", csv: "Jump soft cap" },
+    { key: "mrrCapNotice", csv: "MRR cap" },
     { key: "splitMechanicNotice", csv: "Split mechanic" },
     { key: "capSurplusNotice", csv: "Cap surplus" },
     { key: "blockNotice", csv: "Blocked" },

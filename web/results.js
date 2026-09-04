@@ -1801,6 +1801,15 @@ const NOTICES = [
     subject: "jump soft cap", cls: NOTICE_ACTIONABLE,
     jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
     render: (c) => jumpSoftCapNotice(c.query, c.result) },
+  // #701 — ACTIONABLE, like #663 directly above and for the same reason: the
+  // ceiling the app can see IS known (the armor's cap plus the gear cap bonus on
+  // this loadout), and a Max at that number resolves it. What we cannot decide
+  // for the player is whether a tree or stance raises their cap further, so the
+  // notice names the ceiling and both fixes — a Max, or ranking the cap stat.
+  { name: "mrrCapNotice", id: "mrr-cap", title: "MAGICAL SHELTERING ABOVE YOUR ARMOR'S CAP",
+    subject: "magical resistance rating cap", cls: NOTICE_ACTIONABLE,
+    jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
+    render: (c) => mrrCapNotice(c.query, c.result) },
   // #683 — QUALIFYING, like the #573 disclosure and unlike the #663 one directly
   // above. The player CAN press something — rank the other spelling and reach the
   // remaining sets — but whether that is correct is exactly the unverified
@@ -2077,6 +2086,17 @@ function jumpSoftCapNotice(query, result) {
     ? Proj.jumpSoftCapLine({ snapshot: result, query }) : null;
   return line
     ? `<p class="scope-note jump-softcap-note" role="status">${esc(line)}</p>`
+    : "";
+}
+
+/** #701 — the armor-keyed MRR ceiling disclosure. Same contract as the two
+ *  notices above: reads the SHARED sentence from projection, never a second
+ *  wording, so the app and a shared build cannot disagree about the same solve. */
+function mrrCapNotice(query, result) {
+  const line = (Proj && Proj.mrrCapLine)
+    ? Proj.mrrCapLine({ snapshot: result, query }) : null;
+  return line
+    ? `<p class="scope-note mrr-cap-note" role="status">${esc(line)}</p>`
     : "";
 }
 
@@ -3722,7 +3742,7 @@ function upgradesList(probed, list) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { concessionOutcome, concessionFailedOutcome, upgradesList,
-    renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, jumpSoftCapNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+    renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, jumpSoftCapNotice, mrrCapNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,

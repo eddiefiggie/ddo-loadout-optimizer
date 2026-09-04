@@ -249,7 +249,30 @@ function essenceCoverage() { return _ESSENCE_COVERAGE; }
 // one exists it also appears in the post-solve sentence in projection.js, so the
 // two surfaces cannot come to quote different numbers at the player — the silent
 // drift #677 asked to be designed out.
+/** #701 — the armor-keyed Magical Resistance Rating ceiling, from
+ *  https://ddowiki.com/page/Magical_Resistance_Rating § "MRR cap" (read 2026-09-04):
+ *  "Robes, Outfit, or empty armor slot: 50 · Light Armor: 100 · Medium Armor: No
+ *  cap · Heavy Armor: No cap". ONE table, read by the Advanced-panel hint and the
+ *  post-solve notice alike (#677's drift rule). Medium and heavy are ABSENT, not
+ *  zero or Infinity: absent means "no ceiling", and the readers treat it so.
+ *
+ *  Recorded in docs/wiki-evidence/intrinsic-stat-caps.md §13 and NOT in
+ *  intrinsic_stat_caps.json: it is keyed to the declared armor, not a constant,
+ *  and the wiki lists cap RAISERS the app cannot see (enhancement trees, stances)
+ *  beside the gear ones it can (`Magical Sheltering Cap`). Disclosed, never
+ *  clamped — the Dodge (#573) and Jump (#663) precedent. */
+const MRR_CAP_BY_ARMOR = Object.freeze({ cloth: 50, light: 100 });
+
 const CEILING_DISCLOSURES = {
+  "Magical Sheltering": {
+    ceiling: null,               // per ARMOR TYPE — cloth 50, light 100, medium/heavy none
+    line: "In game, Magical Resistance Rating is capped by your armor type: 50 in "
+        + "cloth (or no armor), 100 in light, uncapped in medium and heavy. Gear cap "
+        + "bonuses (the wiki calls them MRR Cap; this catalog names the stat Magical "
+        + "Sheltering Cap) and some enhancement trees raise it. Because the tree part "
+        + "is yours alone to know, this solve does not apply the cap. Set your real "
+        + "ceiling as the Max here, or rank Magical Sheltering Cap to raise it.",
+  },
   Dodge: {
     ceiling: null,               // per ARMOR, and the wiki does not state it per item
     line: "In game, your armor's Maximum Dexterity Bonus can reduce your Maximum Dodge "
@@ -2020,7 +2043,7 @@ function poolStatNames(model) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { poolStatNames, setIntrinsicCaps, setSplitMechanics, splitMechanicFor,
-    intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
+    intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, MRR_CAP_BY_ARMOR, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,

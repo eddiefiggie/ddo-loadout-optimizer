@@ -1684,6 +1684,43 @@ test("#663: the Jump soft-cap disclosure fires only when the solve actually clea
     "and silent once the player set their own Max: they have already answered this");
 });
 
+test("#701: the MRR cap disclosure is keyed to the declared armor and fires only above the ceiling the app can see", () => {
+  const fire = (q, eff) => R.mrrCapNotice(q, { status: "optimal", effective: eff });
+  const ms = (n, cap) => (cap == null ? { "Magical Sheltering": n } : { "Magical Sheltering": n, "Magical Sheltering Cap": cap });
+
+  const cloth = fire({ armorType: "cloth", targets: ["Magical Sheltering"] }, ms(130));
+  assert.ok(/Magical Sheltering 130/.test(cloth), "names the total the player actually reached");
+  assert.ok(/caps Magical Resistance Rating at 50/.test(cloth), "cloth: the wiki's 50");
+  assert.ok(/The 80 above that/.test(cloth), "quantifies the surplus");
+  assert.ok(/enhancement tree or stance/.test(cloth), "and says why it is not simply wasted — raisers the app cannot see");
+  assert.ok(/set a Max of 50/.test(cloth), "the Max that resolves it is the visible ceiling");
+  // The notice is HTML-escaped, so the apostrophe in "wiki's" is an entity here.
+  assert.ok(/rank Magical Sheltering Cap \(the wiki.{1,6}s MRR Cap\)/.test(cloth),
+    "names the cap stat under BOTH names — the 2026-09-04 report found it under the wiki's");
+
+  const light = fire({ armorType: "light", targets: ["Magical Sheltering"] }, ms(130));
+  assert.ok(/at 100/.test(light) && /The 30 above that/.test(light), "light: the wiki's 100");
+
+  // The gear cap bonus this loadout carries raises the visible ceiling — only when
+  // it is RANKED, because an unranked stat is not credited and has no total.
+  const raised = fire({ armorType: "cloth", targets: ["Magical Sheltering", "Magical Sheltering Cap"] }, ms(130, 30));
+  assert.ok(/raised to 80 by the 30 Magical Sheltering Cap/.test(raised), "the loadout's own cap bonus is quoted");
+  assert.ok(/The 50 above that/.test(raised) && /set a Max of 80/.test(raised), "and the surplus and Max move with it");
+  assert.ok(!/rank Magical Sheltering Cap/.test(raised), "no advice to rank a stat already ranked");
+  assert.strictEqual(fire({ armorType: "cloth", targets: ["Magical Sheltering", "Magical Sheltering Cap"] }, ms(75, 30)), "",
+    "silent under the raised ceiling: 75 against 50 + 30 wastes nothing");
+
+  assert.strictEqual(fire({ armorType: "medium", targets: ["Magical Sheltering"] }, ms(200)), "", "medium: no cap");
+  assert.strictEqual(fire({ armorType: "heavy", targets: ["Magical Sheltering"] }, ms(200)), "", "heavy: no cap");
+  assert.strictEqual(fire({ targets: ["Magical Sheltering"] }, ms(200)), "", "no armor declared: nothing to key on");
+  assert.strictEqual(fire({ armorType: "cloth", targets: ["Magical Sheltering"] }, ms(50)), "",
+    "silent AT the cap: 50 is the last point that counts");
+  assert.strictEqual(fire({ armorType: "cloth", targets: ["Physical Sheltering"] }, { "Physical Sheltering": 200 }), "",
+    "silent when Magical Sheltering is not ranked");
+  assert.strictEqual(fire({ armorType: "cloth", targets: ["Magical Sheltering"], targetCaps: { "Magical Sheltering": 50 } }, ms(130)), "",
+    "and silent once the player set their own Max: they have supplied the limit");
+});
+
 test("U7/#110: the banner qualifies optimality only when a block removed a candidate", () => {
   const on = R.blockNotice({ blockReport: [{ id: "X", name: "X", pool: "Ring", bestAvailable: false }] });
   assert.ok(/block-note/.test(on) && /optimal given those exclusions/.test(on));
@@ -2676,6 +2713,9 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       // ceiling is known (40) and a Max of 40 fully resolves it. What we cannot
       // decide for the player is whether 40 is right for their character.
       jumpSoftCapNotice: ["JUMP ABOVE 40", "actionable"],
+      // #701 — ACTIONABLE for the #663 reason: the ceiling the app can see is known
+      // (armor cap + this loadout's cap bonus) and a Max at it resolves the notice.
+      mrrCapNotice: ["MAGICAL SHELTERING ABOVE YOUR ARMOR'S CAP", "actionable"],
       // #683 — qualifying like the #573 entry two rows up, NOT actionable like the
       // #663 one directly above. The player can press something (rank the other
       // spelling) but whether that is correct is the unverified question itself, so
@@ -2706,7 +2746,7 @@ test("#448: the registry is the ONLY source — nothing classifies a notice but 
 
   assert.deepStrictEqual(Object.keys(R.NOTICE_TABLE), single.map((n) => n.name),
     "NOTICE_TABLE is derived from the registry, in registry order");
-  assert.strictEqual(single.length, 18, "the eighteen single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one)");
+  assert.strictEqual(single.length, 19, "the nineteen single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one, #701 the MRR cap one)");
   assert.deepStrictEqual(split.map((n) => n.name),
     ["artifactNotice", "boundNotice", "zeroSourceNotice"],
     "and the three multi-fact notices come through their U10 entry functions");
@@ -2737,7 +2777,7 @@ test("#448: registry ORDER is the on-screen order within a class, and splits lea
     "artifactNotice", "boundNotice", "zeroSourceNotice",
     "staleSnapshotNotice", "outbidNotice", "saturationNotice", "emptySlotNotice",
     "absorptionQuarantineNotice", "craftingExcludedNotice", "augCeilingNotice",
-    "dodgeMaxDexNotice", "jumpSoftCapNotice", "splitMechanicNotice", "capSurplusNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
+    "dodgeMaxDexNotice", "jumpSoftCapNotice", "mrrCapNotice", "splitMechanicNotice", "capSurplusNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
   ]);
 });
 

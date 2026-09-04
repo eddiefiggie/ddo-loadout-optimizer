@@ -2056,6 +2056,23 @@ test("#663: the Jump soft-cap disclosure reaches ALL FOUR export surfaces", () =
     "the CSV row is independent of whether any stat carries a ceiling row");
 });
 
+test("#701 every exporter carries the MRR cap disclosure, and stays silent under the cap", () => {
+  const monk = { name: "Monk", query: { targets: ["Magical Sheltering"], armorType: "cloth" },
+    inputs: { ml: 34, pool: "all", priorities: ["Magical Sheltering"] },
+    snapshot: { status: "optimal", chosen: [], setsActive: [],
+      effective: { "Magical Sheltering": 130 },
+      query: { targets: ["Magical Sheltering"], armorType: "cloth" } } };
+  const under = { ...monk, snapshot: { ...monk.snapshot, effective: { "Magical Sheltering": 45 } } };
+  for (const [name, fn] of [["markdown", toMarkdown], ["BBCode", toBBCode],
+                            ["CSV", toCsv], ["print HTML", toPrintHtml]]) {
+    assert.ok(/caps Magical Resistance Rating at 50/.test(fn(monk) || ""),
+      `${name} must carry the MRR cap disclosure — a shared cloth build cannot report 130 as all-useful`);
+    assert.ok(!/caps Magical Resistance Rating/.test(fn(under) || ""),
+      `${name} must stay silent under the cap`);
+  }
+  assert.ok(/MRR cap/.test(toCsv(monk) || ""), "the CSV row is present");
+});
+
 // ---------------------------------------------------------------------------
 // #668 — the export notice roster. The defect this replaces was not a typo: FIVE
 // notices sat in the projection bag and reached NONE of the four export surfaces,
@@ -2067,12 +2084,14 @@ test("#663: the Jump soft-cap disclosure reaches ALL FOUR export surfaces", () =
  *  silently skip it, which is the same vacuity that let five notices rot. */
 const ALL_NOTICES_REC = {
   name: "Every notice",
-  query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike"], armorType: "heavy", craftingRung: "no-niche-crafting", augCeiling: 30 },
-  inputs: { ml: 34, armor: "heavy", pool: "all", priorities: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike"], craftingRung: "no-niche-crafting" },
+  query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering"], armorType: "light", craftingRung: "no-niche-crafting", augCeiling: 30 },
+  inputs: { ml: 34, armor: "light", pool: "all", priorities: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering"], craftingRung: "no-niche-crafting" },
   snapshot: {
     status: "optimal", chosen: [], setsActive: [],
-    query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike"], armorType: "heavy", craftingRung: "no-niche-crafting", augCeiling: 30 },
-    effective: { Jump: 46, Dodge: 20, Doublestrike: 20 },
+    query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering"], armorType: "light", craftingRung: "no-niche-crafting", augCeiling: 30 },
+    // #701 — light armor (any armor keeps the Dodge notice; cloth or light is what
+    // keys the MRR one) and a Magical Sheltering total over light's cap of 100.
+    effective: { Jump: 46, Dodge: 20, Doublestrike: 20, "Magical Sheltering": 130 },
     // #459 — a real cap surplus: 15 + 9 supplied against a Max of 20. Chosen for
     // the shape the pattern doc warns about — NEITHER pick is individually
     // droppable (15 and 9 each fall under 20) while 4 points really are wasted.

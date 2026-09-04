@@ -1,9 +1,11 @@
 # Wiki evidence — intrinsic in-game stat caps
 
-**This file holds two sweeps.** §1–§5 are the #199 harvest of 2026-08-28;
+**This file holds three sweeps.** §1–§5 are the #199 harvest of 2026-08-28;
 §6–§12 are the 2026-09-01 sweep of the miss-chance family, Strikethrough, Jump
-and shield bash. The second sweep's table is under its own heading further down —
-do not read the first table as the whole roster.
+and shield bash; §13 is the 2026-09-04 reading of the Magical Resistance Rating
+cap (#701), the first ceiling here that is keyed to the declared armor. Each
+sweep's table is under its own heading — do not read the first table as the
+whole roster.
 
 # First sweep — 2026-08-28 (issue #199)
 
@@ -428,3 +430,83 @@ cheap: drop Displacement alone and see whether the displayed number falls by 50
 or holds at 120. Until someone runs it, the ruling on record is §5 — no numeric
 cap — which this observation supports either way, and the stacking question stays
 open.
+
+---
+
+# Third sweep — 2026-09-04 (Magical Resistance Rating cap, issue #701)
+
+**Harvested:** 2026-09-04, read in the in-app Browser pane from
+https://ddowiki.com/page/Magical_Resistance_Rating (§ "MRR cap" and § "Increasing
+MRR cap"), https://ddowiki.com/page/Lunar_and_Solar_Gems, and
+https://ddowiki.com/page/Item:Set_Augment:_Arcane_Barrier.
+**Outcome: CONFIRMED, and armor-keyed — recorded as a disclosure, not a cap.**
+
+Prompted by a player report (`data/bug_reports.txt`, 2026-09-04) that ranking the
+MRR cap never placed the Solar Gem of MRR Cap. The naming half of that report was
+#702; this sweep is the mechanic the player was reaching for, which the app had no
+notion of at all.
+
+| Armor | MRR cap | Recorded as |
+|---|---|---|
+| Robes, Outfit, or empty armor slot | **50** | disclosure (`MRR_CAP_BY_ARMOR.cloth`) |
+| Light Armor | **100** | disclosure (`MRR_CAP_BY_ARMOR.light`) |
+| Medium Armor | no cap | absent from the table |
+| Heavy Armor | no cap | absent from the table |
+
+## 13. Magical Resistance Rating — CONFIRMED per armor type, disclosed
+
+**Source:** https://ddowiki.com/page/Magical_Resistance_Rating
+
+> Different armor types can apply a cap for Magical Resistance Rating (U23):
+> Robes, Outfit, or empty armor slot: 50 · Light Armor: 100 · Medium Armor: No cap · Heavy Armor: No cap
+
+The same page adds that medium and heavy armor (and large and tower shields)
+prevent Evasion, which is the trade the cap is balancing and is out of scope here.
+
+**Why a disclosure and not an entry in `intrinsic_stat_caps.json`.** Two reasons,
+each of which alone would settle it.
+
+1. **It is keyed to the declared armor, not to the stat.** `intrinsic_stat_caps.json`
+   is a `{stat: number}` table read by `intrinsicCapFor(stat)`; a number there is
+   applied to every solve. There is no single number: the right one is 50, 100, or
+   nothing, depending on a query field. That is the Dodge (§4) shape — "the
+   reduction is keyed to the specific equipped armor" — one level up: keyed to the
+   category, which the query does know, rather than to the item, which it does not.
+2. **The wiki lists raisers the app cannot see.** § "Increasing MRR cap" names, beside
+   the gear sources this catalog carries — the Solar Gems of MRR Cap (+10/+20/+30,
+   Artifact), the Legendary/Perfected Jidz-Tet'ka water stance (+10), and the named
+   item sets Beacon of Magic, Esoteric Initiate, Mind and Matter, Fastidious
+   Fabricator, The Desert's Biting Sands and Draconic Prophecy — a list of
+   enhancement-tree sources: Dragon Disciple's Shining Scales (+30), Grandmaster of
+   Flowers' Beyond the Center (+5/10/15) and Philosophy (+10), Henshin Mystic and
+   Ninja Spy Self Defense (+5), Magus of the Eclipse Lunar Studies (+3 per
+   metamagic), Wild Mage Random Deflector (+1d100 in no armor), Devil's Bulwark,
+   Bombardier's Stone of the Savant, the Dhampir and Tiefling Scoundrel racial
+   trees. A clamp at 50 or 100 would truncate a real total for every character with
+   any of these — the same objection that keeps Jump (§9) a disclosure.
+
+**The stat's names.** The wiki writes "Magical Resistance Rating Cap" and "MRR Cap"
+(the gem is literally *Solar Gem of MRR Cap*); gear-planner, the affix single source
+of truth, writes `Magical Sheltering Cap` on every carrier including the Arcane
+Barrier set augment. The catalog keeps gear-planner's name and aliases both wiki
+spellings to it (#702, `affix_aliases.json`), the same relationship as `Magical
+Resistance Rating` → `Magical Sheltering`.
+
+**What binds, measured.** Against the built catalog a cloth or light wearer clears
+the base cap from gear alone easily — the Beacon of Magic (Legendary) tier alone is
++30 Magical Sheltering, and a legendary solve ranking it reaches well over 100 — so
+unlike every ceiling in the first two sweeps except Jump, this one is reached
+without any declared credit. That is what makes it worth a post-solve line.
+
+### RESOLVED 2026-09-04 (#701) — disclosed, not clamped
+
+The table above lives once, as `MRR_CAP_BY_ARMOR` in `web/model.js`, and two
+surfaces read it: the Advanced-panel hint beside Max on a ranked Magical
+Sheltering (`CEILING_DISCLOSURES`, #677's mechanism), and the post-solve notice
+`mrrCapLine` in `web/projection.js`, which fires only when the solve's Magical
+Sheltering total clears the armor's cap plus whatever Magical Sheltering Cap the
+loadout carries (read from the solve, so only when that stat is ranked). Silent
+for medium and heavy, silent with no armor declared, silent under the visible
+ceiling, and silent once the player sets a Max on Magical Sheltering. The notice
+rides the projection record, so every exporter carries it.
+
