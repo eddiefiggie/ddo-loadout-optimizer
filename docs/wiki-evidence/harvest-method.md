@@ -3,9 +3,21 @@
 **Established:** 2026-08-07 (issues #154, #162)
 **Repo-side half:** `src/harvest.py` + `scripts/merge_harvest.py`
 
-Server-side `curl`/WebFetch return empty for ddowiki (Cloudflare). Only
-Claude-in-Chrome works, and only same-origin from a ddowiki tab. This is the
-loop that works, and the traps around it.
+Server-side `curl`/WebFetch return empty for ddowiki (Cloudflare). A real
+browser tab is the only transport that works, and only same-origin from a
+ddowiki tab. Two browser surfaces have been verified:
+
+- **Claude-in-Chrome** (`mcp__claude-in-chrome__*`) — the original loop below,
+  and still the one for a bulk harvest.
+- **The in-app Browser pane** (`mcp__Claude_Browser__*`) — verified 2026-09-04
+  (#702, #701) when the Chrome extension was disconnected. `navigate` loads
+  ddowiki pages normally, `javascript_tool` reads `#mw-content-text`, and
+  `browser_batch` chains several page reads in one call (a 3 s `wait` after each
+  `navigate` was enough). The same privacy-guard stripping applies. Reach for it
+  for a handful of lookups — validating a player report, an item's Armor Type, a
+  set bonus — and for the bulk loop only if the pacing rules below are kept.
+
+This is the loop that works, and the traps around it.
 
 ---
 
@@ -157,6 +169,9 @@ can be wrong.
   returns nothing). An earlier ruling used an empty `insource:` result as
   evidence of absence; it is not.
 - **`get_page_text` can return "no text content" on a page that loaded fine.**
-  Read `#mw-content-text` via `javascript_tool` instead.
+  Read `#mw-content-text` via `javascript_tool` instead. The Browser pane's
+  `get_page_text` has the sibling failure: it returns the page intro and drops
+  every wiki table, so a set-bonus or gem table reads as absent when it is not.
+  Same fix — `#mw-content-text table tr` via `javascript_tool`.
 - **Augment data lives on `Raw data/Item augments`**, not `Item augments` (which
   does not exist). That is the page gear-planner scrapes.
