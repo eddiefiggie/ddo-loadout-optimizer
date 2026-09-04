@@ -1,6 +1,6 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-09-03",
+ "generated": "2026-09-04",
  "dataset": "web/data/items.json (9194 items)",
  "fixture_count": 24,
  "solves": {
@@ -279,13 +279,13 @@
    "perTarget": {
     "Strength": 37,
     "Deadly": 31,
-    "Seeker": 33,
+    "Seeker": 28,
     "Accuracy": 59
    },
    "effective": {
     "Strength": 37,
     "Deadly": 31,
-    "Seeker": 33,
+    "Seeker": 28,
     "Accuracy": 59
    },
    "chosen": [
@@ -303,7 +303,7 @@
     },
     {
      "slot": "Bracers",
-     "variant": "Bracers of the Battlerager"
+     "variant": "Bracelets of Flourishing Fauna"
     },
     {
      "slot": "Cloak",
@@ -331,7 +331,7 @@
     },
     {
      "slot": "Off Hand",
-     "variant": "Horseshoe Crab Shield (level 26)"
+     "variant": "Legendary Wreckage of the Beachcomber"
     },
     {
      "slot": "Ring",
@@ -339,7 +339,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Nocturne Ring"
+     "variant": "Ring of Shadows (level 23)"
     },
     {
      "slot": "Trinket",
