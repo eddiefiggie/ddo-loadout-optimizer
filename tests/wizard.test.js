@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice } = require("../web/wizard.js");
+const { armorTypesFor, canSolve, DRUID_ARMOR, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -254,6 +254,41 @@ test("U4: the oath overrides a conflicting armor-proficiency chip", () => {
   const q = buildQuery({ ...baseState(), armor: "heavy", oath: "druid" });
   assert.deepStrictEqual(q.armorTypes, ["cloth", "light", "medium"],
     "oath wins over the heavy chip — druids have no heavy proficiency");
+});
+
+// ---- #699 — the oath narrows the declared armor, it never widens it ----
+// Reported 2026-09-04 ("gave me light armour when I'd selected cloth"): with a
+// cloth chip and the druid oath, buildQuery emitted ["cloth","light","medium"]
+// and the solver placed Light Armor of the Artblade's Reflection. The declared
+// armor is the ceiling the R7 gate reads; the oath can only remove from it.
+test("#699: cloth + druid oath stays cloth — the oath cannot grant light or medium", () => {
+  const q = buildQuery({ ...baseState(), armor: "cloth", oath: "druid" });
+  assert.deepStrictEqual(q.armorTypes, ["cloth"], "a monk who said cloth gets cloth");
+  assert.strictEqual(q.oath, "druid", "the metal gate still reads the oath");
+});
+
+test("#699: light and medium chips each narrow the druid set to themselves", () => {
+  assert.deepStrictEqual(buildQuery({ ...baseState(), armor: "light", oath: "druid" }).armorTypes, ["light"]);
+  assert.deepStrictEqual(buildQuery({ ...baseState(), armor: "medium", oath: "druid" }).armorTypes, ["medium"]);
+});
+
+test("#699: armorTypesFor — the declared chip is the ceiling; heavy or nothing falls back to the #162 set", () => {
+  assert.deepStrictEqual(armorTypesFor("cloth", "druid"), ["cloth"]);
+  assert.deepStrictEqual(armorTypesFor("heavy", "druid"), DRUID_ARMOR, "heavy is not a druid proficiency: #162's replacement stands");
+  assert.deepStrictEqual(armorTypesFor("", "druid"), DRUID_ARMOR, "no chip: the oath's own set");
+  assert.deepStrictEqual(armorTypesFor("light", ""), ["light"], "no oath: the chip alone");
+  assert.strictEqual(armorTypesFor("", ""), undefined, "nothing declared: unconstrained, as before");
+  assert.notStrictEqual(armorTypesFor("", "druid"), DRUID_ARMOR, "a copy, never the shared constant");
+});
+
+// ---- #700 — the solve path honours every step's gate, not just the last one's ----
+test("#700: canSolve refuses a state whose required character field is blank", () => {
+  const complete = { ...baseState(), characterName: "Shuri", armor: "cloth", style: "one-hand" };
+  assert.strictEqual(canSolve(complete), true, "a complete character with a ranked stat solves");
+  assert.strictEqual(canSolve({ ...complete, armor: "" }), false, "armor toggled off: refuse, do not solve unconstrained");
+  assert.strictEqual(canSolve({ ...complete, style: "" }), false, "no style (#689): refuse");
+  assert.strictEqual(canSolve({ ...complete, priorities: [] }), false, "nothing ranked: refuse (the old gate)");
+  assert.strictEqual(canSolve({ ...complete, race: "Bladeforged", armor: "" }), true, "a Forged race needs no armor chip");
 });
 
 test("U4: with no oath, armorTypes behaves exactly as before", () => {

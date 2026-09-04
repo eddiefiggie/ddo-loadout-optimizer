@@ -136,6 +136,16 @@
    "reason": "semantic synonym ported from legacy vocab.STAT_ALIASES (U6.5); the string-similarity lint cannot discover it; canonical verified native in the registry"
   },
   {
+   "variant": "Magical Resistance Rating Cap",
+   "canonical": "Magical Sheltering Cap",
+   "reason": "#702 — the wiki's name for the stat (Lunar_and_Solar_Gems: 'Artifact Bonus to Magical Resistance Rating Cap'; Magical_Resistance_Rating § MRR cap). gear-planner, the affix SSOT, spells it Magical Sheltering Cap on every carrier, and its own affix_synonyms table lists this spelling as a synonym. The hand-curated augment_sets.json seed stored Arcane Barrier under this spelling and #672 surfaced it in the picker as a twin nothing in a default pool carries. Same relationship as Magical Resistance Rating -> Magical Sheltering above."
+  },
+  {
+   "variant": "MRR Cap",
+   "canonical": "Magical Sheltering Cap",
+   "reason": "#702 — the wiki's short form (the Solar Gem is literally named 'Solar Gem of MRR Cap'), listed by gear-planner's affix_synonyms as a synonym; keeps a typed 'MRR Cap' resolving in the picker the way 'MRR' resolves to Magical Sheltering."
+  },
+  {
    "variant": "Negative Lore",
    "canonical": "Void Lore",
    "reason": "#374 — upstream flipped its canonical vocabulary (their items.json now emits this name where ours emits the canonical). We keep the in-game enchantment name as canon: a player checking the app against an item tooltip must find the same words. Verified 2026-08-18: ZERO items in either snapshot carry both names, so this is a spelling of one mechanic and not a merge of two (the same-item co-occurrence rule). Doubles as picker discoverability — a player who types upstream's name still finds it."

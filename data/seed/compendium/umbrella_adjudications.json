@@ -1,6 +1,9 @@
 {
  "_meta": {
   "field": "umbrella_adjudications",
+  "retired": {
+   "Magical Resistance Rating Cap": "#702 (2026-09-04): retired, not re-recorded. The name left the rankable set because it was an alias VARIANT all along — gear-planner spells the same set bonus Magical Sheltering Cap, and the only carrier of this spelling was the hand-curated augment_sets.json seed (the entry's own claim that gear-planner's Adherent of the Mists tiers carry it was wrong: raw/gearplanner_sets.json has no such spelling). It now resolves through affix_aliases.json; the canonical contains no detector head-word, so it needs no ruling of its own."
+  },
   "note": "#211 detector rulings. Each entry settles a flagged candidate as `atomic` — a real distinct stat, not an umbrella — with the rendered-tooltip reading (or the standing wiki-evidence ruling) that proves it. The disposition vocabulary is CLOSED at ['atomic']: a name a mechanism models (an expansion family in src/spell_focus.py/_UNIVERSAL, src/umbrella.py, a split module, or a cross-add source) must NOT carry an entry — its registration resolves it, and the detector rejects a stale entry. An unadjudicated candidate FAILS THE BUILD. See docs/wiki-evidence/umbrella-adjudication-sweep.md."
  },
  "harvested": {
@@ -144,13 +147,6 @@
    "source_invocation": "{{Elemental Resistance|Light|36}}",
    "observed_on": "Item:Epic Phiarlan Mirror Cloak",
    "harvested": "2026-08-13"
-  },
-  "Magical Resistance Rating Cap": {
-   "disposition": "atomic",
-   "evidence": "A set-tier stat that RAISES THE CAP on Magical Resistance Rating — a cap adjustment on one stat, not a bundle of anything (distinct from Magical Sheltering, which is the MRR magnitude itself). Stored verbatim from gear-planner's set catalog (Adherent of the Mists family tiers). Flagged only because the name contains the word 'Resistance'.",
-   "source_invocation": "gearplanner_sets.json set-tier affix (verbatim catalog name)",
-   "observed_on": "membership/augment set defs (Adherent of the Mists)",
-   "harvested": "2026-08-14"
   },
   "Moonlit Haunt Lore": {
    "disposition": "atomic",

@@ -483,3 +483,52 @@ style, to refuse a shield whenever TWF is declared, or to disclose the inert
 declaration on the results. The third is the only one that is certainly correct;
 the second conflicts with the deliberate design that lets a player declare TWF
 while on Sword & Board and have it read as inert rather than contradictory.
+
+---
+2026-09-04 — user report (armor type; MRR cap)
+
+Verbatim:
+
+  "Cool tool! I tried a monk shuri build but it gave me light armour when I'd
+   selected cloth. also...The Magical Resist Rating Cap does not seem to work at
+   all. Even if I place that as 1st priority the optimizer does not pick the
+   solar gem of mrr cap."
+
+MRR cap: REPRODUCED. Filed as #702 (alias defect) and #701 (cap-awareness
+improvement).
+
+  The picker offers two spellings of one stat. `Magical Sheltering Cap` is
+  gear-planner's name, carried by the three Solar Gems of MRR Cap (Artifact
+  10/20/30), the Deacon dino set, and ~16 named-set tiers. `Magical Resistance
+  Rating Cap` is the wiki's wording, carried by exactly ONE record: the Arcane
+  Barrier Set Augment's 3-piece bonus in the hand-curated augment_sets.json seed,
+  which is the one channel that never canonicalizes through affix_aliases.json.
+  Set Augments are off until marked owned, so ranking that spelling scores
+  nothing in a default solve. Ranking the canonical name places the Legendary
+  gem immediately (parity harness, ML 34, cloth, shurikens: Magical Sheltering
+  Cap 30, augments [Solar Gem of MRR Cap (Legendary)]).
+
+  Wiki (read 2026-09-04): Lunar_and_Solar_Gems row "MRR Cap — Artifact Bonus to
+  Magical Resistance Rating Cap +10/+20/+30" matches the gem records. The
+  Magical_Resistance_Rating page gives the armor-keyed ceiling — Robes/Outfit/
+  empty 50, Light 100, Medium and Heavy uncapped — which the app does not know
+  about at all; that is #701.
+
+Armor: PARTIALLY REPRODUCED. Filed as #699 (reproduced path) and #700
+(hardening).
+
+  With the wizard's own buildQuery: armor "cloth" + Druidic oath -> armorTypes
+  ["cloth","light","medium"] -> Light Armor of the Artblade's Reflection placed.
+  The oath REPLACES the declared armor rather than narrowing it (#162's fix for
+  the heavy case, applied in the widening direction for cloth/light).
+
+  Without the oath, 18 solves (six monk-shaped priority lists x ML 20/30/34, cloth,
+  shurikens) all placed cloth. Spot-checked on the wiki: Legendary Downcast
+  Brawler's Garb is "Armor Type: Clothing". All 851 non-docent body armors carry a
+  concrete armor_type, so the R7 gate has nothing to fail open on.
+
+  A state with NO armor solves unconstrained (heavy armor placed) because solve()
+  gates only on priorities — not reachable through today's UI, filed as #700.
+
+  Whether the reporter had the oath chip on is unknown. Worth asking which item
+  was placed.

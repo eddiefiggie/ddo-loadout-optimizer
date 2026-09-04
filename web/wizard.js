@@ -1040,6 +1040,34 @@ function clampAugCeiling(raw, cap) {
   return (raw !== "" && raw != null && n > 0 && n < cap) ? n : null;
 }
 
+/** #699 — the armor-proficiency set the R7 gate reads, from the declared armor
+ *  chip and the oath. The oath NARROWS, it never widens: #162 wrote the druid set
+ *  as a replacement for the chip to fix the heavy case (a druid has no heavy
+ *  proficiency, so the chip had to lose), and the same line applied to a cloth or
+ *  light chip handed the solver light-or-medium armor the player never declared —
+ *  a monk who said cloth and ticked the oath was solved into light armor. The
+ *  declared armor is the ceiling; the oath removes from it, or, when the chip is
+ *  one a druid cannot wear at all (heavy, or nothing declared), stands in for it —
+ *  the pinned #162 behavior, unchanged. */
+const DRUID_ARMOR = ["cloth", "light", "medium"];
+function armorTypesFor(armor, oath) {
+  const declared = armor ? [armor] : null;
+  if (oath !== "druid") return declared || undefined;
+  if (declared && DRUID_ARMOR.includes(armor)) return declared;
+  return DRUID_ARMOR.slice();
+}
+
+/** #700 — may this state be SOLVED? Every step's own gate, not just the last
+ *  one's. `solve()` used to check `canAdvance("priorities")` alone, so a state
+ *  with a blank required field — no armor, say, since the armor chips toggle off
+ *  on a second click — solved unconstrained and placed heavy armor on it. The
+ *  character step's Continue is blocked by the same gate; the solve path must be
+ *  too, or the next surface that offers a re-solve from the character step ships
+ *  the hole. Pure; unit-tested. */
+function canSolve(state) {
+  return canAdvance("character", state) && canAdvance("priorities", state);
+}
+
 function buildQuery(state, vocab) {
   const forged = wizIsForged(state.race);
   const mlCap = Number(state.ml) || 36;
@@ -1062,9 +1090,7 @@ function buildQuery(state, vocab) {
     // map below. This replaces the old cloth+light approximation, which wrongly
     // excluded every medium armor including non-metal ones. Forged wear docents, so
     // the gate is moot for them (docent handling lives in the R6 branch).
-    armorTypes: forged ? undefined
-      : (state.oath === "druid" ? ["cloth", "light", "medium"]
-        : (state.armor ? [state.armor] : undefined)),
+    armorTypes: forged ? undefined : armorTypesFor(state.armor, state.oath),
     oath: forged ? null : (state.oath || null),
     // U3 — combat-style / weapon-type / off-hand constraints (replaces the inert
     // coarse `weaponSetup`). Empty arrays / unset style => unconstrained.
@@ -2339,7 +2365,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict,
+  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -2575,7 +2601,7 @@ if (typeof window !== "undefined" && window.App) {
           <div class="wz-field wz-span"><span class="wz-label">Oath / anathema</span>
             <span class="wz-help">A class oath that forbids certain armor. Approximated by armor type — see the note when on.</span>
             <div class="wz-seg" id="wz-oath"><button class="wz-chip ${state.oath === "druid" ? "on" : ""}" data-oath="druid" ${forged ? "disabled" : ""}>Druid — no metal</button></div>
-            ${state.oath === "druid" && !forged ? `<p class="wz-help wz-note">Druidic oath: no metal body armor, no metal shield, no rune arm — matched against each item's wiki-sourced material. Proficiency also limits you to light and medium armor and non-tower shields. A few items whose material the wiki doesn't state are left available rather than excluded on a guess.</p>` : ""}</div>
+            ${state.oath === "druid" && !forged ? `<p class="wz-help wz-note">Druidic oath: no metal body armor, no metal shield, no rune arm — matched against each item's wiki-sourced material. Proficiency also limits you to light and medium armor and non-tower shields — within the armor type you chose above, never wider than it. A few items whose material the wiki doesn't state are left available rather than excluded on a guess.</p>` : ""}</div>
           <label class="wz-check"><input type="checkbox" id="wz-artifact"${state.includeArtifact ? " checked" : ""}>
             <span class="wz-check-body"><span class="wz-label">Include an Artifact</span>
             <span class="wz-help">Build around your one equippable Artifact — the optimizer picks the best-scoring one and tags its slot. Off by default.</span></span></label>
@@ -4499,6 +4525,15 @@ ${(() => {
     async function solve(firstRun) {
       if (solving) return;
       if (!canAdvance("priorities", state)) return;
+      // #700 — a blank required character field solves unconstrained (no armor
+      // => every body armor is eligible). Route to the field instead, exactly as
+      // the character step's Continue does; nothing about the loadout on screen
+      // changes until the player answers.
+      if (!canSolve(state)) {
+        navigate("character");
+        if (state.step === "character") showMissingRequired();
+        return;
+      }
       solving = true;
       abandonRequested = false;   // #582 — a stop never leaks into the next run
       const n = candidateItems().length;
