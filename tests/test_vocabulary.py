@@ -569,8 +569,15 @@ def test_the_real_seed_resolves_the_real_vocabulary():
     # rulings went stale — and (b) newly flagged the TEN Combined Spell Lores
     # (Blighted, Creeping Dust, ...), each now ruled `atomic` on its own row of
     # the Spell_Lore "Combined Spell Lore" table. 30 - 2 + 10 = 38.
-    assert report["candidates"] == 38
-    assert report["atomic"] == 38
+    #
+    # 38 -> 37 at #702: `Magical Resistance Rating Cap` left the rankable set
+    # because it was an alias VARIANT of `Magical Sheltering Cap` all along (the
+    # hand-curated augment_sets.json seed was its only carrier), so the detector
+    # stopped asking about it and its ruling was retired (recorded under the
+    # seed's `_meta.retired`). The canonical carries no head-word and needs no
+    # ruling of its own. 38 - 1 = 37.
+    assert report["candidates"] == 37
+    assert report["atomic"] == 37
     # The detector's first sweep found three live umbrellas; they must stay
     # MODELED (expanded away), never re-enter the rankable vocabulary silently.
     for name in ("Resistance", "Elemental Resonance", "Combat Mastery",

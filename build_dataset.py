@@ -1486,6 +1486,32 @@ def build() -> dict:
         (a.get("stat")
          for _d in augment_set_defs.values() for _t in _d.get("tiers") or []
          for a in _t.get("affixes") or []))
+    # #702 — a def stat that is an alias VARIANT of a rankable canonical. The
+    # hand-curated augment_sets.json seed stored Arcane Barrier's bonus under the
+    # wiki's spelling (`Magical Resistance Rating Cap`) while every other carrier
+    # of that stat — the Solar Gems of MRR Cap, ~16 named-set tiers — carries
+    # gear-planner's `Magical Sheltering Cap`. Nothing failed: the seed's own
+    # _meta.unscored_stats said the stat had no canonical, which was true on the
+    # day it was written and false once the gems shipped, and #672 then surfaced
+    # the raw spelling in the picker as a twin no default solve could score. The
+    # alias table is the ONE place a variant->canonical relationship is recorded,
+    # so a def channel naming a variant is a def channel that will score against
+    # the wrong bucket. Both channels, same pass as the orphan check above.
+    _alias_map_for_defs, _ = vocabulary_mod.load_affix_aliases()
+    _def_alias_variants = sorted(
+        (chan, set_name, a.get("stat"), _alias_map_for_defs[a.get("stat")])
+        for chan, defs in (("membership", membership_defs), ("augment", augment_set_defs))
+        for set_name, _d in defs.items()
+        for _t in _d.get("tiers") or []
+        for a in _t.get("affixes") or []
+        if a.get("stat") in _alias_map_for_defs)
+    if _def_alias_variants:
+        raise SystemExit(
+            "set-def tier affixes name an alias VARIANT of a canonical stat — the "
+            "bonus would score in its own bucket, invisible to the canonical name "
+            "(canonicalize the seed, #702):\n  " +
+            "\n  ".join(f"{c}: {s_} — {stat!r} -> {canon!r}"
+                        for c, s_, stat, canon in _def_alias_variants))
     augment_sets_mod.attach_augment_set_slots(variants, augment_set_defs)
     # #316 — the attach above also forwards each variant's baked `fits_slots`
     # (stamped at the variant loop from src.colors) onto its def; this guard

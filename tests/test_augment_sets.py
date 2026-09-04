@@ -314,19 +314,27 @@ CANONICALIZED = {
     "Tough Shields": "Physical Sheltering",    # was "Physical Resistance Rating"
     "Truthful Blow": "Armor-Piercing",         # was "Fortification Bypass"
     "Cruel Cut": "Damage to helpless enemies",  # was "Damage vs. Helpless" (#305)
+    # #702: the wiki's wording for the MRR cap; gear-planner (the affix SSOT) spells
+    # the same Arcane Barrier bonus `Magical Sheltering Cap`, the name the Solar
+    # Gems of MRR Cap and ~16 named-set tiers carry.
+    "Arcane Barrier": "Magical Sheltering Cap",  # was "Magical Resistance Rating Cap" (#702)
 }
 
 # The former raw names must NOT appear anywhere in the built defs anymore.
 FORMER_RAW_NAMES = {
     "Magical Resistance Rating", "Physical Resistance Rating", "Fortification Bypass",
     "Damage vs. Helpless",
+    "Magical Resistance Rating Cap", "MRR Cap",
 }
 
-# The 5 bonus stats with NO canonical scoring target today. They safely do not
+# The 4 bonus stats with NO canonical scoring target today. They safely do not
 # score and are DISCLOSED in the seed _meta.unscored_stats. Locking this set here
 # makes any future vocab addition a DELIBERATE change (update both places).
+# `Magical Resistance Rating Cap` left this set in #702: its canonical
+# (`Magical Sheltering Cap`) had become rankable and the dated claim never
+# noticed — see docs/solutions/conventions/a-dated-coverage-claim-cannot-notice-its-own-staleness.md.
 KNOWN_UNSCORED = {
-    "Assassinate DCs", "Magical Resistance Rating Cap",
+    "Assassinate DCs",
     "Maximum Hit Points", "Spell DCs", "Tactical DCs",
 }
 
@@ -345,7 +353,7 @@ def test_aliasable_stats_now_carry_canonical_names():
 
 
 def test_known_unscored_stats_are_the_disclosed_set():
-    # The 6 stats with no canonical scoring target are exactly the set disclosed
+    # The stats with no canonical scoring target are exactly the set disclosed
     # in the seed _meta.unscored_stats, and each still appears verbatim in a built
     # def (left as-is, safely unscored). Any future vocab addition must be a
     # deliberate change to BOTH the seed disclosure and this test.

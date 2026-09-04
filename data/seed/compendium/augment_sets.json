@@ -14,10 +14,9 @@
       "A Set Augment carries NO always-on stat — its sole contribution is this set-piece; slotting a copy suppresses the host item's own sets (correctness note for a later solver unit)."
     ],
     "unscored_stats": {
-      "_note": "U9: these bonus stats have NO canonical target in the optimizer's scoring vocabulary today, so their set bonuses safely do NOT score. Left as-is deliberately (adding them to the target vocabulary is out of scope — it would expand what the optimizer optimizes). Disclosed here so the gap is transparent, not a silent miss; a future vocab addition must be a deliberate change (guarded by tests/test_augment_sets.py). The other 3 formerly-unreconciled stats (Magical/Physical Resistance Rating, Fortification Bypass) WERE canonicalized to Magical Sheltering / Physical Sheltering / Armor-Piercing (see affix_aliases.json) and now score.",
+      "_note": "U9: these bonus stats have NO canonical target in the optimizer's scoring vocabulary today, so their set bonuses safely do NOT score. Left as-is deliberately (adding them to the target vocabulary is out of scope — it would expand what the optimizer optimizes). Disclosed here so the gap is transparent, not a silent miss; a future vocab addition must be a deliberate change (guarded by tests/test_augment_sets.py). The other 3 formerly-unreconciled stats (Magical/Physical Resistance Rating, Fortification Bypass) WERE canonicalized to Magical Sheltering / Physical Sheltering / Armor-Piercing (see affix_aliases.json) and now score. #702: Magical Resistance Rating Cap left this list the same way (canonical Magical Sheltering Cap, rankable since the Solar Gems of MRR Cap shipped) — a dated no-canonical claim cannot notice its canonical arriving, so build_dataset.py now fails when any def stat is an alias VARIANT.",
       "stats": [
         "Assassinate DCs",
-        "Magical Resistance Rating Cap",
         "Maximum Hit Points",
         "Spell DCs",
         "Tactical DCs"
@@ -33,7 +32,8 @@
     },
     "Arcane Barrier": {
       "pieces_required": 3,
-      "affixes": [{"stat": "Magical Resistance Rating Cap", "bonus_type": "Artifact", "value": 30, "unit": "flat"}],
+      "affixes": [{"stat": "Magical Sheltering Cap", "bonus_type": "Artifact", "value": 30, "unit": "flat"}],
+      "stat_note": "#702: canonicalized from the wiki tier text's 'Magical Resistance Rating Cap' to the native scoring name — gear-planner spells this same set bonus Magical Sheltering Cap (raw/gearplanner_sets.json), the name the Solar Gems of MRR Cap and the Beacon of Magic / Esoteric Initiate / Mind and Matter / Fastidious Fabricator / Draconic Prophecy / Desert's Biting Sands tiers carry; value/bonus_type/unit verbatim. Left as a raw spelling, it reached the picker as a twin no default solve could score.",
       "original_item": "Mantle of Escher (Clothing)",
       "drop_site": "The Curse of Strahd"
     },
