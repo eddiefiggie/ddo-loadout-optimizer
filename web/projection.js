@@ -1244,6 +1244,51 @@
       + "the slots spent above it will go to your next priority.";
   }
 
+  /** #701 — the armor-keyed Magical Resistance Rating ceiling, DISCLOSED, not
+   *  clamped. Same family as the two notices above it, and the reason it cannot be
+   *  a cap entry is the Dodge reason and the Jump reason at once: the ceiling
+   *  depends on the declared armor (cloth 50, light 100, medium and heavy none),
+   *  and the wiki lists raisers the app cannot see — enhancement-tree tiers,
+   *  stances — beside the gear ones it can (`Magical Sheltering Cap`, the stat the
+   *  wiki calls MRR Cap). A clamp would truncate a real total for every character
+   *  with a tree bonus. The numbers come from ONE table in model.js
+   *  (`MRR_CAP_BY_ARMOR`), which the Advanced-panel hint reads too.
+   *
+   *  Fires only when the solve's Magical Sheltering total actually clears the
+   *  ceiling the app CAN see: the armor's base cap plus whatever Magical Sheltering
+   *  Cap this loadout carries (read from `effective`, so only when that stat is
+   *  ranked — an unranked cap bonus is not credited and is not quoted). Under it,
+   *  nothing is wasted and the line is boilerplate (#449 R15). Silent for medium
+   *  and heavy (no ceiling), silent with no armor declared, and silent once the
+   *  player set a Max on Magical Sheltering — they have supplied their limit. */
+  function mrrCapLine(rec) {
+    const snap = (rec && rec.snapshot) || rec || {};
+    const q = (rec && rec.query) || snap.query || {};
+    const M = _modelModule();
+    const table = (M && M.MRR_CAP_BY_ARMOR) || { cloth: 50, light: 100 };
+    const armor = q.armorType;
+    if (!armor || table[armor] == null) return null;
+    const targets = Array.isArray(q.targets) ? q.targets : [];
+    if (!targets.includes("Magical Sheltering")) return null;
+    const caps = q.targetCaps || {};
+    if (caps["Magical Sheltering"] != null) return null;
+    const eff = snap.effective || {};
+    const total = Number(eff["Magical Sheltering"]) || 0;
+    const raise = targets.includes("Magical Sheltering Cap") ? (Number(eff["Magical Sheltering Cap"]) || 0) : 0;
+    const base = table[armor];
+    const ceiling = base + raise;
+    if (!(total > ceiling)) return null;
+    const armorWord = armor === "cloth" ? "cloth (or no armor)" : `${armor} armor`;
+    return `This build reaches Magical Sheltering ${total}, and in ${armorWord} the game caps `
+      + `Magical Resistance Rating at ${base}`
+      + (raise ? ` — raised to ${ceiling} by the ${raise} Magical Sheltering Cap this loadout carries` : "")
+      + `. The ${total - ceiling} above that buys nothing unless an enhancement tree or stance raises `
+      + "your cap further, which this solve cannot see. If nothing does, set a Max of "
+      + `${ceiling} on your Magical Sheltering priority and the slots spent above it go to your next `
+      + "priority"
+      + (raise ? "." : " — or rank Magical Sheltering Cap (the wiki's MRR Cap) to raise the ceiling instead.");
+  }
+
   /** #459 — where a capped stat's surplus is, and which picks carry it.
    *
    *  A stat held at a cap credits nothing past that point, so gear supplying more
@@ -2444,6 +2489,10 @@
         // and the solve cleared 40). Same channel and same reason: a recipient must
         // not read a Jump total as all-useful when part of it buys no height.
         jumpSoftCapNotice: jumpSoftCapLine(rec),
+        // #701 — the armor-keyed MRR ceiling (null unless cloth or light was
+        // declared, Magical Sheltering ranked with no Max, and the solve cleared
+        // the cap the app can see). Same channel and same reason as the two above.
+        mrrCapNotice: mrrCapLine(rec),
         // #683 — the disclosed name split (null unless a spelling of a disclosed
         // family was ranked). Same channel and same reason as the two above: a
         // recipient must not read the mechanic's total as settled when the wiki
@@ -3105,7 +3154,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, splitMechanicLine, capSurplusLines, packFilterNoticeLines, setFilterNoticeLines,
+    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, mrrCapLine, splitMechanicLine, capSurplusLines, packFilterNoticeLines, setFilterNoticeLines,
     essenceNoticeLines, greenSteelNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)
