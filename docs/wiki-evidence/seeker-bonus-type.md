@@ -1,6 +1,7 @@
-# Seeker — the bonus type is the template's third parameter (#392)
+# Seeker — the bonus type is the template's third parameter (#392) — SUPERSEDED for `exc`, see the 2026-09-04 re-ruling at the end
 
-**Ruled:** 2026-08-19. **Method:** same-origin harvest per `harvest-method.md`;
+**Ruled:** 2026-08-19. **Re-ruled:** 2026-09-04 (#697) — the `exc` rows below
+are corrected to Insight; the Insight and Enhancement rows stand. **Method:** same-origin harvest per `harvest-method.md`;
 invocation lines via `action=query&prop=revisions` (POST, paced), 33 titles in
 four batches. **Shard:** none — no data change was required. **Guard:**
 `tests/test_seeker_bonus_type.py`.
@@ -110,3 +111,94 @@ was written about, from the sibling case in the same refresh.
 `tests/test_seeker_bonus_type.py` pins all 29 rows above against the raw
 gear-planner dump, so a future re-type fails the build naming the carrier
 instead of silently changing what stacks with what.
+
+---
+
+## RE-RULED 2026-09-04 (#697) — `exc` is a label; the applied bonus is Insight
+
+**Trigger.** A player reported that the tool recommends Legendary Helm of the
+Warblade for its "5 Exceptional Seeker" and then a second item for Insightful
+Seeker, "causing an unnecessary overlap" — the item's sub-description and the
+combat log both show the helm's bonus applied as Insight. Reproduced: with
+Seeker ranked at ML 34 the helm's Exceptional 5 was summed on top of the Periapt
+of Strength's Insight 6, crediting 33 where the game grants 28.
+
+**Method.** Browser pane, per `harvest-method.md`. The rendered tooltip of every
+one of the 18 `exc` carriers was read from its own page (`span.tooltip`
+containing "Seeker"), plus the Seeker page and Template:Seeker, plus three
+controls.
+
+**What the ruling above got wrong, and why it is not a re-litigation.** #392
+judged the template invocation's third parameter and called it the bonus type.
+It is the LABEL: Template:Seeker documents `Exc for Exceptional` as a display
+prefix, and the tooltip it renders for that prefix states the type the game
+applies. This is the exact shape `bundled-template-values-live-in-the-tooltip-
+not-the-cell.md` and the Barnacled Buckler correction (#379) record for
+Elemental Resistance — "the visible label lies about the type; the tooltip is
+the authority". The invocation was the strongest layer #392 read; it was not
+the strongest layer available.
+
+**The wiki states it three ways.**
+
+1. [Seeker](https://ddowiki.com/page/Seeker): "Seeker items can provide various
+   types of bonus. Regular Seeker grants Enhancement bonus, then there's
+   Insightful Seeker and much rarer Quality Seeker. **The former Exceptional
+   Seeker grants Insight bonus.**"
+2. Every `exc` carrier's rendered tooltip: "Exceptional Seeker +N: Provides a +N
+   **Insight** bonus to confirm critical hits, and a +N **Insight** bonus to
+   critical hit damage (before multipliers are applied)."
+3. The controls render the other types as themselves — Burrowing Claws:
+   "Seeker +6: Provides a +6 **Enhancement** bonus …" and "Insightful Seeker +2:
+   Provides a +2 **Insight** bonus …" — so the template is not printing Insight
+   indiscriminately.
+
+**The 18 carriers — tooltip read individually, 2026-09-04.** Magnitudes match
+the dataset on all 18; the correction moves the type only.
+
+| Item | Label (invocation) | Tooltip states | Correction |
+| --- | --- | --- | --- |
+| Bracers of Twisting Shade (level 18) | Exceptional Seeker +3 | +3 Insight bonus | Exceptional → Insight 3 |
+| Bracers of Twisting Shade (level 23) | Exceptional Seeker +4 | +4 Insight bonus | Exceptional → Insight 4 |
+| Bracers of Twisting Shade (level 24) | Exceptional Seeker +4 | +4 Insight bonus | Exceptional → Insight 4 |
+| Bracers of Twisting Shade (level 25) | Exceptional Seeker +5 | +5 Insight bonus | Exceptional → Insight 5 |
+| Steady Handed Armbands (level 23) | Exceptional Seeker +3 | +3 Insight bonus | Exceptional → Insight 3 |
+| Steady Handed Armbands (level 24) | Exceptional Seeker +4 | +4 Insight bonus | Exceptional → Insight 4 |
+| Steady Handed Armbands (level 25) | Exceptional Seeker +5 | +5 Insight bonus | Exceptional → Insight 5 |
+| Souvenir Coin | Exceptional Seeker +3 | +3 Insight bonus | Exceptional → Insight 3 |
+| Golden Souvenir Coin | Exceptional Seeker +3 | +3 Insight bonus | Exceptional → Insight 3 |
+| Legendary Souvenir Coin | Exceptional Seeker +5 | +5 Insight bonus | Exceptional → Insight 5 |
+| Legendary Golden Souvenir Coin | Exceptional Seeker +5 | +5 Insight bonus | Exceptional → Insight 5 |
+| Helm of the Warblade | Exceptional Seeker +3 | +3 Insight bonus | Exceptional → Insight 3 |
+| Legendary Helm of the Warblade | Exceptional Seeker +5 | +5 Insight bonus | Exceptional → Insight 5 |
+| Iron Cloak of the Wolf | Exceptional Seeker +3 | +3 Insight bonus | Exceptional → Insight 3 |
+| Mithral Cloak of the Wolf | Exceptional Seeker +4 | +4 Insight bonus | Exceptional → Insight 4 |
+| Adamantine Cloak of the Wolf | Exceptional Seeker +5 | +5 Insight bonus | Exceptional → Insight 5 |
+| Slice | Exceptional Seeker +3 | +3 Insight bonus | Exceptional → Insight 3 |
+| Horseshoe Crab Shield (level 26) | Exceptional Seeker +5 | +5 Insight bonus | Exceptional → Insight 5 |
+
+**What shipped.** 18 entries in `affix_type_corrections.json`
+(`from: Exceptional, to: Insight`, tooltip verbatim, one page each), read as a
+class under `_meta.seeker_exceptional_class`. The stale guard keeps them honest
+in both directions: if upstream re-types the label to Insight itself, the
+`from` no longer matches and the entry must be retired (the #374 retirement
+block); if a carrier's magnitude moves, the `value` binding fails.
+`tests/test_seeker_bonus_type.py` now pins BOTH populations — the raw dump
+(upstream's label, the `from` side) and the built dataset (the applied type,
+the `to` side) — so a correction that silently stops applying is caught where
+the solver reads.
+
+**Consequence for the golden.** `endgame-dps-ml33` gained +5 Seeker at #392
+from Horseshoe Crab Shield (level 26)'s Exceptional 5 stacking on an Insight
+source. That gain reverses; the fixture was re-ratified deliberately with this
+change.
+
+**The forum and release-note trail** (#697 cites a thread titled "Exceptional
+Seeker +5 on Rare items like Legendary Golden Souvenir Coin and Legendary Helm
+of the Warblade" and a report that "Warblade Helm's Mislabeled Seeker Gets
+Fixed") was NOT readable from this environment — forums.ddo.com is blocked in
+the Browser pane. It was not needed: the wiki's own tooltip and Seeker page state
+the applied type outright, which is the evidence rule
+`affix_type_corrections.json` requires. If a later game patch relabels the items
+Insightful, upstream's type will follow, the `from` guard will fire, and the 18
+entries move to the retirement block with that patch as the citation.
+

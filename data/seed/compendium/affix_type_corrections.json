@@ -5,7 +5,8 @@
   "why_not_value_corrections": "src/value_corrections.py overwrites the VALUE and nothing else, and its stale guard is keyed on the value field. Each corrections mechanism changes exactly one field so its guard cannot be weakened for the sake of another field's fix.",
   "stale_guard": "Every entry records `from` — the type gear-planner currently carries — and `value` — the magnitude the tooltip was verified against. The build FAILS if either no longer matches upstream, and FAILS if an entry reaches no record in any channel (renamed/dropped upstream), rather than silently pinning or silently no-opping.",
   "evidence_rule": "Every entry carries the verbatim rendered tooltip stating the bonus type, and the wiki page it was read from.",
-  "sneak_attack_class": "#608 — 20 entries share one cause and are worth reading as a class. The wiki renders these through Template:Sneak Attack Bonus, whose SECOND parameter is the bonus type. Upstream maps that parameter to `type` correctly when it is present (Seal of House Avithoul's `|Insightful` arrives as Insight) and, when it is ABSENT, falls back to the affix NAME — minting a bonus type `Sneak Attack` that the game does not have. The template documents the real default: \"An undefined or empty value will use : Enhancement\". Every entry is verified against the RENDERED tooltip rather than that documentation, because the template's own source comments call the default an assumption (\"Sneak Attack Bonus default type assumed to be Enhancement bonus\", reasoned from its not stacking with Deception). The rendered tooltip states Enhancement outright, which the evidence rule above requires and the comment does not supply."
+  "sneak_attack_class": "#608 — 20 entries share one cause and are worth reading as a class. The wiki renders these through Template:Sneak Attack Bonus, whose SECOND parameter is the bonus type. Upstream maps that parameter to `type` correctly when it is present (Seal of House Avithoul's `|Insightful` arrives as Insight) and, when it is ABSENT, falls back to the affix NAME — minting a bonus type `Sneak Attack` that the game does not have. The template documents the real default: \"An undefined or empty value will use : Enhancement\". Every entry is verified against the RENDERED tooltip rather than that documentation, because the template's own source comments call the default an assumption (\"Sneak Attack Bonus default type assumed to be Enhancement bonus\", reasoned from its not stacking with Deception). The rendered tooltip states Enhancement outright, which the evidence rule above requires and the comment does not supply.",
+  "seeker_exceptional_class": "#697 — 18 entries share one cause and are worth reading as a class. Template:Seeker's third parameter `exc` renders the LABEL 'Exceptional Seeker +N' and a tooltip that states the type the game applies: 'Provides a +N Insight bonus to confirm critical hits, and a +N Insight bonus to critical hit damage'. The Seeker page says it outright — 'The former Exceptional Seeker grants Insight bonus' — and a player's combat log confirmed it on the Legendary Helm of the Warblade. #392 ruled these Exceptional from the invocation's third parameter, which is the visible-label layer; the tooltip is the stronger layer (bundled-template-values-live-in-the-tooltip-not-the-cell.md), exactly as the Barnacled Buckler entry above records for Elemental Resistance. Every one of the 18 tooltips was read from its own page on 2026-09-04; none is inferred from a sibling. docs/wiki-evidence/seeker-bonus-type.md carries the re-ruling."
  },
  "Moment to Moment": [
   {
@@ -950,6 +951,240 @@
    "verified": "2026-08-30",
    "issue": 639,
    "note": "#639 — keyed on `Wizardry`; affix_name_corrections has already merged `Power Drain` into it."
+  }
+ ],
+ "Bracers of Twisting Shade (level 18)": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "3",
+   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{seeker|3|exc}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_18)",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Bracers of Twisting Shade (level 23)": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "4",
+   "tooltip": "Exceptional Seeker +4: Provides a +4 Insight bonus to confirm critical hits, and a +4 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{seeker|4|exc}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_23)",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Bracers of Twisting Shade (level 24)": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "4",
+   "tooltip": "Exceptional Seeker +4: Provides a +4 Insight bonus to confirm critical hits, and a +4 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{seeker|4|exc}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_24)",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Bracers of Twisting Shade (level 25)": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "5",
+   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{seeker|5|exc}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_25)",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Steady Handed Armbands (level 23)": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "3",
+   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|3|Exceptional}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Steady_Handed_Armbands_(level_23)",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Steady Handed Armbands (level 24)": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "4",
+   "tooltip": "Exceptional Seeker +4: Provides a +4 Insight bonus to confirm critical hits, and a +4 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|4|Exceptional}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Steady_Handed_Armbands_(level_24)",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Steady Handed Armbands (level 25)": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "5",
+   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|5|Exceptional}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Steady_Handed_Armbands_(level_25)",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Souvenir Coin": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "3",
+   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|3|Exceptional}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Souvenir_Coin",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Golden Souvenir Coin": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "3",
+   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|3|Exceptional}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Golden_Souvenir_Coin",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Legendary Souvenir Coin": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "5",
+   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|5|Exceptional}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Souvenir_Coin",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Legendary Golden Souvenir Coin": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "5",
+   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|5|Exceptional}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Golden_Souvenir_Coin",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Helm of the Warblade": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "3",
+   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|3|Exceptional}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Helm_of_the_Warblade",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Legendary Helm of the Warblade": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "5",
+   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|5|Exceptional}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Helm_of_the_Warblade",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Iron Cloak of the Wolf": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "3",
+   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|3|exc}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Iron_Cloak_of_the_Wolf",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Mithral Cloak of the Wolf": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "4",
+   "tooltip": "Exceptional Seeker +4: Provides a +4 Insight bonus to confirm critical hits, and a +4 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|4|exc}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Mithral_Cloak_of_the_Wolf",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Adamantine Cloak of the Wolf": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "5",
+   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|5|exc}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Cloak_of_the_Wolf",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Slice": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "3",
+   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|3|exc}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Slice",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+  }
+ ],
+ "Horseshoe Crab Shield (level 26)": [
+  {
+   "name": "Seeker",
+   "from": "Exceptional",
+   "to": "Insight",
+   "value": "5",
+   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+   "template": "{{Seeker|5|exc}}",
+   "wiki_url": "https://ddowiki.com/page/Item:Horseshoe_Crab_Shield_(level_26)",
+   "verified": "2026-09-04",
+   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
   }
  ]
 }

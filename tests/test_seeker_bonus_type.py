@@ -1,10 +1,21 @@
-"""Seeker bonus type is wiki-ruled per carrier (#392).
+"""Seeker bonus type is wiki-ruled per carrier (#392, re-ruled #697).
 
-`{{Seeker|N|<type>}}` states the bonus type as its third positional parameter:
-`exc`/`Exceptional` -> Exceptional, `ins`/`Insight`/`Insightful` -> Insight,
-absent -> Enhancement. The 2026-08-18 refresh (#374) re-typed 18 carriers
-Insight -> Exceptional; every one was verified against its own wiki page and
-upstream was correct. Ruling: `docs/wiki-evidence/seeker-bonus-type.md`.
+`{{Seeker|N|<type>}}` states a LABEL as its third positional parameter:
+`exc`/`Exceptional` renders "Exceptional Seeker +N", `ins`/`Insight`/
+`Insightful` renders "Insightful Seeker +N", absent renders "Seeker +N". The
+2026-08-18 refresh (#374) re-typed 18 carriers Insight -> Exceptional following
+that label, and #392 accepted it from the invocation. #697 re-read the stronger
+layer: every one of the 18 rendered tooltips says "Provides a +N Insight bonus",
+the Seeker page says "The former Exceptional Seeker grants Insight bonus", and a
+player's combat log agreed. So upstream's `Exceptional` is the label, `Insight`
+is the applied type, and `affix_type_corrections.json` carries 18 entries.
+Ruling: `docs/wiki-evidence/seeker-bonus-type.md`.
+
+Two populations are guarded here, deliberately. The RAW dump tables pin what
+upstream carries (the corrections' `from` side — if upstream re-types, the
+correction goes stale and the build must say so). The BUILT dataset assertion
+pins what the solver reads (the `to` side — a correction that silently stops
+applying would leave the raw guard green and the over-stack back).
 
 Bonus type is the stacking key, so a silent re-type changes what stacks with
 what without changing any magnitude. This guard names the carrier when that
@@ -19,7 +30,9 @@ sys.path.insert(0, ROOT)
 
 RAW = os.path.join(ROOT, "data", "seed", "compendium", "raw", "gearplanner_items.json")
 
-# Verified individually 2026-08-19; see the ruling's per-item invocation tables.
+# What UPSTREAM carries: the label. Verified individually 2026-08-19 (invocation)
+# and 2026-09-04 (tooltip); see the ruling's per-item tables. Every row here is
+# corrected to Insight at build time by affix_type_corrections.json (#697).
 EXCEPTIONAL = {
     "Bracers of Twisting Shade (level 18)": "3",
     "Bracers of Twisting Shade (level 23)": "4",
@@ -98,7 +111,48 @@ def _assert_ruled(table, bonus_type):
 
 
 def test_the_eighteen_exceptional_carriers_keep_their_ruled_type():
+    # The RAW side: upstream still labels these Exceptional. If this moves,
+    # the 18 corrections' `from` goes stale and the build fails loudly.
     _assert_ruled(EXCEPTIONAL, "Exceptional")
+
+
+BUILT = os.path.join(ROOT, "web", "data", "items.json")
+
+
+def test_697_the_built_dataset_types_every_exceptional_label_as_insight():
+    """The BUILT side of the 18-row class: what the solver actually reads.
+
+    `test_the_ruled_population_covers_every_exceptional_seeker_in_the_dump`
+    reads the raw dump, so a correction that silently stopped applying would
+    leave it green while the over-stack returned. This reads the built artifact
+    and refuses to inspect zero records."""
+    if not os.path.exists(BUILT):
+        return  # dataset not built; the JS suite builds it first in CI
+    with open(BUILT, encoding="utf-8") as fh:
+        items = json.load(fh)["items"]
+    by_name = {}
+    for it in items:
+        by_name.setdefault(it.get("source_item") or it.get("name"), it)
+    checked = 0
+    for name, value in sorted(EXCEPTIONAL.items()):
+        rec = by_name.get(name)
+        assert rec is not None, f"{name}: absent from the built dataset"
+        seekers = [(a.get("type"), str(a.get("value")))
+                   for a in rec.get("affixes") or [] if a.get("name") == "Seeker"]
+        assert ("Insight", value) in seekers, (
+            f"{name}: built Seeker affixes are {seekers}, ruled Insight {value} "
+            f"(#697) — the affix_type_corrections.json entry stopped applying")
+        assert not any(t == "Exceptional" for t, _ in seekers), (
+            f"{name}: still carries an Exceptional Seeker in the built dataset")
+        checked += 1
+    assert checked == 18
+    leaked = sorted(it.get("source_item") or it.get("name") for it in items
+                    if any(a.get("name") == "Seeker" and a.get("type") == "Exceptional"
+                           for a in it.get("affixes") or []))
+    assert not leaked, (
+        f"built records carrying an Exceptional Seeker: {leaked} — the Seeker page "
+        f"rules 'The former Exceptional Seeker grants Insight bonus'; read the "
+        f"carrier's tooltip and add its correction")
 
 
 def test_the_insight_control_set_did_not_move():
