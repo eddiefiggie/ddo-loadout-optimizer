@@ -55,7 +55,7 @@ from src import cross_add as cross_add_mod
 from src import provenance as provenance_mod
 from src import value_corrections as value_corrections_mod
 from src import name_corrections as name_corrections_mod
-from src import helpless_fold as helpless_fold_mod
+from src import set_tier_folds as set_tier_folds_mod
 from src import split_mechanics as split_mechanics_mod
 from src import untyped_rankable as untyped_rankable_mod
 from src import utility_procs as utility_procs_mod
@@ -1393,7 +1393,7 @@ def build() -> dict:
     # the def channels get their own calls below (per-channel, never vouched
     # for by a sibling). Runs AFTER the expansions above so it inspects the
     # channel exactly as emitted. docs/wiki-evidence/helpless-damage.md.
-    helpless_fold_mod.check_channel(
+    set_tier_folds_mod.check_channel(
         "parsed_set_bonuses",
         (a.get("stat")
          for v in variants for t in v.get("parsed_set_bonuses") or []
@@ -1411,7 +1411,7 @@ def build() -> dict:
     # #305 — the same guard on the membership-def channel (built from the same
     # set catalog through the same parse seam, but a separate emitted structure
     # a sibling guard cannot vouch for).
-    helpless_fold_mod.check_channel(
+    set_tier_folds_mod.check_channel(
         "membership_set_defs",
         (a.get("stat")
          for _d in membership_defs.values() for _t in _d.get("tiers") or []
@@ -1481,7 +1481,7 @@ def build() -> dict:
     # the reviewed seed itself (augment_sets.json canonicalized `Damage vs.
     # Helpless`, the channel's established precedent — see the seed's
     # `stat_note`), so this guard is what keeps the spelling from returning.
-    helpless_fold_mod.check_channel(
+    set_tier_folds_mod.check_channel(
         "augment_set_defs",
         (a.get("stat")
          for _d in augment_set_defs.values() for _t in _d.get("tiers") or []

@@ -784,10 +784,11 @@ def test_374_the_shipped_local_registry_is_not_stale():
     # Display provenance only: both spellings already expand to the same six
     # abilities at the same bonus type, so no value, bucket or solve moves.
     n = build_dataset.assert_local_affix_synonyms()
-    assert n == 12, n
+    # #695 — 13: the Maximum Spellpoints family joined the reviewed local section.
+    assert n == 13, n
     table = V._load(V.AFFIX_SYNONYMS_REGISTRY_PATH)
     assert {e["name"] for e in table["local_affix_synonyms"]} == {
-        "Damage to helpless enemies", "Well Rounded"}
+        "Damage to helpless enemies", "Well Rounded", "Maximum Spell Points (%)"}
     assert n == sum(len(e["synonyms"]) for e in table["local_affix_synonyms"]) \
         == table["local_count"], "the declared local_count must match the section"
 
