@@ -21,7 +21,7 @@ from __future__ import annotations
 import re
 
 from src.affix_parser import parse_line, BONUS_TYPES, MULTI_STAT_TOKENS
-from src import helpless_fold
+from src import set_tier_folds
 
 _PIECES = re.compile(r"(\d+)")
 _TRAILING_TYPE = re.compile(r"\(([^)]+)\)\s*$")
@@ -78,14 +78,15 @@ def parse_piece_text(text: str) -> tuple[list, list]:
         for a in r["affixes"]:
             for part in _expand_compound(a["stat"]):
                 b = dict(a)
-                # #305 — fold the helpless-damage spellings to their canonical
-                # stat at the shared parse seam, so BOTH channels this parser
-                # feeds (item-attached parsed_set_bonuses and the membership
-                # set defs) emit `Damage to helpless enemies`; tier `raw` stays
-                # verbatim. Scoped to the one wiki-verified family — never the
-                # full synonym registry (see src/helpless_fold.py and
-                # docs/wiki-evidence/helpless-damage.md).
-                b["stat"] = helpless_fold.fold_stat(part)
+                # #305/#695 — fold the REPO-REVIEWED local spellings to their
+                # canonical stat at the shared parse seam, so BOTH channels this
+                # parser feeds (item-attached parsed_set_bonuses and the
+                # membership set defs) emit the canonical; tier `raw` stays
+                # verbatim. Scoped to `local_affix_synonyms` — never the merged
+                # `registry_synonym_folds`, whose upstream half would drag
+                # Accuracy<-Attack and AC<-Shield into channels that never had
+                # them (see src/set_tier_folds.py's SCOPE note).
+                b["stat"] = set_tier_folds.fold_stat(part)
                 if line_type and b["bonus_type"] == "Enhancement":
                     b["bonus_type"] = line_type  # apply trailing type only to untyped clauses
                 affixes.append(b)
