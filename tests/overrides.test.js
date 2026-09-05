@@ -336,7 +336,11 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // were RENAMED rather than added, so the delta is the two new components and nothing
   // else — which is the check that the alias widened the match without widening the
   // rewrite.
-  assert.strictEqual(total, 42823, "post-normalize pool size");
+  // 43,063 not 42,823 since #192: +240, the Command expansion. 40 records
+  // (38 items, 2 Brightbane Emerald augments) each trade one folded `Command`
+  // affix for seven — six Charisma skills at the item's own type and a Hide
+  // penalty — so 40 x 7 - 40 = 240. All 280 minted affixes carry `via`.
+  assert.strictEqual(total, 43063, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -390,7 +394,13 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // and an override keyed on the engraved name would address a stat that no longer
   // exists. Worth stating plainly because it is a real, if small, capability the
   // rename costs.
-  assert.strictEqual(eligible, 20739, "engraved, eligible affixes");
+  // 20,699 since #192: MINUS 40, the same movement #649 made for `Undying`. The
+  // 40 folded `Command` affixes were engraved and override-eligible; everything
+  // that replaced them carries `via` and is ineligible by rule 5. A player who
+  // wants to retype a Command item's skill bonus now does it on the record's own
+  // engraved sibling (Coin Belt's Haggle, the Helms' Intimidate), which is what
+  // the card names.
+  assert.strictEqual(eligible, 20699, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -416,7 +426,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // independent cross-check on the -14 above. No weapon is engraved `Undying`, so
   // the whole loss must split across the other two categories, and it does. The
   // augment half is the two `Undying Sapphire` tiers.
-  assert.deepStrictEqual(byCat, { item: 13606, weapon: 6114, augment: 1019 });
+  // item 13,572 / weapon 6,110 / augment 1,017 since #192: -34 / -4 / -2, the 40
+  // Command carriers by category (34 worn, 4 weapons, 2 augments) — the
+  // independent cross-check on the -40 above.
+  assert.deepStrictEqual(byCat, { item: 13572, weapon: 6110, augment: 1017 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {
