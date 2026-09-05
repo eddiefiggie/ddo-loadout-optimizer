@@ -1101,19 +1101,17 @@ function dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts = null, essencePoo
       && (A.source_item || A.variant_id) !== (B.source_item || B.variant_id)) {
     return false;
   }
-  // Legendary Green Steel multi-tier choice-slots (#194), both halves: the
-  // craftable value lives in `thunder_forged_tiers` (the weapon pool's legacy
-  // marker) / `green_steel_tiers` (accessories) — a list of tier slots — outside
+  // Legendary Green Steel multi-tier choice-slots (#194, one marker for both
+  // blank classes since #687): the craftable value lives in
+  // `legendary_green_steel_tiers` — a list of {tier, item_class} slots — outside
   // variantBuckets, so a slot-only blank would be pruned by any affix rival. A must
-  // offer at least as many of each tier slot as B (same trap as Viktranium/Seal
-  // hosts, and the Blank-host trap CONCEPTS.md describes: the 8 accessory blanks
-  // carry NO affix but a drawback, so this clause is the only thing keeping them).
-  const tfA = countColors((A.thunder_forged_tiers || []).map((s) => s.tier));
-  const tfB = countColors((B.thunder_forged_tiers || []).map((s) => s.tier));
-  for (const [k, n] of tfB) if ((tfA.get(k) || 0) < n) return false;
-  const gsA = countColors((A.green_steel_tiers || []).map((s) => s.tier));
-  const gsB = countColors((B.green_steel_tiers || []).map((s) => s.tier));
-  for (const [k, n] of gsB) if ((gsA.get(k) || 0) < n) return false;
+  // offer at least as many of each (class, tier) slot as B (same trap as
+  // Viktranium/Seal hosts, and the Blank-host trap CONCEPTS.md describes: the 8
+  // accessory blanks carry NO affix but a drawback, so this clause is the only
+  // thing keeping them).
+  const lgsA = countColors((A.legendary_green_steel_tiers || []).map((s) => `${s.item_class}||${s.tier}`));
+  const lgsB = countColors((B.legendary_green_steel_tiers || []).map((s) => `${s.item_class}||${s.tier}`));
+  for (const [k, n] of lgsB) if ((lgsA.get(k) || 0) < n) return false;
   // Wildcard set-piece (Gem of Many Facets) joker: its set-completion value lives in
   // joker_set_groups (pools of sets it can complete toward a threshold), outside
   // variantBuckets AND outside set_bonus (the build clears the Gem's fixed set). So a
@@ -1322,7 +1320,7 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, and the target list. */
-function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, thunderForged = [], greenSteel = [], augmentSetDefs = {}, utilityCountingSet = null, nearlyCompletePerItem = {}, essenceCrafting = []) {
+function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, legendaryGreenSteel = [], augmentSetDefs = {}, utilityCountingSet = null, nearlyCompletePerItem = {}, essenceCrafting = []) {
   // #245 — the niche-crafting opt-out. A craftable option slot makes its host a
   // wildcard for every rankable stat (the Viktranium pool alone reaches 126), so
   // under strict lexicographic priority a Lamordia base is never worse and
@@ -1339,7 +1337,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // these option pools are model-level collections.
   if (rungExcludesNicheCrafting(craftingRung(query))) {
     dinoInserts = []; nearlyComplete = []; viktranium = []; seal = [];
-    thunderForged = []; greenSteel = []; essenceCrafting = [];
+    legendaryGreenSteel = []; essenceCrafting = [];
     nearlyCompletePerItem = {};   // #371 — Nearly Finished / Almost There
     membershipSetDefs = {};   // chosen set-membership (Lost Purpose / Dino Set Bonus)
     augmentSetDefs = {};      // set-bonus augments are Dino crafting too
@@ -1771,8 +1769,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // an option whose first affix is off-target while a later one is exactly what the
   // player ranked. Shared with Viktranium deliberately — three containers now have
   // this shape and a fourth reading it differently is how they drift apart.
-  const tfPool = (thunderForged || []).filter((o) => o && vikAdvances(o));
-  const gsPool = (greenSteel || []).filter((o) => o && vikAdvances(o));
+  const lgsPool = (legendaryGreenSteel || []).filter((o) => o && vikAdvances(o));
   // #539 — classify the set pins against the ELIGIBLE pool. Done here, with the
   // pool and both def dicts in scope, so a pin the query cannot satisfy is named
   // as such instead of reaching the solver and coming back as a bare INFEASIBLE.
@@ -1829,7 +1826,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, seal: sealPool,
     // #371 — `{host name: [option]}`, read per host via the item's `nc_per_item_slots`.
     nearlyCompletePerItem: ncPerItemPool,
-    thunderForged: tfPool, greenSteel: gsPool, essenceCrafting: essencePool,
+    legendaryGreenSteel: lgsPool, essenceCrafting: essencePool,
     essenceCoverage: _ESSENCE_COVERAGE,
     membershipSetDefs: membershipSetDefs || {},
     // U6 — set-augment definitions (piece thresholds + affixes), forwarded like
@@ -2019,7 +2016,7 @@ function poolStatNames(model) {
     }
   }
   const pools = [model.augments, model.dinoInserts, model.nearlyComplete, model.viktranium,
-                 model.seal, model.thunderForged, model.greenSteel, model.essenceCrafting];
+                 model.seal, model.legendaryGreenSteel, model.essenceCrafting];
   for (const pool of pools) {
     for (const o of pool || []) {
       if (o && o.stat) out.add(o.stat);

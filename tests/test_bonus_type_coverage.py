@@ -33,7 +33,7 @@ DATASET = os.path.join(ROOT, "web", "data", "items.json")
 #: which the dataset already carried, so the hole was real but unoccupied.
 NORMALIZER = os.path.join(ROOT, "web", "dataset.js")
 POOLS = ("dino_inserts", "nearly_complete", "viktranium", "seal",
-         "thunder_forged", "green_steel")
+         "legendary_green_steel")
 
 
 def _live_types(d):
@@ -191,7 +191,7 @@ def test_psionic_is_gone_and_stays_gone():
 #: That disproves #225's second possibility — a live pool minting `Insightful`
 #: while gear-planner mints `Insight`, putting one mechanic in two buckets that
 #: WOULD stack. The parser is still called by viktranium, seal, nearly_complete,
-#: dino, thunder_forged and green_steel; none of them produces the type.
+#: dino and legendary_green_steel; none of them produces the type.
 #:
 #: So the protection moves here, where it can actually fail. The moment any
 #: channel mints `Insightful`, this names it — and that is exactly when the open

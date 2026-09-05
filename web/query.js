@@ -162,7 +162,7 @@ window.App && window.App.ready((dataset) => {
       // #91 (U3, KTD3) — the utility counting set rides as a buildModel ARGUMENT
       // from the in-scope vocabulary (alias-canonicalized dataset metadata),
       // never on the persisted query. Inert until the sentinel is ranked.
-      const model = buildModel(dataset.items, query, dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs,
+      const model = buildModel(dataset.items, query, dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.legendary_green_steel, dataset.augment_set_defs,
         // #332 — both sets: the counting roster the tier scores, and the
         // admitted procs it deliberately does not, so the result can name
         // a ranked-but-uncounted proc on every surface including exports.

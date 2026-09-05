@@ -377,7 +377,7 @@ test("picker: rankability + presence classification (synthetic)", () => {
   // (typeable only). All remain typeable via `known`.
   const ds = {
     metadata: {}, items: [],
-    green_steel: [
+    legendary_green_steel: [
       { stat: "Wildcard Power", bonus_type: "Untyped", value: 10 },
       { stat: "Armor Class Penalty", bonus_type: "Penalty", value: -5 },
       { stat: "Extra Sneak Damage", bonus_type: "Sneak Attack", value: 8 },
@@ -399,7 +399,7 @@ test("picker: rankability + presence classification (synthetic)", () => {
 test("U5 picker: a free-typed variant is canonicalized through the alias table", () => {
   const ds = {
     metadata: {}, items: [], _affixAliases: { "blood rage": "Blood Rage" },
-    green_steel: [{ stat: "Blood Rage", bonus_type: "Enhancement", value: 4 }],
+    legendary_green_steel: [{ stat: "Blood Rage", bonus_type: "Enhancement", value: 4 }],
   };
   const v = buildPickerVocabulary(ds);
   assert.strictEqual(v.canonical("blood rage"), "Blood Rage");

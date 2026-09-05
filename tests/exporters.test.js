@@ -273,7 +273,7 @@ const richRec = {
     setsActive: [],
     dinoPlaced: [], ncPlaced: [], rollPlaced: [],
     vikPlaced: [{ item: "Epic Spectacles", stat: "Resistance", bonus_type: "Enhancement", value: 3, slot_type: "Melancholic" }],
-    sealPlaced: [], tfPlaced: [], gsPlaced: [], jokerPlaced: [], membershipPlaced: [],
+    sealPlaced: [], lgsPlaced: [], jokerPlaced: [], membershipPlaced: [],
   },
 };
 
@@ -1898,8 +1898,7 @@ const CUELESS_ON_PURPOSE = {
   vikEmpty: "an empty declared slot, not a craft",
   // #194 — the same rule for a declared Legendary Green Steel altar the solve
   // left empty, on either half.
-  tfEmpty: "an empty declared altar tier, not a craft",
-  gsEmpty: "an empty declared altar tier, not a craft",
+  lgsEmpty: "an empty declared altar tier, not a craft",
 };
 
 test("#193: every craft family the loadout can emit carries an export cue", () => {
@@ -1963,7 +1962,7 @@ test("#603: a Set Augment is cued, and the legend explains it", () => {
 });
 
 test("#603: the cue's word is dropped when the label already opens with it", () => {
-  const md = toMarkdown(craftRec("gs", "gsPlaced", [{
+  const md = toMarkdown(craftRec("lgs", "lgsPlaced", [{
     item: "Widget", tier: 1, name: "GS", stat: "Constitution", bonus_type: "Insight",
     value: 6, unit: "flat",
   }]));
@@ -2009,16 +2008,14 @@ test("#603: the gearset label stays self-describing, because it prints with no c
   // `toGearset` prints `cr.label` bare. Trimming the system name out of the LABEL
   // rather than out of the cue would have left that export saying only
   // "Prefix: Strength +13", with nothing naming the system.
-  const cases = {
-    gs: [{ tier: 2, stat: "Constitution", bonus_type: "Insight", value: 6, unit: "flat" }, "Legendary Green Steel"],
-    essence: [{ menu: "Prefix", effect: "Strength", stat: "Strength",
-                bonus_type: "Enhancement", value: 13, unit: "flat" }, "Essence Crafting"],
-    // #194/#653 — the weapon half is Legendary Green Steel too; the legacy `tf`
-    // key stays in the data, the player-facing word does not.
-    tf: [{ tier: 1, stat: "Constitution", bonus_type: "Insight", value: 6, unit: "flat" },
-         "Legendary Green Steel"],
-  };
-  for (const [family, [o, word]] of Object.entries(cases)) {
+  const cases = [
+    // #194/#653/#687 — both blank classes are Legendary Green Steel, one family.
+    ["lgs", { tier: 2, item_class: "accessory", stat: "Constitution", bonus_type: "Insight", value: 6, unit: "flat" }, "Legendary Green Steel"],
+    ["lgs", { tier: 1, item_class: "weapon", stat: "Constitution", bonus_type: "Insight", value: 6, unit: "flat" }, "Legendary Green Steel"],
+    ["essence", { menu: "Prefix", effect: "Strength", stat: "Strength",
+                  bonus_type: "Enhancement", value: 13, unit: "flat" }, "Essence Crafting"],
+  ];
+  for (const [family, o, word] of cases) {
     const label = Proj.craftLabel(o, family);
     assert.ok(label.toLowerCase().startsWith(word.toLowerCase()),
       `${family}: "${label}" must name its system standalone — the gearset prints it with no cue`);

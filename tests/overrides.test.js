@@ -565,9 +565,9 @@ test("#88 U6: every eligible pool row is addressable, and keys are unique across
     seen.set(rec.key, rec.affix);
   });
   assert.deepStrictEqual([...channels].sort(), [
-    "dino_inserts", "green_steel", "nearly_complete", "nearly_complete_per_item",
-    "seal", "thunder_forged", "viktranium",
-  ], "all seven channels are walked");
+    "dino_inserts", "legendary_green_steel", "nearly_complete", "nearly_complete_per_item",
+    "seal", "viktranium",
+  ], "all six channels are walked (#687 folded the two Legendary Green Steel channels into one)");
   // #423 re-ratification — was 976 / 894. The ruling that R7's load-generated
   // exclusion reaches the crafted channels removed exactly the 278 rows carrying
   // a `via` expansion receipt: 184 viktranium, 54 dino_inserts, 40 nearly_complete.
@@ -1141,3 +1141,25 @@ test("#426: the addressability index answers per row in O(1), and excludes the i
   assert.ok(eligible > 0 && Object.keys(idx).length <= eligible,
     "one token per addressable group, never more than the eligible population");
 });
+
+
+// ---- #687 — saved pool overrides on the two retired channels re-address ----
+test("#687: a saved override on a retired Legendary Green Steel channel is re-addressed, everything else is untouched", () => {
+  const tf = { pool_key: "thunder_forged||2||Melee Power||Artifact||25", name: "Melee Power", from: "Artifact", to: "Insight", value: "25" };
+  const gs = { pool_key: "green_steel||T3 (Equipment)||Wizardry||Profane||151", name: "Wizardry", from: "Profane", to: "Enhancement", value: "151" };
+  const item = { variant_id: "Some Item", name: "Strength", from: "Insight", to: "Quality", value: "3" };
+  const modern = { pool_key: "legendary_green_steel||accessory||1||Constitution||Enhancement||8", name: "Constitution", from: "Enhancement", to: "Quality", value: "8" };
+  assert.strictEqual(O.migrateOverride(tf).pool_key, "legendary_green_steel||weapon||2||Melee Power||Artifact||25");
+  assert.strictEqual(O.migrateOverride(gs).pool_key, "legendary_green_steel||accessory||3||Wizardry||Profane||151");
+  assert.strictEqual(O.migrateOverride(item), item, "an item override is the same object");
+  assert.strictEqual(O.migrateOverride(modern), modern, "a modern pool key is the same object");
+  assert.strictEqual(tf.pool_key, "thunder_forged||2||Melee Power||Artifact||25", "the saved record is not mutated");
+  assert.ok(O.isWellFormed(O.migrateOverride(tf)) && O.isWellFormed(O.migrateOverride(gs)));
+  // The re-addressed key is a key the live pool actually mints.
+  const p = loadPool();
+  const keys = new Set();
+  O.eachPoolAffix(p, (rec) => keys.add(rec.key), true);
+  const sample = [...keys].find((k) => k.startsWith("legendary_green_steel||weapon||2||"));
+  assert.ok(sample, "the live pool mints weapon tier-2 keys under the new channel");
+});
+

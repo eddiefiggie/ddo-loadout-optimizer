@@ -200,7 +200,7 @@
    *  Complete, 7 Dino inserts) — every one of them was invisible here, which is
    *  the "solve-visible but share-invisible" shape this repo has ruled against.
    *  Only the multi-affix channels are scanned: `rollPlaced`/`sealPlaced`/
-   *  `tfPlaced`/`gsPlaced` are flat single-affix records with no `affixes` array,
+   *  `lgsPlaced` entries are flat single-affix records with no `affixes` array,
    *  so they cannot reach the 2+ member floor by construction. Add them here if
    *  they ever gain multi-affix options — do not add them speculatively, or the
    *  coverage would be a claim no fixture can fail.
@@ -284,7 +284,7 @@
    *  paying into the player's top priority.
    *
    *  Measured across the four flat pools: `essence_crafting` (25) and `seal` (48)
-   *  were broken; `thunder_forged` (36) and `green_steel` (108) were correct only
+   *  were broken; the two Legendary Green Steel pools (36 and 108, unified by #687) were correct only
    *  because their `name` happens to EQUAL their `stat`. Preferring `stat` fixes
    *  the first two and leaves the second two keyed identically, so they no longer
    *  depend on that coincidence holding.
@@ -1124,8 +1124,8 @@
     // everything a lower rung would take away, not just augments. A build leaning
     // entirely on Viktranium or seals is exactly the player who most needs to know
     // the ladder exists, and counting augments alone left them with no notice.
-    const crafts = ["vikPlaced", "sealPlaced", "ncPlaced", "dinoPlaced", "tfPlaced",
-      "gsPlaced", "essPlaced", "membershipPlaced", "setAugmentsPlaced"]
+    const crafts = ["vikPlaced", "sealPlaced", "ncPlaced", "dinoPlaced", "lgsPlaced",
+      "essPlaced", "membershipPlaced", "setAugmentsPlaced"]
       .reduce((n, k) => n + ((snap[k] || []).length), 0);
     if (!augs && !crafts) return null;   // nothing to give up; no advice worth crowding the results with
     const gems = (snap.augmentsPlaced || [])
@@ -1700,7 +1700,7 @@
       augAssign, dinoAssign,
       ncByItem: byItemMap(build.ncPlaced), rollByItem: byItemMap(build.rollPlaced),
       vikByItem, sealByItem: byItemMap(build.sealPlaced),
-      tfByItem: byItemMap(build.tfPlaced), gsByItem: byItemMap(build.gsPlaced),
+      lgsByItem: byItemMap(build.lgsPlaced),
       essByItem: byItemMap(build.essPlaced), jokerByHost,
       membershipByHost, setAugByHost,
     };
@@ -1774,9 +1774,9 @@
   }
 
   /** #194 — one row per DECLARED Legendary Green Steel tier, filled or empty, in
-   *  tier order: the `vikSlotRows` rule applied to a per-tier marker
-   *  (`thunder_forged_tiers` for the weapon half, `green_steel_tiers` for the
-   *  accessory half). Pairing is a multiset difference on `tier`, so an odd
+   *  tier order: the `vikSlotRows` rule applied to the per-slot marker
+   *  (`legendary_green_steel_tiers`, one list for both blank classes since #687).
+   *  Pairing is a multiset difference on `tier`, so an odd
    *  snapshot declaring two slots of one tier still shows one open after one
    *  craft lands. A placement matching no declared tier is still reported, for
    *  the reason `vikSlotRows` gives: dropping a craft the solve prescribed is the
@@ -1845,9 +1845,9 @@
       case "roll": return "Choice slot";
       case "vik": return `Slot ${o.slot_type} Viktranium augment`;
       case "seal": return `Sealed in ${o.seal_type}`;
-      // #194 — one system, two pools, and the tier IS the slot: a Legendary
-      // Green Steel blank takes one effect at each of three altars.
-      case "tf": case "gs": return `Legendary Green Steel T${o.tier}`;
+      // #194 — the tier IS the slot: a Legendary Green Steel blank takes one
+      // effect at each of three altars.
+      case "lgs": return `Legendary Green Steel T${o.tier}`;
       // #193/#599 — the menu is named because the Gem has three of them and they
       // are spent independently; "Essence Crafting" alone would read as one craft.
       case "essence": return `Essence Crafting ${o.menu}`;
@@ -1904,14 +1904,13 @@
         system: sys(family), title: craftLabel(o, "vikEmpty") };
       case "seal": return { where: o.seal_type, what: craftValue(o), system: sys(family),
         title: "unseal one effect at the crafting table" };
-      // #194 — tier rows for both Legendary Green Steel halves, and the declared
-      // tiers the solve left empty (same identity rule as `vikEmpty`: a blank
-      // that ships with three altars must never read as a two-altar item).
-      case "tf": return { where: `Tier ${o.tier}`, what: craftValue(o), system: sys(family),
-        title: "Legendary Green Steel weapon tier — craft at the Legendary Altar" };
-      case "gs": return { where: `Tier ${o.tier}`, what: craftValue(o), system: sys(family),
-        title: "Legendary Green Steel accessory tier — craft at the Legendary Altar" };
-      case "tfEmpty": case "gsEmpty": return { where: `Tier ${o.tier}`, what: "left empty",
+      // #194 — Legendary Green Steel tier rows (both blank classes, one family
+      // since #687), and the declared tiers the solve left empty (same identity
+      // rule as `vikEmpty`: a blank that ships with three altars must never read
+      // as a two-altar item).
+      case "lgs": return { where: `Tier ${o.tier}`, what: craftValue(o), system: sys(family),
+        title: `Legendary Green Steel ${o.item_class || "blank"} tier — craft at the Legendary Altar` };
+      case "lgsEmpty": return { where: `Tier ${o.tier}`, what: "left empty",
         system: sys(family), title: craftLabel(o, family) };
       case "essence": return { where: `${o.menu} menu`, what: craftValue(o), system: sys(family),
         title: `Essence Crafting ${o.menu}: ${o.effect}` };
@@ -1984,9 +1983,8 @@
    *  pick, so it earns a caption. */
   const CRAFT_SECTION_LABEL = {
     vik: "Viktranium", vikEmpty: "Viktranium", nc: "Nearly Completed",
-    dino: "Dino crafting", seal: "Seal crafting", tf: "Legendary Green Steel",
-    tfEmpty: "Legendary Green Steel", gs: "Legendary Green Steel",
-    gsEmpty: "Legendary Green Steel", roll: "Choice slots", essence: "Essence Crafting",
+    dino: "Dino crafting", seal: "Seal crafting", lgs: "Legendary Green Steel",
+    lgsEmpty: "Legendary Green Steel", roll: "Choice slots", essence: "Essence Crafting",
     // #472 — the set-yielding families. `membership` is a fallback only: that case
     // reads its system name from the CraftingSystems registry, because the two
     // stations behind the one primitive are two different systems.
@@ -2033,12 +2031,12 @@
       // a craft to go apply. The label stands alone on every surface instead.
       case "vikEmpty": return `Slot ${vikSlotName(o)} Viktranium augment: left empty — no option adds to your ranked stats`;
       case "seal": return `Sealed in ${o.seal_type}: ${craftValue(o)}`;
-      // #194 — both halves of Legendary Green Steel name their tier: the tier is
-      // the altar the player goes to, and each altar takes exactly one effect.
-      case "tf": case "gs": return `Legendary Green Steel T${o.tier}: ${craftValue(o)}`;
+      // #194 — a Legendary Green Steel craft names its tier: the tier is the
+      // altar the player goes to, and each altar takes exactly one effect.
+      case "lgs": return `Legendary Green Steel T${o.tier}: ${craftValue(o)}`;
       // A declared tier the solve left empty — same disclosure as `vikEmpty`, and
       // for the same reason: an empty altar must not vanish from the item.
-      case "tfEmpty": case "gsEmpty":
+      case "lgsEmpty":
         return `Legendary Green Steel T${o.tier}: left empty — no option adds to your ranked stats`;
       // #193 — the EFFECT is named whenever it differs from the stat, because
       // that name is the shard the player has to go and make: `Insightful
@@ -2185,7 +2183,7 @@
    *  A pool-keyed override omits the URL line ENTIRELY rather than printing an
    *  empty one: no crafted row carries a `wiki_url` — `seal`, `nearly_complete`,
    *  `viktranium` and `dino_inserts` all store an empty string and
-   *  `thunder_forged` / `green_steel` have no such key — so the key's own channel
+   *  `legendary_green_steel` has no such key — so the key's own channel
    *  and discriminators are what identify it instead. An empty "Wiki:" label
    *  would read as a missing value rather than an absent concept. */
   function correctionReport(override, catalogRow) {
@@ -2294,15 +2292,10 @@
     for (const n of maps.sealByItem.get(v.variant_id) || []) out.push({ family: "seal", label: craftLabel(n, "seal") });
     // #194 — declared Legendary Green Steel tiers, filled and empty, in tier order
     // (the #370/#484 rule the Viktranium rows above follow).
-    for (const r of tierSlotRows(v.thunder_forged_tiers, maps.tfByItem.get(v.variant_id) || [])) {
+    for (const r of tierSlotRows(v.legendary_green_steel_tiers, maps.lgsByItem.get(v.variant_id) || [])) {
       out.push(r.placement
-        ? { family: "tf", label: craftLabel(r.placement, "tf") }
-        : { family: "tfEmpty", label: craftLabel(r, "tfEmpty"), tier: r.tier });
-    }
-    for (const r of tierSlotRows(v.green_steel_tiers, maps.gsByItem.get(v.variant_id) || [])) {
-      out.push(r.placement
-        ? { family: "gs", label: craftLabel(r.placement, "gs") }
-        : { family: "gsEmpty", label: craftLabel(r, "gsEmpty"), tier: r.tier });
+        ? { family: "lgs", label: craftLabel(r.placement, "lgs") }
+        : { family: "lgsEmpty", label: craftLabel(r, "lgsEmpty"), tier: r.tier });
     }
     for (const n of (maps.essByItem && maps.essByItem.get(v.variant_id)) || []) out.push({ family: "essence", label: craftLabel(n, "essence") });
     for (const j of maps.jokerByHost.get(v.variant_id) || []) out.push({ family: "joker", label: craftLabel(j, "joker") });

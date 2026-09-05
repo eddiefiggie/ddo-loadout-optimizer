@@ -94,7 +94,7 @@ async function main() {
     const model = buildModel(
       dataset.items, query,
       dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,
-      dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel,
+      dataset.seal, dataset.membership_set_defs, dataset.legendary_green_steel,
       {}, vocab.utilityCounting || null,
     );
     const r = await solveLexicographic(model, highs);

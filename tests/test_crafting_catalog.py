@@ -81,17 +81,15 @@ def test_legacy_affix_projection_no_remap():
     assert proj == {"stat": "Charisma", "bonus_type": "Insight", "value": 7, "unit": "flat"}
 
 
-def test_green_steel_records_resolve_natively():
-    # A2: the Green Steel pools DO exist (T1/T2/T3 Equipment) — wired, not deleted.
-    recs = CC.green_steel_records()
-    assert len(recs) > 50, "Green Steel Equipment pools are populated natively"
-    # #194 — records are ATOMIC now, so the stats live in each option's `affixes`.
+def test_legendary_green_steel_records_resolve_natively():
+    # #687 — ONE builder over the six T<n> (Equipment|Weapon) menus, keyed by
+    # (item_class, tier). #194 — records are ATOMIC: stats live in `affixes`.
+    recs = CC.legendary_green_steel_records()
+    assert len(recs) == 116, "81 accessory + 35 weapon options"
     stats = {a["stat"] for r in recs for a in r["affixes"]}
     assert "Acid Resistance" in stats or "Acid Intensity" in stats
+    assert {(r["item_class"], r["tier"]) for r in recs} == set(CC.LEGENDARY_GREEN_STEEL_KEYS)
+    assert all(r["tier_key"] == CC.LEGENDARY_GREEN_STEEL_KEYS[(r["item_class"], r["tier"])] for r in recs)
+    for legacy in ("green_steel_records", "thunder_forged_records", "GREEN_STEEL_KEYS", "THUNDER_FORGED_KEYS"):
+        assert not hasattr(CC, legacy), f"{legacy} must be gone — one family, one builder"
 
-
-def test_thunder_forged_records_resolve_natively():
-    recs = CC.thunder_forged_records()
-    assert len(recs) > 20, "Thunder-Forged Weapon pools are populated natively"
-    tiers = {r["tier"] for r in recs}
-    assert tiers == {1, 2, 3}, "all three weapon tiers resolve"

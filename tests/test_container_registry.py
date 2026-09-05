@@ -33,7 +33,7 @@ DATASET = os.path.join(ROOT, "web", "data", "items.json")
 sys.path.insert(0, ROOT)
 from src import container_registry as cr  # noqa: E402
 from src import crafting_catalog, dino, nearly_complete, seal  # noqa: E402
-from src import green_steel, thunder_forged, viktranium  # noqa: E402
+from src import legendary_green_steel, viktranium  # noqa: E402
 from src import essence_pool  # noqa: E402
 from src.spell_focus import PROVENANCE_KEY  # noqa: E402
 
@@ -86,11 +86,11 @@ def raises_systemexit(fn):
 def test_gate_raises_when_a_flat_container_splits_a_source_option():
     """The defect itself. One option carrying three affixes becomes three records,
     the slot takes exactly one, and the player gets a third of the craft."""
-    with registry(green_steel=cr._c(cr.FLAT, (), cr.VERIFIED_SAFE, True, "")):
+    with registry(legendary_green_steel=cr._c(cr.FLAT, (), cr.VERIFIED_SAFE, True, "")):
         msg = raises_systemexit(lambda: cr.check(
-            ds(green_steel=[flat_rec("Charisma Skills"), flat_rec("Use Magic Device"),
-                            flat_rec("Wizardry")]),
-            {"green_steel": 1}))
+            ds(legendary_green_steel=[flat_rec("Charisma Skills"), flat_rec("Use Magic Device"),
+                                      flat_rec("Wizardry")]),
+            {"legendary_green_steel": 1}))
 
     assert "FLAT container turned 1 source option(s) into 3 record(s)" in msg
     assert "mutually exclusive siblings" in msg
@@ -318,14 +318,14 @@ def test_gate_raises_the_moment_a_host_reaches_a_splitting_pool():
     the pool has carried 108 records for months with no host to use them."""
     known_unsafe = cr._c(cr.FLAT, (), cr.KNOWN_UNSAFE, False, "",
                          host_marker="green_steel_slot", splits_options=True)
-    with registry(green_steel=known_unsafe):
-        stats = cr.check(ds(green_steel=[flat_rec(), flat_rec()]), {"green_steel": 1})
-        assert stats["hosts"]["green_steel"] == 0
+    with registry(legendary_green_steel=known_unsafe):
+        stats = cr.check(ds(legendary_green_steel=[flat_rec(), flat_rec()]), {"legendary_green_steel": 1})
+        assert stats["hosts"]["legendary_green_steel"] == 0
 
         msg = raises_systemexit(lambda: cr.check(
             ds(items=[{"name": "Legendary Green Steel Ring", "green_steel_slot": True}],
-               green_steel=[flat_rec(), flat_rec()]),
-            {"green_steel": 1}))
+               legendary_green_steel=[flat_rec(), flat_rec()]),
+            {"legendary_green_steel": 1}))
 
     assert "now carry `green_steel_slot`" in msg
     assert "REACHABLE" in msg
@@ -335,10 +335,10 @@ def test_gate_raises_the_moment_a_host_reaches_a_splitting_pool():
 def test_gate_raises_when_a_known_unsafe_container_no_longer_splits():
     """A corrected builder must not keep a known-unsafe label that would silence the
     cardinality rule for that container permanently."""
-    with registry(green_steel=cr._c(cr.FLAT, (), cr.KNOWN_UNSAFE, False, "",
+    with registry(legendary_green_steel=cr._c(cr.FLAT, (), cr.KNOWN_UNSAFE, False, "",
                                     host_marker="green_steel_slot", splits_options=True)):
         msg = raises_systemexit(
-            lambda: cr.check(ds(green_steel=[flat_rec()]), {"green_steel": 1}))
+            lambda: cr.check(ds(legendary_green_steel=[flat_rec()]), {"legendary_green_steel": 1}))
 
     assert "no longer splits" in msg
     assert "restore the 'verified-safe' verdict" in msg
@@ -346,17 +346,17 @@ def test_gate_raises_when_a_known_unsafe_container_no_longer_splits():
 
 def test_registry_rejects_a_splitter_dressed_as_verified_safe():
     """The declaration that shipped: FLAT, splitting options, certified safe."""
-    with registry(green_steel=cr._c(cr.FLAT, (), cr.VERIFIED_SAFE, False, "",
+    with registry(legendary_green_steel=cr._c(cr.FLAT, (), cr.VERIFIED_SAFE, False, "",
                                     host_marker="green_steel_slot", splits_options=True)):
-        msg = raises_systemexit(lambda: cr.check(ds(green_steel=[flat_rec()]), {}))
+        msg = raises_systemexit(lambda: cr.check(ds(legendary_green_steel=[flat_rec()]), {}))
     assert "must agree" in msg
 
 
 def test_registry_rejects_a_splitter_with_no_host_marker():
     """Without a host marker there is nothing left to trip when the pool goes live."""
-    with registry(green_steel=cr._c(cr.FLAT, (), cr.KNOWN_UNSAFE, False, "",
+    with registry(legendary_green_steel=cr._c(cr.FLAT, (), cr.KNOWN_UNSAFE, False, "",
                                     splits_options=True)):
-        msg = raises_systemexit(lambda: cr.check(ds(green_steel=[flat_rec()]), {}))
+        msg = raises_systemexit(lambda: cr.check(ds(legendary_green_steel=[flat_rec()]), {}))
     assert "no `host_marker`" in msg
 
 
@@ -373,15 +373,13 @@ def test_registry_declares_every_single_pick_container_with_a_verdict():
         "nearly_complete":          (cr.ATOMIC, ("spell_focus",), cr.CORRECTED,     True),
         "nearly_complete_per_item": (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
         "seal":                     (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
-        # #194 — ATOMIC and verified safe since the builders stopped splitting
-        # multi-affix options, and REACHABLE now that the 48 Legendary Green Steel
-        # blanks carry their tier markers (8 accessories / 40 weapons).
-        "green_steel":              (cr.ATOMIC, ("spell_focus",), cr.VERIFIED_SAFE, True),
-        "thunder_forged":           (cr.ATOMIC, (),               cr.VERIFIED_SAFE, True),
-        # #193 — FLAT and verified-safe, which is what separates it from the two
+        # #194/#687 — ONE container for both blank classes: ATOMIC and verified
+        # safe since the builders stopped splitting multi-affix options, REACHABLE
+        # through the 48 Legendary Green Steel blanks (8 accessories / 40 weapons).
+        "legendary_green_steel":    (cr.ATOMIC, ("spell_focus",), cr.VERIFIED_SAFE, True),
+        # #193 — FLAT and verified-safe, which is what separates it from the one
         # above: a crafted Essence effect grants exactly ONE stat by construction,
-        # so there is no multi-affix option for a flat shape to split. Reachable,
-        # unlike green_steel/thunder_forged: three verified Gem tiers host it.
+        # so there is no multi-affix option for a flat shape to split.
         "essence_crafting":         (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
         "roll_groups":              (cr.FLAT,   (),               cr.VERIFIED_SAFE, False),
     }
@@ -434,8 +432,7 @@ def _shipped_source_options():
         "nearly_complete": nc["source_options"],
         "nearly_complete_per_item": nc["per_item_source_options"],
         "seal": seal.build_seal(catalog)["source_options"],
-        "green_steel": green_steel.build_green_steel(catalog)["source_options"],
-        "thunder_forged": thunder_forged.build_thunder_forged(catalog)["source_options"],
+        "legendary_green_steel": legendary_green_steel.build_legendary_green_steel(catalog)["source_options"],
         # #193 — Essence Crafting's source is the seed shards, not the crafting
         # catalog, so it is recomputed from the pool builder instead. Still an
         # independent path from the shipped dataset: the builder re-reads
@@ -472,7 +469,7 @@ def test_gate_passes_on_the_built_dataset():
 
     stats = cr.check(data, _shipped_source_options())
 
-    assert stats["checked"] == 9
+    assert stats["checked"] == 8   # #687 folded green_steel + thunder_forged into one
     assert stats["compared"] > 700, stats
     assert stats["records"]["viktranium"] > 0
     assert stats["records"]["dino_inserts"] > 0
@@ -498,54 +495,47 @@ def test_the_shipped_dataset_holds_one_record_per_option_wherever_it_claims_to()
             assert len(records) <= source[name], name
 
 
-def test_green_steel_and_thunder_forged_no_longer_split_options():
-    """The declaration is measured, not asserted: neither pool splits an option any
-    more, and both are reachable through their Legendary Green Steel blanks. If
-    either fact changes the gate fires.
+def test_legendary_green_steel_no_longer_splits_options():
+    """The declaration is measured, not asserted: the pool splits no option, and
+    both blank classes reach it. If either fact changes the gate fires.
 
-    #194 inverted the first half of this test. It used to assert that both pools DID
-    split — 81 source options into 108 records and 35 into 36 — and that the registry
-    said so, because the split was declared honestly rather than fixed while the
-    pools had no hosts. Now each is one record per craftable option carrying its own
-    `affixes` list, so the counts must match EXACTLY. Equality, not `<=`: the ATOMIC
-    contract permits dropping an option that has no affixes, but nothing in these two
-    catalogs does, and a silent drop is as much a defect as a split.
+    #194 inverted the first half of this test (it used to assert the split was
+    declared honestly: 81 source options into 108 records); #687 folded the two
+    pools into one. One record per craftable option carrying its own `affixes`
+    list, so the counts must match EXACTLY. Equality, not `<=`: the ATOMIC
+    contract permits dropping an option that has no affixes, but nothing in this
+    catalog does, and a silent drop is as much a defect as a split.
     """
     with open(DATASET, "r", encoding="utf-8") as fh:
         data = json.load(fh)
     source = _shipped_source_options()
-
-    # #194 — REACHABLE now: the Legendary Green Steel blanks declare their altar
-    # tiers in crafting[], and the build stamps the marker from that. The marker
-    # trigger stays armed in the other direction — a refresh that drops the labels
-    # leaves a reachable pool with no host, which `check()` refuses.
-    expected_hosts = {"green_steel": 8, "thunder_forged": 40}
-    for name in ("green_steel", "thunder_forged"):
-        assert cr.REGISTRY[name]["verdict"] == cr.VERIFIED_SAFE, name
-        assert cr.REGISTRY[name]["shape"] == cr.ATOMIC, name
-        assert not cr.REGISTRY[name]["splits_options"], name
-        assert cr.REGISTRY[name]["reachable"], name
-        assert len(data[name]) == source[name], name
-        marker = cr.REGISTRY[name]["host_marker"]
-        assert marker, name
-        hosts = [it for it in data["items"] if it.get(marker)]
-        assert len(hosts) == expected_hosts[name], (name, len(hosts))
-        for it in hosts:
-            assert it["source_item"].startswith("Legendary Green Steel"), it["source_item"]
-            assert it[marker] == [{"tier": 1}, {"tier": 2}, {"tier": 3}], it["source_item"]
-
-    # The measured counts, so a change in the catalog shows up as a diff here.
-    assert (len(data["green_steel"]), source["green_steel"]) == (81, 81)
-    assert (len(data["thunder_forged"]), source["thunder_forged"]) == (35, 35)
-
+    name = "legendary_green_steel"
+    assert cr.REGISTRY[name]["verdict"] == cr.VERIFIED_SAFE
+    assert cr.REGISTRY[name]["shape"] == cr.ATOMIC
+    assert not cr.REGISTRY[name]["splits_options"]
+    assert cr.REGISTRY[name]["reachable"]
+    assert (len(data[name]), source[name]) == (116, 116)
+    marker = cr.REGISTRY[name]["host_marker"]
+    assert marker == "legendary_green_steel_tiers"
+    hosts = [it for it in data["items"] if it.get(marker)]
+    by_class = {}
+    for it in hosts:
+        assert it["source_item"].startswith("Legendary Green Steel"), it["source_item"]
+        cls = {sl["item_class"] for sl in it[marker]}
+        assert len(cls) == 1, it["source_item"]
+        (cls,) = cls
+        assert it[marker] == [{"tier": t, "item_class": cls} for t in (1, 2, 3)], it["source_item"]
+        by_class[cls] = by_class.get(cls, 0) + 1
+    assert by_class == {"accessory": 8, "weapon": 40}
     # The multi-affix options are the whole point: these are the records that were
     # being handed to a player one part at a time.
-    gs_multi = [r for r in data["green_steel"] if len(r.get("affixes") or []) > 1]
-    tf_multi = [r for r in data["thunder_forged"] if len(r.get("affixes") or []) > 1]
-    assert len(gs_multi) == 24, len(gs_multi)
-    assert len(tf_multi) == 1, len(tf_multi)
-    for r in gs_multi + tf_multi:
+    multi = [r for r in data[name] if len(r.get("affixes") or []) > 1]
+    assert len([r for r in multi if r["item_class"] == "accessory"]) == 24
+    assert len([r for r in multi if r["item_class"] == "weapon"]) == 1
+    for r in multi:
         assert all(a.get("stat") for a in r["affixes"]), r
+    for legacy in ("green_steel", "thunder_forged"):
+        assert legacy not in cr.REGISTRY and legacy not in data, legacy
 
 
 def test_build_metadata_discloses_the_gate_coverage():
@@ -562,17 +552,16 @@ def test_build_metadata_discloses_the_gate_coverage():
     # #194 — the split is GONE, not merely disclosed. This assertion used to read
     # `>` and was the honest disclosure of a known defect; now every source option
     # maps to exactly one record.
-    assert cov["records"]["green_steel"] == cov["source_options"]["green_steel"]
-    assert cov["records"]["thunder_forged"] == cov["source_options"]["thunder_forged"]
+    assert cov["records"]["legendary_green_steel"] == cov["source_options"]["legendary_green_steel"]
     # #193 — essence_crafting: three verified Gem of Many Facets tiers carry
-    # `essence_slots`. #194 — the two Legendary Green Steel halves are reached by
-    # their 8 accessory and 40 weapon blanks.
-    assert cov["hosts"] == {"essence_crafting": 3, "green_steel": 8, "thunder_forged": 40}
+    # `essence_slots`. #194/#687 — the one Legendary Green Steel pool is reached
+    # by its 48 blanks (8 accessories, 40 weapons).
+    assert cov["hosts"] == {"essence_crafting": 3, "legendary_green_steel": 48}
     # And every declared expansion pass left evidence it ran.
     assert cov["expanded_affixes"]["viktranium"] > 0
     assert cov["expanded_affixes"]["dino_inserts"] > 0
-    # #194 — the accessory pool's 18 ability-skills umbrellas expand in place.
-    assert cov["expanded_affixes"]["green_steel"] > 0
+    # #194 — the accessory options' 18 ability-skills umbrellas expand in place.
+    assert cov["expanded_affixes"]["legendary_green_steel"] > 0
 
 
 def test_viktranium_spell_focus_craft_is_one_option_carrying_seven_schools():
@@ -617,15 +606,16 @@ def test_653_both_pools_declare_and_match_the_legendary_altars():
     """The standing fact, measured against the shipped data rather than asserted."""
     with open(DATASET, "r", encoding="utf-8") as fh:
         data = json.load(fh)
-    for name in ("green_steel", "thunder_forged"):
-        assert cr.REGISTRY[name]["expects_stations"] == ("Legendary Altar",), name
-        recs = data[name]
-        assert recs, name
-        for r in recs:
-            st = r.get("source_stations")
-            assert st, f"{name}: a record carries no provenance stamp"
-            for one in st:
-                assert "Legendary Altar" in one, (name, one)
+    name = "legendary_green_steel"
+    assert cr.REGISTRY[name]["expects_stations"] == ("Legendary Altar",)
+    recs = data[name]
+    assert recs
+    assert {r["item_class"] for r in recs} == {"accessory", "weapon"}, "both classes are judged"
+    for r in recs:
+        st = r.get("source_stations")
+        assert st, f"{name}: a record carries no provenance stamp"
+        for one in st:
+            assert "Legendary Altar" in one, (name, one)
 
 
 def test_653_thunder_forged_has_no_menu_in_the_catalog():
@@ -637,10 +627,9 @@ def test_653_thunder_forged_has_no_menu_in_the_catalog():
     cat = crafting_catalog.load_catalog()
     hits = [k for k in cat if re.search(r"thunder|forge|magma", k, re.I)]
     assert not hits, (
-        f"a Thunder-Forged menu appeared in the catalog: {hits}. The `thunder_forged` "
-        "container currently holds Legendary Green Steel WEAPON recipes (#653); if "
-        "real Thunder-Forged recipes now exist, they are a different pool and the "
-        "container needs re-homing, not renaming.")
+        f"a Thunder-Forged menu appeared in the catalog: {hits}. The T*(Weapon) menus "
+        "are Legendary Green Steel WEAPON recipes (#653, #687); if real Thunder-Forged "
+        "recipes now exist, they are a NEW pool and need their own container.")
 
 
 def test_653_a_foreign_station_in_the_pool_is_REFUSED():
@@ -650,9 +639,11 @@ def test_653_a_foreign_station_in_the_pool_is_REFUSED():
     src = data["metadata"]["container_registry_coverage"]["source_options"]
     bad = copy.deepcopy(data)
     # Exactly the defect: a genuine Thunder-Forged recipe landing in this pool.
-    bad["thunder_forged"][0]["source_stations"] = ["Magma Forge"]
+    # Corrupt a WEAPON record — the class the mislabelling was about.
+    idx = next(i for i, r in enumerate(bad["legendary_green_steel"]) if r["item_class"] == "weapon")
+    bad["legendary_green_steel"][idx]["source_stations"] = ["Magma Forge"]
     msg = raises_systemexit(lambda: cr.check(bad, src))
-    assert "Magma Forge" in msg and "thunder_forged[0]" in msg, msg
+    assert "Magma Forge" in msg and f"legendary_green_steel[{idx}]" in msg, msg
     assert "not one of the stations this container declares" in msg, msg
 
 
@@ -667,7 +658,7 @@ def test_653_a_dropped_provenance_stamp_does_not_pass_VACUOUSLY():
         data = json.load(fh)
     src = data["metadata"]["container_registry_coverage"]["source_options"]
     bad = copy.deepcopy(data)
-    for r in bad["green_steel"]:
+    for r in bad["legendary_green_steel"]:
         r.pop("source_stations", None)
     msg = raises_systemexit(lambda: cr.check(bad, src))
     assert "passes vacuously" in msg, msg

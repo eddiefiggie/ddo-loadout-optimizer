@@ -8,7 +8,7 @@
 function craftCount(sol) {
   return (sol.augmentsPlaced || []).length + (sol.dinoPlaced || []).length
     + (sol.ncPlaced || []).length + (sol.vikPlaced || []).length + (sol.sealPlaced || []).length
-    + (sol.tfPlaced || []).length + (sol.gsPlaced || []).length;
+    + (sol.lgsPlaced || []).length;
 }
 
 function buildKey(sol) {

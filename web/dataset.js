@@ -563,7 +563,7 @@ function normalizeDataset(dataset) {
 // gear, augments, AND crafting by one canonical name. Sources: the build's curated
 // item/scaling/set-bonus vocabulary (metadata.rankable_affixes — clean, ≥2-item +
 // CORE_STATS) UNIONED with every crafting pool (seal, nearly_complete[/per_item],
-// viktranium, dino_inserts, thunder_forged, green_steel, membership set defs). The
+// viktranium, dino_inserts, legendary_green_steel, membership set defs). The
 // crafting union closes the gap where a CRAFTING-ONLY affix could not be selected
 // even though the solver matches it.
 //
@@ -919,12 +919,12 @@ function _craftingAffixTriples(ds) {
   // affix of a multi-affix option (the universal spell-DC craft's seven
   // schools, a Skill-menu craft's six skills) out of the picker vocabulary.
   // Flat single-affix records still read, for back-compat.
-  // #194 — `green_steel` and `thunder_forged` (the two Legendary Green Steel
-  // halves) are ATOMIC too, and have been since #652; reading them through the
-  // flat `o.stat` above left every one of their 116 options out of the picker,
-  // which cost nothing only while no host could reach them. Now 48 blanks can.
+  // #194 — `legendary_green_steel` (both blank classes, one pool since #687) is
+  // ATOMIC too, and has been since #652; reading it through the flat `o.stat`
+  // above left every one of its 116 options out of the picker, which cost
+  // nothing only while no host could reach them. Now 48 blanks can.
   for (const pool of [ds.viktranium, ds.dino_inserts, ds.nearly_complete,
-                      ds.green_steel, ds.thunder_forged]) {
+                      ds.legendary_green_steel]) {
     for (const o of pool || []) {
       const affs = (o.affixes && o.affixes.length) ? o.affixes : [o];
       for (const a of affs) push(a.stat, a.bonus_type, a.value);

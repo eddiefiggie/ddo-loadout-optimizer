@@ -334,7 +334,7 @@ test("U6 (P1 regression): buildModel gates augment_set_defs on the VALUE path by
   // The solver's set-augment y-family reads model.augment_set_defs directly, not the
   // worn/augment pool — so ownership must gate the defs dict, not just eligible().
   const defs = { "Alluring Elocution": { tiers: [], tier: "augment" }, "Arcane Barrier": { tiers: [], tier: "augment" } };
-  const call = (q) => M.buildModel([], q, [], [], [], [], {}, [], [], defs).augment_set_defs;
+  const call = (q) => M.buildModel([], q, [], [], [], [], {}, [], defs).augment_set_defs;
   assert.deepStrictEqual(Object.keys(call({ mlCap: 34, targets: ["Charisma"], ownedSetAugments: new Set() })), [], "empty ownership => no defs reach the solver");
   assert.deepStrictEqual(Object.keys(call({ mlCap: 34, targets: ["Charisma"] })), [], "undefined ownership => no defs");
   assert.deepStrictEqual(Object.keys(call({ mlCap: 34, targets: ["Charisma"], ownedSetAugments: new Set(["Arcane Barrier"]) })), ["Arcane Barrier"], "only the owned set's def reaches the value path");
@@ -367,7 +367,7 @@ test("U6: buildModel forwards owned augment_set_defs onto the model", () => {
   const model = M.buildModel(
     [v("Ring", "Ring", [["Intelligence", "Enhancement", 5]])],
     { mlCap: 34, targets: ["Intelligence"], ownedSetAugments: new Set(["Alluring Elocution"]) },
-    [], [], [], [], {}, [], [], defs);
+    [], [], [], [], {}, [], defs);
   assert.deepStrictEqual(model.augment_set_defs, defs, "an owned set's def must reach the model value path");
 });
 
@@ -801,11 +801,11 @@ test("dominates: an affix item does NOT dominate a seal host it can't match", ()
 });
 
 test("dominates: an affix item does NOT dominate a Thunder-Forged host it can't match", () => {
-  // Regression: a TF host's craftable value lives in thunder_forged_tiers, outside
+  // Regression: a Legendary Green Steel host's craftable value lives in legendary_green_steel_tiers, outside
   // variantBuckets, so a stronger plain-affix rival lacking the tier slots must NOT prune it.
   const real = v("Real", "Main Hand", [["Strength", "Enhancement", 12]], { category: "weapon" });
   const host = v("Host", "Main Hand", [["Strength", "Enhancement", 8]], { category: "weapon" });
-  host.thunder_forged_tiers = [{ tier: 1 }, { tier: 2 }, { tier: 3 }];
+  host.legendary_green_steel_tiers = [{ tier: 1, item_class: "weapon" }, { tier: 2, item_class: "weapon" }, { tier: 3, item_class: "weapon" }];
   const targets = new Set(["Strength"]);
   assert.strictEqual(M.dominates(real, host, targets, 34), false,
     "a rival lacking the TF tier slots cannot dominate the host");
@@ -818,17 +818,17 @@ test("dominates: an affix item does NOT dominate a Green Steel host it can't mat
   // only thing between them and the Blank-host prune.
   const real = v("Real", "Belt", [["Constitution", "Enhancement", 12]]);
   const host = v("Host", "Belt", []);
-  host.green_steel_tiers = [{ tier: 1 }, { tier: 2 }, { tier: 3 }];
+  host.legendary_green_steel_tiers = [{ tier: 1, item_class: "accessory" }, { tier: 2, item_class: "accessory" }, { tier: 3, item_class: "accessory" }];
   const targets = new Set(["Constitution"]);
   assert.strictEqual(M.dominates(real, host, targets, 34), false,
     "a rival lacking the Green Steel tier slots cannot dominate the host");
   assert.strictEqual(M.dominanceFilter([real, host], targets, 34, 1).length, 2, "the GS host survives");
   // A rival offering FEWER tiers cannot dominate either; one offering the same set can.
   const twoTier = v("Two", "Belt", [["Constitution", "Enhancement", 12]]);
-  twoTier.green_steel_tiers = [{ tier: 1 }, { tier: 2 }];
+  twoTier.legendary_green_steel_tiers = [{ tier: 1, item_class: "accessory" }, { tier: 2, item_class: "accessory" }];
   assert.strictEqual(M.dominates(twoTier, host, targets, 34), false, "two tiers do not cover three");
   const peer = v("Peer", "Belt", [["Constitution", "Enhancement", 12]]);
-  peer.green_steel_tiers = [{ tier: 1 }, { tier: 2 }, { tier: 3 }];
+  peer.legendary_green_steel_tiers = [{ tier: 1, item_class: "accessory" }, { tier: 2, item_class: "accessory" }, { tier: 3, item_class: "accessory" }];
   assert.strictEqual(M.dominates(peer, host, targets, 34), true, "same tiers plus a real affix dominates");
   // The retired truthy marker is inert: nothing reads it any more.
   const legacy = v("Legacy", "Belt", []);
@@ -1843,16 +1843,16 @@ test("#346: the no-niche-crafting rung empties the option-pool families", () => 
   const defs = { "Some Set": { tiers: [{ pieces_required: 2, affixes: [{ stat: "Intelligence", bonus_type: "Artifact", value: 6 }] }] } };
   const q = { mlCap: 34, targets: ["Intelligence"] };
 
-  const off = M.buildModel([host], q, [dino], [nc], [vik], [seal], defs, [], [], defs);
+  const off = M.buildModel([host], q, [dino], [nc], [vik], [seal], defs, [], defs);
   assert.ok(off.viktranium.length && off.seal.length && off.nearlyComplete.length
     && off.dinoInserts.length && Object.keys(off.membershipSetDefs).length,
     "top rung: every family pool survives (today's behavior)");
 
   const on = M.buildModel([host], { ...q, craftingRung: "no-niche-crafting" },
-    [dino], [nc], [vik], [seal], defs, [], [], defs);
+    [dino], [nc], [vik], [seal], defs, [], defs);
   assert.deepStrictEqual(
-    [on.viktranium, on.seal, on.nearlyComplete, on.dinoInserts, on.thunderForged, on.greenSteel],
-    [[], [], [], [], [], []], "rung on: every option pool is empty");
+    [on.viktranium, on.seal, on.nearlyComplete, on.dinoInserts, on.legendaryGreenSteel],
+    [[], [], [], [], []], "rung on: every option pool is empty");
   assert.deepStrictEqual(on.membershipSetDefs, {}, "chosen set-membership crafting is off");
   assert.deepStrictEqual(on.augment_set_defs, {}, "set-bonus augments (Dino crafting) are off");
   // the host itself still competes on its printed affixes
@@ -1897,7 +1897,7 @@ test("#346: the model seam honours the legacy boolean when no rung is stored", (
   const vik = { slot_type: "Melancholic", category: "accessory", tier: "legendary",
     affixes: [{ stat: "Intelligence", value: 7, bonus_type: "Insight" }] };
   const legacy = M.buildModel([host], { mlCap: 34, targets: ["Intelligence"], excludeCraftingSystems: true },
-    [], [], [vik], [], {}, [], [], {});
+    [], [], [vik], [], {}, [], {});
   assert.deepStrictEqual(legacy.viktranium, [],
     "a legacy-only query empties the option pools at the model seam");
 });
@@ -1978,7 +1978,7 @@ test("#346: augment sets are cleared from the no-niche-crafting rung down", () =
   // fixture must mark it owned or the rung's effect is unobservable.
   const q = { mlCap: 34, targets: ["Intelligence"], ownedSetAugments: new Set(["Some Aug Set"]) };
   const at = (rung) => Object.keys(
-    M.buildModel([host], { ...q, craftingRung: rung }, [], [], [], [], {}, [], [], defs).augment_set_defs);
+    M.buildModel([host], { ...q, craftingRung: rung }, [], [], [], [], {}, [], defs).augment_set_defs);
 
   assert.deepStrictEqual(at("everything"), ["Some Aug Set"], "the top rung keeps the set");
   for (const rung of ["no-niche-crafting", "no-solar-lunar", "printed-only"]) {
@@ -2294,7 +2294,7 @@ test("#91: sentinel ranked + counting set null explicitly ALSO throws", () => {
   const A = v("A", "Ring", [["Intelligence", "Enhancement", 10]]);
   assert.throws(
     () => M.buildModel([A], { mlCap: 34, targets: [M.UTILITY_SENTINEL] },
-      [], [], [], [], {}, [], [], {}, null),
+      [], [], [], [], {}, [], {}, null),
     /utilityCountingSet/
   );
 });
@@ -2307,7 +2307,7 @@ test("#91: sentinel absent + no counting set stays fine (pre-feature calls unaff
 test("#91: sentinel ranked + a real (even empty) counting set does not throw", () => {
   const A = v("A", "Ring", [["Intelligence", "Enhancement", 10]]);
   assert.doesNotThrow(() => M.buildModel([A], { mlCap: 34, targets: ["Intelligence", M.UTILITY_SENTINEL] },
-    [], [], [], [], {}, [], [], {}, new Set()));
+    [], [], [], [], {}, [], {}, new Set()));
 });
 
 // ---------------------------------------------------------------------------
@@ -2757,7 +2757,7 @@ test("#648/real data: every Gem survives the prune at an endgame cap", () => {
     craftingRung: "everything", blocklist: [], slotConstraints: {}, targetCaps: {},
     targetFloors: {}, declaredCredits: {}, overrides: [],
   };
-  const m = M.buildModel(data.items, q, [], [], [], [], {}, [], [], {}, null, {},
+  const m = M.buildModel(data.items, q, [], [], [], [], {}, [], {}, null, {},
                          data.essence_crafting);
   const hosts = [];
   for (const w of m.worn || []) {
@@ -2779,7 +2779,7 @@ test("#648/real data: the niche-crafting rung restores the pre-fix prune", () =>
     craftingRung: "no-niche-crafting", blocklist: [], slotConstraints: {}, targetCaps: {},
     targetFloors: {}, declaredCredits: {}, overrides: [],
   };
-  const m = M.buildModel(data.items, q, [], [], [], [], {}, [], [], {}, null, {},
+  const m = M.buildModel(data.items, q, [], [], [], [], {}, [], {}, null, {},
                          data.essence_crafting);
   let n = 0;
   for (const w of m.worn || []) {

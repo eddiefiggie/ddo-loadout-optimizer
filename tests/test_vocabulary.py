@@ -549,7 +549,7 @@ def test_the_real_seed_resolves_the_real_vocabulary():
     # lives only in the NC Skill menu; `all Saving Throws` only on set tiers.
     pool_names = V.pool_affix_names(
         [data.get(k) or [] for k in ("nearly_complete", "viktranium",
-         "seal", "thunder_forged", "green_steel", "dino_inserts")]
+         "seal", "legendary_green_steel", "dino_inserts")]
         + list((data.get("nearly_complete_per_item") or {}).values()),
         set_defs=[data.get("membership_set_defs") or {},
                   data.get("augment_set_defs") or {}])

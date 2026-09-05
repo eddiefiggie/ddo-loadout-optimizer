@@ -78,7 +78,7 @@ function* solverStatNames(ds) {
     for (const a of s.affixes || []) yield ["dino-set", s.set, a.stat, a.value];
   }
   for (const key of ["dino_inserts", "nearly_complete", "viktranium", "seal",
-                     "thunder_forged", "green_steel"]) {
+                     "legendary_green_steel"]) {
     for (const rec of ds[key] || []) {
       if (Array.isArray(rec.affixes)) {
         for (const a of rec.affixes) yield [key, rec.name || rec.item || "", a.stat || a.name, a.value];

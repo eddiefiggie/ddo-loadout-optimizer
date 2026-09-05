@@ -58,7 +58,7 @@ function makeRec() {
       setsActive: [],
       dinoPlaced: [], ncPlaced: [], rollPlaced: [],
       vikPlaced: [{ item: "Epic Spectacles", stat: "Resistance", bonus_type: "Enhancement", value: 3, slot_type: "Melancholic" }],
-      sealPlaced: [], tfPlaced: [], gsPlaced: [], jokerPlaced: [], membershipPlaced: [],
+      sealPlaced: [], lgsPlaced: [], jokerPlaced: [], membershipPlaced: [],
     },
   };
 }
@@ -525,7 +525,7 @@ test("#194: a placement matching no declared tier is still reported, and an unde
 
 test("#194: both halves label as Legendary Green Steel with the tier, and an empty tier says why", () => {
   const o = { tier: 2, stat: "Wizardry", bonus_type: "Insight", value: 151, unit: "flat" };
-  for (const family of ["tf", "gs"]) {
+  for (const family of ["lgs"]) {
     const label = P.craftLabel(o, family);
     assert.ok(label.startsWith("Legendary Green Steel T2: "), `${family}: ${label}`);
     assert.ok(!/Thunder/.test(label), "#653 — the weapon half is not Thunder-Forged");
@@ -534,7 +534,7 @@ test("#194: both halves label as Legendary Green Steel with the tier, and an emp
     assert.strictEqual(row.where, "Tier 2");
     assert.strictEqual(P.CRAFT_SECTION_LABEL[family], "Legendary Green Steel");
   }
-  for (const family of ["tfEmpty", "gsEmpty"]) {
+  for (const family of ["lgsEmpty"]) {
     const label = P.craftLabel({ tier: 3 }, family);
     assert.ok(/^Legendary Green Steel T3: left empty — no option adds to your ranked stats$/.test(label), label);
     assert.strictEqual(P.craftRowLabel({ tier: 3 }, family).what, "left empty");
@@ -548,20 +548,20 @@ test("#194: an equipped blank's empty altars reach the shared content model, fil
     snapshot: {
       status: "optimal", perTarget: { Wizardry: 151 },
       chosen: [{ slot: "Belt", variant: { variant_id: "Legendary Green Steel Belt", source_item: "Legendary Green Steel Belt",
-        minimum_level: 26, affixes: [], green_steel_tiers: [{ tier: 1 }, { tier: 2 }, { tier: 3 }] } }],
-      gsPlaced: [{ item: "Legendary Green Steel Belt", tier: 2, name: "Insight Wizardry", stat: "Wizardry", bonus_type: "Insight", value: 151, unit: "flat" }],
+        minimum_level: 26, affixes: [], legendary_green_steel_tiers: [{ tier: 1, item_class: "accessory" }, { tier: 2, item_class: "accessory" }, { tier: 3, item_class: "accessory" }] } }],
+      lgsPlaced: [{ item: "Legendary Green Steel Belt", tier: 2, item_class: "accessory", name: "Insight Wizardry", stat: "Wizardry", bonus_type: "Insight", value: 151, unit: "flat" }],
     },
   };
   const view = P.project(rec);
   const belt = view.loadout.find((it) => it.item === "Legendary Green Steel Belt");
   assert.ok(belt, "the belt is in the loadout view");
   const fams = belt.crafting.map((c) => c.family);
-  assert.deepStrictEqual(fams, ["gsEmpty", "gs", "gsEmpty"], "three declared altars, in tier order, one filled");
+  assert.deepStrictEqual(fams, ["lgsEmpty", "lgs", "lgsEmpty"], "three declared altars, in tier order, one filled");
   assert.strictEqual(belt.crafting[1].label, "Legendary Green Steel T2: Wizardry +151 Insight");
   // The results card reads the same rows.
   const maps = P.buildCraftMaps(rec.snapshot);
   const rows = R.craftRowsFor(rec.snapshot.chosen[0].variant, 0, maps);
-  assert.deepStrictEqual(rows.map((r) => r.family), ["gsEmpty", "gs", "gsEmpty"]);
+  assert.deepStrictEqual(rows.map((r) => r.family), ["lgsEmpty", "lgs", "lgsEmpty"]);
   assert.ok(rows[0].empty && rows[2].empty && !rows[1].empty);
 });
 
@@ -1048,7 +1048,7 @@ test("#626: provenance still wins, and members still report their own names", ()
 });
 
 test("#626: the two pools that were correct by coincidence stay correct", () => {
-  // thunder_forged (36) and green_steel (108) have `name` === `stat`, so the old
+  // the two Legendary Green Steel pools (36 and 108, one since #687) have `name` === `stat`, so the old
   // name-first rule happened to work. They must not depend on that any more.
   assert.strictEqual(P.affixCoverageKey({ name: "Corrosion", stat: "Corrosion", bonus_type: "Insight", value: 24 }), "Corrosion");
   assert.strictEqual(P.affixCoverageKey({ name: "Acid Guard", stat: "Acid Guard", bonus_type: "Enhancement", value: 1 }), "Acid Guard");
@@ -1214,8 +1214,8 @@ test("#346: the top rung names what the loadout leans on, or stays silent", () =
   // Silence requires nothing to give up AT ALL — no augments and no crafted
   // options. The base fixture carries a craft, which the notice now counts.
   rec.snapshot.augmentsPlaced = [];
-  const craftKeys = ["vikPlaced", "sealPlaced", "ncPlaced", "dinoPlaced", "tfPlaced",
-    "gsPlaced", "membershipPlaced", "setAugmentsPlaced"];
+  const craftKeys = ["vikPlaced", "sealPlaced", "ncPlaced", "dinoPlaced", "lgsPlaced",
+    "membershipPlaced", "setAugmentsPlaced"];
   const stashed = {};
   for (const k of craftKeys) { stashed[k] = rec.snapshot[k]; rec.snapshot[k] = []; }
   assert.strictEqual(P.project(rec).character.craftingExcludedNotice, null,

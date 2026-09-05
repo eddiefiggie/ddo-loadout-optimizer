@@ -29,8 +29,12 @@
   const RESULT_KEEP = [
     "status", "chosen", "effective", "perTarget", "breakdown", "setsActive",
     "computeScale", "capped", "augmentsPlaced", "dinoPlaced", "ncPlaced",
-    "rollPlaced", "vikPlaced", "sealPlaced", "jokerPlaced", "tfPlaced",
-    "gsPlaced", "essPlaced", "essenceReport", "greenSteelReport", "membershipPlaced", "setAugmentsPlaced",
+    "rollPlaced", "vikPlaced", "sealPlaced", "jokerPlaced",
+    // #687 — the ONE Legendary Green Steel placement key. `tfPlaced` / `gsPlaced`
+    // are NOT on this list: a save never writes them again. They are read-only
+    // legacy keys that `migrateResult` folds into `lgsPlaced` on load, stamping
+    // the item class each old key implied (tf -> weapon, gs -> accessory).
+    "lgsPlaced", "essPlaced", "essenceReport", "greenSteelReport", "membershipPlaced", "setAugmentsPlaced",
     // #539 — what the player's set pins did. Kept for the same reason blockReport
     // is: `program` is dropped on save and KTD6 forbids re-solving on load, so a
     // restored build could not otherwise say whether a pin landed, was suppressed,
@@ -107,6 +111,40 @@
     // before #348 simply lacks the key, and every consumer treats it as optional.
     "utilityOrdered",
   ];
+
+  /** #687 — fold a saved result's two legacy Legendary Green Steel placement
+   *  lists into the one the solver now emits. Pre-#687 saves carry `tfPlaced`
+   *  (the weapon pool, under the old `thunder_forged` name) and `gsPlaced` (the
+   *  accessory pool); each placement gains the `item_class` its key implied and
+   *  both fold into `lgsPlaced`, weapon first, in saved order. A result that
+   *  already carries `lgsPlaced` is returned untouched — the legacy keys are
+   *  never merged INTO a modern list, or a save round-tripped through an older
+   *  build would double its placements. Pure: returns a new object, never
+   *  mutates the stored record. Idempotent by construction. */
+  const _LEGACY_LGS = [["tfPlaced", "weapon"], ["gsPlaced", "accessory"]];
+  function migrateResult(result) {
+    if (!result || typeof result !== "object") return result;
+    const hasLegacy = _LEGACY_LGS.some(([k]) => Array.isArray(result[k]));
+    if (!hasLegacy) return result;
+    const out = Object.assign({}, result);
+    if (!Array.isArray(out.lgsPlaced)) {
+      const merged = [];
+      for (const [k, cls] of _LEGACY_LGS) {
+        for (const p of (Array.isArray(result[k]) ? result[k] : [])) {
+          merged.push(Object.assign({}, p, { item_class: p && p.item_class ? p.item_class : cls }));
+        }
+      }
+      out.lgsPlaced = merged;
+    }
+    for (const [k] of _LEGACY_LGS) delete out[k];
+    return out;
+  }
+
+  function migrateRecord(rec) {
+    if (!rec || typeof rec !== "object" || !rec.result) return rec;
+    const migrated = migrateResult(rec.result);
+    return migrated === rec.result ? rec : Object.assign({}, rec, { result: migrated });
+  }
 
   function stripResult(result) {
     const out = {};
@@ -352,12 +390,18 @@
 
   function loadCharacter(name, storage) {
     const all = readAll(storage);
-    return Object.prototype.hasOwnProperty.call(all, name) ? all[name] : null;
+    // #687 — migrated on READ, never rewritten in place: the stored record stays
+    // as the older build wrote it until the next save, so a downgrade still finds
+    // the keys it knows.
+    return Object.prototype.hasOwnProperty.call(all, name) ? migrateRecord(all[name]) : null;
   }
 
   // Full name -> record map, for backup export/import.
   function allCharacters(storage) {
-    return readAll(storage);
+    const all = readAll(storage);
+    const out = {};
+    for (const k of Object.keys(all)) out[k] = migrateRecord(all[k]);
+    return out;
   }
 
   function saveMany(records, storage) {
@@ -500,7 +544,7 @@
   }
 
   const api = {
-    STORE_KEY, INPUT_KEYS, stripResult, pickInputs, serializeCharacter,
+    STORE_KEY, INPUT_KEYS, stripResult, migrateResult, migrateRecord, pickInputs, serializeCharacter,
     saveCharacter, listCharacters, loadCharacter, deleteCharacter,
     deletionImpact, deleteBuildAndDependents, renameBuild,
     allCharacters, saveMany,

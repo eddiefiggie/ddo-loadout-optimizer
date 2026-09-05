@@ -34,8 +34,7 @@ The mapping per pool:
 | `nearly_complete_per_item` | each option's `pool`, **plus the host name** | `"Nearly Finished"` / `"Almost There"` |
 | `dino_inserts` | `dino_type` | as-is (`"Claw"`) |
 | `seal` | `seal_type` | `"Sealed in <seal_type>"` |
-| `green_steel` | `tier_key` (`"T1 (Equipment)"`) | base label (`"T1"`) |
-| `thunder_forged` | `tier` (int) | `"T<tier>"` |
+| `legendary_green_steel` | `tier_key` (`"T1 (Equipment)"` / `"T1 (Weapon)"`) | base label (`"T1"`) |
 
 None of `fits_slots`, `dino_type`, `category` or `seal_type` exists in
 `gearplanner_crafting.json` — all four are produced downstream by `src/colors.py`,
@@ -220,15 +219,12 @@ def _seal(dataset):
                        if r.get("seal_type")}
 
 
-def _green_steel(dataset):
-    recs = dataset.get("green_steel") or []
+def _legendary_green_steel(dataset):
+    """#687 — one pool for both blank classes; every record carries its menu key
+    (`tier_key`), whose base label is what the blanks' `crafting[]` prints."""
+    recs = dataset.get("legendary_green_steel") or []
     return len(recs), {base_label(r.get("tier_key")) for r in recs
                        if r.get("tier_key")}
-
-
-def _thunder_forged(dataset):
-    recs = dataset.get("thunder_forged") or []
-    return len(recs), {f"T{r['tier']}" for r in recs if r.get("tier") is not None}
 
 
 def _essence_crafting(dataset):
@@ -257,8 +253,7 @@ POOL_READERS = {
     "nearly_complete_per_item": _nearly_complete_per_item,
     "dino_inserts": _dino_inserts,
     "seal": _seal,
-    "green_steel": _green_steel,
-    "thunder_forged": _thunder_forged,
+    "legendary_green_steel": _legendary_green_steel,
     "essence_crafting": _essence_crafting,
 }
 

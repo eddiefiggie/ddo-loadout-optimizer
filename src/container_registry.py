@@ -159,75 +159,51 @@ REGISTRY = {
         "options -> 48 records: Undeath's and Gloom's 18 ability-stat options each "
         "plus Fire's and Mist's 6 unique-enchantment procs each, every one "
         "single-affix. Same treatment."),
-    "green_steel": _c(
+    "legendary_green_steel": _c(
         ATOMIC, ("spell_focus",), VERIFIED_SAFE, True,
-        "One record per craftable option, carrying its own `affixes` list. 81 source "
-        "options -> 81 records, no option split. It USED to split: 81 options became "
-        "108 records, and since the solver constrains this pool Sigma <= 1 per host "
-        "tier, a player crafting a multi-affix Green Steel effect would have been "
-        "given one of its parts — the reported Viktranium symptom verbatim. 24 of the "
-        "81 are genuinely multi-affix; one grants Charisma Skills +22 Competence, UMD "
-        "+6 Competence and Wizardry +151 Profane, and shipped as three siblings.\n\n"
-        "REACHABLE since #194 landed its hosts: the 8 ML-26 `Legendary Green Steel *` "
-        "accessory blanks declare `T1/T2/T3 (Equipment)` in their own `crafting[]`, "
-        "and `planner_items` surfaces that as `green_steel_tiers` — the same "
-        "structural read `essence_slots` uses, nothing inferred from a name. Each "
-        "record now carries an integer `tier` (1/2/3 from its `tier_key`) and the "
-        "solver takes ONE option per declared tier, mirroring the weapon half: three "
-        "Legendary Altars are three tiers, and an accessory takes one effect at each. "
-        "Reachability also ended the pool's exemption from the universal-name walk: "
-        "18 options are ability-skills umbrellas (`Charisma Skills`, ...), expanded "
+        "ONE container for both Legendary Green Steel blank classes (#687). One "
+        "record per craftable option, carrying its own `affixes` list and tagged "
+        "with its (item_class, tier): 81 accessory + 35 weapon source options -> 116 "
+        "records, no option split. It USED to split: the accessory half's 81 options "
+        "became 108 records, and since the solver constrains this pool Sigma <= 1 "
+        "per host tier, a player crafting a multi-affix effect would have been given "
+        "one of its parts — the reported Viktranium symptom verbatim. 24 of the 81 "
+        "accessory options are genuinely multi-affix (one grants Charisma Skills +22 "
+        "Competence, UMD +6 Competence and Wizardry +151 Profane); 1 of the 35 weapon "
+        "options is.\n\n"
+        "REACHABLE since #194 landed its hosts: the 48 ML-26 `Legendary Green Steel *` "
+        "blanks (8 accessories, 40 weapons) declare `T1/T2/T3 (Equipment|Weapon)` in "
+        "their own `crafting[]`, and `planner_items` surfaces that as "
+        "`legendary_green_steel_tiers` — a list of {tier, item_class} slots, the same "
+        "structural read `essence_slots` uses, nothing inferred from a name. The solver "
+        "takes ONE option per declared slot, keyed by the same pair: three Legendary "
+        "Altars are three tiers, and a blank takes one effect at each. The accessory "
+        "options include 18 ability-skills umbrellas (`Charisma Skills`, ...), expanded "
         "INSIDE each option by the spell_focus pass declared here, as the Nearly "
         "Complete Skill menus are.\n\n"
-        "The old single-pick-over-all-three shape under-credited every host by two "
-        "effects and is gone with the old truthy `green_steel_slot` marker.\n\n"
-        "#653 — WHAT THIS POOL ACTUALLY IS. The `T*(Equipment)` menus are **Legendary "
-        "Green Steel** accessory recipes: every option records a Legendary Altar "
-        "(Invasion / Subjugation / Devastation) as its station. The 47 heroic "
-        "ML-11/12 `Green Steel *` blanks declare NO tier label and get no marker — "
-        "heroic Green Steel upgrades at the non-Legendary altars of the same names "
-        "and has no pool here.\n\n"
+        "#653 — WHAT THIS POOL ACTUALLY IS. Both the `T*(Equipment)` and the "
+        "`T*(Weapon)` menus are **Legendary Green Steel** recipes: every option records "
+        "a Legendary Altar (Invasion / Subjugation / Devastation) as its station. The "
+        "weapon half shipped for months under a `thunder_forged` key — an inference "
+        "from a generic menu name. Thunder-Forged is crafted at the Magma Forge in the "
+        "Ruins of Thunderholme, its tiers are ML 24/26/28, and it has NO menu in this "
+        "catalog; the 42 `Thunder-Forged Alloy *` weapons declare no `T<n> (Weapon)` "
+        "label, so the structural read cannot stamp them. `expects_stations` is the "
+        "guard that a relabelled pool would trip, whatever the pool is called. The 47 "
+        "heroic ML-11/12 `Green Steel *` blanks declare no tier label and get no "
+        "marker — heroic Green Steel upgrades at the non-Legendary altars and has no "
+        "pool here.\n\n"
         "NOT modelled, and disclosed per result: the bonus a MATCHED combination of "
         "tiers unlocks (the Dominion / Opposition / Ethereal / Material aspects). "
         "AGENTS.md lists the exhaustive Green Steel combinatorial space as a "
         "non-goal; each tier's own effect is what is offered.",
-        host_marker="green_steel_tiers",
-        expects_stations=("Legendary Altar",)),
-    "thunder_forged": _c(
-        ATOMIC, (), VERIFIED_SAFE, True,
-        "One record per craftable option carrying its own `affixes` list, tagged with "
-        "its tier. 35 source options -> 35 records, no option split. Converted with "
-        "green_steel and for the same reason (the solver takes one record per TIER "
-        "slot, so a split option hands the player one part of an effect); only 1 of "
-        "the 35 is multi-affix here, which is precisely why it was worth doing at the "
-        "same time — a single quiet case is the one that survives review and ships "
-        "the day a host appears.\n\n"
-        "REACHABLE since #194 landed its hosts: the 40 ML-26 `Legendary Green Steel *` "
-        "WEAPON blanks declare `T1/T2/T3 (Weapon)` in their own `crafting[]`, "
-        "surfaced by `planner_items` as `thunder_forged_tiers`. The container keeps "
-        "its legacy name because renaming it churns 34 files including player-facing "
-        "display code; what it IS is asserted by `expects_stations`, and every "
-        "player-facing label reads Legendary Green Steel.\n\n"
-        "#653 — THIS POOL IS NOT THUNDER-FORGED. The `T*(Weapon)` menus are "
-        "**Legendary Green Steel weapon** recipes: every option records a Legendary "
-        "Altar as its station, and the Legendary Green Steel wiki page lists exactly "
-        "this split in its own navigation ('Tier 3 Augment recipes (Weapon bonus "
-        "effects)'). Thunder-Forged is crafted at the Magma Forge in the Ruins of "
-        "Thunderholme, its tiers are ML 24/26/28, its spell-power effect is +144 "
-        "Equipment (ours reads 139), and it has NO menu in this 83-key catalog. The "
-        "mapping was an inference: the menu keys are generic and never named a "
-        "system.\n\n"
-        "So Thunder-Forged has no recipe data at all. The 42 `Thunder-Forged Alloy *` "
-        "weapons in the roster declare no `T<n> (Weapon)` label, so the structural "
-        "read cannot stamp them; `expects_stations` is the guard that a relabelled "
-        "pool would trip.",
-        host_marker="thunder_forged_tiers",
+        host_marker="legendary_green_steel_tiers",
         expects_stations=("Legendary Altar",)),
     "essence_crafting": _c(
         FLAT, (), VERIFIED_SAFE, True,
         "Essence Crafting Trinket menus, the Gem of Many Facets' three (#193/#599). "
         "Flat is CORRECT here rather than merely tolerated, which is what separates "
-        "it from green_steel and thunder_forged: a crafted Essence effect grants "
+        "it from legendary_green_steel: a crafted Essence effect grants "
         "exactly ONE stat by construction — the pool is built one record per "
         "(menu, effect) from a placement table whose cells are single effects, so "
         "there is no multi-affix option for a flat shape to split. `Insightful "
@@ -282,7 +258,7 @@ NON_CONTAINERS = {
 # unnoticed. Discovery catches an undeclared container that reaches the gate; this
 # catches the other direction — a declaration deleted, or a container added to the
 # registry without anyone revisiting the count.
-EXPECTED_CONTAINER_COUNT = 9
+EXPECTED_CONTAINER_COUNT = 8
 
 
 def describe() -> list:
@@ -434,7 +410,7 @@ def discover(dataset: dict) -> dict:
 
 
 def _count_hosts(items, marker) -> int:
-    """Variants carrying a choice-slot host marker (`green_steel_tiers`, …)."""
+    """Variants carrying a choice-slot host marker (`legendary_green_steel_tiers`, …)."""
     return sum(1 for it in items or [] if isinstance(it, dict) and it.get(marker))
 
 

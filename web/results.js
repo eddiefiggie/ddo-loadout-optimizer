@@ -652,7 +652,7 @@ function statChipRow(entries, cover, idx, ranked) {
  *  `CRAFT_FAMILY_LABEL` plus `roll`, which is native-but-chosen). `worn`, `set`
  *  and `declared` are deliberately absent — those have no slot of their own to
  *  be stated beside, so Stats is where they belong. */
-const CRAFT_SOURCE_KINDS = new Set(["vik", "seal", "nc", "dino", "tf", "gs", "roll", "augment"]);
+const CRAFT_SOURCE_KINDS = new Set(["vik", "seal", "nc", "dino", "lgs", "roll", "augment"]);
 
 /** The card's marker vocabulary: TWO states, and only two.
  *
@@ -770,8 +770,7 @@ function statChipEntries(v, idx2, maps, contribIdx, craftStated) {
     take(maps.rollByItem && maps.rollByItem.get(v.variant_id));
     take(maps.vikByItem && maps.vikByItem.get(v.variant_id));
     take(maps.sealByItem && maps.sealByItem.get(v.variant_id));
-    take(maps.tfByItem && maps.tfByItem.get(v.variant_id));
-    take(maps.gsByItem && maps.gsByItem.get(v.variant_id));
+    take(maps.lgsByItem && maps.lgsByItem.get(v.variant_id));
     take(maps.essByItem && maps.essByItem.get(v.variant_id));
   }
   const raw = [...printed, ...crafted];
@@ -996,12 +995,9 @@ function craftRowsFor(v, idx, maps) {
   }
   push(maps.sealByItem && maps.sealByItem.get(v.variant_id), "seal");
   // #194 — Legendary Green Steel tiers, declared and filled-or-empty, in tier
-  // order, for both halves (the weapon pool keeps its legacy `tf` key).
-  for (const r of Proj.tierSlotRows(v.thunder_forged_tiers, (maps.tfByItem && maps.tfByItem.get(v.variant_id)) || [])) {
-    rows.push(r.placement ? { family: "tf", o: r.placement } : { family: "tfEmpty", o: { tier: r.tier }, empty: true });
-  }
-  for (const r of Proj.tierSlotRows(v.green_steel_tiers, (maps.gsByItem && maps.gsByItem.get(v.variant_id)) || [])) {
-    rows.push(r.placement ? { family: "gs", o: r.placement } : { family: "gsEmpty", o: { tier: r.tier }, empty: true });
+  // order (one marker for both blank classes since #687).
+  for (const r of Proj.tierSlotRows(v.legendary_green_steel_tiers, (maps.lgsByItem && maps.lgsByItem.get(v.variant_id)) || [])) {
+    rows.push(r.placement ? { family: "lgs", o: r.placement } : { family: "lgsEmpty", o: { tier: r.tier }, empty: true });
   }
   push(maps.essByItem && maps.essByItem.get(v.variant_id), "essence");
   return rows;
@@ -2231,7 +2227,7 @@ function _rungRemovedStats(dataset, rung) {
   };
   // The craftable option families buildModel empties at the niche-crafting rung.
   for (const pool of [dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,
-    dataset.seal, dataset.thunder_forged, dataset.green_steel]) {
+    dataset.seal, dataset.legendary_green_steel]) {
     for (const o of pool || []) add(o && (o.affixes || (o.stat ? [o] : [])));
   }
   // #371 — the per-item pools buildModel empties on the same rung; a map of

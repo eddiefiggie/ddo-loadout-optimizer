@@ -177,10 +177,20 @@ def source_stations(opt: dict) -> list:
 
 # --------------------------------------------------------------------- families
 
-# Green Steel is modeled as a flat single-pick over the three Equipment tiers;
-# Thunder-Forged as a per-tier (1/2/3) multi-pick over the Weapon tiers.
-GREEN_STEEL_KEYS = ["T1 (Equipment)", "T2 (Equipment)", "T3 (Equipment)"]
-THUNDER_FORGED_KEYS = {1: "T1 (Weapon)", 2: "T2 (Weapon)", 3: "T3 (Weapon)"}
+# #687 — ONE Legendary Green Steel family. The `T*(Equipment)` menus are the
+# accessory recipes and the `T*(Weapon)` menus are the weapon recipes; both are
+# crafted at the Legendary Altars of Invasion / Subjugation / Devastation (#653),
+# and a blank takes one effect at each altar it declares. They used to be two
+# containers (`green_steel` and `thunder_forged`) with two builders, two host
+# markers and two solver loops of identical shape — the second under a name that
+# described a system with no menu in this catalog at all. One table, keyed by the
+# option's (item class, tier), replaces both.
+LEGENDARY_GREEN_STEEL_CLASSES = ("accessory", "weapon")
+LEGENDARY_GREEN_STEEL_KEYS = {
+    ("accessory", 1): "T1 (Equipment)", ("accessory", 2): "T2 (Equipment)",
+    ("accessory", 3): "T3 (Equipment)",
+    ("weapon", 1): "T1 (Weapon)", ("weapon", 2): "T2 (Weapon)", ("weapon", 3): "T3 (Weapon)",
+}
 
 
 def count_menu_options(keys, catalog: dict = None) -> int:
@@ -195,49 +205,47 @@ def count_menu_options(keys, catalog: dict = None) -> int:
     return sum(len(menu_options(k, catalog)) for k in keys if k in catalog)
 
 
-def green_steel_records(catalog: dict = None) -> list:
-    """ATOMIC Green Steel option records (#194) sourced natively from the
-    ``T*(Equipment)`` menu pools: ONE record per craftable option, carrying its own
-    ``affixes`` list. No gate — Bool/Untyped options pass through.
+def legendary_green_steel_records(catalog: dict = None) -> list:
+    """ATOMIC Legendary Green Steel option records (#194, unified by #687), sourced
+    natively from the six ``T<n> (Equipment|Weapon)`` menu pools: ONE record per
+    craftable option, tagged with its ``item_class`` (``accessory`` / ``weapon``)
+    and integer ``tier`` (1/2/3), carrying its own ``affixes`` list. No gate —
+    Bool/Untyped options pass through.
 
-    This used to emit one record per AFFIX, which split each multi-affix option
-    into mutually exclusive siblings. The solver constrains this pool ``Sigma <= 1``
-    per host, so a player crafting an effect that grants three things would have
+    Emitting one record per AFFIX used to split each multi-affix option into
+    mutually exclusive siblings; the solver constrains this pool ``Sigma <= 1`` per
+    host tier, so a player crafting an effect that grants three things would have
     been offered exactly one of them — the reported Viktranium symptom verbatim
-    (`src/container_registry.py` opens with it). 24 of the 81 source options are
-    genuinely multi-affix; one grants Charisma Skills +22 Competence, UMD +6
-    Competence and Wizardry +151 Profane, and shipped as three siblings.
-
-    It was inert then, and safe only for that reason: no item carried a host
-    marker. The registry gate held it with a tripwire on the HOST marker rather
-    than on record count, and its failure text named this change exactly — "emit
-    one record per option carrying its own `affixes` list, then drop
-    `splits_options`". Done ahead of the hosts, which #194 then stamped from each
-    blank's own ``crafting[]`` (``green_steel_tiers``) — no harvest was needed.
+    (`src/container_registry.py` opens with it). 24 of the 81 accessory options and
+    1 of the 35 weapon options are genuinely multi-affix.
 
     Shape mirrors `viktranium._record`, the container this repo already models
     atomically, so `model.js` and `solver.js` read it through the same
-    `affixes`-or-legacy branch they already run for Viktranium.
+    `affixes`-or-legacy branch they already run for Viktranium. Deterministic:
+    classes in `LEGENDARY_GREEN_STEEL_CLASSES` order, tiers ascending.
     """
     catalog = load_catalog() if catalog is None else catalog
     out = []
-    for tier_key in GREEN_STEEL_KEYS:
-        for opt in menu_options(tier_key, catalog):
-            affixes = [legacy_affix(aff) for aff in iter_affixes(opt)]
-            if not affixes:
-                continue   # an option may be DROPPED (nothing to craft), never split
-            out.append({
-                "name": opt.get("name") or affixes[0].get("stat") or "",
-                "tier_key": tier_key,
-                # #194 — the altar this option is crafted at, as an integer, so the
-                # solver can key the accessory pool per TIER exactly as it keys the
-                # weapon pool: a host takes one effect per altar, not one in total.
-                "tier": GREEN_STEEL_KEYS.index(tier_key) + 1,
-                "ml": opt.get("ml"),
-                "affixes": affixes,
-                # #653 — provenance from the option itself, not from the menu key.
-                "source_stations": source_stations(opt),
-            })
+    for item_class in LEGENDARY_GREEN_STEEL_CLASSES:
+        for tier in (1, 2, 3):
+            tier_key = LEGENDARY_GREEN_STEEL_KEYS[(item_class, tier)]
+            for opt in menu_options(tier_key, catalog):
+                affixes = [legacy_affix(aff) for aff in iter_affixes(opt)]
+                if not affixes:
+                    continue   # an option may be DROPPED (nothing to craft), never split
+                out.append({
+                    "name": opt.get("name") or affixes[0].get("stat") or "",
+                    # The altar this option is crafted at, and which blank class
+                    # takes it: the solver keys the pool by BOTH, and a host's
+                    # `legendary_green_steel_tiers` names both per declared slot.
+                    "item_class": item_class,
+                    "tier": tier,
+                    "tier_key": tier_key,
+                    "ml": opt.get("ml"),
+                    "affixes": affixes,
+                    # #653 — provenance from the option itself, not from the menu key.
+                    "source_stations": source_stations(opt),
+                })
     return out
 
 
@@ -297,30 +305,3 @@ def augment_pool_records(catalog: dict = None) -> list:
     return records
 
 
-def thunder_forged_records(catalog: dict = None) -> list:
-    """ATOMIC per-tier Thunder-Forged option records (#194) sourced natively from
-    the ``T*(Weapon)`` menu pools: ONE record per craftable option, tagged with its
-    tier (1/2/3) and carrying its own ``affixes`` list. No gate.
-
-    Same change and same reasoning as `green_steel_records` above — the solver
-    takes one record per TIER slot, so a split option offers a player one part of
-    an effect. Only 1 of the 35 source options is multi-affix here, which is
-    exactly why this one is worth fixing alongside the other: a single quiet case
-    is the kind that survives a review and then ships the day a host appears.
-    """
-    catalog = load_catalog() if catalog is None else catalog
-    out = []
-    for tier, tier_key in THUNDER_FORGED_KEYS.items():
-        for opt in menu_options(tier_key, catalog):
-            affixes = [legacy_affix(aff) for aff in iter_affixes(opt)]
-            if not affixes:
-                continue
-            out.append({
-                "tier": tier,
-                "name": opt.get("name") or affixes[0].get("stat") or "",
-                "ml": opt.get("ml"),
-                "affixes": affixes,
-                # #653 — provenance from the option itself, not from the menu key.
-                "source_stations": source_stations(opt),
-            })
-    return out
