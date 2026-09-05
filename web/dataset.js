@@ -113,6 +113,14 @@ var EXPANDED_AWAY_FALLBACK = {
   "constitution skills": ["Concentration"],
   "strength skills": ["Jump"],
   "wisdom skills": ["Heal", "Listen", "Spot"],
+  // 2026-09-05 player report — the bundle-named umbrellas the detector's
+  // head-word signal cannot see (no word shared with any component). Each
+  // expands to what ITS tooltip states: Alluring omits UMD, Astute omits
+  // Spellcraft. `Good Luck` is every save plus every skill (_ALL_SKILLS).
+  "alluring skills bonus": ["Bluff", "Diplomacy", "Haggle", "Intimidate", "Perform"],
+  "nimble skills bonus": ["Balance", "Hide", "Move Silently", "Open Lock", "Tumble"],
+  "astute skills bonus": ["Disable Device", "Repair", "Search"],
+  "prudent skills bonus": ["Heal", "Listen", "Spot"],
 };
 // U10 (R13) — the ORIGINATING enchantment names the build stamps (`via`), mapped to
 // the stats each becomes. Fallback ONLY: `metadata.provenance_labels` is authoritative
@@ -139,6 +147,10 @@ var _ALL_SKILLS = ["Balance", "Bluff", "Concentration", "Diplomacy", "Disable De
   "Haggle", "Heal", "Hide", "Intimidate", "Jump", "Listen", "Move Silently",
   "Open Lock", "Perform", "Repair", "Search", "Spellcraft", "Spot", "Swim",
   "Tumble", "Use Magic Device"];
+// `Good Luck +N: This item gives a +N Luck bonus to all saves and skill checks.`
+// Registered here rather than in the literal above because the literal is
+// declared before _ALL_SKILLS is.
+EXPANDED_AWAY_FALLBACK["good luck"] = ["Fortitude Save", "Reflex Save", "Will Save"].concat(_ALL_SKILLS);
 /** Build `+4 Morale` components for a list of stat names. The magnitude and the
  *  type are the wiki's, stated once here so 25 components cannot drift apart. */
 function _morale4(names) {

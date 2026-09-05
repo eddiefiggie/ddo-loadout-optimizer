@@ -1,6 +1,6 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-09-04",
+ "generated": "2026-09-05",
  "dataset": "web/data/items.json (9194 items)",
  "fixture_count": 24,
  "solves": {
@@ -1071,11 +1071,11 @@
    "status": "optimal",
    "perTarget": {
     "Melee Power": 44,
-    "Balance": 71
+    "Balance": 76
    },
    "effective": {
     "Melee Power": 44,
-    "Balance": 71
+    "Balance": 76
    },
    "chosen": [
     {
@@ -1083,24 +1083,24 @@
      "variant": "Breastplate of the Celestial Avenger"
     },
     {
-     "slot": "Belt",
-     "variant": "Belt of the Burrower"
-    },
-    {
      "slot": "Bracers",
      "variant": "Fabricator's Bracers"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Green Steel Weave Cloak"
+     "variant": "Dread Pirate's Cloak (level 36)"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Legendary Gauntlets of Devoured Divinity"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Drider's Vision"
+     "variant": "Legendary Green Steel Goggles"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Cowl of the Drow Devotee"
+     "variant": "The Commander of Bling (level 36)"
     },
     {
      "slot": "Main Hand",
@@ -1120,11 +1120,11 @@
    "status": "optimal",
    "perTarget": {
     "Melee Power": 42,
-    "Balance": 71
+    "Balance": 76
    },
    "effective": {
     "Melee Power": 42,
-    "Balance": 71
+    "Balance": 76
    },
    "chosen": [
     {
@@ -1132,24 +1132,24 @@
      "variant": "Breastplate of the Celestial Avenger"
     },
     {
-     "slot": "Belt",
-     "variant": "Belt of the Burrower"
-    },
-    {
      "slot": "Bracers",
      "variant": "Fabricator's Bracers"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Green Steel Weave Cloak"
+     "variant": "Dread Pirate's Cloak (level 36)"
+    },
+    {
+     "slot": "Gloves",
+     "variant": "Legendary Gauntlets of Devoured Divinity"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Drider's Vision"
+     "variant": "Legendary Green Steel Goggles"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Cowl of the Drow Devotee"
+     "variant": "The Commander of Bling (level 36)"
     },
     {
      "slot": "Main Hand",
@@ -1357,16 +1357,16 @@
    "status": "optimal",
    "perTarget": {
     "Melee Power": 42,
-    "Balance": 71
+    "Balance": 76
    },
    "effective": {
     "Melee Power": 42,
-    "Balance": 71
+    "Balance": 76
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Baphomet's Brutality"
+     "variant": "Legendary Gravekeeper's Armor"
     },
     {
      "slot": "Belt",
@@ -1465,16 +1465,16 @@
    "status": "optimal",
    "perTarget": {
     "Armor Class": 171,
-    "Reflex Save": 30,
-    "Will Save": 30,
-    "Fortitude Save": 29,
+    "Reflex Save": 34,
+    "Will Save": 34,
+    "Fortitude Save": 33,
     "Physical Sheltering": 124
    },
    "effective": {
     "Armor Class": 171,
-    "Reflex Save": 30,
-    "Will Save": 30,
-    "Fortitude Save": 29,
+    "Reflex Save": 34,
+    "Will Save": 34,
+    "Fortitude Save": 33,
     "Physical Sheltering": 124
    },
    "chosen": [
@@ -1512,7 +1512,7 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "Epic Zephyr"
+     "variant": "Legendary Captain's Spyglass"
     },
     {
      "slot": "Necklace",

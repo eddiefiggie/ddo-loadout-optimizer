@@ -119,10 +119,34 @@ build by `tests/test_all_skills.py`, which pins:
 
 ## Scope
 
-Ruling only. **Nothing is registered in `spell_focus.py`'s allowlist here**, and
-that is deliberate: no affix in the built catalog carries an all-skills phrase
-today (measured — zero matches for `all skills` / `skill checks` across every
-affix name), so a registration would have no carrier. It belongs in #140's
-`Greater Heroism` write, alongside the `Morale` type, where it gains one.
+Ruling only, as written 2026-08-28. **Nothing was registered in `spell_focus.py`'s
+allowlist here**, and that was deliberate: no affix in the built catalog carried
+an all-skills phrase in its NAME (measured — zero matches for `all skills` /
+`skill checks` across every affix name), so a registration would have had no
+carrier. The first consumer was #140's `Greater Heroism` write, alongside the
+`Morale` type (`web/dataset.js` `_ALL_SKILLS`, expanded at load time because
+that affix is a Bool composite).
 
-The other prerequisite for that write is `morale-bonus-type.md` (#569).
+The other prerequisite for that write was `morale-bonus-type.md` (#569).
+
+### 2026-09-05 — the roster's first build-time registration (#717)
+
+The measurement above was about affix NAMES, and the all-skills phrase turned out
+to live in a TOOLTIP: `Good Luck +2: This item gives a +2 Luck bonus to all saves
+and skill checks.` (`Item:Ancient_Gemstone`, harvested 2026-09-04 by #713). A
+player reported the Luck bonus missing from both saves and skills, and it was —
+`Good Luck` was rankable as its own name and expanded nowhere.
+
+The roster now lives in `src/spell_focus.py` as `ALL_SKILLS`, and `good luck` is
+registered in `_UNIVERSAL` as `SAVES + ALL_SKILLS` (24 components, type Luck).
+`tests/test_all_skills.py` keeps its own copy of the 21 as the wiki citation and
+pins the module's list equal to it, so the expansion cannot drift from the
+ruling it cites. `web/dataset.js`'s `_ALL_SKILLS` is the same list for the
+load-time composite; three copies, two guards.
+
+**§2's description of the `* Skills Bonus` family as "keep one rankable name" was
+a description of the shipped state, not a ruling that it was right.** #718
+expands those four to their own tooltips' lists (see
+`umbrella-adjudication-sweep.md`). The reasoning in §2 — a name nothing shares
+keys its own bucket and is invisible to the player who ranked the skill — was
+always the argument for expanding them too.

@@ -596,3 +596,67 @@ renders "Provides a +N Insight bonus", and the Seeker page says "The former
 Exceptional Seeker grants Insight bonus". 18 type corrections shipped
 (Exceptional -> Insight); docs/wiki-evidence/seeker-bonus-type.md carries the
 re-ruling.
+
+================================================================================
+2026-09-05 — user report (Good Luck; Insightful Alluring Skills Bonus) — #717, #718
+================================================================================
+
+Verbatim:
+
+  "The effect of Good Luck on both skills and saves seems to be missing."
+
+  "The Insightful Alluring Skills bonus from Legendary Katra's Witt does not seem
+   to be accounted correctly for. It does not add to intimidate."
+
+BOTH REPRODUCED. Filed as #717 (Good Luck) and #718 (the `* Skills Bonus`
+family); the shared root cause — the umbrella detector cannot see a bundle named
+for the bundle — is #719.
+
+Root cause, one shape twice: both names are UMBRELLAS stored atomic. The tooltip
+for each was already on disk from the #713 harvest (affix_tooltip.json,
+2026-09-04) and each states the expansion outright:
+
+  Good Luck +2: This item gives a +2 Luck bonus to all saves and skill checks.
+  Exceptional Alluring Skills Bonus: +8 Exceptional bonus to Bluff, Diplomacy,
+    Haggle, Intimidate, and Perform.
+
+Neither was in src/spell_focus.py's `_UNIVERSAL` table, so the solver — which
+credits a target only by exact stat name — never saw either. `Good Luck` was
+rankable as its own name (68 carriers, +1..+5, all type Luck) and no save or
+skill had a Luck bucket at all. `Alluring Skills Bonus` was rankable as its own
+name (61 rows / 47 carriers; Exceptional 30, Quality 18, Insight 13) and
+Legendary Katra's Wit stores `Alluring Skills Bonus | Insight | 10` exactly as
+reported.
+
+Why the detector never asked: src/vocabulary.py's head-word signal matches a
+candidate's words against component LAST words (`Save`, `Bluff`, `Device`...).
+`Good`/`Luck` and `Alluring`/`Skills`/`Bonus` match none, and the name-shape
+complement (`^All |^Universal |^Elemental | Mastery$`) does not fire either.
+
+Measured on `main` at b808c6a (build 09042026.9), parity harness, mlCap 34:
+
+  targets [Intimidate]                        Intimidate 64   no Alluring carrier placed
+  targets [Alluring Skills Bonus]             Alluring 26     Katra's Razor Wit placed
+  targets [Intimidate, Alluring Skills Bonus] Intimidate 64   Razor Wit worn, credits nothing
+  targets [Reflex Save]                       Reflex 32
+  targets [Reflex Save, Good Luck]            Reflex 32       Gravekeeper's Armor (Luck 5) worn, credits nothing
+
+RESOLVED 2026-09-05 (build 09052026.1). `good luck` -> SAVES + the 21-skill
+roster (type Luck, SELF_NAMED so the label stays `Good Luck`); `alluring skills
+bonus` -> its tooltip's FIVE (no UMD — `Charisma Skills` has six); `nimble` ->
+the SKILLS_DEX five; `astute` -> Disable Device, Repair, Search (no Spellcraft);
+`prudent` -> Heal, Listen, Spot. Same queries after the fix:
+
+  targets [Intimidate]                        Intimidate 74   (+10)
+  targets [Reflex Save]                       Reflex 37       (+5, Gravekeeper's Luck bucket)
+
+Katra's Wit now stamps Bluff/Diplomacy/Haggle/Intimidate/Perform at Insight 10
+with `via: Insightful Alluring Skills Bonus`. Golden: the four fixtures that rank
+a skill or a save moved upward (+5 Balance x3, +4 on all three saves), the other
+20 are byte-identical.
+
+NOT expanded, deliberately: `Mighty Skills Bonus` (2 carriers, below the
+rankability bar, no harvested tooltip). Expanding it to `Strength Skills` by
+analogy is the inference the never-infer rule forbids; a tooltip read from a
+carrier would settle it (#715's harvest is the place). `Good Luck - Reflex`
+(1 carrier, ML 1, not rankable) also stays as-is.
