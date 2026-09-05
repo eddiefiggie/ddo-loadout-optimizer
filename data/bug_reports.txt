@@ -534,27 +534,65 @@ Armor: PARTIALLY REPRODUCED. Filed as #699 (reproduced path) and #700
   was placed.
 
 ---
-2026-09-04 — user report (Seeker bonus type)
+2026-09-04 — user report (Legendary Helm of the Warblade, Seeker bonus type) — #697
 
 Verbatim:
 
-  "Another point of feedback: Your tool recommends Legendary Helm of the
-   Warblade, partly for it's "5 Exceptional Seeker" Bonus. Which, I can't blame
-   it for as the item description is labeled as such. However, the
-   subdescription states the seeker bonus is in fact, insightful, not
-   Exceptional. This is further confirmed in the combat log as shown in the
-   attached screenshot. The tool will then also recommend another item for
-   insightful seeker bonus, in this instance, burrowing claws, causing an
-   unnecessary overlap."
+  "Another point of feedback: Your tool recommends Legendary Helm of the Warblade,
+   partly for it's "5 Exceptional Seeker" Bonus. Which, I can't blame it for as the
+   item description is labeled as such. However, the subdescription states the
+   seeker bonus is in fact, insightful, not Exceptional. This is further confirmed
+   in the combat log as shown in the attached screenshot. The tool will then also
+   recommend another item for insightful seeker bonus, in this instance, burrowing
+   claws, causing an unnecessary overlap."
 
-  (The screenshot did not arrive with the report.)
+The screenshot did not arrive with the report as received here.
 
-REPRODUCED. Filed as #697.
+REPRODUCED (the tool's behavior; the game value is the open question). Filed as #697.
 
-  Ranking Seeker at ML 34 summed the helm's Exceptional 5 on top of the Periapt
-  of Strength's Insight 6 (33 credited, 28 real). Wiki (read 2026-09-04): the
-  rendered tooltip on every one of the 18 "Exceptional Seeker" carriers says
-  "Provides a +N Insight bonus", and the Seeker page says "The former
-  Exceptional Seeker grants Insight bonus". #392 had ruled from the template's
-  third parameter, which is the label. 18 type corrections shipped;
-  docs/wiki-evidence/seeker-bonus-type.md carries the re-ruling.
+Measured on build 09032026.3 via the parity harness (`tests/parity/capture_golden.js`
+`solveEnv`/`solveFixture`), no armor/style/race constraints:
+
+  ML 34, Seeker > Strength > Melee Power -> Seeker 33 =
+      Ophael's Cincture (Enhancement 15) + Legendary Helm of the Warblade
+      (Exceptional 5) + Legendary Periapt of Strength (Insight 6, Quality 3)
+      + Solar Gem of Critical Confirmation (Legendary) (Artifact 4)
+  ML 15, Seeker -> Seeker 19 =
+      Deathnip (Enhancement 10) + Helm of the Warblade (Exceptional 3)
+      + Periapt of Strength (Insight 3, Quality 1) + Solar Gem (Heroic) (Artifact 2)
+
+Both solves sum the helm's Exceptional Seeker on top of an Insight Seeker source.
+If the helm's bonus is really Insight, it adds 0 in both (max against the
+Periapt's Insight 6 / Insight 3), the real totals are 28 and 16, and the helm is
+a wasted slot. The reporter's Burrowing Claws (Insight 2, ML 11) pairing is the
+same defect under a lower cap or inventory mode.
+
+Why this is NOT a re-litigation of #392: `docs/wiki-evidence/seeker-bonus-type.md`
+ruled both helms `{{Seeker|N|Exceptional}}` from the wiki template invocation, and
+was right about what the wiki says. The wiki transcribed the item's in-game name
+label, and the label is what the game mislabels: the sub-description and combat
+log are the game stating the type it actually applies — a layer ABOVE the wiki
+that the evidence hierarchy does not have. Corroborated by a forums.ddo.com thread
+"Exceptional Seeker +5 on Rare items like Legendary Golden Souvenir Coin and
+Legendary Helm of the Warblade" (thread 29866) and an ~Aug 2026 DDO Forum Report
+video "Warblade Helm's Mislabeled Seeker Gets Fixed". None of ddowiki.com,
+forums.ddo.com, ddo.com, ddocompendium.com could be read from the session
+(egress-blocked), so the DIRECTION of SSG's fix is unverified: label corrected to
+Insightful (tool wrong) vs bonus changed to Exceptional (tool right, screenshot
+predates the fix). Read the U81.1 / U81.1.1 release notes before changing data.
+
+Scope: all 18 Exceptional carriers in the ruling were Insight before the
+2026-08-18 refresh re-typed them, and the thread title names the Legendary Golden
+Souvenir Coin too. Likely the whole class; confirm each in-game, infer none.
+
+Not decided here (see #697): whether in-game evidence is admissible above the
+wiki — `affix_type_corrections.json`'s evidence rule requires a wiki tooltip
+stating the type, and here the wiki tooltip says Exceptional, so the seam as
+written cannot carry this correction.
+
+RESOLVED 2026-09-04 (PR #706, build 09042026.3). The wiki tooltip layer settled
+it without the forum trail: every one of the 18 "Exceptional Seeker" carriers
+renders "Provides a +N Insight bonus", and the Seeker page says "The former
+Exceptional Seeker grants Insight bonus". 18 type corrections shipped
+(Exceptional -> Insight); docs/wiki-evidence/seeker-bonus-type.md carries the
+re-ruling.
