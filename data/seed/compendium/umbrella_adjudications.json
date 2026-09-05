@@ -2,6 +2,7 @@
  "_meta": {
   "field": "umbrella_adjudications",
   "retired": {
+   "Deific Focus": "#214 (2026-09-04): retired, not re-recorded. The name left the rankable set because its three carriers are now quarantined in conditional_affix_quarantine.json — the tooltip states a conditional, ramping, single-school, five-second effect stored as its stack ceiling, and the wiki gives no sustained value. The atomic ruling (it is not a Spell Focus umbrella) was correct and is preserved by the quarantine note; there is no rankable name left for the detector to ask about.",
    "Magical Resistance Rating Cap": "#702 (2026-09-04): retired, not re-recorded. The name left the rankable set because it was an alias VARIANT all along — gear-planner spells the same set bonus Magical Sheltering Cap, and the only carrier of this spelling was the hand-curated augment_sets.json seed (the entry's own claim that gear-planner's Adherent of the Mists tiers carry it was wrong: raw/gearplanner_sets.json has no such spelling). It now resolves through affix_aliases.json; the canonical contains no detector head-word, so it needs no ruling of its own."
   },
   "note": "#211 detector rulings. Each entry settles a flagged candidate as `atomic` — a real distinct stat, not an umbrella — with the rendered-tooltip reading (or the standing wiki-evidence ruling) that proves it. The disposition vocabulary is CLOSED at ['atomic']: a name a mechanism models (an expansion family in src/spell_focus.py/_UNIVERSAL, src/umbrella.py, a split module, or a cross-add source) must NOT carry an entry — its registration resolves it, and the detector rejects a stale entry. An unadjudicated candidate FAILS THE BUILD. See docs/wiki-evidence/umbrella-adjudication-sweep.md."
@@ -59,13 +60,6 @@
    "evidence": "Dark Restoration Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Positive + Negative + Poison. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
    "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
    "harvested": "2026-08-18"
-  },
-  "Deific Focus": {
-   "disposition": "atomic",
-   "evidence": "Standing ruling, docs/wiki-evidence/spell-focus-universal.md: a conditional, ramping, single-school on-cast buff ('On Spell Cast: +1 Sacred bonus to DC of that school for five seconds... Casting a spell from another school clears all stacks') — NOT universal, never expand.",
-   "source_invocation": "carrier tooltips (see ruling)",
-   "observed_on": "docs/wiki-evidence/spell-focus-universal.md",
-   "harvested": "2026-08-13"
   },
   "Enchantment Save": {
    "disposition": "atomic",
