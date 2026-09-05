@@ -7,6 +7,11 @@ const Proj = require("../web/projection.js");
 // fixture below cannot populate `splitMechanicNotice` without it. Installed from a
 // fixture rather than the built dataset because web/data/items.json is gitignored
 // and this file must run without it.
+// #713 — the one `disclose` ruling shipped, installed by hand the way the split
+// mechanics below are: these tests build no dataset, so model.js has no map.
+require("../web/model.js").setConditionalDisclosures({ "Orb Bonus": {
+  label: "+4 Orb Bonus", sentence: "only while the orb is equipped and you are actively blocking",
+  tooltip: "+4 Orb Bonus: While this orb is equipped and you are actively blocking, you gain a +4 orb bonus to all saving throws, as well as Acid, Cold, Fire, Electric, and Sonic resistances." } });
 require("../web/model.js").setSplitMechanics([{
   mechanic: "Critical Multiplier on a 19-20",
   spellings: ["Critical Multiplier on a 19-20", "Critical Multiplier on a roll of 19-20"],
@@ -2081,14 +2086,16 @@ test("#701 every exporter carries the MRR cap disclosure, and stays silent under
  *  silently skip it, which is the same vacuity that let five notices rot. */
 const ALL_NOTICES_REC = {
   name: "Every notice",
-  query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering"], armorType: "light", craftingRung: "no-niche-crafting", augCeiling: 30 },
-  inputs: { ml: 34, armor: "light", pool: "all", priorities: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering"], craftingRung: "no-niche-crafting" },
+  query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering", "Orb Bonus"], armorType: "light", craftingRung: "no-niche-crafting", augCeiling: 30 },
+  inputs: { ml: 34, armor: "light", pool: "all", priorities: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering", "Orb Bonus"], craftingRung: "no-niche-crafting" },
   snapshot: {
     status: "optimal", chosen: [], setsActive: [],
-    query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering"], armorType: "light", craftingRung: "no-niche-crafting", augCeiling: 30 },
+    query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering", "Orb Bonus"], armorType: "light", craftingRung: "no-niche-crafting", augCeiling: 30 },
     // #701 — light armor (any armor keeps the Dodge notice; cloth or light is what
     // keys the MRR one) and a Magical Sheltering total over light's cap of 100.
-    effective: { Jump: 46, Dodge: 20, Doublestrike: 20, "Magical Sheltering": 130 },
+    // #713 — Orb Bonus is the one `disclose` ruling shipped, so ranking it
+    // populates the conditional notice.
+    effective: { Jump: 46, Dodge: 20, Doublestrike: 20, "Magical Sheltering": 130, "Orb Bonus": 4 },
     // #459 — a real cap surplus: 15 + 9 supplied against a Max of 20. Chosen for
     // the shape the pattern doc warns about — NEITHER pick is individually
     // droppable (15 and 9 each fall under 20) while 4 points really are wasted.
@@ -2170,3 +2177,17 @@ test("#668: the five notices that were orphaned are specifically covered", () =>
   // matched-aspect bonuses are out of scope is the one a shared build must carry.
   assert.ok(/matched tier combination/.test(md), "#194 greenSteelNotice");
 });
+
+test("#713 every exporter carries the conditional-effect disclosure, and stays silent without a ruled stat", () => {
+  const orb = { name: "Orb user", query: { targets: ["Orb Bonus"] },
+    inputs: { ml: 34, pool: "all", priorities: ["Orb Bonus"] },
+    snapshot: { status: "optimal", chosen: [], setsActive: [],
+      effective: { "Orb Bonus": 4 }, query: { targets: ["Orb Bonus"] } } };
+  const plain = { ...orb, query: { targets: ["Strength"] }, snapshot: { ...orb.snapshot, query: { targets: ["Strength"] }, effective: { Strength: 10 } } };
+  for (const [name, fn] of [["markdown", toMarkdown], ["BBCode", toBBCode], ["CSV", toCsv], ["print HTML", toPrintHtml]]) {
+    assert.ok(/actively blocking/.test(fn(orb) || ""), `${name} must carry the conditional disclosure`);
+    assert.ok(!/actively blocking/.test(fn(plain) || ""), `${name} must stay silent without a ruled stat`);
+  }
+  assert.ok(/Conditional effect/.test(toCsv(orb) || ""), "the CSV row is present");
+});
+

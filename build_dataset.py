@@ -46,6 +46,7 @@ from src import parrying_split as parrying_split_mod
 from src import riposte_split as riposte_split_mod
 from src import heightened_awareness as heightened_awareness_mod
 from src import command_split as command_split_mod
+from src import affix_tooltip as affix_tooltip_mod
 from src import absorption_split as absorption_split_mod
 from src import elemental_resistance_split as er_split_mod
 from src import enchantment_split as enchantment_split_mod
@@ -1511,6 +1512,34 @@ def build() -> dict:
     # `membership_set_defs` declares 0 there, so a refresh that starts emitting
     # it fails the build instead of silently widening the population the notice
     # quotes. docs/wiki-evidence/critical-multiplier-19-20.md.
+    # #713 (#214 Option B with C) — the rendered-tooltip shard and the conditional
+    # detector. The roster is COMPUTED from the records just built — every
+    # rankable name with a numeric, non-Bool, non-expanded item carrier — never
+    # a hand list, so a new rankable name cannot ship unharvested and unruled.
+    # `check` raises on an unruled candidate, on evidence drift, on a stale
+    # ruling, on a roster name with neither a tooltip nor a recorded reason, and
+    # on a `quarantine` ruling no quarantine entry carries out.
+    _tooltip_shard = affix_tooltip_mod.load_shard()
+    _cond_adj = affix_tooltip_mod.load_adjudications()
+    _rankable_set_for_tooltips = set(_rankable_list)
+    _tooltip_roster = set()
+    for v in variants:
+        if not v.get("wiki_url") or "/page/Item:" not in str(v.get("wiki_url")):
+            continue
+        for a in v.get("affixes") or []:
+            n = a.get("name"); t = a.get("type")
+            if n not in _rankable_set_for_tooltips or t == "Bool" or a.get("via"):
+                continue
+            try:
+                float(a.get("value"))
+            except (TypeError, ValueError):
+                continue
+            _tooltip_roster.add(n)
+    _quarantine_affix_names = {e.get("name") for ents in _cond_q.values() for e in ents}
+    _affix_tooltip_coverage = affix_tooltip_mod.check(
+        _tooltip_shard, _cond_adj, sorted(_tooltip_roster), _quarantine_affix_names)
+    _conditional_disclosures = affix_tooltip_mod.disclosures(_cond_adj)
+
     _split_mechanics = split_mechanics_mod.load(SPLIT_MECHANICS_PATH)
     _split_spellings = [sp for _e in _split_mechanics for sp in _e.get("spellings") or []]
     _split_measured = split_mechanics_mod.measure(_split_spellings, {
@@ -2277,6 +2306,11 @@ def build() -> dict:
     # #694 — what the set_parser seam dropped as target-conditional, so the gap
     # is disclosed in the artifact rather than silent.
     out["metadata"]["target_conditional_set_coverage"] = _target_conditional_set_coverage
+    # #713 — what the tooltip harvest covered and how each candidate was ruled,
+    # and the `disclose` rulings the web layer installs (model.js
+    # setConditionalDisclosures via dataset.js).
+    out["metadata"]["affix_tooltip_coverage"] = _affix_tooltip_coverage
+    out["metadata"]["conditional_disclosures"] = _conditional_disclosures
     out["metadata"]["split_mechanic_disclosures"] = split_mechanics_mod.stamp(
         _split_mechanics, _split_measured)
 

@@ -1289,6 +1289,33 @@
       + (raise ? "." : " — or rank Magical Sheltering Cap (the wiki's MRR Cap) to raise the ceiling instead.");
   }
 
+  /** #713 (#214 Option C) — a ranked stat whose harvested wiki tooltip states a
+   *  condition, ruled `disclose` in conditional_adjudications.json: the credit
+   *  stands, and the result says when it applies. One line per such ranked stat,
+   *  quoting the ruling's own sentence, so the app and every export carry the
+   *  same words. Reads the map dataset.js installed into model.js at load
+   *  (`conditionalDisclosureFor`), which is the build's rulings and nothing
+   *  inferred here. Silent when no ranked stat carries a disclosure — the
+   *  ordinary case, and the #449 R15 rule against boilerplate. */
+  function conditionalNoticeLines(rec) {
+    const snap = (rec && rec.snapshot) || rec || {};
+    const q = (rec && rec.query) || snap.query || {};
+    const targets = Array.isArray(q.targets) ? q.targets : [];
+    const M = _modelModule();
+    const forStat = (M && M.conditionalDisclosureFor) ? M.conditionalDisclosureFor : null;
+    if (!forStat) return [];
+    const out = [];
+    for (const stat of targets) {
+      const d = forStat(stat);
+      if (!d || !d.sentence) continue;
+      const eff = snap.effective || {};
+      const total = (eff[stat] != null) ? ` (${eff[stat]} here)` : "";
+      out.push(`${stat}${total} is credited at its full value, but the game grants it ${d.sentence}. `
+        + `The wiki's own words: \u201C${d.tooltip || d.label || stat}\u201D`);
+    }
+    return out;
+  }
+
   /** #459 — where a capped stat's surplus is, and which picks carry it.
    *
    *  A stat held at a cap credits nothing past that point, so gear supplying more
@@ -2486,6 +2513,10 @@
         // declared, Magical Sheltering ranked with no Max, and the solve cleared
         // the cap the app can see). Same channel and same reason as the two above.
         mrrCapNotice: mrrCapLine(rec),
+        // #713 — ranked stats the wiki states as conditional, ruled `disclose`.
+        // Same channel and same reason: a recipient must not read the total as
+        // always-on when the tooltip says when it applies.
+        conditionalNotice: conditionalNoticeLines(rec),
         // #683 — the disclosed name split (null unless a spelling of a disclosed
         // family was ranked). Same channel and same reason as the two above: a
         // recipient must not read the mechanic's total as settled when the wiki
@@ -3147,7 +3178,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, mrrCapLine, splitMechanicLine, capSurplusLines, packFilterNoticeLines, setFilterNoticeLines,
+    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, mrrCapLine, conditionalNoticeLines, splitMechanicLine, capSurplusLines, packFilterNoticeLines, setFilterNoticeLines,
     essenceNoticeLines, greenSteelNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)
