@@ -131,3 +131,35 @@ def test_whole_seed_set_bonuses_parse_without_exceptions():
         for tier in parsed:
             total_affixes += len(tier["affixes"])
     assert total_affixes > 0, "expected some structured set threshold-affixes from the seed"
+
+
+# --- #694: target-conditional clauses are flagged at the seam, never scored ------
+
+def test_694_a_vs_creatures_clause_is_flagged_not_minted():
+    """Crypt Raider's 3-piece, verbatim from Named_item_sets. Both "vs. Evil"
+    clauses apply only against Evil creatures; upstream folds the condition into
+    the stat name and stores a flat constant. Flagged with the reason, and the
+    unconditional clauses on the same tier still parse."""
+    affixes, flagged = set_parser.parse_piece_text(
+        "+5 Artifact bonus to hit and damage vs. Evil creatures; "
+        "+2 Artifact bonus to Saves vs. Evil Creatures; "
+        "+15 Artifact bonus to Melee Power")
+    assert [(a["stat"], a["bonus_type"], a["value"]) for a in affixes] == \
+        [("Melee Power", "Artifact", 15)]
+    assert [f["raw"] for f in flagged] == [
+        "+5 Artifact bonus to hit and damage vs. Evil creatures",
+        "+2 Artifact bonus to Saves vs. Evil Creatures"]
+    assert all(f["reason"] == set_parser.TARGET_CONDITIONAL_REASON for f in flagged)
+
+
+def test_694_the_condition_test_is_narrow():
+    # The helpless family is "vs." wording too, and is a real unconditional stat
+    # (docs/wiki-evidence/helpless-damage.md) — it must NOT be caught.
+    assert not set_parser.is_target_conditional("Damage vs. the Helpless")
+    assert not set_parser.is_target_conditional("Damage to helpless enemies")
+    assert set_parser.is_target_conditional("hit and damage vs. Evil creatures")
+    assert set_parser.is_target_conditional("Saves vs. Evil Creatures")
+    assert set_parser.is_target_conditional("Attack vs Undead creatures")
+    assert not set_parser.is_target_conditional("Melee Power")
+    assert not set_parser.is_target_conditional("")
+

@@ -34,6 +34,28 @@ def _pieces_required(label: str):
     return n if (n is not None and n >= 1) else None
 
 
+# #694 — a TARGET-CONDITIONAL set bonus: one the wiki states applies only against
+# a class of creature ("+5 Artifact Bonus to hit and damage vs. Evil creatures",
+# "+2 Artifact Bonus to Saves vs. Evil Creatures" — Crypt Raider, Named_item_sets).
+# Upstream stores the clause as a flat constant with the condition folded into
+# the stat NAME, so it reached `parsed_set_bonuses` as a scoring affix under a
+# name no player can rank, and would have credited an always-on +5 had the
+# compound been expanded onto Accuracy/Deadly. This is the #88 quarantine class
+# (a flat number for a bonus the game grants only while a condition holds), on
+# the set channel the item-record quarantine does not reach. The clause is
+# FLAGGED, not re-valued: the wiki states no unconditional value, and inventing
+# one is the inference the data gate forbids. Tier `raw` keeps the wording
+# verbatim, and build_dataset.py counts what this dropped so the gap is
+# disclosed rather than silent. docs/wiki-evidence/target-conditional-set-bonuses.md.
+_TARGET_CONDITIONAL_RE = re.compile(r"\bvs\.?\s+\S.*\bcreatures?\s*$", re.IGNORECASE)
+TARGET_CONDITIONAL_REASON = "target-conditional: the wiki states this bonus applies only against the named creatures"
+
+
+def is_target_conditional(stat: str) -> bool:
+    """True when a parsed stat name carries a "vs. <creatures>" target condition."""
+    return bool(_TARGET_CONDITIONAL_RE.search((stat or "").strip()))
+
+
 def _expand_compound(stat: str):
     """Split a "/"-joined multi-stat token (e.g. "PRR/MRR") the value-first parse
     left intact, so the halves match real targets. Non-compound stats pass through."""
@@ -76,6 +98,9 @@ def parse_piece_text(text: str) -> tuple[list, list]:
             flagged.append({"raw": clause, "reason": r.get("reason") or f"non-affix ({r['kind']})"})
             continue
         for a in r["affixes"]:
+            if is_target_conditional(a["stat"]):
+                flagged.append({"raw": clause, "reason": TARGET_CONDITIONAL_REASON})
+                continue
             for part in _expand_compound(a["stat"]):
                 b = dict(a)
                 # #305/#695 — fold the REPO-REVIEWED local spellings to their

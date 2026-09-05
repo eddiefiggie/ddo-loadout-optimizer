@@ -204,6 +204,9 @@ def test_all_universal_names_map_to_their_family_targets():
                          "dexterity skills", "intelligence skills",
                          "constitution skills", "strength skills",
                          "wisdom skills",
+                         # #694 — the Mechanic set's wording of the Dexterity
+                         # umbrella ("all Dexterity based Skills").
+                         "all dexterity based skills",
                          # set-channel wordings of the same families (#289
                          # catalog-wording precedent)
                          "all saving throws", "saving throws", "tactical dcs",
@@ -229,6 +232,7 @@ def test_all_universal_names_map_to_their_family_targets():
     assert away["combat mastery"] == spell_focus.TACTICS
     assert away["charisma skills"] == spell_focus.SKILLS_CHA
     assert away["dexterity skills"] == spell_focus.SKILLS_DEX
+    assert away["all dexterity based skills"] == spell_focus.SKILLS_DEX
     assert away["intelligence skills"] == spell_focus.SKILLS_INT
     assert away["constitution skills"] == spell_focus.SKILLS_CON
     assert away["strength skills"] == spell_focus.SKILLS_STR

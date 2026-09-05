@@ -1398,6 +1398,43 @@ def build() -> dict:
         (a.get("stat")
          for v in variants for t in v.get("parsed_set_bonuses") or []
          for a in t.get("affixes") or []))
+    # #694 — target-conditional set clauses ("+5 Artifact bonus to hit and
+    # damage vs. Evil creatures") are FLAGGED at the set_parser seam, never
+    # emitted as stats. Two things here: the disclosure (how many clauses the
+    # seam dropped, and from which sets — a visible gap, never a silent one)
+    # and the guard (no emitted stat in either set channel carries the
+    # condition, which would mean the seam did not run on that channel).
+    # docs/wiki-evidence/target-conditional-set-bonuses.md.
+    _tc_sets = collections.Counter()
+    _tc_seen = set()
+    for v in variants:
+        for t in v.get("parsed_set_bonuses") or []:
+            for f in t.get("flagged") or []:
+                if f.get("reason") == set_mod.TARGET_CONDITIONAL_REASON:
+                    key = (t.get("set"), t.get("pieces_required"), f.get("raw"))
+                    if key not in _tc_seen:
+                        _tc_seen.add(key)
+                        _tc_sets[t.get("set")] += 1
+    _tc_leaked = sorted({(t.get("set"), a.get("stat"))
+                         for v in variants for t in v.get("parsed_set_bonuses") or []
+                         for a in t.get("affixes") or []
+                         if set_mod.is_target_conditional(a.get("stat"))})
+    if _tc_leaked:
+        raise SystemExit(
+            "target-conditional set clause(s) reached parsed_set_bonuses as a scoring "
+            "stat — the set_parser seam did not flag them (#694):\n  "
+            + "\n  ".join(f"{s_} — {stat!r}" for s_, stat in _tc_leaked))
+    if not _tc_sets:
+        raise SystemExit(
+            "target-conditional set guard: the seam flagged ZERO clauses, but the "
+            "catalog is known to carry Crypt Raider's two (#694) — either the wording "
+            "changed upstream (re-read the set) or the seam stopped running")
+    _target_conditional_set_coverage = {
+        "clauses_flagged": sum(_tc_sets.values()),
+        "sets": sorted(_tc_sets),
+        "per_set": dict(sorted(_tc_sets.items())),
+        "reason": set_mod.TARGET_CONDITIONAL_REASON,
+    }
     # Vecna Lost Purpose: the membership set defs come from the SAME set catalog that feeds
     # intrinsic set members (single source of truth), so an awakened Lost Purpose set gives the
     # identical bonus + stat vocabulary as an intrinsically-completed one. Attach the
@@ -1416,6 +1453,16 @@ def build() -> dict:
         (a.get("stat")
          for _d in membership_defs.values() for _t in _d.get("tiers") or []
          for a in _t.get("affixes") or []))
+    _tc_leaked_defs = sorted({(_n, a.get("stat"))
+                              for _n, _d in membership_defs.items()
+                              for _t in _d.get("tiers") or []
+                              for a in _t.get("affixes") or []
+                              if set_mod.is_target_conditional(a.get("stat"))})
+    if _tc_leaked_defs:
+        raise SystemExit(
+            "target-conditional set clause(s) reached membership_set_defs as a "
+            "scoring stat (#694):\n  "
+            + "\n  ".join(f"{s_} — {stat!r}" for s_, stat in _tc_leaked_defs))
 
     # #683 — the DISCLOSED name splits. Measured here, beside the fold guards,
     # because it is the same question asked the other way: `helpless_fold`
@@ -2190,6 +2237,9 @@ def build() -> dict:
     # read: the family, the per-spelling distinct-set counts the sentence quotes,
     # and the issue. The stacking axis is deliberately absent — it is unsettled,
     # so there is no number here for anything to consume by accident.
+    # #694 — what the set_parser seam dropped as target-conditional, so the gap
+    # is disclosed in the artifact rather than silent.
+    out["metadata"]["target_conditional_set_coverage"] = _target_conditional_set_coverage
     out["metadata"]["split_mechanic_disclosures"] = split_mechanics_mod.stamp(
         _split_mechanics, _split_measured)
 

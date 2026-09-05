@@ -35,6 +35,7 @@ must never collapse anything).
 | `Elemental Resonance` | Corrosion, Combustion, Magnetism, Glaciation | `Elemental Resonance +70: Passive: +70 Equipment bonus to Acid, Fire, Electric and Cold Spell Power.` | 2 (Slave Master's Staff pair) |
 | `Charisma Skills` | Bluff, Diplomacy, Haggle, Intimidate, Perform, Use Magic Device | `Charisma Skills - Exceptional Bonus +2: Passive +2 Exceptional bonus to the Charisma based skills of: Bluff, Diplomacy, Haggle, Intimidate, Perform and Use Magic Device (UMD)` | 3 worn + NC menu |
 | `Dexterity Skills` | Balance, Hide, Move Silently, Open Lock, Tumble | `... Balance, Hide, Move Silently, Open Lock, and Tumble` | 9 worn + NC menu |
+| `all Dexterity based Skills` (#694) | same five | the Mechanic set's own wording of the row above — `Named_item_sets`: `+2 Exceptional Bonus to all Dexterity based Skills`; the `Skill` table keys exactly these five to Dexterity | 1 set tier |
 | `Intelligence Skills` | Disable Device, Repair, Search, Spellcraft | `... Disable Device, Repair, Search, and Spellcraft` | 12 worn + NC menu |
 | `Constitution Skills` | Concentration | `... Constitution based skills of: Concentration` | NC menu only |
 | `Strength Skills` | Jump | `... Strength based skills of: Jump` | NC menu only |
