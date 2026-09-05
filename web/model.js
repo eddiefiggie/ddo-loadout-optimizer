@@ -332,6 +332,26 @@ function intrinsicCapFor(stat) {
 // family on two different pages, so the app takes neither and tells the player
 // instead. Nothing the solver reads may ever be derived from this table.
 // docs/wiki-evidence/critical-multiplier-19-20.md.
+// #713 — DISCLOSED conditional effects: rankable stats whose harvested wiki
+// tooltip states a condition (Orb Bonus: "while actively blocking") and whose
+// ruling in conditional_adjudications.json is `disclose` — the credit stands and
+// the result names the condition (#214 Option C). Installed from dataset.js on
+// load, same two-runtime bridge as the split mechanics below.
+let _CONDITIONAL = Object.create(null);
+function setConditionalDisclosures(map) {
+  _CONDITIONAL = Object.create(null);
+  if (map && typeof map === "object") {
+    for (const k of Object.keys(map)) {
+      const v = map[k];
+      if (v && typeof v === "object" && typeof v.sentence === "string") _CONDITIONAL[k] = v;
+    }
+  }
+}
+function conditionalDisclosureFor(stat) {
+  if (stat == null) return null;
+  return Object.prototype.hasOwnProperty.call(_CONDITIONAL, stat) ? _CONDITIONAL[stat] : null;
+}
+
 let _SPLIT_MECHANICS = [];
 function setSplitMechanics(list) {
   _SPLIT_MECHANICS = Array.isArray(list) ? list.slice() : [];
@@ -2039,7 +2059,7 @@ function poolStatNames(model) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { poolStatNames, setIntrinsicCaps, setSplitMechanics, splitMechanicFor,
+  module.exports = { poolStatNames, setIntrinsicCaps, setSplitMechanics, splitMechanicFor, setConditionalDisclosures, conditionalDisclosureFor,
     intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, MRR_CAP_BY_ARMOR, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, dominanceFilter, dominates,

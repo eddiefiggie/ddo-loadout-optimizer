@@ -1,0 +1,60 @@
+{
+ "_meta": {
+  "field": "conditional_adjudications",
+  "note": "#713 (#214 Option B with C) rulings on every affix whose harvested tooltip (affix_tooltip.json) matches a STRONG conditional marker in src/affix_tooltip.py. Disposition vocabulary is CLOSED at constant | quarantine | disclose. `evidence` is the shard tooltip VERBATIM and the build fails when the two diverge, when a candidate has no ruling, when a ruling names no candidate, or when a `quarantine` ruling is not carried out by conditional_affix_quarantine.json. A `disclose` ruling carries the `sentence` the post-solve notice quotes.",
+  "precedent": "Deific Focus (quarantined in conditional_affix_quarantine.json, #214) is the class this exists to catch before a player does: a ramping, windowed, single-school effect stored as its stack ceiling and offered as a rankable stat."
+ },
+ "ruled": {
+  "Dazing": {
+   "disposition": "constant",
+   "markers": "trigger, ramp, window, cooldown",
+   "evidence": "Dazing IV: On Hit: Your target suffers a -1 Penalty to Will Saving Throws for 6 seconds. This effect stacks up to 5 times. This effect may only occur on-hit once every three seconds.Passive: The DC of the saving throw to resist your Stunning Blow and Stunning Fist combat feats is increased by 8.",
+   "label": "Dazing IV",
+   "carrier": "Item:Buckler_of_the_Demonic_Soldier",
+   "wiki_url": "https://ddowiki.com/page/Item:Buckler_of_the_Demonic_Soldier",
+   "harvested": "2026-09-04",
+   "why": "The credited magnitude is the PASSIVE clause — the stat's carriers store the Stunning DC bonus (Buckler of the Demonic Soldier stores 8, the tooltip's 'increased by 8'), which is unconditional. The on-hit -1 Will save debuff that stacks to 5 for 6 seconds is an EXTRA the catalog does not credit at all. Nothing is over-credited."
+  },
+  "Sundering": {
+   "disposition": "constant",
+   "markers": "trigger, ramp, window, cooldown",
+   "evidence": "Sundering V: On Hit: Your target suffers a -1 Penalty to Fortitude Saving Throws for 6 seconds. This effect stacks up to 5 times. This effect may only occur on-hit once every three seconds.Passive: The DC of the saving throw to resist your Sunder combat feats is increased by 10.",
+   "label": "Sundering V",
+   "carrier": "Item:Giant's_Fist_(level_17)",
+   "wiki_url": "https://ddowiki.com/page/Item:Giant's_Fist_(level_17)",
+   "harvested": "2026-09-04",
+   "why": "Same shape as Dazing: the stored value is the passive Sunder DC bonus (Giant's Fist stores 10, the tooltip's 'increased by 10'); the on-hit Fortitude debuff is uncredited."
+  },
+  "Dragon's Edge": {
+   "disposition": "constant",
+   "markers": "trigger",
+   "evidence": "Dragon's Edge 3: +9% Enhancement bonus to bypass enemy Fortification. On Crit: 3d8 Bleeding Damage to those that are vulnerable to it.",
+   "label": "Dragon's Edge 3",
+   "carrier": "Item:Axe_of_Savaran",
+   "wiki_url": "https://ddowiki.com/page/Item:Axe_of_Savaran",
+   "harvested": "2026-09-04",
+   "why": "The passive +9% Fortification bypass is unconditional; the On Crit bleed is uncredited. NOTE (not a conditional question): the stored value is the RANK (3 for 'Dragon's Edge 3'), not the 9% — the Parrying-shaped value-is-a-rank trap, tracked separately."
+  },
+  "Improved Deception": {
+   "disposition": "constant",
+   "markers": "standing, window",
+   "evidence": "Improved Deception: This item makes your weapons hard to focus upon and thus provides a +5 enhancement bonus to Bluff checks. In addition, while using this item your weapons have a chance to envelop the target in darkness, making them vulnerable to sneak attacks for a short time.",
+   "label": "Improved Deception",
+   "carrier": "Item:Agony,_the_Knife_in_the_Dark",
+   "wiki_url": "https://ddowiki.com/page/Item:Agony,_the_Knife_in_the_Dark",
+   "harvested": "2026-09-04",
+   "why": "The stored magnitude is the unconditional Bluff bonus (the +5 the tooltip states, matching the modal stored 5); the 'while using this item ... chance to envelop the target' proc is uncredited."
+  },
+  "Orb Bonus": {
+   "disposition": "disclose",
+   "markers": "standing",
+   "evidence": "+4 Orb Bonus: While this orb is equipped and you are actively blocking, you gain a +4 orb bonus to all saving throws, as well as Acid, Cold, Fire, Electric, and Sonic resistances.",
+   "label": "+4 Orb Bonus",
+   "carrier": "Item:Acidic_Sphere",
+   "wiki_url": "https://ddowiki.com/page/Item:Acidic_Sphere",
+   "harvested": "2026-09-04",
+   "why": "The whole bonus is conditional: 'While this orb is equipped and you are actively blocking'. The credit stands — a player ranking Orb Bonus is asking for exactly this — and the result says when it applies.",
+   "sentence": "only while the orb is equipped and you are actively blocking"
+  }
+ }
+}

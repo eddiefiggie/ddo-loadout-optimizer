@@ -175,3 +175,28 @@ can be wrong.
   Same fix — `#mw-content-text table tr` via `javascript_tool`.
 - **Augment data lives on `Raw data/Item augments`**, not `Item augments` (which
   does not exist). That is the page gear-planner scrapes.
+
+## Rendered tooltips by page: the `parse` variant (2026-09-04, #713)
+
+The revisions loop above returns WIKITEXT, which is what a template
+invocation needs. A rendered TOOLTIP needs the parsed HTML, and the same
+same-origin `api.php` serves it: POST `action=parse&prop=text&format=json&page=<title>`,
+one page per request, and read `span.tooltip` out of the returned HTML with a
+`DOMParser`. Two traps beyond the ones above:
+
+- **GET returns an empty body** (`Unexpected end of JSON input`) — same rule as
+  the revisions loop, POST only.
+- **A burst trips the `202`-empty throttle, and a navigation clears it.** The
+  cure is a real page navigation in the tab, which also WIPES page-scoped
+  state — export whatever the loop accumulated (`JSON.stringify(window.__tt)`)
+  BEFORE navigating, save it, then reload the roster. Keep each
+  `javascript_tool` call to about ten pages at ~1.3 s so it stays under the
+  45 s ceiling; the loop is resumable because it skips names already stored.
+- **Match the tooltip by the LABEL the page engraves, not the stat name.** Ten
+  of 198 names render under a different label (`Accuracy` is engraved
+  `Attack Bonus`, `False Life` is `Vitality`, the charge counts are
+  `Action Boost Enhancement` / `Anger` / `Minor Greater Dragonmark
+  Enhancement`); a second pass with a label hint recovered nine.
+
+Shard: `data/seed/compendium/affix_tooltip.json`, one entry per rankable name.
+

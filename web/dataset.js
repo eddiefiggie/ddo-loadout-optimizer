@@ -459,6 +459,16 @@ function installIntrinsicCaps(map) {
 }
 
 // #683 — same two-runtime bridge for the disclosed name splits.
+// #713 — the `disclose` rulings from conditional_adjudications.json, keyed by
+// stat. Same bridge as the split mechanics: a browser global when model.js is
+// loaded ahead of this file, a require under Node, a no-op when absent.
+function installConditionalDisclosures(map) {
+  if (typeof setConditionalDisclosures !== "undefined") { setConditionalDisclosures(map); return; }
+  if (typeof require !== "undefined") {
+    try { require("./model.js").setConditionalDisclosures(map); } catch (e) { /* model.js absent: no-op */ }
+  }
+}
+
 function installSplitMechanics(list) {
   if (typeof setSplitMechanics !== "undefined") { setSplitMechanics(list); return; }
   if (typeof require !== "undefined") {
@@ -507,6 +517,7 @@ function normalizeDataset(dataset) {
   // there, because the table's absence means "no family is disclosed as split",
   // which is exactly the pre-#683 behavior.
   installSplitMechanics(meta.split_mechanic_disclosures || []);
+  installConditionalDisclosures(meta.conditional_disclosures || {});
   const crossAdd = meta.cross_add || {};
   dataset._crossAdd = crossAdd;
   installCrossAdd(crossAdd);

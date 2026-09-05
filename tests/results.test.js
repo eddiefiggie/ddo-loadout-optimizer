@@ -1684,6 +1684,27 @@ test("#663: the Jump soft-cap disclosure fires only when the solve actually clea
     "and silent once the player set their own Max: they have already answered this");
 });
 
+test("#713: a ranked stat ruled `disclose` gets the wiki's condition on the card, in the ruling's words", () => {
+  const M = require("../web/model.js");
+  // Installed by hand, the way exporters.test.js installs the split mechanics:
+  // this file builds no dataset, so model.js has no map of its own.
+  M.setConditionalDisclosures({ "Orb Bonus": {
+    label: "+4 Orb Bonus", sentence: "only while the orb is equipped and you are actively blocking",
+    tooltip: "+4 Orb Bonus: While this orb is equipped and you are actively blocking, you gain a +4 orb bonus to all saving throws, as well as Acid, Cold, Fire, Electric, and Sonic resistances." } });
+  const on = R.conditionalNotice({ targets: ["Orb Bonus", "Strength"] }, { status: "optimal", effective: { "Orb Bonus": 4 } });
+  assert.ok(/Orb Bonus \(4 here\) is credited at its full value/.test(on), on);
+  assert.ok(/only while the orb is equipped and you are actively blocking/.test(on), "quotes the ruling's sentence");
+  assert.ok(/actively blocking, you gain a \+4 orb bonus/.test(on), "and the wiki's own tooltip");
+  assert.strictEqual(R.conditionalNotice({ targets: ["Strength", "Dazing"] }, { status: "optimal", effective: {} }), "",
+    "silent for a constant-ruled stat (Dazing) and for anything unruled");
+  assert.strictEqual(R.conditionalNotice({ targets: [] }, { status: "optimal" }), "");
+  // The map is the build's, not a hand copy: uninstalling it silences the notice.
+  const saved = M.conditionalDisclosureFor("Orb Bonus");
+  M.setConditionalDisclosures({});
+  assert.strictEqual(R.conditionalNotice({ targets: ["Orb Bonus"] }, { status: "optimal" }), "");
+  M.setConditionalDisclosures({ "Orb Bonus": saved });
+});
+
 test("#701: the MRR cap disclosure is keyed to the declared armor and fires only above the ceiling the app can see", () => {
   const fire = (q, eff) => R.mrrCapNotice(q, { status: "optimal", effective: eff });
   const ms = (n, cap) => (cap == null ? { "Magical Sheltering": n } : { "Magical Sheltering": n, "Magical Sheltering Cap": cap });
@@ -2716,6 +2737,9 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       // #701 — ACTIONABLE for the #663 reason: the ceiling the app can see is known
       // (armor cap + this loadout's cap bonus) and a Max at it resolves the notice.
       mrrCapNotice: ["MAGICAL SHELTERING ABOVE YOUR ARMOR'S CAP", "actionable"],
+      // #713 — qualifying like #683: the wiki states the condition and the catalog
+      // credits the full value; that is a fact about the data, not the query.
+      conditionalNotice: ["CREDITED IN FULL, GRANTED ON A CONDITION", "qualifying"],
       // #683 — qualifying like the #573 entry two rows up, NOT actionable like the
       // #663 one directly above. The player can press something (rank the other
       // spelling) but whether that is correct is the unverified question itself, so
@@ -2746,7 +2770,7 @@ test("#448: the registry is the ONLY source — nothing classifies a notice but 
 
   assert.deepStrictEqual(Object.keys(R.NOTICE_TABLE), single.map((n) => n.name),
     "NOTICE_TABLE is derived from the registry, in registry order");
-  assert.strictEqual(single.length, 19, "the nineteen single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one, #701 the MRR cap one)");
+  assert.strictEqual(single.length, 20, "the twenty single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one, #701 the MRR cap one)");
   assert.deepStrictEqual(split.map((n) => n.name),
     ["artifactNotice", "boundNotice", "zeroSourceNotice"],
     "and the three multi-fact notices come through their U10 entry functions");
@@ -2777,7 +2801,7 @@ test("#448: registry ORDER is the on-screen order within a class, and splits lea
     "artifactNotice", "boundNotice", "zeroSourceNotice",
     "staleSnapshotNotice", "outbidNotice", "saturationNotice", "emptySlotNotice",
     "absorptionQuarantineNotice", "craftingExcludedNotice", "augCeilingNotice",
-    "dodgeMaxDexNotice", "jumpSoftCapNotice", "mrrCapNotice", "splitMechanicNotice", "capSurplusNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
+    "dodgeMaxDexNotice", "jumpSoftCapNotice", "mrrCapNotice", "conditionalNotice", "splitMechanicNotice", "capSurplusNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
   ]);
 });
 
