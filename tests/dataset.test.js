@@ -91,6 +91,40 @@ test("R12/#253: bare Sheltering's halves are stamped with the engraved name", ()
 // browser-side expansions (the typed Shelterings) only exist after normalizeDataset,
 // so a vocabulary built from the raw artifact would not carry their labels and the
 // comparison would be meaningless in both directions.
+// #694 — three set-tier names reached the picker's `known` set as raw prose:
+// an unexpanded umbrella (Mechanic's "all Dexterity based Skills") and two
+// target-conditional Crypt Raider clauses. The fix is upstream of the picker
+// (the umbrella expands at the universal seam, the conditionals are flagged at
+// the parse seam), so the picker must simply never see them again. Against the
+// REAL built dataset, so a channel the seams stopped reaching fails here.
+test("#694: set-tier residue never reaches the picker as a scorable name", () => {
+  const v = buildPickerVocabulary(realData);
+  const RAW = ["all Dexterity based Skills", "hit and damage vs. Evil creatures", "Saves vs. Evil Creatures"];
+  // None is suggested. (All three stay in `known` through the frozen upstream
+  // affix registry, exactly as `Dexterity Skills` does — `known` is the
+  // registry by design; what matters is what happens when one is typed.)
+  for (const raw of RAW) assert.ok(!v.suggestions.includes(raw), `${raw} is still suggested`);
+  // The umbrella is expanded away: typing it is redirected to its five skills,
+  // and a saved build that ranked it migrates the same way `Dexterity Skills` does.
+  const DEX = ["Balance", "Hide", "Move Silently", "Open Lock", "Tumble"];
+  assert.deepStrictEqual(expandedAwayFor(v, "all Dexterity based Skills"), DEX);
+  assert.ok(/rank those instead/.test(expandedAwayMessage(v, "all Dexterity based Skills")));
+  for (const skill of DEX) assert.ok(v.suggestions.includes(skill), `${skill} must stay rankable`);
+  // No item or set tier carries any of the three any more — the seams ran on
+  // every channel the picker reads.
+  const carriers = [];
+  for (const it of realData.items) {
+    for (const a of it.affixes || []) if (RAW.includes(a.name)) carriers.push(it.variant_id + "|" + a.name);
+    for (const t of it.parsed_set_bonuses || []) for (const a of t.affixes || []) if (RAW.includes(a.stat)) carriers.push(t.set + "|" + a.stat);
+  }
+  for (const [name, d] of Object.entries(realData.membership_set_defs || {})) {
+    for (const t of d.tiers || []) for (const a of t.affixes || []) if (RAW.includes(a.stat)) carriers.push(name + "|" + a.stat);
+  }
+  assert.deepStrictEqual(carriers, []);
+  const cov = realData.metadata.target_conditional_set_coverage;
+  assert.ok(cov && cov.clauses_flagged === 2, "the build discloses the two flagged clauses: " + JSON.stringify(cov));
+});
+
 test("R13 invariant: every stamped label is admitted by the picker", () => {
   const v = buildPickerVocabulary(realData);
   const stamped = new Set();

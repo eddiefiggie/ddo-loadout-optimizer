@@ -226,6 +226,16 @@ _UNIVERSAL = {
     "tactical dcs": TACTICS,
     "charisma skills": SKILLS_CHA,
     "dexterity skills": SKILLS_DEX,
+    # #694 — the Mechanic set's own wording of the same umbrella. Named_item_sets
+    # prints the 2-piece as "+2 Exceptional Bonus to all Dexterity based Skills",
+    # and the Skill page's table keys exactly five skills to Dexterity: Balance,
+    # Hide, Move Silently, Open Lock, Tumble — the SKILLS_DEX roster the
+    # `Dexterity Skills` tooltip already enumerates (umbrella-adjudication-sweep.md
+    # row 2). Stored verbatim it reached the picker as a name no player could
+    # use and credited nothing to a ranked Balance or Hide. The same-type
+    # expansion is right here for the same reason as the worn umbrella: one
+    # Exceptional grant across the five, highest-of-type per skill.
+    "all dexterity based skills": SKILLS_DEX,
     "intelligence skills": SKILLS_INT,
     "constitution skills": SKILLS_CON,
     "strength skills": SKILLS_STR,
