@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { armorTypesFor, canSolve, DRUID_ARMOR, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice } = require("../web/wizard.js");
+const { armorTypesFor, canSolve, DRUID_ARMOR, bundleStaleNames, staleBundleText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -919,6 +919,72 @@ test("U4: applying preserves the player's Utility tier decision", () => {
   const moved = applySavedBundle(bundle, [S, "Melee Power"]);
   assert.deepStrictEqual(moved.priorities, ["Constitution", "Dodge", S],
     "a dragged tier keeps its presence, not its index — rank 1 of a different list is a different decision");
+});
+
+// ---- #529 — a bundle saved under an older catalog: migrate what can be, disclose the rest ----
+const bundleVocab = () => {
+  const v = pickerVocabulary(realData);
+  return v;
+};
+
+test("#529: a name the catalog no longer knows is reported STALE with its rank, and kept in place", () => {
+  const v = bundleVocab();
+  const j = bundleStaleNames({ affixes: ["Constitution", "Zzz Retyped Stat", "Dodge"] }, v);
+  assert.deepStrictEqual(j.priorities, ["Constitution", "Zzz Retyped Stat", "Dodge"], "nothing dropped, nothing reordered");
+  assert.deepStrictEqual(j.stale, [{ name: "Zzz Retyped Stat", rank: 2 }]);
+  assert.deepStrictEqual(j.substitutions, []);
+  const first = bundleStaleNames({ affixes: ["Zzz Retyped Stat", "Dodge"] }, v);
+  assert.deepStrictEqual(first.stale, [{ name: "Zzz Retyped Stat", rank: 1 }], "#1 being dead is reported as #1");
+});
+
+test("#529: a name that MIGRATES is not stale — it becomes the stats it stands for, as a saved character's would", () => {
+  const v = bundleVocab();
+  // `Dexterity Skills` is an expanded-away umbrella (five skills); a bundle saved
+  // with it restores the five, reported as a substitution, and is not stale.
+  const j = bundleStaleNames({ affixes: ["Dexterity Skills", "Constitution"] }, v);
+  assert.ok(!j.stale.length, JSON.stringify(j.stale));
+  assert.deepStrictEqual(j.priorities.slice(0, 5), ["Balance", "Hide", "Move Silently", "Open Lock", "Tumble"]);
+  assert.strictEqual(j.priorities[5], "Constitution");
+  assert.strictEqual(j.substitutions.length, 1);
+  assert.strictEqual(j.substitutions[0].from, "Dexterity Skills");
+  // An alias spelling resolves, and is not stale either.
+  const alias = bundleStaleNames({ affixes: ["MRR"] }, v);
+  assert.deepStrictEqual(alias.priorities, ["Magical Sheltering"]);
+  assert.deepStrictEqual(alias.stale, []);
+});
+
+test("#529: applySavedBundle migrates with a vocabulary and drops a bound keyed to a replaced name, disclosed", () => {
+  const v = bundleVocab();
+  const next = applySavedBundle({ affixes: ["Dexterity Skills", "Constitution", "Zzz Gone"],
+    floors: { "Dexterity Skills": 10, Constitution: 40 }, caps: { "Zzz Gone": 5 } }, ["Melee Power"], v);
+  assert.strictEqual(next.priorities[5], "Constitution");
+  assert.strictEqual(next.priorities[6], "Zzz Gone", "the stale name is restored in place, at its rank");
+  assert.deepStrictEqual(next.targetFloors, { Constitution: 40 }, "a floor keyed to the umbrella cannot be re-keyed by guess");
+  assert.deepStrictEqual(next.targetCaps, { "Zzz Gone": 5 }, "a bound on a stale name rides with it — the name is still ranked");
+  assert.deepStrictEqual(next.droppedBounds, [{ stat: "Dexterity Skills", kind: "min", value: 10 }]);
+  assert.deepStrictEqual(next.stale, [{ name: "Zzz Gone", rank: 7 }]);
+  // Without a vocabulary the pre-#529 behavior is byte-identical: names as saved.
+  const plain = applySavedBundle({ affixes: ["Dexterity Skills", "Zzz Gone"], floors: { "Dexterity Skills": 10 }, caps: {} }, []);
+  assert.deepStrictEqual(plain.priorities, ["Dexterity Skills", "Zzz Gone"]);
+  assert.deepStrictEqual(plain.targetFloors, { "Dexterity Skills": 10 });
+  assert.deepStrictEqual(plain.stale, []);
+});
+
+test("#529: the chip, the confirm, and the status line all say the same thing, before and after", () => {
+  const v = bundleVocab();
+  const html = savedBundlesHTML([{ id: "b1", name: "Old", affixes: ["Zzz Gone", "Constitution"] },
+                                 { id: "b2", name: "Fine", affixes: ["Constitution"] }], v);
+  assert.ok(/data-stale-count="1"/.test(html), "the chip badges the stale count");
+  assert.ok(/has-stale/.test(html) && /#1 Zzz Gone/.test(html), "and names it with its rank in the title");
+  assert.ok(!/data-saved-bundle="b2"[^>]*no longer/.test(html), "a healthy bundle carries no badge");
+  const withoutVocab = savedBundlesHTML([{ id: "b1", name: "Old", affixes: ["Zzz Gone"] }]);
+  assert.ok(!/has-stale/.test(withoutVocab), "no vocabulary, no judgement — the pre-#529 chip");
+  const confirm = applyBundleConfirmText("Old", 3, [{ name: "Zzz Gone", rank: 1 }]);
+  assert.ok(/discarded/.test(confirm) && /#1 \u201CZzz Gone\u201D/.test(confirm) && /no longer in this catalog/.test(confirm),
+    "the confirm names the dead priority BEFORE the replace");
+  assert.ok(/nothing was dropped or reordered/.test(staleBundleText([{ name: "Zzz Gone", rank: 1 }])));
+  assert.strictEqual(staleBundleText([]), null);
+  assert.ok(/2 ranked stats are/.test(staleBundleText([{ name: "A", rank: 1 }, { name: "B", rank: 4 }])));
 });
 
 test("U4: the replace confirmation says what is discarded", () => {
