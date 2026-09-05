@@ -576,8 +576,13 @@ def test_the_real_seed_resolves_the_real_vocabulary():
     # stopped asking about it and its ruling was retired (recorded under the
     # seed's `_meta.retired`). The canonical carries no head-word and needs no
     # ruling of its own. 38 - 1 = 37.
-    assert report["candidates"] == 37
-    assert report["atomic"] == 37
+    #
+    # 37 -> 36 at #214: `Deific Focus` left the rankable set because its three
+    # carriers are quarantined (a conditional, ramping effect stored as its stack
+    # ceiling — conditional_affix_quarantine.json), so the detector stopped asking
+    # about it and its atomic ruling was retired (`_meta.retired`). 37 - 1 = 36.
+    assert report["candidates"] == 36
+    assert report["atomic"] == 36
     # The detector's first sweep found three live umbrellas; they must stay
     # MODELED (expanded away), never re-enter the rankable vocabulary silently.
     for name in ("Resistance", "Elemental Resonance", "Combat Mastery",

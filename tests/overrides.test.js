@@ -340,7 +340,11 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // (38 items, 2 Brightbane Emerald augments) each trade one folded `Command`
   // affix for seven — six Charisma skills at the item's own type and a Hide
   // penalty — so 40 x 7 - 40 = 240. All 280 minted affixes carry `via`.
-  assert.strictEqual(total, 43063, "post-normalize pool size");
+  // 43,060 not 43,063 since #214: -3, the three `Deific Focus` affixes now
+  // quarantined (a conditional, ramping effect stored as its stack ceiling;
+  // conditional_affix_quarantine.json). Dropped, not renamed, so total and
+  // eligible move together for once.
+  assert.strictEqual(total, 43060, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -400,7 +404,9 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // wants to retype a Command item's skill bonus now does it on the record's own
   // engraved sibling (Coin Belt's Haggle, the Helms' Intimidate), which is what
   // the card names.
-  assert.strictEqual(eligible, 20699, "engraved, eligible affixes");
+  // 20,696 since #214: MINUS 3, the same three affixes — they were engraved
+  // and overridable, and now they do not exist.
+  assert.strictEqual(eligible, 20696, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -426,10 +432,12 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // independent cross-check on the -14 above. No weapon is engraved `Undying`, so
   // the whole loss must split across the other two categories, and it does. The
   // augment half is the two `Undying Sapphire` tiers.
+  // item 13,570 / weapon 6,109 since #214: -2 / -1 (the Morion and the Epic
+  // Deific Diadem are worn, the Staff of Irian is a weapon); augment unchanged.
   // item 13,572 / weapon 6,110 / augment 1,017 since #192: -34 / -4 / -2, the 40
   // Command carriers by category (34 worn, 4 weapons, 2 augments) — the
   // independent cross-check on the -40 above.
-  assert.deepStrictEqual(byCat, { item: 13572, weapon: 6110, augment: 1017 });
+  assert.deepStrictEqual(byCat, { item: 13570, weapon: 6109, augment: 1017 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {

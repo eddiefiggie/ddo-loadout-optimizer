@@ -27,6 +27,42 @@
     "verified": "2026-08-20",
     "note": "#88 - the Yellow-slot sibling of Meridian Fragment, identical wording and identical defect."
    }
+  ],
+  "Morion of the Undying": [
+   {
+    "name": "Deific Focus",
+    "type": "Sacred",
+    "from_value": "3",
+    "reason": "conditional + ramping + temporary + single-school",
+    "wiki_text": "Deific Focus III: On Spell Cast: +1 Sacred bonus to DC of that school for five seconds. Stacks up to III times. Casting a spell from another school clears all stacks of this effect.",
+    "wiki_url": "https://ddowiki.com/page/Item:Morion_of_the_Undying",
+    "verified": "2026-09-04",
+    "note": "#214 — stored as the stack ceiling with no trigger, no duration and no school. Ruled in #205 while it was inert (no target carried the name); by build 09042026.7 `Deific Focus` was in rankable_affixes and offered by the picker, so a player who ranked it was credited a permanent +N Sacred the game grants for five seconds after casting, one school at a time. Quarantined on the #88 disposition: the wiki states no sustained value, and inventing one would violate the never-infer rule. docs/plans/2026-09-04-003-conditional-effects-stored-as-constants-design-note.md."
+   }
+  ],
+  "Epic Deific Diadem": [
+   {
+    "name": "Deific Focus",
+    "type": "Sacred",
+    "from_value": "2",
+    "reason": "conditional + ramping + temporary + single-school",
+    "wiki_text": "Deific Focus II: On Spell Cast: +1 Sacred bonus to DC of that school for five seconds. Stacks up to II times. Casting a spell from another school clears all stacks of this effect.",
+    "wiki_url": "https://ddowiki.com/page/Item:Epic_Deific_Diadem",
+    "verified": "2026-09-04",
+    "note": "#214 — stored as the stack ceiling with no trigger, no duration and no school. Ruled in #205 while it was inert (no target carried the name); by build 09042026.7 `Deific Focus` was in rankable_affixes and offered by the picker, so a player who ranked it was credited a permanent +N Sacred the game grants for five seconds after casting, one school at a time. Quarantined on the #88 disposition: the wiki states no sustained value, and inventing one would violate the never-infer rule. docs/plans/2026-09-04-003-conditional-effects-stored-as-constants-design-note.md."
+   }
+  ],
+  "Staff of Irian": [
+   {
+    "name": "Deific Focus",
+    "type": "Sacred",
+    "from_value": "3",
+    "reason": "conditional + ramping + temporary + single-school",
+    "wiki_text": "Deific Focus III: On Spell Cast: +1 Sacred bonus to DC of that school for five seconds. Stacks up to III times. Casting a spell from another school clears all stacks of this effect.",
+    "wiki_url": "https://ddowiki.com/page/Item:Staff_of_Irian",
+    "verified": "2026-09-04",
+    "note": "#214 — stored as the stack ceiling with no trigger, no duration and no school. Ruled in #205 while it was inert (no target carried the name); by build 09042026.7 `Deific Focus` was in rankable_affixes and offered by the picker, so a player who ranked it was credited a permanent +N Sacred the game grants for five seconds after casting, one school at a time. Quarantined on the #88 disposition: the wiki states no sustained value, and inventing one would violate the never-infer rule. docs/plans/2026-09-04-003-conditional-effects-stored-as-constants-design-note.md."
+   }
   ]
  }
 }

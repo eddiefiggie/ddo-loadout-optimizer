@@ -16,7 +16,10 @@ def _rec(name, affixes):
 
 def test_seed_carries_its_wiki_evidence():
     q = cq.load(SEED)
-    assert set(q) == {"Meridian Fragment", "Crystallized Drop of Tea"}
+    # #214 — Deific Focus joined once it became rankable: three carriers, each
+    # with its own page's tooltip (docs/plans/2026-09-04-003-...-design-note.md).
+    assert set(q) == {"Meridian Fragment", "Crystallized Drop of Tea",
+                      "Morion of the Undying", "Epic Deific Diadem", "Staff of Irian"}
     for record, entries in q.items():
         for e in entries:
             for field in ("name", "type", "from_value", "reason", "wiki_text", "wiki_url", "verified"):
