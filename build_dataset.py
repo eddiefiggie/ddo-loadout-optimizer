@@ -45,6 +45,7 @@ from src import speed_split as speed_split_mod
 from src import parrying_split as parrying_split_mod
 from src import riposte_split as riposte_split_mod
 from src import heightened_awareness as heightened_awareness_mod
+from src import command_split as command_split_mod
 from src import absorption_split as absorption_split_mod
 from src import elemental_resistance_split as er_split_mod
 from src import enchantment_split as enchantment_split_mod
@@ -933,6 +934,25 @@ def build() -> dict:
                          "\n  ".join(_ha_guard["problems"]))
     _ha_coverage = heightened_awareness_mod.apply(planner_records, _ha_shard)
 
+    # #192 — `Command` is an enchantment, not a stat: a Competence (or Insight)
+    # bonus to the six Charisma-based skills and a flat -6 Hide penalty, per
+    # https://ddowiki.com/page/Command_(enchantment) and every carrier's tooltip.
+    # No per-item shard: the stored magnitude and type ARE the granted bonus and
+    # its version, and the penalty is a constant. Same seam as Parrying above.
+    # A folded `Command` that survives (a type or value the wiki does not state)
+    # fails the build by name rather than reaching the solver as a stat nobody
+    # ranks. docs/wiki-evidence/command.md.
+    _command_coverage = command_split_mod.apply(planner_records)
+    if _command_coverage["unexpanded"]:
+        raise SystemExit(
+            "Command expansion left folded affixes standing (#192):\n  " +
+            "\n  ".join(f"{u['record']}: Command | {u['type']} | {u['value']}"
+                        for u in _command_coverage["unexpanded"]))
+    if not _command_coverage["records_expanded"]:
+        raise SystemExit(
+            "Command expansion touched ZERO records — the catalog is known to carry "
+            "38 item records (#192); either upstream renamed the affix or the seam stopped running")
+
     # U5/U6 (#249) — the compound absorption names. Three stat names cover several
     # elements at once, so a player ranking `Fire Absorption` scored nothing from
     # the seventeen affix records carrying one. The two paired names expand
@@ -1073,6 +1093,25 @@ def build() -> dict:
     # so both arrive as `Conditioning` + type Legendary from one owner rather than
     # two. It also keeps the alias pointing at a name the frozen raw registry knows.
     _name_coverage_augments = name_corrections_mod.apply(aug_pool, _name_corrections)
+    # #192 — the augment channel carries Command too (the Brightbane Emeralds,
+    # `Insightful Command`), so the same expansion runs here, after this
+    # channel's own corrections, exactly as the item channel above. One coverage
+    # record for both channels; the zero-records guard already fired above.
+    _command_coverage_augments = command_split_mod.apply(aug_pool)
+    if _command_coverage_augments["unexpanded"]:
+        raise SystemExit(
+            "Command expansion left folded augment affixes standing (#192):\n  " +
+            "\n  ".join(f"{u['record']}: Command | {u['type']} | {u['value']}"
+                        for u in _command_coverage_augments["unexpanded"]))
+    _command_coverage = {
+        **_command_coverage,
+        "records_expanded": _command_coverage["records_expanded"] + _command_coverage_augments["records_expanded"],
+        "affixes_minted": _command_coverage["affixes_minted"] + _command_coverage_augments["affixes_minted"],
+        "by_version": {k: _command_coverage["by_version"][k] + _command_coverage_augments["by_version"][k]
+                       for k in _command_coverage["by_version"]},
+        "by_channel": {"items": _command_coverage["records_expanded"],
+                       "augments": _command_coverage_augments["records_expanded"]},
+    }
     # #374/KTD2 — one honesty guard across ALL FOUR channels. A per-channel miss is
     # a correct silent no-op; reaching nothing anywhere is staleness. The crafting
     # and sets coverage dicts must be threaded here or the two new channels vouch
@@ -1331,6 +1370,7 @@ def build() -> dict:
         **spell_focus_mod.expanded_away(),
         **speed_split_mod.EXPANDED_AWAY,
         **parrying_split_mod.EXPANDED_AWAY,
+        **command_split_mod.EXPANDED_AWAY,
         **riposte_split_mod.EXPANDED_AWAY,
         **heightened_awareness_mod.EXPANDED_AWAY,
         # #249 — no set-bonus tier names a compound absorption stat today, so
@@ -1930,6 +1970,9 @@ def build() -> dict:
             "parrying_set_bonus_coverage": _parrying_sets,
             "heightened_awareness_set_bonus_coverage": _ha_sets,
             "speed_set_bonus_coverage": _speed_sets,
+            # #192 — the Command enchantment's expansion into six Charisma skills
+            # and a Hide penalty; `unexpanded` is asserted empty at build time.
+            "command_split_coverage": _command_coverage,
             "parrying_split_coverage": {**_parrying_coverage,
                                         "shard_audit": _parrying_audit,
                                         "tooltip_snapshots": _parrying_snapshots,
@@ -2068,6 +2111,7 @@ def build() -> dict:
                                     **spell_focus_mod.expanded_away(),
                                     **speed_split_mod.EXPANDED_AWAY,
                                     **parrying_split_mod.EXPANDED_AWAY,
+                                    **command_split_mod.EXPANDED_AWAY,
                                     **riposte_split_mod.EXPANDED_AWAY,
                                     **heightened_awareness_mod.EXPANDED_AWAY,
                                     **absorption_split_mod.EXPANDED_AWAY,

@@ -359,7 +359,12 @@ def test_the_built_reigns_score_the_wiki_values():
     assert not any(a["name"] == "Acid Absorption" and a["type"] == "Enhancement"
                    for a in items["Juiblex's Reign"]["affixes"])
     assert aff("Demogorgon's Reign", "Fortification", "Insight")["value"] == "87"
-    assert aff("Fraz-Urb'luu's Reign", "Command", "Competence")["value"] == "8"
+    # #192 — the corrected Command +8 lands BEFORE the Command expansion, so it
+    # surfaces as six Competence skill affixes (and a Hide penalty) carrying the
+    # engraved name on `via`; the folded `Command` affix no longer exists.
+    umd = aff("Fraz-Urb'luu's Reign", "Use Magic Device", "Competence")
+    assert umd["value"] == "8" and umd.get("via") == "Command"
+    assert not any(a["name"] == "Command" for a in items["Fraz-Urb'luu's Reign"]["affixes"])
     assert aff("Fraz-Urb'luu's Reign", "Evocation Focus", "Equipment")["value"] == "16"
     assert aff("Zuggtmoy's Reign", "Corrosion", "Quality")["value"] == "43"
     assert aff("Lolth's Reign", "Sheltering", "Insight")["value"] == "21"
