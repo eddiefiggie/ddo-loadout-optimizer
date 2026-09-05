@@ -136,24 +136,29 @@ def test_marker_host_counts_reported():
 # --- #194: Legendary Green Steel tier markers, read from crafting[] -------------
 
 def test_lgs_tiers_extracted_by_item_class():
-    """`T<n> (Equipment)` -> green_steel_tiers, `T<n> (Weapon)` -> thunder_forged_tiers.
-    One slot per DECLARED tier, in tier order, and the two classes never cross."""
+    """`T<n> (Equipment)` -> accessory slots, `T<n> (Weapon)` -> weapon slots, on ONE
+    marker (#687). One slot per DECLARED tier, in tier order, class on each slot."""
     acc = P._record({"name": "A", "slot": "Belt", "ml": 26, "affixes": [],
                      "crafting": ["T3 (Equipment)", "T1 (Equipment)", "T2 (Equipment)"]}, set())
-    assert acc["green_steel_tiers"] == [{"tier": 1}, {"tier": 2}, {"tier": 3}]
-    assert "thunder_forged_tiers" not in acc
+    assert acc["legendary_green_steel_tiers"] == [
+        {"tier": 1, "item_class": "accessory"}, {"tier": 2, "item_class": "accessory"},
+        {"tier": 3, "item_class": "accessory"}]
     wpn = P._record({"name": "W", "slot": "Weapon", "ml": 26, "affixes": [],
                      "crafting": ["T1 (Weapon)", "T2 (Weapon)", "T3 (Weapon)", "T1 (Weapon)"]}, set())
-    assert wpn["thunder_forged_tiers"] == [{"tier": 1}, {"tier": 2}, {"tier": 3}]
-    assert "green_steel_tiers" not in wpn
+    assert wpn["legendary_green_steel_tiers"] == [
+        {"tier": 1, "item_class": "weapon"}, {"tier": 2, "item_class": "weapon"},
+        {"tier": 3, "item_class": "weapon"}]
     # Only the tiers the item declares — never all three on the strength of one.
     two = P._record({"name": "T", "slot": "Belt", "ml": 26, "affixes": [],
                      "crafting": ["T1 (Equipment)", "T2 (Equipment)"]}, set())
-    assert two["green_steel_tiers"] == [{"tier": 1}, {"tier": 2}]
+    assert two["legendary_green_steel_tiers"] == [
+        {"tier": 1, "item_class": "accessory"}, {"tier": 2, "item_class": "accessory"}]
     # A real Thunder-Forged item declares no tier label and must get nothing.
     tfa = P._record({"name": "Thunder-Forged Alloy Longsword", "slot": "Weapon", "ml": 22,
                      "affixes": [], "crafting": ["Red Augment Slot"]}, set())
-    assert "thunder_forged_tiers" not in tfa and "green_steel_tiers" not in tfa
+    assert "legendary_green_steel_tiers" not in tfa
+    for legacy in ("thunder_forged_tiers", "green_steel_tiers"):
+        assert legacy not in acc and legacy not in wpn and legacy not in tfa
 
 
 def test_lgs_hosts_are_the_legendary_blanks_and_counted():
@@ -161,18 +166,19 @@ def test_lgs_hosts_are_the_legendary_blanks_and_counted():
     all named `Legendary Green Steel *`. The 47 heroic `Green Steel *` blanks
     declare no tier label and carry no marker."""
     recs, stats = _records()
-    gs = [r for r in recs if r.get("green_steel_tiers")]
-    tf = [r for r in recs if r.get("thunder_forged_tiers")]
-    assert stats["planner_green_steel_hosts"] == len(gs) == 8
-    assert stats["planner_lgs_weapon_hosts"] == len(tf) == 40
-    for r in gs + tf:
+    hosts = [r for r in recs if r.get("legendary_green_steel_tiers")]
+    acc = [r for r in hosts if r["legendary_green_steel_tiers"][0]["item_class"] == "accessory"]
+    wpn = [r for r in hosts if r["legendary_green_steel_tiers"][0]["item_class"] == "weapon"]
+    assert stats["planner_legendary_green_steel_hosts"] == {"accessory": 8, "weapon": 40}
+    assert (len(acc), len(wpn)) == (8, 40)
+    for r in hosts:
         assert r["name"].startswith("Legendary Green Steel"), r["name"]
         assert r["ml"] == 26, (r["name"], r["ml"])
-    assert all(r["green_steel_tiers"] == [{"tier": 1}, {"tier": 2}, {"tier": 3}] for r in gs)
-    assert all(r["thunder_forged_tiers"] == [{"tier": 1}, {"tier": 2}, {"tier": 3}] for r in tf)
+        cls = r["legendary_green_steel_tiers"][0]["item_class"]
+        assert r["legendary_green_steel_tiers"] == [{"tier": t, "item_class": cls} for t in (1, 2, 3)]
     heroic = [r for r in recs if r["name"].startswith("Green Steel")]
     assert len(heroic) >= 40
-    assert not any(r.get("green_steel_tiers") or r.get("thunder_forged_tiers") for r in heroic)
+    assert not any(r.get("legendary_green_steel_tiers") for r in heroic)
 
 
 # --- #371: the per-item Nearly Complete host gate ------------------------------

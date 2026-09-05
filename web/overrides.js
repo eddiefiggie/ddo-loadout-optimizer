@@ -173,6 +173,27 @@
    *  Used at the load boundary, where a hand-edited backup can carry entries no
    *  reader could act on: dropped there they are gone, kept they would render as
    *  ghost rows and re-persist on every save. */
+  /** #687 — rewrite a saved pool override's `pool_key` from the two retired
+   *  Legendary Green Steel channels to the one that replaced them. The key is the
+   *  composed `channel||disc…||stat||type||value` string `keyOf` builds; only the
+   *  channel and discriminator prefix changes, the affix identity does not.
+   *  `thunder_forged||<tier>||…` (the weapon pool under its old name) becomes
+   *  `legendary_green_steel||weapon||<tier>||…`; `green_steel||T<n> (Equipment)||…`
+   *  becomes `legendary_green_steel||accessory||<n>||…`. Anything else — an item
+   *  override, a modern key, an unrecognised legacy shape — is returned as-is.
+   *  Pure: returns a new object when it rewrites, the same object otherwise. */
+  var _LEGACY_TF = /^thunder_forged\|\|([123])\|\|/;
+  var _LEGACY_GS = /^green_steel\|\|T([123]) \(Equipment\)\|\|/;
+  function migrateOverride(o) {
+    if (!o || typeof o !== "object" || typeof o.pool_key !== "string") return o;
+    var k = o.pool_key;
+    var m = _LEGACY_TF.exec(k);
+    if (m) return Object.assign({}, o, { pool_key: "legendary_green_steel||weapon||" + m[1] + "||" + k.slice(m[0].length) });
+    m = _LEGACY_GS.exec(k);
+    if (m) return Object.assign({}, o, { pool_key: "legendary_green_steel||accessory||" + m[1] + "||" + k.slice(m[0].length) });
+    return o;
+  }
+
   function isWellFormed(o) {
     if (!o || typeof o !== "object") return false;
     var target = (typeof o.variant_id === "string" && o.variant_id)
@@ -195,7 +216,7 @@
 
   // ---- U6: the crafted pools -------------------------------------------------
   //
-  // Crafted options are not item affixes. They live in seven sibling channels on
+  // Crafted options are not item affixes. They live in six sibling channels on
   // the dataset, they use `bonus_type` where an item affix uses `type`, and no
   // pool entry carries a name that is both present and unique — all 48 `seal` and
   // all 68 `nearly_complete` rows carry none. So an override on one is addressed
@@ -208,7 +229,7 @@
   // retype occurrences the player never selected. With them, the remaining
   // collisions are byte-identical duplicate rows, which R2 says retype together.
   //
-  // Six channels are arrays. The seventh is structurally different: a dict keyed
+  // Five channels are arrays. The sixth is structurally different: a dict keyed
   // by host item name, so its rows are host-scoped and their keys carry the host.
   var POOL_CHANNELS = [
     { channel: "seal", multi: false, disc: function (e) { return [e.seal_type, e.domain]; } },
@@ -217,8 +238,12 @@
     // exactly as viktranium's do. `multi` is the flag that already models this;
     // leaving it false made every row in both channels unaddressable — the walk
     // treated the option record itself as an affix and found no `stat` on it.
-    { channel: "thunder_forged", multi: true, disc: function (e) { return [e.tier]; } },
-    { channel: "green_steel", multi: true, disc: function (e) { return [e.tier_key]; } },
+    // #687 — ONE Legendary Green Steel channel for both blank classes, keyed by
+    // (item_class, tier). Saved overrides addressed to the two old channels
+    // (`thunder_forged||<tier>||…`, `green_steel||T<n> (Equipment)||…`) are
+    // rewritten by `migrateOverride` on load, so a player's correction survives
+    // the rename.
+    { channel: "legendary_green_steel", multi: true, disc: function (e) { return [e.item_class, e.tier]; } },
     { channel: "nearly_complete", multi: true, disc: function (e) { return [e.category, e.tier]; } },
     { channel: "viktranium", multi: true, disc: function (e) { return [e.slot_type, e.category, e.tier]; } },
     { channel: "dino_inserts", multi: true, disc: function (e) { return [e.category, e.dino_type]; } },
@@ -804,7 +829,7 @@
   var api = {
     OVERRIDE_FROM, ELIGIBLE_CACHE, OVERRIDE_LIMIT,
     isEligible, classifyPool, eligibleAffixes, isCompositeComponent,
-    overrideKey, isWellFormed, matchAffixes, resolveMatch, catalogTypeOrLive,
+    overrideKey, isWellFormed, migrateOverride, matchAffixes, resolveMatch, catalogTypeOrLive,
     eachPoolAffix, poolOverrideKey, matchPoolAffixes, poolAffixEligible, readType, poolIndex,
     resolveOverrides, resolvePoolMatch, keyMinusType, sameOverrideSet,
     pickerEntries, poolPickerEntries, poolPickerEntriesFor, poolAddressable, isPoolAddressable, managerRows,

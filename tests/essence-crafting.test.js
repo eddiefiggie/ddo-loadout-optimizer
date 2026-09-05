@@ -160,7 +160,7 @@ async function solve(model) {
     const pool = [opt("Prefix", "Haggle", "Haggle", "Competence", flat(20))];
     const model = M.buildModel(
       [gem("Gem", 30)], { targets: ["Constitution"], mlCap: 34 },
-      [], [], [], [], {}, [], [], {}, null, {}, pool);
+      [], [], [], [], {}, [], {}, null, {}, pool);
     assert.strictEqual((model.essenceCrafting || []).length, 0,
       "an option for a stat nobody ranked is a variable the MILP can never use");
   });

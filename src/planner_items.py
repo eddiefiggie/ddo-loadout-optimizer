@@ -15,8 +15,9 @@ Key mappings (the dump keeps these in *separate* keys):
       - `"Nearly Complete: <category>"`        -> `nearly_complete`
       - `"Nearly Finished" / "Almost There"`   -> `nc_per_item_slots` (gated)
       - `"Lost Purpose" / "Legendary Lost Purpose"` -> `lost_purpose`
-      - `"T<n> (Equipment)"` / `"T<n> (Weapon)"`   -> `green_steel_tiers` /
-        `thunder_forged_tiers` (#194 — Legendary Green Steel altar tiers)
+      - `"T<n> (Equipment)"` / `"T<n> (Weapon)"`   -> `legendary_green_steel_tiers`
+        (#194 — Legendary Green Steel altar tiers; #687 — one marker carrying the
+        blank's item class, `accessory` or `weapon`)
     Each host marker is surfaced NATIVELY (the plan's native host-marker
     surfacing) so the crafting families activate from the authority, not from the
     retired wiki-enriched shards.
@@ -161,19 +162,24 @@ def _nc_per_item_slots(crafting, name, per_item_hosts):
     return out
 
 
-def _lgs_tiers(crafting, kind):
-    """The Legendary Green Steel tier slots a host declares for `kind`
-    (`"Equipment"` -> `green_steel_tiers`, `"Weapon"` -> `thunder_forged_tiers`),
-    as `[{tier: 1}, {tier: 2}, ...]` in tier order, deduped. Only the tiers the
-    item actually declares — a blank declaring two altars gets two slots."""
-    tiers = set()
+_LGS_CLASS_OF = {"Equipment": "accessory", "Weapon": "weapon"}
+
+
+def _lgs_tiers(crafting):
+    """The Legendary Green Steel tier slots a host declares, as
+    `[{tier, item_class}, ...]` in (class, tier) order, deduped — one marker for
+    both blank classes (#687): `T<n> (Equipment)` -> `accessory`, `T<n> (Weapon)`
+    -> `weapon`. Only the tiers the item actually declares — a blank declaring
+    two altars gets two slots. A real Thunder-Forged item declares no such label
+    and gets nothing (#653)."""
+    slots = set()
     for c in crafting or []:
         if not isinstance(c, str):
             continue
         m = _LGS_TIER_RE.match(c.strip())
-        if m and m.group(2) == kind:
-            tiers.add(int(m.group(1)))
-    return [{"tier": t} for t in sorted(tiers)]
+        if m and m.group(2) in _LGS_CLASS_OF:
+            slots.add((_LGS_CLASS_OF[m.group(2)], int(m.group(1))))
+    return [{"tier": t, "item_class": k} for k, t in sorted(slots)]
 
 
 def _lost_purpose(crafting):
@@ -234,17 +240,13 @@ def _record(it, verified_seal_types, nc_per_item_hosts=None):
     lp = _lost_purpose(it.get("crafting"))
     if lp:
         rec["lost_purpose"] = lp
-    # #194 — the two Legendary Green Steel pools, keyed by the host's item class.
-    # `thunder_forged_tiers` is the WEAPON half's marker: the pool under that name
-    # is Legendary Green Steel weapon recipes (#653), and the registry asserts its
-    # station. Real Thunder-Forged items declare no `T<n> (Weapon)` label, so they
-    # cannot pick this up.
-    gs = _lgs_tiers(it.get("crafting"), "Equipment")
-    if gs:
-        rec["green_steel_tiers"] = gs
-    tf = _lgs_tiers(it.get("crafting"), "Weapon")
-    if tf:
-        rec["thunder_forged_tiers"] = tf
+    # #194/#687 — the Legendary Green Steel altar slots, one marker for both blank
+    # classes; each slot names its tier AND the class of blank that takes it. The
+    # registry asserts the pool's station (#653). Real Thunder-Forged items declare
+    # no `T<n> (Weapon)` label, so they cannot pick this up.
+    lgs = _lgs_tiers(it.get("crafting"))
+    if lgs:
+        rec["legendary_green_steel_tiers"] = lgs
     return rec
 
 
@@ -270,7 +272,7 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
     records, seen = [], set()
     collapsed = host_owned = 0
     seal_hosts = lamordia_hosts = nearly_hosts = lost_purpose_hosts = 0
-    green_steel_hosts = lgs_weapon_hosts = 0
+    lgs_hosts = {"accessory": 0, "weapon": 0}
     nc_per_item_hosts_marked = 0
     for it in raw:
         name = it.get("name")
@@ -292,10 +294,8 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
             nc_per_item_hosts_marked += 1
         if rec.get("lost_purpose"):
             lost_purpose_hosts += 1
-        if rec.get("green_steel_tiers"):
-            green_steel_hosts += 1
-        if rec.get("thunder_forged_tiers"):
-            lgs_weapon_hosts += 1
+        for _cls in {sl["item_class"] for sl in rec.get("legendary_green_steel_tiers") or []}:
+            lgs_hosts[_cls] += 1
         records.append(rec)
 
     stats = {
@@ -307,9 +307,7 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
         "planner_nearly_complete_hosts": nearly_hosts,
         "planner_nc_per_item_hosts": nc_per_item_hosts_marked,
         "planner_lost_purpose_hosts": lost_purpose_hosts,
-        # #194 — Legendary Green Steel blanks, by pool: the accessory half and
-        # the weapon half (the latter under the pool's legacy `thunder_forged` name).
-        "planner_green_steel_hosts": green_steel_hosts,
-        "planner_lgs_weapon_hosts": lgs_weapon_hosts,
+        # #194/#687 — Legendary Green Steel blanks, by class: 8 accessory, 40 weapon.
+        "planner_legendary_green_steel_hosts": dict(lgs_hosts),
     }
     return records, stats

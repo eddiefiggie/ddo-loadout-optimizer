@@ -112,7 +112,7 @@ async function solveFixture(fx, env) {
   const model = buildModel(
     dataset.items, query,
     dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,
-    dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel,
+    dataset.seal, dataset.membership_set_defs, dataset.legendary_green_steel,
     {}, vocab.utilityCounting && vocab.utilityCounting.size
       // #348 (U3) — the capture solves what the app solves, ORDER included: a
       // golden captured in alphabetical order would ratify a loadout no player

@@ -32,8 +32,7 @@ from src import dino_parser as dino_parser_mod
 from src import nearly_complete as nc_mod
 from src import viktranium as vik_mod
 from src import seal as seal_mod
-from src import thunder_forged as tf_mod
-from src import green_steel as gs_mod
+from src import legendary_green_steel as lgs_mod
 from src import essence_pool as essence_mod
 from src import membership as membership_mod
 from src import augment_sets as augment_sets_mod
@@ -1617,36 +1616,26 @@ def build() -> dict:
     # matching pool. Undeath sourced (Ritual Table); Fire/Gloom/Mist pending.
     sl = seal_mod.build_seal(crafting)
 
-    # Legendary Thunder-Forged (multi-tier choice-slot) + Green Steel (single-pick
-    # choice-slot): expose the craftable option pools. Hosts carry the marker
-    # (thunder_forged_tiers / green_steel_tiers); the solver crafts the best option.
-    # U2 (R6/A2): these pools DO exist in gearplanner_crafting.json (the earlier
-    # "no pool / pending harvest" claim was wrong) — source them NATIVELY from the
-    # crafting catalog (T*(Weapon) / T*(Equipment)). No wiki_url gate, no type
-    # remap, no quarantine (F1). Host-marker surfacing (which items carry the slot)
-    # lands with the native reader in U3; until then the pools are populated but
-    # inert (no host references them), so the solver behavior is unchanged.
-    # #374/KTD2 — thread the ALREADY-RENAMED `crafting` catalog, do not let these
-    # two builders re-load it from disk. Their `catalog=None` default calls
-    # `crafting_catalog.load_catalog()` a second time, which re-reads the raw file
-    # and so bypasses the canon rename applied at the catalog's single load point
-    # above. That is not hypothetical: the Thunder-Forged Weapon pools shipped 18
-    # records under upstream's generic spellings (`Fire Spell Power`, ...) while
-    # every other pool carried our canon, splitting one mechanic across two
-    # buckets. The comment on that rename claimed it already covered green-steel
-    # and thunder-forged; it did not, because of these two argument-less calls.
-    tf = tf_mod.build_thunder_forged(crafting)
-    gs = gs_mod.build_green_steel(crafting)
-    # #194 — the accessory pool is ATOMIC and, now that it is reachable, expanded
-    # exactly as the Nearly Complete and Viktranium channels above: one level IN,
-    # inside the option's own affix list. 18 of its 81 options are the
+    # Legendary Green Steel (#194, unified by #687): ONE multi-tier choice-slot
+    # pool for both blank classes, keyed by (item_class, tier). Hosts carry
+    # `legendary_green_steel_tiers` ([{tier, item_class}]); the solver crafts one
+    # option per declared slot. Sourced NATIVELY from the crafting catalog's six
+    # T<n> (Equipment|Weapon) menus — no wiki_url gate, no type remap, no
+    # quarantine. #374/KTD2 — thread the ALREADY-RENAMED `crafting` catalog: a
+    # `catalog=None` default re-reads the raw file and bypasses the canon rename
+    # applied at the catalog's single load point above, which is how 18 weapon
+    # options once shipped under upstream's generic spellings.
+    lgs = lgs_mod.build_legendary_green_steel(crafting)
+    # #194 — the pool is ATOMIC and, being reachable, expanded exactly as the
+    # Nearly Complete and Viktranium channels above: one level IN, inside the
+    # option's own affix list. 18 of the 81 accessory options are the
     # ability-skills umbrellas ("Charisma Skills +22 Competence") that
     # `spell_focus` expands into their component skills, and one craft grants
     # every component together. Expanding ACROSS the record list would turn one
     # craft into N mutually exclusive ones — the fan-out defect the registry gate
-    # exists to catch. The weapon pool carries no universal name, so it declares
-    # no pass (a declared pass that leaves no stamp fails the gate).
-    for _opt in gs["records"]:
+    # exists to catch. The weapon options carry no universal name and pass
+    # through the same call untouched.
+    for _opt in lgs["records"]:
         if _opt.get("affixes"):
             _opt["affixes"] = spell_focus_mod.expand_affixes(_opt["affixes"])
             # The gear-planner recipe name IS the umbrella ("Charisma Skills"), and
@@ -1660,32 +1649,39 @@ def build() -> dict:
                          if a.get(spell_focus_mod.PROVENANCE_KEY)), None)
             if _via and spell_focus_mod.is_universal(_opt.get("name")):
                 _opt["name"] = _via
-    # #194 — the hosts. `planner_items` surfaces `green_steel_tiers` (the 8 ML-26
-    # accessory blanks, `T<n> (Equipment)`) and `thunder_forged_tiers` (the 40
-    # weapon blanks, `T<n> (Weapon)`) from each item's own `crafting[]`. Only a
-    # `verified` host keeps its tiers, for the reason the Essence gate below gives:
-    # crafting real numbers onto a record we do not trust is how an unverified item
-    # becomes a recommendation. Counted here so the coverage can say how many hosts
-    # each pool actually reaches, and so the registry's host-marker trigger sees them.
-    for _marker, _cov in (("green_steel_tiers", gs["coverage"]),
-                          ("thunder_forged_tiers", tf["coverage"])):
-        _active, _pending = {}, {}
-        for v in variants:
-            if not v.get(_marker):
-                continue
-            if v.get("verification") == essence_mod.REQUIRED_VERIFICATION:
-                _active[v["source_item"]] = len(v[_marker])
-            else:
-                _pending[v["source_item"]] = len(v[_marker])
-                v[_marker] = None
-        _cov["hosts_active"] = len(_active)
-        _cov["tier_slots_active"] = sum(_active.values())
-        _cov["hosts_pending"] = sorted(_pending)
-        if not _active:
+    # #194 — the hosts. `planner_items` surfaces `legendary_green_steel_tiers` (the
+    # 8 ML-26 accessory blanks and the 40 weapon blanks) from each item's own
+    # `crafting[]`. Only a `verified` host keeps its tiers, for the reason the
+    # Essence gate below gives: crafting real numbers onto a record we do not trust
+    # is how an unverified item becomes a recommendation. Counted per class so the
+    # coverage can say how many hosts each blank population actually reaches, and
+    # so the registry's host-marker trigger sees them.
+    _lgs_active, _lgs_pending = {}, {}
+    _lgs_class_hosts = {c: 0 for c in lgs_mod.CLASSES}
+    _lgs_class_slots = {c: 0 for c in lgs_mod.CLASSES}
+    for v in variants:
+        if not v.get("legendary_green_steel_tiers"):
+            continue
+        if v.get("verification") == essence_mod.REQUIRED_VERIFICATION:
+            _lgs_active[v["source_item"]] = len(v["legendary_green_steel_tiers"])
+            for _cls in {_slot["item_class"] for _slot in v["legendary_green_steel_tiers"]}:
+                _lgs_class_hosts[_cls] += 1
+            for _slot in v["legendary_green_steel_tiers"]:
+                _lgs_class_slots[_slot["item_class"]] += 1
+        else:
+            _lgs_pending[v["source_item"]] = len(v["legendary_green_steel_tiers"])
+            v["legendary_green_steel_tiers"] = None
+    lgs["coverage"]["hosts_active"] = len(_lgs_active)
+    lgs["coverage"]["tier_slots_active"] = sum(_lgs_active.values())
+    lgs["coverage"]["hosts_pending"] = sorted(_lgs_pending)
+    for _cls in lgs_mod.CLASSES:
+        lgs["coverage"]["by_class"][_cls]["hosts_active"] = _lgs_class_hosts[_cls]
+        lgs["coverage"]["by_class"][_cls]["tier_slots_active"] = _lgs_class_slots[_cls]
+        if not _lgs_class_hosts[_cls]:
             raise SystemExit(
-                f"Legendary Green Steel ({_marker}): the pool has options but NO verified "
-                f"host carries a tier. The pool would be inert while the coverage gate "
-                f"reports the labels served — the overstatement this gate exists to prevent.")
+                f"Legendary Green Steel ({_cls}): the pool has options but NO verified "
+                f"{_cls} host carries a tier. The pool would be inert while the coverage "
+                f"gate reports the labels served — the overstatement this gate exists to prevent.")
 
     # Essence Crafting — the Gem of Many Facets' three Trinket menus (#193/#599).
     # An option is offered only when its PLACEMENT, BONUS TYPE and ML CURVE are all
@@ -1740,8 +1736,8 @@ def build() -> dict:
     # Nearly-Complete Skill menu and was invisible to a worn-only sweep. Runs
     # AFTER every pool is built for exactly that reason.
     _pool_names = vocabulary_mod.pool_affix_names(
-        [nc["records"], vik["records"], sl["records"], tf["records"],
-         gs["records"], dino_inserts,
+        [nc["records"], vik["records"], sl["records"], lgs["records"],
+         dino_inserts,
          *[v for v in (nc.get("per_item") or {}).values()]],
         set_defs=[membership_defs, augment_set_defs])
     _family_components = {c for comps in _expanded_away_map.values()
@@ -1776,8 +1772,7 @@ def build() -> dict:
         "nearly_complete": nc["source_options"],
         "nearly_complete_per_item": nc["per_item_source_options"],
         "seal": sl["source_options"],
-        "green_steel": gs["source_options"],
-        "thunder_forged": tf["source_options"],
+        "legendary_green_steel": lgs["source_options"],
         # One record per (menu, effect) by construction — the pool has no
         # multi-affix option to split, so source options and records are the
         # same population and the gate's equality check is exact.
@@ -1893,8 +1888,7 @@ def build() -> dict:
             "nc_coverage": nc["coverage"],
             "viktranium_coverage": vik["coverage"],
             "seal_coverage": sl["coverage"],
-            "thunder_forged_coverage": tf["coverage"],
-            "green_steel_coverage": gs["coverage"],
+            "legendary_green_steel_coverage": lgs["coverage"],
             "essence_crafting_coverage": essence["coverage"],
             "membership_coverage": membership_mod.coverage(membership_defs),
             "augment_set_coverage": membership_mod.coverage(augment_set_defs),
@@ -2134,9 +2128,8 @@ def build() -> dict:
         "nearly_complete_per_item": nc.get("per_item", {}),
         "viktranium": vik["records"],
         "seal": sl["records"],
-        "thunder_forged": tf["records"],
+        "legendary_green_steel": lgs["records"],
         "essence_crafting": essence["records"],
-        "green_steel": gs["records"],
         "membership_set_defs": membership_defs,
         # U2 — the 21 Augment-Set defs (3-piece Set Bonuses), same shape as
         # membership_set_defs. A later solver unit reads these together with each
@@ -2293,7 +2286,7 @@ def _native_affix(a: dict) -> dict:
 def _serialize_item(it: dict) -> dict:
     """A shallow copy of a variant with its `affixes` converted to native shape.
     Only `items[]` variant affixes go native (uniform across all sources); the
-    other pools (dino_inserts, membership set defs, green_steel, …) keep their
+    other pools (dino_inserts, membership set defs, legendary_green_steel, …) keep their
     legacy structured shape and their own consumers, so they are untouched."""
     return {**it, "affixes": [_native_affix(a) for a in (it.get("affixes") or [])]}
 

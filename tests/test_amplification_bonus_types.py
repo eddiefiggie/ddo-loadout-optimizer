@@ -73,7 +73,7 @@ import build_dataset  # noqa: E402
 AMPLIFICATION_STATS = ("Healing Amplification", "Repair Amplification", "Negative Amplification")
 
 CRAFTED_CHANNELS = ("nearly_complete", "nearly_complete_per_item", "viktranium",
-                    "seal", "dino_inserts", "thunder_forged", "green_steel")
+                    "seal", "dino_inserts", "legendary_green_steel")
 
 # How dominant the worn type must be before arm 2 treats it as the stat's bucket.
 # Measured margins today: Healing 120 vs 55, Repair 48 vs 3, Negative 37 vs 5.

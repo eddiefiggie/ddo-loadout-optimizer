@@ -17,8 +17,8 @@ Steel *` records at ML 26. Each names its crafting menus in its own `crafting[]`
 
 | host class | count | `crafting[]` | marker stamped |
 |---|---|---|---|
-| accessory blank (Belt, Boots, Bracers, Cloak, Gloves, Goggles, Helm, Necklace) | 8 | `T1 (Equipment)`, `T2 (Equipment)`, `T3 (Equipment)` | `green_steel_tiers` |
-| weapon blank | 40 | `T1 (Weapon)`, `T2 (Weapon)`, `T3 (Weapon)` | `thunder_forged_tiers` |
+| accessory blank (Belt, Boots, Bracers, Cloak, Gloves, Goggles, Helm, Necklace) | 8 | `T1 (Equipment)`, `T2 (Equipment)`, `T3 (Equipment)` | `legendary_green_steel_tiers` (`item_class: accessory`) |
+| weapon blank | 40 | `T1 (Weapon)`, `T2 (Weapon)`, `T3 (Weapon)` | `legendary_green_steel_tiers` (`item_class: weapon`) |
 
 That is the same structural link `essence_slots` uses for the Gem of Many Facets:
 the item says which menus it has. `src/planner_items.py` reads the label and
@@ -26,13 +26,17 @@ nothing else — no name match, no ML heuristic. The 47 heroic `Green Steel *`
 blanks (ML 11–12) declare no tier label and receive no marker; heroic Green Steel
 upgrades at the non-Legendary altars and has no menu in the catalog.
 
-The marker for the weapon half keeps the pool's legacy `thunder_forged` key. #653
-established that the `T*(Weapon)` menus are Legendary Green Steel weapon recipes
-(every option records a Legendary Altar as its station) and that Thunder-Forged
-has no menu in the catalog at all. The 42 `Thunder-Forged Alloy *` weapons declare
-no `T<n> (Weapon)` label, so the structural read cannot stamp them; the
-container registry's `expects_stations` guard is what would catch a relabelled
-pool.
+**Superseded 2026-09-04 (#687):** the weapon half no longer carries the legacy
+`thunder_forged` key. Both blank classes now live in ONE container,
+`legendary_green_steel`, keyed by `(item_class, tier)`, with one host marker
+(`legendary_green_steel_tiers`, each slot naming its class), one solver loop, one
+family key (`lgs`) and one persisted result key (`lgsPlaced`; saves carrying the
+old `tfPlaced` / `gsPlaced` migrate on load). #653's finding stands unchanged:
+the `T*(Weapon)` menus are Legendary Green Steel weapon recipes (every option
+records a Legendary Altar as its station) and Thunder-Forged has no menu in the
+catalog at all. The 42 `Thunder-Forged Alloy *` weapons declare no tier label
+and cannot be stamped; `expects_stations` is the guard, whatever the pool is
+called.
 
 ## One effect per altar
 
@@ -48,8 +52,8 @@ The pools themselves, read from `gearplanner_crafting.json`:
 
 | pool | options | multi-affix | bonus types by tier |
 |---|---|---|---|
-| accessory (`green_steel`) | 81 | 24 | T1 Enhancement / Competence / Profane / Resistance / Untyped, T2 Insight, T3 Quality / Competence |
-| weapon (`thunder_forged`) | 35 | 1 | T1 Enhancement / Equipment, T2 Insight / Quality, T3 Exceptional |
+| accessory (`legendary_green_steel`, `item_class: accessory`) | 81 | 24 | T1 Enhancement / Competence / Profane / Resistance / Untyped, T2 Insight, T3 Quality / Competence |
+| weapon (`legendary_green_steel`, `item_class: weapon`) | 35 | 1 | T1 Enhancement / Equipment, T2 Insight / Quality, T3 Exceptional |
 
 18 accessory options are the ability-skills umbrellas (`Charisma Skills +22
 Competence`, …). They expand inside the option, never across the record list,

@@ -882,12 +882,12 @@ async function withCrossAdd(map, fn) {
     const variants = [full("hiA", [["A", "Enhancement", 10]]), full("gtOnly", [["Ghost Touch", "Bool", 1]])];
     const counting = new Set(["Ghost Touch"]);
     const withTier = M.buildModel(variants, { mlCap: 34, targets: ["A", SENT] },
-      [], [], [], [], {}, [], [], {}, counting);
+      [], [], [], [], {}, [], {}, counting);
     const ids = withTier.worn.find((g) => g.slot === "Trinket").variants.map((v) => v.variant_id);
     assert.ok(ids.includes("gtOnly"), "the utility-only item survives the dominance pre-filter");
     assert.strictEqual(withTier.utilityEnabled, true);
     const without = M.buildModel(variants, { mlCap: 34, targets: ["A"] },
-      [], [], [], [], {}, [], [], {}, counting);
+      [], [], [], [], {}, [], {}, counting);
     const ids2 = without.worn.find((g) => g.slot === "Trinket").variants.map((v) => v.variant_id);
     assert.ok(!ids2.includes("gtOnly"), "tier removed: the pre-feature pool prunes it exactly as before");
     assert.strictEqual(without.utilityEnabled, false);
@@ -2638,13 +2638,13 @@ async function withCrossAdd(map, fn) {
     const q = { mlCap: 9, targets: ["Charisma", "Constitution"], armorType: null, weaponSetup: null, classRace: null };
     const build = (query) => buildModel(data.items, query,
       data.dino_inserts, data.nearly_complete, data.viktranium, data.seal,
-      data.membership_set_defs, data.thunder_forged, data.green_steel);
+      data.membership_set_defs, data.legendary_green_steel);
     const off = await S.solveLexicographic(build(q), highs);
     assert.strictEqual(off.status, "optimal");
     const on = await S.solveLexicographic(build({ ...q, craftingRung: "no-niche-crafting" }), highs);
     assert.strictEqual(on.status, "optimal");
     const placements = (r) => [].concat(r.vikPlaced || [], r.sealPlaced || [], r.ncPlaced || [],
-      r.dinoPlaced || [], r.tfPlaced || [], r.gsPlaced || [], r.membershipPlaced || []);
+      r.dinoPlaced || [], r.lgsPlaced || [], r.membershipPlaced || []);
     assert.strictEqual(placements(on).length, 0, "rung on: no crafted placement of any family");
     // The rung can only remove crafted points, never add: the opt-out optimum is
     // bounded by the full one on the first priority.
@@ -2669,7 +2669,7 @@ async function withCrossAdd(map, fn) {
     const q = { mlCap: 15, targets, armorType: null, weaponSetup: null, style: "thf", classRace: null };
     const modelAt = (rung) => buildModel(data.items, { ...q, craftingRung: rung },
       data.dino_inserts, data.nearly_complete, data.viktranium, data.seal,
-      data.membership_set_defs, data.thunder_forged, data.green_steel, data.augment_set_defs);
+      data.membership_set_defs, data.legendary_green_steel, data.augment_set_defs);
     const rungs = ["everything", "no-niche-crafting", "no-solar-lunar", "printed-only"];
     const models = {}, out = {};
     for (const rung of rungs) {
@@ -2686,7 +2686,7 @@ async function withCrossAdd(map, fn) {
     // Pool nesting is exact and needs no solve; the solve-level guarantees are
     // monotone non-improvement and the absence of each rung's own category.
     const poolIds = (m) => new Set((m.augments || []).map((a) => a.variant_id || a.name));
-    const nichePools = ["viktranium", "seal", "thunderForged", "greenSteel", "dinoInserts",
+    const nichePools = ["viktranium", "seal", "legendaryGreenSteel", "dinoInserts",
       "nearlyComplete", "membershipSetDefs", "augment_set_defs"];
     for (let i = 1; i < rungs.length; i++) {
       const above = poolIds(models[rungs[i - 1]]), here = poolIds(models[rungs[i]]);
@@ -2742,7 +2742,7 @@ async function withCrossAdd(map, fn) {
       armorType: null, weaponSetup: null, classRace: null };
     const build = (rung) => buildModel(data.items, { ...q, craftingRung: rung },
       data.dino_inserts, data.nearly_complete, data.viktranium, data.seal,
-      data.membership_set_defs, data.thunder_forged, data.green_steel, data.augment_set_defs);
+      data.membership_set_defs, data.legendary_green_steel, data.augment_set_defs);
 
     const top = await S.solveLexicographic(build("everything"), highs);
     assert.strictEqual(top.status, "optimal");
@@ -3227,14 +3227,15 @@ async function withCrossAdd(map, fn) {
     assert.ok(r.membershipPlaced.every((m) => m.station === "Cannith Repurposing Station"), "prescriptions name the station");
   });
 
-  // ---- Legendary Thunder-Forged (multi-tier choice-slot) ----
+  // ---- Legendary Green Steel, WEAPON class (multi-tier choice-slot; one pool
+  // for both classes since #687, keyed by (item_class, tier)) ----
   function tfHost(id, slotName, tiers, affixes) {
     const v = item(id, slotName, affixes || []);
-    v.thunder_forged_tiers = tiers.map((t) => ({ tier: t }));
+    v.legendary_green_steel_tiers = tiers.map((t) => ({ tier: t, item_class: "weapon" }));
     return v;
   }
   function tfOpt(tier, stat, bonus_type, value) {
-    return { tier, stat, bonus_type, value, unit: "flat" };
+    return { tier, item_class: "weapon", stat, bonus_type, value, unit: "flat" };
   }
 
   await test("TF/multi-tier: a Thunder-Forged host crafts one option per tier independently", async () => {
@@ -3245,12 +3246,12 @@ async function withCrossAdd(map, fn) {
     ];
     const model = {
       targets: ["Strength", "Constitution"], mlCap: 34,
-      thunderForged: POOL,
+      legendaryGreenSteel: POOL,
       worn: [slot("Main Hand", [tfHost("W", "Main Hand", [1, 2, 3])])],
     };
     const r = await S.solveLexicographic(model, highs);
     assert.strictEqual(r.status, "optimal");
-    assert.strictEqual((r.tfPlaced || []).length, 3, "one pick per tier (3 tiers)");
+    assert.strictEqual((r.lgsPlaced || []).length, 3, "one pick per tier (3 tiers)");
     // Strength Enhancement 4 (T1) + Strength Profane 2 (T3) stack (different types) = 6
     assert.strictEqual(r.effective.Strength, 6, "T1 + T3 Strength stack across bonus types");
     assert.strictEqual(r.effective.Constitution, 3, "T2 Constitution crafted");
@@ -3260,24 +3261,24 @@ async function withCrossAdd(map, fn) {
     // Pool only has a Tier-2 option; a host with only Tier 1 crafts nothing.
     const program = S.buildProgram({
       targets: ["Constitution"], mlCap: 34,
-      thunderForged: [tfOpt(2, "Constitution", "Insightful", 3)],
+      legendaryGreenSteel: [tfOpt(2, "Constitution", "Insightful", 3)],
       worn: [slot("Main Hand", [tfHost("W", "Main Hand", [1])])],
     });
-    assert.strictEqual(program.tfMeta.size, 0, "no craft option generated for an absent tier");
+    assert.strictEqual(program.lgsMeta.size, 0, "no craft option generated for an absent tier");
   });
 
   // ---- Legendary Green Steel, accessory half (#194: multi-tier choice-slot) ----
   // Was a single pick over all three tiers behind a truthy `green_steel_slot`. An
   // accessory takes one effect at EACH Legendary Altar, so the marker is now a
   // per-tier list and the pool records carry the altar as `tier`, exactly as the
-  // weapon half (`thunder_forged_tiers`) has always been shaped.
+  // weapon half has always been shaped (one `legendary_green_steel_tiers` marker since #687).
   function gsHost(id, slotName, tiers, affixes) {
     const v = item(id, slotName, affixes || []);
-    v.green_steel_tiers = (tiers || [1, 2, 3]).map((t) => ({ tier: t }));
+    v.legendary_green_steel_tiers = (tiers || [1, 2, 3]).map((t) => ({ tier: t, item_class: "accessory" }));
     return v;
   }
   function gsOpt(tier, name, stat, bonus_type, value) {
-    return { tier, name, stat, bonus_type, value, unit: "flat" };
+    return { tier, item_class: "accessory", name, stat, bonus_type, value, unit: "flat" };
   }
 
   await test("GS/multi-tier: an accessory host crafts one option per tier independently", async () => {
@@ -3288,15 +3289,15 @@ async function withCrossAdd(map, fn) {
     ];
     const model = {
       targets: ["Constitution", "Strength"], mlCap: 34,
-      greenSteel: POOL,
+      legendaryGreenSteel: POOL,
       worn: [slot("Belt", [gsHost("H", "Belt", [1, 2, 3])])],
     };
     const r = await S.solveLexicographic(model, highs);
     assert.strictEqual(r.status, "optimal");
-    assert.strictEqual((r.gsPlaced || []).length, 3, "one pick per tier (3 tiers) — not one in total");
+    assert.strictEqual((r.lgsPlaced || []).length, 3, "one pick per tier (3 tiers) — not one in total");
     assert.strictEqual(r.effective.Constitution, 7, "T1 Enhancement 4 + T2 Insightful 3 stack across types");
     assert.strictEqual(r.effective.Strength, 2, "T3 crafted alongside, not instead");
-    assert.deepStrictEqual(r.gsPlaced.map((p) => p.tier).sort(), [1, 2, 3], "each placement names its altar");
+    assert.deepStrictEqual(r.lgsPlaced.map((p) => p.tier).sort(), [1, 2, 3], "each placement names its altar");
   });
 
   await test("GS/per-tier: two options in ONE tier are exclusive — the slot takes one", async () => {
@@ -3306,11 +3307,11 @@ async function withCrossAdd(map, fn) {
     ];
     const model = {
       targets: ["Constitution", "Strength"], mlCap: 34,
-      greenSteel: POOL,
+      legendaryGreenSteel: POOL,
       worn: [slot("Belt", [gsHost("H", "Belt", [1, 2, 3])])],
     };
     const r = await S.solveLexicographic(model, highs);
-    assert.strictEqual((r.gsPlaced || []).length, 1, "exactly one craft in tier 2");
+    assert.strictEqual((r.lgsPlaced || []).length, 1, "exactly one craft in tier 2");
     assert.strictEqual(r.effective.Constitution, 8, "priority-1 crafted");
     assert.strictEqual(r.effective.Strength, 0, "one tier -> only one option, not both");
   });
@@ -3318,19 +3319,19 @@ async function withCrossAdd(map, fn) {
   await test("GS/tier-keyed: an option for a tier the host does not declare is not craftable", () => {
     const program = S.buildProgram({
       targets: ["Constitution"], mlCap: 34,
-      greenSteel: [gsOpt(3, "Con T3", "Constitution", "Quality", 3)],
+      legendaryGreenSteel: [gsOpt(3, "Con T3", "Constitution", "Quality", 3)],
       worn: [slot("Belt", [gsHost("H", "Belt", [1, 2])])],
     });
-    assert.strictEqual(program.gsMeta.size, 0, "no craft option generated for an undeclared tier");
+    assert.strictEqual(program.lgsMeta.size, 0, "no craft option generated for an undeclared tier");
     // And the retired truthy marker generates nothing: a stale record cannot reach the pool.
     const legacy = item("L", "Belt", []);
     legacy.green_steel_slot = true;
     const p2 = S.buildProgram({
       targets: ["Constitution"], mlCap: 34,
-      greenSteel: [gsOpt(1, "Con T1", "Constitution", "Enhancement", 3)],
+      legendaryGreenSteel: [gsOpt(1, "Con T1", "Constitution", "Enhancement", 3)],
       worn: [slot("Belt", [legacy])],
     });
-    assert.strictEqual(p2.gsMeta.size, 0, "`green_steel_slot` is retired and reads as no host");
+    assert.strictEqual(p2.lgsMeta.size, 0, "`green_steel_slot` is retired and reads as no host");
   });
 
   await test("GS/stacking: a tier pick respects bonus-type stacking (picks the stacking type)", async () => {
@@ -3339,13 +3340,13 @@ async function withCrossAdd(map, fn) {
     const POOL = [gsOpt(2, "Con insight", "Constitution", "Insightful", 8), gsOpt(2, "Con quality", "Constitution", "Quality", 4)];
     const model = {
       targets: ["Constitution"], mlCap: 34,
-      greenSteel: POOL,
+      legendaryGreenSteel: POOL,
       worn: [slot("Belt", [gsHost("H", "Belt", [2], [["Constitution", "Insightful", 10]])])],
     };
     const r = await S.solveLexicographic(model, highs);
     // worn Insightful 10 + GS Quality 4 = 14 (different types stack); NOT 18, NOT just 10.
     assert.strictEqual(r.effective.Constitution, 14, "crafts the Quality option to stack past the capped Insightful");
-    assert.strictEqual(r.gsPlaced[0].bonus_type, "Quality", "chose the stacking type");
+    assert.strictEqual(r.lgsPlaced[0].bonus_type, "Quality", "chose the stacking type");
   });
 
   await test("#194/report: the solve names the crafts per altar and the declared altars left empty", async () => {
@@ -3357,7 +3358,7 @@ async function withCrossAdd(map, fn) {
     ];
     const model = {
       targets: ["Constitution"], mlCap: 34,
-      greenSteel: POOL,
+      legendaryGreenSteel: POOL,
       worn: [slot("Belt", [gsHost("H", "Belt", [1, 2, 3])])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -3373,7 +3374,7 @@ async function withCrossAdd(map, fn) {
   await test("#194/report: no blank equipped, no report — the notice stays silent", async () => {
     const model = {
       targets: ["Constitution"], mlCap: 34,
-      greenSteel: [gsOpt(1, "Con T1", "Constitution", "Enhancement", 4)],
+      legendaryGreenSteel: [gsOpt(1, "Con T1", "Constitution", "Enhancement", 4)],
       worn: [slot("Belt", [item("Plain", "Belt", [["Constitution", "Enhancement", 12]]),
                           gsHost("H", "Belt", [1, 2, 3])])],
     };
@@ -3398,17 +3399,17 @@ async function withCrossAdd(map, fn) {
   // exactly the thing that lets an unreachable pool be tested.
   // Both pools are tier-keyed now (#194): an accessory option names its altar too.
   const gsAtomic = (name, affixes) => ({
-    tier: 1, name, affixes: affixes.map(([stat, bonus_type, value]) =>
+    tier: 1, item_class: "accessory", name, affixes: affixes.map(([stat, bonus_type, value]) =>
       ({ stat, bonus_type, value, unit: "flat" })),
   });
-  const tfAtomic = (tier, name, affixes) => ({ ...gsAtomic(name, affixes), tier });
+  const tfAtomic = (tier, name, affixes) => ({ ...gsAtomic(name, affixes), tier, item_class: "weapon" });
 
   await test("#194/GS: a multi-affix option grants ALL of its affixes, not one", async () => {
     // The defect, stated as a test. Under the old shape this option was three
     // records and the host could take one, reporting 22 / 0 / 0.
     const model = {
       targets: ["Charisma Skills", "Use Magic Device", "Wizardry"], mlCap: 34,
-      greenSteel: [gsAtomic("Skills item", [
+      legendaryGreenSteel: [gsAtomic("Skills item", [
         ["Charisma Skills", "Competence", 22],
         ["Use Magic Device", "Competence", 6],
         ["Wizardry", "Profane", 151],
@@ -3417,7 +3418,7 @@ async function withCrossAdd(map, fn) {
     };
     const r = await S.solveLexicographic(model, highs);
     assert.strictEqual(r.status, "optimal");
-    assert.strictEqual((r.gsPlaced || []).length, 1, "still ONE craft — the slot is single-pick");
+    assert.strictEqual((r.lgsPlaced || []).length, 1, "still ONE craft — the slot is single-pick");
     assert.strictEqual(r.effective["Charisma Skills"], 22);
     assert.strictEqual(r.effective["Use Magic Device"], 6, "the second affix is not lost");
     assert.strictEqual(r.effective.Wizardry, 151, "nor the third");
@@ -3427,14 +3428,14 @@ async function withCrossAdd(map, fn) {
     // Atomicity must not become "take everything": two multi-affix options, one slot.
     const model = {
       targets: ["Constitution", "Strength"], mlCap: 34,
-      greenSteel: [
+      legendaryGreenSteel: [
         gsAtomic("A", [["Constitution", "Insightful", 8], ["Strength", "Insightful", 8]]),
         gsAtomic("B", [["Constitution", "Quality", 4], ["Strength", "Quality", 4]]),
       ],
       worn: [slot("Trinket", [gsHost("H", "Trinket")])],
     };
     const r = await S.solveLexicographic(model, highs);
-    assert.strictEqual((r.gsPlaced || []).length, 1, "one option, whole — never two");
+    assert.strictEqual((r.lgsPlaced || []).length, 1, "one option, whole — never two");
     assert.strictEqual(r.effective.Constitution, 8, "option A, both of its affixes");
     assert.strictEqual(r.effective.Strength, 8);
   });
@@ -3445,31 +3446,31 @@ async function withCrossAdd(map, fn) {
     // ranked was dropped entirely.
     const model = {
       targets: ["Wizardry"], mlCap: 34,
-      greenSteel: [gsAtomic("Lead is off-target", [
+      legendaryGreenSteel: [gsAtomic("Lead is off-target", [
         ["Fortitude Save Vs Disease", "Insight", 4],
         ["Wizardry", "Profane", 151],
       ])],
       worn: [slot("Trinket", [gsHost("H", "Trinket")])],
     };
     const r = await S.solveLexicographic(model, highs);
-    assert.strictEqual((r.gsPlaced || []).length, 1, "the option is offered on its second affix");
+    assert.strictEqual((r.lgsPlaced || []).length, 1, "the option is offered on its second affix");
     assert.strictEqual(r.effective.Wizardry, 151);
     // The off-target affix is carried on the placement for display, but contributes
     // to no ranked bucket — it is not a target.
-    assert.strictEqual((r.gsPlaced[0].affixes || []).length, 2,
+    assert.strictEqual((r.lgsPlaced[0].affixes || []).length, 2,
       "the whole option rides along so the placement is self-describing");
   });
 
   await test("#194/TF: a multi-affix tier option grants all of its affixes", async () => {
     const model = {
       targets: ["Good Aligned", "Holy"], mlCap: 34,
-      thunderForged: [tfAtomic(1, "Good Aligned", [
+      legendaryGreenSteel: [tfAtomic(1, "Good Aligned", [
         ["Good Aligned", "Bool", 1], ["Holy", "Bool", 1],
       ])],
       worn: [slot("Main Hand", [tfHost("W", "Main Hand", [1])])],
     };
     const r = await S.solveLexicographic(model, highs);
-    assert.strictEqual((r.tfPlaced || []).length, 1);
+    assert.strictEqual((r.lgsPlaced || []).length, 1);
     assert.strictEqual(r.effective["Good Aligned"], 1);
     assert.strictEqual(r.effective.Holy, 1, "the one multi-affix Thunder-Forged option, whole");
   });
@@ -3479,7 +3480,7 @@ async function withCrossAdd(map, fn) {
     // pools and older callers write the flat shape.
     const model = {
       targets: ["Constitution"], mlCap: 34,
-      greenSteel: [gsOpt(1, "flat", "Constitution", "Insightful", 8)],
+      legendaryGreenSteel: [gsOpt(1, "flat", "Constitution", "Insightful", 8)],
       worn: [slot("Trinket", [gsHost("H", "Trinket")])],
     };
     const r = await S.solveLexicographic(model, highs);
@@ -5968,7 +5969,7 @@ async function withCrossAdd(map, fn) {
     sealHostV.seal_slots = [{ seal_type: "Undeath", category: "Jewelry" }];
     const tfHostV = tfHost("TF-H", "Main Hand", [1]);
     const gsHostV = item("GS-H", "Gloves", []);
-    gsHostV.green_steel_tiers = [{ tier: 1 }];
+    gsHostV.legendary_green_steel_tiers = [{ tier: 1, item_class: "accessory" }];
     const augHostV = host("AUG-H", "Helmet", [], ["Colorless"]);
     return {
       targets: ["Melee Power", "Strength"], mlCap: 36,
@@ -5981,8 +5982,8 @@ async function withCrossAdd(map, fn) {
       nearlyComplete: [{ category: "Scales", tier: "heroic", stat: "Melee Power", bonus_type: "Enhancement", value: 5, unit: "flat" }],
       viktranium: [vikOpt("Melancholic", "Accessory", "Melee Power", "Quality", 4, "legendary")],
       seal: [{ seal_type: "Undeath", stat: "Melee Power", bonus_type: "Profane", value: 3, unit: "flat" }],
-      thunderForged: [tfOpt(1, "Melee Power", "Exceptional", 2)],
-      greenSteel: [{ tier: 1, name: "Ethereal", stat: "Melee Power", bonus_type: "Sacred", value: 4, unit: "flat" }],
+      legendaryGreenSteel: [tfOpt(1, "Melee Power", "Exceptional", 2),
+        { tier: 1, item_class: "accessory", name: "Ethereal", stat: "Melee Power", bonus_type: "Sacred", value: 4, unit: "flat" }],
       augments: [augment("MPGem", "Colorless", [["Melee Power", "Enhancement", 6]])],
     };
   }
@@ -6000,7 +6001,7 @@ async function withCrossAdd(map, fn) {
   await test("#319 guards: a floated craft var (no fired contribution) is omitted from all seven families", async () => {
     const program = S.buildProgram(guardModel());
     const fams = [["dinoMeta", "dinoPlaced"], ["ncMeta", "ncPlaced"], ["rollMeta", "rollPlaced"],
-                  ["vikMeta", "vikPlaced"], ["sealMeta", "sealPlaced"], ["tfMeta", "tfPlaced"], ["gsMeta", "gsPlaced"]];
+                  ["vikMeta", "vikPlaced"], ["sealMeta", "sealPlaced"], ["lgsMeta", "lgsPlaced"]];
     for (const [metaKey, arrKey] of fams) {
       const metaMap = program[metaKey];
       assert.ok(metaMap && metaMap.size >= 1, `${metaKey} minted at least one var`);
@@ -6065,11 +6066,11 @@ async function withCrossAdd(map, fn) {
     const craftHost = host("CH", "Ring", [], ["Colorless"]);
     craftHost.dino_slots_norm = ["Fang||Accessory"];
     craftHost.seal_slots = [{ seal_type: "Undeath", category: "Jewelry" }];
-    craftHost.green_steel_tiers = [{ tier: 1 }];
+    craftHost.legendary_green_steel_tiers = [{ tier: 1, item_class: "accessory" }];
     craftHost.nearly_complete = "Scales";
     craftHost.roll_groups = [{ options: [{ stat: "Melee Power", bonus_type: "Artifact", value: 2, unit: "flat" }] }];
     craftHost.lamordia_slots = [{ type: "Melancholic", category: "Accessory" }];
-    craftHost.thunder_forged_tiers = [{ tier: 1 }];
+    craftHost.legendary_green_steel_tiers = [{ tier: 1, item_class: "weapon" }];
     craftHost.minimum_level = craftHost.ml = 20; // heroic nc + lamordia tiers
     const model = {
       targets: ["Melee Power"], mlCap: 36,
@@ -6079,18 +6080,18 @@ async function withCrossAdd(map, fn) {
       nearlyComplete: [{ category: "Scales", tier: "heroic", stat: "Melee Power", bonus_type: "Artifact", value: 2, unit: "flat" }],
       viktranium: [vikOpt("Melancholic", "Accessory", "Melee Power", "Artifact", 2, "heroic")],
       seal: [{ seal_type: "Undeath", stat: "Melee Power", bonus_type: "Artifact", value: 3, unit: "flat" }],
-      thunderForged: [tfOpt(1, "Melee Power", "Artifact", 2)],
-      greenSteel: [{ tier: 1, name: "Dim", stat: "Melee Power", bonus_type: "Artifact", value: 4, unit: "flat" }],
+      legendaryGreenSteel: [tfOpt(1, "Melee Power", "Artifact", 2),
+        { tier: 1, item_class: "accessory", name: "Dim", stat: "Melee Power", bonus_type: "Artifact", value: 4, unit: "flat" }],
       augments: [augment("DimGem", "Colorless", [["Melee Power", "Enhancement", 6]])],
     };
     const program = S.buildProgram(model);
-    for (const mk of ["augMeta", "dinoMeta", "ncMeta", "rollMeta", "vikMeta", "sealMeta", "tfMeta", "gsMeta"]) {
+    for (const mk of ["augMeta", "dinoMeta", "ncMeta", "rollMeta", "vikMeta", "sealMeta", "lgsMeta"]) {
       assert.ok(program[mk] && program[mk].size >= 1, `${mk} minted at least one var (fixture is non-vacuous)`);
     }
     const r = S.solveConstrained(program, highs, { objectiveStat: "Melee Power", sense: "max", tieBreak: false });
     assert.strictEqual(r.status, "optimal");
     assert.strictEqual(r.effective["Melee Power"], 35, "worn sources win both buckets");
-    for (const k of ["augmentsPlaced", "dinoPlaced", "ncPlaced", "rollPlaced", "vikPlaced", "sealPlaced", "tfPlaced", "gsPlaced"]) {
+    for (const k of ["augmentsPlaced", "dinoPlaced", "ncPlaced", "rollPlaced", "vikPlaced", "sealPlaced", "lgsPlaced"]) {
       assert.strictEqual((r[k] || []).length, 0, `${k}: no phantom placement on the tieBreak:false path`);
     }
     const A = require("../web/alternatives.js");
@@ -6441,7 +6442,7 @@ async function withCrossAdd(map, fn) {
     const dinoHostV = item("DINO-H2", "Ring", []);
     dinoHostV.dino_slots_norm = ["Fang||Accessory"];
     const gsHostV = item("GS-H2", "Gloves", []);
-    gsHostV.green_steel_tiers = [{ tier: 1 }];
+    gsHostV.legendary_green_steel_tiers = [{ tier: 1, item_class: "accessory" }];
     const program = S.buildProgram({
       targets: ["Melee Power"], mlCap: 36,
       userCaps: { "Melee Power": 15 },
@@ -6449,17 +6450,17 @@ async function withCrossAdd(map, fn) {
              slot("Ring", [dinoHostV]), slot("Gloves", [gsHostV])],
       dinoInserts: [{ dino_type: "Fang", category: "Accessory", name: "Test Fang",
         affixes: [{ stat: "Melee Power", bonus_type: "Artifact", value: 5, unit: "flat" }] }],
-      greenSteel: [{ tier: 1, name: "Dim", stat: "Melee Power", bonus_type: "Profane", value: 4, unit: "flat" }],
+      legendaryGreenSteel: [{ tier: 1, item_class: "accessory", name: "Dim", stat: "Melee Power", bonus_type: "Profane", value: 4, unit: "flat" }],
     });
     assert.strictEqual(program.cappedStats["Melee Power"], 15, "cap minted");
     assert.strictEqual(program.dinoMeta.size, 1, "dino placement minted");
-    assert.strictEqual(program.gsMeta.size, 1, "GS placement minted");
+    assert.strictEqual(program.lgsMeta.size, 1, "GS placement minted");
     const qd = [...program.dinoMeta.keys()][0];
-    const qg = [...program.gsMeta.keys()][0];
+    const qg = [...program.lgsMeta.keys()][0];
     const xa = xOf(program, "BIGMP2");
     const r = S.readSolution(primalOf([xa, zsForGate(program, xa)[0],
       qd, zsForGate(program, qd)[0], qg, zsForGate(program, qg)[0]]), program);
-    const nDino = (r.dinoPlaced || []).length, nGs = (r.gsPlaced || []).length;
+    const nDino = (r.dinoPlaced || []).length, nGs = (r.lgsPlaced || []).length;
     assert.ok(nDino + nGs >= 1, "at least one jointly-saturating placement reports");
     assert.strictEqual(r.effective["Melee Power"], 15, "total sits at the cap");
     // The REPORTED set's contributions alone must still reach the cap.
@@ -6691,19 +6692,19 @@ async function withCrossAdd(map, fn) {
   await test("#321 a load-bearing Thunder-Forged placement counts as a crafting step", async () => {
     const armor = item("BIG", "Armor", [["Melee Power", "Artifact", 20], ["Melee Power", "Enhancement", 15]]);
     const craftHost = host("CH", "Ring", [], []);
-    craftHost.thunder_forged_tiers = [{ tier: 1 }];
+    craftHost.legendary_green_steel_tiers = [{ tier: 1, item_class: "weapon" }];
     craftHost.minimum_level = craftHost.ml = 20;
     const model = {
       targets: ["Melee Power"], mlCap: 36,
       worn: [slot("Armor", [armor]), slot("Ring", [craftHost])],
-      thunderForged: [tfOpt(1, "Melee Power", "Artifact", 25)],
+      legendaryGreenSteel: [tfOpt(1, "Melee Power", "Artifact", 25)],
     };
     const program = S.buildProgram(model);
-    assert.ok(program.tfMeta && program.tfMeta.size >= 1, "tfMeta minted (fixture is non-vacuous)");
+    assert.ok(program.lgsMeta && program.lgsMeta.size >= 1, "tfMeta minted (fixture is non-vacuous)");
     const r = S.solveConstrained(program, highs, { objectiveStat: "Melee Power", sense: "max", tieBreak: false });
     assert.strictEqual(r.status, "optimal");
     assert.strictEqual(r.effective["Melee Power"], 40, "TF tier (25) beats the worn Artifact source (20)");
-    assert.strictEqual((r.tfPlaced || []).length, 1, "the TF placement is load-bearing and reports");
+    assert.strictEqual((r.lgsPlaced || []).length, 1, "the TF placement is load-bearing and reports");
     const A = require("../web/alternatives.js");
     assert.strictEqual(A.craftCount(r), 1, "fewer-crafts counting includes the TF placement");
   });
@@ -6716,23 +6717,23 @@ async function withCrossAdd(map, fn) {
     // the gs terms in craftVars/optCrafts/solCrafts must all execute.
     const armor = item("BIG-GS", "Armor", [["Melee Power", "Artifact", 20], ["Melee Power", "Enhancement", 15]]);
     const gsHostV = item("GSCH", "Ring", []);
-    gsHostV.green_steel_tiers = [{ tier: 1 }];
+    gsHostV.legendary_green_steel_tiers = [{ tier: 1, item_class: "accessory" }];
     const plainRing = item("PLAIN", "Ring", [["Melee Power", "Insightful", 20]]);
     const model = {
       targets: ["Melee Power"], mlCap: 36,
       worn: [slot("Armor", [armor]), slot("Ring", [gsHostV, plainRing])],
-      greenSteel: [{ tier: 1, name: "Ethereal", stat: "Melee Power", bonus_type: "Insightful", value: 25, unit: "flat" }],
+      legendaryGreenSteel: [{ tier: 1, item_class: "accessory", name: "Ethereal", stat: "Melee Power", bonus_type: "Insightful", value: 25, unit: "flat" }],
     };
     const opt = await S.solveLexicographic(model, highs);
     assert.strictEqual(opt.status, "optimal");
-    assert.ok(opt.program.gsMeta && opt.program.gsMeta.size >= 1, "gsMeta minted (fixture is non-vacuous)");
+    assert.ok(opt.program.lgsMeta && opt.program.lgsMeta.size >= 1, "gsMeta minted (fixture is non-vacuous)");
     assert.strictEqual(opt.effective["Melee Power"], 60, "GS craft (25) beats the craft-free ring (20)");
-    assert.strictEqual((opt.gsPlaced || []).length, 1, "the GS placement is load-bearing in the optimum");
+    assert.strictEqual((opt.lgsPlaced || []).length, 1, "the GS placement is load-bearing in the optimum");
     const alts = S.generateAlternatives(opt, model, highs);
     const crafts = alts.find((a) => a.gainAxis === "crafts");
     assert.ok(crafts, "the fewer-crafts axis produced a candidate");
     assert.ok(crafts.meta.optCrafts >= 1, "optCrafts counting saw the GS placement");
-    assert.strictEqual((crafts.sol.gsPlaced || []).length, 0, "the candidate drops the GS craft");
+    assert.strictEqual((crafts.sol.lgsPlaced || []).length, 0, "the candidate drops the GS craft");
     assert.ok(crafts.sol.chosen.some((c) => c.variant.variant_id === "PLAIN"),
       "swaps to the craft-free ring within the bounded give");
     const A = require("../web/alternatives.js");
@@ -6803,23 +6804,23 @@ async function withCrossAdd(map, fn) {
     const mk = (targets) => {
       const armor = item("BIG-GS", "Armor", [["Melee Power", "Artifact", 20], ["Melee Power", "Enhancement", 15]]);
       const gsHostV = item("GSCH", "Ring", [["Ghost Touch", "Bool", 1]]);
-      gsHostV.green_steel_tiers = [{ tier: 1 }];
+      gsHostV.legendary_green_steel_tiers = [{ tier: 1, item_class: "accessory" }];
       const plainRing = item("PLAIN", "Ring", [["Melee Power", "Insightful", 20]]);
       return {
         targets, mlCap: 36,
         utilityCountingSet: new Set(["Ghost Touch"]),
         worn: [slot("Armor", [armor]), slot("Ring", [gsHostV, plainRing])],
-        greenSteel: [{ tier: 1, name: "Ethereal", stat: "Melee Power", bonus_type: "Insightful", value: 25, unit: "flat" }],
+        legendaryGreenSteel: [{ tier: 1, item_class: "accessory", name: "Ethereal", stat: "Melee Power", bonus_type: "Insightful", value: 25, unit: "flat" }],
       };
     };
     const r = await S.solveLexicographic(mk(["Melee Power", SENT]), highs);
     assert.strictEqual(r.effective["Melee Power"], 60, "GS craft (25) beats the craft-free ring (20)");
     assert.strictEqual(r.utilityReport.count, 1, "the GS host carries the counted effect");
-    assert.strictEqual((r.gsPlaced || []).length, 1, "the optimum crafts");
+    assert.strictEqual((r.lgsPlaced || []).length, 1, "the optimum crafts");
     const alts = S.generateAlternatives(r, mk(["Melee Power", SENT]), highs);
     const crafts = alts.find((a) => a.gainAxis === "crafts");
     assert.ok(crafts, "tier below the stat: the craft-free swap is a legal give-bounded trade (review fix)");
-    assert.strictEqual((crafts.sol.gsPlaced || []).length, 0, "it genuinely drops the craft");
+    assert.strictEqual((crafts.sol.lgsPlaced || []).length, 0, "it genuinely drops the craft");
     const A2 = require("../web/alternatives.js");
     const an = A2.analyzeAlternative(r, crafts, { targets: ["Melee Power", SENT] });
     assert.ok(/gives up Ghost Touch/.test(an.costText), "the shed effect is stated by name");
@@ -6828,7 +6829,7 @@ async function withCrossAdd(map, fn) {
     // shedding swap is infeasible and no crafts candidate exists.
     const rf = await S.solveLexicographic(mk([SENT, "Melee Power"]), highs);
     assert.strictEqual(rf.utilityReport.count, 1);
-    assert.strictEqual((rf.gsPlaced || []).length, 1);
+    assert.strictEqual((rf.lgsPlaced || []).length, 1);
     const altsF = S.generateAlternatives(rf, mk([SENT, "Melee Power"]), highs);
     assert.ok(!altsF.some((a) => a.gainAxis === "crafts"),
       "no give applies to the top-ranked tier — the exact lock rules the shed out");
@@ -6849,7 +6850,7 @@ async function withCrossAdd(map, fn) {
       weaponSetup: null, classRace: null };
     const sets = { counting: new Set(["Ghostly"]), notCounted: new Set(["Undead Bane"]) };
 
-    const m = buildModel(items, q, [], [], [], [], {}, [], [], {}, sets);
+    const m = buildModel(items, q, [], [], [], [], {}, [], {}, sets);
     assert.ok(m.utilityNotCountedSet, "the not-counted set reaches the model");
     const prog = S.buildProgram(m);
     assert.deepStrictEqual(prog.utilityRankedNotCounted, ["Undead Bane"],
@@ -6859,13 +6860,13 @@ async function withCrossAdd(map, fn) {
     // built against the earlier shape must keep disclosing rather than resolve to
     // null and silently say nothing — the exact failure mode #380 was filed for.
     const legacy = { counting: new Set(["Ghostly"]), admitted: new Set(["Undead Bane"]) };
-    const mLegacy = buildModel(items, q, [], [], [], [], {}, [], [], {}, legacy);
+    const mLegacy = buildModel(items, q, [], [], [], [], {}, [], {}, legacy);
     assert.ok(mLegacy.utilityNotCountedSet, "the pre-#380 `admitted` key still resolves");
     assert.deepStrictEqual(S.buildProgram(mLegacy).utilityRankedNotCounted, ["Undead Bane"],
       "and produces the same exclusion names");
 
     // And the bare-Set form must NOT populate it — that is the pre-#332 shape.
-    const bare = buildModel(items, q, [], [], [], [], {}, [], [], {}, new Set(["Ghostly"]));
+    const bare = buildModel(items, q, [], [], [], [], {}, [], {}, new Set(["Ghostly"]));
     assert.strictEqual(bare.utilityNotCountedSet, null, "a bare Set carries no not-counted half");
     assert.deepStrictEqual(S.buildProgram(bare).utilityRankedNotCounted, [],
       "and yields no exclusion names, so the sentence stays silent");

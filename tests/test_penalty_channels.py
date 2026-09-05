@@ -30,7 +30,7 @@ DATASET = os.path.join(ROOT, "web", "data", "items.json")
 
 #: Every channel the solver reads contributions from, besides worn item affixes.
 UNFORCED_POOLS = ("dino_inserts", "nearly_complete", "viktranium", "seal",
-                  "thunder_forged", "green_steel", "essence_crafting")
+                  "legendary_green_steel", "essence_crafting")
 
 
 def _num(v):

@@ -492,8 +492,7 @@ function buildProgram(model) {
   const rollMeta = new Map(); // roll-group option var -> {item, stat, bonus_type, value, unit}
   const vikMeta = new Map(); // Viktranium placement var -> {item, slot_type, category, name, affixes, stat, bonus_type, value, unit, tier, wiki_url}
   const sealMeta = new Map(); // seal placement var -> {item, seal_type, category, stat, bonus_type, value, unit, wiki_url}
-  const tfMeta = new Map();   // Legendary Green Steel WEAPON pick var -> {item, tier, name, affixes, stat, bonus_type, value, unit, wiki_url}
-  const gsMeta = new Map();   // Legendary Green Steel accessory pick var -> same shape, keyed per tier (#194)
+  const lgsMeta = new Map();  // Legendary Green Steel pick var -> {item, tier, item_class, name, affixes, stat, bonus_type, value, unit, wiki_url} (#194/#687)
   const essMeta = new Map();  // Essence Crafting pick var -> {item, menu, effect, stat, bonus_type, value, unit, wiki_url}
   const memberMeta = new Map(); // membership pick var -> {host, set, station} (chosen set-membership: Cannith / Dino Set-Bonus)
 
@@ -1075,27 +1074,36 @@ function buildProgram(model) {
     ? opt.affixes
     : (opt.stat ? [{ stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit }] : []));
 
-  // Legendary Green Steel, WEAPON half (#194/#653 — the pool keeps its legacy
-  // `thunder_forged` name; its options are Legendary Altar recipes) — a multi-tier
-  // choice-slot. `thunder_forged_tiers` is a list of tier slots [{tier}]; each may
-  // craft one option from that tier's pool, an independent Σ n <= 1 per tier
-  // (mirrors Viktranium's per-`lamordia_slot` loop). Pool keyed by `tier` alone.
-  let tfc = 0;
+  // Legendary Green Steel (#194, ONE pool for both blank classes since #687) — a
+  // multi-tier choice-slot. `legendary_green_steel_tiers` is a list of slots
+  // [{tier, item_class}], one per Legendary Altar the blank declares (Invasion /
+  // Subjugation / Devastation); each may craft ONE option from the pool keyed by
+  // the SAME (item_class, tier) pair, an independent Σ n <= 1 per slot (mirrors
+  // Viktranium's per-`lamordia_slot` loop). The accessory half used to be a single
+  // pick over all three tiers behind a truthy `green_steel_slot`, which
+  // under-credited every host by two effects: a blank takes one effect at EACH
+  // altar, not one in total.
+  //
+  // Not modelled, and disclosed per result (`greenSteelReportFor`): the bonus a
+  // MATCHED combination of tiers unlocks — the Dominion / Opposition / Ethereal /
+  // Material aspects. AGENTS.md lists the exhaustive combinatorial space as a
+  // non-goal; each tier's own effect is what is offered.
+  let lgsc = 0;
   for (const xv of xVars) {
-    const tiers = xv.variant.thunder_forged_tiers || [];
+    const tiers = xv.variant.legendary_green_steel_tiers || [];
     if (!tiers.length) continue;
     for (const slot of tiers) {
       const slotVars = [];
-      for (const opt of model.thunderForged || []) {
-        if (opt.tier !== slot.tier) continue;
+      for (const opt of model.legendaryGreenSteel || []) {
+        if (opt.tier !== slot.tier || opt.item_class !== slot.item_class) continue;
         const affixes = _craftAffixes(opt);
         const onTarget = affixes.filter((a) => targetSet.has(a.stat) && a.value > 0);
         if (!onTarget.length) continue;
-        const n = "tf" + tfc++;
+        const n = "lgs" + lgsc++;
         extraVars.push(n);
         const lead = onTarget[0];
-        tfMeta.set(n, {
-          item: xv.variant.variant_id, tier: slot.tier, name: opt.name,
+        lgsMeta.set(n, {
+          item: xv.variant.variant_id, tier: slot.tier, item_class: slot.item_class, name: opt.name,
           // The whole option rides along, so a placement is self-describing and a
           // multi-affix craft is findable by any affix it grants (Viktranium's rule).
           affixes: affixes.map((a) => ({
@@ -1115,55 +1123,7 @@ function buildProgram(model) {
           zByBucket.get(k).push(zOf([n], a.value, a, xv.variant.variant_id));
         }
       }
-      if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single pick per tier
-    }
-  }
-
-  // Legendary Green Steel, accessory half (#194) — a multi-tier choice-slot, the same
-  // shape as the weapon half above. `green_steel_tiers` is a list of tier slots
-  // [{tier}], one per Legendary Altar the blank declares (Invasion / Subjugation /
-  // Devastation); each may craft ONE option from that tier's pool, an independent
-  // Σ n <= 1 per tier. This used to be a single pick over all three tiers behind a
-  // truthy `green_steel_slot`, which under-credited every host by two effects: an
-  // accessory takes one effect at EACH altar, not one in total.
-  //
-  // Not modelled, and disclosed per result (`greenSteelReportFor`): the bonus a
-  // MATCHED combination of tiers unlocks — the Dominion / Opposition / Ethereal /
-  // Material aspects. AGENTS.md lists the exhaustive combinatorial space as a
-  // non-goal; each tier's own effect is what is offered.
-  let gsc = 0;
-  for (const xv of xVars) {
-    const tiers = xv.variant.green_steel_tiers || [];
-    if (!tiers.length) continue;
-    for (const slot of tiers) {
-      const slotVars = [];
-      for (const opt of model.greenSteel || []) {
-        if (opt.tier !== slot.tier) continue;
-        const affixes = _craftAffixes(opt);
-        const onTarget = affixes.filter((a) => targetSet.has(a.stat) && a.value > 0);
-        if (!onTarget.length) continue;
-        const n = "gs" + gsc++;
-        extraVars.push(n);
-        const lead = onTarget[0];
-        gsMeta.set(n, {
-          item: xv.variant.variant_id, tier: slot.tier, name: opt.name,
-          affixes: affixes.map((a) => ({
-            stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat",
-            ...(a.via ? { via: a.via } : {}),
-          })),
-          // Legacy flat fields — the option's leading ON-TARGET affix.
-          stat: lead.stat, bonus_type: lead.bonus_type, value: lead.value,
-          unit: lead.unit || "flat", wiki_url: opt.wiki_url,
-        });
-        slotVars.push(n);
-        extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
-        for (const a of onTarget) {
-          const k = `${a.stat}||${_equivType(a.bonus_type)}`;
-          if (!zByBucket.has(k)) zByBucket.set(k, []);
-          zByBucket.get(k).push(zOf([n], a.value, a, xv.variant.variant_id));
-        }
-      }
-      if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single pick per tier
+      if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single pick per slot
     }
   }
 
@@ -1601,7 +1561,7 @@ function buildProgram(model) {
     // tracked stat it also feeds is capped and slack.
     flooredStats: Object.keys(model.floors || {}),
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
-    extraVars, extraConstraints, penaltyKeys, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, tfMeta, gsMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
+    extraVars, extraConstraints, penaltyKeys, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, lgsMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
     // #91 (U3) — the Utility tier's stage state: whether the sentinel is
     // ranked, the per-effect indicator binaries, and their name/ceiling meta.
     utilityEnabled, utilityVars, utilityMeta,
@@ -1899,7 +1859,7 @@ function preferColorlessSetAugments(program, highs, prevRes, locks, extraBase) {
   // could otherwise flip reported sets, crafts, or suppression flags with
   // identical totals — display churn the settle stage exists to prevent.
   for (const meta of [program.setMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
-                      program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta,
+                      program.vikMeta, program.sealMeta, program.lgsMeta,
                       program.essMeta]) {
     pinVarsAt(pin, at, meta ? [...meta.keys()] : []);
   }
@@ -1918,7 +1878,7 @@ function preferColorlessSetAugments(program, highs, prevRes, locks, extraBase) {
 // the report endorses.
 function hiddenPlacementGateFn(program, visible) {
   const placementMetas = [program.placeMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
-                          program.vikMeta, program.sealMeta, program.tfMeta, program.gsMeta,
+                          program.vikMeta, program.sealMeta, program.lgsMeta,
                           program.essMeta];
   return (g) => !visible.has(g) && placementMetas.some((m) => m && m.has(g));
 }
@@ -1966,9 +1926,8 @@ function breakdownByTarget(program, prim, precomputedVisible) {
     if (program.ncMeta && program.ncMeta.has(gate)) { const m = program.ncMeta.get(gate); return { kind: "nc", label: m.pool || "Nearly Completed", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.rollMeta && program.rollMeta.has(gate)) { const m = program.rollMeta.get(gate); return { kind: "roll", label: "choice slot", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.vikMeta && program.vikMeta.has(gate)) { const m = program.vikMeta.get(gate); return { kind: "vik", label: `Slot ${m.slot_type} Viktranium augment`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
-    if (program.tfMeta && program.tfMeta.has(gate)) { const m = program.tfMeta.get(gate); return { kind: "tf", label: `Legendary Green Steel Tier ${m.tier}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
+    if (program.lgsMeta && program.lgsMeta.has(gate)) { const m = program.lgsMeta.get(gate); return { kind: "lgs", label: `Legendary Green Steel Tier ${m.tier}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.essMeta && program.essMeta.has(gate)) { const m = program.essMeta.get(gate); return { kind: "essence", label: `Essence Crafting ${m.menu}: ${m.effect}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
-    if (program.gsMeta && program.gsMeta.has(gate)) { const m = program.gsMeta.get(gate); return { kind: "gs", label: `Legendary Green Steel Tier ${m.tier}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.placeMeta && program.placeMeta.has(gate)) return { kind: "augment", label: program.placeMeta.get(gate).variant_id };
     return { kind: "other", label: gate };
   };
@@ -2099,7 +2058,7 @@ function computeScale(program) {
     + (program.dinoMeta ? program.dinoMeta.size : 0) + (program.ncMeta ? program.ncMeta.size : 0)
     + (program.rollMeta ? program.rollMeta.size : 0) + (program.vikMeta ? program.vikMeta.size : 0)
     + (program.sealMeta ? program.sealMeta.size : 0) + (program.memberMeta ? program.memberMeta.size : 0)
-    + (program.tfMeta ? program.tfMeta.size : 0) + (program.gsMeta ? program.gsMeta.size : 0)
+    + (program.lgsMeta ? program.lgsMeta.size : 0)
     + (program.essMeta ? program.essMeta.size : 0);
   return { variants: program.xVars.length, crafts, stages: (program.targetList || []).length + 1 };
 }
@@ -2331,10 +2290,8 @@ function readSolution(res, program, precomputedVisible) {
   for (const [n, meta] of program.vikMeta || []) if (prim(n) > 0.5 && fired.has(n)) vikPlaced.push(meta);
   const sealPlaced = [];
   for (const [n, meta] of program.sealMeta || []) if (prim(n) > 0.5 && fired.has(n)) sealPlaced.push(meta);
-  const tfPlaced = [];
-  for (const [n, meta] of program.tfMeta || []) if (prim(n) > 0.5 && fired.has(n)) tfPlaced.push(meta);
-  const gsPlaced = [];
-  for (const [n, meta] of program.gsMeta || []) if (prim(n) > 0.5 && fired.has(n)) gsPlaced.push(meta);
+  const lgsPlaced = [];
+  for (const [n, meta] of program.lgsMeta || []) if (prim(n) > 0.5 && fired.has(n)) lgsPlaced.push(meta);
   // Essence Crafting picks (#193/#599). Reported per menu so the player can read
   // the Gem as three separate crafts rather than one lump — it is three slots and
   // they are spent independently.
@@ -2402,7 +2359,7 @@ function readSolution(res, program, precomputedVisible) {
       setAugmentsPlaced.push({ ...meta, slot_color: setAugColorByY.get(y) || "Colorless" });
     }
   }
-  const out = { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, tfPlaced, gsPlaced, essPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced,
+  const out = { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, lgsPlaced, essPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced,
     // #449 U1 (KTD9) — the achieved/ceiling census, built HERE rather than in
     // solveLexicographic so the tieBreak:false alternatives path (solveConstrained,
     // which spreads this object) carries its OWN numbers. renderBuild is generic
@@ -2451,7 +2408,7 @@ function readSolution(res, program, precomputedVisible) {
       }
     });
     const craftMetas = [program.ncMeta, program.rollMeta, program.vikMeta,
-      program.sealMeta, program.tfMeta, program.gsMeta, program.essMeta];
+      program.sealMeta, program.lgsMeta, program.essMeta];
     const carrierOf = (gate) => {
       const xi = xIndex.get(gate);
       if (xi !== undefined) {
@@ -3134,7 +3091,7 @@ async function solveLexicographic(model, highs, opts = {}) {
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
     dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced,
     vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced, jokerPlaced: sol.jokerPlaced,
-    tfPlaced: sol.tfPlaced, gsPlaced: sol.gsPlaced, essPlaced: sol.essPlaced,
+    lgsPlaced: sol.lgsPlaced, essPlaced: sol.essPlaced,
     // #193/#599 — stamped whenever the solve COULD craft, not only when it did.
     // A Gem that was offered 25 options and took none is exactly the player who
     // should be told the menu was short, and a build that crafted nothing still
@@ -3648,38 +3605,36 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
 /** #194 — the Legendary Green Steel report, read from the SOLUTION rather than the
  *  candidate pool: 48 blanks are candidates on every ML 26+ solve, so a report keyed
  *  on candidacy would fire on nearly every result. It names the equipped blanks,
- *  every effect crafted at each altar (both halves: `tfPlaced` is the weapon pool's
- *  legacy key), and each DECLARED tier the solve left empty — the declared-structure
- *  rule, so an empty altar is disclosed rather than vanishing. Null when no blank is
- *  equipped, which keeps the notice silent in the ordinary case. */
+ *  every effect crafted at each altar (`lgsPlaced`, each placement carrying its
+ *  `item_class` — reported as `half` for the renderers and saved records that
+ *  already read it), and each DECLARED slot the solve left empty — the
+ *  declared-structure rule, so an empty altar is disclosed rather than vanishing.
+ *  Null when no blank is equipped, which keeps the notice silent in the ordinary
+ *  case. */
 function greenSteelReportFor(sol) {
   const hosts = [];
   for (const c of (sol && sol.chosen) || []) {
     const v = c && c.variant;
     if (!v) continue;
-    const tf = v.thunder_forged_tiers || [];
-    const gs = v.green_steel_tiers || [];
-    if (tf.length || gs.length) hosts.push({ id: v.variant_id || v.source_item, tf, gs });
+    const slots = v.legendary_green_steel_tiers || [];
+    if (slots.length) hosts.push({ id: v.variant_id || v.source_item, slots });
   }
   if (!hosts.length) return null;
-  const pick = (p, half) => ({ item: p.item, tier: p.tier, name: p.name, half,
-                               stat: p.stat, bonus_type: p.bonus_type, value: p.value });
-  const placed = [
-    ...(sol.tfPlaced || []).map((p) => pick(p, "weapon")),
-    ...(sol.gsPlaced || []).map((p) => pick(p, "accessory")),
-  ];
+  const placed = (sol.lgsPlaced || []).map((p) => ({
+    item: p.item, tier: p.tier, name: p.name, half: p.item_class,
+    stat: p.stat, bonus_type: p.bonus_type, value: p.value }));
   const unfilled = [];
   for (const h of hosts) {
-    for (const [declared, half] of [[h.tf, "weapon"], [h.gs, "accessory"]]) {
-      // Multiset difference on tier, per host, so two declared slots of one tier
-      // (not a shape any real blank has, but a snapshot could) still count both.
-      const used = new Map();
-      for (const p of placed) if (p.item === h.id && p.half === half) used.set(p.tier, (used.get(p.tier) || 0) + 1);
-      for (const s of declared) {
-        const n = used.get(s.tier) || 0;
-        if (n > 0) { used.set(s.tier, n - 1); continue; }
-        unfilled.push({ item: h.id, tier: s.tier, half });
-      }
+    // Multiset difference on (class, tier), per host, so two declared slots of
+    // one tier (not a shape any real blank has, but a snapshot could) still count
+    // both.
+    const used = new Map();
+    for (const p of placed) if (p.item === h.id) { const k = `${p.half}||${p.tier}`; used.set(k, (used.get(k) || 0) + 1); }
+    for (const s of h.slots) {
+      const k = `${s.item_class}||${s.tier}`;
+      const n = used.get(k) || 0;
+      if (n > 0) { used.set(k, n - 1); continue; }
+      unfilled.push({ item: h.id, tier: s.tier, half: s.item_class });
     }
   }
   return { hosts: hosts.length, placed, unfilled };
@@ -3911,13 +3866,12 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
   const craftVars = [
     ...(program.augMeta ? program.augMeta.keys() : []), ...(program.dinoMeta ? program.dinoMeta.keys() : []),
     ...(program.ncMeta ? program.ncMeta.keys() : []), ...(program.vikMeta ? program.vikMeta.keys() : []),
-    ...(program.sealMeta ? program.sealMeta.keys() : []), ...(program.tfMeta ? program.tfMeta.keys() : []),
-    ...(program.gsMeta ? program.gsMeta.keys() : []),
+    ...(program.sealMeta ? program.sealMeta.keys() : []), ...(program.lgsMeta ? program.lgsMeta.keys() : []),
     ...(program.essMeta ? program.essMeta.keys() : []),
   ];
   const optCrafts = (optimum.augmentsPlaced || []).length + (optimum.dinoPlaced || []).length
     + (optimum.ncPlaced || []).length + (optimum.vikPlaced || []).length + (optimum.sealPlaced || []).length
-    + (optimum.tfPlaced || []).length + (optimum.gsPlaced || []).length
+    + (optimum.lgsPlaced || []).length
     + (optimum.essPlaced || []).length;
   if (craftVars.length && optCrafts > 0) {
     const relaxedAll = ranked.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));   // #91 (KTD7) — no sentinel lock entry
@@ -3930,7 +3884,7 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     const solCrafts = sol.status === "optimal"
       ? (sol.augmentsPlaced || []).length + (sol.dinoPlaced || []).length
         + (sol.ncPlaced || []).length + (sol.vikPlaced || []).length + (sol.sealPlaced || []).length
-        + (sol.tfPlaced || []).length + (sol.gsPlaced || []).length
+        + (sol.lgsPlaced || []).length
         + (sol.essPlaced || []).length
       : optCrafts;
     // Only surface when it genuinely uses fewer crafts (a same-count different build

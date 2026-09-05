@@ -159,7 +159,7 @@ function setMaps(o) {
   return {
     augAssign: { byIndex: new Map(), freeByIndex: new Map() }, dinoAssign: { byIndex: new Map() },
     ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(), sealByItem: new Map(),
-    tfByItem: new Map(), gsByItem: new Map(),
+    lgsByItem: new Map(),
     jokerByHost: o.jokerByHost || new Map(),
     membershipByHost: o.membershipByHost || new Map(),
     setAugByHost: o.setAugByHost || new Map(),
@@ -480,7 +480,7 @@ function blockMaps(o) {
     dinoAssign: { byIndex: o.dinoByIndex || new Map() },
     ncByItem: o.ncByItem || new Map(), rollByItem: o.rollByItem || new Map(),
     vikByItem: o.vikByItem || new Map(), sealByItem: o.sealByItem || new Map(),
-    tfByItem: o.tfByItem || new Map(), gsByItem: o.gsByItem || new Map(),
+    lgsByItem: o.lgsByItem || new Map(),
   };
 }
 
@@ -998,7 +998,7 @@ const _modelWith = (statNames) => ({
   targets: [],
   worn: [{ slot: "Ring", variants: [{ affixes: statNames.map((n) => ({ name: n, type: "Enhancement", value: 5 })) }] }],
   augments: [], dinoInserts: [], nearlyComplete: [], viktranium: [],
-  seal: [], thunderForged: [], greenSteel: [],
+  seal: [], legendaryGreenSteel: [],
   membershipSetDefs: {}, augment_set_defs: {},
 });
 const _datasetWith = (statNames) => ({
@@ -2238,7 +2238,7 @@ function _dupBuild() {
     status: "optimal",
     chosen: [{ slot: "Ring", variant: mk(id) }, { slot: "Ring", variant: mk(_M4.twinIdOf(id)) }],
     effective: { Charisma: 14 }, augmentsPlaced: [], setsActive: [], dinoPlaced: [],
-    ncPlaced: [], rollPlaced: [], vikPlaced: [], sealPlaced: [], tfPlaced: [], gsPlaced: [],
+    ncPlaced: [], rollPlaced: [], vikPlaced: [], sealPlaced: [], lgsPlaced: [],
     jokerPlaced: [], membershipPlaced: [], setAugmentsPlaced: [],
   };
 }
@@ -3182,7 +3182,7 @@ test("#449 U8: the control is a gear, and keeps its label (regression guard)", (
 function chipMaps(augAssign) {
   const empty = new Map();
   return { augAssign, dinoAssign: { byIndex: empty }, ncByItem: empty, rollByItem: empty,
-           vikByItem: empty, sealByItem: empty, tfByItem: empty, gsByItem: empty,
+           vikByItem: empty, sealByItem: empty, lgsByItem: empty,
            jokerByHost: empty };
 }
 
@@ -3836,7 +3836,7 @@ test("#469/#472: the crafting system is named in words, not carried by a colour"
   // A mixed-family item must NOT name one of two systems above rows from both.
   const mixed = blockMaps({
     vikByItem: new Map([["Eyes", [{ slot_type: "Dolorous", stat: "Seeker", value: 15 }]]]),
-    tfByItem: new Map([["Eyes", [{ tier: 3, stat: "Melee Power", value: 12 }]]]),
+    lgsByItem: new Map([["Eyes", [{ tier: 3, item_class: "weapon", stat: "Melee Power", value: 12 }]]]),
   });
   assert.ok(/pd-slabel">Craft</.test(R.craftSection(v, 0, mixed, idx, null, new Set())),
     "a mixed-family item says just Craft — naming one system would be a false claim");

@@ -935,3 +935,44 @@ test("the excluded-sets answer survives a save, like every other pool narrowing"
   const P = require("../web/persist.js");
   assert.ok(P.INPUT_KEYS.includes("excludedSets"), "and the answer itself is a saved input");
 });
+
+
+// ---- #687 — the two legacy Legendary Green Steel placement keys fold into one ----
+test("#687: a pre-unification save folds tfPlaced + gsPlaced into lgsPlaced, class-stamped, on load", () => {
+  const P = require("../web/persist.js");
+  const legacy = {
+    status: "optimal", chosen: [],
+    tfPlaced: [{ item: "Legendary Green Steel Longsword", tier: 2, name: "Ethereal", stat: "Melee Power", value: 4 }],
+    gsPlaced: [{ item: "Legendary Green Steel Belt", tier: 1, name: "Dim", stat: "Wizardry", value: 151 }],
+  };
+  const out = P.migrateResult(legacy);
+  assert.deepStrictEqual(out.lgsPlaced, [
+    { item: "Legendary Green Steel Longsword", tier: 2, name: "Ethereal", stat: "Melee Power", value: 4, item_class: "weapon" },
+    { item: "Legendary Green Steel Belt", tier: 1, name: "Dim", stat: "Wizardry", value: 151, item_class: "accessory" },
+  ], "weapon placements first, each stamped with the class its old key implied");
+  assert.ok(!("tfPlaced" in out) && !("gsPlaced" in out), "the legacy keys are gone from the loaded result");
+  assert.deepStrictEqual(Object.keys(legacy).sort(), ["chosen", "gsPlaced", "status", "tfPlaced"], "the stored record is not mutated");
+  // Idempotent, and a modern result is never merged into.
+  assert.strictEqual(P.migrateResult(out), out);
+  const modern = { lgsPlaced: [{ item: "X", item_class: "weapon" }], tfPlaced: [{ item: "Y" }] };
+  assert.deepStrictEqual(P.migrateResult(modern).lgsPlaced, [{ item: "X", item_class: "weapon" }], "legacy keys never double a modern list");
+  // The save allowlist writes only the new key.
+  assert.ok(P.stripResult({ lgsPlaced: [1], tfPlaced: [2], gsPlaced: [3] }).lgsPlaced);
+  assert.ok(!("tfPlaced" in P.stripResult({ tfPlaced: [2] })), "a save never writes tfPlaced again");
+  assert.ok(!("gsPlaced" in P.stripResult({ gsPlaced: [3] })), "a save never writes gsPlaced again");
+});
+
+test("#687: loadCharacter and allCharacters migrate on READ and leave storage as written", () => {
+  const P = require("../web/persist.js");
+  const store = new Map();
+  const storage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, v), removeItem: (k) => store.delete(k) };
+  const rec = { name: "Old", inputs: { ml: 34 }, result: { status: "optimal", chosen: [], tfPlaced: [{ item: "W", tier: 1 }] } };
+  P.saveMany({ Old: rec }, storage);
+  const loaded = P.loadCharacter("Old", storage);
+  assert.deepStrictEqual(loaded.result.lgsPlaced, [{ item: "W", tier: 1, item_class: "weapon" }]);
+  assert.ok(!("tfPlaced" in loaded.result));
+  assert.deepStrictEqual(P.allCharacters(storage).Old.result.lgsPlaced, loaded.result.lgsPlaced);
+  const raw = JSON.parse(store.get(P.STORE_KEY));
+  assert.ok(raw.Old.result.tfPlaced && !raw.Old.result.lgsPlaced, "storage is untouched until the next save (downgrade bridge)");
+});
+

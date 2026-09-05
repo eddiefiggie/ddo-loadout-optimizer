@@ -122,11 +122,11 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     craft: {
       dino: ["🦴", "Dino Bone"], nc: ["✨", "Nearly Completed"], roll: ["🎲", "Choice"],
       vik: ["⚗️", "Viktranium"], seal: ["🔮", "Sealed"],
-      // #194/#653 — one system, two pools: `tf` is the WEAPON half's legacy key.
-      // Both label rows open with the cue word, so the de-stutter below names the
-      // system once. `tfEmpty`/`gsEmpty` deliberately carry no cue (the `vikEmpty`
-      // rule: an empty altar is not a craft to go and apply).
-      tf: ["💠", "Legendary Green Steel"], gs: ["💠", "Legendary Green Steel"],
+      // #194/#687 — one system, one family. The label row opens with the cue
+      // word, so the de-stutter below names the system once. `lgsEmpty`
+      // deliberately carries no cue (the `vikEmpty` rule: an empty altar is not a
+      // craft to go and apply).
+      lgs: ["💠", "Legendary Green Steel"],
       joker: ["🃏", "Wildcard set"], membership: ["🔗", "Set craft"],
       // #193 — without an entry here `craftStr` renders the row bare, so an
       // Essence craft read as an ordinary affix line in every text export while
@@ -167,8 +167,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const colors = ["red", "yellow", "blue", "green", "orange", "purple", "colorless"]
       .map((k) => cue("color", k, fmt)).join("  ");
     const moon = ["Lunar", "Solar"].map((k) => cue("moon", k, fmt)).join("  ");
-    // `tf` and `gs` share one cue (#194), so the legend lists it once.
-    const craft = ["dino", "nc", "roll", "vik", "seal", "gs", "essence", "joker",
+    const craft = ["dino", "nc", "roll", "vik", "seal", "lgs", "essence", "joker",
       "membership", "augmentset"]
       .map((k) => cue("craft", k, fmt)).join("  ");
     return `Legend — augment slots: ${colors} · ${moon} · crafting: ${craft}`;

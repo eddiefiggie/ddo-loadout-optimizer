@@ -294,14 +294,14 @@ def test_no_universal_stat_survives_anywhere_in_the_built_dataset():
             continue        # expanded_away_names legitimately NAMES them
         walk(value, key)
 
-    # #194 — green_steel is REACHABLE now (48 Legendary Green Steel blanks), so
+    # #194/#687 — legendary_green_steel is REACHABLE (48 Legendary Green Steel blanks), so
     # it is walked like every other pool: the exemption that once stood here was
     # valid only while no host could reach the channel, and its tripwire fired
     # the day the hosts shipped. The pool is ATOMIC, so any universal name it
     # ever carries is expanded INSIDE the option, never across the record list.
     from src import container_registry as _cr
-    assert _cr.REGISTRY["green_steel"]["reachable"] is True, (
-        "green_steel is declared unreachable again — if the hosts really went "
+    assert _cr.REGISTRY["legendary_green_steel"]["reachable"] is True, (
+        "legendary_green_steel is declared unreachable again — if the hosts really went "
         "away, the walk above is still correct; if not, the registry is stale")
 
     assert not offenders, (

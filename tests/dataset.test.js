@@ -757,8 +757,8 @@ test("picker: no dropdown suggestion is unsourced (dead-entry guard)", () => {
       Object.values(o).forEach(walk);
     }
   };
-  for (const k of ["dino_inserts", "viktranium", "seal", "thunder_forged",
-                   "green_steel", "nearly_complete", "membership_set_defs", "augment_set_defs"]) {
+  for (const k of ["dino_inserts", "viktranium", "seal", "legendary_green_steel",
+                   "nearly_complete", "membership_set_defs", "augment_set_defs"]) {
     walk(realData[k]);
   }
   // U10 — a provenance label is deliberately unsourced AS A STAT: it is the
@@ -2464,7 +2464,7 @@ function _scorableNames(ds, raw) {
     (v.roll_groups || []).forEach((g) => (g.options || []).forEach(add));
   }
   for (const key of ["dino_inserts", "seal", "viktranium", "nearly_complete",
-                     "essence_crafting", "green_steel", "thunder_forged"]) {
+                     "essence_crafting", "legendary_green_steel"]) {
     for (const r of (raw[key] || [])) { add(r); (r.affixes || []).forEach(add); }
   }
   for (const defs of [raw.membership_set_defs, raw.augment_set_defs, raw.set_defs]) {

@@ -367,7 +367,7 @@ const tradeModel = () => ({
 
   await test("craftCount counts Thunder-Forged and Green Steel placements", () => {
     assert.strictEqual(A.craftCount({}), 0, "empty solution counts zero");
-    const sol = { tfPlaced: [{ item: "CH", tier: 1 }], gsPlaced: [{ item: "CH", name: "Dim" }] };
+    const sol = { lgsPlaced: [{ item: "CH", tier: 1, item_class: "weapon" }, { item: "CH", name: "Dim", item_class: "accessory" }] };
     assert.strictEqual(A.craftCount(sol), 2, "one TF + one GS placement count as two crafting steps");
   });
 

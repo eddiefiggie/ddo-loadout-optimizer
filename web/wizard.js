@@ -602,6 +602,10 @@ function restoreOverrides(inputs) {
   if (!Array.isArray(list)) return [];
   const O = _overridesModule();
   return list
+    // #687 — a pool override saved against a retired Legendary Green Steel
+    // channel is re-addressed BEFORE the well-formedness filter, so it neither
+    // drops nor sits in the manager pointing at a channel that no longer exists.
+    .map((o) => (O && O.migrateOverride ? O.migrateOverride(o) : o))
     .filter((o) => (O ? O.isWellFormed(o) : (o && typeof o === "object")))
     .slice(0, OVERRIDE_LIMIT)
     .map((o) => Object.assign({}, o));
@@ -4575,7 +4579,7 @@ ${(() => {
         // ARGUMENT from the in-scope vocabulary, never on the persisted query.
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
-          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs,
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.legendary_green_steel, dataset.augment_set_defs,
           // #332 — BOTH sets: the counting roster the tier scores, and the admitted
           // procs it deliberately does not, so the result can name a ranked-but-
           // uncounted proc on every surface including exports. THIS file is the live
@@ -4951,7 +4955,7 @@ ${(() => {
         // #91 (U3, KTD3) — same counting-set threading as the solve path above.
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
-          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.thunder_forged, dataset.green_steel, dataset.augment_set_defs,
+          dataset.viktranium, dataset.seal, dataset.membership_set_defs, dataset.legendary_green_steel, dataset.augment_set_defs,
           // #332 — BOTH sets: the counting roster the tier scores, and the admitted
           // procs it deliberately does not, so the result can name a ranked-but-
           // uncounted proc on every surface including exports. THIS file is the live

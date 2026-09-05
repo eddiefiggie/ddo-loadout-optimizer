@@ -217,8 +217,7 @@ async function main() {
   const build = (query, counting) => buildModel(
     dataset.items, query,
     dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,
-    dataset.seal, dataset.membership_set_defs, dataset.thunder_forged,
-    dataset.green_steel, dataset.augment_set_defs, counting);
+    dataset.seal, dataset.membership_set_defs, dataset.legendary_green_steel, dataset.augment_set_defs, counting);
 
   // #505 — the ROSTER A/B (see header), rebuilt against the population that
   // carries the question today.

@@ -138,8 +138,8 @@ def full_dataset(per_item=True, **overrides):
         "nearly_complete": [{"category": "Ability Score"}],
         "dino_inserts": [{"dino_type": "Claw", "category": "Accessory"}],
         "seal": [{"seal_type": "Fire"}],
-        "green_steel": [{"tier_key": "T1 (Equipment)"}],
-        "thunder_forged": [{"tier": 1}],
+        "legendary_green_steel": [{"tier_key": "T1 (Equipment)", "item_class": "accessory", "tier": 1},
+                                  {"tier_key": "T1 (Weapon)", "item_class": "weapon", "tier": 1}],
         # #193 — keyed by `menu`. Present for the same reason every other pool is:
         # `served_labels` refuses a pool that walks zero records, so a fixture
         # missing this one fails on THAT rather than on what the test is about.
@@ -269,8 +269,7 @@ def test_each_pool_raises_distinguishably_when_it_walks_zero_records():
         "nearly_complete": {"nearly_complete": []},
         "dino_inserts": {"dino_inserts": []},
         "seal": {"seal": []},
-        "green_steel": {"green_steel": []},
-        "thunder_forged": {"thunder_forged": []},
+        "legendary_green_steel": {"legendary_green_steel": []},
         "essence_crafting": {"essence_crafting": []},
         "nearly_complete_per_item": {"nearly_complete_per_item": {}},
     }
