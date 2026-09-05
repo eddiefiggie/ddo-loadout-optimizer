@@ -2145,18 +2145,29 @@ function bundleContainerHTML(group, label, keys) {
  *  The save action is always present, empty or not: it is the only way a bundle
  *  gets created, and hiding it behind a populated container would make the
  *  feature unreachable exactly when it is needed. */
-function savedBundlesHTML(bundles) {
+function savedBundlesHTML(bundles, vocab) {
   const e = _escAttr;
   const list = Array.isArray(bundles) ? bundles : [];
   const chips = list.length
     ? `<div class="wz-bundle-row">${list.map((b) => {
       const n = (b.affixes || []).length;
+      // #529 — a chip whose names this catalog no longer knows says so BEFORE it
+      // is pressed: the badge counts the stale names and the title names them,
+      // so the player knows what they are about to restore. Judged only when a
+      // vocabulary is supplied; without one the chip renders as it always did.
+      const stale = vocab ? bundleStaleNames(b, vocab).stale : [];
+      const staleTitle = stale.length
+        ? ` \u2014 ${stale.length} no longer in this catalog: ${stale.map((x) => `#${x.rank} ${x.name}`).join(", ")}`
+        : "";
+      const staleBadge = stale.length
+        ? `<span class="wz-bundle-stale" data-stale-count="${e(stale.length)}" title="${e(staleTitle.slice(3))}">${e(stale.length)}</span>`
+        : "";
       // Rename and delete ride WITH the chip and exist only here. A preset chip
       // renders none of them, and the handlers refuse a preset key anyway — an
       // absent control is a UI state, not a guarantee.
-      return `<span class="wz-saved-chip">
+      return `<span class="wz-saved-chip${stale.length ? " has-stale" : ""}">
         <button type="button" class="wz-bundle wz-bundle-mine" data-saved-bundle="${e(b.id)}"
-          title="Apply \u2014 ${e(n)} ${n === 1 ? "stat" : "stats"}">${e(b.name || "Untitled")}</button>
+          title="Apply \u2014 ${e(n)} ${n === 1 ? "stat" : "stats"}${e(staleTitle)}">${e(b.name || "Untitled")}${staleBadge}</button>
         <button type="button" class="wz-saved-act" data-rename-bundle="${e(b.id)}"
           aria-label="Rename ${e(b.name || "Untitled")}" title="Rename">\u270e</button>
         <button type="button" class="wz-saved-act" data-delete-bundle="${e(b.id)}"
@@ -2171,6 +2182,53 @@ function savedBundlesHTML(bundles) {
         <button type="button" class="btn ghost" id="wz-bundle-save">Save current ranks</button>
       </div>
       <p class="wz-bundle-msg" id="wz-bundle-msg" role="status" aria-live="polite"></p>`);
+}
+
+/** #529 — which of a saved bundle's names this catalog no longer knows.
+ *
+ *  A bundle stores affix NAMES, and the dataset is rebuilt from wiki-sourced
+ *  seed data, so a name can stop existing: retyped, folded into a synonym,
+ *  dropped when a ruling changes. Two populations are deliberately told apart:
+ *
+ *    * a name that MIGRATES — an expanded-away shorthand, a retired label, an
+ *      alias — is not stale. `migratePriorities` repairs it into the stats it
+ *      stands for, exactly as a saved character's ranking is repaired on load
+ *      and a preset is repaired in `resolveBundle`. Reported as `substitutions`.
+ *    * a name that, after migration, is absent from `vocab.known` is STALE:
+ *      nothing in the catalog is registered under it, so it can score nothing.
+ *      Reported with its 1-based rank in the bundle, because #1 being dead is a
+ *      different fact from #6 being dead.
+ *
+ *  `known` is the registry of NAMES, which the #529 build guard makes safe to
+ *  use here in one direction: every name the picker OFFERS is scorable, so a
+ *  name the registry does not carry at all is certainly dead. The converse is
+ *  not asserted — a registered name may be typeable-only — and that case is
+ *  left to the post-solve zero-source notice, which reads the solved pool.
+ *  Nothing here is dropped: the stale name is restored as-is and disclosed,
+ *  because removing it would demote every priority below it without asking —
+ *  the trade the weighted-mode non-goal exists to refuse.
+ *
+ *  Pure. Without a vocabulary there is nothing to judge against, and the
+ *  answer is "no migration, nothing stale" — the pre-#529 behavior. */
+function bundleStaleNames(bundle, vocab) {
+  const b = bundle || {};
+  const raw = (Array.isArray(b.affixes) ? b.affixes : [])
+    .filter((a) => typeof a === "string" && a && a !== _utilitySentinel);
+  if (!vocab || !(vocab.known instanceof Set)) {
+    return { priorities: raw, stale: [], substitutions: [], retired: [] };
+  }
+  const canonical = (typeof vocab.canonical === "function")
+    ? raw.map((n) => vocab.canonical(n) || n) : raw.slice();
+  const DN = _datasetNormalizer();
+  const migrated = (DN && DN.migratePriorities)
+    ? DN.migratePriorities(canonical, vocab)
+    : { priorities: canonical, substitutions: [], retired: [] };
+  const stale = [];
+  migrated.priorities.forEach((name, i) => {
+    if (!vocab.known.has(name)) stale.push({ name, rank: i + 1 });
+  });
+  return { priorities: migrated.priorities, stale,
+           substitutions: migrated.substitutions || [], retired: migrated.retired || [] };
 }
 
 /** plan U4 — the ranking a saved bundle restores, and what it preserves.
@@ -2190,27 +2248,58 @@ function savedBundlesHTML(bundles) {
  *
  *  Bounds come from the bundle alone. Carrying the old ranking's floors forward
  *  would leave bounds keyed to stats the new ranking no longer has — the orphan
- *  the store's own write boundary refuses. */
-function applySavedBundle(bundle, ranked) {
+ *  the store's own write boundary refuses.
+ *
+ *  #529 — with a vocabulary, the names are MIGRATED first (`bundleStaleNames`),
+ *  so a bundle saved under an older catalog restores the stats its names now
+ *  stand for, and what could not be repaired is returned as `stale` for the
+ *  caller to disclose. A bound keyed to a name the migration replaced is dropped
+ *  and reported in `droppedBounds`, never re-keyed by guess. */
+function applySavedBundle(bundle, ranked, vocab) {
   const b = bundle || {};
   const cur = Array.isArray(ranked) ? ranked : [];
   const keepTier = cur.includes(_utilitySentinel);
-  const stats = (Array.isArray(b.affixes) ? b.affixes : [])
-    .filter((a) => typeof a === "string" && a && a !== _utilitySentinel);
+  const judged = bundleStaleNames(b, vocab);
+  const stats = judged.priorities;
+  const keep = new Set(stats);
+  const floors = {}, caps = {}, droppedBounds = [];
+  for (const [k, v] of Object.entries(b.floors || {})) { if (keep.has(k)) floors[k] = v; else droppedBounds.push({ stat: k, kind: "min", value: v }); }
+  for (const [k, v] of Object.entries(b.caps || {})) { if (keep.has(k)) caps[k] = v; else droppedBounds.push({ stat: k, kind: "max", value: v }); }
   return {
     priorities: keepTier ? [...stats, _utilitySentinel] : stats,
-    targetFloors: Object.assign({}, b.floors || {}),
-    targetCaps: Object.assign({}, b.caps || {}),
+    targetFloors: floors,
+    targetCaps: caps,
+    stale: judged.stale,
+    substitutions: judged.substitutions,
+    retired: judged.retired,
+    droppedBounds,
   };
+}
+
+/** #529 — the sentence for what a bundle could not restore as a live stat.
+ *  Names each stale priority with its rank, because "#1 is dead" and "#6 is
+ *  dead" call for different reactions, and says what the player can do. Null
+ *  when nothing is stale. Pure. */
+function staleBundleText(stale) {
+  const list = Array.isArray(stale) ? stale.filter((s) => s && s.name) : [];
+  if (!list.length) return null;
+  const parts = list.map((s) => `#${s.rank} \u201C${s.name}\u201D`);
+  return `${parts.length === 1 ? "One ranked stat is" : `${parts.length} ranked stats are`} no longer in this catalog: `
+    + `${parts.join(", ")}. ${parts.length === 1 ? "It is" : "They are"} restored in place and will score nothing `
+    + "until you replace or remove it — nothing was dropped or reordered for you.";
 }
 
 /** plan U4 — what the player is asked before a replace discards their work.
  *  Named the way `overwriteConfirmText` is, and pure for the same reason: the
  *  sentence is the product, so it is testable without a browser. */
-function applyBundleConfirmText(name, rankedCount) {
+function applyBundleConfirmText(name, rankedCount, stale) {
   const n = Number(rankedCount) || 0;
-  return `Replace your current ranking with \u201C${String(name || "")}\u201D?`
+  const base = `Replace your current ranking with \u201C${String(name || "")}\u201D?`
     + ` The ${n} ${n === 1 ? "stat" : "stats"} you have ranked now, and their floors and caps, are discarded.`;
+  // #529 — say BEFORE the replace which of the bundle's names are dead, so the
+  // player is not told after their own ranking is already gone.
+  const staleNote = staleBundleText(stale);
+  return staleNote ? `${base} ${staleNote}` : base;
 }
 
 /** plan U5 — the delete confirmation. A bundle is authored work and nothing else
@@ -2369,7 +2458,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict,
+  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -3391,7 +3480,7 @@ ${(() => {
           <span class="wz-label">Start from a bundle <span class="wz-sub">· optional · adds to your list — reorder or edit after</span></span>
           <div class="wz-bundle-grid">
             ${BUNDLE_CONTAINERS.map((g) => bundleContainerHTML(g.group, g.label, BUNDLE_GROUPS[g.group] || [])).join("")}
-            ${savedBundlesHTML(_savedBundles() ? _savedBundles().listBundles() : [])}
+            ${savedBundlesHTML(_savedBundles() ? _savedBundles().listBundles() : [], vocab)}
           </div>
         </div>
         <div class="wz-addrow">
@@ -6134,7 +6223,7 @@ ${(() => {
           const B = _savedBundles();
           if (!box || !B) return;
           const wrap = document.createElement("div");
-          wrap.innerHTML = savedBundlesHTML(B.listBundles());
+          wrap.innerHTML = savedBundlesHTML(B.listBundles(), vocab);
           box.replaceWith(wrap.firstElementChild);
           wireSavedBundles();
         }
@@ -6183,14 +6272,26 @@ ${(() => {
               const rec = B.listBundles().find((x) => x.id === chip.dataset.savedBundle);
               if (!rec) { bundleMsg("That bundle is no longer saved."); renderSavedBundles(); return; }
               const ranked = (state.priorities || []).filter((p) => p && p !== _utilitySentinel);
-              if (ranked.length && !window.confirm(applyBundleConfirmText(rec.name, ranked.length))) return;
-              const next = applySavedBundle(rec, state.priorities);
+              // #529 — judge the bundle BEFORE the confirm, so the sentence can say
+              // which of its names are dead while the player still has a choice.
+              const judged = bundleStaleNames(rec, vocab);
+              if (ranked.length && !window.confirm(applyBundleConfirmText(rec.name, ranked.length, judged.stale))) return;
+              const next = applySavedBundle(rec, state.priorities, vocab);
               markDirty();
               state.priorities = next.priorities;
               state.targetFloors = next.targetFloors;
               state.targetCaps = next.targetCaps;
               renderRanked();
-              bundleMsg(`Applied \u201C${rec.name}\u201D.`);
+              // #529 — after the apply, the status line carries what changed: the
+              // migration sentence saved characters get (`migrationMessage`), then
+              // the stale names, if any. The same words as the confirm, so the
+              // player never learns something after the replace they were not told before.
+              const DN = _datasetNormalizer();
+              const migrated = (DN && DN.migrationMessage && (next.substitutions.length || next.retired.length))
+                ? DN.migrationMessage(next.substitutions, next.droppedBounds, [], { retired: next.retired })
+                : null;
+              const staleNote = staleBundleText(next.stale);
+              bundleMsg([`Applied \u201C${rec.name}\u201D.`, migrated, staleNote].filter(Boolean).join(" "));
             };
           });
 

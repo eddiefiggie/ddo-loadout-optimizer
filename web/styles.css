@@ -1055,6 +1055,11 @@ input.wz-ml { width: 120px; }
    chip group so the three read as one control, not three loose buttons. */
 .wz-saved-chip { display: inline-flex; align-items: stretch; }
 .wz-saved-chip .wz-bundle-mine { border-radius: 999px 0 0 999px; border-right: none; }
+/* #529 — a saved bundle whose names this catalog no longer knows: the badge
+   counts them, the chip's title names them with their rank. */
+.wz-saved-chip.has-stale .wz-bundle-mine { border-color: var(--warn, #c9a227); }
+.wz-bundle-stale { display: inline-block; margin-left: 0.4em; padding: 0 0.45em; border-radius: 999px;
+  font-size: 0.75em; line-height: 1.5; background: var(--warn, #c9a227); color: #1a1a1a; }
 .wz-saved-act { background: var(--panel-2); color: var(--muted); border: 1px solid var(--accent-2);
   border-left: none; padding: 0 8px; font-size: var(--fs-xs); cursor: pointer; line-height: 1;
   /* Square by default. Only `:last-child` was ever given a radius, so the MIDDLE
