@@ -3019,6 +3019,24 @@
         + ` Unpin to exclude ${one ? "it" : "them"}.` }];
   }
 
+  /** #721 — items in the loadout that the owned-gear import does not carry and
+   *  that are there ONLY because the player pinned them. The pin overrides the
+   *  owned pool (KD5, the same rule the ML floor and the Artifact opt-in follow),
+   *  and this is the half that keeps the override from being silent — the
+   *  failure #369 named: "the pin is silently discarded" is one bug, and
+   *  "the pin quietly overrides a filter" would be its mirror image.
+   *  `facts`: `{ pinnedUnowned: [display names] }`. */
+  function pinnedUnownedNoticeEntries(facts, esc) {
+    const e = esc || _asText;
+    const names = ((facts || {}).pinnedUnowned || []).filter(Boolean);
+    if (!names.length) return [];
+    const one = names.length === 1;
+    return [{ id: "pinned-not-owned", title: "PINNED, NOT OWNED", class: NOTICE_ACTIONABLE,
+      sentence: `${e(names.join(", "))} ${one ? "is" : "are"} not in your owned-gear import`
+        + ` and ${one ? "was" : "were"} included because you pinned ${one ? "it" : "them"}.`
+        + ` Unpin to keep this solve to gear you own.` }];
+  }
+
   /** U3 (plan 2026-08-05-001) — the two zero-source causes. Two different player
    *  actions, so two entries: a stat no data carries has no resolution path, and a
    *  stat the filters removed does. `facts`: `{ absent, filtered, owned,
@@ -3188,8 +3206,8 @@
     PENALTY_COUNTED_WORDING, itemPenalties, penaltyDisclosure,
     // #110 — the blocklist disclosure sentences
     blockNoticeLines, setPinNoticeLines,
-    // U10 — the three multi-fact notices, one addressable entry per fired branch
-    artifactNoticeEntries, zeroSourceNoticeEntries, boundNoticeEntries,
+    // U10 — the four multi-fact notices, one addressable entry per fired branch
+    artifactNoticeEntries, pinnedUnownedNoticeEntries, zeroSourceNoticeEntries, boundNoticeEntries,
     NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMATIONAL,
     // constraint header helpers (exporters delegates to these)
     constraintPairs, constraintLines,

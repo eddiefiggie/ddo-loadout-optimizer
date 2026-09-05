@@ -1072,13 +1072,25 @@ function canSolve(state) {
   return canAdvance("character", state) && canAdvance("priorities", state);
 }
 
-function buildQuery(state, vocab) {
+/** #721 — `items` is optional and only feeds the pinned-unowned disclosure. Omit
+ *  it (as the pre-#721 call sites and their tests do) and the fact is an empty
+ *  list, so the notice cannot fire on a query built without the catalog. */
+function buildQuery(state, vocab, items) {
   const forged = wizIsForged(state.race);
   const mlCap = Number(state.ml) || 36;
   const rung = _normalizeRung(state.craftingRung);
   return {
     mlCap,
     mlFloor: Number(state.mlFloor) || null,   // optional item-level floor (hide low-ML gear)
+    // #721 — pinned items the owned-gear import does not carry. A fact, not a
+    // filter: the pin already overrides the pool (see `ownedPoolAdmits`), and
+    // this is what lets the results page say so instead of including the item
+    // silently. Empty off the owned pool and when no pin is unowned.
+    pinnedUnowned: pinnedUnownedNames(
+      state.pool, state.ownedNames, state.slotConstraints, items,
+      (v) => ((typeof TroveImport !== "undefined" && TroveImport.ownedHasCatalogName)
+        ? TroveImport.ownedHasCatalogName(state.ownedNames, v.source_item || v.variant_id)
+        : state.ownedNames.has(v.source_item || v.variant_id))),
     // #346 (U1, KTD4) — a rung that excludes augments forces the ceiling to null
     // in the SOLVED query. The control keeps the player's typed value so it comes
     // back when they climb the ladder again (U2), but a solve that placed no
@@ -1162,6 +1174,68 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
   ? pinnedVariantIds
   // eslint-disable-next-line global-require
   : require("./model.js").pinnedVariantIds;
+
+/** #721 — every variant id pinned to any slot, as one set.
+ *
+ *  Reads through the shared `pinnedVariantIds` authority rather than walking the
+ *  constraint shapes here, so a list-shaped Ring pin is seen exactly as the
+ *  solver sees it. */
+function pinnedIdSet(slotConstraints) {
+  const out = new Set();
+  for (const c of Object.values(slotConstraints || {})) {
+    if (!c || c.type !== "pin") continue;
+    _pinnedVariantIds(c).forEach((id) => out.add(id));
+  }
+  return out;
+}
+
+/** #721 — the owned-gear pool's admission test, WITH the pin escape hatch.
+ *
+ *  KD5, already settled for the ML floor (R8), the augment ceiling (#339) and
+ *  the Artifact opt-in (#369): a pin is an explicit instruction that overrides a
+ *  filter. Those three exemptions all live inside `variantConflict`, which the
+ *  owned pool never reaches — it filters `dataset.items` BEFORE `buildModel`
+ *  sees them, so a pinned unowned variant's pick var was never created and
+ *  `slotConstraintBodies`' documented "a pinned id absent from the pool is a
+ *  silent no-op" swallowed the constraint. `reconcilePinLegality` did not catch
+ *  it either: it consults weapon/armor/slot legality, which knows nothing about
+ *  the import. Reported by a player who pinned a craftable crossbow they did not
+ *  yet own and kept being handed a different one, with no message.
+ *
+ *  Scoped per-variant like #369's: a pin exempts ITSELF, never the whole gate,
+ *  so unpinned unowned gear stays out. `owns` is injected rather than reached
+ *  for, so the one ownership predicate (TroveImport's, which handles Trove's
+ *  plural spellings) stays the only definition of "owned" — see #408.
+ *
+ *  Augments take the #359 branch and no pin exemption: augments cannot be
+ *  pinned today, and their pool is already owned-UNION-acquirable. */
+function ownedPoolAdmits(v, owns, pinnedIds, ownedAugments) {
+  if (!v) return false;
+  // `pinIdOf` is the pin flow's OWN id derivation, reused rather than restated:
+  // if the two ever disagreed about what to call a variant, the exemption would
+  // miss exactly the pins it exists to protect.
+  if (v.category === "augment") return !ownedAugments || v.acquirable === true || owns(v);
+  if (pinnedIds && pinnedIds.has(pinIdOf(v))) return true;
+  return owns(v);
+}
+
+/** #721 — the disclosure's fact: pinned items the owned-gear import does not
+ *  carry, by display name. Empty off the owned pool (nothing is being filtered),
+ *  which is what keeps the notice from firing on a full-catalog solve. */
+function pinnedUnownedNames(pool, ownedNames, slotConstraints, items, owns) {
+  if (pool !== "owned" || !ownedNames) return [];
+  const pinned = pinnedIdSet(slotConstraints);
+  if (!pinned.size) return [];
+  const out = [];
+  const seen = new Set();
+  for (const v of items || []) {
+    const id = pinIdOf(v);
+    if (!pinned.has(id) || seen.has(id) || owns(v)) continue;
+    seen.add(id);
+    out.push(v.source_item || id);
+  }
+  return out;
+}
 
 // R4a — same cross-runtime resolve for the legality gate (browser global vs Node
 // require), so reconcilePinLegality works in tests and in the app.
@@ -2458,7 +2532,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict,
+  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -3105,7 +3179,7 @@ ${(() => {
       if (!box) return;
       const pins = currentPins();
       if (!pins.length) { box.innerHTML = `<p class="wz-pin-empty">No pinned items yet — search above to force a specific item into the build.</p>`; return; }
-      const query = buildQuery(state, vocab);
+      const query = buildQuery(state, vocab, dataset && dataset.items);
       // Aggregate guard: a character equips at most ONE Artifact, but each pin is
       // honored, so pinning 2+ Artifacts with the opt-in on would force an illegal
       // multi-Artifact build. Warn (don't block — the pins are the player's choice).
@@ -4411,9 +4485,11 @@ ${(() => {
         const owns = (v) => (typeof TroveImport !== "undefined" && TroveImport.ownedHasCatalogName)
           ? TroveImport.ownedHasCatalogName(state.ownedNames, v.source_item || v.variant_id)
           : state.ownedNames.has(v.source_item || v.variant_id);
-        return dataset.items.filter((v) => (v.category === "augment"
-          ? (!state.ownedAugments || v.acquirable === true || owns(v))
-          : owns(v)));
+        // #721 — the pin escape hatch. See `ownedPoolAdmits`: this filter runs
+        // upstream of buildModel, so the pin exemptions inside variantConflict
+        // cannot reach it and a pinned unowned item was dropped in silence.
+        const pinned = pinnedIdSet(state.slotConstraints);
+        return dataset.items.filter((v) => ownedPoolAdmits(v, owns, pinned, state.ownedAugments));
       }
       return dataset.items;
     }
@@ -4640,7 +4716,7 @@ ${(() => {
         // outside it, a rejection would wedge the UI with the guard stuck on.
         await yieldToPaint();
         const h = await getHighs();
-        const query = buildQuery(state, vocab);
+        const query = buildQuery(state, vocab, dataset && dataset.items);
         // R4a — suppress pins illegal for THIS config from the solve WITHOUT mutating
         // persistent state: reconcile a COPY, so an illegal pin is only dropped for the
         // current (illegal) solve and is honored again once the config makes it legal
@@ -5040,7 +5116,7 @@ ${(() => {
       // results view).
       const _target = stepOnLoad(i, snap);
       if (_target === "results") {
-        const query = rec.query || buildQuery(state, vocab);
+        const query = rec.query || buildQuery(state, vocab, dataset && dataset.items);
         // #91 (U3, KTD3) — same counting-set threading as the solve path above.
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,

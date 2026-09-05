@@ -660,3 +660,40 @@ rankability bar, no harvested tooltip). Expanding it to `Strength Skills` by
 analogy is the inference the never-infer rule forbids; a tooltip read from a
 carrier would settle it (#715's harvest is the place). `Good Luck - Reflex`
 (1 carrier, ML 1, not rankable) also stays as-is.
+
+================================================================================
+2026-09-05 — user report (pin vs the owned-gear pool) — #721
+================================================================================
+
+Verbatim, from the same session as #717/#718 above:
+
+  "Also…. Is this a bug?
+   Set to only items I own
+   It gave me Dinosaur Bone Heavy Crossbow to give me earth attunement
+   Pinned Legendary Light Crossbow of the Oozing Hunger. I don't own it, but I
+   can craft it.
+   Still gives me Dinosaur Bone Heavy Crossbow.
+   Would have thought pinning an item overrides whether you own it"
+
+REPRODUCED. The reporter's expectation is the rule the project already wrote
+down: KD5, "a pin is an explicit instruction that overrides the filter", shipped
+for the ML floor (R8), the augment ceiling (#339) and the Artifact opt-in (#369).
+
+All three of those exemptions live inside `variantConflict`. The owned-gear pool
+filters `dataset.items` in wizard.js `candidateItems()` — BEFORE `buildModel` is
+called — so none of them could reach it. The pinned variant's pick var was never
+created and `slotConstraintBodies`' documented "a pinned id absent from the pool
+is a silent no-op" swallowed the constraint. `reconcilePinLegality` did not catch
+it either: it consults weapon/armor/slot legality, which knows nothing about the
+player's import. The pin was neither honored, nor dropped, nor reported.
+
+NOT a duplicate of #369, whose title matches almost word for word ("Pins can be
+silently replaced in owned-gear mode") and whose investigation concluded that
+owned-gear mode was "a red herring — the variable is the Artifact opt-in". That
+was correct FOR THAT REPORT: that player owned the item they pinned. This one
+does not, which is the case a pin exists to express.
+
+RESOLVED. The exemption now lives at the pool too, scoped per-variant, with a
+PINNED, NOT OWNED disclosure — having fixed a silent discard, a silent override
+would be the same defect wearing the other face. Lesson banked in
+docs/solutions/design-patterns/an-override-exemption-only-covers-the-gates-downstream-of-it.md
