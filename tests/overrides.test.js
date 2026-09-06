@@ -425,7 +425,14 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // exists; the card names the five skills it became.
   // 20,514 not 20,516 since #724: -2, the same two rows losing their engraved
   // status — the mirror of the +2 above, for the reason the -182 note gives.
-  assert.strictEqual(eligible, 20514, "engraved, eligible affixes");
+  // 20,496 not 20,514 since #714: -18, with the TOTAL unchanged — a third
+  // ledger shape beside the two above. `Dragon's Edge` is RENAMED into
+  // `Armor-Piercing`, not expanded into components: one affix in, one affix out,
+  // so the pool size cannot move. What moves is engraved-ness — the renamed
+  // affix carries `via`, so its 18 carriers lose an overridable row each.
+  // Expansion changes both counts in opposite directions; a rename changes only
+  // this one.
+  assert.strictEqual(eligible, 20496, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -463,7 +470,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // item 13,401 not 13,403 since #724: -2, both `Mighty Skills Bonus` rows sit
   // on one worn item (The Repulsor Boots, at Insight and Quality); weapon and
   // augment unchanged.
-  assert.deepStrictEqual(byCat, { item: 13401, weapon: 6100, augment: 1013 });
+  // weapon 6,082 not 6,100 since #714: -18, and ALL of it on weapons — every
+  // Dragon's Edge carrier is a weapon, which is the independent cross-check on
+  // the -18 above. item and augment unchanged.
+  assert.deepStrictEqual(byCat, { item: 13401, weapon: 6082, augment: 1013 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {

@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "field": "dragons_edge_version",
+    "note": "Wiki-harvested seed shard for #714. Keyed by the RANK the catalog stores, not by item: the tooltip is a pure function of the rank, so one entry serves every carrier at that rank. `provenance` records whether the wiki stated the value; only `stated` is solver-eligible.",
+    "mapping_note": "THE MAPPING IS A LOOKUP, NOT A FORMULA. Rank 2 -> 8%, rank 3 -> 9%, rank 7 -> 23%. That fits neither `rank x 3` (which would make 7 -> 21, the value #714's body guessed) nor `rank + 6` (which would make 7 -> 13). The step from 2 to 3 is +1 and the step from 3 to 7 is +14. A rank nobody has rendered must be quarantined rather than computed - `src/dragons_edge_split.py` refuses an unlisted rank for exactly this reason. The BLEED half of the same tooltip does scale cleanly as `N d8`, which is the trap: checking either half alone produces a confident wrong answer about the other.",
+    "fold_note": "The granted stat is `Armor-Piercing`, and that is the wiki's own classification rather than an inference: https://ddowiki.com/page/Armor-Piercing lists this enchantment in its 'Found on' section - 'Thunder-Forged crafting: Dragon's Edge +35%'. Both are stated as an Enhancement bonus to bypassing enemy Fortification. The +35% there is the Thunder-Forged CRAFTED tier and is not one of the ranks below; it is evidence of classification, not a fourth value to store.",
+    "uncredited_note": "The `On Crit: Nd8 Bleeding Damage to those that are vulnerable to it` half is a proc and stays uncredited, exactly as every other proc does. Recorded here so a later reader can see it was read and declined rather than missed.",
+    "harvested": "2026-09-05"
+  },
+  "harvested": {
+    "2": {
+      "value": { "bypass": 8 },
+      "provenance": "stated",
+      "raw": "Dragon's Edge 2",
+      "carrier": "Item:Burning_Blade_of_Estelar",
+      "wiki_url": "https://ddowiki.com/page/Item:Burning_Blade_of_Estelar",
+      "tooltip": "Dragon's Edge 2: +8% Enhancement bonus to bypass enemy Fortification. On Crit: 2d8 Bleeding Damage to those that are vulnerable to it.",
+      "harvested": "2026-09-05"
+    },
+    "3": {
+      "value": { "bypass": 9 },
+      "provenance": "stated",
+      "raw": "Dragon's Edge 3",
+      "carrier": "Item:Axe_of_Savaran",
+      "wiki_url": "https://ddowiki.com/page/Item:Axe_of_Savaran",
+      "tooltip": "Dragon's Edge 3: +9% Enhancement bonus to bypass enemy Fortification. On Crit: 3d8 Bleeding Damage to those that are vulnerable to it.",
+      "harvested": "2026-09-05"
+    },
+    "7": {
+      "value": { "bypass": 23 },
+      "provenance": "stated",
+      "raw": "Dragon's Edge 7",
+      "carrier": "Item:Legendary_Axe_of_Savaran",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Axe_of_Savaran",
+      "tooltip": "Dragon's Edge 7: +23% Enhancement bonus to bypass enemy Fortification. On Crit: 7d8 Bleeding Damage to those that are vulnerable to it.",
+      "harvested": "2026-09-05"
+    }
+  }
+}
