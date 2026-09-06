@@ -74,6 +74,7 @@ from src import vocabulary as vocabulary_mod
 from src import crafting_catalog as crafting_catalog_mod
 from src import dino_native as dino_native_mod
 from src import container_registry as container_registry_mod
+from src import craft_identity as craft_identity_mod
 from src import crafting_coverage as crafting_coverage_mod
 from src import crafted_twins as crafted_twins_mod
 from src import ring_exclusivity as ring_exclusivity_mod
@@ -2210,6 +2211,25 @@ def build() -> dict:
         "augment_set_defs": augment_set_defs,
         "compendium": comp_records,
     }
+
+    # #270 — the crafted-option identity handle. Stamped over the ASSEMBLED
+    # dataset for the same reason the gates below are: it must see every pool
+    # that actually shipped, not the ones this function remembered to name. The
+    # key is stamped HERE so the browser never synthesises one — the same rule
+    # `block_identity` follows.
+    #
+    # The report is published rather than merely asserted because collapsing two
+    # options onto one key is a DATA event: an upstream refresh that renames an
+    # option so it collides with a sibling would otherwise show up only as a
+    # failing test, with no number saying how much of the pool it touched.
+    _craft_cov = craft_identity_mod.stamp(out)
+    if _craft_cov["stamped"] != _craft_cov["distinct"]:
+        raise SystemExit(
+            "craft identity: {stamped} option rows produced only {distinct} distinct "
+            "keys. A shared key means blocking one option silently blocks another; "
+            "widen the discriminator in src/craft_identity.py POOL_KEY rather than "
+            "letting the collision ship.".format(**_craft_cov))
+    out["metadata"]["craft_identity_coverage"] = _craft_cov
 
     # U3 (#205) — the fan-out gate, run over the ASSEMBLED dataset so it discovers
     # its own containers. Every top-level key must be either a declared single-pick
