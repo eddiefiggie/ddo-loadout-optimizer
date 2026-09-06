@@ -1309,6 +1309,14 @@ function artifactNotice(result, query) {
 
 /** U10 — the Artifact facts this solve fired, each carrying its title and class.
  *  The render above is these entries and nothing else. */
+/** #721 — the owned-pool pin disclosure. The fact is computed where the pool is
+ *  (wizard.js `pinnedUnownedNames`, which owns the ownership predicate) and read
+ *  here, rather than re-derived from the result — results.js has no view of the
+ *  player's import. */
+function pinnedUnownedNoticeEntries(query) {
+  return Proj.pinnedUnownedNoticeEntries({ pinnedUnowned: (query || {}).pinnedUnowned }, esc);
+}
+
 function artifactNoticeEntries(result, query) {
   const missing = !!(query && query.includeArtifact && result && result.chosen
     && !result.chosen.some((c) => c.variant && c.variant.artifact));
@@ -1742,6 +1750,8 @@ const NOTICES = [
   // ---- split notices: several cards from one source, classified by projection.js ----
   { name: "artifactNotice", split: true,
     entries: (c) => artifactNoticeEntries(c.result, c.query) },
+  { name: "pinnedUnownedNotice", split: true,
+    entries: (c) => pinnedUnownedNoticeEntries(c.query) },
   { name: "boundNotice", split: true,
     entries: (c) => boundNoticeEntries(c.query, c.result) },
   { name: "zeroSourceNotice", split: true,
@@ -1891,6 +1901,7 @@ const NOTICE_TABLE = Object.fromEntries(NOTICES.filter((n) => !n.split).map((n) 
 const NOTICE_ENTRY_SUBJECTS = {
   "artifact-unavailable": "artifact unavailable",
   "artifact-pinned-in": "artifact pinned in",
+  "pinned-not-owned": "pinned, not owned",
   "stat-not-in-data": "stat not in data",
   "stat-filtered-out": "stat filtered out",
   "gear-ml-floor": "gear ML floor",
@@ -1910,6 +1921,9 @@ const NOTICE_ENTRY_SUBJECTS = {
  *  without a control, which the U5 test catches. */
 const NOTICE_ENTRY_JUMPS = {
   "artifact-pinned-in": { label: "Review pins →", step: "pool", anchor: null },
+  // #721 — the same route as its sibling: both are a pin overriding a pool
+  // choice, and the control that undoes either is the pin list.
+  "pinned-not-owned": { label: "Review pins →", step: "pool", anchor: null },
   "stat-filtered-out": { label: "Change character filters →", step: "character", anchor: null },
   "floor-not-reached": { label: "Edit priorities →", step: "priorities", anchor: null },
   "re-solve-to-apply": { label: "Re-solve now", step: null, anchor: "#wz-adjust-slot" },
@@ -3756,7 +3770,7 @@ function upgradesList(probed, list) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { concessionOutcome, concessionFailedOutcome, upgradesList,
-    renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, jumpSoftCapNotice, mrrCapNotice, conditionalNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+    renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, pinnedUnownedNoticeEntries, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, jumpSoftCapNotice, mrrCapNotice, conditionalNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,

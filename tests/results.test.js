@@ -2772,8 +2772,9 @@ test("#448: the registry is the ONLY source — nothing classifies a notice but 
     "NOTICE_TABLE is derived from the registry, in registry order");
   assert.strictEqual(single.length, 20, "the twenty single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one, #701 the MRR cap one)");
   assert.deepStrictEqual(split.map((n) => n.name),
-    ["artifactNotice", "boundNotice", "zeroSourceNotice"],
-    "and the three multi-fact notices come through their U10 entry functions");
+    ["artifactNotice", "pinnedUnownedNotice", "boundNotice", "zeroSourceNotice"],
+    "and the four multi-fact notices come through their U10 entry functions "
+    + "(#721 added the owned-pool pin disclosure)");
 
   for (const n of single) {
     assert.strictEqual(typeof n.render, "function", `${n.name}: no render`);
@@ -2798,7 +2799,7 @@ test("#448: registry ORDER is the on-screen order within a class, and splits lea
   // so the array's order is load-bearing rather than cosmetic. Pinned so a reorder
   // is a deliberate edit.
   assert.deepStrictEqual(R.NOTICES.map((n) => n.name), [
-    "artifactNotice", "boundNotice", "zeroSourceNotice",
+    "artifactNotice", "pinnedUnownedNotice", "boundNotice", "zeroSourceNotice",
     "staleSnapshotNotice", "outbidNotice", "saturationNotice", "emptySlotNotice",
     "absorptionQuarantineNotice", "craftingExcludedNotice", "augCeilingNotice",
     "dodgeMaxDexNotice", "jumpSoftCapNotice", "mrrCapNotice", "conditionalNotice", "splitMechanicNotice", "capSurplusNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
@@ -2867,9 +2868,10 @@ test("#449 U5 (R6/KTD5): every actionable route carries a control, and outbid de
       `${k} is exempt because it resolves in-card; giving it a jump means the exemption should go`);
   }
   assert.deepStrictEqual(Object.keys(R.NOTICE_ENTRY_JUMPS).sort(),
-    ["artifact-pinned-in", "floor-not-reached", "re-solve-to-apply", "stat-filtered-out",
-      "twf-not-applied"],
-    "and the actionable cards U10 split out are routed by entry id (#508 added the fifth)");
+    ["artifact-pinned-in", "floor-not-reached", "pinned-not-owned", "re-solve-to-apply",
+      "stat-filtered-out", "twf-not-applied"],
+    "and the actionable cards U10 split out are routed by entry id (#508 added the fifth, "
+    + "#721 the sixth — both pin overrides route to the pin list)");
   for (const j of [...Object.values(R.NOTICE_TABLE).map((v) => v.jump), ...Object.values(R.NOTICE_ENTRY_JUMPS)]) {
     if (!j) continue;
     assert.ok(j.label && /→|now/.test(j.label), `${j.label}: a verb plus a destination`);
