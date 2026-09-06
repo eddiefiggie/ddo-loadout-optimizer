@@ -32,7 +32,8 @@
       "X": "no classifying category",
       "M": "no wiki page"
     },
-    "extraction_note": "The `adpack` parameter is often present and EMPTY. An earlier pattern used `\\s*$`, and because `\\s` matches a newline it ran the empty value onto the following line and captured `| level = 8` as three quests' adventure pack. The shipped pattern is line-bounded. All 533 rows were hash-verified against the live wiki before being written here."
+    "extraction_note": "The `adpack` parameter is often present and EMPTY. An earlier pattern used `\\s*$`, and because `\\s` matches a newline it ran the empty value onto the following line and captured `| level = 8` as three quests' adventure pack. The shipped pattern is line-bounded. All 533 rows were hash-verified against the live wiki before being written here.",
+    "crafting_may_carry_a_pack": "#729 — a `crafting` entry MAY carry a pack, and `Catalyst Crafting` is the first. The earlier invariant (only a pack-quest carries a pack) read `location_pack` as 'which quest pack is this quest in'. The #246 content filter consumes it as 'content the player must own', and an expansion-gated crafting system fits that meaning exactly — `kind` already records the source type separately. Keeping the invariant meant no expansion-gated crafting system could ever be excluded, which is the reported bug. Deliberately NOT applied to the other 16 crafting sources: each needs its own prose read, tracked separately."
   },
   "entries": {
     "A Blood Pact": {
@@ -352,8 +353,8 @@
     },
     "Catalyst Crafting": {
       "kind": "crafting",
-      "pack": null,
-      "via": "`Crafting` category"
+      "pack": "Terror of Demogorgon",
+      "via": "Page PROSE, https://ddowiki.com/page/Catalyst_Crafting, read 2026-09-06 (#729): \"Catalyst Crafting is a crafting mechanic that allows players to combine rare Catalyst items found in [[Terror of Demogorgon]] quests\"; its inputs are \"50 Abyssal Gems ... from [[Terror of Demogorgon]] end chests\", and \"Abyssal and Deep Catalysts appear in fixed chests in the [[Terror of Demogorgon]] pack\". The page carries NO adpack parameter and its only categories are `Category` and `Crafting`, which is why the 2026-08-29 harvest — keyed on categories and the quest infobox — recorded pack:null. A gap in the signal set, not a never_infer violation."
     },
     "Catastrophe": {
       "kind": "pack-quest",
