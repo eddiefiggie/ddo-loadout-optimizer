@@ -225,11 +225,15 @@ def test_all_universal_names_map_to_their_family_targets():
                          # `Good Luck` to every save and every skill.
                          "alluring skills bonus", "nimble skills bonus",
                          "astute skills bonus", "prudent skills bonus",
+                         # #724 — the fifth group, expanded once its tooltip
+                         # was read off Item:The_Repulsor_Boots.
+                         "mighty skills bonus",
                          "good luck"}
     assert away["alluring skills bonus"] == spell_focus.SKILLS_ALLURING
     assert away["nimble skills bonus"] == spell_focus.SKILLS_DEX
     assert away["astute skills bonus"] == spell_focus.SKILLS_ASTUTE
     assert away["prudent skills bonus"] == spell_focus.SKILLS_WIS
+    assert away["mighty skills bonus"] == spell_focus.SKILLS_MIGHTY
     assert away["good luck"] == spell_focus.GOOD_LUCK_TARGETS
     assert away["litany of the dead ii - combat bonus"] == spell_focus.COMBAT_ROLLS
     assert away["litany of the dead - combat bonus"] == spell_focus.COMBAT_ROLLS
@@ -616,13 +620,23 @@ def test_nimble_and_prudent_match_their_ability_cousins_exactly():
     assert {a[VIA] for a in prudent} == {"Quality Prudent Skills Bonus"}
 
 
-def test_mighty_skills_bonus_is_not_expanded_without_a_tooltip():
-    """No harvested tooltip (2 carriers, below the rankability bar). Expanding
-    it to `Strength Skills` by analogy is the inference the never-infer rule
-    forbids, so it passes through untouched."""
-    assert not spell_focus.is_universal("Mighty Skills Bonus")
+def test_mighty_expands_to_jump_and_swim_not_the_strength_skills_one():
+    """`Insightful Mighty Skills Bonus: +10 Insight bonus to Jump and Swim.`
+
+    #724, and the reason the never-infer rule earned its keep. #718 left this
+    group folded and predicted that expanding it to `Strength Skills` by analogy
+    would be an inference; the harvested tooltip proves the analogy WRONG —
+    `SKILLS_STR` is `["Jump"]` alone, and Mighty grants Swim too. The assertion
+    below is deliberately against SKILLS_STR, not just the roster, so that a
+    future "tidy-up" cannot quietly reintroduce the cousin's list.
+    """
     out = spell_focus.expand_affixes([_aff("Mighty Skills Bonus", "Insight", 10)])
-    assert out == [_aff("Mighty Skills Bonus", "Insight", 10)]
+    assert sorted(a["stat"] for a in out) == ["Jump", "Swim"]
+    assert sorted(spell_focus.SKILLS_MIGHTY) != sorted(spell_focus.SKILLS_STR), (
+        "Mighty is not the Strength-Skills roster; if these ever match, re-read "
+        "both tooltips before believing it")
+    assert {a[VIA] for a in out} == {"Insightful Mighty Skills Bonus"}
+    assert {a["bonus_type"] for a in out} == {"Insight"}
 
 
 def test_good_luck_expands_to_every_save_and_every_skill_as_luck():

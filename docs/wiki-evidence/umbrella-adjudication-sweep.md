@@ -45,6 +45,7 @@ must never collapse anything).
 | `Astute Skills Bonus` (#718) | Disable Device, Repair, Search — **not** Spellcraft | `Exceptional Astute Skills Bonus: +8 Exceptional bonus to Disable Device, Repair and Search.` (`Item:Epic_Treasure_Hunter's_Spyglass_(level_20)`) | 10 worn |
 | `Prudent Skills Bonus` (#718) | the SKILLS_WIS three | `Exceptional Prudent Skills Bonus: +8 Exceptional bonus to Heal, Listen and Spot.` (same carrier) | 7 worn |
 | `Good Luck` (#717) | Fortitude/Reflex/Will Save + the 21-skill roster of `all-skills-grants.md` | `Good Luck +2: This item gives a +2 Luck bonus to all saves and skill checks.` (`Item:Ancient_Gemstone`, 2026-09-04) | **68 worn/augment at +1..+5, type Luck** (plus one `Good Luck - Reflex`, ML 1, unrankable, left as-is) — no save or skill had a Luck bucket before this |
+| `Mighty Skills Bonus` (#724) | Jump and Swim — **not** the `SKILLS_STR` `["Jump"]` an analogy gives | `Insightful Mighty Skills Bonus: +10 Insight bonus to Jump and Swim.` (`Item:The_Repulsor_Boots`, 2026-09-05; the same carrier also engraves the Quality variant at +5, same two skills) | 2 worn, below the rankability bar |
 
 The five rows dated 2026-09-05 were **not found by the detector**. They came from a
 player report ("Good Luck on both skills and saves seems to be missing"; "the
@@ -52,8 +53,9 @@ Insightful Alluring Skills bonus from Legendary Katra's Wit does not add to
 Intimidate"), and each already had its tooltip on disk from the #713 harvest.
 Two of them differ from the ability-keyed umbrella they resemble — `Alluring`
 omits UMD, `Astute` omits Spellcraft — which is why each expands to its OWN
-tooltip's list and never to the cousin's. `Mighty Skills Bonus` (2 carriers,
-below the rankability bar, no tooltip) is deliberately left atomic. Why the
+tooltip's list and never to the cousin's. `Mighty Skills Bonus` was left atomic at the time
+for want of a tooltip, and #724 has since read one — see the row below, and note
+that the analogy this rule refused would have been **wrong**. Why the
 detector missed them is the next section's last caution.
 
 The three NC-menu-only families are why the detector's universe is the
@@ -113,3 +115,20 @@ Purpose (Bool proc), and the Woeful Shadows proc sentence (Bool).
   That is the design: every ruling costs one rendered tooltip, and the
   alternative was #205 (232 instances invisible for the feature's lifetime),
   `Resistance` (245), and six skills umbrellas nobody had reported.
+
+### The Mighty row is the never-infer rule paying for itself
+
+#718 declined to expand `Mighty Skills Bonus` and recorded why: expanding it to
+`Strength Skills` by analogy "is the inference the never-infer rule forbids".
+That was a judgement call made with no tooltip in hand, and it would have been
+easy to read as excessive caution over two records nobody can rank.
+
+The tooltip, read 2026-09-05, settles it: `SKILLS_STR` is `["Jump"]` alone,
+because that is what the `{{Skills|Strength|N}}` tooltip states — and Mighty
+grants **Jump and Swim**. The analogy would have silently dropped a skill from
+two records, in a bucket no test compares against anything, on a name no player
+can rank and therefore no player could report.
+
+`tests/test_spell_focus.py` now asserts `SKILLS_MIGHTY != SKILLS_STR` directly,
+so a later tidy-up cannot re-merge them on the assumption that two
+Strength-flavoured rosters ought to match.

@@ -121,6 +121,8 @@ var EXPANDED_AWAY_FALLBACK = {
   "nimble skills bonus": ["Balance", "Hide", "Move Silently", "Open Lock", "Tumble"],
   "astute skills bonus": ["Disable Device", "Repair", "Search"],
   "prudent skills bonus": ["Heal", "Listen", "Spot"],
+  // #724 — Jump and Swim, not the SKILLS_STR ["Jump"] an analogy would give.
+  "mighty skills bonus": ["Jump", "Swim"],
 };
 // U10 (R13) — the ORIGINATING enchantment names the build stamps (`via`), mapped to
 // the stats each becomes. Fallback ONLY: `metadata.provenance_labels` is authoritative
