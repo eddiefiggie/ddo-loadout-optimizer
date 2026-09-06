@@ -344,7 +344,15 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // quarantined (a conditional, ramping effect stored as its stack ceiling;
   // conditional_affix_quarantine.json). Dropped, not renamed, so total and
   // eligible move together for once.
-  assert.strictEqual(total, 43060, "post-normalize pool size");
+  // 45,026 since #717/#718: PLUS 1,966, the largest single move in this census,
+  // and it is 2,146 - 180. `Good Luck` (68 carriers x 24 components = 1,632) and
+  // the four `* Skills Bonus` umbrellas (112 carriers -> 514 components) are now
+  // expanded by `src/spell_focus.py`, and the 180 engraved originals they replace
+  // are gone. Per label: Good Luck 68 -> 1,632; Exceptional/Insightful/Quality
+  // Alluring 30/13/18 -> 150/65/90 (five each); Exceptional/Insightful/Quality
+  // Nimble 23/3/2 -> 115/15/10 (five each); Exceptional Astute 10 -> 30 (three);
+  // Exceptional Prudent 13 -> 39 (three).
+  assert.strictEqual(total, 45026, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -406,7 +414,13 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // the card names.
   // 20,696 since #214: MINUS 3, the same three affixes — they were engraved
   // and overridable, and now they do not exist.
-  assert.strictEqual(eligible, 20696, "engraved, eligible affixes");
+  // 20,516 since #717/#718: MINUS 180, the same movement #649 and #192 made —
+  // exactly the 180 engraved umbrella affixes above. They were overridable; every
+  // one of their 2,146 replacements carries `via` and is ineligible by rule 5. A
+  // player who wants to retype Katra's Wit's Insight skill bonus can no longer do
+  // it on the ring's `Alluring Skills Bonus` line, because that line no longer
+  // exists; the card names the five skills it became.
+  assert.strictEqual(eligible, 20516, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -437,7 +451,11 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // item 13,572 / weapon 6,110 / augment 1,017 since #192: -34 / -4 / -2, the 40
   // Command carriers by category (34 worn, 4 weapons, 2 augments) — the
   // independent cross-check on the -40 above.
-  assert.deepStrictEqual(byCat, { item: 13570, weapon: 6109, augment: 1017 });
+  // item 13,403 / weapon 6,100 / augment 1,013 since #717/#718: -167 / -9 / -4,
+  // the 180 umbrella carriers by category (Good Luck alone is 57 / 7 / 4; the
+  // four augments are the Sapphire of Good Luck tiers) — the independent
+  // cross-check on the -180 above.
+  assert.deepStrictEqual(byCat, { item: 13403, weapon: 6100, augment: 1013 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {

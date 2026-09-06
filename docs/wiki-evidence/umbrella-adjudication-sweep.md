@@ -40,6 +40,21 @@ must never collapse anything).
 | `Constitution Skills` | Concentration | `... Constitution based skills of: Concentration` | NC menu only |
 | `Strength Skills` | Jump | `... Strength based skills of: Jump` | NC menu only |
 | `Wisdom Skills` | Heal, Listen, Spot | `... Wisdom based skills of: Heal, Listen and Spot` | NC menu only |
+| `Alluring Skills Bonus` (#718) | Bluff, Diplomacy, Haggle, Intimidate, Perform — **not** Use Magic Device | `Exceptional Alluring Skills Bonus: +8 Exceptional bonus to Bluff, Diplomacy, Haggle, Intimidate, and Perform.` (`Item:Breaking_the_Bank`, 2026-09-04) | 61 worn (Exceptional 30, Quality 18, Insight 13) |
+| `Nimble Skills Bonus` (#718) | the SKILLS_DEX five | `Exceptional Nimble Skills Bonus: +7 Exceptional bonus to Balance, Hide, Move Silently, Open Lock and Tumble.` (`Item:Boots_of_Fleet_and_Fortune`) | 28 worn |
+| `Astute Skills Bonus` (#718) | Disable Device, Repair, Search — **not** Spellcraft | `Exceptional Astute Skills Bonus: +8 Exceptional bonus to Disable Device, Repair and Search.` (`Item:Epic_Treasure_Hunter's_Spyglass_(level_20)`) | 10 worn |
+| `Prudent Skills Bonus` (#718) | the SKILLS_WIS three | `Exceptional Prudent Skills Bonus: +8 Exceptional bonus to Heal, Listen and Spot.` (same carrier) | 7 worn |
+| `Good Luck` (#717) | Fortitude/Reflex/Will Save + the 21-skill roster of `all-skills-grants.md` | `Good Luck +2: This item gives a +2 Luck bonus to all saves and skill checks.` (`Item:Ancient_Gemstone`, 2026-09-04) | **68 worn/augment at +1..+5, type Luck** (plus one `Good Luck - Reflex`, ML 1, unrankable, left as-is) — no save or skill had a Luck bucket before this |
+
+The five rows dated 2026-09-05 were **not found by the detector**. They came from a
+player report ("Good Luck on both skills and saves seems to be missing"; "the
+Insightful Alluring Skills bonus from Legendary Katra's Wit does not add to
+Intimidate"), and each already had its tooltip on disk from the #713 harvest.
+Two of them differ from the ability-keyed umbrella they resemble — `Alluring`
+omits UMD, `Astute` omits Spellcraft — which is why each expands to its OWN
+tooltip's list and never to the cousin's. `Mighty Skills Bonus` (2 carriers,
+below the rankability bar, no tooltip) is deliberately left atomic. Why the
+detector missed them is the next section's last caution.
 
 The three NC-menu-only families are why the detector's universe is the
 picker's, not the worn roster: `Constitution Skills` never appears on an item.
@@ -86,6 +101,14 @@ Purpose (Bool proc), and the Woeful Shadows proc sentence (Bool).
 - The disposition vocabulary is closed at `atomic`. A confirmed umbrella is
   MODELED (registered in `_UNIVERSAL` or a split module), never "pending" —
   the detector exists to make the latent state impossible, not to catalog it.
+- **A bundle named for the bundle is invisible to both signals (#719).** The
+  head-word axis matches a candidate's words against component LAST words
+  (`Save`, `Focus`, `Bluff`, `Device`...), and the shape complement is
+  `^All |^Universal |^Elemental | Mastery$`. `Good Luck` and `Alluring Skills
+  Bonus` share no word with any component and fit no shape, so 68 + 106 rankable
+  affix instances sat in the picker's universe unflagged until a player
+  reported them (2026-09-05). Do not read a green detector as "no umbrellas
+  remain"; it means none of the shapes it knows remain.
 - A new gear-planner name that trips the detector fails the build until ruled.
   That is the design: every ruling costs one rendered tooltip, and the
   alternative was #205 (232 instances invisible for the feature's lifetime),

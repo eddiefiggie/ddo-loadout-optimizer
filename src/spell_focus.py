@@ -159,6 +159,54 @@ SKILLS_CON = ["Concentration"]
 SKILLS_STR = ["Jump"]
 SKILLS_WIS = ["Heal", "Listen", "Spot"]
 
+# #718 (2026-09-05 player report) — the `* Skills Bonus` family: umbrellas named
+# for the BUNDLE rather than for an ability, which is why the detector's
+# head-word signal never saw them (#719). Each list is what ITS rendered tooltip
+# states (`data/seed/compendium/affix_tooltip.json`, harvested 2026-09-04) —
+# never the ability-keyed cousin's list, because two of them differ:
+#   * `Exceptional Alluring Skills Bonus: +8 Exceptional bonus to Bluff,
+#     Diplomacy, Haggle, Intimidate, and Perform.` — FIVE skills; `Charisma
+#     Skills` above has six (it adds Use Magic Device).
+#   * `Exceptional Astute Skills Bonus: +8 Exceptional bonus to Disable Device,
+#     Repair and Search.` — THREE; `Intelligence Skills` adds Spellcraft.
+#   * `Exceptional Nimble Skills Bonus: +7 Exceptional bonus to Balance, Hide,
+#     Move Silently, Open Lock and Tumble.` — the SKILLS_DEX five exactly.
+#   * `Exceptional Prudent Skills Bonus: +8 Exceptional bonus to Heal, Listen
+#     and Spot.` — the SKILLS_WIS three exactly.
+# `Mighty Skills Bonus` (2 carriers, below the rankability bar) has NO harvested
+# tooltip and is deliberately absent: expanding it to `Strength Skills` by
+# analogy is the inference the never-infer rule forbids.
+SKILLS_ALLURING = ["Bluff", "Diplomacy", "Haggle", "Intimidate", "Perform"]
+SKILLS_ASTUTE = ["Disable Device", "Repair", "Search"]
+
+# #570 — every skill in DDO, from the wiki's own all-skills enumeration: the
+# `Skill` page's "List of Skills" table, prefaced "This table describes all the
+# skills present in DDO", read structurally 2026-08-28. Twenty-one, all rankable.
+# Ruling: docs/wiki-evidence/all-skills-grants.md.
+#
+# Do NOT rebuild this list by unioning the six ability umbrellas above. They
+# union to 20 and drop `Swim`, because each quotes a `{{Skills|<ability>|N}}`
+# tooltip describing what that ENCHANTMENT grants, not what skills exist — and
+# the fix is not to edit SKILLS_STR, which quotes its tooltip correctly.
+# `tests/test_all_skills.py` pins both halves of that relationship, and
+# `web/dataset.js` carries the same list (`_ALL_SKILLS`) for the boolean
+# composite that expands at load time (`Greater Heroism`, #140).
+ALL_SKILLS = [
+    "Balance", "Bluff", "Concentration", "Diplomacy", "Disable Device",
+    "Haggle", "Heal", "Hide", "Intimidate", "Jump", "Listen", "Move Silently",
+    "Open Lock", "Perform", "Repair", "Search", "Spellcraft", "Spot", "Swim",
+    "Tumble", "Use Magic Device",
+]
+
+# #717 (2026-09-05 player report) — `Good Luck`, the first registration the #570
+# all-skills ruling gets. Rendered tooltip, carrier `Item:Ancient_Gemstone`,
+# harvested 2026-09-04: `Good Luck +2: This item gives a +2 Luck bonus to all
+# saves and skill checks.` Every save (the SAVES three) plus every skill (the
+# ALL_SKILLS twenty-one), one Luck grant across all of them — the `Resistance`
+# shape at 24 components. 68 carriers at +1..+5 credited nothing to any save or
+# skill before this entry; no save or skill had a Luck bucket at all.
+GOOD_LUCK_TARGETS = SAVES + ALL_SKILLS
+
 # Lowercased universal stat name -> the concrete stats it becomes. Allowlist;
 # see the module docstring for what is deliberately excluded and why.
 #
@@ -261,6 +309,20 @@ _UNIVERSAL = {
     # Evidence: docs/wiki-evidence/litany-of-the-dead.md.
     "litany of the dead - combat bonus": COMBAT_ROLLS,
     "litany of the dead ii - combat bonus": COMBAT_ROLLS,
+    # #718 — the bundle-named skill umbrellas, each to its OWN tooltip's list
+    # (see the SKILLS_ALLURING / SKILLS_ASTUTE comment above for the two that
+    # differ from their ability-keyed cousins). Same-type expansion for the same
+    # reason as `Charisma Skills`: one Exceptional / Insight / Quality grant
+    # across the listed skills, highest-of-type per skill. `source_label`
+    # renders the wiki's own engraving ("Insightful Alluring Skills Bonus").
+    "alluring skills bonus": SKILLS_ALLURING,
+    "nimble skills bonus": SKILLS_DEX,
+    "astute skills bonus": SKILLS_ASTUTE,
+    "prudent skills bonus": SKILLS_WIS,
+    # #717 — `Good Luck`: all saves and all skills, type Luck. SELF_NAMED below,
+    # because the wiki engraves `Good Luck +N` and the type is the name's own
+    # word — prefixing would print "Luck Good Luck".
+    "good luck": GOOD_LUCK_TARGETS,
 }
 
 # #367/#396 — engraved names that are ALREADY the complete name the item prints,
@@ -274,6 +336,9 @@ SELF_NAMED = {
     "litany of the dead ii - ability bonus",
     "litany of the dead - combat bonus",
     "litany of the dead ii - combat bonus",
+    # #717 — the wiki engraves `Good Luck +N`; its bonus type (Luck) is a word
+    # of the name, not a prefix to it.
+    "good luck",
 }
 
 # Field carrying the originating enchantment name on an expanded affix. Absent on

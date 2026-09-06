@@ -10,6 +10,29 @@
 //   node tests/parity/capture_golden.js
 //
 // Ratifications:
+//   #717/#718 (2026-09-05) — FOUR fixtures moved, every one of them a fixture that
+//   ranks a skill or a save, every delta UPWARD, and the other 20 byte-identical.
+//   `Good Luck` (all saves + all 21 skills, type Luck) and the four `* Skills
+//   Bonus` umbrellas now expand at build time; before this no save and no skill
+//   had a Luck bucket at all, so the Luck deltas are pure additions.
+//     * `blocklist-topaz-ml36` and its `-baseline`: Balance 71 -> 76. `The
+//       Commander of Bling (level 36)` enters at Helmet carrying `Good Luck | Luck
+//       | 5`, and `Dread Pirate's Cloak (level 36)` enters at Cloak carrying
+//       `Exceptional Nimble Skills Bonus +11` (now Balance Exceptional 11). The
+//       total moved by exactly the new Luck bucket, so the Exceptional swap is
+//       value-neutral against what the outgoing carriers gave; the four other
+//       slot changes (Belt, Goggles, Helmet, Gloves) are the reshuffle around
+//       those two entries, at unchanged Balance.
+//     * `utility-removed-complex-blocklist-topaz-ml36`: Balance 71 -> 76, ONE
+//       slot: `Legendary Gravekeeper's Armor` (`Good Luck | Luck | 5`) replaces
+//       `Baphomet's Brutality`. The cleanest attribution of the four.
+//     * `riposte-split-ac-saves-ml34`: all three saves +4 (29/30/30 -> 33/34/34),
+//       ONE slot: `Legendary Captain's Spyglass` (ML 31, `Good Luck | Luck | 4`)
+//       replaces `Epic Zephyr` at Main Hand. +4 on every save from one item is
+//       exactly what a 24-way same-value expansion predicts.
+//     * The 20 unmoved fixtures rank neither a skill nor a save, so none could
+//       see the change — the same honest half #140 reported.
+//
 //   #140 (2026-08-28) — FIVE fixtures, every delta exactly +4, every `chosen`
 //   loadout BYTE-IDENTICAL. `Greater Heroism` left quarantine and now writes +4
 //   Morale to attack rolls, the three saves, and all 21 skills.

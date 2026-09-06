@@ -54,6 +54,14 @@ def _rankable():
         return set(json.load(fh)["metadata"]["rankable_affixes"])
 
 
+def test_the_module_roster_is_this_roster():
+    """#717 — the roster gained its first consumer (`Good Luck` expands into it), so
+    it now lives in `src/spell_focus.py`. This file keeps its own copy as the
+    wiki citation; the two must be one list, or the expansion drifts from the
+    ruling it cites."""
+    assert tuple(spell_focus.ALL_SKILLS) == ALL_SKILLS
+
+
 def test_roster_is_twenty_one_and_distinct():
     """Refuse to inspect nothing: the roster is a fixed, duplicate-free 21."""
     assert len(ALL_SKILLS) == 21, f"roster is {len(ALL_SKILLS)}, expected 21"

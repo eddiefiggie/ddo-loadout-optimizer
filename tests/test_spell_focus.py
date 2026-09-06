@@ -217,7 +217,20 @@ def test_all_universal_names_map_to_their_family_targets():
                          # is the affix name itself, so `source_label` returns it
                          # unprefixed. Two components, not a school/element set.
                          "litany of the dead - combat bonus",
-                         "litany of the dead ii - combat bonus"}
+                         "litany of the dead ii - combat bonus",
+                         # #717/#718 (2026-09-05 player report) — the
+                         # bundle-named umbrellas the detector's head-word
+                         # signal cannot see (#719): the `* Skills Bonus`
+                         # family, each to its own tooltip's list, and
+                         # `Good Luck` to every save and every skill.
+                         "alluring skills bonus", "nimble skills bonus",
+                         "astute skills bonus", "prudent skills bonus",
+                         "good luck"}
+    assert away["alluring skills bonus"] == spell_focus.SKILLS_ALLURING
+    assert away["nimble skills bonus"] == spell_focus.SKILLS_DEX
+    assert away["astute skills bonus"] == spell_focus.SKILLS_ASTUTE
+    assert away["prudent skills bonus"] == spell_focus.SKILLS_WIS
+    assert away["good luck"] == spell_focus.GOOD_LUCK_TARGETS
     assert away["litany of the dead ii - combat bonus"] == spell_focus.COMBAT_ROLLS
     assert away["litany of the dead - combat bonus"] == spell_focus.COMBAT_ROLLS
     assert away["spell lore"] == spell_focus.LORE_TARGETS
@@ -567,3 +580,70 @@ def test_shipped_dataset_expands_both_combat_tiers():
             assert str(a.get("value")) == value, f"{variant_id}: {a['name']} = {a.get('value')!r}"
         checked += 1
     assert checked == 2, "the guard inspected fewer than both tiers"
+
+
+# --- #717 / #718: the bundle-named umbrellas (2026-09-05 player report) ---------
+#
+# `Good Luck` and the `* Skills Bonus` family are umbrellas named for the BUNDLE
+# rather than for a member, so the detector's head-word signal never flagged
+# them (#719) and they shipped atomic: Legendary Katra's Wit's `Insight` +10
+# Alluring credited Intimidate nothing, and 69 Good Luck carriers credited no
+# save and no skill. Each list below is what the rendered tooltip states.
+
+def test_alluring_expands_to_the_tooltips_five_skills_not_charisma_skills_six():
+    """`+8 Exceptional bonus to Bluff, Diplomacy, Haggle, Intimidate, and Perform.`
+    — no Use Magic Device, unlike `Charisma Skills`. Reusing SKILLS_CHA would
+    credit UMD from an enchantment the wiki says does not grant it."""
+    out = spell_focus.expand_affixes([_aff("Alluring Skills Bonus", "Insight", 10)])
+    assert sorted(a["stat"] for a in out) == ["Bluff", "Diplomacy", "Haggle", "Intimidate", "Perform"]
+    assert "Use Magic Device" not in {a["stat"] for a in out}
+    assert all(a["bonus_type"] == "Insight" and a["value"] == 10 for a in out)
+    assert {a[VIA] for a in out} == {"Insightful Alluring Skills Bonus"}
+
+
+def test_astute_expands_to_three_not_intelligence_skills_four():
+    """`+8 Exceptional bonus to Disable Device, Repair and Search.` — no Spellcraft."""
+    out = spell_focus.expand_affixes([_aff("Astute Skills Bonus", "Exceptional", 8)])
+    assert sorted(a["stat"] for a in out) == ["Disable Device", "Repair", "Search"]
+    assert {a[VIA] for a in out} == {"Exceptional Astute Skills Bonus"}
+
+
+def test_nimble_and_prudent_match_their_ability_cousins_exactly():
+    nimble = spell_focus.expand_affixes([_aff("Nimble Skills Bonus", "Exceptional", 7)])
+    assert sorted(a["stat"] for a in nimble) == sorted(spell_focus.SKILLS_DEX)
+    prudent = spell_focus.expand_affixes([_aff("Prudent Skills Bonus", "Quality", 3)])
+    assert sorted(a["stat"] for a in prudent) == sorted(spell_focus.SKILLS_WIS)
+    assert {a[VIA] for a in prudent} == {"Quality Prudent Skills Bonus"}
+
+
+def test_mighty_skills_bonus_is_not_expanded_without_a_tooltip():
+    """No harvested tooltip (2 carriers, below the rankability bar). Expanding
+    it to `Strength Skills` by analogy is the inference the never-infer rule
+    forbids, so it passes through untouched."""
+    assert not spell_focus.is_universal("Mighty Skills Bonus")
+    out = spell_focus.expand_affixes([_aff("Mighty Skills Bonus", "Insight", 10)])
+    assert out == [_aff("Mighty Skills Bonus", "Insight", 10)]
+
+
+def test_good_luck_expands_to_every_save_and_every_skill_as_luck():
+    """`Good Luck +2: This item gives a +2 Luck bonus to all saves and skill checks.`"""
+    out = spell_focus.expand_affixes([_aff("Good Luck", "Luck", 5)])
+    stats = sorted(a["stat"] for a in out)
+    assert stats == sorted(spell_focus.SAVES + spell_focus.ALL_SKILLS)
+    assert len(stats) == 24 and len(set(stats)) == 24
+    assert "Swim" in stats, "the all-skills roster, not the six-umbrella union (which drops Swim)"
+    assert all(a["bonus_type"] == "Luck" and a["value"] == 5 for a in out)
+
+
+def test_good_luck_label_is_the_engraved_name_not_luck_good_luck():
+    """SELF_NAMED: the wiki engraves `Good Luck +N`; the type is a word of the name."""
+    assert spell_focus.source_label("Good Luck", "Luck") == "Good Luck"
+    out = spell_focus.expand_affixes([_aff("Good Luck", "Luck", 2)])
+    assert {a[VIA] for a in out} == {"Good Luck"}
+
+
+def test_all_skills_roster_is_the_wiki_twenty_one():
+    assert len(spell_focus.ALL_SKILLS) == 21
+    assert len(set(spell_focus.ALL_SKILLS)) == 21
+    for s in spell_focus.ALL_SKILLS:
+        assert not spell_focus.is_universal(s), s
