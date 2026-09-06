@@ -464,6 +464,57 @@ def test_detector_flags_the_name_shapes():
     assert all(c["signal"] == "name-shape" for c in cands)
 
 
+def test_detector_flags_a_bundle_named_for_the_bundle():
+    """#719 — the signal the other two cannot carry.
+
+    Both original signals assume an umbrella shares a word with its members: the
+    sibling axis matches a component's head-word, the shape matches a quantifier
+    prefix. `Good Luck` shares nothing with `Reflex Save`, and
+    `Alluring Skills Bonus` ends in the CATEGORY word `Skills`, which is never a
+    component's last word. Both sat rankable and unexpanded for the detector's
+    whole life and were found by a player instead (#717/#718).
+    """
+    # The six names that motivated the widening, none of them modeled here so the
+    # detector has to see them on shape alone.
+    bundles = ["Good Luck", "Alluring Skills Bonus", "Nimble Skills Bonus",
+               "Astute Skills Bonus", "Prudent Skills Bonus", "Mighty Skills Bonus"]
+    cands = V.umbrella_candidates(bundles, ["Necromancy Focus", "Reflex Save"], [])
+    assert sorted(c["name"] for c in cands) == sorted(bundles), (
+        "every bundle-named umbrella must reach the queue")
+    assert all(c["signal"] == "bundle-name" for c in cands), \
+        [c["signal"] for c in cands]
+
+
+def test_the_original_signals_could_not_have_caught_them():
+    """The guard's own guard — proves the widening is load-bearing, not decorative.
+
+    If this ever passes with the bundle signal disabled, one of the other two has
+    started covering these names and this one can be reconsidered.
+    """
+    bundles = ["Good Luck", "Alluring Skills Bonus"]
+    components = ["Necromancy Focus", "Reflex Save", "Bluff", "Intimidate"]
+    heads = {V._head_word(c) for c in components}
+    for name in bundles:
+        by_head = any(w in heads for w in name.split())
+        by_shape = bool(V._UMBRELLA_SHAPE_RE.search(name))
+        assert not by_head and not by_shape, (
+            f"{name} is now caught by an original signal; re-measure before "
+            "assuming the bundle signal is still needed")
+
+
+def test_the_widening_does_not_flag_ordinary_names():
+    """Measured cost: against the real build inputs it added ZERO candidates.
+
+    These are the near-misses that must NOT be swept in — a stat whose name
+    merely contains a bundle word, or ends in one that is a genuine component.
+    """
+    cands = V.umbrella_candidates(
+        ["Reflex Save", "Skill Focus", "Lucky Charm", "Dodge"],
+        ["Reflex Save"], [])
+    # `Reflex Save` is a component; the other three match no signal at all.
+    assert [c["name"] for c in cands] == [], [c["name"] for c in cands]
+
+
 def test_detector_skips_family_members_and_modeled_names():
     cands = V.umbrella_candidates(
         ["Necromancy Focus", "Universal Spell Power", "Rune Arm Focus"],
