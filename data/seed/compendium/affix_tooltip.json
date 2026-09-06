@@ -5,30 +5,24 @@
     "harvested": "2026-09-04",
     "unharvested": {
       "Bard Song Charge": "no item carrier; augment/set-only in this catalog",
-      "Concealment": "minted by the boolean-composite expansion (Blurry / Lesser Displacement), no engraved carrier of its own",
-      "Conditioning": "umbrella label (Legendary Conditioning family), no engraved carrier of its own",
+      "Concealment": "minted by the boolean-composite expansion from `Blurry` / `Lesser Displacement`; those two carry the harvested tooltips. No engraved carrier of its own. (#715: pointer recorded.)",
+      "Conditioning": "umbrella label for the `Legendary Conditioning` family; the family members carry the tooltips. No engraved carrier of its own. (#715: pointer recorded.)",
       "Critical Multiplier on a 19-20": "set-tier-only stat (#683 split mechanic), no item carrier",
       "Critical Multiplier on a roll of 19-20": "set-tier-only stat (#683 split mechanic), no item carrier",
-      "Damage to helpless enemies": "augment/set-only (Solar Gem of Cruelty), no worn carrier page",
-      "Dodge Cap": "augment-only (Solar Gem of Dodge Cap); the Lunar_and_Solar_Gems table is its page",
       "Eldritch Blast Dice": "augment/set-only, no worn carrier page",
       "Imbue Dice": "augment/set-only, no worn carrier page",
-      "MRR": "alias spelling (-> Magical Sheltering), no carrier of its own",
-      "Magical Sheltering Cap": "augment/set-only (Solar Gem of MRR Cap); the Lunar_and_Solar_Gems table is its page",
-      "Max Dex Bonus": "augment-only (Sapphire of Armored Agility)",
+      "MRR": "alias spelling of `Magical Sheltering` (affix_aliases.json); that name's tooltip covers it. No carrier of its own. (#715: pointer recorded.)",
+      "Max Dex Bonus": "augment-only (Sapphire of Armored Agility) and STILL unreadable: that augment has no wiki page, and `Armored Agility` redirects to the Fighter enhancement of that name, which is a different thing. Checked 2026-09-05 (#715). Needs a carrier page that engraves it, or the augment's own page to exist.",
       "Melee Diversion": "augment/set-only, no worn carrier page",
       "Missile Deflection": "set-tier-only, no worn carrier page",
-      "Movement Speed": "minted by the speed split (speed_enchantment.json holds its tooltips), no engraved carrier under this name",
-      "PRR": "alias spelling (-> Physical Sheltering), no carrier of its own",
+      "Movement Speed": "minted by the speed split; `speed_enchantment.json` holds the per-invocation tooltips. No engraved carrier under this name. (#715: pointer recorded.)",
+      "PRR": "alias spelling of `Physical Sheltering` (affix_aliases.json); that name's tooltip covers it. No carrier of its own. (#715: pointer recorded.)",
       "Ranged Diversion": "augment/set-only, no worn carrier page",
       "Rune Arm DCs": "augment/set-only, no worn carrier page",
       "Sneak Attack": "augment/set-only, no worn carrier page",
-      "Sneak Attack Damage": "augment-only (Solar Gem), no worn carrier page",
-      "Sneak Attack Dice": "augment-only (Solar Gem), no worn carrier page",
       "Spell Critical Damage": "set-tier-only (#672), no worn carrier page",
-      "Strikethrough": "augment-only (Solar Gem of Strikethrough), no worn carrier page",
       "Turn Undead Charge": "augment/set-only, no worn carrier page",
-      "Unconsciousness Range": "expansion-minted (#649 Undying rename), no engraved carrier under this name"
+      "Unconsciousness Range": "expansion-minted by the #649 `Undying` rename; the pre-rename name carries the evidence. No engraved carrier under this name. (#715: pointer recorded.)"
     },
     "unharvested_note": "Rankable names with a numeric carrier but no ITEM page to read a tooltip from (augment-, set- or expansion-only). Recorded with the reason so the coverage guard can tell 'not harvested yet' from 'cannot be harvested this way'; the augment half's next source is the Lunar_and_Solar_Gems table (#713 follow-up)."
   },
@@ -284,6 +278,15 @@
       "tooltip": "Damage Reduction 5/-: Reduces all physical damage by 5.",
       "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
     },
+    "Damage to helpless enemies": {
+      "carrier": "Lunar_and_Solar_Gems",
+      "wiki_url": "https://ddowiki.com/page/Lunar_and_Solar_Gems",
+      "provenance": "stated",
+      "harvested": "2026-09-05",
+      "label": "Cruelty (Solar/Lunar gem)",
+      "tooltip": "Artifact Bonus to Damage to Helpless Enemies. Tiers: +5% / +10% / +15%.",
+      "note": "#715. Augment-only stat with no item carrier page. The Lunar_and_Solar_Gems table IS its page: one row per gem family, the effect column stating the granted stat and bonus type, with the three tier magnitudes in their own columns. Recorded as the effect phrase plus the tiers rather than reflowed into a sentence the wiki does not print."
+    },
     "Dark Restoration Lore": {
       "carrier": "Item:Alaric's_Grim_Gauntlets",
       "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
@@ -379,6 +382,15 @@
       "harvested": "2026-09-04",
       "label": "Dodge +8%",
       "tooltip": "Dodge +8%: +8% Enhancement bonus to Dodge."
+    },
+    "Dodge Cap": {
+      "carrier": "Lunar_and_Solar_Gems",
+      "wiki_url": "https://ddowiki.com/page/Lunar_and_Solar_Gems",
+      "provenance": "stated",
+      "harvested": "2026-09-05",
+      "label": "Dodge Cap (Solar/Lunar gem)",
+      "tooltip": "Artifact Bonus to Dodge Cap. Tiers: +1 / +2 / +3.",
+      "note": "#715. Augment-only stat with no item carrier page. The Lunar_and_Solar_Gems table IS its page: one row per gem family, the effect column stating the granted stat and bonus type, with the three tier magnitudes in their own columns. Recorded as the effect phrase plus the tiers rather than reflowed into a sentence the wiki does not print."
     },
     "Doubleshot": {
       "carrier": "Item:Beltstrap_of_Forbidden_Tomes",
@@ -913,6 +925,15 @@
       "label": "Insightful Magical Sheltering +10",
       "tooltip": "Insightful Magical Sheltering +10: +10 Insight bonus to Magical Resistance Rating"
     },
+    "Magical Sheltering Cap": {
+      "carrier": "Lunar_and_Solar_Gems",
+      "wiki_url": "https://ddowiki.com/page/Lunar_and_Solar_Gems",
+      "provenance": "stated",
+      "harvested": "2026-09-05",
+      "label": "MRR Cap (Solar/Lunar gem)",
+      "tooltip": "Artifact Bonus to Magical Resistance Rating Cap. Tiers: +10 / +20 / +30.",
+      "note": "#715. Augment-only stat with no item carrier page. The Lunar_and_Solar_Gems table IS its page: one row per gem family, the effect column stating the granted stat and bonus type, with the three tier magnitudes in their own columns. Recorded as the effect phrase plus the tiers rather than reflowed into a sentence the wiki does not print."
+    },
     "Magnetism": {
       "carrier": "Item:Attunement_Gauntlets",
       "wiki_url": "https://ddowiki.com/page/Item:Attunement_Gauntlets",
@@ -1408,6 +1429,24 @@
       "label": "Sneak Attack Bonus +2",
       "tooltip": "Sneak Attack Bonus +2 : Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue."
     },
+    "Sneak Attack Damage": {
+      "carrier": "Lunar_and_Solar_Gems",
+      "wiki_url": "https://ddowiki.com/page/Lunar_and_Solar_Gems",
+      "provenance": "stated",
+      "harvested": "2026-09-05",
+      "label": "Sneak Attack Damage (Solar/Lunar gem)",
+      "tooltip": "Artifact Bonus to Sneak Attack Damage. Tiers: +1 / +2 / +3.",
+      "note": "#715. Augment-only stat with no item carrier page. The Lunar_and_Solar_Gems table IS its page: one row per gem family, the effect column stating the granted stat and bonus type, with the three tier magnitudes in their own columns. Recorded as the effect phrase plus the tiers rather than reflowed into a sentence the wiki does not print."
+    },
+    "Sneak Attack Dice": {
+      "carrier": "Lunar_and_Solar_Gems",
+      "wiki_url": "https://ddowiki.com/page/Lunar_and_Solar_Gems",
+      "provenance": "stated",
+      "harvested": "2026-09-05",
+      "label": "Sneak Attack Dice (Solar/Lunar gem)",
+      "tooltip": "Artifact Bonus to Sneak Attack Dice. Tiers: +1 / +2 / +3.",
+      "note": "#715. Augment-only stat with no item carrier page. The Lunar_and_Solar_Gems table IS its page: one row per gem family, the effect column stating the granted stat and bonus type, with the three tier magnitudes in their own columns. Recorded as the effect phrase plus the tiers rather than reflowed into a sentence the wiki does not print."
+    },
     "Sonic Absorption": {
       "carrier": "Item:Downcast_Cowl",
       "wiki_url": "https://ddowiki.com/page/Item:Downcast_Cowl",
@@ -1487,6 +1526,15 @@
       "harvested": "2026-09-04",
       "label": "Strength +3",
       "tooltip": "Strength +3: This item gives the wearer the power of Ogre Strength, granting a +3 Enhancement bonus to Strength."
+    },
+    "Strikethrough": {
+      "carrier": "Lunar_and_Solar_Gems",
+      "wiki_url": "https://ddowiki.com/page/Lunar_and_Solar_Gems",
+      "provenance": "stated",
+      "harvested": "2026-09-05",
+      "label": "Strikethrough (Solar/Lunar gem)",
+      "tooltip": "Artifact Bonus to Strikethrough. Tiers: +5% / +10% / +15%.",
+      "note": "#715. Augment-only stat with no item carrier page. The Lunar_and_Solar_Gems table IS its page: one row per gem family, the effect column stating the granted stat and bonus type, with the three tier magnitudes in their own columns. Recorded as the effect phrase plus the tiers rather than reflowed into a sentence the wiki does not print."
     },
     "Stunning": {
       "carrier": "Item:Antipode,_Fist_of_the_Horizon",
