@@ -30,7 +30,11 @@ def _dataset():
 #: #729 — crafting sources whose OWN page states an expansion requirement in prose.
 #: One entry, deliberately: each addition is a separate wiki read and a separate
 #: widening of what the content filter can exclude.
-CRAFTING_MAY_CARRY_A_PACK = {"Catalyst Crafting"}
+CRAFTING_MAY_CARRY_A_PACK = {
+    "Catalyst Crafting",                    # #729 — Terror of Demogorgon
+    "Unholy Defiler of the Hidden Hand",    # #734 — Vecna Unleashed
+    "Ritual Table",                         # #734 — Magic of Myth Drannor
+}
 
 
 def test_the_shard_loads_and_every_entry_states_its_evidence():

@@ -57,4 +57,49 @@ test("an absent ownedPacks still filters nothing", () => {
   assert.deepStrictEqual(m.packExcluded, [], "absent means filter nothing, as #246 documents");
 });
 
+// ---- #734: two more crafting sources qualified on the same standard ----------
+test("the crafting sources with a stated expansion requirement are attributed", () => {
+  const want = {
+    "Unholy Defiler of the Hidden Hand": ["Vecna Unleashed", 114],
+    "Ritual Table": ["Magic of Myth Drannor", 71],
+  };
+  for (const [quest, [pack, count]] of Object.entries(want)) {
+    const rows = DS.items.filter((v) => v.location_quest === quest);
+    assert.strictEqual(rows.length, count, `${quest} population`);
+    for (const v of rows) {
+      assert.strictEqual(v.location_pack, pack, v.variant_id);
+      assert.strictEqual(v.location_kind, "crafting", v.variant_id);
+    }
+  }
+});
+
+test("a crafting source whose page states no requirement stays unattributed", () => {
+  // The checked-absence half. These pages were read and say nothing, so the
+  // filter must keep their items — dropping them would be the guess #729's
+  // `never_infer` rule exists to prevent.
+  for (const quest of ["Stone of Change", "Cauldron of Sora Katra", "Epic Crafting"]) {
+    const rows = DS.items.filter((v) => v.location_quest === quest);
+    assert.ok(rows.length > 0, `${quest} carries no variants`);
+    for (const v of rows) {
+      assert.strictEqual(v.location_pack, null,
+        `${v.variant_id}: attributed to a pack its page never states`);
+    }
+  }
+});
+
+test("introduced-with an expansion is not gated-behind it", () => {
+  // #734 — the Sealed Altar case. Its page names Gravenhollow and no pack, and
+  // Gravenhollow's page says the zone "is, however, accessible to all players,
+  // even if you don't own the expansion". A location-based chain would have
+  // attributed 90 variants to Terror of Demogorgon and wrongly excluded them
+  // from players who can reach them. Pinned so a later sweep does not "finish
+  // the job" by following that chain.
+  const rows = DS.items.filter((v) => v.location_quest === "Sealed Altar");
+  assert.strictEqual(rows.length, 90, "population");
+  for (const v of rows) {
+    assert.strictEqual(v.location_pack, null,
+      "Gravenhollow is free to all players — the altar is not pack-gated");
+  }
+});
+
 console.log(`\n${passed} passed`);
