@@ -352,7 +352,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // Alluring 30/13/18 -> 150/65/90 (five each); Exceptional/Insightful/Quality
   // Nimble 23/3/2 -> 115/15/10 (five each); Exceptional Astute 10 -> 30 (three);
   // Exceptional Prudent 13 -> 39 (three).
-  assert.strictEqual(total, 45026, "post-normalize pool size");
+  // 45,028 not 45,026 since #724: +2, the `Mighty Skills Bonus` expansion —
+  // 2 rows x (2 components - 1). The fifth and last member of the
+  // `* Skills Bonus` family, folded until its tooltip was read.
+  assert.strictEqual(total, 45028, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -420,7 +423,9 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // player who wants to retype Katra's Wit's Insight skill bonus can no longer do
   // it on the ring's `Alluring Skills Bonus` line, because that line no longer
   // exists; the card names the five skills it became.
-  assert.strictEqual(eligible, 20516, "engraved, eligible affixes");
+  // 20,514 not 20,516 since #724: -2, the same two rows losing their engraved
+  // status — the mirror of the +2 above, for the reason the -182 note gives.
+  assert.strictEqual(eligible, 20514, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -455,7 +460,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // the 180 umbrella carriers by category (Good Luck alone is 57 / 7 / 4; the
   // four augments are the Sapphire of Good Luck tiers) — the independent
   // cross-check on the -180 above.
-  assert.deepStrictEqual(byCat, { item: 13403, weapon: 6100, augment: 1013 });
+  // item 13,401 not 13,403 since #724: -2, both `Mighty Skills Bonus` rows sit
+  // on one worn item (The Repulsor Boots, at Insight and Quality); weapon and
+  // augment unchanged.
+  assert.deepStrictEqual(byCat, { item: 13401, weapon: 6100, augment: 1013 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {

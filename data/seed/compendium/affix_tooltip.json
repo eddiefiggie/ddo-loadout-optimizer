@@ -1,1635 +1,1644 @@
 {
- "_meta": {
-  "field": "affix_tooltip",
-  "note": "#713 — ONE rendered tooltip per rankable affix name that has a numeric carrier, read from a carrier item page's rendered HTML (span.tooltip) via the paced same-origin api.php parse loop in docs/wiki-evidence/harvest-method.md. The condition prose lives in the enchantment TEMPLATE, so one rendering per name is the evidence for every carrier. `tooltip` is verbatim (with | = & ? stripped by the privacy guard); `label` is the enchantment name the wiki engraves. `provenance`: stated (tooltip captured) or unmatched (the page rendered tooltips but none named this affix — recorded with the labels seen so the gap is visible, never inferred).",
-  "harvested": "2026-09-04",
-  "unharvested": {
-   "Bard Song Charge": "no item carrier; augment/set-only in this catalog",
-   "Concealment": "minted by the boolean-composite expansion (Blurry / Lesser Displacement), no engraved carrier of its own",
-   "Conditioning": "umbrella label (Legendary Conditioning family), no engraved carrier of its own",
-   "Critical Multiplier on a 19-20": "set-tier-only stat (#683 split mechanic), no item carrier",
-   "Critical Multiplier on a roll of 19-20": "set-tier-only stat (#683 split mechanic), no item carrier",
-   "Damage to helpless enemies": "augment/set-only (Solar Gem of Cruelty), no worn carrier page",
-   "Dodge Cap": "augment-only (Solar Gem of Dodge Cap); the Lunar_and_Solar_Gems table is its page",
-   "Eldritch Blast Dice": "augment/set-only, no worn carrier page",
-   "Imbue Dice": "augment/set-only, no worn carrier page",
-   "MRR": "alias spelling (-> Magical Sheltering), no carrier of its own",
-   "Magical Sheltering Cap": "augment/set-only (Solar Gem of MRR Cap); the Lunar_and_Solar_Gems table is its page",
-   "Max Dex Bonus": "augment-only (Sapphire of Armored Agility)",
-   "Melee Diversion": "augment/set-only, no worn carrier page",
-   "Missile Deflection": "set-tier-only, no worn carrier page",
-   "Movement Speed": "minted by the speed split (speed_enchantment.json holds its tooltips), no engraved carrier under this name",
-   "PRR": "alias spelling (-> Physical Sheltering), no carrier of its own",
-   "Ranged Diversion": "augment/set-only, no worn carrier page",
-   "Rune Arm DCs": "augment/set-only, no worn carrier page",
-   "Sneak Attack": "augment/set-only, no worn carrier page",
-   "Sneak Attack Damage": "augment-only (Solar Gem), no worn carrier page",
-   "Sneak Attack Dice": "augment-only (Solar Gem), no worn carrier page",
-   "Spell Critical Damage": "set-tier-only (#672), no worn carrier page",
-   "Strikethrough": "augment-only (Solar Gem of Strikethrough), no worn carrier page",
-   "Turn Undead Charge": "augment/set-only, no worn carrier page",
-   "Unconsciousness Range": "expansion-minted (#649 Undying rename), no engraved carrier under this name"
-  },
-  "unharvested_note": "Rankable names with a numeric carrier but no ITEM page to read a tooltip from (augment-, set- or expansion-only). Recorded with the reason so the coverage guard can tell 'not harvested yet' from 'cannot be harvested this way'; the augment half's next source is the Lunar_and_Solar_Gems table (#713 follow-up)."
- },
- "harvested": {
-  "Abjuration Focus": {
-   "carrier": "Item:Adversion",
-   "wiki_url": "https://ddowiki.com/page/Item:Adversion",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Abjuration Focus +4",
-   "tooltip": "Abjuration Focus +4: +4 Equipment bonus to the DC of Abjuration spells."
-  },
-  "Accuracy": {
-   "carrier": "Item:Adamantine_Cloak_of_the_Wolf",
-   "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Cloak_of_the_Wolf",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Attack Bonus +4",
-   "tooltip": "Attack Bonus +4: Provides a +4 competence bonus to your attack rolls.",
-   "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
-  },
-  "Acid Absorption": {
-   "carrier": "Item:Battered_Phiarlan_Shield_(angular)",
-   "wiki_url": "https://ddowiki.com/page/Item:Battered_Phiarlan_Shield_(angular)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Acid Absorption +15%",
-   "tooltip": "Acid Absorption +15%: Passive: 15% Enhancement Bonus to Acid Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
-  },
-  "Acid Intensity": {
-   "carrier": "Item:Envenomed_Craft",
-   "wiki_url": "https://ddowiki.com/page/Item:Envenomed_Craft",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Acid Intensity +12%",
-   "tooltip": "Acid Intensity +12%: +12% Enhancement bonus to critical damage with Acid spells."
-  },
-  "Acid Lore": {
-   "carrier": "Item:Acidic_Insignia",
-   "wiki_url": "https://ddowiki.com/page/Item:Acidic_Insignia",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Acid Lore +21",
-   "tooltip": "Acid Lore +21: Passive: Your Acid spells gain a 21% Equipment bonus to their chance to critical hit."
-  },
-  "Acid Resistance": {
-   "carrier": "Item:Band_of_Seasons'_Warding",
-   "wiki_url": "https://ddowiki.com/page/Item:Band_of_Seasons'_Warding",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Acid Resistance +26",
-   "tooltip": "Acid Resistance +26: Passive: +26 Enhancement bonus to your Acid Resistance."
-  },
-  "Action Boost Charges": {
-   "carrier": "Item:Adherent's_Pendant",
-   "wiki_url": "https://ddowiki.com/page/Item:Adherent's_Pendant",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Action Boost Enhancement",
-   "tooltip": "Action Boost Enhancement: This will increase the total number of Action Boosts you can use by 3. However, these additional Action Boosts will only take effect after the wielder rests.",
-   "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
-  },
-  "Alignment Absorption": {
-   "carrier": "Item:Aegis_of_Aosu'riel",
-   "wiki_url": "https://ddowiki.com/page/Item:Aegis_of_Aosu'riel",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Alignment Absorption +15%",
-   "tooltip": "Alignment Absorption +15%: Passive: 15% Enhancement Bonus to Alignment Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
-  },
-  "Alluring Skills Bonus": {
-   "carrier": "Item:Breaking_the_Bank",
-   "wiki_url": "https://ddowiki.com/page/Item:Breaking_the_Bank",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Exceptional Alluring Skills Bonus",
-   "tooltip": "Exceptional Alluring Skills Bonus: +8 Exceptional bonus to Bluff, Diplomacy, Haggle, Intimidate, and Perform."
-  },
-  "Armor Class": {
-   "carrier": "Item:+1_Starter_Breastplate",
-   "wiki_url": "https://ddowiki.com/page/Item:+1_Starter_Breastplate",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "+1 Enhancement Bonus",
-   "tooltip": "+1 Enhancement Bonus: +1 enhancement bonus to Armor Class."
-  },
-  "Armor Mastery": {
-   "carrier": "Item:Boots_of_Blessed_Travels",
-   "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Blessed_Travels",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Quality Armor Mastery +2",
-   "tooltip": "Quality Armor Mastery +2: Passive: +2 Quality bonus to the Max Dex Bonus of your equipped light, medium, or heavy armor. This benefit does not apply to the Max Dex Bonus of a Tower Shield."
-  },
-  "Armor-Piercing": {
-   "carrier": "Item:Admiral's_Wristwatch",
-   "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Wristwatch",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Armor-Piercing 7%",
-   "tooltip": "Armor-Piercing 7%: Passive: +7% Enhancement bonus to Fortification Bypass. (Fortification Bypass makes your attacks ignore a percentage of enemy Fortification.)"
-  },
-  "Assassinate": {
-   "carrier": "Item:Assassin's_Kiss",
-   "wiki_url": "https://ddowiki.com/page/Item:Assassin's_Kiss",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Assassinate +2",
-   "tooltip": "Assassinate +2: +2 Enhancement bonus to the DC of character's Assassinate attempts."
-  },
-  "Astute Skills Bonus": {
-   "carrier": "Item:Epic_Treasure_Hunter's_Spyglass_(level_20)",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Treasure_Hunter's_Spyglass_(level_20)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Exceptional Astute Skills Bonus",
-   "tooltip": "Exceptional Astute Skills Bonus: +8 Exceptional bonus to Disable Device, Repair and Search."
-  },
-  "Balance": {
-   "carrier": "Item:Balanced_Boots",
-   "wiki_url": "https://ddowiki.com/page/Item:Balanced_Boots",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Balance +13",
-   "tooltip": "Balance +13: Passive: +13 Competence bonus to the Balance skill."
-  },
-  "Blighted Lore": {
-   "carrier": "Item:Blightstaff",
-   "wiki_url": "https://ddowiki.com/page/Item:Blightstaff",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Blighted Lore +22",
-   "tooltip": "Blighted Lore +22: Passive: Your Acid, Negative, Poison and Evil spells gain a 22% Equipment bonus to their chance to critical hit."
-  },
-  "Bluff": {
-   "carrier": "Item:Backstabber's_Gloves_(level_12)",
-   "wiki_url": "https://ddowiki.com/page/Item:Backstabber's_Gloves_(level_12)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Bluff +10",
-   "tooltip": "Bluff +10: Passive: +10 Competence bonus to the Bluff skill."
-  },
-  "Breath Weapon Focus": {
-   "carrier": "Item:Dragon_Eyes",
-   "wiki_url": "https://ddowiki.com/page/Item:Dragon_Eyes",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Breath Weapon Focus +4",
-   "tooltip": "Breath Weapon Focus +4: +4 Equipment bonus to the DC of Breath Weapon spells."
-  },
-  "Carrying Capacity": {
-   "carrier": "Item:Legendary_Official_Kobold_Union_Buckle",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Official_Kobold_Union_Buckle",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Carrying Capacity +15",
-   "tooltip": "Carrying Capacity +15: You gain a +15 Enhancement Bonus to Carrying Capacity, increasing your Carrying Capacity as if you had an additional +15 Strength."
-  },
-  "Chaos Absorption": {
-   "carrier": "Item:Admiral's_Cummerbund",
-   "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Cummerbund",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Chaos Absorption +14%",
-   "tooltip": "Chaos Absorption +14%: Passive: 14% Enhancement Bonus to Chaos Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
-  },
-  "Charisma": {
-   "carrier": "Item:Admiral's_Gloves",
-   "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Gloves",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Charisma +5",
-   "tooltip": "Charisma +5: This item makes the wearer have more flair, granting a +5 Enhancement bonus to Charisma."
-  },
-  "Cold Absorption": {
-   "carrier": "Item:Chilling_Sash_of_Tailara",
-   "wiki_url": "https://ddowiki.com/page/Item:Chilling_Sash_of_Tailara",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Cold Absorption +20%",
-   "tooltip": "Cold Absorption +20%: Passive: 20% Enhancement Bonus to Cold Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
-  },
-  "Cold Resistance": {
-   "carrier": "Item:Aquatic_Bracers_(level_12)",
-   "wiki_url": "https://ddowiki.com/page/Item:Aquatic_Bracers_(level_12)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Cold Resistance +20",
-   "tooltip": "Cold Resistance +20: Passive: +20 Enhancement bonus to your Cold Resistance."
-  },
-  "Combustion": {
-   "carrier": "Item:Beacon_of_Tira",
-   "wiki_url": "https://ddowiki.com/page/Item:Beacon_of_Tira",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Combustion +78",
-   "tooltip": "Combustion +78: Passive: +78 Equipment bonus to Fire Spell Power."
-  },
-  "Concentration": {
-   "carrier": "Item:Alchemical_Apprentice's_Robe",
-   "wiki_url": "https://ddowiki.com/page/Item:Alchemical_Apprentice's_Robe",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Concentration +1",
-   "tooltip": "Concentration +1: Passive: +1 Competence bonus to the Concentration skill."
-  },
-  "Conjuration Focus": {
-   "carrier": "Item:Band_of_Manifest_Magic",
-   "wiki_url": "https://ddowiki.com/page/Item:Band_of_Manifest_Magic",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Conjuration Focus +4",
-   "tooltip": "Conjuration Focus +4: +4 Equipment bonus to the DC of Conjuration spells."
-  },
-  "Constitution": {
-   "carrier": "Item:Aegis_of_Aosu'riel",
-   "wiki_url": "https://ddowiki.com/page/Item:Aegis_of_Aosu'riel",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Quality Constitution +1",
-   "tooltip": "Quality Constitution +1: This item gives the wearer improved health, granting a +1 Quality bonus to Constitution."
-  },
-  "Corrosion": {
-   "carrier": "Item:Acidic_Insignia",
-   "wiki_url": "https://ddowiki.com/page/Item:Acidic_Insignia",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Quality Corrosion +34",
-   "tooltip": "Quality Corrosion +34: Passive: +34 Quality bonus to Acid Spell Power."
-  },
-  "Creeping Dust Lore": {
-   "carrier": "Item:Creeping_Dust_Conduit",
-   "wiki_url": "https://ddowiki.com/page/Item:Creeping_Dust_Conduit",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Creeping Dust Lore +14",
-   "tooltip": "Creeping Dust Lore +14: Passive: Your Cold and Acid spells gain a 14% Equipment bonus to their chance to critical hit."
-  },
-  "Curse Resistance": {
-   "carrier": "Item:Cursebane_Focus",
-   "wiki_url": "https://ddowiki.com/page/Item:Cursebane_Focus",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Curse Resistance +5",
-   "tooltip": "Curse Resistance +5: Passive: +5 Enhancement bonus to saves versus curses."
-  },
-  "Dark Restoration Lore": {
-   "carrier": "Item:Alaric's_Grim_Gauntlets",
-   "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Dark Restoration Lore +23",
-   "tooltip": "Dark Restoration Lore +23: Passive: Your Negative, Poison and Positive spells gain a 23% Equipment bonus to their chance to critical hit."
-  },
-  "Dazing": {
-   "carrier": "Item:Buckler_of_the_Demonic_Soldier",
-   "wiki_url": "https://ddowiki.com/page/Item:Buckler_of_the_Demonic_Soldier",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Dazing IV",
-   "tooltip": "Dazing IV: On Hit: Your target suffers a -1 Penalty to Will Saving Throws for 6 seconds. This effect stacks up to 5 times. This effect may only occur on-hit once every three seconds.Passive: The DC of the saving throw to resist your Stunning Blow and Stunning Fist combat feats is increased by 8."
-  },
-  "Deadly": {
-   "carrier": "Item:Admiral's_Wristwatch",
-   "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Wristwatch",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Deadly +4",
-   "tooltip": "Deadly +4: +4 Competence bonus to weapon damage."
-  },
-  "Deception": {
-   "carrier": "Item:Admiral's_Gumshoes",
-   "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Gumshoes",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Deception +3",
-   "tooltip": "Deception +3: +3 Enhancement bonus to hit and +5 to damage for any hit that would qualify as a sneak attack."
-  },
-  "Devotion": {
-   "carrier": "Item:+1_Starter_Heavy_Mace",
-   "wiki_url": "https://ddowiki.com/page/Item:+1_Starter_Heavy_Mace",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Devotion +30",
-   "tooltip": "Devotion +30: Passive: +30 Equipment bonus to Positive (Healing) Spell Power."
-  },
-  "Dexterity": {
-   "carrier": "Item:Arlyn's_Ring",
-   "wiki_url": "https://ddowiki.com/page/Item:Arlyn's_Ring",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Dexterity +3",
-   "tooltip": "Dexterity +3: This item makes the wearer more nimble and dexterous, granting a +3 Enhancement bonus to Dexterity."
-  },
-  "Diplomacy": {
-   "carrier": "Item:Cardinal's_Gloves",
-   "wiki_url": "https://ddowiki.com/page/Item:Cardinal's_Gloves",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Diplomacy +5",
-   "tooltip": "Diplomacy +5: Passive: +5 Competence bonus to the Diplomacy skill."
-  },
-  "Disable Device": {
-   "carrier": "Item:Bracers_of_Twisting_Shade_(level_16)",
-   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_16)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Disable Device +15",
-   "tooltip": "Disable Device +15: Passive: +15 Competence bonus to the Disable Device skill."
-  },
-  "Distant Diversion": {
-   "carrier": "Item:Aral'Aul'Nevae's_Hide",
-   "wiki_url": "https://ddowiki.com/page/Item:Aral'Aul'Nevae's_Hide",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Distant Diversion +7%",
-   "tooltip": "Distant Diversion +7%: +7% Enhancement bonus to decreased threat generated from ranged damage."
-  },
-  "Distant Incite": {
-   "carrier": "Item:Cloak_of_the_Crownblade",
-   "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_the_Crownblade",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Distant Incite +23",
-   "tooltip": "Distant Incite +23: +23% bonus to increased threat generation from ranged damage"
-  },
-  "Diversion": {
-   "carrier": "Item:Animated_Rope",
-   "wiki_url": "https://ddowiki.com/page/Item:Animated_Rope",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Diversion +14%",
-   "tooltip": "Diversion +14%: +14% Enhancement bonus to decreased threat generated from melee damage."
-  },
-  "Dodge": {
-   "carrier": "Item:Adamantine_Cloak_of_the_Wolf",
-   "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Cloak_of_the_Wolf",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Dodge +8%",
-   "tooltip": "Dodge +8%: +8% Enhancement bonus to Dodge."
-  },
-  "Doubleshot": {
-   "carrier": "Item:Beltstrap_of_Forbidden_Tomes",
-   "wiki_url": "https://ddowiki.com/page/Item:Beltstrap_of_Forbidden_Tomes",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Insightful Doubleshot 5%",
-   "tooltip": "Insightful Doubleshot 5%: Passive: 5% Insight bonus to Doubleshot. (Doubleshot is a chance to score an additional hit with a ranged attack.)"
-  },
-  "Doublestrike": {
-   "carrier": "Item:Antipode,_Fist_of_the_Horizon",
-   "wiki_url": "https://ddowiki.com/page/Item:Antipode,_Fist_of_the_Horizon",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Doublestrike 6%",
-   "tooltip": "Doublestrike 6%: Passive: 6% Enhancement bonus to Doublestrike. (Doublestrike is a chance to score an additional hit with a melee attack.)"
-  },
-  "DR": {
-   "carrier": "Item:Adherence",
-   "wiki_url": "https://ddowiki.com/page/Item:Adherence",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Damage Reduction 5/-",
-   "tooltip": "Damage Reduction 5/-: Reduces all physical damage by 5.",
-   "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
-  },
-  "Dragon's Edge": {
-   "carrier": "Item:Axe_of_Savaran",
-   "wiki_url": "https://ddowiki.com/page/Item:Axe_of_Savaran",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Dragon's Edge 3",
-   "tooltip": "Dragon's Edge 3: +9% Enhancement bonus to bypass enemy Fortification. On Crit: 3d8 Bleeding Damage to those that are vulnerable to it."
-  },
-  "Dream Vision": {
-   "carrier": "Item:Dream_Visor_(level_12)",
-   "wiki_url": "https://ddowiki.com/page/Item:Dream_Visor_(level_12)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Dream Vision +1",
-   "tooltip": "Dream Vision +1: Passive: +1 Competence bonus to Attack and Damage rolls. your melee and ranged attacks are also able to bypass the miss chance for attacking Incorporeal enemies as if they had Ghost Touch."
-  },
-  "Efficient Metamagic - Embolden": {
-   "carrier": "Item:Attunement's_Gaze",
-   "wiki_url": "https://ddowiki.com/page/Item:Attunement's_Gaze",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Efficient Metamagic - Embolden II",
-   "tooltip": "Efficient Metamagic - Embolden II: The additional spell point cost for using the Embolden Metamagic feat is reduced by 2 SP."
-  },
-  "Efficient Metamagic - Empower": {
-   "carrier": "Item:Belashyrra's_Cleansed_Scepter",
-   "wiki_url": "https://ddowiki.com/page/Item:Belashyrra's_Cleansed_Scepter",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Efficient Metamagic - Empower II",
-   "tooltip": "Efficient Metamagic - Empower II: The additional spell point cost for using the Empower Metamagic feat is reduced by 2 SP."
-  },
-  "Efficient Metamagic - Empower Healing": {
-   "carrier": "Item:Bijio",
-   "wiki_url": "https://ddowiki.com/page/Item:Bijio",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Efficient Metamagic - Empower Healing I",
-   "tooltip": "Efficient Metamagic - Empower Healing I: The additional spell point cost for using the Empower Healing Metamagic feat is reduced by 1 SP."
-  },
-  "Efficient Metamagic - Enlarge": {
-   "carrier": "Item:Drow_Wizard's_Greaves",
-   "wiki_url": "https://ddowiki.com/page/Item:Drow_Wizard's_Greaves",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Efficient Metamagic - Enlarge I",
-   "tooltip": "Efficient Metamagic - Enlarge I: The additional spell point cost for using the Enlarge Metamagic feat is reduced by 1 SP."
-  },
-  "Efficient Metamagic - Extend": {
-   "carrier": "Item:Elder's_Focus",
-   "wiki_url": "https://ddowiki.com/page/Item:Elder's_Focus",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Efficient Metamagic - Extend I",
-   "tooltip": "Efficient Metamagic - Extend I: The additional spell point cost for using the Extend Metamagic feat is reduced by 1 SP."
-  },
-  "Efficient Metamagic - Intensify": {
-   "carrier": "Item:Acidic_Insignia",
-   "wiki_url": "https://ddowiki.com/page/Item:Acidic_Insignia",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Efficient Metamagic - Intensify II",
-   "tooltip": "Efficient Metamagic - Intensify II: The additional spell point cost for using the Intensify Metamagic feat is reduced by 2 SP."
-  },
-  "Efficient Metamagic - Maximize": {
-   "carrier": "Item:Arcane_Shard",
-   "wiki_url": "https://ddowiki.com/page/Item:Arcane_Shard",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Efficient Metamagic - Maximize II",
-   "tooltip": "Efficient Metamagic - Maximize II: The additional spell point cost for using the Maximize Metamagic feat is reduced by 4 SP."
-  },
-  "Efficient Metamagic - Quicken": {
-   "carrier": "Item:Legendary_Mad_Brew_Bottle",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Mad_Brew_Bottle",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Efficient Metamagic - Quicken II",
-   "tooltip": "Efficient Metamagic - Quicken II: The additional spell point cost for using the Quicken Metamagic feat is reduced by 2 SP."
-  },
-  "Electric Absorption": {
-   "carrier": "Item:Azure_Necklace_of_Prophecy",
-   "wiki_url": "https://ddowiki.com/page/Item:Azure_Necklace_of_Prophecy",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Electric Absorption +19%",
-   "tooltip": "Electric Absorption +19%: Passive: 19% Enhancement Bonus to Electric Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
-  },
-  "Electric Resistance": {
-   "carrier": "Item:Amulet_of_the_Stormreaver",
-   "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Stormreaver",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Electric Resistance +30",
-   "tooltip": "Electric Resistance +30: Passive: +30 Enhancement bonus to your Electric Resistance."
-  },
-  "Enchantment Focus": {
-   "carrier": "Item:Band_of_Mental_Magic",
-   "wiki_url": "https://ddowiki.com/page/Item:Band_of_Mental_Magic",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Enchantment Focus +4",
-   "tooltip": "Enchantment Focus +4: +4 Equipment bonus to the DC of Enchantment spells."
-  },
-  "Enchantment Save": {
-   "carrier": "Item:Adherence",
-   "wiki_url": "https://ddowiki.com/page/Item:Adherence",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Enchantment Save +6",
-   "tooltip": "Enchantment Save +6: +6 Resistance bonus to your saves versus enchantments"
-  },
-  "Enhanced Ki": {
-   "carrier": "Item:Blood_of_Blossoms",
-   "wiki_url": "https://ddowiki.com/page/Item:Blood_of_Blossoms",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Enhanced Ki +3",
-   "tooltip": "Enhanced Ki +3: Increases the rate at which the user gains ki with each successful attack."
-  },
-  "Enhancement Bonus": {
-   "carrier": "Item:Epic_Mournlode_Docent",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Mournlode_Docent",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "+5 Enhancement Bonus",
-   "tooltip": "+5 Enhancement Bonus: +5 enhancement bonus to Armor Class."
-  },
-  "Enhancement Bonus (Armor)": {
-   "carrier": "Item:+1_Starter_Breastplate",
-   "wiki_url": "https://ddowiki.com/page/Item:+1_Starter_Breastplate",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "+1 Enhancement Bonus",
-   "tooltip": "+1 Enhancement Bonus: +1 enhancement bonus to Armor Class.",
-   "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
-  },
-  "Enhancement Bonus (Weapon)": {
-   "carrier": "Item:-1_Quarterstaff_of_Lesser_Halfling_Bane",
-   "wiki_url": "https://ddowiki.com/page/Item:-1_Quarterstaff_of_Lesser_Halfling_Bane",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "-1 Enhancement Bonus",
-   "tooltip": "-1 Enhancement Bonus: This weapon is less well-made than normal, giving a -1 penalty to attack and damage rolls.",
-   "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
-  },
-  "Evil Absorption": {
-   "carrier": "Item:Bone_Figurine",
-   "wiki_url": "https://ddowiki.com/page/Item:Bone_Figurine",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Evil Absorption +11%",
-   "tooltip": "Evil Absorption +11%: Passive: 11% Enhancement Bonus to Evil Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
-  },
-  "Evocation Focus": {
-   "carrier": "Item:Anathema",
-   "wiki_url": "https://ddowiki.com/page/Item:Anathema",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Evocation Focus I",
-   "tooltip": "Evocation Focus I: +1 Equipment bonus to the DC of Evocation spells."
-  },
-  "False Life": {
-   "carrier": "Item:Amulet_of_the_Makers",
-   "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Makers",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Vitality +25",
-   "tooltip": "Vitality +25: Passive: +25 Vitality bonus to Hit Points.",
-   "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
-  },
-  "Fire Absorption": {
-   "carrier": "Item:Absorption_Gauntlet",
-   "wiki_url": "https://ddowiki.com/page/Item:Absorption_Gauntlet",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Fire Absorption +26%",
-   "tooltip": "Fire Absorption +26%: Passive: 26% Enhancement Bonus to Fire Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
-  },
-  "Fire Intensity": {
-   "carrier": "Item:Flamewhip_Belt",
-   "wiki_url": "https://ddowiki.com/page/Item:Flamewhip_Belt",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Fire Intensity +12%",
-   "tooltip": "Fire Intensity +12%: +12% Enhancement bonus to critical damage with Fire spells."
-  },
-  "Fire Lore": {
-   "carrier": "Item:Blight_Inferno",
-   "wiki_url": "https://ddowiki.com/page/Item:Blight_Inferno",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Fire Lore +11",
-   "tooltip": "Fire Lore +11: Passive: Your Fire spells gain a 11% Equipment bonus to their chance to critical hit."
-  },
-  "Fire Resistance": {
-   "carrier": "Item:Argenti's_Armor",
-   "wiki_url": "https://ddowiki.com/page/Item:Argenti's_Armor",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Fire Resistance +30",
-   "tooltip": "Fire Resistance +30: Passive: +30 Enhancement bonus to your Fire Resistance."
-  },
-  "Firestorm Lore": {
-   "carrier": "Item:Firestorm_Conduit",
-   "wiki_url": "https://ddowiki.com/page/Item:Firestorm_Conduit",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Firestorm Lore +14",
-   "tooltip": "Firestorm Lore +14: Passive: Your Fire and Lightning spells gain a 14% Equipment bonus to their chance to critical hit."
-  },
-  "Force Absorption": {
-   "carrier": "Item:Bulwark_of_Snow",
-   "wiki_url": "https://ddowiki.com/page/Item:Bulwark_of_Snow",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Force Absorption +11%",
-   "tooltip": "Force Absorption +11%: Passive: 11% Enhancement Bonus to Force Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
-  },
-  "Fortification": {
-   "carrier": "Item:Allegience_of_the_Wild_Hunt",
-   "wiki_url": "https://ddowiki.com/page/Item:Allegience_of_the_Wild_Hunt",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Fortification +59%",
-   "tooltip": "Fortification +59%: +59% Enhancement bonus to reduced chance of taking critical damage on a critical hit."
-  },
-  "Fortitude Save": {
-   "carrier": "Item:Abyssal_Compass",
-   "wiki_url": "https://ddowiki.com/page/Item:Abyssal_Compass",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Insightful Fortitude Save +3",
-   "tooltip": "Insightful Fortitude Save +3: This item gives a +3 Insight bonus to your Fortitude saves."
-  },
-  "Frozen Depths Lore": {
-   "carrier": "Item:Black_Pearl_Ring",
-   "wiki_url": "https://ddowiki.com/page/Item:Black_Pearl_Ring",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Frozen Depths Lore +22",
-   "tooltip": "Frozen Depths Lore +22: Passive: Your Negative, Poison and Cold spells gain a +22% Equipment bonus to their chance to critical hit."
-  },
-  "Frozen Storm Lore": {
-   "carrier": "Item:Echo_of_Wave",
-   "wiki_url": "https://ddowiki.com/page/Item:Echo_of_Wave",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Frozen Storm Lore +11",
-   "tooltip": "Frozen Storm Lore +11: Passive: Your Cold and Lightning spells gain a 11% Equipment bonus to their chance to critical hit."
-  },
-  "Glaciation": {
-   "carrier": "Item:Anchorchain",
-   "wiki_url": "https://ddowiki.com/page/Item:Anchorchain",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Glaciation +53",
-   "tooltip": "Glaciation +53: Passive: +53 Equipment bonus to Cold Spell Power."
-  },
-  "Good Luck": {
-   "carrier": "Item:Ancient_Gemstone",
-   "wiki_url": "https://ddowiki.com/page/Item:Ancient_Gemstone",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Good Luck +2",
-   "tooltip": "Good Luck +2: This item gives a +2 Luck bonus to all saves and skill checks."
-  },
-  "Greater Dragonmark Charges": {
-   "carrier": "Item:Epic_Chimera's_Crown",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Chimera's_Crown",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Minor Greater Dragonmark Enhancement",
-   "tooltip": "Minor Greater Dragonmark Enhancement: This will increase the total number of Greater Dragonmarks you can use by 1. However, these additional Greater Dragonmarks will only take effect after the wielder rests.",
-   "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
-  },
-  "Haggle": {
-   "carrier": "Item:+1_Vorpal_Sickle_of_Haggling",
-   "wiki_url": "https://ddowiki.com/page/Item:+1_Vorpal_Sickle_of_Haggling",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Haggle +3",
-   "tooltip": "Haggle +3: Passive: +3 Competence bonus to the Haggle skill."
-  },
-  "Hallowed": {
-   "carrier": "Item:Alaric's_Grim_Gauntlets",
-   "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Hallowed",
-   "tooltip": "Hallowed: An item with this quality assists only wearers who have the ability to turn undead. Hallowed items provide an +14 Enhancement bonus to the maximum Hit Dice of undead turned."
-  },
-  "Hardened Exterior": {
-   "carrier": "Item:Duskbone_Ring",
-   "wiki_url": "https://ddowiki.com/page/Item:Duskbone_Ring",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Hardened Exterior 2",
-   "tooltip": "Hardened Exterior 2: You gain a +2 profane bonus to AC."
-  },
-  "Heal": {
-   "carrier": "Item:Band_of_Light",
-   "wiki_url": "https://ddowiki.com/page/Item:Band_of_Light",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Heal +13",
-   "tooltip": "Heal +13: Passive: +13 Competence bonus to the Heal skill."
-  },
-  "Healing Intensity": {
-   "carrier": "Item:Legendary_Signet_of_the_Prince_of_Pleasure",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Signet_of_the_Prince_of_Pleasure",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Healing Intensity +24%",
-   "tooltip": "Healing Intensity +24%: +24% Enhancement bonus to critical damage with Positive (Healing) spells."
-  },
-  "Healing Lore": {
-   "carrier": "Item:Adherent's_Pendant",
-   "wiki_url": "https://ddowiki.com/page/Item:Adherent's_Pendant",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Healing Lore +12",
-   "tooltip": "Healing Lore +12: Passive: Your Positive Energy spells gain a 12% Equipment bonus to their chance to critical hit."
-  },
-  "Hide": {
-   "carrier": "Item:Accomplice",
-   "wiki_url": "https://ddowiki.com/page/Item:Accomplice",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Hide +10",
-   "tooltip": "Hide +10: Passive: +10 Competence bonus to the Hide skill."
-  },
-  "Ice Intensity": {
-   "carrier": "Item:Cavernous_Chill",
-   "wiki_url": "https://ddowiki.com/page/Item:Cavernous_Chill",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Ice Intensity +12%",
-   "tooltip": "Ice Intensity +12%: +12% Enhancement bonus to critical damage with Cold spells."
-  },
-  "Healing Amplification": {
-   "carrier": "Item:A_Garbage_Can_Lid",
-   "wiki_url": "https://ddowiki.com/page/Item:A_Garbage_Can_Lid",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Healing Amplification",
-   "tooltip": "Healing Amplification: This effect amplifies all incoming positive energy healing by +8 (Exceptional bonus). Includes spells, potions, and other effects."
-  },
-  "Ice Lore": {
-   "carrier": "Item:Anchorchain",
-   "wiki_url": "https://ddowiki.com/page/Item:Anchorchain",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Ice Lore +8",
-   "tooltip": "Ice Lore +8: Passive: Your Cold spells gain a 8% Equipment bonus to their chance to critical hit."
-  },
-  "Illusion Focus": {
-   "carrier": "Item:Admiral's_Gloves",
-   "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Gloves",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Illusion Focus +3",
-   "tooltip": "Illusion Focus +3: +3 Equipment bonus to the DC of Illusion spells."
-  },
-  "Illusion Save": {
-   "carrier": "Item:Epic_Glimpse_of_the_Soul",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Glimpse_of_the_Soul",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Illusion Save +6",
-   "tooltip": "Illusion Save +6: +6 Resistance bonus to your saves versus illusions"
-  },
-  "Improved Deception": {
-   "carrier": "Item:Agony,_the_Knife_in_the_Dark",
-   "wiki_url": "https://ddowiki.com/page/Item:Agony,_the_Knife_in_the_Dark",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Improved Deception",
-   "tooltip": "Improved Deception: This item makes your weapons hard to focus upon and thus provides a +5 enhancement bonus to Bluff checks. In addition, while using this item your weapons have a chance to envelop the target in darkness, making them vulnerable to sneak attacks for a short time."
-  },
-  "Impulse": {
-   "carrier": "Item:Arm_of_the_Archons",
-   "wiki_url": "https://ddowiki.com/page/Item:Arm_of_the_Archons",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Impulse +72",
-   "tooltip": "Impulse +72: Passive: +72 Equipment bonus to Force, Untyped, Slashing, Piercing, and Bludgeoning Spell Power."
-  },
-  "Incite": {
-   "carrier": "Item:Adamantine_Cloak_of_the_Bear",
-   "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Cloak_of_the_Bear",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Incite +20",
-   "tooltip": "Incite +20: +20% Enhancement bonus to increased threat generation from melee damage"
-  },
-  "Intelligence": {
-   "carrier": "Item:Acolyte's_Lenses",
-   "wiki_url": "https://ddowiki.com/page/Item:Acolyte's_Lenses",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Intelligence +8",
-   "tooltip": "Intelligence +8: This item focuses the power of the wearer's mind, granting a +8 Enhancement bonus to Intelligence."
-  },
-  "Intimidate": {
-   "carrier": "Item:+1_Intimidating_Dagger_of_Acid",
-   "wiki_url": "https://ddowiki.com/page/Item:+1_Intimidating_Dagger_of_Acid",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Intimidate +3",
-   "tooltip": "Intimidate +3: Passive: +3 Competence bonus to the Intimidate skill."
-  },
-  "Jump": {
-   "carrier": "Item:Acrobat's_Ring",
-   "wiki_url": "https://ddowiki.com/page/Item:Acrobat's_Ring",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Jump +7",
-   "tooltip": "Jump +7: Passive: +7 Competence bonus to the Jump skill."
-  },
-  "Kinetic Intensity": {
-   "carrier": "Item:Legendary_Ruler_of_Ruin",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ruler_of_Ruin",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Kinetic Intensity +24%",
-   "tooltip": "Kinetic Intensity +24%: +24% Enhancement bonus to critical damage with Force and Physical spells."
-  },
-  "Kinetic Lore": {
-   "carrier": "Item:Collision,_the_Unstoppable_Arcana",
-   "wiki_url": "https://ddowiki.com/page/Item:Collision,_the_Unstoppable_Arcana",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Kinetic Lore +24",
-   "tooltip": "Kinetic Lore +24: Passive: Your Force, Physical and Untyped spells gain a 24% Equipment bonus to their chance to critical hit."
-  },
-  "Law Absorption": {
-   "carrier": "Item:Admiral's_Cummerbund",
-   "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Cummerbund",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Law Absorption +14%",
-   "tooltip": "Law Absorption +14%: Passive: 14% Enhancement Bonus to Law Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
-  },
-  "Lesser Dragonmark Charges": {
-   "carrier": "Item:Chimera's_Crown",
-   "wiki_url": "https://ddowiki.com/page/Item:Chimera's_Crown",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Minor Lesser Dragonmark Enhancement",
-   "tooltip": "Minor Lesser Dragonmark Enhancement: This will increase the total number of Lesser Dragonmarks you can use by 1. However, these additional Lesser Dragonmarks will only take effect after the wielder rests.",
-   "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
-  },
-  "Lifesealed": {
-   "carrier": "Item:Boots_of_Tranquility",
-   "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Tranquility",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Lifesealed +28",
-   "tooltip": "Lifesealed +28: You are immune to magical effects that cause instant death. In addition, you have a +28% enhancement bonus to Negative Energy Absorption."
-  },
-  "Light Absorption": {
-   "carrier": "Item:A_Memento_of_Mori",
-   "wiki_url": "https://ddowiki.com/page/Item:A_Memento_of_Mori",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Light Absorption +22%",
-   "tooltip": "Light Absorption +22%: Passive: 22% Enhancement Bonus to Light Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
-  },
-  "Light Resistance": {
-   "carrier": "Item:Cursekeeper",
-   "wiki_url": "https://ddowiki.com/page/Item:Cursekeeper",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Insightful Light Resistance +13",
-   "tooltip": "Insightful Light Resistance +13: Passive: +13 Insight bonus to your Light Resistance."
-  },
-  "Lightning Intensity": {
-   "carrier": "Item:Legendary_Lightning_Soles",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Lightning_Soles",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Lightning Intensity +24%",
-   "tooltip": "Lightning Intensity +24%: +24% Enhancement bonus to critical damage with Electric spells."
-  },
-  "Lightning Lore": {
-   "carrier": "Item:Amplin,_the_Channeling_Bolt",
-   "wiki_url": "https://ddowiki.com/page/Item:Amplin,_the_Channeling_Bolt",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Lightning Lore +24",
-   "tooltip": "Lightning Lore +24: Passive: Your Electricity spells gain a 24% Equipment bonus to their chance to critical hit."
-  },
-  "Listen": {
-   "carrier": "Item:Agony's_Eyes",
-   "wiki_url": "https://ddowiki.com/page/Item:Agony's_Eyes",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Listen +10",
-   "tooltip": "Listen +10: Passive: +10 Competence bonus to the Listen skill."
-  },
-  "Magical Efficiency": {
-   "carrier": "Item:Aetherband",
-   "wiki_url": "https://ddowiki.com/page/Item:Aetherband",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Magical Efficiency 5%",
-   "tooltip": "Magical Efficiency 5%: You take a 5% Enhancement discount to the Spell Point cost of your spells."
-  },
-  "Magical Sheltering": {
-   "carrier": "Item:Absorption_Gauntlet",
-   "wiki_url": "https://ddowiki.com/page/Item:Absorption_Gauntlet",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Insightful Magical Sheltering +10",
-   "tooltip": "Insightful Magical Sheltering +10: +10 Insight bonus to Magical Resistance Rating"
-  },
-  "Magnetism": {
-   "carrier": "Item:Attunement_Gauntlets",
-   "wiki_url": "https://ddowiki.com/page/Item:Attunement_Gauntlets",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Magnetism +94",
-   "tooltip": "Magnetism +94: Passive: +94 Equipment bonus to Electricity Spell Power."
-  },
-  "Melee Alacrity": {
-   "carrier": "Item:Antique_Greataxe",
-   "wiki_url": "https://ddowiki.com/page/Item:Antique_Greataxe",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Melee Alacrity 5%",
-   "tooltip": "Melee Alacrity 5%: Gain 5% Enhancement bonus to Melee attack speed. Does not stack with the Haste spell."
-  },
-  "Melee Power": {
-   "carrier": "Item:Epic_Buckler_of_the_Demonic_Soldier",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Buckler_of_the_Demonic_Soldier",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Melee Power +6",
-   "tooltip": "Melee Power +6: This item provides a +6 Enhancement bonus to Melee Power."
-  },
-  "Minor Spell Penetration": {
-   "carrier": "Item:Elfcrafted_Chain_Armor",
-   "wiki_url": "https://ddowiki.com/page/Item:Elfcrafted_Chain_Armor",
-   "provenance": "unmatched",
-   "harvested": "2026-09-04",
-   "labels_seen": [
-    "Mithral",
-    "Platinum Piece",
-    "+3 Enhancement Bonus",
-    "Mithral"
-   ],
-   "note": "the Elfcrafted Chain Armor page renders no tooltip for it (its labels are the Mithral material and the enhancement bonus); needs a carrier whose page engraves the enchantment."
-  },
-  "Moonlit Haunt Lore": {
-   "carrier": "Item:Perfected_Twisted_Talisman",
-   "wiki_url": "https://ddowiki.com/page/Item:Perfected_Twisted_Talisman",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Moonlit Haunt Lore +23",
-   "tooltip": "Moonlit Haunt Lore +23: Passive: Your Negative, Force, and Poison spells gain a 23% Equipment bonus to their chance to critical hit."
-  },
-  "Move Silently": {
-   "carrier": "Item:Accomplice",
-   "wiki_url": "https://ddowiki.com/page/Item:Accomplice",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Move Silently +10",
-   "tooltip": "Move Silently +10: Passive: +10 Competence bonus to the Move Silently skill."
-  },
-  "Mystic Diversion": {
-   "carrier": "Item:Acidic_Sphere",
-   "wiki_url": "https://ddowiki.com/page/Item:Acidic_Sphere",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Mystic Diversion +9%",
-   "tooltip": "Mystic Diversion +9%: +9% Enhancement bonus to decreased threat generated from spell damage."
-  },
-  "Mystic Incite": {
-   "carrier": "Item:Cloak_of_the_Crownblade",
-   "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_the_Crownblade",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Mystic Incite +23",
-   "tooltip": "Mystic Incite +23: +23% bonus to increased threat generation from spell damage"
-  },
-  "Necromancy Focus": {
-   "carrier": "Item:Bracers_of_the_Spider_Queen",
-   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_the_Spider_Queen",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Necromancy Focus +4",
-   "tooltip": "Necromancy Focus +4: +4 Equipment bonus to the DC of Necromancy spells."
-  },
-  "Negative Amplification": {
-   "carrier": "Item:Black_Velvet_Capelet",
-   "wiki_url": "https://ddowiki.com/page/Item:Black_Velvet_Capelet",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Negative Amplification",
-   "tooltip": "Negative Amplification: This effect amplifies all incoming negative energy healing by +15 (Insight bonus). Includes spells, potions, and other effects."
-  },
-  "Negative Energy Absorption": {
-   "carrier": "Item:Belt_of_Thoughtful_Rememberance",
-   "wiki_url": "https://ddowiki.com/page/Item:Belt_of_Thoughtful_Rememberance",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Negative Energy Absorption +20%",
-   "tooltip": "Negative Energy Absorption +20%: This effect absorbs 20% of all negative damage the character would have taken, after all other protections have been penetrated."
-  },
-  "Negative Resistance": {
-   "carrier": "Item:First_Light_(level_10)",
-   "wiki_url": "https://ddowiki.com/page/Item:First_Light_(level_10)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Negative Resistance +21",
-   "tooltip": "Negative Resistance +21: Passive: +21 Enhancement bonus to your Negative Resistance."
-  },
-  "Nimble Skills Bonus": {
-   "carrier": "Item:Boots_of_Fleet_and_Fortune",
-   "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Fleet_and_Fortune",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Exceptional Nimble Skills Bonus",
-   "tooltip": "Exceptional Nimble Skills Bonus: +7 Exceptional bonus to Balance, Hide, Move Silently, Open Lock and Tumble."
-  },
-  "Nullification": {
-   "carrier": "Item:Boots_of_Corrosion",
-   "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Corrosion",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Nullification +59",
-   "tooltip": "Nullification +59: Passive: +59 Equipment bonus to Negative (Necrotic) and Poison Spell Power."
-  },
-  "Open Lock": {
-   "carrier": "Item:Epic_Gloves_of_the_Tinkerer",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Gloves_of_the_Tinkerer",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Open Lock +17",
-   "tooltip": "Open Lock +17: Passive: +17 Competence bonus to the Open Lock skill."
-  },
-  "Orb Bonus": {
-   "carrier": "Item:Acidic_Sphere",
-   "wiki_url": "https://ddowiki.com/page/Item:Acidic_Sphere",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "+4 Orb Bonus",
-   "tooltip": "+4 Orb Bonus: While this orb is equipped and you are actively blocking, you gain a +4 orb bonus to all saving throws, as well as Acid, Cold, Fire, Electric, and Sonic resistances."
-  },
-  "Perform": {
-   "carrier": "Item:Bard's_Cloak",
-   "wiki_url": "https://ddowiki.com/page/Item:Bard's_Cloak",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Perform +15",
-   "tooltip": "Perform +15: Passive: +15 Competence bonus to the Perform skill."
-  },
-  "Physical Sheltering": {
-   "carrier": "Item:Admiral's_Cummerbund",
-   "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Cummerbund",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Physical Sheltering +11",
-   "tooltip": "Physical Sheltering +11: +11 Enhancement bonus to Physical Resistance Rating"
-  },
-  "Poison Absorption": {
-   "carrier": "Item:Astral_Spore_Pendant",
-   "wiki_url": "https://ddowiki.com/page/Item:Astral_Spore_Pendant",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Poison Absorption +21%",
-   "tooltip": "Poison Absorption +21%: Passive: 21% Enhancement Bonus to Poison Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
-  },
-  "Poison Resistance": {
-   "carrier": "Item:Crystalline_Wristlet",
-   "wiki_url": "https://ddowiki.com/page/Item:Crystalline_Wristlet",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Poison Resistance +33",
-   "tooltip": "Poison Resistance +33: Passive: +33 Enhancement bonus to your Poison Resistance."
-  },
-  "Power": {
-   "carrier": "Item:Arcane_Goggles",
-   "wiki_url": "https://ddowiki.com/page/Item:Arcane_Goggles",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Power I",
-   "tooltip": "Power I: This item grants the wearer +10 maximum spell points. Favored Souls and Sorcerers gain double spell points from this item."
-  },
-  "Power in Pact": {
-   "carrier": "Item:Baron_Aubrecker's_Family_Amulet",
-   "wiki_url": "https://ddowiki.com/page/Item:Baron_Aubrecker's_Family_Amulet",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Power in Pact +1",
-   "tooltip": "Power in Pact +1: You gain a +1 Enhancement bonus to Pact Dice."
-  },
-  "Power of Creeping Dust": {
-   "carrier": "Item:Creeping_Dust_Conduit",
-   "wiki_url": "https://ddowiki.com/page/Item:Creeping_Dust_Conduit",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Power of Creeping Dust +94",
-   "tooltip": "Power of Creeping Dust +94: Passive: +94 Equipment bonus to Cold and Acid Power."
-  },
-  "Power of the Blight": {
-   "carrier": "Item:Blightstaff",
-   "wiki_url": "https://ddowiki.com/page/Item:Blightstaff",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Power of the Blight +148",
-   "tooltip": "Power of the Blight +148: Passive: +148 Equipment bonus to Acid, Negative, Poison and Evil Spell Power."
-  },
-  "Power of the Dark Restoration": {
-   "carrier": "Item:Alaric's_Grim_Gauntlets",
-   "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Power of the Dark Restoration +155",
-   "tooltip": "Power of the Dark Restoration +155: Passive: +155 Equipment bonus to Negative, Poison and Positive Spell Power."
-  },
-  "Power of the Firestorm": {
-   "carrier": "Item:Cloak_of_the_Artblade",
-   "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_the_Artblade",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Power of the Firestorm +87",
-   "tooltip": "Power of the Firestorm +87: Passive: +87 Equipment bonus to Fire and Electric Spell Power."
-  },
-  "Power of the Flames of Purity": {
-   "carrier": "Item:Epic_Luminous_Truth",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Luminous_Truth",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Power of the Flames of Purity +111",
-   "tooltip": "Power of the Flames of Purity +111: Passive: +111 Equipment bonus to Fire and Light Spell Power."
-  },
-  "Power of the Frozen Depths": {
-   "carrier": "Item:Black_Pearl_Ring",
-   "wiki_url": "https://ddowiki.com/page/Item:Black_Pearl_Ring",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Power of the Frozen Depths +154",
-   "tooltip": "Power of the Frozen Depths +154: Passive: +154 Equipment bonus to Negative, Cold and Poison Spell Power."
-  },
-  "Power of the Frozen Storm": {
-   "carrier": "Item:Bottled_Rainstorm",
-   "wiki_url": "https://ddowiki.com/page/Item:Bottled_Rainstorm",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Insightful Power of the Frozen Storm +74",
-   "tooltip": "Insightful Power of the Frozen Storm +74: Passive: +74 Insight bonus to Cold and Electric Spell Power."
-  },
-  "Power of the Moonlit Haunt": {
-   "carrier": "Item:Perfected_Twisted_Talisman",
-   "wiki_url": "https://ddowiki.com/page/Item:Perfected_Twisted_Talisman",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Power of the Moonlit Haunt +157",
-   "tooltip": "Power of the Moonlit Haunt +157: Passive: +157 Equipment bonus to Negative, Force and Poison Spell Power."
-  },
-  "Power of the Silver Flame": {
-   "carrier": "Item:Epic_Pillar_of_Light",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Pillar_of_Light",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Power of the Silver Flame +122",
-   "tooltip": "Power of the Silver Flame +122: Passive: +122 Equipment bonus to Positive, Light, and Alignment Spell Power."
-  },
-  "Power of the Thunderstorm": {
-   "carrier": "Item:Epic_Storm",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Storm",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Power of the Thunderstorm +111",
-   "tooltip": "Power of the Thunderstorm +111: Passive: +111 Equipment bonus to Sonic and Electric Spell Power."
-  },
-  "Proof Against Disease": {
-   "carrier": "Item:Arraetrikos'_Bane_(level_15)",
-   "wiki_url": "https://ddowiki.com/page/Item:Arraetrikos'_Bane_(level_15)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Quality Proof Against Disease +1",
-   "tooltip": "Quality Proof Against Disease +1: This item grants its wearer immunity to natural diseases. This item also grants a +1 Quality bonus to saving throws against magical diseases, and the wearer does not fail saving throws against them on a roll of a natural 1 (this renders the wearer immune to magical diseases with a DC of less than 2 + their Fortitude save)."
-  },
-  "Proof Against Poison": {
-   "carrier": "Item:Arraetrikos'_Bane_(level_15)",
-   "wiki_url": "https://ddowiki.com/page/Item:Arraetrikos'_Bane_(level_15)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Insightful Proof Against Poison +2",
-   "tooltip": "Insightful Proof Against Poison +2: This item grants its wearer immunity to natural poisons. This item also grants a +2 Insight bonus to saving throws against magical poisons, and the wearer does not fail saving throws against them on a roll of a natural 1 (this renders the wearer immune to magical poisons with a DC of less than 3 + their Fortitude save)."
-  },
-  "Protection from Evil": {
-   "carrier": "Item:Epic_Icon_of_Mielikki",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Icon_of_Mielikki",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Protection from Evil +5",
-   "tooltip": "Protection from Evil +5: You have a +5 Deflection bonus to AC, and a +5 Resistance bonus to Saves vs Evil Monsters."
-  },
-  "Prudent Skills Bonus": {
-   "carrier": "Item:Epic_Treasure_Hunter's_Spyglass_(level_20)",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Treasure_Hunter's_Spyglass_(level_20)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Exceptional Prudent Skills Bonus",
-   "tooltip": "Exceptional Prudent Skills Bonus: +8 Exceptional bonus to Heal, Listen and Spot."
-  },
-  "Purifying Flame Lore": {
-   "carrier": "Item:Epic_Luminous_Truth",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Luminous_Truth",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Purifying Flame Lore +16",
-   "tooltip": "Purifying Flame Lore +16: Passive: Your Fire and Light spells gain a +16% Equipment bonus to their chance to critical hit."
-  },
-  "Radiance": {
-   "carrier": "Item:Alchemist's_Crown",
-   "wiki_url": "https://ddowiki.com/page/Item:Alchemist's_Crown",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Radiance +72",
-   "tooltip": "Radiance +72: Passive: +72 Equipment bonus to Light and Alignment Spell Power."
-  },
-  "Radiance Intensity": {
-   "carrier": "Item:Legendary_Mad_Angels'_Manacles",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Mad_Angels'_Manacles",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Radiance Intensity +24%",
-   "tooltip": "Radiance Intensity +24%: +24% Enhancement bonus to critical damage with Light and Alignment spells."
-  },
-  "Radiance Lore": {
-   "carrier": "Item:Celestial_Beacon",
-   "wiki_url": "https://ddowiki.com/page/Item:Celestial_Beacon",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Radiance Lore +11",
-   "tooltip": "Radiance Lore +11: Passive: Your Light and Aligned spells gain a 11% Equipment bonus to their chance to critical hit."
-  },
-  "Rage Charges": {
-   "carrier": "Item:Epic_Goggles_of_the_Inquisition",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Goggles_of_the_Inquisition",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Anger",
-   "tooltip": "Anger: This will increase the total number of Rages you can use by 3. However, these additional Rages will only take effect after the wielder rests.",
-   "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
-  },
-  "Ranged Alacrity": {
-   "carrier": "Item:Aeon,_the_Blazing_Reign",
-   "wiki_url": "https://ddowiki.com/page/Item:Aeon,_the_Blazing_Reign",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Ranged Alacrity 20%",
-   "tooltip": "Ranged Alacrity 20%: Gain 20% Enhancement bonus to Ranged attack speed. Does not stack with the Haste spell."
-  },
-  "Ranged Power": {
-   "carrier": "Item:Dawnbringer_(level_28)",
-   "wiki_url": "https://ddowiki.com/page/Item:Dawnbringer_(level_28)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Ranged Power +6",
-   "tooltip": "Ranged Power +6: This item provides a +6 Enhancement bonus to Ranged Power."
-  },
-  "Reconstruction": {
-   "carrier": "Item:Amulet_of_the_Makers",
-   "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Makers",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Reconstruction +101",
-   "tooltip": "Reconstruction +101: Passive: +101 Equipment bonus to Repair and Rust Spell Power."
-  },
-  "Reflex Save": {
-   "carrier": "Item:Agile_Belt",
-   "wiki_url": "https://ddowiki.com/page/Item:Agile_Belt",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Reflex Save +1",
-   "tooltip": "Reflex Save +1: This item gives a +1 Resistance bonus to your Reflex saves."
-  },
-  "Repair": {
-   "carrier": "Item:Boots_of_Uncanny_Mending",
-   "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Uncanny_Mending",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Repair Amplification",
-   "tooltip": "Repair Amplification: This effect amplifies all incoming repair healing by +27 (Enhancement bonus). Includes spells, potions, and other effects."
-  },
-  "Repair Amplification": {
-   "carrier": "Item:Adamantine_Bracers",
-   "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Bracers",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Repair Amplification",
-   "tooltip": "Repair Amplification: This effect amplifies all incoming repair healing by +53 (Enhancement bonus). Includes spells, potions, and other effects."
-  },
-  "Repair Intensity": {
-   "carrier": "Item:Karazikar's_Cube",
-   "wiki_url": "https://ddowiki.com/page/Item:Karazikar's_Cube",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Repair Intensity +12%",
-   "tooltip": "Repair Intensity +12%: +12% Enhancement bonus to critical damage with Repair and Rust spells."
-  },
-  "Repair Lore": {
-   "carrier": "Item:Bronzed_Bracers",
-   "wiki_url": "https://ddowiki.com/page/Item:Bronzed_Bracers",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Repair Lore +10",
-   "tooltip": "Repair Lore +10: Passive: Your Repair and Rust spells gain a 10% Equipment bonus to their chance to critical hit."
-  },
-  "Resonance": {
-   "carrier": "Item:Bejeweled_Letter_Opener",
-   "wiki_url": "https://ddowiki.com/page/Item:Bejeweled_Letter_Opener",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Resonance +77",
-   "tooltip": "Resonance +77: Passive: +77 Equipment bonus to Sonic Spell Power."
-  },
-  "Rune Arm Charge Rate": {
-   "carrier": "Item:Echoes_of_Night",
-   "wiki_url": "https://ddowiki.com/page/Item:Echoes_of_Night",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Rune Arm Charge Rate",
-   "tooltip": "Rune Arm Charge Rate: 5%: This Rune Arm has a 5% Enhancement bonus to its Charge Rate."
-  },
-  "Rune Arm Focus": {
-   "carrier": "Item:Construct_Champion's_Bands",
-   "wiki_url": "https://ddowiki.com/page/Item:Construct_Champion's_Bands",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Rune Arm Focus +4",
-   "tooltip": "Rune Arm Focus +4: +4 Equipment bonus to the DC of Rune Arm spells."
-  },
-  "Search": {
-   "carrier": "Item:Amethyst_Loupe",
-   "wiki_url": "https://ddowiki.com/page/Item:Amethyst_Loupe",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Search +6",
-   "tooltip": "Search +6: Passive: +6 Competence bonus to the Search skill."
-  },
-  "Seeker": {
-   "carrier": "Item:Adamantine_Cloak_of_the_Wolf",
-   "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Cloak_of_the_Wolf",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Exceptional Seeker +5",
-   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied)."
-  },
-  "Shatter": {
-   "carrier": "Item:Breach,_The_Dividing_Blade",
-   "wiki_url": "https://ddowiki.com/page/Item:Breach,_The_Dividing_Blade",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Shatter +10",
-   "tooltip": "Shatter +10: This effect gives a +10 Enhancement bonus to the DC to resist the character's Sunder and Improved Sunder attempts."
-  },
-  "Sheltering": {
-   "carrier": "Item:Abyssal_Compass",
-   "wiki_url": "https://ddowiki.com/page/Item:Abyssal_Compass",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Insightful Sheltering +9",
-   "tooltip": "Insightful Sheltering +9: +9 Insight bonus to Physical and Magical Resistance Ratings"
-  },
-  "Shield Bashing": {
-   "carrier": "Item:A_Garbage_Can_Lid",
-   "wiki_url": "https://ddowiki.com/page/Item:A_Garbage_Can_Lid",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Shield Bashing +12",
-   "tooltip": "Shield Bashing +12: +12 Enhancement bonus to Increased chance of Secondary Shield Bash."
-  },
-  "Silver Flame Lore": {
-   "carrier": "Item:Epic_Pillar_of_Light",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Pillar_of_Light",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Silver Flame Lore +18",
-   "tooltip": "Silver Flame Lore +18: Passive: Your Positive, Light, and Alignment spells gain a 18% Equipment bonus to their chance to critical hit."
-  },
-  "Smoke Screen": {
-   "carrier": "Item:Drow_Captain's_Mask",
-   "wiki_url": "https://ddowiki.com/page/Item:Drow_Captain's_Mask",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Smoke Screen +22%",
-   "tooltip": "Smoke Screen +22%: +22% Enhancement bonus to Concealment Percentage."
-  },
-  "Sneak Attack Bonus": {
-   "carrier": "Item:Assassin_Initiate's_Leathers_(level_13)",
-   "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate's_Leathers_(level_13)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Sneak Attack Bonus +2",
-   "tooltip": "Sneak Attack Bonus +2 : Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue."
-  },
-  "Sonic Absorption": {
-   "carrier": "Item:Downcast_Cowl",
-   "wiki_url": "https://ddowiki.com/page/Item:Downcast_Cowl",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Insightful Sonic Absorption +4%",
-   "tooltip": "Insightful Sonic Absorption +4%: Passive: 4% Insight Bonus to Sonic Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
-  },
-  "Sonic Intensity": {
-   "carrier": "Item:Legendary_Minotaur_Calling_Horn",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Minotaur_Calling_Horn",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Sonic Intensity +24%",
-   "tooltip": "Sonic Intensity +24%: +24% Enhancement bonus to critical damage with Sonic spells."
-  },
-  "Sonic Lore": {
-   "carrier": "Item:Bell_of_Warding",
-   "wiki_url": "https://ddowiki.com/page/Item:Bell_of_Warding",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Sonic Lore +21",
-   "tooltip": "Sonic Lore +21: Passive: Your Sonic spells gain a 21% Equipment bonus to their chance to critical hit."
-  },
-  "Sonic Resistance": {
-   "carrier": "Item:Cloak_of_Troll's_Resistance",
-   "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_Troll's_Resistance",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Sonic Resistance +10",
-   "tooltip": "Sonic Resistance +10: Passive: +10 Enhancement bonus to your Sonic Resistance."
-  },
-  "Spell Penetration": {
-   "carrier": "Item:Adversion",
-   "wiki_url": "https://ddowiki.com/page/Item:Adversion",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Spell Penetration +4",
-   "tooltip": "Spell Penetration +4: Passive: +4 Equipment bonus to Spell Penetration checks."
-  },
-  "Spell Resistance": {
-   "carrier": "Item:Aberrant_Robe",
-   "wiki_url": "https://ddowiki.com/page/Item:Aberrant_Robe",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Spell Resistance +17",
-   "tooltip": "Spell Resistance +17: +17 Enhancement bonus to Spell Resistance."
-  },
-  "Spell Save": {
-   "carrier": "Item:Band_of_the_Imprisoned_One",
-   "wiki_url": "https://ddowiki.com/page/Item:Band_of_the_Imprisoned_One",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Insightful Spell Save +2",
-   "tooltip": "Insightful Spell Save +2: This item gives a +2 Insight bonus to your saves versus spells."
-  },
-  "Spellcraft": {
-   "carrier": "Item:Absorption_Gauntlet",
-   "wiki_url": "https://ddowiki.com/page/Item:Absorption_Gauntlet",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Quality Spellcraft +4",
-   "tooltip": "Quality Spellcraft +4: Passive: +4 Quality bonus to the Spellcraft skill."
-  },
-  "Spot": {
-   "carrier": "Item:Amethyst_Loupe",
-   "wiki_url": "https://ddowiki.com/page/Item:Amethyst_Loupe",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Spot +6",
-   "tooltip": "Spot +6: Passive: +6 Competence bonus to the Spot skill."
-  },
-  "Strength": {
-   "carrier": "Item:Agarta's_Belt",
-   "wiki_url": "https://ddowiki.com/page/Item:Agarta's_Belt",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Strength +3",
-   "tooltip": "Strength +3: This item gives the wearer the power of Ogre Strength, granting a +3 Enhancement bonus to Strength."
-  },
-  "Stunning": {
-   "carrier": "Item:Antipode,_Fist_of_the_Horizon",
-   "wiki_url": "https://ddowiki.com/page/Item:Antipode,_Fist_of_the_Horizon",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Stunning +10",
-   "tooltip": "Stunning +10: +10 Enhancement bonus to the DC of character's Stunning Blow and Stunning Fist attempts."
-  },
-  "Sundering": {
-   "carrier": "Item:Giant's_Fist_(level_17)",
-   "wiki_url": "https://ddowiki.com/page/Item:Giant's_Fist_(level_17)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Sundering V",
-   "tooltip": "Sundering V: On Hit: Your target suffers a -1 Penalty to Fortitude Saving Throws for 6 seconds. This effect stacks up to 5 times. This effect may only occur on-hit once every three seconds.Passive: The DC of the saving throw to resist your Sunder combat feats is increased by 10."
-  },
-  "Swim": {
-   "carrier": "Item:Aquatic_Bracers_(level_12)",
-   "wiki_url": "https://ddowiki.com/page/Item:Aquatic_Bracers_(level_12)",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Swim +13",
-   "tooltip": "Swim +13: Passive: +13 Competence bonus to the Swim skill."
-  },
-  "Thunderstorm Lore": {
-   "carrier": "Item:Epic_Storm",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Storm",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Thunderstorm Lore +16",
-   "tooltip": "Thunderstorm Lore +16: Passive: Your Sonic and Lightning spells gain a +16% Equipment bonus to their chance to critical hit."
-  },
-  "Transmutation Focus": {
-   "carrier": "Item:Band_of_Manifest_Magic",
-   "wiki_url": "https://ddowiki.com/page/Item:Band_of_Manifest_Magic",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Transmutation Focus +4",
-   "tooltip": "Transmutation Focus +4: +4 Equipment bonus to the DC of Transmutation spells."
-  },
-  "Tumble": {
-   "carrier": "Item:Acrobat's_Ring",
-   "wiki_url": "https://ddowiki.com/page/Item:Acrobat's_Ring",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Tumble +7",
-   "tooltip": "Tumble +7: Passive: +7 Competence bonus to the Tumble skill."
-  },
-  "Turn Undead": {
-   "carrier": "Item:Alaric's_Grim_Gauntlets",
-   "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Hallowed",
-   "tooltip": "Hallowed: An item with this quality assists only wearers who have the ability to turn undead. Hallowed items provide an +14 Enhancement bonus to the maximum Hit Dice of undead turned."
-  },
-  "Turning": {
-   "carrier": "Item:Chainmail_Coif",
-   "wiki_url": "https://ddowiki.com/page/Item:Chainmail_Coif",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Turning",
-   "tooltip": "Turning : This will increase the total number of Turn Undead attempts you can use by 3. However, these additional Turn Undead attempts will only take effect after the wielder rests."
-  },
-  "Underwater Action": {
-   "carrier": "Item:Epic_Snakeskin_Belt",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Snakeskin_Belt",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Underwater Action",
-   "tooltip": "Underwater Action: You have a +17 Competence bonus to Swim and can breathe underwater."
-  },
-  "Universal Spell Lore": {
-   "carrier": "Item:Barovian_Nobles'_Regalia",
-   "wiki_url": "https://ddowiki.com/page/Item:Barovian_Nobles'_Regalia",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Exceptional Universal Spell Lore",
-   "tooltip": "Exceptional Universal Spell Lore: 3% Exceptional bonus to Universal Spell Lore."
-  },
-  "Universal Spell Power": {
-   "carrier": "Item:+1_Starter_Heavy_Mace",
-   "wiki_url": "https://ddowiki.com/page/Item:+1_Starter_Heavy_Mace",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Spellcasting Implement +3",
-   "tooltip": "Spellcasting Implement +3: Passive: +3 Implement bonus to Universal Spell Power."
-  },
-  "Upgradeable - Tier": {
-   "carrier": "Item:Bold_Trinket",
-   "wiki_url": "https://ddowiki.com/page/Item:Bold_Trinket",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Upgradeable - Tier 2",
-   "tooltip": "Upgradeable - Tier 2: This is a tier 2 upgradeable item."
-  },
-  "Use Magic Device": {
-   "carrier": "Item:Compliance",
-   "wiki_url": "https://ddowiki.com/page/Item:Compliance",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Use Magic Device +2",
-   "tooltip": "Use Magic Device +2: Passive: +2 Competence bonus to the Use Magic Device skill."
-  },
-  "Vertigo": {
-   "carrier": "Item:Duskbone_Ring",
-   "wiki_url": "https://ddowiki.com/page/Item:Duskbone_Ring",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Vertigo +4",
-   "tooltip": "Vertigo +4: This effect gives a +4 Enhancement bonus to the DC to resist the character's Trip and Improved Trip attempts."
-  },
-  "Void Intensity": {
-   "carrier": "Item:Cracked_Symbol_of_Lolth",
-   "wiki_url": "https://ddowiki.com/page/Item:Cracked_Symbol_of_Lolth",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Void Intensity +12%",
-   "tooltip": "Void Intensity +12%: +12% Enhancement bonus to critical damage with Negative and Poison spells."
-  },
-  "Void Lore": {
-   "carrier": "Item:Combustible_Nullified_Quarterstaff",
-   "wiki_url": "https://ddowiki.com/page/Item:Combustible_Nullified_Quarterstaff",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Void Lore +12",
-   "tooltip": "Void Lore +12: Passive: Your Negative Energy and Poison spells gain a 12% Equipment bonus to their chance to critical hit."
-  },
-  "Will Save": {
-   "carrier": "Item:Admiral's_Gloves",
-   "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Gloves",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Will Save +5",
-   "tooltip": "Will Save +5: This item gives a +5 Resistance bonus to your Will saves."
-  },
-  "Wisdom": {
-   "carrier": "Item:Alaric's_Grim_Gauntlets",
-   "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Wisdom +14",
-   "tooltip": "Wisdom +14: This item makes the wearer more in tune with her surroundings, granting a +14 Enhancement bonus to Wisdom."
-  },
-  "Wizardry": {
-   "carrier": "Item:Aberrant_Robe",
-   "wiki_url": "https://ddowiki.com/page/Item:Aberrant_Robe",
-   "provenance": "stated",
-   "harvested": "2026-09-04",
-   "label": "Wizardry II",
-   "tooltip": "Wizardry II: This item grants the wearer +50 maximum spell points. Sorcerers and Favored Souls gain up to double spell points from items."
+  "_meta": {
+    "field": "affix_tooltip",
+    "note": "#713 — ONE rendered tooltip per rankable affix name that has a numeric carrier, read from a carrier item page's rendered HTML (span.tooltip) via the paced same-origin api.php parse loop in docs/wiki-evidence/harvest-method.md. The condition prose lives in the enchantment TEMPLATE, so one rendering per name is the evidence for every carrier. `tooltip` is verbatim (with | = & ? stripped by the privacy guard); `label` is the enchantment name the wiki engraves. `provenance`: stated (tooltip captured) or unmatched (the page rendered tooltips but none named this affix — recorded with the labels seen so the gap is visible, never inferred).",
+    "harvested": "2026-09-04",
+    "unharvested": {
+      "Bard Song Charge": "no item carrier; augment/set-only in this catalog",
+      "Concealment": "minted by the boolean-composite expansion (Blurry / Lesser Displacement), no engraved carrier of its own",
+      "Conditioning": "umbrella label (Legendary Conditioning family), no engraved carrier of its own",
+      "Critical Multiplier on a 19-20": "set-tier-only stat (#683 split mechanic), no item carrier",
+      "Critical Multiplier on a roll of 19-20": "set-tier-only stat (#683 split mechanic), no item carrier",
+      "Damage to helpless enemies": "augment/set-only (Solar Gem of Cruelty), no worn carrier page",
+      "Dodge Cap": "augment-only (Solar Gem of Dodge Cap); the Lunar_and_Solar_Gems table is its page",
+      "Eldritch Blast Dice": "augment/set-only, no worn carrier page",
+      "Imbue Dice": "augment/set-only, no worn carrier page",
+      "MRR": "alias spelling (-> Magical Sheltering), no carrier of its own",
+      "Magical Sheltering Cap": "augment/set-only (Solar Gem of MRR Cap); the Lunar_and_Solar_Gems table is its page",
+      "Max Dex Bonus": "augment-only (Sapphire of Armored Agility)",
+      "Melee Diversion": "augment/set-only, no worn carrier page",
+      "Missile Deflection": "set-tier-only, no worn carrier page",
+      "Movement Speed": "minted by the speed split (speed_enchantment.json holds its tooltips), no engraved carrier under this name",
+      "PRR": "alias spelling (-> Physical Sheltering), no carrier of its own",
+      "Ranged Diversion": "augment/set-only, no worn carrier page",
+      "Rune Arm DCs": "augment/set-only, no worn carrier page",
+      "Sneak Attack": "augment/set-only, no worn carrier page",
+      "Sneak Attack Damage": "augment-only (Solar Gem), no worn carrier page",
+      "Sneak Attack Dice": "augment-only (Solar Gem), no worn carrier page",
+      "Spell Critical Damage": "set-tier-only (#672), no worn carrier page",
+      "Strikethrough": "augment-only (Solar Gem of Strikethrough), no worn carrier page",
+      "Turn Undead Charge": "augment/set-only, no worn carrier page",
+      "Unconsciousness Range": "expansion-minted (#649 Undying rename), no engraved carrier under this name"
+    },
+    "unharvested_note": "Rankable names with a numeric carrier but no ITEM page to read a tooltip from (augment-, set- or expansion-only). Recorded with the reason so the coverage guard can tell 'not harvested yet' from 'cannot be harvested this way'; the augment half's next source is the Lunar_and_Solar_Gems table (#713 follow-up)."
+  },
+  "harvested": {
+    "Abjuration Focus": {
+      "carrier": "Item:Adversion",
+      "wiki_url": "https://ddowiki.com/page/Item:Adversion",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Abjuration Focus +4",
+      "tooltip": "Abjuration Focus +4: +4 Equipment bonus to the DC of Abjuration spells."
+    },
+    "Accuracy": {
+      "carrier": "Item:Adamantine_Cloak_of_the_Wolf",
+      "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Cloak_of_the_Wolf",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Attack Bonus +4",
+      "tooltip": "Attack Bonus +4: Provides a +4 competence bonus to your attack rolls.",
+      "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
+    },
+    "Acid Absorption": {
+      "carrier": "Item:Battered_Phiarlan_Shield_(angular)",
+      "wiki_url": "https://ddowiki.com/page/Item:Battered_Phiarlan_Shield_(angular)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Acid Absorption +15%",
+      "tooltip": "Acid Absorption +15%: Passive: 15% Enhancement Bonus to Acid Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
+    },
+    "Acid Intensity": {
+      "carrier": "Item:Envenomed_Craft",
+      "wiki_url": "https://ddowiki.com/page/Item:Envenomed_Craft",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Acid Intensity +12%",
+      "tooltip": "Acid Intensity +12%: +12% Enhancement bonus to critical damage with Acid spells."
+    },
+    "Acid Lore": {
+      "carrier": "Item:Acidic_Insignia",
+      "wiki_url": "https://ddowiki.com/page/Item:Acidic_Insignia",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Acid Lore +21",
+      "tooltip": "Acid Lore +21: Passive: Your Acid spells gain a 21% Equipment bonus to their chance to critical hit."
+    },
+    "Acid Resistance": {
+      "carrier": "Item:Band_of_Seasons'_Warding",
+      "wiki_url": "https://ddowiki.com/page/Item:Band_of_Seasons'_Warding",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Acid Resistance +26",
+      "tooltip": "Acid Resistance +26: Passive: +26 Enhancement bonus to your Acid Resistance."
+    },
+    "Action Boost Charges": {
+      "carrier": "Item:Adherent's_Pendant",
+      "wiki_url": "https://ddowiki.com/page/Item:Adherent's_Pendant",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Action Boost Enhancement",
+      "tooltip": "Action Boost Enhancement: This will increase the total number of Action Boosts you can use by 3. However, these additional Action Boosts will only take effect after the wielder rests.",
+      "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
+    },
+    "Alignment Absorption": {
+      "carrier": "Item:Aegis_of_Aosu'riel",
+      "wiki_url": "https://ddowiki.com/page/Item:Aegis_of_Aosu'riel",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Alignment Absorption +15%",
+      "tooltip": "Alignment Absorption +15%: Passive: 15% Enhancement Bonus to Alignment Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
+    },
+    "Alluring Skills Bonus": {
+      "carrier": "Item:Breaking_the_Bank",
+      "wiki_url": "https://ddowiki.com/page/Item:Breaking_the_Bank",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Exceptional Alluring Skills Bonus",
+      "tooltip": "Exceptional Alluring Skills Bonus: +8 Exceptional bonus to Bluff, Diplomacy, Haggle, Intimidate, and Perform."
+    },
+    "Armor Class": {
+      "carrier": "Item:+1_Starter_Breastplate",
+      "wiki_url": "https://ddowiki.com/page/Item:+1_Starter_Breastplate",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "+1 Enhancement Bonus",
+      "tooltip": "+1 Enhancement Bonus: +1 enhancement bonus to Armor Class."
+    },
+    "Armor Mastery": {
+      "carrier": "Item:Boots_of_Blessed_Travels",
+      "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Blessed_Travels",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Quality Armor Mastery +2",
+      "tooltip": "Quality Armor Mastery +2: Passive: +2 Quality bonus to the Max Dex Bonus of your equipped light, medium, or heavy armor. This benefit does not apply to the Max Dex Bonus of a Tower Shield."
+    },
+    "Armor-Piercing": {
+      "carrier": "Item:Admiral's_Wristwatch",
+      "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Wristwatch",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Armor-Piercing 7%",
+      "tooltip": "Armor-Piercing 7%: Passive: +7% Enhancement bonus to Fortification Bypass. (Fortification Bypass makes your attacks ignore a percentage of enemy Fortification.)"
+    },
+    "Assassinate": {
+      "carrier": "Item:Assassin's_Kiss",
+      "wiki_url": "https://ddowiki.com/page/Item:Assassin's_Kiss",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Assassinate +2",
+      "tooltip": "Assassinate +2: +2 Enhancement bonus to the DC of character's Assassinate attempts."
+    },
+    "Astute Skills Bonus": {
+      "carrier": "Item:Epic_Treasure_Hunter's_Spyglass_(level_20)",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Treasure_Hunter's_Spyglass_(level_20)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Exceptional Astute Skills Bonus",
+      "tooltip": "Exceptional Astute Skills Bonus: +8 Exceptional bonus to Disable Device, Repair and Search."
+    },
+    "Balance": {
+      "carrier": "Item:Balanced_Boots",
+      "wiki_url": "https://ddowiki.com/page/Item:Balanced_Boots",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Balance +13",
+      "tooltip": "Balance +13: Passive: +13 Competence bonus to the Balance skill."
+    },
+    "Blighted Lore": {
+      "carrier": "Item:Blightstaff",
+      "wiki_url": "https://ddowiki.com/page/Item:Blightstaff",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Blighted Lore +22",
+      "tooltip": "Blighted Lore +22: Passive: Your Acid, Negative, Poison and Evil spells gain a 22% Equipment bonus to their chance to critical hit."
+    },
+    "Bluff": {
+      "carrier": "Item:Backstabber's_Gloves_(level_12)",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber's_Gloves_(level_12)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Bluff +10",
+      "tooltip": "Bluff +10: Passive: +10 Competence bonus to the Bluff skill."
+    },
+    "Breath Weapon Focus": {
+      "carrier": "Item:Dragon_Eyes",
+      "wiki_url": "https://ddowiki.com/page/Item:Dragon_Eyes",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Breath Weapon Focus +4",
+      "tooltip": "Breath Weapon Focus +4: +4 Equipment bonus to the DC of Breath Weapon spells."
+    },
+    "Carrying Capacity": {
+      "carrier": "Item:Legendary_Official_Kobold_Union_Buckle",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Official_Kobold_Union_Buckle",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Carrying Capacity +15",
+      "tooltip": "Carrying Capacity +15: You gain a +15 Enhancement Bonus to Carrying Capacity, increasing your Carrying Capacity as if you had an additional +15 Strength."
+    },
+    "Chaos Absorption": {
+      "carrier": "Item:Admiral's_Cummerbund",
+      "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Cummerbund",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Chaos Absorption +14%",
+      "tooltip": "Chaos Absorption +14%: Passive: 14% Enhancement Bonus to Chaos Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
+    },
+    "Charisma": {
+      "carrier": "Item:Admiral's_Gloves",
+      "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Gloves",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Charisma +5",
+      "tooltip": "Charisma +5: This item makes the wearer have more flair, granting a +5 Enhancement bonus to Charisma."
+    },
+    "Cold Absorption": {
+      "carrier": "Item:Chilling_Sash_of_Tailara",
+      "wiki_url": "https://ddowiki.com/page/Item:Chilling_Sash_of_Tailara",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Cold Absorption +20%",
+      "tooltip": "Cold Absorption +20%: Passive: 20% Enhancement Bonus to Cold Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
+    },
+    "Cold Resistance": {
+      "carrier": "Item:Aquatic_Bracers_(level_12)",
+      "wiki_url": "https://ddowiki.com/page/Item:Aquatic_Bracers_(level_12)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Cold Resistance +20",
+      "tooltip": "Cold Resistance +20: Passive: +20 Enhancement bonus to your Cold Resistance."
+    },
+    "Combustion": {
+      "carrier": "Item:Beacon_of_Tira",
+      "wiki_url": "https://ddowiki.com/page/Item:Beacon_of_Tira",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Combustion +78",
+      "tooltip": "Combustion +78: Passive: +78 Equipment bonus to Fire Spell Power."
+    },
+    "Concentration": {
+      "carrier": "Item:Alchemical_Apprentice's_Robe",
+      "wiki_url": "https://ddowiki.com/page/Item:Alchemical_Apprentice's_Robe",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Concentration +1",
+      "tooltip": "Concentration +1: Passive: +1 Competence bonus to the Concentration skill."
+    },
+    "Conjuration Focus": {
+      "carrier": "Item:Band_of_Manifest_Magic",
+      "wiki_url": "https://ddowiki.com/page/Item:Band_of_Manifest_Magic",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Conjuration Focus +4",
+      "tooltip": "Conjuration Focus +4: +4 Equipment bonus to the DC of Conjuration spells."
+    },
+    "Constitution": {
+      "carrier": "Item:Aegis_of_Aosu'riel",
+      "wiki_url": "https://ddowiki.com/page/Item:Aegis_of_Aosu'riel",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Quality Constitution +1",
+      "tooltip": "Quality Constitution +1: This item gives the wearer improved health, granting a +1 Quality bonus to Constitution."
+    },
+    "Corrosion": {
+      "carrier": "Item:Acidic_Insignia",
+      "wiki_url": "https://ddowiki.com/page/Item:Acidic_Insignia",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Quality Corrosion +34",
+      "tooltip": "Quality Corrosion +34: Passive: +34 Quality bonus to Acid Spell Power."
+    },
+    "Creeping Dust Lore": {
+      "carrier": "Item:Creeping_Dust_Conduit",
+      "wiki_url": "https://ddowiki.com/page/Item:Creeping_Dust_Conduit",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Creeping Dust Lore +14",
+      "tooltip": "Creeping Dust Lore +14: Passive: Your Cold and Acid spells gain a 14% Equipment bonus to their chance to critical hit."
+    },
+    "Curse Resistance": {
+      "carrier": "Item:Cursebane_Focus",
+      "wiki_url": "https://ddowiki.com/page/Item:Cursebane_Focus",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Curse Resistance +5",
+      "tooltip": "Curse Resistance +5: Passive: +5 Enhancement bonus to saves versus curses."
+    },
+    "DR": {
+      "carrier": "Item:Adherence",
+      "wiki_url": "https://ddowiki.com/page/Item:Adherence",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Damage Reduction 5/-",
+      "tooltip": "Damage Reduction 5/-: Reduces all physical damage by 5.",
+      "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
+    },
+    "Dark Restoration Lore": {
+      "carrier": "Item:Alaric's_Grim_Gauntlets",
+      "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Dark Restoration Lore +23",
+      "tooltip": "Dark Restoration Lore +23: Passive: Your Negative, Poison and Positive spells gain a 23% Equipment bonus to their chance to critical hit."
+    },
+    "Dazing": {
+      "carrier": "Item:Buckler_of_the_Demonic_Soldier",
+      "wiki_url": "https://ddowiki.com/page/Item:Buckler_of_the_Demonic_Soldier",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Dazing IV",
+      "tooltip": "Dazing IV: On Hit: Your target suffers a -1 Penalty to Will Saving Throws for 6 seconds. This effect stacks up to 5 times. This effect may only occur on-hit once every three seconds.Passive: The DC of the saving throw to resist your Stunning Blow and Stunning Fist combat feats is increased by 8."
+    },
+    "Deadly": {
+      "carrier": "Item:Admiral's_Wristwatch",
+      "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Wristwatch",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Deadly +4",
+      "tooltip": "Deadly +4: +4 Competence bonus to weapon damage."
+    },
+    "Deception": {
+      "carrier": "Item:Admiral's_Gumshoes",
+      "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Gumshoes",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Deception +3",
+      "tooltip": "Deception +3: +3 Enhancement bonus to hit and +5 to damage for any hit that would qualify as a sneak attack."
+    },
+    "Devotion": {
+      "carrier": "Item:+1_Starter_Heavy_Mace",
+      "wiki_url": "https://ddowiki.com/page/Item:+1_Starter_Heavy_Mace",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Devotion +30",
+      "tooltip": "Devotion +30: Passive: +30 Equipment bonus to Positive (Healing) Spell Power."
+    },
+    "Dexterity": {
+      "carrier": "Item:Arlyn's_Ring",
+      "wiki_url": "https://ddowiki.com/page/Item:Arlyn's_Ring",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Dexterity +3",
+      "tooltip": "Dexterity +3: This item makes the wearer more nimble and dexterous, granting a +3 Enhancement bonus to Dexterity."
+    },
+    "Diplomacy": {
+      "carrier": "Item:Cardinal's_Gloves",
+      "wiki_url": "https://ddowiki.com/page/Item:Cardinal's_Gloves",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Diplomacy +5",
+      "tooltip": "Diplomacy +5: Passive: +5 Competence bonus to the Diplomacy skill."
+    },
+    "Disable Device": {
+      "carrier": "Item:Bracers_of_Twisting_Shade_(level_16)",
+      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_16)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Disable Device +15",
+      "tooltip": "Disable Device +15: Passive: +15 Competence bonus to the Disable Device skill."
+    },
+    "Distant Diversion": {
+      "carrier": "Item:Aral'Aul'Nevae's_Hide",
+      "wiki_url": "https://ddowiki.com/page/Item:Aral'Aul'Nevae's_Hide",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Distant Diversion +7%",
+      "tooltip": "Distant Diversion +7%: +7% Enhancement bonus to decreased threat generated from ranged damage."
+    },
+    "Distant Incite": {
+      "carrier": "Item:Cloak_of_the_Crownblade",
+      "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_the_Crownblade",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Distant Incite +23",
+      "tooltip": "Distant Incite +23: +23% bonus to increased threat generation from ranged damage"
+    },
+    "Diversion": {
+      "carrier": "Item:Animated_Rope",
+      "wiki_url": "https://ddowiki.com/page/Item:Animated_Rope",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Diversion +14%",
+      "tooltip": "Diversion +14%: +14% Enhancement bonus to decreased threat generated from melee damage."
+    },
+    "Dodge": {
+      "carrier": "Item:Adamantine_Cloak_of_the_Wolf",
+      "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Cloak_of_the_Wolf",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Dodge +8%",
+      "tooltip": "Dodge +8%: +8% Enhancement bonus to Dodge."
+    },
+    "Doubleshot": {
+      "carrier": "Item:Beltstrap_of_Forbidden_Tomes",
+      "wiki_url": "https://ddowiki.com/page/Item:Beltstrap_of_Forbidden_Tomes",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Insightful Doubleshot 5%",
+      "tooltip": "Insightful Doubleshot 5%: Passive: 5% Insight bonus to Doubleshot. (Doubleshot is a chance to score an additional hit with a ranged attack.)"
+    },
+    "Doublestrike": {
+      "carrier": "Item:Antipode,_Fist_of_the_Horizon",
+      "wiki_url": "https://ddowiki.com/page/Item:Antipode,_Fist_of_the_Horizon",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Doublestrike 6%",
+      "tooltip": "Doublestrike 6%: Passive: 6% Enhancement bonus to Doublestrike. (Doublestrike is a chance to score an additional hit with a melee attack.)"
+    },
+    "Dragon's Edge": {
+      "carrier": "Item:Axe_of_Savaran",
+      "wiki_url": "https://ddowiki.com/page/Item:Axe_of_Savaran",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Dragon's Edge 3",
+      "tooltip": "Dragon's Edge 3: +9% Enhancement bonus to bypass enemy Fortification. On Crit: 3d8 Bleeding Damage to those that are vulnerable to it."
+    },
+    "Dream Vision": {
+      "carrier": "Item:Dream_Visor_(level_12)",
+      "wiki_url": "https://ddowiki.com/page/Item:Dream_Visor_(level_12)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Dream Vision +1",
+      "tooltip": "Dream Vision +1: Passive: +1 Competence bonus to Attack and Damage rolls. your melee and ranged attacks are also able to bypass the miss chance for attacking Incorporeal enemies as if they had Ghost Touch."
+    },
+    "Efficient Metamagic - Embolden": {
+      "carrier": "Item:Attunement's_Gaze",
+      "wiki_url": "https://ddowiki.com/page/Item:Attunement's_Gaze",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Efficient Metamagic - Embolden II",
+      "tooltip": "Efficient Metamagic - Embolden II: The additional spell point cost for using the Embolden Metamagic feat is reduced by 2 SP."
+    },
+    "Efficient Metamagic - Empower": {
+      "carrier": "Item:Belashyrra's_Cleansed_Scepter",
+      "wiki_url": "https://ddowiki.com/page/Item:Belashyrra's_Cleansed_Scepter",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Efficient Metamagic - Empower II",
+      "tooltip": "Efficient Metamagic - Empower II: The additional spell point cost for using the Empower Metamagic feat is reduced by 2 SP."
+    },
+    "Efficient Metamagic - Empower Healing": {
+      "carrier": "Item:Bijio",
+      "wiki_url": "https://ddowiki.com/page/Item:Bijio",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Efficient Metamagic - Empower Healing I",
+      "tooltip": "Efficient Metamagic - Empower Healing I: The additional spell point cost for using the Empower Healing Metamagic feat is reduced by 1 SP."
+    },
+    "Efficient Metamagic - Enlarge": {
+      "carrier": "Item:Drow_Wizard's_Greaves",
+      "wiki_url": "https://ddowiki.com/page/Item:Drow_Wizard's_Greaves",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Efficient Metamagic - Enlarge I",
+      "tooltip": "Efficient Metamagic - Enlarge I: The additional spell point cost for using the Enlarge Metamagic feat is reduced by 1 SP."
+    },
+    "Efficient Metamagic - Extend": {
+      "carrier": "Item:Elder's_Focus",
+      "wiki_url": "https://ddowiki.com/page/Item:Elder's_Focus",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Efficient Metamagic - Extend I",
+      "tooltip": "Efficient Metamagic - Extend I: The additional spell point cost for using the Extend Metamagic feat is reduced by 1 SP."
+    },
+    "Efficient Metamagic - Intensify": {
+      "carrier": "Item:Acidic_Insignia",
+      "wiki_url": "https://ddowiki.com/page/Item:Acidic_Insignia",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Efficient Metamagic - Intensify II",
+      "tooltip": "Efficient Metamagic - Intensify II: The additional spell point cost for using the Intensify Metamagic feat is reduced by 2 SP."
+    },
+    "Efficient Metamagic - Maximize": {
+      "carrier": "Item:Arcane_Shard",
+      "wiki_url": "https://ddowiki.com/page/Item:Arcane_Shard",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Efficient Metamagic - Maximize II",
+      "tooltip": "Efficient Metamagic - Maximize II: The additional spell point cost for using the Maximize Metamagic feat is reduced by 4 SP."
+    },
+    "Efficient Metamagic - Quicken": {
+      "carrier": "Item:Legendary_Mad_Brew_Bottle",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Mad_Brew_Bottle",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Efficient Metamagic - Quicken II",
+      "tooltip": "Efficient Metamagic - Quicken II: The additional spell point cost for using the Quicken Metamagic feat is reduced by 2 SP."
+    },
+    "Electric Absorption": {
+      "carrier": "Item:Azure_Necklace_of_Prophecy",
+      "wiki_url": "https://ddowiki.com/page/Item:Azure_Necklace_of_Prophecy",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Electric Absorption +19%",
+      "tooltip": "Electric Absorption +19%: Passive: 19% Enhancement Bonus to Electric Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
+    },
+    "Electric Resistance": {
+      "carrier": "Item:Amulet_of_the_Stormreaver",
+      "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Stormreaver",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Electric Resistance +30",
+      "tooltip": "Electric Resistance +30: Passive: +30 Enhancement bonus to your Electric Resistance."
+    },
+    "Enchantment Focus": {
+      "carrier": "Item:Band_of_Mental_Magic",
+      "wiki_url": "https://ddowiki.com/page/Item:Band_of_Mental_Magic",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Enchantment Focus +4",
+      "tooltip": "Enchantment Focus +4: +4 Equipment bonus to the DC of Enchantment spells."
+    },
+    "Enchantment Save": {
+      "carrier": "Item:Adherence",
+      "wiki_url": "https://ddowiki.com/page/Item:Adherence",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Enchantment Save +6",
+      "tooltip": "Enchantment Save +6: +6 Resistance bonus to your saves versus enchantments"
+    },
+    "Enhanced Ki": {
+      "carrier": "Item:Blood_of_Blossoms",
+      "wiki_url": "https://ddowiki.com/page/Item:Blood_of_Blossoms",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Enhanced Ki +3",
+      "tooltip": "Enhanced Ki +3: Increases the rate at which the user gains ki with each successful attack."
+    },
+    "Enhancement Bonus": {
+      "carrier": "Item:Epic_Mournlode_Docent",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Mournlode_Docent",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "+5 Enhancement Bonus",
+      "tooltip": "+5 Enhancement Bonus: +5 enhancement bonus to Armor Class."
+    },
+    "Enhancement Bonus (Armor)": {
+      "carrier": "Item:+1_Starter_Breastplate",
+      "wiki_url": "https://ddowiki.com/page/Item:+1_Starter_Breastplate",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "+1 Enhancement Bonus",
+      "tooltip": "+1 Enhancement Bonus: +1 enhancement bonus to Armor Class.",
+      "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
+    },
+    "Enhancement Bonus (Weapon)": {
+      "carrier": "Item:-1_Quarterstaff_of_Lesser_Halfling_Bane",
+      "wiki_url": "https://ddowiki.com/page/Item:-1_Quarterstaff_of_Lesser_Halfling_Bane",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "-1 Enhancement Bonus",
+      "tooltip": "-1 Enhancement Bonus: This weapon is less well-made than normal, giving a -1 penalty to attack and damage rolls.",
+      "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
+    },
+    "Evil Absorption": {
+      "carrier": "Item:Bone_Figurine",
+      "wiki_url": "https://ddowiki.com/page/Item:Bone_Figurine",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Evil Absorption +11%",
+      "tooltip": "Evil Absorption +11%: Passive: 11% Enhancement Bonus to Evil Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
+    },
+    "Evocation Focus": {
+      "carrier": "Item:Anathema",
+      "wiki_url": "https://ddowiki.com/page/Item:Anathema",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Evocation Focus I",
+      "tooltip": "Evocation Focus I: +1 Equipment bonus to the DC of Evocation spells."
+    },
+    "False Life": {
+      "carrier": "Item:Amulet_of_the_Makers",
+      "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Makers",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Vitality +25",
+      "tooltip": "Vitality +25: Passive: +25 Vitality bonus to Hit Points.",
+      "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
+    },
+    "Fire Absorption": {
+      "carrier": "Item:Absorption_Gauntlet",
+      "wiki_url": "https://ddowiki.com/page/Item:Absorption_Gauntlet",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Fire Absorption +26%",
+      "tooltip": "Fire Absorption +26%: Passive: 26% Enhancement Bonus to Fire Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
+    },
+    "Fire Intensity": {
+      "carrier": "Item:Flamewhip_Belt",
+      "wiki_url": "https://ddowiki.com/page/Item:Flamewhip_Belt",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Fire Intensity +12%",
+      "tooltip": "Fire Intensity +12%: +12% Enhancement bonus to critical damage with Fire spells."
+    },
+    "Fire Lore": {
+      "carrier": "Item:Blight_Inferno",
+      "wiki_url": "https://ddowiki.com/page/Item:Blight_Inferno",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Fire Lore +11",
+      "tooltip": "Fire Lore +11: Passive: Your Fire spells gain a 11% Equipment bonus to their chance to critical hit."
+    },
+    "Fire Resistance": {
+      "carrier": "Item:Argenti's_Armor",
+      "wiki_url": "https://ddowiki.com/page/Item:Argenti's_Armor",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Fire Resistance +30",
+      "tooltip": "Fire Resistance +30: Passive: +30 Enhancement bonus to your Fire Resistance."
+    },
+    "Firestorm Lore": {
+      "carrier": "Item:Firestorm_Conduit",
+      "wiki_url": "https://ddowiki.com/page/Item:Firestorm_Conduit",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Firestorm Lore +14",
+      "tooltip": "Firestorm Lore +14: Passive: Your Fire and Lightning spells gain a 14% Equipment bonus to their chance to critical hit."
+    },
+    "Force Absorption": {
+      "carrier": "Item:Bulwark_of_Snow",
+      "wiki_url": "https://ddowiki.com/page/Item:Bulwark_of_Snow",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Force Absorption +11%",
+      "tooltip": "Force Absorption +11%: Passive: 11% Enhancement Bonus to Force Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
+    },
+    "Fortification": {
+      "carrier": "Item:Allegience_of_the_Wild_Hunt",
+      "wiki_url": "https://ddowiki.com/page/Item:Allegience_of_the_Wild_Hunt",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Fortification +59%",
+      "tooltip": "Fortification +59%: +59% Enhancement bonus to reduced chance of taking critical damage on a critical hit."
+    },
+    "Fortitude Save": {
+      "carrier": "Item:Abyssal_Compass",
+      "wiki_url": "https://ddowiki.com/page/Item:Abyssal_Compass",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Insightful Fortitude Save +3",
+      "tooltip": "Insightful Fortitude Save +3: This item gives a +3 Insight bonus to your Fortitude saves."
+    },
+    "Frozen Depths Lore": {
+      "carrier": "Item:Black_Pearl_Ring",
+      "wiki_url": "https://ddowiki.com/page/Item:Black_Pearl_Ring",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Frozen Depths Lore +22",
+      "tooltip": "Frozen Depths Lore +22: Passive: Your Negative, Poison and Cold spells gain a +22% Equipment bonus to their chance to critical hit."
+    },
+    "Frozen Storm Lore": {
+      "carrier": "Item:Echo_of_Wave",
+      "wiki_url": "https://ddowiki.com/page/Item:Echo_of_Wave",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Frozen Storm Lore +11",
+      "tooltip": "Frozen Storm Lore +11: Passive: Your Cold and Lightning spells gain a 11% Equipment bonus to their chance to critical hit."
+    },
+    "Glaciation": {
+      "carrier": "Item:Anchorchain",
+      "wiki_url": "https://ddowiki.com/page/Item:Anchorchain",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Glaciation +53",
+      "tooltip": "Glaciation +53: Passive: +53 Equipment bonus to Cold Spell Power."
+    },
+    "Good Luck": {
+      "carrier": "Item:Ancient_Gemstone",
+      "wiki_url": "https://ddowiki.com/page/Item:Ancient_Gemstone",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Good Luck +2",
+      "tooltip": "Good Luck +2: This item gives a +2 Luck bonus to all saves and skill checks."
+    },
+    "Greater Dragonmark Charges": {
+      "carrier": "Item:Epic_Chimera's_Crown",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Chimera's_Crown",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Minor Greater Dragonmark Enhancement",
+      "tooltip": "Minor Greater Dragonmark Enhancement: This will increase the total number of Greater Dragonmarks you can use by 1. However, these additional Greater Dragonmarks will only take effect after the wielder rests.",
+      "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
+    },
+    "Haggle": {
+      "carrier": "Item:+1_Vorpal_Sickle_of_Haggling",
+      "wiki_url": "https://ddowiki.com/page/Item:+1_Vorpal_Sickle_of_Haggling",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Haggle +3",
+      "tooltip": "Haggle +3: Passive: +3 Competence bonus to the Haggle skill."
+    },
+    "Hallowed": {
+      "carrier": "Item:Alaric's_Grim_Gauntlets",
+      "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Hallowed",
+      "tooltip": "Hallowed: An item with this quality assists only wearers who have the ability to turn undead. Hallowed items provide an +14 Enhancement bonus to the maximum Hit Dice of undead turned."
+    },
+    "Hardened Exterior": {
+      "carrier": "Item:Duskbone_Ring",
+      "wiki_url": "https://ddowiki.com/page/Item:Duskbone_Ring",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Hardened Exterior 2",
+      "tooltip": "Hardened Exterior 2: You gain a +2 profane bonus to AC."
+    },
+    "Heal": {
+      "carrier": "Item:Band_of_Light",
+      "wiki_url": "https://ddowiki.com/page/Item:Band_of_Light",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Heal +13",
+      "tooltip": "Heal +13: Passive: +13 Competence bonus to the Heal skill."
+    },
+    "Healing Amplification": {
+      "carrier": "Item:A_Garbage_Can_Lid",
+      "wiki_url": "https://ddowiki.com/page/Item:A_Garbage_Can_Lid",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Healing Amplification",
+      "tooltip": "Healing Amplification: This effect amplifies all incoming positive energy healing by +8 (Exceptional bonus). Includes spells, potions, and other effects."
+    },
+    "Healing Intensity": {
+      "carrier": "Item:Legendary_Signet_of_the_Prince_of_Pleasure",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Signet_of_the_Prince_of_Pleasure",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Healing Intensity +24%",
+      "tooltip": "Healing Intensity +24%: +24% Enhancement bonus to critical damage with Positive (Healing) spells."
+    },
+    "Healing Lore": {
+      "carrier": "Item:Adherent's_Pendant",
+      "wiki_url": "https://ddowiki.com/page/Item:Adherent's_Pendant",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Healing Lore +12",
+      "tooltip": "Healing Lore +12: Passive: Your Positive Energy spells gain a 12% Equipment bonus to their chance to critical hit."
+    },
+    "Hide": {
+      "carrier": "Item:Accomplice",
+      "wiki_url": "https://ddowiki.com/page/Item:Accomplice",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Hide +10",
+      "tooltip": "Hide +10: Passive: +10 Competence bonus to the Hide skill."
+    },
+    "Ice Intensity": {
+      "carrier": "Item:Cavernous_Chill",
+      "wiki_url": "https://ddowiki.com/page/Item:Cavernous_Chill",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Ice Intensity +12%",
+      "tooltip": "Ice Intensity +12%: +12% Enhancement bonus to critical damage with Cold spells."
+    },
+    "Ice Lore": {
+      "carrier": "Item:Anchorchain",
+      "wiki_url": "https://ddowiki.com/page/Item:Anchorchain",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Ice Lore +8",
+      "tooltip": "Ice Lore +8: Passive: Your Cold spells gain a 8% Equipment bonus to their chance to critical hit."
+    },
+    "Illusion Focus": {
+      "carrier": "Item:Admiral's_Gloves",
+      "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Gloves",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Illusion Focus +3",
+      "tooltip": "Illusion Focus +3: +3 Equipment bonus to the DC of Illusion spells."
+    },
+    "Illusion Save": {
+      "carrier": "Item:Epic_Glimpse_of_the_Soul",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Glimpse_of_the_Soul",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Illusion Save +6",
+      "tooltip": "Illusion Save +6: +6 Resistance bonus to your saves versus illusions"
+    },
+    "Improved Deception": {
+      "carrier": "Item:Agony,_the_Knife_in_the_Dark",
+      "wiki_url": "https://ddowiki.com/page/Item:Agony,_the_Knife_in_the_Dark",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Improved Deception",
+      "tooltip": "Improved Deception: This item makes your weapons hard to focus upon and thus provides a +5 enhancement bonus to Bluff checks. In addition, while using this item your weapons have a chance to envelop the target in darkness, making them vulnerable to sneak attacks for a short time."
+    },
+    "Impulse": {
+      "carrier": "Item:Arm_of_the_Archons",
+      "wiki_url": "https://ddowiki.com/page/Item:Arm_of_the_Archons",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Impulse +72",
+      "tooltip": "Impulse +72: Passive: +72 Equipment bonus to Force, Untyped, Slashing, Piercing, and Bludgeoning Spell Power."
+    },
+    "Incite": {
+      "carrier": "Item:Adamantine_Cloak_of_the_Bear",
+      "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Cloak_of_the_Bear",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Incite +20",
+      "tooltip": "Incite +20: +20% Enhancement bonus to increased threat generation from melee damage"
+    },
+    "Intelligence": {
+      "carrier": "Item:Acolyte's_Lenses",
+      "wiki_url": "https://ddowiki.com/page/Item:Acolyte's_Lenses",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Intelligence +8",
+      "tooltip": "Intelligence +8: This item focuses the power of the wearer's mind, granting a +8 Enhancement bonus to Intelligence."
+    },
+    "Intimidate": {
+      "carrier": "Item:+1_Intimidating_Dagger_of_Acid",
+      "wiki_url": "https://ddowiki.com/page/Item:+1_Intimidating_Dagger_of_Acid",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Intimidate +3",
+      "tooltip": "Intimidate +3: Passive: +3 Competence bonus to the Intimidate skill."
+    },
+    "Jump": {
+      "carrier": "Item:Acrobat's_Ring",
+      "wiki_url": "https://ddowiki.com/page/Item:Acrobat's_Ring",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Jump +7",
+      "tooltip": "Jump +7: Passive: +7 Competence bonus to the Jump skill."
+    },
+    "Kinetic Intensity": {
+      "carrier": "Item:Legendary_Ruler_of_Ruin",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ruler_of_Ruin",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Kinetic Intensity +24%",
+      "tooltip": "Kinetic Intensity +24%: +24% Enhancement bonus to critical damage with Force and Physical spells."
+    },
+    "Kinetic Lore": {
+      "carrier": "Item:Collision,_the_Unstoppable_Arcana",
+      "wiki_url": "https://ddowiki.com/page/Item:Collision,_the_Unstoppable_Arcana",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Kinetic Lore +24",
+      "tooltip": "Kinetic Lore +24: Passive: Your Force, Physical and Untyped spells gain a 24% Equipment bonus to their chance to critical hit."
+    },
+    "Law Absorption": {
+      "carrier": "Item:Admiral's_Cummerbund",
+      "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Cummerbund",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Law Absorption +14%",
+      "tooltip": "Law Absorption +14%: Passive: 14% Enhancement Bonus to Law Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
+    },
+    "Lesser Dragonmark Charges": {
+      "carrier": "Item:Chimera's_Crown",
+      "wiki_url": "https://ddowiki.com/page/Item:Chimera's_Crown",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Minor Lesser Dragonmark Enhancement",
+      "tooltip": "Minor Lesser Dragonmark Enhancement: This will increase the total number of Lesser Dragonmarks you can use by 1. However, these additional Lesser Dragonmarks will only take effect after the wielder rests.",
+      "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
+    },
+    "Lifesealed": {
+      "carrier": "Item:Boots_of_Tranquility",
+      "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Tranquility",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Lifesealed +28",
+      "tooltip": "Lifesealed +28: You are immune to magical effects that cause instant death. In addition, you have a +28% enhancement bonus to Negative Energy Absorption."
+    },
+    "Light Absorption": {
+      "carrier": "Item:A_Memento_of_Mori",
+      "wiki_url": "https://ddowiki.com/page/Item:A_Memento_of_Mori",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Light Absorption +22%",
+      "tooltip": "Light Absorption +22%: Passive: 22% Enhancement Bonus to Light Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
+    },
+    "Light Resistance": {
+      "carrier": "Item:Cursekeeper",
+      "wiki_url": "https://ddowiki.com/page/Item:Cursekeeper",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Insightful Light Resistance +13",
+      "tooltip": "Insightful Light Resistance +13: Passive: +13 Insight bonus to your Light Resistance."
+    },
+    "Lightning Intensity": {
+      "carrier": "Item:Legendary_Lightning_Soles",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Lightning_Soles",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Lightning Intensity +24%",
+      "tooltip": "Lightning Intensity +24%: +24% Enhancement bonus to critical damage with Electric spells."
+    },
+    "Lightning Lore": {
+      "carrier": "Item:Amplin,_the_Channeling_Bolt",
+      "wiki_url": "https://ddowiki.com/page/Item:Amplin,_the_Channeling_Bolt",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Lightning Lore +24",
+      "tooltip": "Lightning Lore +24: Passive: Your Electricity spells gain a 24% Equipment bonus to their chance to critical hit."
+    },
+    "Listen": {
+      "carrier": "Item:Agony's_Eyes",
+      "wiki_url": "https://ddowiki.com/page/Item:Agony's_Eyes",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Listen +10",
+      "tooltip": "Listen +10: Passive: +10 Competence bonus to the Listen skill."
+    },
+    "Magical Efficiency": {
+      "carrier": "Item:Aetherband",
+      "wiki_url": "https://ddowiki.com/page/Item:Aetherband",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Magical Efficiency 5%",
+      "tooltip": "Magical Efficiency 5%: You take a 5% Enhancement discount to the Spell Point cost of your spells."
+    },
+    "Magical Sheltering": {
+      "carrier": "Item:Absorption_Gauntlet",
+      "wiki_url": "https://ddowiki.com/page/Item:Absorption_Gauntlet",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Insightful Magical Sheltering +10",
+      "tooltip": "Insightful Magical Sheltering +10: +10 Insight bonus to Magical Resistance Rating"
+    },
+    "Magnetism": {
+      "carrier": "Item:Attunement_Gauntlets",
+      "wiki_url": "https://ddowiki.com/page/Item:Attunement_Gauntlets",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Magnetism +94",
+      "tooltip": "Magnetism +94: Passive: +94 Equipment bonus to Electricity Spell Power."
+    },
+    "Melee Alacrity": {
+      "carrier": "Item:Antique_Greataxe",
+      "wiki_url": "https://ddowiki.com/page/Item:Antique_Greataxe",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Melee Alacrity 5%",
+      "tooltip": "Melee Alacrity 5%: Gain 5% Enhancement bonus to Melee attack speed. Does not stack with the Haste spell."
+    },
+    "Melee Power": {
+      "carrier": "Item:Epic_Buckler_of_the_Demonic_Soldier",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Buckler_of_the_Demonic_Soldier",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Melee Power +6",
+      "tooltip": "Melee Power +6: This item provides a +6 Enhancement bonus to Melee Power."
+    },
+    "Mighty Skills Bonus": {
+      "carrier": "Item:The_Repulsor_Boots",
+      "wiki_url": "https://ddowiki.com/page/Item:The_Repulsor_Boots",
+      "provenance": "stated",
+      "harvested": "2026-09-05",
+      "label": "Insightful Mighty Skills Bonus",
+      "tooltip": "Insightful Mighty Skills Bonus: +10 Insight bonus to Jump and Swim.",
+      "note": "#724. The same carrier also engraves `Quality Mighty Skills Bonus: +5 Quality bonus to Jump and Swim.` — same two skills at a second type, which is the corroboration that the roster is the group's and not one item's."
+    },
+    "Minor Spell Penetration": {
+      "carrier": "Item:Elfcrafted_Chain_Armor",
+      "wiki_url": "https://ddowiki.com/page/Item:Elfcrafted_Chain_Armor",
+      "provenance": "unmatched",
+      "harvested": "2026-09-04",
+      "labels_seen": [
+        "Mithral",
+        "Platinum Piece",
+        "+3 Enhancement Bonus",
+        "Mithral"
+      ],
+      "note": "the Elfcrafted Chain Armor page renders no tooltip for it (its labels are the Mithral material and the enhancement bonus); needs a carrier whose page engraves the enchantment."
+    },
+    "Moonlit Haunt Lore": {
+      "carrier": "Item:Perfected_Twisted_Talisman",
+      "wiki_url": "https://ddowiki.com/page/Item:Perfected_Twisted_Talisman",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Moonlit Haunt Lore +23",
+      "tooltip": "Moonlit Haunt Lore +23: Passive: Your Negative, Force, and Poison spells gain a 23% Equipment bonus to their chance to critical hit."
+    },
+    "Move Silently": {
+      "carrier": "Item:Accomplice",
+      "wiki_url": "https://ddowiki.com/page/Item:Accomplice",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Move Silently +10",
+      "tooltip": "Move Silently +10: Passive: +10 Competence bonus to the Move Silently skill."
+    },
+    "Mystic Diversion": {
+      "carrier": "Item:Acidic_Sphere",
+      "wiki_url": "https://ddowiki.com/page/Item:Acidic_Sphere",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Mystic Diversion +9%",
+      "tooltip": "Mystic Diversion +9%: +9% Enhancement bonus to decreased threat generated from spell damage."
+    },
+    "Mystic Incite": {
+      "carrier": "Item:Cloak_of_the_Crownblade",
+      "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_the_Crownblade",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Mystic Incite +23",
+      "tooltip": "Mystic Incite +23: +23% bonus to increased threat generation from spell damage"
+    },
+    "Necromancy Focus": {
+      "carrier": "Item:Bracers_of_the_Spider_Queen",
+      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_the_Spider_Queen",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Necromancy Focus +4",
+      "tooltip": "Necromancy Focus +4: +4 Equipment bonus to the DC of Necromancy spells."
+    },
+    "Negative Amplification": {
+      "carrier": "Item:Black_Velvet_Capelet",
+      "wiki_url": "https://ddowiki.com/page/Item:Black_Velvet_Capelet",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Negative Amplification",
+      "tooltip": "Negative Amplification: This effect amplifies all incoming negative energy healing by +15 (Insight bonus). Includes spells, potions, and other effects."
+    },
+    "Negative Energy Absorption": {
+      "carrier": "Item:Belt_of_Thoughtful_Rememberance",
+      "wiki_url": "https://ddowiki.com/page/Item:Belt_of_Thoughtful_Rememberance",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Negative Energy Absorption +20%",
+      "tooltip": "Negative Energy Absorption +20%: This effect absorbs 20% of all negative damage the character would have taken, after all other protections have been penetrated."
+    },
+    "Negative Resistance": {
+      "carrier": "Item:First_Light_(level_10)",
+      "wiki_url": "https://ddowiki.com/page/Item:First_Light_(level_10)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Negative Resistance +21",
+      "tooltip": "Negative Resistance +21: Passive: +21 Enhancement bonus to your Negative Resistance."
+    },
+    "Nimble Skills Bonus": {
+      "carrier": "Item:Boots_of_Fleet_and_Fortune",
+      "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Fleet_and_Fortune",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Exceptional Nimble Skills Bonus",
+      "tooltip": "Exceptional Nimble Skills Bonus: +7 Exceptional bonus to Balance, Hide, Move Silently, Open Lock and Tumble."
+    },
+    "Nullification": {
+      "carrier": "Item:Boots_of_Corrosion",
+      "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Corrosion",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Nullification +59",
+      "tooltip": "Nullification +59: Passive: +59 Equipment bonus to Negative (Necrotic) and Poison Spell Power."
+    },
+    "Open Lock": {
+      "carrier": "Item:Epic_Gloves_of_the_Tinkerer",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Gloves_of_the_Tinkerer",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Open Lock +17",
+      "tooltip": "Open Lock +17: Passive: +17 Competence bonus to the Open Lock skill."
+    },
+    "Orb Bonus": {
+      "carrier": "Item:Acidic_Sphere",
+      "wiki_url": "https://ddowiki.com/page/Item:Acidic_Sphere",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "+4 Orb Bonus",
+      "tooltip": "+4 Orb Bonus: While this orb is equipped and you are actively blocking, you gain a +4 orb bonus to all saving throws, as well as Acid, Cold, Fire, Electric, and Sonic resistances."
+    },
+    "Perform": {
+      "carrier": "Item:Bard's_Cloak",
+      "wiki_url": "https://ddowiki.com/page/Item:Bard's_Cloak",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Perform +15",
+      "tooltip": "Perform +15: Passive: +15 Competence bonus to the Perform skill."
+    },
+    "Physical Sheltering": {
+      "carrier": "Item:Admiral's_Cummerbund",
+      "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Cummerbund",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Physical Sheltering +11",
+      "tooltip": "Physical Sheltering +11: +11 Enhancement bonus to Physical Resistance Rating"
+    },
+    "Poison Absorption": {
+      "carrier": "Item:Astral_Spore_Pendant",
+      "wiki_url": "https://ddowiki.com/page/Item:Astral_Spore_Pendant",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Poison Absorption +21%",
+      "tooltip": "Poison Absorption +21%: Passive: 21% Enhancement Bonus to Poison Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
+    },
+    "Poison Resistance": {
+      "carrier": "Item:Crystalline_Wristlet",
+      "wiki_url": "https://ddowiki.com/page/Item:Crystalline_Wristlet",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Poison Resistance +33",
+      "tooltip": "Poison Resistance +33: Passive: +33 Enhancement bonus to your Poison Resistance."
+    },
+    "Power": {
+      "carrier": "Item:Arcane_Goggles",
+      "wiki_url": "https://ddowiki.com/page/Item:Arcane_Goggles",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Power I",
+      "tooltip": "Power I: This item grants the wearer +10 maximum spell points. Favored Souls and Sorcerers gain double spell points from this item."
+    },
+    "Power in Pact": {
+      "carrier": "Item:Baron_Aubrecker's_Family_Amulet",
+      "wiki_url": "https://ddowiki.com/page/Item:Baron_Aubrecker's_Family_Amulet",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Power in Pact +1",
+      "tooltip": "Power in Pact +1: You gain a +1 Enhancement bonus to Pact Dice."
+    },
+    "Power of Creeping Dust": {
+      "carrier": "Item:Creeping_Dust_Conduit",
+      "wiki_url": "https://ddowiki.com/page/Item:Creeping_Dust_Conduit",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Power of Creeping Dust +94",
+      "tooltip": "Power of Creeping Dust +94: Passive: +94 Equipment bonus to Cold and Acid Power."
+    },
+    "Power of the Blight": {
+      "carrier": "Item:Blightstaff",
+      "wiki_url": "https://ddowiki.com/page/Item:Blightstaff",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Power of the Blight +148",
+      "tooltip": "Power of the Blight +148: Passive: +148 Equipment bonus to Acid, Negative, Poison and Evil Spell Power."
+    },
+    "Power of the Dark Restoration": {
+      "carrier": "Item:Alaric's_Grim_Gauntlets",
+      "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Power of the Dark Restoration +155",
+      "tooltip": "Power of the Dark Restoration +155: Passive: +155 Equipment bonus to Negative, Poison and Positive Spell Power."
+    },
+    "Power of the Firestorm": {
+      "carrier": "Item:Cloak_of_the_Artblade",
+      "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_the_Artblade",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Power of the Firestorm +87",
+      "tooltip": "Power of the Firestorm +87: Passive: +87 Equipment bonus to Fire and Electric Spell Power."
+    },
+    "Power of the Flames of Purity": {
+      "carrier": "Item:Epic_Luminous_Truth",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Luminous_Truth",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Power of the Flames of Purity +111",
+      "tooltip": "Power of the Flames of Purity +111: Passive: +111 Equipment bonus to Fire and Light Spell Power."
+    },
+    "Power of the Frozen Depths": {
+      "carrier": "Item:Black_Pearl_Ring",
+      "wiki_url": "https://ddowiki.com/page/Item:Black_Pearl_Ring",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Power of the Frozen Depths +154",
+      "tooltip": "Power of the Frozen Depths +154: Passive: +154 Equipment bonus to Negative, Cold and Poison Spell Power."
+    },
+    "Power of the Frozen Storm": {
+      "carrier": "Item:Bottled_Rainstorm",
+      "wiki_url": "https://ddowiki.com/page/Item:Bottled_Rainstorm",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Insightful Power of the Frozen Storm +74",
+      "tooltip": "Insightful Power of the Frozen Storm +74: Passive: +74 Insight bonus to Cold and Electric Spell Power."
+    },
+    "Power of the Moonlit Haunt": {
+      "carrier": "Item:Perfected_Twisted_Talisman",
+      "wiki_url": "https://ddowiki.com/page/Item:Perfected_Twisted_Talisman",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Power of the Moonlit Haunt +157",
+      "tooltip": "Power of the Moonlit Haunt +157: Passive: +157 Equipment bonus to Negative, Force and Poison Spell Power."
+    },
+    "Power of the Silver Flame": {
+      "carrier": "Item:Epic_Pillar_of_Light",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Pillar_of_Light",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Power of the Silver Flame +122",
+      "tooltip": "Power of the Silver Flame +122: Passive: +122 Equipment bonus to Positive, Light, and Alignment Spell Power."
+    },
+    "Power of the Thunderstorm": {
+      "carrier": "Item:Epic_Storm",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Storm",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Power of the Thunderstorm +111",
+      "tooltip": "Power of the Thunderstorm +111: Passive: +111 Equipment bonus to Sonic and Electric Spell Power."
+    },
+    "Proof Against Disease": {
+      "carrier": "Item:Arraetrikos'_Bane_(level_15)",
+      "wiki_url": "https://ddowiki.com/page/Item:Arraetrikos'_Bane_(level_15)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Quality Proof Against Disease +1",
+      "tooltip": "Quality Proof Against Disease +1: This item grants its wearer immunity to natural diseases. This item also grants a +1 Quality bonus to saving throws against magical diseases, and the wearer does not fail saving throws against them on a roll of a natural 1 (this renders the wearer immune to magical diseases with a DC of less than 2 + their Fortitude save)."
+    },
+    "Proof Against Poison": {
+      "carrier": "Item:Arraetrikos'_Bane_(level_15)",
+      "wiki_url": "https://ddowiki.com/page/Item:Arraetrikos'_Bane_(level_15)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Insightful Proof Against Poison +2",
+      "tooltip": "Insightful Proof Against Poison +2: This item grants its wearer immunity to natural poisons. This item also grants a +2 Insight bonus to saving throws against magical poisons, and the wearer does not fail saving throws against them on a roll of a natural 1 (this renders the wearer immune to magical poisons with a DC of less than 3 + their Fortitude save)."
+    },
+    "Protection from Evil": {
+      "carrier": "Item:Epic_Icon_of_Mielikki",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Icon_of_Mielikki",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Protection from Evil +5",
+      "tooltip": "Protection from Evil +5: You have a +5 Deflection bonus to AC, and a +5 Resistance bonus to Saves vs Evil Monsters."
+    },
+    "Prudent Skills Bonus": {
+      "carrier": "Item:Epic_Treasure_Hunter's_Spyglass_(level_20)",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Treasure_Hunter's_Spyglass_(level_20)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Exceptional Prudent Skills Bonus",
+      "tooltip": "Exceptional Prudent Skills Bonus: +8 Exceptional bonus to Heal, Listen and Spot."
+    },
+    "Purifying Flame Lore": {
+      "carrier": "Item:Epic_Luminous_Truth",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Luminous_Truth",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Purifying Flame Lore +16",
+      "tooltip": "Purifying Flame Lore +16: Passive: Your Fire and Light spells gain a +16% Equipment bonus to their chance to critical hit."
+    },
+    "Radiance": {
+      "carrier": "Item:Alchemist's_Crown",
+      "wiki_url": "https://ddowiki.com/page/Item:Alchemist's_Crown",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Radiance +72",
+      "tooltip": "Radiance +72: Passive: +72 Equipment bonus to Light and Alignment Spell Power."
+    },
+    "Radiance Intensity": {
+      "carrier": "Item:Legendary_Mad_Angels'_Manacles",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Mad_Angels'_Manacles",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Radiance Intensity +24%",
+      "tooltip": "Radiance Intensity +24%: +24% Enhancement bonus to critical damage with Light and Alignment spells."
+    },
+    "Radiance Lore": {
+      "carrier": "Item:Celestial_Beacon",
+      "wiki_url": "https://ddowiki.com/page/Item:Celestial_Beacon",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Radiance Lore +11",
+      "tooltip": "Radiance Lore +11: Passive: Your Light and Aligned spells gain a 11% Equipment bonus to their chance to critical hit."
+    },
+    "Rage Charges": {
+      "carrier": "Item:Epic_Goggles_of_the_Inquisition",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Goggles_of_the_Inquisition",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Anger",
+      "tooltip": "Anger: This will increase the total number of Rages you can use by 3. However, these additional Rages will only take effect after the wielder rests.",
+      "note": "second pass: the wiki engraves this affix under a different label than gear-planner's stat name; matched on the label the page shows."
+    },
+    "Ranged Alacrity": {
+      "carrier": "Item:Aeon,_the_Blazing_Reign",
+      "wiki_url": "https://ddowiki.com/page/Item:Aeon,_the_Blazing_Reign",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Ranged Alacrity 20%",
+      "tooltip": "Ranged Alacrity 20%: Gain 20% Enhancement bonus to Ranged attack speed. Does not stack with the Haste spell."
+    },
+    "Ranged Power": {
+      "carrier": "Item:Dawnbringer_(level_28)",
+      "wiki_url": "https://ddowiki.com/page/Item:Dawnbringer_(level_28)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Ranged Power +6",
+      "tooltip": "Ranged Power +6: This item provides a +6 Enhancement bonus to Ranged Power."
+    },
+    "Reconstruction": {
+      "carrier": "Item:Amulet_of_the_Makers",
+      "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Makers",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Reconstruction +101",
+      "tooltip": "Reconstruction +101: Passive: +101 Equipment bonus to Repair and Rust Spell Power."
+    },
+    "Reflex Save": {
+      "carrier": "Item:Agile_Belt",
+      "wiki_url": "https://ddowiki.com/page/Item:Agile_Belt",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Reflex Save +1",
+      "tooltip": "Reflex Save +1: This item gives a +1 Resistance bonus to your Reflex saves."
+    },
+    "Repair": {
+      "carrier": "Item:Boots_of_Uncanny_Mending",
+      "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Uncanny_Mending",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Repair Amplification",
+      "tooltip": "Repair Amplification: This effect amplifies all incoming repair healing by +27 (Enhancement bonus). Includes spells, potions, and other effects."
+    },
+    "Repair Amplification": {
+      "carrier": "Item:Adamantine_Bracers",
+      "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Bracers",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Repair Amplification",
+      "tooltip": "Repair Amplification: This effect amplifies all incoming repair healing by +53 (Enhancement bonus). Includes spells, potions, and other effects."
+    },
+    "Repair Intensity": {
+      "carrier": "Item:Karazikar's_Cube",
+      "wiki_url": "https://ddowiki.com/page/Item:Karazikar's_Cube",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Repair Intensity +12%",
+      "tooltip": "Repair Intensity +12%: +12% Enhancement bonus to critical damage with Repair and Rust spells."
+    },
+    "Repair Lore": {
+      "carrier": "Item:Bronzed_Bracers",
+      "wiki_url": "https://ddowiki.com/page/Item:Bronzed_Bracers",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Repair Lore +10",
+      "tooltip": "Repair Lore +10: Passive: Your Repair and Rust spells gain a 10% Equipment bonus to their chance to critical hit."
+    },
+    "Resonance": {
+      "carrier": "Item:Bejeweled_Letter_Opener",
+      "wiki_url": "https://ddowiki.com/page/Item:Bejeweled_Letter_Opener",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Resonance +77",
+      "tooltip": "Resonance +77: Passive: +77 Equipment bonus to Sonic Spell Power."
+    },
+    "Rune Arm Charge Rate": {
+      "carrier": "Item:Echoes_of_Night",
+      "wiki_url": "https://ddowiki.com/page/Item:Echoes_of_Night",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Rune Arm Charge Rate",
+      "tooltip": "Rune Arm Charge Rate: 5%: This Rune Arm has a 5% Enhancement bonus to its Charge Rate."
+    },
+    "Rune Arm Focus": {
+      "carrier": "Item:Construct_Champion's_Bands",
+      "wiki_url": "https://ddowiki.com/page/Item:Construct_Champion's_Bands",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Rune Arm Focus +4",
+      "tooltip": "Rune Arm Focus +4: +4 Equipment bonus to the DC of Rune Arm spells."
+    },
+    "Search": {
+      "carrier": "Item:Amethyst_Loupe",
+      "wiki_url": "https://ddowiki.com/page/Item:Amethyst_Loupe",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Search +6",
+      "tooltip": "Search +6: Passive: +6 Competence bonus to the Search skill."
+    },
+    "Seeker": {
+      "carrier": "Item:Adamantine_Cloak_of_the_Wolf",
+      "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Cloak_of_the_Wolf",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Exceptional Seeker +5",
+      "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied)."
+    },
+    "Shatter": {
+      "carrier": "Item:Breach,_The_Dividing_Blade",
+      "wiki_url": "https://ddowiki.com/page/Item:Breach,_The_Dividing_Blade",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Shatter +10",
+      "tooltip": "Shatter +10: This effect gives a +10 Enhancement bonus to the DC to resist the character's Sunder and Improved Sunder attempts."
+    },
+    "Sheltering": {
+      "carrier": "Item:Abyssal_Compass",
+      "wiki_url": "https://ddowiki.com/page/Item:Abyssal_Compass",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Insightful Sheltering +9",
+      "tooltip": "Insightful Sheltering +9: +9 Insight bonus to Physical and Magical Resistance Ratings"
+    },
+    "Shield Bashing": {
+      "carrier": "Item:A_Garbage_Can_Lid",
+      "wiki_url": "https://ddowiki.com/page/Item:A_Garbage_Can_Lid",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Shield Bashing +12",
+      "tooltip": "Shield Bashing +12: +12 Enhancement bonus to Increased chance of Secondary Shield Bash."
+    },
+    "Silver Flame Lore": {
+      "carrier": "Item:Epic_Pillar_of_Light",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Pillar_of_Light",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Silver Flame Lore +18",
+      "tooltip": "Silver Flame Lore +18: Passive: Your Positive, Light, and Alignment spells gain a 18% Equipment bonus to their chance to critical hit."
+    },
+    "Smoke Screen": {
+      "carrier": "Item:Drow_Captain's_Mask",
+      "wiki_url": "https://ddowiki.com/page/Item:Drow_Captain's_Mask",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Smoke Screen +22%",
+      "tooltip": "Smoke Screen +22%: +22% Enhancement bonus to Concealment Percentage."
+    },
+    "Sneak Attack Bonus": {
+      "carrier": "Item:Assassin_Initiate's_Leathers_(level_13)",
+      "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate's_Leathers_(level_13)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Sneak Attack Bonus +2",
+      "tooltip": "Sneak Attack Bonus +2 : Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue."
+    },
+    "Sonic Absorption": {
+      "carrier": "Item:Downcast_Cowl",
+      "wiki_url": "https://ddowiki.com/page/Item:Downcast_Cowl",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Insightful Sonic Absorption +4%",
+      "tooltip": "Insightful Sonic Absorption +4%: Passive: 4% Insight Bonus to Sonic Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)"
+    },
+    "Sonic Intensity": {
+      "carrier": "Item:Legendary_Minotaur_Calling_Horn",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Minotaur_Calling_Horn",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Sonic Intensity +24%",
+      "tooltip": "Sonic Intensity +24%: +24% Enhancement bonus to critical damage with Sonic spells."
+    },
+    "Sonic Lore": {
+      "carrier": "Item:Bell_of_Warding",
+      "wiki_url": "https://ddowiki.com/page/Item:Bell_of_Warding",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Sonic Lore +21",
+      "tooltip": "Sonic Lore +21: Passive: Your Sonic spells gain a 21% Equipment bonus to their chance to critical hit."
+    },
+    "Sonic Resistance": {
+      "carrier": "Item:Cloak_of_Troll's_Resistance",
+      "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_Troll's_Resistance",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Sonic Resistance +10",
+      "tooltip": "Sonic Resistance +10: Passive: +10 Enhancement bonus to your Sonic Resistance."
+    },
+    "Spell Penetration": {
+      "carrier": "Item:Adversion",
+      "wiki_url": "https://ddowiki.com/page/Item:Adversion",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Spell Penetration +4",
+      "tooltip": "Spell Penetration +4: Passive: +4 Equipment bonus to Spell Penetration checks."
+    },
+    "Spell Resistance": {
+      "carrier": "Item:Aberrant_Robe",
+      "wiki_url": "https://ddowiki.com/page/Item:Aberrant_Robe",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Spell Resistance +17",
+      "tooltip": "Spell Resistance +17: +17 Enhancement bonus to Spell Resistance."
+    },
+    "Spell Save": {
+      "carrier": "Item:Band_of_the_Imprisoned_One",
+      "wiki_url": "https://ddowiki.com/page/Item:Band_of_the_Imprisoned_One",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Insightful Spell Save +2",
+      "tooltip": "Insightful Spell Save +2: This item gives a +2 Insight bonus to your saves versus spells."
+    },
+    "Spellcraft": {
+      "carrier": "Item:Absorption_Gauntlet",
+      "wiki_url": "https://ddowiki.com/page/Item:Absorption_Gauntlet",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Quality Spellcraft +4",
+      "tooltip": "Quality Spellcraft +4: Passive: +4 Quality bonus to the Spellcraft skill."
+    },
+    "Spot": {
+      "carrier": "Item:Amethyst_Loupe",
+      "wiki_url": "https://ddowiki.com/page/Item:Amethyst_Loupe",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Spot +6",
+      "tooltip": "Spot +6: Passive: +6 Competence bonus to the Spot skill."
+    },
+    "Strength": {
+      "carrier": "Item:Agarta's_Belt",
+      "wiki_url": "https://ddowiki.com/page/Item:Agarta's_Belt",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Strength +3",
+      "tooltip": "Strength +3: This item gives the wearer the power of Ogre Strength, granting a +3 Enhancement bonus to Strength."
+    },
+    "Stunning": {
+      "carrier": "Item:Antipode,_Fist_of_the_Horizon",
+      "wiki_url": "https://ddowiki.com/page/Item:Antipode,_Fist_of_the_Horizon",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Stunning +10",
+      "tooltip": "Stunning +10: +10 Enhancement bonus to the DC of character's Stunning Blow and Stunning Fist attempts."
+    },
+    "Sundering": {
+      "carrier": "Item:Giant's_Fist_(level_17)",
+      "wiki_url": "https://ddowiki.com/page/Item:Giant's_Fist_(level_17)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Sundering V",
+      "tooltip": "Sundering V: On Hit: Your target suffers a -1 Penalty to Fortitude Saving Throws for 6 seconds. This effect stacks up to 5 times. This effect may only occur on-hit once every three seconds.Passive: The DC of the saving throw to resist your Sunder combat feats is increased by 10."
+    },
+    "Swim": {
+      "carrier": "Item:Aquatic_Bracers_(level_12)",
+      "wiki_url": "https://ddowiki.com/page/Item:Aquatic_Bracers_(level_12)",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Swim +13",
+      "tooltip": "Swim +13: Passive: +13 Competence bonus to the Swim skill."
+    },
+    "Thunderstorm Lore": {
+      "carrier": "Item:Epic_Storm",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Storm",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Thunderstorm Lore +16",
+      "tooltip": "Thunderstorm Lore +16: Passive: Your Sonic and Lightning spells gain a +16% Equipment bonus to their chance to critical hit."
+    },
+    "Transmutation Focus": {
+      "carrier": "Item:Band_of_Manifest_Magic",
+      "wiki_url": "https://ddowiki.com/page/Item:Band_of_Manifest_Magic",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Transmutation Focus +4",
+      "tooltip": "Transmutation Focus +4: +4 Equipment bonus to the DC of Transmutation spells."
+    },
+    "Tumble": {
+      "carrier": "Item:Acrobat's_Ring",
+      "wiki_url": "https://ddowiki.com/page/Item:Acrobat's_Ring",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Tumble +7",
+      "tooltip": "Tumble +7: Passive: +7 Competence bonus to the Tumble skill."
+    },
+    "Turn Undead": {
+      "carrier": "Item:Alaric's_Grim_Gauntlets",
+      "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Hallowed",
+      "tooltip": "Hallowed: An item with this quality assists only wearers who have the ability to turn undead. Hallowed items provide an +14 Enhancement bonus to the maximum Hit Dice of undead turned."
+    },
+    "Turning": {
+      "carrier": "Item:Chainmail_Coif",
+      "wiki_url": "https://ddowiki.com/page/Item:Chainmail_Coif",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Turning",
+      "tooltip": "Turning : This will increase the total number of Turn Undead attempts you can use by 3. However, these additional Turn Undead attempts will only take effect after the wielder rests."
+    },
+    "Underwater Action": {
+      "carrier": "Item:Epic_Snakeskin_Belt",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Snakeskin_Belt",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Underwater Action",
+      "tooltip": "Underwater Action: You have a +17 Competence bonus to Swim and can breathe underwater."
+    },
+    "Universal Spell Lore": {
+      "carrier": "Item:Barovian_Nobles'_Regalia",
+      "wiki_url": "https://ddowiki.com/page/Item:Barovian_Nobles'_Regalia",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Exceptional Universal Spell Lore",
+      "tooltip": "Exceptional Universal Spell Lore: 3% Exceptional bonus to Universal Spell Lore."
+    },
+    "Universal Spell Power": {
+      "carrier": "Item:+1_Starter_Heavy_Mace",
+      "wiki_url": "https://ddowiki.com/page/Item:+1_Starter_Heavy_Mace",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Spellcasting Implement +3",
+      "tooltip": "Spellcasting Implement +3: Passive: +3 Implement bonus to Universal Spell Power."
+    },
+    "Upgradeable - Tier": {
+      "carrier": "Item:Bold_Trinket",
+      "wiki_url": "https://ddowiki.com/page/Item:Bold_Trinket",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Upgradeable - Tier 2",
+      "tooltip": "Upgradeable - Tier 2: This is a tier 2 upgradeable item."
+    },
+    "Use Magic Device": {
+      "carrier": "Item:Compliance",
+      "wiki_url": "https://ddowiki.com/page/Item:Compliance",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Use Magic Device +2",
+      "tooltip": "Use Magic Device +2: Passive: +2 Competence bonus to the Use Magic Device skill."
+    },
+    "Vertigo": {
+      "carrier": "Item:Duskbone_Ring",
+      "wiki_url": "https://ddowiki.com/page/Item:Duskbone_Ring",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Vertigo +4",
+      "tooltip": "Vertigo +4: This effect gives a +4 Enhancement bonus to the DC to resist the character's Trip and Improved Trip attempts."
+    },
+    "Void Intensity": {
+      "carrier": "Item:Cracked_Symbol_of_Lolth",
+      "wiki_url": "https://ddowiki.com/page/Item:Cracked_Symbol_of_Lolth",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Void Intensity +12%",
+      "tooltip": "Void Intensity +12%: +12% Enhancement bonus to critical damage with Negative and Poison spells."
+    },
+    "Void Lore": {
+      "carrier": "Item:Combustible_Nullified_Quarterstaff",
+      "wiki_url": "https://ddowiki.com/page/Item:Combustible_Nullified_Quarterstaff",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Void Lore +12",
+      "tooltip": "Void Lore +12: Passive: Your Negative Energy and Poison spells gain a 12% Equipment bonus to their chance to critical hit."
+    },
+    "Will Save": {
+      "carrier": "Item:Admiral's_Gloves",
+      "wiki_url": "https://ddowiki.com/page/Item:Admiral's_Gloves",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Will Save +5",
+      "tooltip": "Will Save +5: This item gives a +5 Resistance bonus to your Will saves."
+    },
+    "Wisdom": {
+      "carrier": "Item:Alaric's_Grim_Gauntlets",
+      "wiki_url": "https://ddowiki.com/page/Item:Alaric's_Grim_Gauntlets",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Wisdom +14",
+      "tooltip": "Wisdom +14: This item makes the wearer more in tune with her surroundings, granting a +14 Enhancement bonus to Wisdom."
+    },
+    "Wizardry": {
+      "carrier": "Item:Aberrant_Robe",
+      "wiki_url": "https://ddowiki.com/page/Item:Aberrant_Robe",
+      "provenance": "stated",
+      "harvested": "2026-09-04",
+      "label": "Wizardry II",
+      "tooltip": "Wizardry II: This item grants the wearer +50 maximum spell points. Sorcerers and Favored Souls gain up to double spell points from items."
+    }
   }
- }
 }

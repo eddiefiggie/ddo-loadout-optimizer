@@ -47,7 +47,12 @@ def test_markers_flag_triggers_ramps_windows_and_standing_conditions_only():
 def test_the_shipped_shard_covers_the_roster_and_every_candidate_is_ruled():
     sh, adj, roster, qn = _real()
     cov = T.check(sh, adj, roster, qn)
-    assert cov["names"] == 198 and cov["stated"] == 197, cov
+    # 199/198 not 198/197 since #724: +1, the `Mighty Skills Bonus` tooltip read
+    # off Item:The_Repulsor_Boots. It is NOT a roster name (2 carriers, below the
+    # rankability bar), so it moves this count without moving the roster
+    # coverage below — a harvested tooltip and a rankable name are different
+    # populations, and this pair is where that shows.
+    assert cov["names"] == 199 and cov["stated"] == 198, cov
     assert cov["unmatched"] == ["Minor Spell Penetration"]
     assert len(cov["unharvested"]) == 25
     assert [c["name"] for c in cov["candidates"]] == ["Dazing", "Dragon's Edge", "Improved Deception", "Orb Bonus", "Sundering"]
@@ -123,7 +128,7 @@ def test_built_dataset_stamps_coverage_and_the_disclose_map():
         return
     data = json.load(open(ITEMS, encoding="utf-8"))
     cov = data["metadata"]["affix_tooltip_coverage"]
-    assert cov["names"] == 198 and cov["by_disposition"]["disclose"] == ["Orb Bonus"]
+    assert cov["names"] == 199 and cov["by_disposition"]["disclose"] == ["Orb Bonus"]  # #724
     assert set(data["metadata"]["conditional_disclosures"]) == {"Orb Bonus"}
     assert "actively blocking" in data["metadata"]["conditional_disclosures"]["Orb Bonus"]["sentence"]
     # The roster the build computed is covered: no rankable numeric item stat is

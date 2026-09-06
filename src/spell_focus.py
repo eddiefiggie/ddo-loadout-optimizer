@@ -173,11 +173,17 @@ SKILLS_WIS = ["Heal", "Listen", "Spot"]
 #     Move Silently, Open Lock and Tumble.` — the SKILLS_DEX five exactly.
 #   * `Exceptional Prudent Skills Bonus: +8 Exceptional bonus to Heal, Listen
 #     and Spot.` — the SKILLS_WIS three exactly.
-# `Mighty Skills Bonus` (2 carriers, below the rankability bar) has NO harvested
-# tooltip and is deliberately absent: expanding it to `Strength Skills` by
-# analogy is the inference the never-infer rule forbids.
+#   * `Insightful Mighty Skills Bonus: +10 Insight bonus to Jump and Swim.`
+#     — TWO, and the reason the never-infer rule earned its keep here. #718 left
+#     this group folded for want of a tooltip and recorded that "expanding it to
+#     `Strength Skills` by analogy is the inference the never-infer rule
+#     forbids". The tooltip, read 2026-09-05 off `Item:The_Repulsor_Boots`
+#     (#724), shows the analogy would have been WRONG: `SKILLS_STR` is `["Jump"]`
+#     alone, and Mighty grants Swim as well. A plausible inference would have
+#     silently dropped a skill.
 SKILLS_ALLURING = ["Bluff", "Diplomacy", "Haggle", "Intimidate", "Perform"]
 SKILLS_ASTUTE = ["Disable Device", "Repair", "Search"]
+SKILLS_MIGHTY = ["Jump", "Swim"]
 
 # #570 — every skill in DDO, from the wiki's own all-skills enumeration: the
 # `Skill` page's "List of Skills" table, prefaced "This table describes all the
@@ -317,6 +323,11 @@ _UNIVERSAL = {
     # renders the wiki's own engraving ("Insightful Alluring Skills Bonus").
     "alluring skills bonus": SKILLS_ALLURING,
     "nimble skills bonus": SKILLS_DEX,
+    # #724 — the fifth `* Skills Bonus` group, expanded once its tooltip was
+    # read. Below the two-carrier rankability bar, so no player can rank the
+    # name; its two rows credited Jump and Swim nothing, which is the only
+    # reason it is worth closing.
+    "mighty skills bonus": SKILLS_MIGHTY,
     "astute skills bonus": SKILLS_ASTUTE,
     "prudent skills bonus": SKILLS_WIS,
     # #717 — `Good Luck`: all saves and all skills, type Luck. SELF_NAMED below,
