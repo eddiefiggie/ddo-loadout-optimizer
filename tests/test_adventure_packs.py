@@ -27,13 +27,27 @@ def _dataset():
         return json.load(fh)
 
 
+#: #729 — crafting sources whose OWN page states an expansion requirement in prose.
+#: One entry, deliberately: each addition is a separate wiki read and a separate
+#: widening of what the content filter can exclude.
+CRAFTING_MAY_CARRY_A_PACK = {"Catalyst Crafting"}
+
+
 def test_the_shard_loads_and_every_entry_states_its_evidence():
     m = AP.load()
     _true(m, "refusing to pass over an empty mapping")
     for name, e in m.items():
         _in(e["kind"], AP.KINDS, f"{name}: unknown kind")
         _true(e.get("via"), f"{name}: no wiki signal recorded — never infer a value")
-        if e["kind"] != "pack-quest":
+        # #729 — a `crafting` entry may carry a pack, because the #246 filter reads
+        # `location_pack` as "content the player must own" and an expansion-gated
+        # crafting system fits that exactly. Allowlisted BY NAME rather than opened
+        # to the whole kind: the other 16 crafting sources have not been re-read
+        # against page prose, and a blanket relaxation would let the next one
+        # acquire a pack without anyone stating the evidence.
+        if e["kind"] == "crafting" and name in CRAFTING_MAY_CARRY_A_PACK:
+            _true(e.get("pack"), f"{name}: allowlisted to carry a pack but carries none")
+        elif e["kind"] != "pack-quest":
             _eq(e.get("pack"), None, f"{name}: only a quest can carry an adventure pack")
 
 
