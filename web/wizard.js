@@ -1543,26 +1543,136 @@ function blockPinOverlap(blocklist, slotConstraints) {
  *  carries (renamed or removed upstream) is stale. A stale entry is KEPT — it
  *  blocks something that no longer exists, which is harmless — and reported;
  *  dropping it would silently un-block if the name comes back. */
-function blockStale(blocklist, items) {
+function blockStale(blocklist, items, craftIndex) {
   if (!Array.isArray(blocklist) || !blocklist.length) return [];
   const ids = new Set();
   for (const v of items || []) {
     if (v) ids.add(v.variant_id || v.source_item);
   }
-  return blocklist.filter((id) => !ids.has(id));
+  // #270 — a crafted option is resolved against the OPTION index, not the item
+  // roster: no catalog record carries a `craft:` key, so walking `items` alone
+  // would report every crafted block stale on every load and invite the player to
+  // remove a block that is working. When no index is supplied (callers that
+  // predate #270, and their tests), a `craft:` id is left alone rather than
+  // guessed at — unresolvable is not the same as absent.
+  const craftIdx = Array.isArray(craftIndex) ? craftIndex : null;
+  return blocklist.filter((id) => {
+    if (typeof id === "string" && id.indexOf("craft:") === 0) {
+      return craftIdx ? !craftIdIsKnown(craftIdx, id) : false;
+    }
+    return !ids.has(id);
+  });
+}
+
+// #270 — the crafted-option search index.
+//
+// The block picker searches `filterVariants` over `dataset.items`, which has no
+// crafted-option source: an option is a row in a pool, not a catalog record. The
+// keys the pipeline stamps (`craft:<pool>:<pool key>:<option>`,
+// `src/craft_identity.py`) are what the gate matches on, so the picker's job is
+// to turn those rows into something a player can find and tick — and to read the
+// stamped key rather than deriving one, which is the same rule the gate follows.
+//
+// Deliberately NOT `browsableItems(dataset)`: its display-only pseudo-variants
+// carry synthetic ids that never reach a solver pool, which is the exact trap the
+// #110 comment above records. These rows carry the real key or they are not
+// offered.
+const CRAFT_FAMILY_LABEL = {
+  seal: "Sealed-in slot",
+  viktranium: "Viktranium experiment",
+  dino_inserts: "Dinosaur Bone insert",
+  nearly_complete: "Nearly Complete",
+  legendary_green_steel: "Legendary Green Steel",
+  essence_crafting: "Essence Crafting",
+  nearly_complete_per_item: "Nearly Finished / Almost There",
+};
+
+/** A row's display name. Two pools carry no `name`, so the affix it grants IS
+ *  the name a player would recognise — "Charisma +6 (Enhancement)" rather than a
+ *  key fragment nobody typed. */
+function craftOptionName(rec) {
+  const n = (rec && rec.name || "").trim();
+  if (n) return n;
+  const a = (rec && rec.affixes && rec.affixes[0]) || rec || {};
+  const stat = a.stat || "";
+  const val = a.value != null ? a.value : "";
+  const type = a.bonus_type && a.bonus_type !== "Bool" ? ` (${a.bonus_type})` : "";
+  if (!stat) return "";
+  return a.bonus_type === "Bool" ? String(stat) : `${stat} +${val}${type}`;
+}
+
+/** Where the option comes from, in the player's words — the host class the plan
+ *  asked for, so two identically-named options in different families are
+ *  distinguishable in the list. */
+function craftOptionWhere(pool, rec, host) {
+  if (pool === "nearly_complete_per_item") return host;
+  if (pool === "viktranium") return `${rec.slot_type || ""} · ${rec.category || ""}`.trim();
+  if (pool === "dino_inserts") return `${rec.dino_type || ""} · ${rec.category || ""}`.trim();
+  if (pool === "seal") return `${rec.seal_type || ""} seal`;
+  if (pool === "legendary_green_steel") return `Tier ${rec.tier}`;
+  if (pool === "essence_crafting") return `${rec.menu || ""} menu`;
+  return rec.category || "";
+}
+
+/** `[{id, name, family, where, quarterstaff}]` for every craftable option the
+ *  dataset ships. Pure and exported; built once per dataset, not per keystroke. */
+function craftOptionIndex(dataset) {
+  const out = [];
+  const push = (pool, rec, host) => {
+    if (!rec || !rec.block_key) return;   // unstamped => not offerable
+    out.push({
+      id: rec.block_key,
+      name: craftOptionName(rec),
+      family: CRAFT_FAMILY_LABEL[pool] || pool,
+      where: craftOptionWhere(pool, rec, host),
+      quarterstaff: !!rec.quarterstaff,
+    });
+  };
+  for (const pool of ["seal", "viktranium", "dino_inserts", "nearly_complete",
+    "legendary_green_steel", "essence_crafting"]) {
+    for (const rec of (dataset && dataset[pool]) || []) push(pool, rec);
+  }
+  const perItem = (dataset && dataset.nearly_complete_per_item) || {};
+  for (const host of Object.keys(perItem)) {
+    for (const rec of perItem[host] || []) push("nearly_complete_per_item", rec, host);
+  }
+  return out;
+}
+
+/** Substring search over the index, ranked the way the item picker ranks: exact,
+ *  then prefix, then contains. Matches the family and host text too, so "green
+ *  steel" or a host name finds a family the player cannot name option-by-option. */
+function filterCraftOptions(index, query) {
+  const q = (query || "").trim().toLowerCase();
+  if (!q) return [];
+  const hay = (r) => `${r.name} ${r.family} ${r.where}`.toLowerCase();
+  const hits = (index || []).filter((r) => hay(r).indexOf(q) >= 0);
+  const rank = (r) => {
+    const n = (r.name || "").toLowerCase();
+    return n === q ? 0 : n.indexOf(q) === 0 ? 1 : 2;
+  };
+  return hits.sort((a, b) => rank(a) - rank(b) || (a.name || "").localeCompare(b.name || ""));
+}
+
+/** #270 — a `craft:` id is resolved against the option index, never against the
+ *  item roster. Without this every crafted block would be reported stale on
+ *  every load: `blockStale` walks `items`, and no catalog record carries these
+ *  keys. Same keep-and-report contract as an item id's. */
+function craftIdIsKnown(index, id) {
+  return (index || []).some((r) => r.id === id);
 }
 
 /** #110 (U5/U6) — the load-path disclosure sentence, or null when clean. One
  *  sentence for both facts, mirroring the priorities-migration message shape:
  *  computed pure here, rendered by the banner. */
-function blockLoadMessage(blocklist, slotConstraints, items) {
+function blockLoadMessage(blocklist, slotConstraints, items, craftIndex) {
   const parts = [];
   const overlap = blockPinOverlap(blocklist, slotConstraints);
   if (overlap.length) {
     parts.push(`${overlap.join(", ")} ${overlap.length > 1 ? "are" : "is"} both pinned and `
       + "blocked — a block wins, so the pin will not be honored. Remove one of the two.");
   }
-  const stale = blockStale(blocklist, items);
+  const stale = blockStale(blocklist, items, craftIndex);
   if (stale.length) {
     parts.push(`Blocked ${stale.length > 1 ? "entries" : "entry"} ${stale.join(", ")} no longer `
       + "match anything in the current data (renamed or removed upstream). "
@@ -2532,7 +2642,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict,
+  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -3015,7 +3125,7 @@ if (typeof window !== "undefined" && window.App) {
         ${poolFold("block", "Block items or augments", poolStatus("block"), `
           <p class="wz-adv-note">Gear the solver must never recommend.</p>
           <div class="wz-addrow">
-            <input id="wz-block-search" data-nodirty type="text" placeholder="Search anything placeable — e.g. Lunar Gem of Abjuration…" autocomplete="off">
+            <input id="wz-block-search" data-nodirty type="text" placeholder="Search anything placeable — an item, an augment, or a craft…" autocomplete="off">
           </div>
           <div id="wz-block-results" class="wz-pin-results"></div>
           <div id="wz-block-stage" class="wz-block-stage"></div>
@@ -3228,6 +3338,14 @@ ${(() => {
     const blockStage = new Set();   // UI-transient; never persisted
     const BLOCK_CAP = 30;
 
+    // #270 — built once per dataset, not per keystroke: 812 rows is cheap to
+    // walk but not cheap to rebuild on every character typed into the search.
+    let _craftIndex = null;
+    function craftIndex() {
+      if (!_craftIndex) _craftIndex = craftOptionIndex(dataset);
+      return _craftIndex;
+    }
+
     function renderBlockStage() {
       const box = document.getElementById("wz-block-stage");
       if (!box) return;
@@ -3265,14 +3383,23 @@ ${(() => {
       const input = document.getElementById("wz-block-search");
       if (!box || !input) return;
       const q = (input.value || "").trim();
-      if (!q) { box.innerHTML = `<p class="wz-pin-hint">Type a name to search everything the solver can place — items and augments.</p>`; renderBlockStage(); return; }
+      if (!q) { box.innerHTML = `<p class="wz-pin-hint">Type a name to search everything the solver can place — items, augments and crafted options.</p>`; renderBlockStage(); return; }
       // eslint-disable-next-line no-undef
       const matches = filterVariants(dataset.items, { verification: "verified", query: q });
       const rank = (v) => { const n = (v.source_item || v.variant_id || "").toLowerCase(); const ql = q.toLowerCase(); return n === ql ? 0 : n.startsWith(ql) ? 1 : 2; };
       matches.sort((a, b) => rank(a) - rank(b) || (a.source_item || "").localeCompare(b.source_item || ""));
-      if (!matches.length) { box.innerHTML = `<p class="wz-pin-hint">Nothing matches “${esc(q)}”.</p>`; renderBlockStage(); return; }
+      if (!matches.length && !filterCraftOptions(craftIndex(), q).length) {
+        box.innerHTML = `<p class="wz-pin-hint">Nothing matches “${esc(q)}”.</p>`; renderBlockStage(); return;
+      }
       const blockedSet = new Set(state.blocklist || []);
+      // #270 — crafted options share the list, the staging set and the commit
+      // action with items. One picker, because "never give me this" is one
+      // intent: making the player choose a different control first would mean
+      // knowing whether the thing they don't want is an item or a craft, which
+      // is exactly the distinction they should not have to make.
+      const craftHits = filterCraftOptions(craftIndex(), q);
       const shown = matches.slice(0, BLOCK_CAP);
+      const craftShown = craftHits.slice(0, Math.max(0, BLOCK_CAP - shown.length));
       box.innerHTML = shown.map((v) => {
         const id = pinIdOf(v), name = v.source_item || v.variant_id;
         const already = blockedSet.has(id);
@@ -3290,7 +3417,19 @@ ${(() => {
           <span class="wz-pin-hit-name">${esc(name)}</span>
           <span class="wz-pin-hit-slot">${esc(v.category === "augment" ? ((v.aug_color || {}).color || "augment") + " augment" : v.slot || "")}${note}</span></label>`;
       }).join("")
-        + (matches.length > BLOCK_CAP ? `<p class="wz-pin-more">Showing top ${BLOCK_CAP} of ${matches.length.toLocaleString()} — refine and tick; your selection keeps across searches.</p>` : "");
+        + craftShown.map((r) => {
+          const already = blockedSet.has(r.id);
+          // A crafted option cannot be pinned, so there is no pin note here and
+          // no displacement to warn about — the two surfaces disagree about
+          // nothing because only one of them can hold a craft.
+          const qs = r.quarterstaff ? " · quarterstaff" : "";
+          return `<label class="wz-block-hit${already ? " wz-block-hit-off" : ""}">
+          <input type="checkbox" data-block-id="${esc(r.id)}"${blockStage.has(r.id) ? " checked" : ""}${already ? " disabled" : ""}>
+          <span class="wz-pin-hit-name">${esc(r.name)}</span>
+          <span class="wz-pin-hit-slot">${esc(r.family)}${r.where ? " · " + esc(r.where) : ""}${esc(qs)}${already ? " · blocked" : ""}</span></label>`;
+        }).join("")
+        + (matches.length + craftHits.length > BLOCK_CAP
+          ? `<p class="wz-pin-more">Showing top ${shown.length + craftShown.length} of ${(matches.length + craftHits.length).toLocaleString()} — refine and tick; your selection keeps across searches.</p>` : "");
       box.querySelectorAll("input[data-block-id]").forEach((cb) => cb.onchange = () => {
         if (cb.checked) blockStage.add(cb.dataset.blockId);
         else blockStage.delete(cb.dataset.blockId);
@@ -3530,7 +3669,7 @@ ${(() => {
       if (!entries.length) { box.innerHTML = `<p class="wz-pin-empty">Nothing blocked — search above to forbid gear the solver keeps recommending.</p>`; return; }
       // U6 — stale entries (no longer resolving to any roster variant) are
       // labelled by name rather than silently kept or dropped.
-      const staleSet = new Set(blockStale(entries, dataset.items));
+      const staleSet = new Set(blockStale(entries, dataset.items, craftIndex()));
       box.innerHTML = entries.map((id) => {
         const stale = staleSet.has(id)
           ? `<span class="wz-pin-flag" title="No current item or augment carries this id — it may have been renamed upstream. The entry still saves; it just matches nothing right now.">no longer matches anything</span>`
@@ -5104,7 +5243,7 @@ ${(() => {
       // pin+block overlap (hand-edited/corrupted import) or a stale blocked id
       // (renamed upstream) is REPORTED, never silently resolved or dropped. The
       // helper works on copies; nothing here rewrites the saved arrays.
-      state.blockLoadNotice = blockLoadMessage(state.blocklist, state.slotConstraints, dataset.items);
+      state.blockLoadNotice = blockLoadMessage(state.blocklist, state.slotConstraints, dataset.items, craftOptionIndex(dataset));
       // U5, Part C — one-time load migration: a PRE-OVERHAUL saved snapshot embedded
       // its chosen items with only the legacy `stat`/`bonus_type`/`minimum_level`
       // fields; upgrade them so the native-first readers (affixLabel/itemMl) render.

@@ -86,4 +86,66 @@ test("a stale craft: id withholds nothing and does not throw", () => {
     "a renamed option leaves a stale entry; the stale-entry report discloses it");
 });
 
+// ---- #270 half two: the picker index -----------------------------------------
+const W = require("../web/wizard.js");
+
+test("the index covers every stamped option row and nothing else", () => {
+  const idx = W.craftOptionIndex(DS);
+  assert.strictEqual(idx.length, 812, "index size is the stamped population");
+  assert.strictEqual(new Set(idx.map((r) => r.id)).size, 812, "ids stay unique through the index");
+  for (const r of idx) {
+    assert.ok(r.id.startsWith("craft:"), r.id);
+    assert.ok(r.name, `row with no display name: ${r.id}`);
+    assert.ok(r.family, `row with no family label: ${r.id}`);
+  }
+});
+
+test("an unstamped row is not offerable", () => {
+  const idx = W.craftOptionIndex({ seal: [{ name: "No Key" }] });
+  assert.deepStrictEqual(idx, [], "a row with no block_key must not reach the picker");
+});
+
+test("the two nameless pools get a name a player would recognise", () => {
+  const idx = W.craftOptionIndex(DS);
+  const nc = idx.find((r) => r.id.startsWith("craft:nearly_complete:"));
+  assert.ok(/\+\d/.test(nc.name) || nc.name.length > 2,
+    `nearly_complete row should name its affix, got ${nc.name}`);
+  assert.ok(!nc.name.includes("|"), "a key fragment is not a name");
+});
+
+test("search finds by option name, by family, and by host", () => {
+  const idx = W.craftOptionIndex(DS);
+  assert.ok(W.filterCraftOptions(idx, "Acid Guard").length, "by option name");
+  assert.ok(W.filterCraftOptions(idx, "green steel").length, "by family label");
+  const host = Object.keys(DS.nearly_complete_per_item)[0];
+  assert.ok(W.filterCraftOptions(idx, host).length, "by host name");
+  assert.deepStrictEqual(W.filterCraftOptions(idx, ""), [], "empty query matches nothing");
+});
+
+test("exact name outranks a substring match", () => {
+  const idx = W.craftOptionIndex(DS);
+  const hits = W.filterCraftOptions(idx, "Acid Guard");
+  assert.strictEqual(hits[0].name.toLowerCase(), "acid guard");
+});
+
+test("a craft: id is resolved against the index, not the item roster", () => {
+  const idx = W.craftOptionIndex(DS);
+  const live = DS.legendary_green_steel[0].block_key;
+  // Without the index a crafted block would be reported stale on every load.
+  assert.deepStrictEqual(W.blockStale([live], DS.items, idx), [],
+    "a live crafted block is not stale");
+  assert.deepStrictEqual(W.blockStale([live], DS.items), [],
+    "with no index supplied, a craft: id is left alone rather than guessed at");
+  assert.deepStrictEqual(W.blockStale(["craft:legendary_green_steel:1:Gone"], DS.items, idx),
+    ["craft:legendary_green_steel:1:Gone"], "a renamed option IS reported stale");
+});
+
+test("the load message names a stale craft the same way it names an item", () => {
+  const idx = W.craftOptionIndex(DS);
+  const msg = W.blockLoadMessage(["craft:seal:Fire:No Such Seal"], {}, DS.items, idx);
+  assert.ok(msg && /no longer/.test(msg), msg);
+  assert.strictEqual(W.blockLoadMessage([DS.seal[0].block_key], {}, DS.items, idx), null,
+    "a live crafted block says nothing on load");
+});
+
 console.log(`\n${passed} passed`);
