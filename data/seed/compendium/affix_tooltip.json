@@ -4,24 +4,17 @@
     "note": "#713 — ONE rendered tooltip per rankable affix name that has a numeric carrier, read from a carrier item page's rendered HTML (span.tooltip) via the paced same-origin api.php parse loop in docs/wiki-evidence/harvest-method.md. The condition prose lives in the enchantment TEMPLATE, so one rendering per name is the evidence for every carrier. `tooltip` is verbatim (with | = & ? stripped by the privacy guard); `label` is the enchantment name the wiki engraves. `provenance`: stated (tooltip captured) or unmatched (the page rendered tooltips but none named this affix — recorded with the labels seen so the gap is visible, never inferred).",
     "harvested": "2026-09-04",
     "unharvested": {
-      "Bard Song Charge": "no item carrier; augment/set-only in this catalog",
+      "Bard Song Charge": "augment/set-only and NOT on Named_item_sets (checked 2026-09-06, #715) -- it is augment-set text, so the Esoterica-style augment-set source is where to look next.",
       "Concealment": "minted by the boolean-composite expansion from `Blurry` / `Lesser Displacement`; those two carry the harvested tooltips. No engraved carrier of its own. (#715: pointer recorded.)",
       "Conditioning": "umbrella label for the `Legendary Conditioning` family; the family members carry the tooltips. No engraved carrier of its own. (#715: pointer recorded.)",
-      "Critical Multiplier on a 19-20": "set-tier-only stat (#683 split mechanic), no item carrier",
-      "Critical Multiplier on a roll of 19-20": "set-tier-only stat (#683 split mechanic), no item carrier",
-      "Eldritch Blast Dice": "augment/set-only, no worn carrier page",
-      "Imbue Dice": "augment/set-only, no worn carrier page",
+      "Eldritch Blast Dice": "augment/set-only and NOT on Named_item_sets (checked 2026-09-06, #715) -- augment-set text.",
       "MRR": "alias spelling of `Magical Sheltering` (affix_aliases.json); that name's tooltip covers it. No carrier of its own. (#715: pointer recorded.)",
       "Max Dex Bonus": "augment-only (Sapphire of Armored Agility) and STILL unreadable: that augment has no wiki page, and `Armored Agility` redirects to the Fighter enhancement of that name, which is a different thing. Checked 2026-09-05 (#715). Needs a carrier page that engraves it, or the augment's own page to exist.",
-      "Melee Diversion": "augment/set-only, no worn carrier page",
-      "Missile Deflection": "set-tier-only, no worn carrier page",
+      "Melee Diversion": "augment/set-only and NOT on Named_item_sets (checked 2026-09-06, #715) -- augment-set text.",
       "Movement Speed": "minted by the speed split; `speed_enchantment.json` holds the per-invocation tooltips. No engraved carrier under this name. (#715: pointer recorded.)",
       "PRR": "alias spelling of `Physical Sheltering` (affix_aliases.json); that name's tooltip covers it. No carrier of its own. (#715: pointer recorded.)",
-      "Ranged Diversion": "augment/set-only, no worn carrier page",
-      "Rune Arm DCs": "augment/set-only, no worn carrier page",
-      "Sneak Attack": "augment/set-only, no worn carrier page",
-      "Spell Critical Damage": "set-tier-only (#672), no worn carrier page",
-      "Turn Undead Charge": "augment/set-only, no worn carrier page",
+      "Ranged Diversion": "augment/set-only and NOT on Named_item_sets (checked 2026-09-06, #715) -- augment-set text.",
+      "Turn Undead Charge": "augment/set-only and NOT on Named_item_sets (checked 2026-09-06, #715) -- augment-set text.",
       "Unconsciousness Range": "expansion-minted by the #649 `Undying` rename; the pre-rename name carries the evidence. No engraved carrier under this name. (#715: pointer recorded.)"
     },
     "unharvested_note": "Rankable names with a numeric carrier but no ITEM page to read a tooltip from (augment-, set- or expansion-only). Recorded with the reason so the coverage guard can tell 'not harvested yet' from 'cannot be harvested this way'; the augment half's next source is the Lunar_and_Solar_Gems table (#713 follow-up)."
@@ -260,6 +253,24 @@
       "harvested": "2026-09-04",
       "label": "Creeping Dust Lore +14",
       "tooltip": "Creeping Dust Lore +14: Passive: Your Cold and Acid spells gain a 14% Equipment bonus to their chance to critical hit."
+    },
+    "Critical Multiplier on a 19-20": {
+      "carrier": "Renegade Champion [ML:14/29]",
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets",
+      "provenance": "stated",
+      "harvested": "2026-09-06",
+      "label": "Renegade Champion",
+      "tooltip": "+1 Artifact Bonus to Critical Multiplier on a 19-20",
+      "note": "#715. Set-tier-only stat with no item carrier page: the set tier text on Named_item_sets IS its page. Recorded verbatim including the page's own tier markers -- the diamond/circle/star glyphs are its heroic/epic/legendary tiers, not part of the stat name."
+    },
+    "Critical Multiplier on a roll of 19-20": {
+      "carrier": "Fried & Frozen Frenzy [ML:18/32]",
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets",
+      "provenance": "stated",
+      "harvested": "2026-09-06",
+      "label": "Fried & Frozen Frenzy",
+      "tooltip": "+1 Artifact Bonus to Critical Multiplier on a roll of 19-20",
+      "note": "#715. Set-tier-only stat with no item carrier page: the set tier text on Named_item_sets IS its page. Recorded verbatim including the page's own tier markers -- the diamond/circle/star glyphs are its heroic/epic/legendary tiers, not part of the stat name."
     },
     "Curse Resistance": {
       "carrier": "Item:Cursebane_Focus",
@@ -780,6 +791,15 @@
       "label": "Illusion Save +6",
       "tooltip": "Illusion Save +6: +6 Resistance bonus to your saves versus illusions"
     },
+    "Imbue Dice": {
+      "carrier": "Wrath of Sora Kell [ML:11/31]",
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets",
+      "provenance": "stated",
+      "harvested": "2026-09-06",
+      "label": "Wrath of Sora Kell",
+      "tooltip": "♦+1★+3 Artifact bonus to Imbue Dice",
+      "note": "#715. Set-tier-only stat with no item carrier page: the set tier text on Named_item_sets IS its page. Recorded verbatim including the page's own tier markers -- the diamond/circle/star glyphs are its heroic/epic/legendary tiers, not part of the stat name."
+    },
     "Improved Deception": {
       "carrier": "Item:Agony,_the_Knife_in_the_Dark",
       "wiki_url": "https://ddowiki.com/page/Item:Agony,_the_Knife_in_the_Dark",
@@ -979,6 +999,15 @@
         "Mithral"
       ],
       "note": "the Elfcrafted Chain Armor page renders no tooltip for it (its labels are the Mithral material and the enhancement bonus); needs a carrier whose page engraves the enchantment."
+    },
+    "Missile Deflection": {
+      "carrier": "Beacon of Magic [ML:10/29]",
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets",
+      "provenance": "stated",
+      "harvested": "2026-09-06",
+      "label": "Beacon of Magic",
+      "tooltip": "♦+2%★+5% Artifact Bonus to Missile Deflection",
+      "note": "#715. Set-tier-only stat with no item carrier page: the set tier text on Named_item_sets IS its page. Recorded verbatim including the page's own tier markers -- the diamond/circle/star glyphs are its heroic/epic/legendary tiers, not part of the stat name."
     },
     "Moonlit Haunt Lore": {
       "carrier": "Item:Perfected_Twisted_Talisman",
@@ -1357,6 +1386,15 @@
       "label": "Rune Arm Charge Rate",
       "tooltip": "Rune Arm Charge Rate: 5%: This Rune Arm has a 5% Enhancement bonus to its Charge Rate."
     },
+    "Rune Arm DCs": {
+      "carrier": "Renegade Champion [ML:14/29]",
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets",
+      "provenance": "stated",
+      "harvested": "2026-09-06",
+      "label": "Renegade Champion",
+      "tooltip": "♦+2★+3 Artifact Bonus to Rune Arm DCs",
+      "note": "#715. Set-tier-only stat with no item carrier page: the set tier text on Named_item_sets IS its page. Recorded verbatim including the page's own tier markers -- the diamond/circle/star glyphs are its heroic/epic/legendary tiers, not part of the stat name."
+    },
     "Rune Arm Focus": {
       "carrier": "Item:Construct_Champion's_Bands",
       "wiki_url": "https://ddowiki.com/page/Item:Construct_Champion's_Bands",
@@ -1421,6 +1459,15 @@
       "label": "Smoke Screen +22%",
       "tooltip": "Smoke Screen +22%: +22% Enhancement bonus to Concealment Percentage."
     },
+    "Sneak Attack": {
+      "carrier": "Vulkoor's Might [ML:7/20/30]",
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets",
+      "provenance": "stated",
+      "harvested": "2026-09-06",
+      "label": "Vulkoor's Might",
+      "tooltip": "★+3 Artifact bonus to Sneak Attack",
+      "note": "#715. Set-tier-only stat with no item carrier page: the set tier text on Named_item_sets IS its page. Recorded verbatim including the page's own tier markers -- the diamond/circle/star glyphs are its heroic/epic/legendary tiers, not part of the stat name."
+    },
     "Sneak Attack Bonus": {
       "carrier": "Item:Assassin_Initiate's_Leathers_(level_13)",
       "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate's_Leathers_(level_13)",
@@ -1478,6 +1525,15 @@
       "harvested": "2026-09-04",
       "label": "Sonic Resistance +10",
       "tooltip": "Sonic Resistance +10: Passive: +10 Enhancement bonus to your Sonic Resistance."
+    },
+    "Spell Critical Damage": {
+      "carrier": "Elder's Knowledge [ML:7/20/30]",
+      "wiki_url": "https://ddowiki.com/page/Named_item_sets",
+      "provenance": "stated",
+      "harvested": "2026-09-06",
+      "label": "Elder's Knowledge",
+      "tooltip": "♦5%●10%★15% Legendary bonus to spell critical damage",
+      "note": "#715. Set-tier-only stat with no item carrier page: the set tier text on Named_item_sets IS its page. Recorded verbatim including the page's own tier markers -- the diamond/circle/star glyphs are its heroic/epic/legendary tiers, not part of the stat name."
     },
     "Spell Penetration": {
       "carrier": "Item:Adversion",
