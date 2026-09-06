@@ -52,16 +52,35 @@ def test_the_shipped_shard_covers_the_roster_and_every_candidate_is_ruled():
     # rankability bar), so it moves this count without moving the roster
     # coverage below — a harvested tooltip and a rankable name are different
     # populations, and this pair is where that shows.
-    assert cov["names"] == 199 and cov["stated"] == 198, cov
+    # 205/204 not 199/198 since #715: +6, the augment-only stats read from the
+    # Lunar_and_Solar_Gems table — the table IS their page, one row per gem
+    # family. Six of the seven augment-only names; `Max Dex Bonus` stays
+    # unharvested because its named carrier has no wiki page at all.
+    assert cov["names"] == 205 and cov["stated"] == 204, cov
     assert cov["unmatched"] == ["Minor Spell Penetration"]
-    assert len(cov["unharvested"]) == 25
+    # 19 not 25 since #715: the six above left the register. The remaining 19 are
+    # 12 set-tier-only stats (the Named_item_sets half, still to harvest), the six
+    # alias/expansion-minted names whose canonical carries the tooltip — now
+    # recorded as explicit pointers rather than vague reasons — and Max Dex Bonus.
+    assert len(cov["unharvested"]) == 19
     assert [c["name"] for c in cov["candidates"]] == ["Dazing", "Dragon's Edge", "Improved Deception", "Orb Bonus", "Sundering"]
     assert cov["by_disposition"] == {"constant": ["Dazing", "Dragon's Edge", "Improved Deception", "Sundering"],
                                      "quarantine": [], "disclose": ["Orb Bonus"]}
+    # #715 — a tooltip's source is not always an item page. The whole reason
+    # these stats sat unharvested is that they have NO item carrier: the
+    # Lunar_and_Solar_Gems table is the page for the augment-only ones, one row
+    # per gem family. So the URL check widens from "an Item: page" to "a ddowiki
+    # page" — but the non-item sources are ALLOWLISTED, so it cannot quietly
+    # drift to an arbitrary page and call that evidence.
+    NON_ITEM_SOURCES = {"https://ddowiki.com/page/Lunar_and_Solar_Gems"}
     for name, e in sh["harvested"].items():
         assert e["provenance"] in ("stated", "unmatched"), name
         if e["provenance"] == "stated":
-            assert e["tooltip"] and e["label"] and e["carrier"] and e["wiki_url"].startswith("https://ddowiki.com/page/Item:"), name
+            assert e["tooltip"] and e["label"] and e["carrier"], name
+            url = e["wiki_url"]
+            assert url.startswith("https://ddowiki.com/page/Item:") or url in NON_ITEM_SOURCES, (
+                f"{name}: {url} is neither an item page nor an allowlisted "
+                "non-item source — add it to NON_ITEM_SOURCES deliberately")
     assert T.disclosures(adj) == {"Orb Bonus": {"label": "+4 Orb Bonus",
                                                 "sentence": "only while the orb is equipped and you are actively blocking",
                                                 "tooltip": sh["harvested"]["Orb Bonus"]["tooltip"]}}
@@ -128,7 +147,7 @@ def test_built_dataset_stamps_coverage_and_the_disclose_map():
         return
     data = json.load(open(ITEMS, encoding="utf-8"))
     cov = data["metadata"]["affix_tooltip_coverage"]
-    assert cov["names"] == 199 and cov["by_disposition"]["disclose"] == ["Orb Bonus"]  # #724
+    assert cov["names"] == 205 and cov["by_disposition"]["disclose"] == ["Orb Bonus"]  # #724, #715
     assert set(data["metadata"]["conditional_disclosures"]) == {"Orb Bonus"}
     assert "actively blocking" in data["metadata"]["conditional_disclosures"]["Orb Bonus"]["sentence"]
     # The roster the build computed is covered: no rankable numeric item stat is
