@@ -44,6 +44,7 @@ from src import material as material_mod
 from src import speed_split as speed_split_mod
 from src import parrying_split as parrying_split_mod
 from src import riposte_split as riposte_split_mod
+from src import dragons_edge_split as dragons_edge_split_mod
 from src import heightened_awareness as heightened_awareness_mod
 from src import command_split as command_split_mod
 from src import affix_tooltip as affix_tooltip_mod
@@ -339,6 +340,7 @@ UTILITY_PROCS_PATH = os.path.join(
 SPEED_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "speed_enchantment.json")
 PARRYING_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "parrying_version.json")
 RIPOSTE_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "riposte_version.json")
+DRAGONS_EDGE_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "dragons_edge_version.json")
 RING_EXCLUSIVITY_SHARD_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "ring_exclusivity.json")
 #: #442's retired allowlist, read ONLY as corroboration for the blocklist that
@@ -920,6 +922,18 @@ def build() -> dict:
         raise SystemExit("riposte snapshot guard failed:\n  " +
                          "\n  ".join(_riposte_guard["problems"]))
     _riposte_coverage = riposte_split_mod.apply(planner_records, _riposte_shard)
+
+    # #714 — the same value-is-a-rank trap a third time. `Dragon's Edge N` stores
+    # the enchantment's RANK where the tooltip states a Fortification-bypass
+    # percentage, so the stat never joined the `Armor-Piercing` bucket the wiki's
+    # own page files it under. Keyed by RANK rather than by item: the tooltip is a
+    # pure function of the rank, so a new carrier at a known rank needs no
+    # harvest. An unlisted rank is REFUSED and reported — 2/3/7 map to 8/9/23,
+    # which fits no formula, so computing one would ship a wrong number.
+    _de_shard = harvest_mod.load_shard(DRAGONS_EDGE_SHARD_PATH, "dragons_edge_version")
+    _de_audit = dragons_edge_split_mod.audit_shard(_de_shard)
+    _de_unlisted = dragons_edge_split_mod.unlisted_ranks(planner_records, _de_shard)
+    _de_coverage = dragons_edge_split_mod.apply(planner_records, _de_shard)
 
     # U3 (#169) — the other half of the same defect. `Heightened Awareness` grants
     # one thing, an Insight bonus to AC, and stored as an enchantment name it
