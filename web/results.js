@@ -2339,7 +2339,7 @@ function zeroSourceNoticeEntries(query, result, model, dataset) {
     owned,
     rungRestricts: filtered.some((s) => removedByRung.has(s)),
     removed: _resultsRungExcludesAllAugments(rung) ? "augments"
-      : _resultsRungExcludesSolarLunar(rung) ? "Solar/Lunar Gems" : "niche crafting",
+      : _resultsRungExcludesSolarLunar(rung) ? "Solar/Lunar Gems" : "crafting options",  // #735
   }, esc);
 }
 

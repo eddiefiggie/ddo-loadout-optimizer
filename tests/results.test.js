@@ -1598,7 +1598,7 @@ test("#346: the ladder notice renders from the shared projection sentence", () =
   // result argument would exercise a branch the live render never takes.
   const bare = { status: "optimal", augmentsPlaced: [], chosen: [] };
   const on = R.craftingExcludedNotice({ craftingRung: "no-niche-crafting" }, bare);
-  assert.ok(/crafting-excluded-note/.test(on) && /Niche crafting was excluded/.test(on));
+  assert.ok(/crafting-excluded-note/.test(on) && /did not choose any crafting options/.test(on));
   assert.match(R.craftingExcludedNotice({ craftingRung: "printed-only" }, bare),
     /nothing beyond what is printed/, "the bottom rung has its own sentence");
   assert.strictEqual(R.craftingExcludedNotice({ craftingRung: "everything" }, bare), "",
@@ -2041,7 +2041,7 @@ test("#346: the zero-source notice blames the rung only on evidence", () => {
   // to the niche-crafting rung, which previously never named itself at all.
   const vikCarried = { items: [{ category: "item", affixes: [{ name: "X", value: 5 }] }],
     viktranium: [{ affixes: [{ stat: "X", value: 7 }] }] };
-  assert.match(notice("no-niche-crafting", vikCarried), /which exclude niche crafting/);
+  assert.match(notice("no-niche-crafting", vikCarried), /which exclude crafting options/  /* #735 */);
   assert.match(notice("everything", vikCarried), /widening the ML band/,
     "the top rung removed nothing and never claims otherwise");
 });

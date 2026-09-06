@@ -1181,7 +1181,7 @@ test("#346: project() carries craftCarried on the loadout and the ladder notice"
   const view = P.project(rec);
   assert.ok(view.loadout.every((it) => "craftCarried" in it),
     "every loadout entry carries the field (null when not carried)");
-  assert.ok(/Niche crafting was excluded/.test(view.character.craftingExcludedNotice),
+  assert.ok(/did not choose any crafting options/.test(view.character.craftingExcludedNotice),
     "the scope disclosure rides the shared content model");
   assert.ok(!/Regular augments/.test(view.character.craftingExcludedNotice),
     "the old carve-out sentence is gone — the ladder now owns augments");
@@ -1196,7 +1196,7 @@ test("#346: each rung produces its own single notice sentence", () => {
     rec.snapshot.query = { craftingRung: rung };
     return P.project(rec).character.craftingExcludedNotice;
   };
-  assert.match(noticeAt("no-niche-crafting"), /Niche crafting was excluded/);
+  assert.match(noticeAt("no-niche-crafting"), /did not choose any crafting options/);
   assert.match(noticeAt("no-solar-lunar"), /Solar\/Lunar Gems were excluded/);
   assert.match(noticeAt("no-solar-lunar"), /colour augments were still considered/);
   assert.match(noticeAt("printed-only"), /nothing beyond what is printed/);
@@ -1243,7 +1243,7 @@ test("#346: the top rung names what the loadout leans on, or stays silent", () =
 test("#346: a pre-ladder snapshot falls back to the legacy boolean", () => {
   const rec = makeRec();
   rec.snapshot.query = { excludeCraftingSystems: true };
-  assert.match(P.project(rec).character.craftingExcludedNotice, /Niche crafting was excluded/,
+  assert.match(P.project(rec).character.craftingExcludedNotice, /did not choose any crafting options/,
     "an old save discloses without re-solving");
   rec.snapshot.query = { craftingRung: "printed-only", excludeCraftingSystems: true };
   assert.match(P.project(rec).character.craftingExcludedNotice, /nothing beyond what is printed/,
