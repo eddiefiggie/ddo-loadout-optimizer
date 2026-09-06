@@ -4,20 +4,20 @@
     "note": "#713 — ONE rendered tooltip per rankable affix name that has a numeric carrier, read from a carrier item page's rendered HTML (span.tooltip) via the paced same-origin api.php parse loop in docs/wiki-evidence/harvest-method.md. The condition prose lives in the enchantment TEMPLATE, so one rendering per name is the evidence for every carrier. `tooltip` is verbatim (with | = & ? stripped by the privacy guard); `label` is the enchantment name the wiki engraves. `provenance`: stated (tooltip captured) or unmatched (the page rendered tooltips but none named this affix — recorded with the labels seen so the gap is visible, never inferred).",
     "harvested": "2026-09-04",
     "unharvested": {
-      "Bard Song Charge": "augment/set-only and NOT on Named_item_sets (checked 2026-09-06, #715) -- it is augment-set text, so the Esoterica-style augment-set source is where to look next.",
+      "Bard Song Charge": "CORRECTION (2026-09-06, #715): the earlier note claiming this is not on Named_item_sets was WRONG -- a false negative from searching our canonical name. The page carries the grant as prose (\"+1 additional Bard Song per rest\", \"+2 additional Bard songs per rest\"); the word `Charge` is ours, not the wiki's. What is still missing is reliable SET attribution: those lines sit outside the `[ML:...]` heading structure the rest of the page uses, and a carrier guessed from a backward scan resolved to an unrelated heading. Harvest needs the set identified first.",
       "Concealment": "minted by the boolean-composite expansion from `Blurry` / `Lesser Displacement`; those two carry the harvested tooltips. No engraved carrier of its own. (#715: pointer recorded.)",
       "Conditioning": "umbrella label for the `Legendary Conditioning` family; the family members carry the tooltips. No engraved carrier of its own. (#715: pointer recorded.)",
-      "Eldritch Blast Dice": "augment/set-only and NOT on Named_item_sets (checked 2026-09-06, #715) -- augment-set text.",
       "MRR": "alias spelling of `Magical Sheltering` (affix_aliases.json); that name's tooltip covers it. No carrier of its own. (#715: pointer recorded.)",
       "Max Dex Bonus": "augment-only (Sapphire of Armored Agility) and STILL unreadable: that augment has no wiki page, and `Armored Agility` redirects to the Fighter enhancement of that name, which is a different thing. Checked 2026-09-05 (#715). Needs a carrier page that engraves it, or the augment's own page to exist.",
-      "Melee Diversion": "augment/set-only and NOT on Named_item_sets (checked 2026-09-06, #715) -- augment-set text.",
+      "Melee Diversion": "augment/set-only. Checked 2026-09-06 (#715) against BOTH Named_item_sets and the Lunar_and_Solar_Gems table using the bare word `Diversion`, not just our canonical name -- absent from both. Shipped carriers are item-attached set bonuses (parsed_set_bonuses) on sets including Assassin and Crypt Raider, so the grant is real; the wiki source for its wording has not been found.",
       "Movement Speed": "minted by the speed split; `speed_enchantment.json` holds the per-invocation tooltips. No engraved carrier under this name. (#715: pointer recorded.)",
       "PRR": "alias spelling of `Physical Sheltering` (affix_aliases.json); that name's tooltip covers it. No carrier of its own. (#715: pointer recorded.)",
-      "Ranged Diversion": "augment/set-only and NOT on Named_item_sets (checked 2026-09-06, #715) -- augment-set text.",
-      "Turn Undead Charge": "augment/set-only and NOT on Named_item_sets (checked 2026-09-06, #715) -- augment-set text.",
+      "Ranged Diversion": "augment/set-only. Checked 2026-09-06 (#715) against BOTH Named_item_sets and the Lunar_and_Solar_Gems table using the bare word `Diversion`, not just our canonical name -- absent from both. Shipped carriers are item-attached set bonuses (parsed_set_bonuses) on sets including Assassin and Crypt Raider, so the grant is real; the wiki source for its wording has not been found.",
+      "Turn Undead Charge": "CORRECTION (2026-09-06, #715): as with Bard Song Charge, the earlier not-on-the-page note was a false negative. Named_item_sets carries \"+1 additional Turn Undead attempt\" and \"3 additional Turn Undead attempts after resting\"; `Charge` is our word. Same blocker: no reliable set attribution for those lines yet.",
       "Unconsciousness Range": "expansion-minted by the #649 `Undying` rename; the pre-rename name carries the evidence. No engraved carrier under this name. (#715: pointer recorded.)"
     },
-    "unharvested_note": "Rankable names with a numeric carrier but no ITEM page to read a tooltip from (augment-, set- or expansion-only). Recorded with the reason so the coverage guard can tell 'not harvested yet' from 'cannot be harvested this way'; the augment half's next source is the Lunar_and_Solar_Gems table (#713 follow-up)."
+    "unharvested_note": "Rankable names with a numeric carrier but no ITEM page to read a tooltip from (augment-, set- or expansion-only). Recorded with the reason so the coverage guard can tell 'not harvested yet' from 'cannot be harvested this way'; the augment half's next source is the Lunar_and_Solar_Gems table (#713 follow-up).",
+    "false_negative_note": "#715 -- TWICE a source was searched for OUR canonical name and returned a false negative while carrying the grant under different wording: `Eldritch Blast Dice` is the table row `Blast Dice`, and `Bard Song Charge` / `Turn Undead Charge` are prose about additional songs/attempts per rest. Search a source for the bare distinguishing WORD, then read outward -- a canonical-name search proves nothing about a page that words it differently."
   },
   "harvested": {
     "Abjuration Focus": {
@@ -498,6 +498,15 @@
       "harvested": "2026-09-04",
       "label": "Efficient Metamagic - Quicken II",
       "tooltip": "Efficient Metamagic - Quicken II: The additional spell point cost for using the Quicken Metamagic feat is reduced by 2 SP."
+    },
+    "Eldritch Blast Dice": {
+      "carrier": "Lunar_and_Solar_Gems",
+      "wiki_url": "https://ddowiki.com/page/Lunar_and_Solar_Gems",
+      "provenance": "stated",
+      "harvested": "2026-09-06",
+      "label": "Blast Dice (Lunar/Solar gem)",
+      "tooltip": "Profane Bonus to Eldritch Blast Dice. Tiers: +1 / +2 / +3. The Solar row states the same grant as an Artifact Bonus, same tiers.",
+      "note": "#715. Augment-only stat; the Lunar_and_Solar_Gems table is its page. Two rows for one stat -- the Lunar gem grants it Profane, the Solar gem Artifact -- which matches the six shipped carriers (Lunar Gem of Blast Dice, Profane, +1/+2/+3). MISSED BY THE FIRST PASS: the gem family is called `Blast Dice` while our stat is `Eldritch Blast Dice`, so a search keyed on our canonical name did not match the table's row label."
     },
     "Electric Absorption": {
       "carrier": "Item:Azure_Necklace_of_Prophecy",
