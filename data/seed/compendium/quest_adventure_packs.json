@@ -33,7 +33,7 @@
       "M": "no wiki page"
     },
     "extraction_note": "The `adpack` parameter is often present and EMPTY. An earlier pattern used `\\s*$`, and because `\\s` matches a newline it ran the empty value onto the following line and captured `| level = 8` as three quests' adventure pack. The shipped pattern is line-bounded. All 533 rows were hash-verified against the live wiki before being written here.",
-    "crafting_may_carry_a_pack": "#729 — a `crafting` entry MAY carry a pack, and `Catalyst Crafting` is the first. The earlier invariant (only a pack-quest carries a pack) read `location_pack` as 'which quest pack is this quest in'. The #246 content filter consumes it as 'content the player must own', and an expansion-gated crafting system fits that meaning exactly — `kind` already records the source type separately. Keeping the invariant meant no expansion-gated crafting system could ever be excluded, which is the reported bug. Deliberately NOT applied to the other 16 crafting sources: each needs its own prose read, tracked separately."
+    "crafting_may_carry_a_pack": "#729 — a `crafting` entry MAY carry a pack, and `Catalyst Crafting` is the first. The earlier invariant (only a pack-quest carries a pack) read `location_pack` as 'which quest pack is this quest in'. The #246 content filter consumes it as 'content the player must own', and an expansion-gated crafting system fits that meaning exactly — `kind` already records the source type separately. Keeping the invariant meant no expansion-gated crafting system could ever be excluded, which is the reported bug. #734 read the other 16: two more qualify (Unholy Defiler of the Hidden Hand -> Vecna Unleashed, Ritual Table -> Magic of Myth Drannor), twelve state no requirement and now carry a CHECKED absence, Mikrom Sum names only an update, and Sealed Altar was REFUTED: its zone (Gravenhollow) is explicitly free to all players, so a location-based chain would have mis-attributed 90 variants. Introduced-with an expansion is not the same claim as gated-behind it, and Gravenhollow is the case that proves the difference."
   },
   "entries": {
     "A Blood Pact": {
@@ -144,17 +144,17 @@
     "Altar of Epic Rituals": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting devices` category"
+      "via": "`Crafting devices` category | Checked 2026-09-06 against its own wiki page for a prose expansion requirement (#734): the page states none, and carries no pack or expansion category. `pack: null` is a CHECKED absence, not an unexamined one."
     },
     "Altar of Fecundity": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting devices` category"
+      "via": "`Crafting devices` category | Checked 2026-09-06 against its own wiki page for a prose expansion requirement (#734): the page states none, and carries no pack or expansion category. `pack: null` is a CHECKED absence, not an unexamined one."
     },
     "Altar of Vulkoor": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting devices` category"
+      "via": "`Crafting devices` category | Checked 2026-09-06 against its own wiki page for a prose expansion requirement (#734): the page states none, and carries no pack or expansion category. `pack: null` is a CHECKED absence, not an unexamined one."
     },
     "An Element of Chaos": {
       "kind": "pack-quest",
@@ -369,7 +369,7 @@
     "Cauldron of Sora Katra": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting devices` category"
+      "via": "`Crafting devices` category | Checked 2026-09-06 against its own wiki page for a prose expansion requirement (#734): the page states none, and carries no pack or expansion category. `pack: null` is a CHECKED absence, not an unexamined one."
     },
     "Caverns of Korromar": {
       "kind": "pack-quest",
@@ -514,7 +514,7 @@
     "Dragoncraft Armor": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting` category"
+      "via": "`Crafting` category | Checked 2026-09-06 against its own wiki page for a prose expansion requirement (#734): the page states none, and carries no pack or expansion category. `pack: null` is a CHECKED absence, not an unexamined one."
     },
     "Dragontouched Armor": {
       "kind": "unknown",
@@ -529,7 +529,7 @@
     "Dreamforge": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting devices` category"
+      "via": "`Crafting devices` category | Checked 2026-09-06 against its own wiki page for a prose expansion requirement (#734): the page states none, and carries no pack or expansion category. `pack: null` is a CHECKED absence, not an unexamined one."
     },
     "Dreams of Insanity": {
       "kind": "pack-quest",
@@ -544,7 +544,7 @@
     "Elfcraft Armor": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting` category"
+      "via": "`Crafting` category | Checked 2026-09-06 against its own wiki page for a prose expansion requirement (#734): the page states none, and carries no pack or expansion category. `pack: null` is a CHECKED absence, not an unexamined one."
     },
     "Emerald Claw Nugget": {
       "kind": "unknown",
@@ -574,7 +574,7 @@
     "Epic Crafting": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting` category"
+      "via": "`Crafting` category | Checked 2026-09-06 against its own wiki page for a prose expansion requirement (#734): the page states none, and carries no pack or expansion category. `pack: null` is a CHECKED absence, not an unexamined one."
     },
     "Escape Plan": {
       "kind": "pack-quest",
@@ -744,7 +744,7 @@
     "Giantcraft Armor": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting` category"
+      "via": "`Crafting` category | Checked 2026-09-06 against its own wiki page for a prose expansion requirement (#734): the page states none, and carries no pack or expansion category. `pack: null` is a CHECKED absence, not an unexamined one."
     },
     "Gianthold Tor": {
       "kind": "pack-quest",
@@ -1039,7 +1039,7 @@
     "Magma Forge": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting devices` category"
+      "via": "`Crafting devices` category | Checked 2026-09-06 against its own wiki page for a prose expansion requirement (#734): the page states none, and carries no pack or expansion category. `pack: null` is a CHECKED absence, not an unexamined one."
     },
     "Make Believe": {
       "kind": "pack-quest",
@@ -1059,7 +1059,7 @@
     "Mikrom Sum": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting devices` category"
+      "via": "`Crafting devices` category | Checked 2026-09-06 (#734): the page says only \"Introduced in [[Update 14]]\" — an update, not an expansion, and no pack is named. Not a signal."
     },
     "Mimic Hunt": {
       "kind": "event",
@@ -1373,8 +1373,8 @@
     },
     "Ritual Table": {
       "kind": "crafting",
-      "pack": null,
-      "via": "`Crafting devices` category"
+      "pack": "Magic of Myth Drannor",
+      "via": "Page prose, https://ddowiki.com/page/Ritual_Table, read 2026-09-06 (#734): \"a Crafting device introduced in [[Update 69]] with the [[Magic of Myth Drannor]] expansion, to upgrade legendary weapons from quests in [[Magic of Myth Drannor]], including the raid loot from [[Threats Old and New]]. It is found in a side room of the raid [[Threats Old and New]]\". Same standard as #729."
     },
     "Roll Call": {
       "kind": "pack-quest",
@@ -1439,7 +1439,7 @@
     "Sealed Altar": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting devices` category"
+      "via": "`Crafting devices` category | Checked 2026-09-06 (#734) and REFUTED. The page says \"introduced in [[Update 81]], found in upstairs in [[Gravenhollow]]\" and names no pack, so the chain Sealed Altar -> Gravenhollow -> Terror of Demogorgon looked promising. Gravenhollow's own page closes it the OTHER way: \"a city zone introduced in [[Update 81]] - [[Terror of Demogorgon]] expansion. It is, however, ACCESSIBLE TO ALL PLAYERS, even if you don't own the expansion.\" So the altar is reachable without the expansion and must NOT carry a pack — stamping it would have wrongly excluded 90 variants from players who can actually reach them. `pack: null` is correct and now positively evidenced, not merely unproven."
     },
     "Sealed in Amber": {
       "kind": "pack-quest",
@@ -1619,7 +1619,7 @@
     "Stone of Change": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting devices` category"
+      "via": "`Crafting devices` category | Checked 2026-09-06 against its own wiki page for a prose expansion requirement (#734): the page states none, and carries no pack or expansion category. `pack: null` is a CHECKED absence, not an unexamined one."
     },
     "Stone of Experience": {
       "kind": "unknown",
@@ -1659,7 +1659,7 @@
     "Syranian Forged Weaponry": {
       "kind": "crafting",
       "pack": null,
-      "via": "`Crafting` category"
+      "via": "`Crafting` category | Checked 2026-09-06 against its own wiki page for a prose expansion requirement (#734): the page states none, and carries no pack or expansion category. `pack: null` is a CHECKED absence, not an unexamined one."
     },
     "Taken in Hand": {
       "kind": "pack-quest",
@@ -2558,8 +2558,8 @@
     },
     "Unholy Defiler of the Hidden Hand": {
       "kind": "crafting",
-      "pack": null,
-      "via": "`Crafting devices` category"
+      "pack": "Vecna Unleashed",
+      "via": "Page prose, https://ddowiki.com/page/Unholy_Defiler_of_the_Hidden_Hand, read 2026-09-06 (#734): \"a Crafting device introduced in [[Update 61]] with the [[Vecna Unleashed]] expansion, to upgrade weapons and shields from quests in [[Vecna Unleashed]] and create Minor Artifacts. It is located in [[Morgrave University - Upper Commons]]\". Same standard as Catalyst Crafting (#729): the page states the inputs come from that expansion's quests AND the device sits inside its content."
     },
     "Vagan Taneer": {
       "kind": "vendor",
