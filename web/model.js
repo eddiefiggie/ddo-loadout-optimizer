@@ -1362,6 +1362,48 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     membershipSetDefs = {};   // chosen set-membership (Lost Purpose / Dino Set Bonus)
     augmentSetDefs = {};      // set-bonus augments are Dino crafting too
   }
+  // #270 — the crafted-option half of the blocklist, applied at THIS seam and
+  // for the reasons #110 gives for the item half: it filters CANDIDACY, upstream
+  // of every pool consumer, so an option the player forbade cannot appear in any
+  // craft the solve reports. A crafted option has no `variant_id`, so it is named
+  // by the composite `craft:` key stamped at build time
+  // (`src/craft_identity.py`) — the browser never synthesises one, exactly as it
+  // never derives `block_identity`.
+  //
+  // Runs AFTER the rung so an opted-out player's already-empty pools stay empty
+  // and the disclosure does not claim a block did work the rung had already done.
+  // An ABSENT blocklist filters nothing, the same truthiness contract the item
+  // half documents above.
+  //
+  // Removed rows are retained for the disclosure rather than discarded, so the
+  // results layer can say WHICH option was withheld without re-deriving keys.
+  const craftBlockedIds = new Set(
+    (Array.isArray(query.blocklist) ? query.blocklist : [])
+      .filter((id) => typeof id === "string" && id.indexOf("craft:") === 0));
+  const craftBlocked = [];
+  if (craftBlockedIds.size) {
+    const sift = (rows) => (rows || []).filter((r) => {
+      if (r && craftBlockedIds.has(r.block_key)) { craftBlocked.push(r); return false; }
+      return true;
+    });
+    dinoInserts = sift(dinoInserts);
+    nearlyComplete = sift(nearlyComplete);
+    viktranium = sift(viktranium);
+    seal = sift(seal);
+    legendaryGreenSteel = sift(legendaryGreenSteel);
+    essenceCrafting = sift(essenceCrafting);
+    // Per-item pools are keyed by host, so each host's list is sifted and a host
+    // left with nothing keeps an empty list rather than vanishing — a missing key
+    // and an empty pool mean different things to `nearly_complete_per_item`'s
+    // consumer, and collapsing them would silently un-declare the host's slot.
+    if (nearlyCompletePerItem && typeof nearlyCompletePerItem === "object") {
+      const out = {};
+      for (const host of Object.keys(nearlyCompletePerItem)) {
+        out[host] = sift(nearlyCompletePerItem[host]);
+      }
+      nearlyCompletePerItem = out;
+    }
+  }
   // Note for U5's unavailability reporting: Augment Sets need no separate rung
   // handling. They are already cleared above as set-bonus crafting, and the
   // ladder nests — every rung that excludes augments also excludes niche
@@ -1800,6 +1842,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // #110 (U2) — eligible-but-blocked variants, retained for the disclosure's
     // attribution. Never re-enters any pool below.
     blocked,
+    // #270 — the crafted options the blocklist withheld, for the disclosure.
+    craftBlocked,
     // #246 — variants excluded because their adventure pack was not ticked, and a
     // count of those no ownership answer could apply to. Both are needed: a filter
     // that reports what it removed and stays silent about what it could not check
