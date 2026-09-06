@@ -2891,9 +2891,18 @@ if (typeof window !== "undefined" && window.App) {
             const RUNGS = [
               ["everything", "Everything",
                 "Craftable options and every augment are on the table. This is the default."],
-              ["no-niche-crafting", "No niche crafting",
-                "Exclude Viktranium experiments, Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, and set-bonus crafting. Augments still count."],
-              ["no-solar-lunar", "No niche crafting or Solar/Lunar gems",
+              // #735 — the LABEL, not the behaviour, was the defect. A player
+              // read "No niche crafting" as "no crafted gear at all" and
+              // reported crafted items still arriving (#729). The rung governs
+              // what the solver may CHOOSE — it empties the option pools — and
+              // never touched items that already exist as catalog records
+              // because they were crafted. Ruled 2026-09-06: keep the behaviour,
+              // say what it does. The alternative reading would have removed
+              // 1,080 variants, 11.7% of the catalog, including Cannith gear and
+              // the Altars, as a side effect of one report about 84 items.
+              ["no-niche-crafting", "Don't choose crafting options for me",
+                "The solver won't pick Viktranium experiments, Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, or set-bonus crafting. Augments still count. Items that already exist because someone crafted them are ordinary gear and still appear."],
+              ["no-solar-lunar", "Don't choose crafting options or Solar/Lunar gems",
                 "Also exclude Solar and Lunar Gems. Ordinary colour augments — rubies, sapphires, topazes, diamonds — still count."],
               ["printed-only", "No crafting or augments at all",
                 "Every item wins on what is actually printed on it. Pick this when you won't spend crafting mats on gear you'll replace while levelling."],

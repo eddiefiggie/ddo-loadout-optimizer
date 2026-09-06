@@ -1103,13 +1103,19 @@
       : "";
 
     if (rung === "no-niche-crafting") {
-      return "Niche crafting was excluded from this solve: Viktranium experiments, "
-        + "Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, and "
-        + "set-bonus crafting were not considered. Augments still were." + setsClause;
+      // #735 — says what the rung DOES (the solver did not choose them), not
+      // that crafted gear is absent. A crafted item already in the catalog is
+      // ordinary gear and can still appear; conflating the two is what produced
+      // the #729 report.
+      return "The solver did not choose any crafting options for this build: "
+        + "Viktranium experiments, Sealed-in-X seals, Nearly Completed, Dinosaur "
+        + "Bone crafting, and set-bonus crafting were not considered. Augments "
+        + "still were." + setsClause;
     }
     if (rung === "no-solar-lunar") {
-      return "Niche crafting and Solar/Lunar Gems were excluded from this solve. "
-        + "Ordinary colour augments were still considered." + setsClause;
+      return "The solver did not choose any crafting options for this build, and "
+        + "Solar/Lunar Gems were excluded. Ordinary colour augments were still "
+        + "considered." + setsClause;
     }
     if (rung === "printed-only") {
       return "This solve used nothing beyond what is printed on each item: no "

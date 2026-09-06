@@ -3145,7 +3145,12 @@ test("#346: every reader of the ladder agrees on the same precedence", () => {
     assert.strictEqual(rungFromInputs(input), expected, `wizard load path: ${JSON.stringify(input)}`);
     // The projection reads the same rule through craftingExcludedLine's rung branch.
     const line = P.craftingExcludedLine({ query: input, snapshot: { augmentsPlaced: [] } }) || "";
-    const impliedRestrictive = /excluded from this solve|nothing beyond what is printed/.test(line);
+    // #735 — the phrase list grew when the rung was relabelled. This assertion
+    // infers "is this rung restrictive?" from the notice PROSE, so a reworded
+    // notice reads as unrestrictive until the pattern follows it. That coupling
+    // is the price of checking that every reader agrees; keep the alternation in
+    // step with `craftingExcludedLine` whenever its wording changes.
+    const impliedRestrictive = /excluded from this solve|nothing beyond what is printed|did not choose any crafting options/.test(line);
     assert.strictEqual(impliedRestrictive, expected !== "everything",
       `projection notice: ${JSON.stringify(input)} implies ${expected}`);
   }

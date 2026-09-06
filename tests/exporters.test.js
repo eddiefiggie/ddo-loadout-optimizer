@@ -1238,20 +1238,20 @@ test("#346: a craft-carried pick and the ladder notice reach MD, CSV, print, BBC
   };
   const md = toMarkdown(carriedRec);
   assert.ok(/⚒ Picked only for its crafts: Charisma \+1 \(Viktranium\)/.test(md), "markdown line");
-  assert.ok(/Niche crafting was excluded/.test(md), "markdown notice");
+  assert.ok(/did not choose any crafting options/.test(md), "markdown notice");
   const csv = toCsv(carriedRec);
   assert.ok(/Picked only for its crafts: Charisma \+1 \(Viktranium\)/.test(csv), "csv crafting cell");
-  assert.ok(/^Scope,/m.test(csv) && /Niche crafting was excluded/.test(csv), "csv scope row");
+  assert.ok(/^Scope,/m.test(csv) && /did not choose any crafting options/.test(csv), "csv scope row");
   const html = toPrintHtml(carriedRec);
-  assert.ok(/⚒ Picked only for its crafts/.test(html) && /Niche crafting was excluded/.test(html), "print");
+  assert.ok(/⚒ Picked only for its crafts/.test(html) && /did not choose any crafting options/.test(html), "print");
   const bb = toBBCode(carriedRec);
   assert.ok(/Picked only for its crafts/.test(bb), "bbcode line");
-  assert.ok(/Niche crafting was excluded/.test(bb), "bbcode notice");
+  assert.ok(/did not choose any crafting options/.test(bb), "bbcode notice");
 });
 
 test("#245: a natively-earned loadout exports with no carried line and no notice", () => {
   const md = toMarkdown(rec);
-  assert.ok(!/Picked only for its crafts/.test(md) && !/Niche crafting was excluded/.test(md));
+  assert.ok(!/Picked only for its crafts/.test(md) && !/did not choose any crafting options/.test(md));
 });
 
 // #110 U7/U9 — the blocklist disclosure reaches every prose export.
