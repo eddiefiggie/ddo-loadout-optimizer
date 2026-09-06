@@ -1011,6 +1011,31 @@ UMBRELLA_ADJUDICATIONS_PATH = os.path.join(
 # family-less umbrella. Case-sensitive against canonical names.
 _UMBRELLA_SHAPE_RE = re.compile(r"^(All |Universal |Elemental )|( Mastery$)", re.I)
 
+# #719 — the BUNDLE-NAMED complement. Both signals above assume an umbrella
+# shares a word with its members: the sibling axis matches a component's
+# head-word, and the shape above matches a quantifier prefix. A bundle named for
+# the BUNDLE shares nothing — `Good Luck`'s words are `Good` and `Luck`, and
+# `Alluring Skills Bonus` ends in the category word `Skills`, which is never a
+# component's last word. Both sat rankable and unexpanded for the detector's
+# whole life and were found by a player instead (#717/#718).
+#
+# Measured before adopting, which is what the issue asked for: against the real
+# build inputs (universe 291, components 76, modeled 43, queue 36) this adds
+# **zero** new candidates, and back-testing it against the six names that
+# motivated it catches all six where the old signals catch none. So the ruling
+# cost the issue was worried about is nil today.
+#
+# Honest limit: zero new candidates means it costs nothing NOW, not that it
+# never will — a refresh introducing a matching name will queue it, which is the
+# point. And the back-test is confirmatory rather than predictive, since these
+# names are what suggested the phrases.
+_BUNDLE_SHAPE_RE = re.compile(r"( Skills?( Bonus)?$)|(^All Skills)|( Saves?$)", re.I)
+
+# A word that is both a bonus TYPE and the thing a bundle is named for. `Luck`
+# reaches every save and every skill without naming one of them, so no component
+# head-word can ever match it.
+_BUNDLE_HEAD_WORDS = {"Luck"}
+
 
 def pool_affix_names(pools, set_defs=()):
     """Every affix name a crafting pool or set-definition channel carries.
@@ -1066,11 +1091,16 @@ def umbrella_candidates(rankable, family_components, modeled):
         # the Focus family's axis even though its final word is `Mastery` —
         # last-word matching would have missed exactly the #205 name this
         # detector exists to catch.
-        by_head = any(w in heads for w in (name or "").split())
+        words = (name or "").split()
+        by_head = any(w in heads for w in words)
         by_shape = bool(_UMBRELLA_SHAPE_RE.search(name or ""))
-        if by_head or by_shape:
-            out.append({"name": name,
-                        "signal": "head-word" if by_head else "name-shape"})
+        # #719 — checked last so the two original signals keep their labels; a
+        # name any of them flags is one candidate, not three.
+        by_bundle = (any(w in _BUNDLE_HEAD_WORDS for w in words)
+                     or bool(_BUNDLE_SHAPE_RE.search(name or "")))
+        if by_head or by_shape or by_bundle:
+            signal = "head-word" if by_head else "name-shape" if by_shape else "bundle-name"
+            out.append({"name": name, "signal": signal})
     return out
 
 

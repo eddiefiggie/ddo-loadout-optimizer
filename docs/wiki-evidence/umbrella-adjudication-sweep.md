@@ -132,3 +132,40 @@ can rank and therefore no player could report.
 `tests/test_spell_focus.py` now asserts `SKILLS_MIGHTY != SKILLS_STR` directly,
 so a later tidy-up cannot re-merge them on the assumption that two
 Strength-flavoured rosters ought to match.
+
+## #719 — the third signal, and what measuring it cost
+
+The two original signals both assume an umbrella **shares a word with its
+members**: the sibling axis matches a component's head-word, and the name-shape
+complement matches a quantifier prefix (`All `/`Universal `/`Elemental `/
+` Mastery`). A bundle named for the **bundle** shares nothing — `Good Luck`'s
+words are `Good` and `Luck`, and `Alluring Skills Bonus` ends in the category
+word `Skills`, which is never a component's last word. Both were invisible by
+construction, and a player found them (#717/#718), which is the outcome the
+standing cautions above say this detector exists to prevent.
+
+#719 asked for the widening's queue to be **measured before adopting it**: "if it
+flags dozens of genuinely atomic names, the ruling cost may exceed the catch rate
+and a narrower phrase set is the answer."
+
+Measured 2026-09-05 against the real build inputs — universe 291, family
+components 76, modeled 43, existing queue 36 — by instrumenting `build_dataset.py`
+rather than reconstructing them (a first reconstruction disagreed with the
+shipped numbers, 20 against 36, and reconstructed inputs are not the population):
+
+| | result |
+|---|---|
+| new candidates the widening adds | **0** |
+| the six motivating names, old signals | **0 of 6 caught** |
+| the six motivating names, widened | **6 of 6 caught** |
+
+So the ruling cost the issue was worried about is nil, and the catch is proven on
+the names that prompted it. The build's queue is unchanged at 36 after adoption,
+which is the same fact from the other direction.
+
+**Two honest limits.** Zero new candidates means it costs nothing *now*, not that
+it never will — a refresh introducing a matching name will queue it, and that is
+the point of having it. And the back-test is **confirmatory, not predictive**:
+these six names are what suggested the phrases, so it demonstrates the signal is
+well-formed, not that it will catch the next unknown shape. The next bundle that
+names itself something neither `Skills`, `Saves` nor `Luck` is still invisible.
