@@ -1,0 +1,4344 @@
+{
+  "_meta": {
+    "field": "race_req",
+    "note": "Wiki-harvested seed shard. Values are verbatim from the DDO wiki; `provenance` records whether the wiki stated the value, fell back to a template default, or is silent. Only `stated` is solver-eligible."
+  },
+  "harvested": {
+    "Item:+1 Starter Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Aegis of the Deep": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Allegience of the Wild Hunt": {
+      "value": {
+        "race_text": "Pet"
+      },
+      "provenance": "stated",
+      "raw": "| race = Pet",
+      "harvested": "2026-09-10"
+    },
+    "Item:Ancient Gemstone": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Arcane Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Argenti's Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Balanced Boots": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Band of Light": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Barovian Nobles' Regalia": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Battle-Plated Cloak": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Beast-leather Belt": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Beholder Plate Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Belt of the Black Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Belt of the Blue Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Belt of the Green Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Belt of the Red Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Belt of the Scoundrel": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Belt of the Scourge": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Belt of the White Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Belt of the Wilds": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Bittersnow": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Black Dragonscale Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Bladed Steel Ring": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Blademark's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Blockade": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Blood-Red Lenses": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Bloody Bite": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Blue Dragonscale Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Bolstered Bandolier": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Book of Amaunator": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Brawler's Helm": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Breastplate of the Celestial Avenger": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Breastplate of the Celestial Sage": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Breastplate of the Shining Sun": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Brightsun": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Brilliant Bracer": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Brilliant Docent of the Dawn": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Burning Light": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Certainty": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Chaosmancer's Pendant": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Char, the Hellstorm's Edge": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cherished Wedding Ring": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Claw-Carved Band": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Clear Lenses": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Clearwater": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Climbing Hook": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cloak of Seasons": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cloak of the Dawn": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cloth Half-Sleeve": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Collapse, the Crusher of Souls": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Component Carrier": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Copper Band": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cormyrian Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cormyrian Full Plate": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cormyrian Green Dragonhide Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cormyrian Green Dragonplate Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cormyrian Green Dragonscale Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cormyrian Green Dragonscale Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cormyrian Red Dragonscale Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cormyrian Spectacles": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Covert Cape": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Covert Cowl": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Creation Forge Bassinet": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Creation Forge Docent": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Creation Forge Gauntlets": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Creation Forge Girdle": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Creation Forge Gorget": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Creation Forge Lenses": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Creation Forge Sabatons": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Creation Forge Vambraces": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Crisis Core": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Crystalline Cacophony": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cyran Guard (level 26)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cyran Guard (level 27)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Cyran Guard (level 28)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dark Bargainer's Armor": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dark Bargainer's Pactscroll": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dark Powers' Demands": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Darkmoss": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dawnbreaker": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Decision": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Decorated Belt": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Decorated Boots": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Decorated Bracers": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Delighter's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Delver's Helm": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Demise, the Beginning of the Fall": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Diabolist's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dink's Leather Wraps": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dinosaur Bone Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Disc of Acid Warding": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Disc of Enhancement": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Disordered Vision": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Acid": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Blood": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Corpsecraft": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Defense": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Defiance": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Grace": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Insight": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Moonlight": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Quickening": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Shadow (level 12)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Shadow (level 16)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Shadow (level 20)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Shadow (level 24)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Shadow (level 28)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Shadow (level 32)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Shadow (level 4)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Shadow (level 8)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of Sunlight": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Artblade": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Artblade's Reflection": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Black Earth": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Celestial Avenger": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Celestial Sage": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Claw": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Crownblade": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Crownblade's Reflection": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Crushing Wave": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Eternal Flame": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Flames": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Howling Hatred": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Locus": {
+      "value": {
+        "race_text": "Bladeforged, Warforged - Iron Defender"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged, Warforged - Iron Defender",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Tomb": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Warblade": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Docent of the Warblade's Reflection": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Downcast Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dragon Eyes": {
+      "value": {
+        "race_text": "Dragonborn"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dragonborn",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dragoncraft Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dragoncrafted Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dragontouched Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dreadcursed Defender": {
+      "value": {
+        "race_text": "Iron Defender"
+      },
+      "provenance": "stated",
+      "raw": "| race = Iron Defender",
+      "harvested": "2026-09-10"
+    },
+    "Item:Duergar Gem Circlet": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Duergarcraft Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dusk": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Dusty Adventuring Garb": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Eladrin Regalia": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Elfcraft Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Elfcrafted Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Embrace of the Spider Queen": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Emissary's Stone": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Enigma Core": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Entropic Edge": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Entropic Heartstone": {
+      "value": {
+        "race_text": "warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Entropic Vessel": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Arcane Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Belt of the Black Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Belt of the Blue Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Belt of the Green Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Belt of the Red Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Belt of the White Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Black Lace Blindfold": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Blademark's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Crisis Core": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Crystalline Cacophony": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Delera's Vestment": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Diabolist's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Docent of Grace": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Docent of Insight": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Docent of the Tomb": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Emerald Guard": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Flamekeep Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Marilith Chain": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Mournlode Breastplate": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Mournlode Chain": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Mournlode Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Mournlode Fullplate": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Pendant of the Black Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Pendant of the Blue Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Pendant of the Green Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Pendant of the Red Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Pendant of the White Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Rakshasa Hide": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Red Dragonscale Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Saltiron Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Scales of Surety": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Sceptre of Glaciation": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Stinkpelt's Hide": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Stone Exoskeleton": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Templar's Bastion": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Epic Templar's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Essence of the Scout": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Executioner's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Faded Hunter's Cloak": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Faded Tracker's Boots": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Faded Tracker's Gloves": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Fanciful Necklace": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Feline-Faced Buckle": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Ferrocrystal Kama": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Filtration Module": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Fine Finesse": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Fingerless Gloves": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Firebreak (level 17)": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Firestalker Docent": {
+      "value": {
+        "race_text": "Bladeforged, Warforged - Iron Defender"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged, Warforged - Iron Defender",
+      "harvested": "2026-09-10"
+    },
+    "Item:Fists of Justice": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flame Blade (level 1)": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flame Blade (level 10)": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flame Blade (level 15)": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flame Blade (level 20)": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flame Blade (level 25)": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flame Blade (level 30)": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flame Blade (level 5)": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flamekeep Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flametouched Fiddle": {
+      "value": {
+        "race_text": "Any"
+      },
+      "provenance": "stated",
+      "raw": "| race = Any",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flawless Black Dragonplate Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flawless Black Dragonscale Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flawless Black Dragonscale Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flawless Blue Dragonscale Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flawless White Dragonplate Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flawless White Dragonscale Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Flawless White Dragonscale Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Fleshshaper's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Forgeblade": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Forged Armlets": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Forged Golden Band": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Forged Silver Band": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Fortified Fiddle": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Frostflame Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Gettis": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Giantcraft Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Giantcrafted Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Gilded Branches": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Gilded Protectors": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Glass Heart": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Gleaming Adamantine Plate": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Gleaming Plate": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Gloves of the Miner": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Goggles of Delving": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Gorgon Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Gravekeeper's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Great Forge Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Grim Greaves": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Hardened Hide Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Heartwood": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Heirloom Map Case": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Hidden Armlets": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Hunger's Hands": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Hunter's Band": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Hunter's Hide": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Hunter's Wraps": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Icon of the Lord of Blades": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Ignition, the Fear and Flame": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Illicit Warding Armor": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Illusionist's Focus": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Implement of Stone Magic": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Incandescent Band": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Infused Chaos Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Ingenious Bracers": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Initiate's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Intangible Whetstone": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Intricate Lenses": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Iron Band": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Iron Loop": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Ironheart": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Ironweave Tunic": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Jinx's Vexation": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Kiksum": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Kindred Spirit": {
+      "value": {
+        "race_text": "Pet"
+      },
+      "provenance": "stated",
+      "raw": "| race = Pet",
+      "harvested": "2026-09-10"
+    },
+    "Item:Knight's Blade": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Knight's Cloak": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Knight's Gauntlets": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Knight's Girdle": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Knight's Gorget": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Knight's Helm": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Knight's Sabatons": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Knight's Vambraces": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Kobold Admiral's Uniform": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Lamordian Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Leathers of the Celestial Archer": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Leathers of the Celestial Avenger": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Leathers of the Celestial Sage": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Allegience of the Wild Hunt": {
+      "value": {
+        "race_text": "Pet"
+      },
+      "provenance": "stated",
+      "raw": "| race = Pet",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Barovian Nobles' Regalia": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Belt of the Black Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Belt of the Blue Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Belt of the Green Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Belt of the Red Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Belt of the White Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Bittersnow": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Blademark's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Bottle of Shadows": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Brightsun": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Cherished Wedding Ring": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Clearwater": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Darkmoss": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Diabolist's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Docent of Grace": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Docent of Moonlight": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Docent of Sunlight": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Docent of the Artblade": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Docent of the Black Earth": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Docent of the Crownblade": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Docent of the Crushing Wave": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Docent of the Eternal Flame": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Docent of the Howling Hatred": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Docent of the Locus": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Docent of the Warblade": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Downcast Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Dragon Eyes": {
+      "value": {
+        "race_text": "Dragonborn"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dragonborn",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Dreadcursed Defender": {
+      "value": {
+        "race_text": "Iron Defender"
+      },
+      "provenance": "stated",
+      "raw": "| race = Iron Defender",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Duergarcraft Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Emissary's Stone": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Enigma Core": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Entropic Heartstone": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Executioner's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Ferrocrystal Hand Axe": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Ferrocrystal Heavy Crossbow": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Firestalker Docent": {
+      "value": {
+        "race_text": "Warforged - Iron Defender"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged - Iron Defender",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Frostflame Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Glass Heart": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Gorgon Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Gravekeeper's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Great Forge Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Hardened Hide Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Heartwood": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Ironheart": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Kindred Spirit": {
+      "value": {
+        "race_text": "Pet"
+      },
+      "provenance": "stated",
+      "raw": "| race = Pet",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Lamordian Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Long-Lost Charm": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Memory of Fine Regalia": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Memory of Hiding in Darkness": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Mist-laden Vestment": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Neglected Wedding Ring": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Pair of Mind Flayer Nickels": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Pendant of the Black Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Pendant of the Blue Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Pendant of the Green Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Pendant of the Red Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Pendant of the White Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Plasma Core": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Red Dragonscale Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Rust-Laden Pendant": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Saltiron Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Scale-Stone of Avarice": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Scale-Stone of Malice": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Scales of Malice": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Sinsoul": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Templar's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Umbral Soul": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary University Bulwark's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary University Spellshield's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Legendary Wildheart": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Lesser Whirlwind Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Litany of the Bond": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Livewood Band": {
+      "value": {
+        "race_text": "Bladeforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Bladeforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Livewood Core (level 15)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Livewood Core (level 16)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Livewood Core (level 17)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Livewood Core (level 22)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Livewood Core (level 23)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Livewood Core (level 24)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Lockup Property Log": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Lockup Property Log: Razorclaw Shifter": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Long-Lost Charm": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Lost Docent of the Mastermind": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Lousy Chain Docent?": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mail of the Mroranon": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mantle of the Deep": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Marro, the Bone of Demons": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mask of the Scourge": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Memory of Fine Regalia": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Memory of Hiding in Darkness": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Memory of a Tailor's Duress": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mind's Reach": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mindcleaver's Armor": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mindcleaver's Mantle": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mist Vial": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mist-laden Vestment": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mist-touched Cloak": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Momento of War": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Morleth's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Breastplate (Level 4)": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Breastplate (level 12)": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Breastplate (level 16)": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Breastplate (level 8)": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Chain (level 12)": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Chain (level 16)": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Chain (level 4)": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Chain (level 8)": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Docent (level 12)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Docent (level 16)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Docent (level 4)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Docent (level 8)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Fullplate (level 12)": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Fullplate (level 4)": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mournlode Fullplate (level 8)": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mysterious Pendant": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mystic Force": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Mythic Arcane Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Navigator's Medallion": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Neglected Wedding Ring": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Nightforge Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Nullscale Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Oathring": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Orcish Privateer's Plate": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Outburst, the Electric End": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Outfit of the Celestial Avenger": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Outfit of the Celestial Guardian": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Outsider's Furs (level 16)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Outsider's Furs (level 27)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Pactbearer's Boon": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Pactbearer's Debt": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Pair of Mind Flayer Nickels": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Patience Through Peril": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Pendant of Wild Ancestry": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Pendant of the Black Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Pendant of the Blue Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Pendant of the Green Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Pendant of the Red Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Pendant of the Sturdy Mind": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Pendant of the White Abishai": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Pestle, the Crucible of Bones": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Plasma Core": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Platemail of the Celestial Avenger": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Platemail of the Celestial Sage": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Pointed Crown": {
+      "value": {
+        "race_text": "Dhampir Dark Bargainer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Dhampir Dark Bargainer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Purple Dragon Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Purple Dragon Knight's Armor": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Quorforged Docent of Battle": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Quorforged Docent of Victory (level 12)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Quorforged Docent of Victory (level 16)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Quorforged Docent of Victory (level 20)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Quorforged Docent of Victory (level 24)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Quorforged Docent of Victory (level 28)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Quorforged Docent of Victory (level 32)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Quorforged Docent of Victory (level 36)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Quorforged Docent of Victory (level 4)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Quorforged Docent of Victory (level 8)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Razorclaw's Armguards": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Razorclaw's Lenses": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Razorclaw's Mantle": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Re-forged Hammer": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Red Raptor Feather": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Redeem": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Reinforced Ring": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Reliable Duergar Boots": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Restored Dragoncraft Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Restored Elfcraft Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Restored Giantcraft Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Return": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Reward": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Ring of the Runaway": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Ringed Bracer": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Risk": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Robe of Duality": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Robe of the Celestial Sage": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Rough Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Rough-Forged Band": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Rulebreaker": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Rust-Laden Pendant": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Saltiron Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scale-Stone of Avarice": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scale-Stone of Malice": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scalemail of the Celestial Avenger": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scalemail of the Celestial Sage": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scales of Malice": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scoundrel's Bangle": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scoundrel's Bracers": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scoundrel's Duelist's Leathers": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scoundrel's Feathered Hat": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scoundrel's Half-Cloak": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scoundrel's Lenses": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scoundrel's Ring": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scourge's Guise": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scuffed Long-Gloves": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Scuffed Scoundrel's Boots": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Seal of the Purple Dragon": {
+      "value": {
+        "race_text": "Purple Dragon Knight"
+      },
+      "provenance": "stated",
+      "raw": "| race = Purple Dragon Knight",
+      "harvested": "2026-09-10"
+    },
+    "Item:Season's Anchors": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Shadar-kai Armor": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Shaded Lenses": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Shadow Sight": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Shadowscale Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Shard of the Shadowfell": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Shining Wall": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Signet Ring of the Earth": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Signet of Amaunator": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:Silent Steps": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Simple Spectacles": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Sinsoul": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Sly Gloves": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Snare, the Chained Band": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Spellshield Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Spellworker's Gloves": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Sphere of Souls": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Splinterskull Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Spontaneity": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Steadfast Belt": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    },
+    "Item:Stone Exoskeleton": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Stone Heart": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Stone-steady Boots": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Stoneworker's Hammer": {
+      "value": {
+        "race_text": "Deep Gnome"
+      },
+      "provenance": "stated",
+      "raw": "| race = Deep Gnome",
+      "harvested": "2026-09-10"
+    },
+    "Item:Subtle Amulet": {
+      "value": {
+        "race_text": "Shadar-kai"
+      },
+      "provenance": "stated",
+      "raw": "| race = Shadar-kai",
+      "harvested": "2026-09-10"
+    },
+    "Item:Sureshot": {
+      "value": {
+        "race_text": "Tiefling Scoundrel"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tiefling Scoundrel",
+      "harvested": "2026-09-10"
+    },
+    "Item:Tarnished Blademark's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Templar's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Terrorweb Chitin Breastplate": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Anarchist's Crossbow": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Anarchist's Crossbow (Abridged)": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Band of Binding": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Bloodstained Letter": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Bloody End": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Claws of the Balor": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Cleaving Claw": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Dying Hope": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Harrowing Remains": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Life for the Lifeless": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Magic Conch": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Piercing Pain": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Reaper of Lives": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Ruined Vision": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Shattering Death": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Slaughtering Shot": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Slayer of the Living": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Time Taken": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:The Wicked Spines": {
+      "value": {
+        "race_text": "none"
+      },
+      "provenance": "stated",
+      "raw": "| race = none",
+      "harvested": "2026-09-10"
+    },
+    "Item:Thick Skin (level 10)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Thick Skin (level 15)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Thick Skin (level 20)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Thick Skin (level 25)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Thick Skin (level 30)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Thick Skin (level 5)": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Titanic Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Tracker's Band": {
+      "value": {
+        "race_text": "Aasimar Scourge"
+      },
+      "provenance": "stated",
+      "raw": "| race = Aasimar Scourge",
+      "harvested": "2026-09-10"
+    },
+    "Item:Trailblazer's Branch": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Trailblazer's Footwraps": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Trailblazer's Outfit": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Trailblazer's Resilient Hood": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Trailblazer's Tattered Scarf": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Umbral Soul": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Undeniable Truth": {
+      "value": {
+        "race_text": "Sun Elf"
+      },
+      "provenance": "stated",
+      "raw": "| race = Sun Elf",
+      "harvested": "2026-09-10"
+    },
+    "Item:University Bulwark's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:University Spellshield's Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Vestments of Ravenloft": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Vineweave Ring": {
+      "value": {
+        "race_text": "Tabaxi Trailblazer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Tabaxi Trailblazer",
+      "harvested": "2026-09-10"
+    },
+    "Item:White Dragonscale Docent": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Wighthide Armor": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Wild Blade": {
+      "value": {
+        "race_text": "Eladrin Chaosmancer"
+      },
+      "provenance": "stated",
+      "raw": "| race = Eladrin Chaosmancer",
+      "harvested": "2026-09-10"
+    },
+    "Item:Wildcard": {
+      "value": {
+        "race_text": "None"
+      },
+      "provenance": "stated",
+      "raw": "| race = None",
+      "harvested": "2026-09-10"
+    },
+    "Item:Wildheart": {
+      "value": {
+        "race_text": "Warforged"
+      },
+      "provenance": "stated",
+      "raw": "| race = Warforged",
+      "harvested": "2026-09-10"
+    },
+    "Item:Worn Razorclaw's Boots": {
+      "value": {
+        "race_text": "Razorclaw Shifter"
+      },
+      "provenance": "stated",
+      "raw": "| race = Razorclaw Shifter",
+      "harvested": "2026-09-10"
+    },
+    "Item:Wreckis": {
+      "value": {
+        "race_text": "Duergar Mindcleaver"
+      },
+      "provenance": "stated",
+      "raw": "| race = Duergar Mindcleaver",
+      "harvested": "2026-09-10"
+    }
+  }
+}
