@@ -232,6 +232,22 @@ var COMPOSITE_COMPONENTS = {
     "Fortitude Save", "Reflex Save", "Will Save",
     // "skill checks" -> every skill. See _ALL_SKILLS.
   ].concat(_ALL_SKILLS)),
+  // #741 — six ML 33 `* of the Warblade's Reflection` armors. Harvested from a
+  // carrier's rendered tooltip, NOT copied from the Viktranium `Woeful Shadow`
+  // option that happens to carry the same four values: that is a precedent for
+  // the shape and a cross-check, never the source. See boolean-composites.md §5.
+  //
+  // "+3% Profane bonus to Doublestrike and Doubleshot" is ONE clause granting
+  // TWO stats at the same magnitude. Reading it as one component halves the
+  // item's worth — the mistake this comment exists to prevent.
+  "Shadow Striker": [
+    { name: "Doublestrike", type: "Profane", value: 3, unit: "flat" },
+    { name: "Doubleshot", type: "Profane", value: 3, unit: "flat" },
+    // The tooltip says "Melee/Ranged Attack Speed"; the catalog's canonical
+    // names are `Melee Alacrity` (173 records) and `Ranged Alacrity` (154).
+    { name: "Melee Alacrity", type: "Enhancement", value: 15, unit: "flat" },
+    { name: "Ranged Alacrity", type: "Enhancement", value: 20, unit: "flat" },
+  ],
 };
 
 // #140 — the bonus types COMPOSITE_COMPONENTS mints, declared as a flat literal so
@@ -245,7 +261,10 @@ var COMPOSITE_COMPONENTS = {
 //
 // It is a mirror, and mirrors drift — `tests/dataset.test.js` pins it against the
 // live table, so a component type added without updating this goes red.
-var COMPOSITE_COMPONENT_TYPES = ["Enhancement", "Morale"];
+// `Profane` joined 2026-09-10 with `Shadow Striker` (#741). It is already ruled
+// `legitimate` in `bonus_type_dispositions.json` — the same disposition `Morale`
+// carries — so it keys its own bucket and opens no stacking-equivalence question.
+var COMPOSITE_COMPONENT_TYPES = ["Enhancement", "Morale", "Profane"];
 
 // R12 — every expansion family stamps the ORIGINATING enchantment name onto each
 // affix it emits, under the key `src/spell_focus.py` writes (PROVENANCE_KEY).
@@ -381,11 +400,21 @@ function normalizeItem(it) {
       // measured: keying on the pair changes ZERO components for Blurry, Lesser
       // Displacement and Crown of Summer.
       //
-      // The raw `type` IS the bucket here rather than equivType(type), because no
-      // composite component type participates in the stacking-equivalence table.
-      // `tests/dataset.test.js` pins that, so the day one does, this goes red
-      // instead of quietly under-suppressing.
-      var bucketKey = function (name, type) { return name + "||" + (type == null ? "" : type); };
+      // The bucket is `equivType(type)`, NOT the raw type. It was the raw type
+      // until #741, sound only while no composite component type appeared in the
+      // stacking-equivalence table — and `Shadow Striker` put `Profane` there
+      // (`Profane Natural` -> `Profane`). Under a raw key an item stating
+      // `Doublestrike | Profane Natural` would not match a derived
+      // `Doublestrike | Profane`, so BOTH would land and the item would be
+      // credited twice for one effect. equivType on both sides suppresses it.
+      //
+      // Measured behavior change for the other four composites: none. Their
+      // component types are `Enhancement` and `Morale`, and neither appears in
+      // the equivalence table, so equivType is the identity for both.
+      var bucketKey = function (name, type) {
+        var t = equivTypeOrRaw(type);
+        return name + "||" + (t == null ? "" : t);
+      };
       var stated = new Set(affixes.map(function (a) { return a && bucketKey(a.name, a.type); }));
       var derived = new Map();
       for (const a of affixes) {
@@ -462,6 +491,20 @@ function installStackEquiv(map) {
   if (typeof require !== "undefined") {
     try { require("./model.js").setStackEquiv(map); } catch (e) { /* model.js absent: no-op */ }
   }
+}
+
+// #741 — the same two-runtime bridge, read side, for the composite shadow key.
+// Returns the type UNCHANGED when model.js is unreachable or the map has not been
+// installed yet. That fallback is the pre-#741 behavior exactly, so a standalone
+// `normalizeItem` (the snapshot path, and the tests that call it directly) keys on
+// the raw type as it always did rather than silently changing meaning.
+function equivTypeOrRaw(type) {
+  if (type == null) return type;
+  try {
+    if (typeof equivType !== "undefined") return equivType(type);
+    if (typeof require !== "undefined") return require("./model.js").equivType(type);
+  } catch (e) { /* model.js absent: fall through */ }
+  return type;
 }
 
 // #199 — same two-runtime bridge for the intrinsic stat-cap table.
