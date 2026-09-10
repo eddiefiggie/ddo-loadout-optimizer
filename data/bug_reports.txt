@@ -702,7 +702,8 @@ docs/solutions/design-patterns/an-override-exemption-only-covers-the-gates-downs
 2026-09-10 — user feedback batch (forum thread) — #740–#747
 ================================================================================
 
-Seven items from one forum thread, plus one reply from a second player. Every
+Six reports from one player, plus one reply from a second. They became EIGHT
+issues (#740-#747): report 6 below carried two separate complaints. Every
 claim below was checked against the BUILT DATASET and, where it was a behaviour
 claim, reproduced through the real solver (tests/parity/capture_golden.js's
 solveEnv/solveFixture). ddowiki was unreachable from the working container

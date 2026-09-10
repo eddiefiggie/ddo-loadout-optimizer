@@ -1,11 +1,17 @@
 # 2026-09-10 — user feedback batch: triage, evidence and sequencing
 
-**Status:** triage complete, nothing built. Seven issues filed (#740–#747).
+**Issues filed:** #740–#747 (eight).
 **Raw reports:** `data/bug_reports.txt`, 2026-09-10 divider.
 
+Deliberately carries no build status. `AGENTS.md`: a plan is a decision
+artifact and progress lives in git, not in the plan body — so what has shipped
+since is readable from the issues and the log, and this document does not go
+stale by standing still.
+
 One forum thread, six items from one player plus a reply from a second. This
-plan records what was verified, how, and the order the work should land in. No
-design change was made — that was the explicit ask.
+plan records what was verified, how, and the order the work should land in.
+No design change was made in the same breath as the triage — that was the
+explicit ask.
 
 ## Verification boundary, stated first
 
@@ -22,8 +28,10 @@ them, and each issue says so rather than substituting a plausible number.
 
 ## What the batch turned out to be
 
-The seven items are not seven of the same thing. They sort into four kinds, and
-the kind decides the sequencing more than the severity does.
+Six reports from one player plus a reply from a second became **eight** issues —
+the message about a near-miss on PRR also carried the Ghost Touch complaint, and
+the two want different things. They sort into four kinds, and the kind decides
+the sequencing more than the severity does.
 
 | # | Item | Kind |
 |---|---|---|
