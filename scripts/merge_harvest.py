@@ -99,6 +99,18 @@ FIELDS = {
         "help": "craftable Essence Crafting effects, all 16 slots (#193)",
         "key": "name",
     },
+    # Race requirements are a WIKI claim this project cannot infer: the catalog
+    # carries no race signal at all — `restrictions` is the literal "unknown" on
+    # every record (#740). So the roster is EVERY catalog title, the whole
+    # population the question is asked of, and the shard records only the items
+    # the wiki states a requirement for. Absence from the shard means "no stated
+    # requirement", which is the fail-open `src/variants.py` already assumes.
+    # `--missing-only` is therefore not the work order for this field — the
+    # browser sweep over the whole Item namespace is (see harvest-method.md).
+    "race_req": {
+        "shard": os.path.join(SHARD_DIR, "race_requirement.json"),
+        "help": "items the wiki gates on race (#740)",
+    },
 }
 
 # Affix fields whose roster is every raw item carrying the folded affix, keyed by
@@ -133,6 +145,8 @@ def roster(field: str, slot: str = "") -> set:
         return _folded_augment_names()
     if field == "essence_bonus_type":
         return _essence_effect_names(slot)
+    if field == "race_req":
+        return {_title(i["url"]) for i in items if i.get("url")}
     affix = NAME_KEYED_AFFIX.get(field)
     if affix is not None:
         return {i["name"] for i in items

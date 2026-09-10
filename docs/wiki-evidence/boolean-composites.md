@@ -10,7 +10,7 @@ Four affixes are stored in the dataset as `Bool` — presence with no magnitude 
 
 Per KTD5, a component whose bonus type the wiki does not state is **excluded**, not written untyped: an untyped component would land in its own bucket and stack on top of a same-stat affix already on the item, turning an under-counting bug into an over-counting one.
 
-**Outcome: 3 of 4 confirmed, 1 quarantined.**
+**Outcome: 4 of 5 confirmed, 1 quarantined.** (`Shadow Striker` was added 2026-09-10 by #741; the original U4 batch was the first four.)
 
 | Composite | Records | Verdict |
 |---|---|---|
@@ -18,6 +18,7 @@ Per KTD5, a component whose bonus type the wiki does not state is **excluded**, 
 | Lesser Displacement | 69 | CONFIRMED — 1 component |
 | Crown of Summer | 7 | CONFIRMED — 3 components |
 | Greater Heroism | 16 | **QUARANTINED** — magnitude not stated for the item enchantment |
+| Shadow Striker | 6 | CONFIRMED — 4 components (#741, added 2026-09-10) |
 
 ---
 
@@ -180,6 +181,38 @@ carriers on their other affixes and simply not counting this one. Details in the
 `#140` entry in `tests/solver_golden.test.js`.
 
 **One thing this re-harvest could not establish.** Whether that items-section sentence is new since 2026-08-05 or was present and missed. The wiki's page history is login-gated and returned a permission error, so the provenance of the sentence is unknown. Recorded rather than guessed — if it was missed, the harvest method has a gap worth finding; if it is new, nothing was done wrong.
+
+---
+
+## 5. Shadow Striker — CONFIRMED
+
+**Added:** 2026-09-10 (#741), from a player report.
+**Source:** the rendered tooltip on `https://ddowiki.com/page/Item:Robe_of_the_Warblade%27s_Reflection`, one of the six carriers.
+
+> Shadow Striker: Passive: +3% Profane bonus to Doublestrike and Doubleshot. (Doublestrike/Doubleshot is a chance to score an additional hit with a melee/ranged attack.) +15% Enhancement Bonus to Melee Attack Speed. +20% Enhancement Bonus to Ranged Attack Speed.
+
+| Stat | Bonus type | Value |
+|---|---|---|
+| Doublestrike | Profane | 3 |
+| Doubleshot | Profane | 3 |
+| Melee Alacrity | Enhancement | 15 |
+| Ranged Alacrity | Enhancement | 20 |
+
+Every component states its bonus type explicitly, so KTD5's exclusion rule does not bite.
+
+**Name mapping:** the tooltip says "Melee Attack Speed" and "Ranged Attack Speed"; the dataset's canonical names are `Melee Alacrity` (173 records) and `Ranged Alacrity` (154). `Doublestrike` and `Doubleshot` map directly. All four are already rankable, so no new stat is minted.
+
+**One sentence, four components, two of them from a single clause.** "+3% Profane bonus to Doublestrike and Doubleshot" grants *both* stats at the same magnitude — a comma-free conjunction inside one clause. Reading it as one component is the easy mistake and halves the item's worth.
+
+**`Profane` is the first non-`Enhancement`/`Morale` type to arrive through `COMPOSITE_COMPONENTS`,** so `COMPOSITE_COMPONENT_TYPES` gains it. `bonus_type_dispositions.json` already rules `Profane` `legitimate` — the same disposition `Morale` carries — so it opens no *disposition* question.
+
+**It did open a bucketing one, and the existing guard caught it.** `Profane` is a target in `metadata.stacking_equivalence` (`Profane Natural` → `Profane`), and the composite shadow key in `web/dataset.js` had keyed on the RAW type — sound only while no component type was equivalence-mapped, which this entry ended. `tests/dataset.test.js` failed on exactly that premise, as it was written to. Under the raw key an item stating `Doublestrike | Profane Natural` would not have matched the derived `Doublestrike | Profane`, so both would land and the item would be credited twice for one effect.
+
+The key now runs both sides through `equivType`. Measured blast radius: **zero** today — no item carries `Profane Natural` on any of these four stats — and zero for the other four composites, whose `Enhancement` and `Morale` components are not equivalence-mapped, so `equivType` is the identity for them. The guard was replaced with one that pins the behavior bought rather than the expired premise: a stated equivalent-typed affix must suppress the derived component.
+
+**Do not source this from `Woeful Shadow`.** The Viktranium crafting option of that name carries the same four values, and #741 notes the reporter identified them correctly from it. It is a *precedent for the shape*, not evidence for what this enchantment grants on Myth Drannor armor. This entry is harvested from a carrier page; the agreement between the two is a cross-check, not the source. (Note also the separate `Woeful Shadows` — plural — pinned in #741 as a different option.)
+
+**Scope of the win, stated honestly.** #741 measured that at a full ML 34 loadout ranking these four stats, the totals do not move and the armor is still not chosen: better gear already fills those buckets. This is a correctness fix for the item's own worth, not a promise that an endgame build gets faster.
 
 ---
 
