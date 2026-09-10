@@ -2856,7 +2856,7 @@ if (typeof window !== "undefined" && window.App) {
               <span class="wz-help">Highest item level you can equip. Gear above this is excluded.</span>
               <input id="wz-ml" class="wz-ml" type="number" min="1" max="40" value="${esc(state.ml)}"></label>
             <label class="wz-field" data-req="race"><span class="wz-label"><span class="wz-req-mark" aria-hidden="true">*</span> Race</span>
-              <span class="wz-help">Determines body-slot and race-locked gear.</span>
+              <span class="wz-help">Determines your body slot — Forged races equip a docent, everyone else body armor. It does not yet filter race-locked gear, so a result may include an item your race cannot equip.</span>
               <select id="wz-race"><option value="">Select a race…</option>
                 <optgroup label="Basic races">${RACES_BASIC.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</optgroup>
                 <optgroup label="Iconic heroes">${RACES_ICONIC.map((r) => `<option ${state.race === r ? "selected" : ""}>${r}</option>`).join("")}</optgroup></select></label>

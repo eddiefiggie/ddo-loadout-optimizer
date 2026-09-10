@@ -561,23 +561,41 @@ test("U5: COMPOSITE_COMPONENT_TYPES mirrors the types the table actually mints",
     + "data/seed/compendium/bonus_type_dispositions.json.");
 });
 
-// The pair key is the raw `type` rather than equivType(type), which is only sound
-// while no composite component type is equivalence-mapped. Pinned, so the day one
-// is, this goes red instead of quietly under-suppressing.
-test("U5: no composite component type participates in the stacking-equivalence table", () => {
+// #741 — this guard used to assert the opposite: that NO composite component type
+// appeared in the stacking-equivalence table, which is what made a raw-type shadow
+// key sound. `Shadow Striker` mints `Profane`, and `Profane Natural` -> `Profane`
+// is in that table, so the premise expired and `bucketKey` moved to equivType.
+// What needs pinning now is the behavior that change bought: a stated affix whose
+// type is merely EQUIVALENT to a component's type must still suppress it. Under
+// the old raw key both would land and the item would be credited twice.
+test("U5/#741: a stated equivalent-typed affix suppresses the derived component", () => {
   const equiv = (realData.metadata || {}).stacking_equivalence || {};
   assert.ok(Object.keys(equiv).length, "the equivalence table was empty — nothing was inspected");
-  const mapped = new Set(Object.keys(equiv).concat(Object.values(equiv)));
-  const types = new Set();
+  // Take a real alias from the live table whose target a composite actually mints,
+  // so this cannot pass by testing a pair the table does not contain.
+  const minted = new Set();
   for (const comps of Object.values(COMPOSITE_COMPONENTS)) {
-    for (const c of comps) types.add(c.type);
+    for (const c of comps) minted.add(c.type);
   }
-  assert.ok(types.size, "no composite component types were inspected");
-  const clash = [...types].filter((t) => mapped.has(t));
-  assert.deepStrictEqual(clash, [],
-    `${JSON.stringify(clash)} is both a composite component type and an entry in the `
-    + "stacking-equivalence table, so the raw type is no longer its bucket. The "
-    + "shadow key in web/dataset.js must switch to equivType(type).");
+  const pair = Object.entries(equiv).find(([, target]) => minted.has(target));
+  assert.ok(pair, "no equivalence alias targets a composite component type — "
+    + "this guard is inspecting nothing. If the table or the components changed, "
+    + "re-derive the case rather than deleting the test.");
+  const [alias, target] = pair;
+  const comp = Object.entries(COMPOSITE_COMPONENTS)
+    .flatMap(([name, comps]) => comps.map((c) => ({ name, c })))
+    .find(({ c }) => c.type === target);
+
+  const it = { affixes: [
+    { name: comp.name, type: "Bool", value: "1", eligible: true },
+    { name: comp.c.name, type: alias, value: 1 },
+  ] };
+  normalizeItem(it);
+  const same = it.affixes.filter((a) => a.name === comp.c.name);
+  assert.strictEqual(same.length, 1,
+    `a stated ${comp.c.name} typed ${alias} must suppress the derived ${target} `
+    + "component — equivType is the bucket, so these are one bucket, not two.");
+  assert.strictEqual(same[0].type, alias, "the item's own stated affix is the survivor");
 });
 
 // R12 — a derived component names the composite it was derived from. The

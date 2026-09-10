@@ -109,8 +109,13 @@ test("the 161 unstamped boolean-composite components are ineligible", () => {
   // Wind variants their `Blurry`, and `Blurry` is a Concealment composite component,
   // so each mints one more. Re-ratified rather than accepted: 4 new carriers x 1
   // component = 4, and the predicate still refuses every one below.
-  assert.strictEqual(derived.length, 565,
-    "normalizeDataset generates 565 composite components carrying no provenance stamp");
+  //
+  // 589 not 565 since #741: `Shadow Striker` joined COMPOSITE_COMPONENTS — exactly
+  // 6 carriers x 4 components = 24. Re-ratified rather than accepted: the delta is
+  // the whole of the new composite and nothing else, and the predicate still
+  // refuses every one below.
+  assert.strictEqual(derived.length, 589,
+    "normalizeDataset generates 589 composite components carrying no provenance stamp");
   assert.ok(derived.every((a) => !O.isEligible(a)),
     "and the predicate refuses every one of them, so it cannot be a `via` presence test");
 });
@@ -355,7 +360,8 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // 45,028 not 45,026 since #724: +2, the `Mighty Skills Bonus` expansion —
   // 2 rows x (2 components - 1). The fifth and last member of the
   // `* Skills Bonus` family, folded until its tooltip was read.
-  assert.strictEqual(total, 45028, "post-normalize pool size");
+  // 45,052 not 45,028 since #741: +24, `Shadow Striker`'s 6 carriers x 4 components.
+  assert.strictEqual(total, 45052, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -555,7 +561,10 @@ test("the generator marks composite components, so provenance is read not inferr
   // 565 not 561 since #313 — the same four `Blurry`-derived components as above, and
   // the assertion inside the loop is the one that matters: each is still marked and
   // still ineligible, so the overlay minted no unmarked composite.
-  assert.strictEqual(marked, 565, "every generated composite component carries the mark");
+  // 589 not 565 since #741 — `Shadow Striker`'s 24, and again the in-loop assertion
+  // is the one that matters: each is marked and ineligible, so the new composite
+  // minted no unmarked component.
+  assert.strictEqual(marked, 589, "every generated composite component carries the mark");
   const one = pool.items.flatMap((v) => v.affixes || []).find((a) => a._compositeOf);
   assert.ok(!Object.keys(one).includes("_compositeOf"), "and the mark is non-enumerable");
 });
