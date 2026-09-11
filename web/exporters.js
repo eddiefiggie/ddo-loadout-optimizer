@@ -64,6 +64,11 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     { key: "conditionalNotice", csv: "Conditional effect" },
     { key: "splitMechanicNotice", csv: "Split mechanic" },
     { key: "capSurplusNotice", csv: "Cap surplus" },
+    // #747 — beside its mirror above, and exported for the same reason: a
+    // recipient reading a shared build cannot otherwise tell how many slots one
+    // stat consumed. Distinct CSV label because the two say opposite things —
+    // "your cap is wasting gear" versus "you have no cap and this stat took N picks".
+    { key: "capOpportunityNotice", csv: "Slots per stat" },
     { key: "blockNotice", csv: "Blocked" },
     { key: "packFilterNotice", csv: "Content not owned" },
     { key: "setFilterNotice", csv: "Excluded sets" },

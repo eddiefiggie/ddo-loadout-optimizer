@@ -2749,6 +2749,7 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       // can act and the action is well defined (give up at most the stated surplus
       // ACROSS these picks, or raise the Max).
       capSurplusNotice: ["GEAR ABOVE YOUR CAP", "actionable"],
+      capOpportunityNotice: ["ONE STAT, MANY SLOTS", "informational"],
       // #193/#599 — qualifying for the same reason: there is nothing to press.
       // It reports that the Gem's menus were solved over 25 of the 170 effects
       // the game offers, which is a fact about the DATA, not about the query.
@@ -2770,7 +2771,7 @@ test("#448: the registry is the ONLY source — nothing classifies a notice but 
 
   assert.deepStrictEqual(Object.keys(R.NOTICE_TABLE), single.map((n) => n.name),
     "NOTICE_TABLE is derived from the registry, in registry order");
-  assert.strictEqual(single.length, 20, "the twenty single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one, #701 the MRR cap one)");
+  assert.strictEqual(single.length, 21, "the twenty-one single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one, #701 the MRR cap one, #747 the cap-opportunity one)");
   assert.deepStrictEqual(split.map((n) => n.name),
     ["artifactNotice", "pinnedUnownedNotice", "boundNotice", "zeroSourceNotice"],
     "and the four multi-fact notices come through their U10 entry functions "
@@ -2802,7 +2803,7 @@ test("#448: registry ORDER is the on-screen order within a class, and splits lea
     "artifactNotice", "pinnedUnownedNotice", "boundNotice", "zeroSourceNotice",
     "staleSnapshotNotice", "outbidNotice", "saturationNotice", "emptySlotNotice",
     "absorptionQuarantineNotice", "craftingExcludedNotice", "augCeilingNotice",
-    "dodgeMaxDexNotice", "jumpSoftCapNotice", "mrrCapNotice", "conditionalNotice", "splitMechanicNotice", "capSurplusNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
+    "dodgeMaxDexNotice", "jumpSoftCapNotice", "mrrCapNotice", "conditionalNotice", "splitMechanicNotice", "capSurplusNotice", "capOpportunityNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
   ]);
 });
 

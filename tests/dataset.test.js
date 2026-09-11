@@ -3,7 +3,8 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const { normalizeItem, buildPickerVocabulary, expandedAwayFor, expandedAwayMessage, normalizeDataset,
-        COMPANION_STATS, companionHintFor, COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES } = require("../web/dataset.js");
+        COMPANION_STATS, companionHintFor, AFFIX_FAMILIES, familyHintFor, familyCarrierCounts,
+        COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES } = require("../web/dataset.js");
 const P = require("../web/projection.js");
 // The built catalog, for the whole-vocabulary invariants at the bottom of this file.
 const realData = normalizeDataset(JSON.parse(
@@ -2310,6 +2311,74 @@ test("#404: adding an element Intensity suggests its companion by name", () => {
   assert.ok(hint, "a hint is produced");
   assert.ok(/Spell Critical Damage/.test(hint), "it names the companion");
   assert.ok(/spell critical damage/i.test(hint), "and says why the two are related");
+});
+
+// ---- #746 — the affix-family hint -----------------------------------------
+
+test("#746: a family member names its siblings, with counts, biggest first", () => {
+  const counts = { Ghostbane: 129, Ghostly: 112, "Ghost Touch": 69, Ethereal: 23 };
+  const hint = familyHintFor("Ethereal", ["Ethereal"], counts);
+  assert.ok(hint, "a hint is produced for the reported name");
+  for (const n of ["Ghostbane", "Ghostly", "Ghost Touch", "Ethereal"]) {
+    assert.ok(hint.includes(n), `the hint names ${n}`);
+  }
+  // The whole point for the reporter: Ghostly outnumbers Ethereal five to one and
+  // they never saw it. Biggest first is what makes that readable at a glance.
+  assert.ok(hint.indexOf("Ghostbane") < hint.indexOf("Ethereal (23"),
+    "members are ordered by carrier count, not by the curated list order");
+});
+
+test("#746: the hint claims the names are SEPARATE, never interchangeable", () => {
+  // The load-bearing assertion. The report says any one of these meets the need;
+  // that is a claim about the GAME and nobody has checked it. Surfacing the family
+  // is a fact about the catalog, ruling them equivalent is not — and a hint that
+  // drifted into saying "any one will do" would ship an unverified game ruling.
+  const hint = familyHintFor("Ethereal", ["Ethereal"], { Ethereal: 23 });
+  assert.ok(/separate effects/i.test(hint), "it says they are separate effects");
+  assert.ok(/not\s+(?:checked|something this tool has checked)/i.test(hint)
+    || /has not checked/i.test(hint), "and that substitution is unchecked here");
+  assert.ok(!/any one|interchangeab|same effect|synonym/i.test(hint),
+    "it must never claim the members substitute for one another");
+});
+
+test("#746: silent once a sibling is already ranked, and for a non-member", () => {
+  const counts = { Ghostly: 112, Ethereal: 23 };
+  assert.strictEqual(familyHintFor("Ethereal", ["Ethereal", "Ghostly"], counts), null,
+    "the player has demonstrably found the family — the hint closes a dead end, not nags");
+  assert.strictEqual(familyHintFor("Doublestrike", ["Doublestrike"], counts), null,
+    "a stat in no family says nothing");
+});
+
+test("#746: a member the catalog no longer carries renders without a number", () => {
+  // "(0 items)" would read as a claim the effect was removed from the game. The
+  // honest rendering is the bare name.
+  const hint = familyHintFor("Ethereal", ["Ethereal"], { Ethereal: 23 });
+  assert.ok(/Ghostly(?!\s*\()/.test(hint), "an uncounted sibling appears with no parenthetical");
+  assert.ok(!/\(0 items\)/.test(hint), "never prints a zero count");
+});
+
+test("#746/real data: the curated family is real, and its counts are non-vacuous", () => {
+  // Guards the shape this feature would fail silently in: a family whose members
+  // no longer exist in the catalog produces a hint full of dead names, and a counts
+  // map of zeroes produces one with no numbers. Both look fine in a unit test.
+  const counts = familyCarrierCounts(realData.items);
+  const entry = AFFIX_FAMILIES.find((f) => f.family === "ghost touch");
+  assert.ok(entry, "the ghost-touch family is declared");
+  for (const m of entry.members) {
+    assert.ok(counts[m] > 0, `${m} has no carriers in the built catalog — the family has rotted`);
+  }
+  // The reported asymmetry, pinned against the real catalog rather than asserted.
+  assert.ok(counts.Ghostly > counts.Ethereal,
+    "Ghostly outnumbers Ethereal — the fact the reporter needed and could not see");
+});
+
+test("#746/real data: the counts reach the picker through the vocabulary", () => {
+  // The seam. familyHintFor is pure and its counts arrive from the vocab, so a
+  // vocab that forgot the field would leave every hint numberless in the app while
+  // every unit test above still passed.
+  const vocab = buildPickerVocabulary(realData);
+  assert.ok(vocab.familyCounts, "the vocabulary carries the counts");
+  assert.ok(vocab.familyCounts.Ghostly > 0, "and they are populated");
 });
 
 test("#404: every declared member produces the hint, not just the reported one", () => {

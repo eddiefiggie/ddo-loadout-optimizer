@@ -3510,6 +3510,53 @@ test("#404: an ordinary add carries no hint field at all", () => {
   assert.ok(!("companionHint" in out), "absent, not an empty string — callers test truthiness");
 });
 
+test("#746: a successful add carries the family hint, with counts from the vocab", () => {
+  // The reported dead end: ranking `Ethereal` pins the player to the ML 8
+  // Wraithborn Emerald, because its ML 30 upgrade carries `Ghostly` instead — a
+  // different name, so the name they ranked excludes the better item.
+  const vocab = buildPickerVocabulary(realData);
+  const out = resolvePriorityAdd("Ethereal", vocab, ["Constitution"]);
+  assert.strictEqual(out.ok, true);
+  assert.deepStrictEqual(out.priorities, ["Constitution", "Ethereal"], "the add still happens");
+  assert.ok(out.familyHint, "the hint rides out with it");
+  assert.ok(/Ghostly/.test(out.familyHint), "and names the sibling they could not see");
+  assert.ok(/Ghostly \(\d+ items\)/.test(out.familyHint),
+    "with a real count from the vocabulary, not a hardcoded one");
+});
+
+test("#746: the family hint is computed against the POST-add list", () => {
+  // Same rule as the companion hint above: adding a second member must not then
+  // recite the family back. Computing against the pre-add list would.
+  //
+  // The positive control is load-bearing, not decoration. Without it this test is
+  // a bare "no hint here", which passes on a tree that produces no hints at all —
+  // it would have covered none of this change. Pairing the two makes the assertion
+  // about the SILENCE being conditional.
+  const vocab = buildPickerVocabulary(realData);
+  const fresh = resolvePriorityAdd("Ghostly", vocab, ["Constitution"]);
+  assert.ok(fresh.familyHint, "control: the same add DOES hint when no sibling is ranked");
+
+  const out = resolvePriorityAdd("Ghostly", vocab, ["Ethereal"]);
+  assert.strictEqual(out.ok, true);
+  assert.ok(!out.familyHint, "no hint once a sibling is already ranked");
+});
+
+test("#746: an ordinary add carries no family hint field at all", () => {
+  const vocab = buildPickerVocabulary(realData);
+  const out = resolvePriorityAdd("Constitution", vocab, []);
+  assert.ok(!("familyHint" in out), "absent, not an empty string — callers test truthiness");
+});
+
+test("#746: the two advisory channels are independent fields", () => {
+  // They answer different questions and the render site joins them. Collapsing
+  // either into the other would hide whichever fired second.
+  const vocab = buildPickerVocabulary(realData);
+  const fam = resolvePriorityAdd("Ethereal", vocab, []);
+  const comp = resolvePriorityAdd("Void Intensity", vocab, []);
+  assert.ok(fam.familyHint && !fam.companionHint, "a family member carries only the family hint");
+  assert.ok(comp.companionHint && !comp.familyHint, "an Intensity carries only the companion hint");
+});
+
 
 // --- #359: owned-augment mode ----------------------------------------------
 //
