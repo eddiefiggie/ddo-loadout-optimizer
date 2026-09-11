@@ -5350,3 +5350,122 @@ test("#689: the load flag raises a banner, ranked below the TWF migration", () =
   assert.strictEqual(resolveBannerPrimary({ styleMissing: false }), null);
   assert.ok(resolveBannerShowing({ styleMissing: true }));
 });
+
+// ---- #744 / #747 — priority reordering and bound discoverability -----------
+// `S` is scoped to the U4 block above, so bind the sentinel again here rather
+// than depending on a name defined several hundred lines away.
+const SENT = require("../web/model.js").UTILITY_SENTINEL;
+
+test("#744: movePriority is pure, and top/bottom saturate rather than reject", () => {
+  const { movePriority } = require("../web/wizard.js");
+  const list = ["A", "B", "C", "D"];
+  assert.deepStrictEqual(movePriority(list, 3, 0), ["D", "A", "B", "C"], "to the top");
+  assert.deepStrictEqual(movePriority(list, 0, Infinity), ["B", "C", "D", "A"], "to the bottom");
+  assert.deepStrictEqual(list, ["A", "B", "C", "D"], "input untouched");
+  // Saturating is what lets a caller say "top"/"bottom" without knowing the list.
+  assert.deepStrictEqual(movePriority(list, 2, -99), ["C", "A", "B", "D"]);
+  assert.deepStrictEqual(movePriority(list, 1, 99), ["A", "C", "D", "B"]);
+  assert.deepStrictEqual(movePriority(list, 1, 1), ["A", "B", "C", "D"], "a no-op move");
+});
+
+test("#744: a one-step move is exactly the swap the buttons used to do", () => {
+  // The unification is only safe if it is behaviour-preserving for the adjacent
+  // case. Assert that against a hand-written swap rather than trusting it.
+  const { movePriority } = require("../web/wizard.js");
+  const base = ["A", "B", "C", "D"];
+  for (let i = 0; i < base.length; i++) {
+    for (const d of [-1, 1]) {
+      const j = i + d;
+      if (j < 0 || j >= base.length) continue;
+      const swapped = base.slice();
+      [swapped[i], swapped[j]] = [swapped[j], swapped[i]];
+      assert.deepStrictEqual(movePriority(base, i, j), swapped,
+        `move ${i}->${j} must equal the old swap`);
+    }
+  }
+});
+
+test("#744: the pinned Utility sentinel is the bottom, and cannot be displaced", () => {
+  const { movePriority, lastRankedIndex } = require("../web/wizard.js");
+  const withPin = ["A", "B", "C", SENT];
+  assert.strictEqual(lastRankedIndex(withPin), 2, "one above the sentinel");
+  assert.strictEqual(lastRankedIndex(["A", "B"]), 1, "no sentinel: the true end");
+  assert.strictEqual(lastRankedIndex([SENT]), -1, "sentinel only: nothing ranked");
+  // "Send to bottom" lands ABOVE the sentinel, never below it.
+  assert.deepStrictEqual(movePriority(withPin, 0, Infinity), ["B", "C", "A", SENT]);
+  // A drop aimed AT the sentinel row clamps the same way (#348 U6/R1).
+  assert.deepStrictEqual(movePriority(withPin, 0, 3), ["B", "C", "A", SENT]);
+  // And the sentinel itself is not movable through this path.
+  assert.deepStrictEqual(movePriority(withPin, 3, 0), withPin, "sentinel refuses to move");
+});
+
+test("#744: movePriority refuses an out-of-range or non-integer source", () => {
+  const { movePriority } = require("../web/wizard.js");
+  const list = ["A", "B"];
+  for (const bad of [-1, 2, 99, 1.5, NaN, null, undefined, {}]) {
+    assert.deepStrictEqual(movePriority(list, bad, 0), list,
+      `source ${String(bad)} must be refused`);
+  }
+  // A numeric STRING is coerced on purpose, not refused: the call sites read
+  // `dataset` attributes, and being strict here would make the primitive
+  // unusable from the markup it exists to serve.
+  assert.deepStrictEqual(movePriority(list, "1", 0), ["B", "A"], "a numeric string is accepted");
+  assert.deepStrictEqual(movePriority(null, 0, 0), [], "a non-array is an empty list");
+  // A NaN destination must do NOTHING. Saturating it would reorder the list on
+  // what is really a bug upstream — the drop path builds `to` from a dataset
+  // attribute, so an unparseable one is silent corruption, not "move to top".
+  for (const bad of [NaN, undefined, "x", {}]) {
+    assert.deepStrictEqual(movePriority(list, 0, bad), list,
+      `destination ${String(bad)} must be a no-op`);
+  }
+  assert.deepStrictEqual(movePriority(list, 0, Infinity), ["B", "A"], "but Infinity still means bottom");
+});
+
+test("#744: every ranked row renders five controls, disabled at the ends", () => {
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const ctl = srcBetween(src, "function reorderControlsHTML", "\n    }", "#744 controls");
+  for (const d of ["top", "up", "down", "bottom", "del"]) {
+    assert.ok(ctl.includes(`b("${d}"`), `the ${d} control is rendered`);
+  }
+  // The disabled rule comes from the shared helper, not a re-spelled predicate.
+  assert.ok(ctl.includes("lastRankedIndex(state.priorities)"),
+    "the bottom is asked for, never recomputed inline");
+  assert.ok(!/priorities\[i \+ 1\] === _utilitySentinel/.test(ctl),
+    "the old inline sentinel test is gone, not duplicated beside the helper");
+  // Every button says what it does to BOTH a screen reader and a mouse hover.
+  assert.ok(/aria-label="\$\{label\}" title="\$\{label\}"/.test(ctl),
+    "aria-label and title come from one string, so they cannot drift");
+});
+
+test("#744: the click handler and the drop handler share one reorder primitive", () => {
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  // No swap survives anywhere in the file: a second reorder path is exactly the
+  // drift this unification removed.
+  assert.ok(!/\[state\.priorities\[i [-+] 1\], state\.priorities\[i\]\] =/.test(src),
+    "no hand-written swap remains");
+  assert.ok(!/state\.priorities\.splice\(to, 0, m\)/.test(src),
+    "the drop handler no longer splices directly");
+  assert.strictEqual((src.match(/movePriority\(state\.priorities/g) || []).length, 5,
+    "four buttons plus the drop handler, all through movePriority");
+});
+
+test("#747: both bounds carry a visible label naming the concept", () => {
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const bounds = srcBetween(src, `<span class="wz-bounds">`, "${ceilingHintHTML(stat)}", "#747 bounds");
+  // The words are the point: `max` alone is the one nobody guesses, which is how
+  // two players in one thread worked around this control without finding it.
+  assert.ok(/Min <em>floor<\/em>/.test(bounds), "the floor box is labelled on screen");
+  assert.ok(/Max <em>cap<\/em>/.test(bounds), "the cap box is labelled on screen");
+  assert.ok(!/placeholder="max"/.test(bounds),
+    "`max` is no longer carrying the explanation alone as a placeholder");
+});
+
+test("#747: an active cap is named in the collapsed summary, beside Required", () => {
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const sum = srcBetween(src, "function advSummaryHTML", "\n    }", "#747 summary");
+  assert.ok(/wz-adv-cap/.test(sum), "the cap has a summary chip");
+  assert.ok(/adv\.cap != null/.test(sum), "and it is driven by the model's cap, not a second flag");
+  // A floor already reads as "Required" there; naming it twice would be two
+  // labels for one fact, so only the cap gets a number.
+  assert.ok(/adv\.required/.test(sum), "Required is still the floor's word");
+});

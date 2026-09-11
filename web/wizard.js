@@ -1865,6 +1865,67 @@ function insertAboveTrailingSentinel(ranked, stat) {
   return out;
 }
 
+/** #744 — move one ranked priority to a new index. The ONE reorder primitive:
+ *  the ↑/↓/⤒/⤓ buttons and the drag-drop handler all route through it, so a
+ *  position rule cannot hold in one path and not the other.
+ *
+ *  Before this, the buttons SWAPPED adjacent entries and drop SPLICE-MOVED. For
+ *  a one-step move those are the same operation, which is why the split survived
+ *  — but only splice generalizes to "send this to the top", so unifying is what
+ *  makes the new buttons possible rather than a tidy-up beside them.
+ *
+ *  `to` is clamped into the legal range rather than rejected, which is what lets
+ *  a caller pass 0 for "top" and Infinity for "bottom" without knowing where the
+ *  Utility sentinel sits. That clamp is the SAME rule the drop handler applies
+ *  (#348 U6/R1): the sentinel is pinned last and nothing ranked may land at or
+ *  below it, so the last legal index is `pin - 1`, not `length - 1`. A list with
+ *  no sentinel (the player removed it) clamps to `length - 1` as normal.
+ *
+ *  Pure — returns a new array, like `insertAboveTrailingSentinel` above. */
+function movePriority(ranked, from, to) {
+  const out = (Array.isArray(ranked) ? ranked : []).slice();
+  const src = Number(from);
+  if (!Number.isInteger(src) || src < 0 || src >= out.length) return out;
+  // The sentinel itself is not movable by this path: its row renders no reorder
+  // buttons and is not draggable, so a call naming it is a bug elsewhere rather
+  // than an interaction. Refusing here keeps the pin unbreakable from ONE place.
+  if (out[src] === _utilitySentinel) return out;
+  // A NaN destination is a no-op, not a move to the top. `to` reaches here from
+  // `+li.dataset.i` on the drop path, so an unparseable one is a bug upstream;
+  // saturating it would silently reorder the list instead of doing nothing.
+  // ±Infinity is deliberately NOT NaN — it is how callers say "top"/"bottom".
+  if (Number.isNaN(Number(to))) return out;
+  const dest = movePriorityDest(out, to);
+  if (dest === src) return out;
+  const [moved] = out.splice(src, 1);
+  out.splice(dest, 0, moved);
+  return out;
+}
+
+/** #744 — the clamped destination index for a move within `ranked`, and the one
+ *  place that knows where the bottom is. Split out so `lastRankedIndex` below can
+ *  share the sentinel rule with the button-disabling logic instead of restating
+ *  it. Pure. */
+function movePriorityDest(ranked, to) {
+  const n = Number(to);
+  const last = lastRankedIndex(ranked);
+  if (!Number.isFinite(n)) return n > 0 ? last : 0;   // Infinity => bottom, -Infinity => top
+  return Math.max(0, Math.min(Math.trunc(n), last));
+}
+
+/** #744 — the last index a RANKED stat may occupy: one above the pinned Utility
+ *  sentinel, or the true end when the list carries none.
+ *
+ *  Exported and shared because three call sites need the same answer and had
+ *  been spelling it out separately: the down button's disabled test (which read
+ *  `i === length - 1 || ranked[i + 1] === sentinel`, the same predicate written
+ *  the long way), the new bottom button's, and the clamp above. Pure. */
+function lastRankedIndex(ranked) {
+  const list = Array.isArray(ranked) ? ranked : [];
+  const pin = list.indexOf(_utilitySentinel);
+  return (pin >= 0 ? pin : list.length) - 1;
+}
+
 // ---- #348 (U6) — the Utility CONTAINER's pure logic ------------------------
 //
 // Everything below is pure so the row's behavior is unit-testable; the DOM closure
@@ -2642,7 +2703,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
+  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -3711,7 +3772,7 @@ ${(() => {
           <button class="btn ghost" id="wz-add-btn">Add</button>
         </div>
         <ol class="wz-ranked" id="wz-ranked"></ol>
-        <p class="wz-draghelp">Drag the ⋮⋮ handle to reorder, or use the ↑ ↓ buttons (they work on touch and keyboard).</p>
+        <p class="wz-draghelp">Drag the ⋮⋮ handle to reorder, or use the ⤒ ↑ ↓ ⤓ buttons — jump to top or bottom, or step one place (these work on touch and keyboard).</p>
         <p id="wz-status" class="wz-status"></p>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           ${saveControl("ghost")}<button class="btn primary" data-solve>Solve ⚡</button></div>
@@ -3932,14 +3993,37 @@ ${(() => {
         <span class="wz-grip" title="drag to reorder">⋮⋮</span>
         <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${isPresenceOnly(p, vocab) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it. A min of 1 makes it a hard requirement; there is no magnitude to maximize.">on/off</span>` : ""}</span>
         ${adv.suppressed ? "" : advancedHTML(p, i, adv)}
-        <span class="wz-ctl"><button data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="move up">↑</button>
-          <button data-down="${i}" ${(i === state.priorities.length - 1
-            // #348 (U6/R1) — also disabled when the NEXT row is the pinned container:
-            // a swap there would push a ranked stat below it, the exact displacement
-            // pinning exists to prevent.
-            || state.priorities[i + 1] === _utilitySentinel) ? "disabled" : ""} aria-label="move down">↓</button>
-          <button data-del="${i}" aria-label="remove">✕</button></span></li>`;
+        ${reorderControlsHTML(i)}</li>`;
       }).join("");
+    }
+
+    /** #744 — the reorder/remove control cluster for one ranked row.
+     *
+     *  Four moves, not two. A player who wants their twelfth priority first was
+     *  clicking ↑ eleven times; the reporter asked for exactly this. ⤒/⤓ are the
+     *  jump pair, ↑/↓ the step pair, ✕ unchanged.
+     *
+     *  Disabled state comes from `lastRankedIndex`, which owns the sentinel rule
+     *  (#348 U6/R1: nothing ranked may sit at or below the pinned Utility tier).
+     *  The down button used to spell that rule out inline as `i === length - 1 ||
+     *  priorities[i + 1] === sentinel`; it is the same predicate, now stated once.
+     *
+     *  Every button carries BOTH `aria-label` and `title`. They had only the
+     *  former, which reads the state to a screen reader and leaves a mouse user
+     *  hovering a bare glyph — and ⤒/⤓ are exactly the glyphs least likely to be
+     *  self-evident, in the fonts least likely to have them. */
+    function reorderControlsHTML(i) {
+      const last = lastRankedIndex(state.priorities);
+      const atTop = i === 0;
+      const atBottom = i === last;
+      const b = (data, glyph, label, off) =>
+        `<button data-${data}="${i}"${off ? " disabled" : ""} aria-label="${label}" title="${label}">${glyph}</button>`;
+      return `<span class="wz-ctl">${
+        b("top", "⤒", "move to top", atTop)}${
+        b("up", "↑", "move up", atTop)}${
+        b("down", "↓", "move down", atBottom)}${
+        b("bottom", "⤓", "move to bottom", atBottom)}${
+        b("del", "✕", "remove", false)}</span>`;
     }
 
     // #348 (U6) — the pinned container row. Distinct from every ranked row: no rank
@@ -4011,7 +4095,18 @@ ${(() => {
       // chip, for the reason the settings badge is: a purely visual mark loses
       // the state for screen-reader users instead of for everyone.
       const req = adv.required ? ` <span class="wz-adv-req">· Required</span>` : "";
-      return `Advanced${req}${t ? ` <span class="wz-adv-badge">${esc(t)}</span>` : ""}`;
+      // #747 — an active CAP is named in the collapsed summary too, for the same
+      // reason "Required" is: a bound the player set is state, and state that
+      // shows only when you open a panel is state nobody finds. Two players in
+      // one thread worked around this control without discovering it, and the
+      // summary is the only part of the panel they were guaranteed to read.
+      //
+      // Deliberately NOT symmetric with the floor. A floor already reads as
+      // "Required" here, which says what it DOES; a cap has no such word, so it
+      // shows its number. Naming both the same way would be two labels for one
+      // fact on floored rows.
+      const cap = adv.cap != null ? ` <span class="wz-adv-cap">· Cap ${esc(adv.cap)}</span>` : "";
+      return `Advanced${req}${cap}${t ? ` <span class="wz-adv-badge">${esc(t)}</span>` : ""}`;
     }
 
     /** #677 — read-only ceiling context under the bounds pair. NEVER written into
@@ -4034,8 +4129,10 @@ ${(() => {
         <div class="wz-adv-body">
           <p class="wz-adv-lead">${ADVANCED_PANEL_HELP.lead}</p>
           <span class="wz-bounds">
-            <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-min="${i}" value="${esc(adv.floor == null ? "" : adv.floor)}" placeholder="min" aria-label="${esc(stat)} minimum (floor)" draggable="false">
-            <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-max="${i}" value="${esc(adv.cap == null ? "" : adv.cap)}" placeholder="max" aria-label="${esc(stat)} maximum (cap)" draggable="false"></span>
+            <label class="wz-bound-field"><span class="wz-bound-lbl">Min <em>floor</em></span>
+              <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-min="${i}" value="${esc(adv.floor == null ? "" : adv.floor)}" placeholder="none" aria-label="${esc(stat)} minimum (floor)" draggable="false"></label>
+            <label class="wz-bound-field"><span class="wz-bound-lbl">Max <em>cap</em></span>
+              <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-max="${i}" value="${esc(adv.cap == null ? "" : adv.cap)}" placeholder="none" aria-label="${esc(stat)} maximum (cap)" draggable="false"></label></span>
           ${ceilingHintHTML(stat)}
           ${adv.required ? `<p class="wz-adv-req-note">This effect is required: the solve must include it, giving up higher-ranked stats if that is what it takes. <button type="button" class="wz-clear-req" data-clearreq="${i}">Clear requirement</button></p>` : ""}
           <p class="wz-adv-note">${ADVANCED_PANEL_HELP.min}</p>
@@ -4129,8 +4226,13 @@ ${(() => {
       ol.querySelectorAll("button").forEach((b) => b.onclick = () => {
         markDirty();   // #428 U5 — every ranked-list button mutates the build
         let after = null;
-        if (b.dataset.up != null) { const i = +b.dataset.up;[state.priorities[i - 1], state.priorities[i]] = [state.priorities[i], state.priorities[i - 1]]; }
-        else if (b.dataset.down != null) { const i = +b.dataset.down;[state.priorities[i + 1], state.priorities[i]] = [state.priorities[i], state.priorities[i + 1]]; }
+        // #744 — all four moves through the one primitive. `top`/`bottom` pass a
+        // saturating index rather than a computed one, so neither this handler nor
+        // the markup needs to know where the pinned Utility sentinel sits.
+        if (b.dataset.top != null) { state.priorities = movePriority(state.priorities, +b.dataset.top, 0); }
+        else if (b.dataset.up != null) { const i = +b.dataset.up; state.priorities = movePriority(state.priorities, i, i - 1); }
+        else if (b.dataset.down != null) { const i = +b.dataset.down; state.priorities = movePriority(state.priorities, i, i + 1); }
+        else if (b.dataset.bottom != null) { state.priorities = movePriority(state.priorities, +b.dataset.bottom, Infinity); }
         else if (b.dataset.del != null) {
           const p = state.priorities[+b.dataset.del];
           state.priorities.splice(+b.dataset.del, 1);
@@ -4329,17 +4431,16 @@ ${(() => {
         li.ondragover = (e) => e.preventDefault();
         li.ondrop = (e) => {
           e.preventDefault();
-          let to = +li.dataset.i;
+          const to = +li.dataset.i;
           if (from === null || to === from) return;
           // #348 (U6/R1) — the pinned row is not draggable, but it is still a DROP
           // TARGET, and dropping onto it would splice a ranked stat below it. Clamp
           // to the last position above the container rather than ignoring the drop:
           // ignoring reads as a broken drag, clamping does what the player meant.
-          const pin = state.priorities.indexOf(_utilitySentinel);
-          if (pin >= 0 && to >= pin) to = Math.max(0, pin - 1);
-          if (to === from) return;
-          const m = state.priorities.splice(from, 1)[0];
-          state.priorities.splice(to, 0, m);
+          // #744 — that clamp now lives inside `movePriority`, which is also what
+          // the ⤒/⤓ buttons call. One rule, so drag and buttons cannot disagree
+          // about where the bottom is.
+          state.priorities = movePriority(state.priorities, from, to);
           from = null; rerender();
         };
       });

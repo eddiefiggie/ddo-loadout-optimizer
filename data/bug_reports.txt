@@ -697,3 +697,221 @@ RESOLVED. The exemption now lives at the pool too, scoped per-variant, with a
 PINNED, NOT OWNED disclosure — having fixed a silent discard, a silent override
 would be the same defect wearing the other face. Lesson banked in
 docs/solutions/design-patterns/an-override-exemption-only-covers-the-gates-downstream-of-it.md
+
+================================================================================
+2026-09-10 — user feedback batch (forum thread) — #740–#747
+================================================================================
+
+Six reports from one player, plus one reply from a second. They became EIGHT
+issues (#740-#747): report 6 below carried two separate complaints. Every
+claim below was checked against the BUILT DATASET and, where it was a behaviour
+claim, reproduced through the real solver (tests/parity/capture_golden.js's
+solveEnv/solveFixture). ddowiki was unreachable from the working container
+(Cloudflare, as AGENTS.md documents), so nothing here is a wiki ruling — where a
+value needs the wiki, the issue says so and does not guess.
+
+--------------------------------------------------------------------------------
+1. "I am trying to force and/or suggest to the optimizer that I want the
+    Deconstructor augment in my weapon.
+    Maybe I am overlooking something because sofar I have failed"        -> #742
+--------------------------------------------------------------------------------
+CONFIRMED, and total rather than partial. Augments are excluded from pinning by
+construction (wizard.js:3226 `v.category !== "augment"`, stated in prose at
+1210-1212). Deconstructor (Red, ML 28) carries three Bool affixes: `Adamantine`
+and `Destruction` are presence-targetable but NOT in the Utility counting set,
+and `6 to 36 bonus Rust damage on hit vs Constructs` fails the presence
+predicate entirely. So it feeds no objective by any path.
+
+The `min 1` hard-floor route was tried and does not reach it. At ML 30, ranking
+`Destruction` places `Breastplate of Destruction`; flooring `Destruction >= 1`
+beside Melee Power places the same. The floor is satisfied by any of 111
+carriers and nothing prefers the augment. Deconstructor is the only AUGMENT
+carrying `Destruction`, but "the only augment" is not an expressible constraint.
+
+--------------------------------------------------------------------------------
+2. "the iconic gear shows up even when your race doesnt match, eg. set to
+    gnome, assimar scourge bracers were advised"                         -> #740
+--------------------------------------------------------------------------------
+CONFIRMED. There is no race-restriction filter anywhere. `restrictions` is the
+hardcoded literal "unknown" (variants.py:148, pinned by test_variants.py:68), no
+JS consumer reads it, and the sole race predicate (model.js:757-762) only
+decides docent-vs-body-armor. Of 9,194 items: 9,183 "unknown", 11 null, zero
+carrying any requirement language.
+
+Reproduced: race gnome, ML 15, Constitution then Physical Sheltering places
+`Cowl of the Drow Devotee` at Helmet.
+
+Naming trap recorded for whoever harvests this: iconic gear is named for the
+ICONIC, not the base race. Zero records contain "Aasimar", "Gnome", "Warforged",
+"Iconic" or "Sun Elf" anywhere. What exists is Duergar 121, Drow 44, Morninglord
+42, Scourge 7, Razorclaw 5. There is no item named "Scourge Bracers" — the
+reporter most likely saw `Razorclaw's Armguards` (Bracers, ML 15). A name-keyed
+filter is NOT a shortcut here.
+
+--------------------------------------------------------------------------------
+3. "How would I put for offhand weapon, Assassinate and Insightful
+    Assassinate? I couldn't see any way to pin it on a weapon"           -> #743
+--------------------------------------------------------------------------------
+NOT POSSIBLE, and the reporter found no way because there is none. Measured
+across every channel:
+
+  named weapons                4, all Enhancement (Assassin's Kiss, Epic
+                               Assassin's Kiss, Epic/Legendary Midnight
+                               Greetings)
+  Viktranium Accessory pool    2, Enhancement (Miserable Assassinate)
+  Viktranium Armor pool        2, Profane
+  Dino Accessory / Armor       1 / 1
+  Insight on ANY weapon        ZERO
+  Quality anywhere craftable   ZERO (reporter already knew this — correct)
+
+Craftability boundary, checked directly: every Weapon and Off Hand host draws
+from the Weapon pool (479 weapon-slot, 76 off-hand declarations) or, for two
+shields, the Armor pool. ZERO weapon/off-hand hosts declare a `Miserable` slot
+of any category, so the one craftable Assassinate is unreachable from a weapon
+by construction.
+
+"A blank weapon you put effects on" matches no modelled system. Blanks here are
+named catalog items whose value is their craft slots; the player pins the blank,
+the solver picks the recipe, and recipes are blockable but never pinnable
+(wizard.js:3431-3433). The real gap is that nothing tells a player an effect is
+unreachable in the slot they want — a fourth way to be disappointed alongside
+CONCEPTS.md's three routes to a zero target.
+
+--------------------------------------------------------------------------------
+4. "Any chance we could get the Optimizer to recognize the Shadow Striker
+    affix? ... the tool does not credit the build with any of the effects" -> #741
+--------------------------------------------------------------------------------
+CONFIRMED and MEASURED. Six ML 33 armor variants (`* of the Warblade's
+Reflection`) store it as `{"name":"Shadow Striker","type":"Bool","value":"1"}`.
+It is in utility_presence_not_counted and in NEITHER rankable_affixes NOR
+utility_counting_set, so no player action reaches it.
+
+The reporter's four numbers are already in the catalog under `Woeful Shadow`
+(SINGULAR) — Doublestrike Profane 3, Doubleshot Profane 3, Melee Alacrity
+Enhancement 15, Ranged Alacrity Enhancement 20. NOTE THE TRAP: a separate option
+named `Woeful Shadows` (PLURAL) is an unrelated Bool about reducing enemy
+resistance ratings. The reporter's "Woeful Shadows" matches the singular by its
+numbers; do not cite the plural as evidence.
+
+Simulated the fix (four contributions appended to the six carriers, re-solved).
+Armor alone, every other slot locked empty:
+
+  Doublestrike     30 -> 33   (+3, Profane bucket empty)
+  Doubleshot        8 -> 11   (+3, same)
+  Melee Alacrity    0 -> 15   (+15, nothing else carried it)
+  Ranged Alacrity  15 -> 20   (+5, Enhancement bucket already held 15)
+
+HONEST OTHER HALF: at a full ML 34 loadout ranking those same four stats the
+totals do not move and the armor is not chosen either way — better gear already
+fills those buckets. This is a correctness fix for the item's worth, not a
+promise that anyone's endgame numbers rise.
+
+--------------------------------------------------------------------------------
+5. "bundle certain effects and move them up and down as a group" +
+   "a button to move an effect to the top/bottom" + drag/density   -> #745, #744
+--------------------------------------------------------------------------------
+All four sub-asks confirmed. Split deliberately: #744 is mechanical (no
+move-to-top/bottom, only adjacent swaps at wizard.js:4129-4133; zero autoscroll
+code in wizard.js so native HTML5 DnD edge-scroll is all there is, and native DnD
+swallows wheel events; `.wz-ranked { max-width: 34rem }` at styles.css:1101 plus
+a full-width Advanced line per magnitude row at styles.css:1131). #745 is the
+data model.
+
+styles.css:1115-1130 already records that inlining Advanced was TRIED and pushed
+the reorder buttons to a third line — read that comment before redoing it.
+
+The Utility tier cannot generalize into the group feature: its sentinel is one
+hardcoded string used as a position oracle, it is bottom-pinned and undraggable,
+and `containerAddable` filters on isPresenceOnly so it cannot hold the
+spellpower/lore/intensity stats the reporter named.
+
+--------------------------------------------------------------------------------
+6a. "I also find it awkward to find a ghost touch effect. There are three
+     different affixes that cover it"                                    -> #746
+--------------------------------------------------------------------------------
+REPRODUCED, and sharper than the prose. `Wraithborn Emerald` (ML 8, Green)
+carries `Ethereal`; `Legendary Wraithborn Emerald` (ML 30, Green) carries
+`Ghostly`. The upgrade CHANGES THE AFFIX NAME, so ranking `Ethereal` actively
+excludes the better augment. The reporter's hunch that Ethereal "does not seem
+optimal" is correct and that is the mechanism.
+
+Family: Ghostbane 129 carriers, Ghostly 112, Ghost Touch 69, Ethereal 23. Three
+of the four sit in utility_counting_set as SEPARATE entries, so the tier counts
+three distinct wins where the player has one need.
+
+NOT an alias — merging them would be a data error. Whether they are actually
+interchangeable in game is a WIKI question and is not ruled on here.
+
+--------------------------------------------------------------------------------
+6b. "Legendary Bracelets of Subtle Life ... 38 enhancement is the max so it also
+     added an item with that ... the loss of 3 PRR/MRR is inconsequential"
+     + second player: "41 PRR is max I believe rather than 38"           -> #747
+--------------------------------------------------------------------------------
+CONFIRMED, and THE FEATURE ALREADY EXISTS — the per-stat cap. Neither player
+found it. No solver change needed.
+
+Item checks out: Legendary Bracelets of Subtle Life (ML 31, Bracers), Distant
+Diversion Insight 10, PRR/MRR Enhancement 35.
+
+Both players are right about different things on 38 vs 41. Enhancement PRR tops
+out at 41 (`Legendary Demonic Rush`, Boots ML 35); MRR likewise at 41
+(`Legendary Hooves of Orcus`, Boots ML 35). The 38s are the five Legendary
+Dragonscale armors at ML 34. At a cap of 34 the first reporter's 38 is exactly
+right; 41 needs ML 35.
+
+Measured, ML 34, Distant Diversion / PRR / MRR:
+
+  no cap        DD 56, PRR 126, MRR 133, 11 slots used
+  max 35 both   DD 56, PRR  35, MRR  35,  4 slots used   (bracers kept)
+
+And the freed slots are real — adding Constitution 4th: 36 uncapped, 37 capped.
+
+Not the weighted-sum non-goal: a cap is a clamp the PLAYER sets, not a trade the
+solver makes. Nobody is traded without being asked.
+
+Why it was missed: the control's only visible label is the placeholder `max`
+(wizard.js:4036-4038); "cap" appears solely in aria-label and help prose. The
+reporter reached for the bonus-type skip grid in the same panel instead and it
+WORKED, which is the worst outcome — a working wrong tool ends the search.
+
+The second player's "set the value to 41 so the optimizer thinks you have that"
+is worse than the cap: a declared credit is a real contribution seated in the
+Enhancement bucket, so the reported total then includes 41 the character does not
+have. Their pinning advice is sound and independent.
+
+--------------------------------------------------------------------------------
+ADDENDUM to 6a — the rename is systematic, and half of it is already solved
+--------------------------------------------------------------------------------
+Swept every item family (strip Legendary/Epic/(level N), compare counted-presence
+sets across tiers): 58 families rename a counted presence effect on upgrade.
+
+They split along exactly the line #746 is about:
+
+  SOLVED    Blurry -> Lesser Displacement. Both mint `Concealment` at
+            Enhancement 20 / 25 via COMPOSITE_COMPONENTS (dataset.js:216-218),
+            so ranking `Concealment` gets whichever tier is better and the
+            rename is invisible. Celestial Topaz Ring, Cloak of Autumn, the
+            four elemental Docents, and others.
+
+  UNSOLVED  Ethereal -> Ghostly. Nothing joins them. Cold Iron Bracers (ML5 ->
+            ML29), Book of Spirits (ML3 -> ML29), Wraithborn Emerald (ML8 ->
+            ML30).
+
+  THIRD     Dusk -> Lesser Displacement. `Dusk` is counted but mints nothing,
+            so this upgrade crosses from an uncounted effect into a counted
+            magnitude. Coldharbor Cladding, Confiscated Heavy Mail, Brimstone
+            Boulder Warden's Robe.
+
+CONSEQUENCE FOR #746: its answer is probably NOT the satisfy-any set the issue
+first proposed. If the wiki rules the ghost-touch names are tiers of one
+mechanic, the fix is the concealment treatment — one minted stat, values sourced
+per tier — which also ranks the tiers against each other rather than treating
+them as interchangeable. The wiki ruling is the gate and has not been made.
+
+The reporter's own #747 item is on the list: Bracelets of Subtle Life carries
+`Ghostly` at ML 8 and `Lesser Displacement` at ML 31.
+
+NEGATIVE RESULT, recorded so it is not retried: detecting unvalued compound
+Bools by name-matching them against numeric crafted options finds two rows and
+MISSES `Shadow Striker` — `Woeful Shadow` and `Shadow Striker` do not share
+enough tokens. Name similarity is not the signal; the tier-family sweep is.

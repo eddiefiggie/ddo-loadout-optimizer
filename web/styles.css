@@ -1107,11 +1107,24 @@ input.wz-ml { width: 120px; }
   font-size: var(--fs-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .wz-nm { flex: 1; font-weight: 550; }
 /* U4 — per-priority min/max bound inputs (advanced, secondary affordance) */
-.wz-bounds { display: flex; gap: 4px; }
-.wz-bound { width: 3.4rem; background: var(--panel); color: var(--text); border: 1px solid var(--border-2);
+.wz-bounds { display: flex; gap: var(--sp-2); align-items: flex-end; }
+/* #747 — each bound carries a VISIBLE label, not just a placeholder. The control
+   shipped with `min`/`max` as placeholder text and the words "floor" and "cap"
+   only in `aria-label`, so a sighted player got two unexplained number boxes.
+   Two experienced players worked around this control in one forum thread without
+   finding it; one settled on the bonus-type grid below it instead. The concept
+   word is what makes it searchable in the player's own head, so it is on screen. */
+.wz-bound-field { display: flex; flex-direction: column; gap: 2px; }
+.wz-bound-lbl { font-size: var(--fs-xs); color: var(--muted); line-height: 1.1; }
+.wz-bound-lbl em { font-style: normal; color: var(--faint); }
+.wz-bound { width: 4.2rem; background: var(--panel); color: var(--text); border: 1px solid var(--border-2);
   border-radius: var(--r-1, 6px); padding: 2px 4px; font-size: 0.85em; text-align: center; }
 .wz-bound::placeholder { color: var(--faint); }
 .wz-bound:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+/* #747 — an active cap, named in the collapsed summary beside `· Required`. Same
+   treatment as its sibling because it is the same kind of fact: a bound the
+   player set, which they should not have to open the panel to see. */
+.wz-adv-cap { color: var(--muted); font-weight: 550; }
 /* plan 005 — the per-row Advanced disclosure. Takes its own full-width line
    below the row rather than competing for space on it: `.wz-ranked li` is a flex
    container, so an auto-width <details> would size to its collapsed summary and
@@ -1185,6 +1198,12 @@ input.wz-ml { width: 120px; }
 .attrib-row.is-declared .attrib-type { font-style: italic; }
 .attrib-declared { color: var(--muted); font-style: italic; border-bottom: 1px dotted var(--border-2); cursor: help; }
 .wz-ctl { display: flex; gap: 4px; }
+/* #744 — five controls now (⤒ ↑ ↓ ⤓ ✕), not three. Scoped to `.wz-ranked`
+   deliberately: `.wz-ctl` is shared with the saved-character list and the rail
+   note, which have their own layouts and three buttons apiece. `flex: none`
+   keeps the cluster intact so `.wz-ranked li`'s existing `flex-wrap` drops it to
+   its own line at narrow widths rather than squeezing the stat name to nothing. */
+.wz-ranked .wz-ctl { flex: none; }
 .wz-ctl button { background: var(--panel); border: 1px solid var(--border-2); color: var(--muted);
   width: 32px; height: 32px; min-height: 0; padding: 0; flex: none; display: flex; align-items: center;
   justify-content: center; border-radius: var(--radius-sm); cursor: pointer; }
