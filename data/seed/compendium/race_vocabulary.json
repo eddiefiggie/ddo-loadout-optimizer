@@ -1,0 +1,37 @@
+{
+  "_README": "Classification of every `race_text` value the race harvest (#749) records, for the race gate (#740). The harvest stores the wiki's string verbatim; this file says what each string MEANS to the solver — a real race gate, an explicit non-gate, or pet equipment that is not a character gate at all. Exclude-until-verified: a value in none of the three buckets FAILS THE BUILD rather than falling through, because a race_text nobody classified would silently fail open and recommend gear the player cannot equip. That is the defect #740 exists to fix, so it must not be reachable by adding a wiki value.",
+  "_source": "Values are verbatim from data/seed/compendium/race_requirement.json (542 entries, all provenance `stated`). Harvest method and the wikitext-vs-rendered trap: docs/wiki-evidence/race-requirements.md.",
+  "_ruling": "Strict exact match (#740, 2026-09-11). An item stating a race admits ONLY that race; no base-race-may-wear-its-Iconic's-gear equivalence is inferred, because the wiki states one race string per item and does not say otherwise. The single exception is Warforged/Bladeforged, and it is NOT asserted here — it is already shipped in `FORGED_RACES` in web/model.js, which the docent rule at variantConflict has used since R6/AE1. The gate reuses that set rather than restating it; see `raceMeets`.",
+
+  "_gates_note": "wiki race_text -> the canonical race label the app offers. The VALUE must be one of the 30 labels in RACES_BASIC/RACES_ICONIC in web/wizard.js, which tests/test_race_vocabulary.py asserts by reading that file — so renaming a race there goes red here rather than silently disabling the gate. `warforged` is a case variant the wiki carries; it is listed explicitly rather than case-folded in code, so the vocabulary stays the single place a new spelling is acknowledged.",
+  "gates": {
+    "Warforged": "Warforged",
+    "warforged": "Warforged",
+    "Dragonborn": "Dragonborn",
+    "Bladeforged": "Bladeforged",
+    "Deep Gnome": "Deep Gnome",
+    "Sun Elf": "Sun Elf (Morninglord)",
+    "Shadar-kai": "Shadar-kai",
+    "Purple Dragon Knight": "Purple Dragon Knight",
+    "Aasimar Scourge": "Aasimar Scourge",
+    "Duergar Mindcleaver": "Duergar Mindcleaver",
+    "Tiefling Scoundrel": "Tiefling Scoundrel",
+    "Dhampir Dark Bargainer": "Dhampir Dark Bargainer",
+    "Eladrin Chaosmancer": "Eladrin Chaosmancer",
+    "Razorclaw Shifter": "Razorclaw Shifter",
+    "Tabaxi Trailblazer": "Tabaxi Trailblazer"
+  },
+
+  "_sun_elf_evidence": "`Sun Elf` is the ONLY harvested value with no exact label in the app's race list. It is mapped rather than quarantined because the mapping is unambiguous within THIS APP'S vocabulary, not because a game claim was inferred: the app's Elf-family labels are exactly `Elf`, `Wood Elf` and `Sun Elf (Morninglord)`, so there is one candidate. This is a label-spelling decision over a list the project controls, not a statement about DDO. If a bare `Sun Elf` race is ever added to RACES_BASIC, this mapping becomes ambiguous and must be re-ruled — tests/test_race_vocabulary.py fails in that case because the roster it reads will carry both.",
+
+  "_no_gate_note": "Values that state there is NO race requirement. Kept as an explicit bucket rather than dropped, because the harvest deliberately preserves the stated-vs-silent distinction: 108 pages STATE `None` in their wikitext while the rendered template prints `None` for silent pages too. A page that states `None` is evidence; a page that says nothing is absence of evidence. Both fail open, but only one of them was checked.",
+  "no_gate": ["none", "None", "Any"],
+
+  "_pet_note": "Pet equipment. These are gear for a hireling pet (the Iron Defender), never a requirement on the player character, so they must NOT reach the character gate — treating `Pet` as an unmatched race would exclude the item from every one of the 30 races. Compound values name a pet variant after the dash rather than a second race, which is why they are classified whole rather than split on the comma.",
+  "pet_equipment": [
+    "Pet",
+    "Iron Defender",
+    "Warforged - Iron Defender",
+    "Bladeforged, Warforged - Iron Defender"
+  ]
+}

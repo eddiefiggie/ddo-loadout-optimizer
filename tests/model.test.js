@@ -1049,6 +1049,87 @@ test("#90 case 3: a real docent is eligible for a Bladeforged (and Warforged) at
   }
 });
 
+// --- R18 (#740) race-locked gear, against the REAL built dataset -------------
+// The report: "the iconic gear shows up even when your race doesnt match, eg. set
+// to gnome, assimar scourge bracers were advised." Nothing leaked past a gate —
+// there was no gate. These pin both halves: the dataset tag the gate depends on,
+// and the exclusion itself.
+const REAL_ICONIC = data.items.find((x) => x.source_item === "Hidden Armlets");
+const REAL_UNGATED = data.items.find((x) => x.source_item === "Cowl of the Drow Devotee");
+const REAL_BLADEFORGED = data.items.find(
+  (x) => x.race_req === "Bladeforged" && x.slot !== "Armor");
+
+test("#740 dataset tag: Hidden Armlets carries its wiki-stated race lock", () => {
+  assert.ok(REAL_ICONIC, "Hidden Armlets missing from dataset");
+  assert.strictEqual(REAL_ICONIC.race_req, "Aasimar Scourge");
+  assert.strictEqual(REAL_ICONIC.slot, "Bracers"); // a slot the R6 docent rule never inspects
+});
+
+test("#740 the report: Aasimar Scourge bracers are refused to a gnome", () => {
+  const reason = M.variantConflict(REAL_ICONIC, { mlCap: 36, race: "Gnome" });
+  assert.strictEqual(reason, "requires the Aasimar Scourge race");
+});
+
+test("#740 the same bracers are still offered to an Aasimar Scourge", () => {
+  assert.strictEqual(M.variantConflict(REAL_ICONIC, { mlCap: 36, race: "Aasimar Scourge" }), null);
+});
+
+test("#740 strict: the base race does NOT inherit its Iconic's gear", () => {
+  // The ruling. The wiki states one race string per item and never says an Aasimar
+  // may wear Scourge gear, so the gate does not invent the equivalence. Governs
+  // ~172 harvested entries — if this ever flips, it flips on wiki evidence.
+  assert.ok(M.variantConflict(REAL_ICONIC, { mlCap: 36, race: "Aasimar" }),
+    "an Aasimar must not inherit Aasimar Scourge gear without wiki evidence");
+});
+
+test("#740 a gnome keeps gear that merely SOUNDS race-locked", () => {
+  // Cowl of the Drow Devotee is named for the Drow and gated on nobody — its wiki
+  // page carries no `race` parameter at all. The issue's own repro used it, which
+  // was this issue's naming trap closing on itself: a name is not evidence in
+  // either direction. This placement was never wrong and must not change.
+  assert.ok(REAL_UNGATED, "Cowl of the Drow Devotee missing from dataset");
+  assert.strictEqual(REAL_UNGATED.race_req, undefined, "no stated gate -> no field");
+  assert.strictEqual(M.variantConflict(REAL_UNGATED, { mlCap: 36, race: "Gnome" }), null);
+});
+
+test("#740 non-body Forged gear is gated — the docent rule cannot see it", () => {
+  // The R6 rule matches on `slot === "Armor"` × docent-ness, so the ML 15
+  // Bladeforged set (Cloak, Rings, Trinket, Weapon, ...) was unreachable by it BY
+  // CONSTRUCTION. Forged gear leaked too, not just Iconic gear.
+  assert.ok(REAL_BLADEFORGED, "no non-Armor Bladeforged item in dataset");
+  assert.ok(M.variantConflict(REAL_BLADEFORGED, { mlCap: 36, race: "Human" }),
+    "a human must not be offered Bladeforged-locked gear");
+  assert.strictEqual(M.variantConflict(REAL_BLADEFORGED, { mlCap: 36, race: "Bladeforged" }), null);
+});
+
+test("#740 the Forged carve-out: a Bladeforged satisfies a Warforged requirement", () => {
+  // NOT a new claim — FORGED_RACES already rules both Forged for the docent rule.
+  // A strict string compare would refuse all 203 Warforged-gated records (every one
+  // of them body armor) to a Bladeforged character, regressing a shipped rule.
+  assert.strictEqual(M.raceMeets("Bladeforged", "Warforged"), true);
+  assert.strictEqual(M.raceMeets("warforged", "Warforged"), true);
+});
+
+test("#740 the carve-out is asymmetric, and that is the strict ruling holding", () => {
+  // Bladeforged gear is Iconic gear. A Warforged inheriting it would be exactly the
+  // base-race-inherits-its-Iconic equivalence the ruling refuses.
+  assert.strictEqual(M.raceMeets("Warforged", "Bladeforged"), false);
+  assert.strictEqual(M.raceMeets("Aasimar", "Aasimar Scourge"), false);
+});
+
+test("#740 fail-open: no race in the query, and no stated gate, both pass", () => {
+  assert.strictEqual(M.variantConflict(REAL_ICONIC, { mlCap: 36 }), null,
+    "a solve with no race selected must not start excluding gear");
+  assert.strictEqual(M.raceMeets("Gnome", ""), true, "absent race_req -> fail open");
+  assert.strictEqual(M.raceMeets("Gnome", null), true);
+});
+
+test("#740 eligible(): the gnome solve no longer contains the reported item", () => {
+  const kept = M.eligible(data.items, { mlCap: 36, race: "Gnome", armorTypes: ["light"] })
+    .filter((x) => x.source_item === "Hidden Armlets");
+  assert.strictEqual(kept.length, 0, "Aasimar Scourge bracers leaked into a gnome loadout");
+});
+
 test("#90 no forbidden body-slot pick leaks across the three constraint inputs (full dataset)", () => {
   // 1) Halfling + Light: no docent, no non-light concrete body armor survives.
   const halfling = M.eligible(data.items, { mlCap: 36, race: "halfling", armorTypes: ["light"] });
