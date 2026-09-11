@@ -2225,8 +2225,19 @@ function resolvePriorityAdd(name, vocab, priorities) {
   // ranking the companion is the player's call. Computed against `next` so a
   // companion the player just added is not suggested back to them.
   const companionHint = (DN && DN.companionHintFor) ? DN.companionHintFor(v, next) : null;
+  // #746 — ADVISORY for the same reason, and disjoint from the companion hint in
+  // practice: a companion is a second stat worth ranking TOO, a family is several
+  // names the player may be searching for interchangeably. Both are computed
+  // against `next` so a name the player just added is not suggested back at them.
+  // Counts ride on the VOCAB, which every caller of this function already holds —
+  // so no call site had to learn a new argument and none could be missed. A vocab
+  // built before this field existed renders the names with no numbers rather than
+  // throwing, which is why it falls back to `{}` rather than being assumed.
+  const familyHint = (DN && DN.familyHintFor)
+    ? DN.familyHintFor(v, next, (vocab && vocab.familyCounts) || {}) : null;
   return { ok: true, priorities: next, substitutions: [],
-           ...(companionHint ? { companionHint } : {}) };
+           ...(companionHint ? { companionHint } : {}),
+           ...(familyHint ? { familyHint } : {}) };
 }
 
 // Composable affix BUNDLES — modelled on the DDO gear planner's "packages" (its
@@ -4474,7 +4485,11 @@ ${(() => {
         // #404 — the one case where a SUCCESSFUL add still has something to say.
         // Clearing the line here is what left two reporters hunting for a stat
         // whose name the picker never mentioned.
-        if (status) status.textContent = res.companionHint || "";
+        // #746 — two advisory channels now, joined rather than one winning: they
+        // answer different questions ("rank this too" vs "these names exist"), and
+        // dropping one because the other fired would hide whichever came second.
+        // Disjoint in practice today; joined so that stays true if either table grows.
+        if (status) status.textContent = [res.companionHint, res.familyHint].filter(Boolean).join(" ");
         return true;
       }
 

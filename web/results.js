@@ -1842,6 +1842,16 @@ const NOTICES = [
     subject: "cap surplus", cls: NOTICE_ACTIONABLE,
     jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
     render: (c) => capSurplusNotice(c.query, c.result) },
+  // #747 — INFORMATIONAL, deliberately NOT actionable like the notice above it.
+  // The cap-surplus card reports a defect in the build the player can resolve;
+  // this one reports a build that is already optimal and merely offers a lever
+  // they may not want. Marking it "needs attention" would inflate the pill that
+  // exists to mean something is wrong — the same reasoning `upgradeNotice` carries.
+  // The jump still goes to priorities, because the Max box is what it names.
+  { name: "capOpportunityNotice", id: "cap-opportunity", title: "ONE STAT, MANY SLOTS",
+    subject: "stats spread across many picks", cls: NOTICE_INFORMATIONAL,
+    jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
+    render: (c) => capOpportunityNotice(c.query, c.result) },
   // #193/#599 — qualifying for the same reason as the notice above: there is
   // nothing for the player to press. It reports that the Gem's menus were solved
   // over 25 of the 170 effects the game offers, which is a fact about the DATA
@@ -2136,6 +2146,18 @@ function capSurplusNotice(query, result) {
   if (!lines || !lines.length) return "";
   return lines.map((l) =>
     `<p class="scope-note cap-surplus-note" role="status">${esc(l)}</p>`).join("");
+}
+
+/** #747 — the mirror of the notice above: a ranked stat with NO cap that the solve
+ *  spread across many picks. Same contract — reads the SHARED sentence from
+ *  projection rather than respelling it here, so the app and a shared build cannot
+ *  come to disagree about the same solve. */
+function capOpportunityNotice(query, result) {
+  const lines = (Proj && Proj.capOpportunityLines)
+    ? Proj.capOpportunityLines({ snapshot: result, query }) : [];
+  if (!lines || !lines.length) return "";
+  return lines.map((l) =>
+    `<p class="scope-note cap-opportunity-note" role="status">${esc(l)}</p>`).join("");
 }
 
 /** #683 — the disclosed name split. Same contract as the two notices above: reads

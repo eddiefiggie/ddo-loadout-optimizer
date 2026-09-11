@@ -2106,6 +2106,17 @@ const ALL_NOTICES_REC = {
         { source: "Legendary Swordcrossed Topaz", sourceKind: "augment", bonus_type: "Enhancement", value: 15, slot: "Necklace" },
         { source: "Solar Gem of Doublestrike", sourceKind: "augment", bonus_type: "Artifact", value: 9, slot: "Armor" },
       ],
+      // #747 — the MIRROR shape, and it has to be a different stat from the one
+      // above: that notice needs a cap, this one needs the absence of a cap, so a
+      // single stat can never populate both. Four picks summing to exactly the
+      // displayed 130, because the sentence quotes the total and the tail and the
+      // arithmetic must hold on screen — the line is withheld when it does not.
+      "Magical Sheltering": [
+        { source: "Legendary Hooves of Orcus", sourceKind: "worn", bonus_type: "Enhancement", value: 41, slot: "Boots" },
+        { source: "Legendary Bracelets of Subtle Life", sourceKind: "worn", bonus_type: "Profane", value: 45, slot: "Bracers" },
+        { source: "Epic Shield of Legends", sourceKind: "worn", bonus_type: "Insight", value: 31, slot: "Off Hand" },
+        { source: "Quality Sheltering Augment", sourceKind: "augment", bonus_type: "Quality", value: 13, slot: "Ring" },
+      ],
     },
     creditReport: [{ stat: "Dodge", bonus_type: "Profane", value: 5 }],
     saturationReport: [{ stat: "Dodge", cap: 20, bonusTypes: ["Enhancement"] }],

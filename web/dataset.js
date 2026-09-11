@@ -583,6 +583,11 @@ function normalizeDataset(dataset) {
   // that gear/augments/crafting share.
   dataset._affixRegistry = meta.affix_registry || [];
   dataset._affixAliases = meta.affix_aliases || {};
+  // #746 — carrier counts for the curated affix families, counted from the shipped
+  // catalog at the load seam for the same reason `material_class` is derived here:
+  // one pass, one field, and the picker hint reads a number rather than carrying a
+  // hardcoded one that would go stale without anything noticing.
+  dataset._familyCarrierCounts = familyCarrierCounts(dataset.items);
   // #162 — derive each item's metal/non-metal class from its wiki-sourced material.
   // Logic-not-data at the load seam, the same shape as ARMOR_TYPE_MAP above: the
   // curated map lives in metadata, the per-item class is derived from it here so the
@@ -865,6 +870,94 @@ function companionHintFor(stat, priorities) {
     if (!entry.members.includes(stat)) continue;
     if (ranked.has(entry.companion)) return null;
     return `Also consider "${entry.companion}" — ${entry.reason}.`;
+  }
+  return null;
+}
+
+/** #746 — families of similarly-named effects a player may mistake for one name.
+ *
+ *  DIFFERENT FROM `COMPANION_STATS` ABOVE, and the difference is the whole design.
+ *  A companion is a second stat that also raises the number you want, so the hint
+ *  says "rank this too". A family is several names that a player may be searching
+ *  for interchangeably — and this hint says only "these exist, here is how common
+ *  each is". It never suggests ranking more than one, because that would be a
+ *  claim about the game that nobody has checked.
+ *
+ *  WHAT THIS DELIBERATELY DOES NOT SAY: that the members are interchangeable.
+ *  The report behind this ("there are three different affixes that cover it and I
+ *  only need one of them") is a credible claim about the GAME; the catalog knows
+ *  only that these are separate effects with separate carriers. Ruling them
+ *  equivalent needs the wiki, same-origin per docs/wiki-evidence/harvest-method.md,
+ *  and until then the honest thing to surface is the population, not a verdict.
+ *
+ *  So this is NOT `affix_aliases.json`, and must not grow into it. An alias says
+ *  two names ARE one effect and the build folds them; this says four names LOOK
+ *  alike and leaves the choice with the player.
+ *
+ *  The worked example that motivated it: `Wraithborn Emerald` (ML 8) carries
+ *  `Ethereal`, and its upgrade `Legendary Wraithborn Emerald` (ML 30) carries
+ *  `Ghostly`. A player who ranks `Ethereal` is pinned to the ML 8 augment — the
+ *  better item stopped carrying the name they ranked. Nothing on screen said so.
+ */
+const AFFIX_FAMILIES = [
+  {
+    family: "ghost touch",
+    // Order is the CURATED reading order, not a ranking: the hint re-sorts by
+    // carrier count so the player sees which name the catalog actually favours.
+    members: ["Ghost Touch", "Ghostly", "Ethereal", "Ghostbane"],
+  },
+];
+
+/** Carrier counts for every curated family member, from the built dataset.
+ *
+ *  Counted here rather than written into the table above, because a hardcoded
+ *  count is a claim about a population that goes stale silently — the exact
+ *  failure `AGENTS.md` records under "a count is a claim about a population".
+ *  One pass over the catalog at the load seam, counting DISTINCT ITEMS (an item
+ *  carrying a name twice is one carrier, not two).
+ *
+ *  Returns `{name: count}` covering only the curated names, so the map stays
+ *  small enough to ride on the dataset. */
+function familyCarrierCounts(items) {
+  const wanted = new Set();
+  for (const f of AFFIX_FAMILIES) for (const m of f.members) wanted.add(m);
+  const counts = {};
+  for (const name of wanted) counts[name] = 0;
+  for (const it of items || []) {
+    const seen = new Set();
+    for (const a of (it && it.affixes) || []) {
+      const n = a && a.name;
+      if (wanted.has(n) && !seen.has(n)) { seen.add(n); counts[n] += 1; }
+    }
+  }
+  return counts;
+}
+
+/** The advisory sentence for `stat`'s family, or null when there is nothing to say.
+ *
+ *  Returns null when ANOTHER member is already ranked: the player has demonstrably
+ *  found the family, and the hint exists to close a dead end rather than nag —
+ *  the same rule `companionHintFor` above follows for its companion.
+ *
+ *  Pure over (stat, priorities, counts) so the picker and its tests read one
+ *  implementation. A member with no count (a name the catalog no longer carries)
+ *  renders without a number rather than "(0 items)", which would read as a claim
+ *  that the effect was removed from the game. */
+function familyHintFor(stat, priorities, counts) {
+  const ranked = new Set(Array.isArray(priorities) ? priorities : []);
+  counts = counts || {};
+  for (const entry of AFFIX_FAMILIES) {
+    if (!entry.members.includes(stat)) continue;
+    if (entry.members.some((m) => m !== stat && ranked.has(m))) return null;
+    const named = entry.members.slice()
+      .sort((a, b) => (counts[b] || 0) - (counts[a] || 0) || a.localeCompare(b))
+      .map((m) => (counts[m] ? `${m} (${counts[m]} items)` : m))
+      .join(", ");
+    return `Heads up: "${stat}" is one of ${entry.members.length} similarly-named `
+      + `effects in the catalog — ${named}. They are separate effects here, not `
+      + `spellings of one, so an item carrying a sibling does not carry this. `
+      + `Whether any of them substitutes for another in game is not something this `
+      + `tool has checked — rank the name your intended gear actually carries.`;
   }
   return null;
 }
@@ -1382,6 +1475,13 @@ function buildPickerVocabulary(dataset) {
            // beside the set so every caller (solve, wizard, browse) reads ONE
            // ordering rather than re-deriving it and drifting.
            utilityOrder: defaultUtilityOrder(utilityCounting),
+           // #746 — carrier counts for the curated affix families, carried on the
+           // vocabulary for the same reason `utilityOrder` is: every picker caller
+           // already holds a vocab, so riding here means no call site has to learn
+           // a new argument and none can be missed. Prefer the seam-stamped map;
+           // fall back to counting, so a vocab built from a raw dataset (the parity
+           // harness does exactly that) still has numbers.
+           familyCounts: ds._familyCarrierCounts || familyCarrierCounts(ds.items),
            expandedAway, provenanceLabels: labelMap, retiredLabels };
 }
 
@@ -1665,10 +1765,11 @@ function migrateCredits(credits, vocab) {
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES, companionHintFor, COMPANION_STATS, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
+  window.DatasetNormalizer = { COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES, companionHintFor, COMPANION_STATS, familyHintFor, AFFIX_FAMILIES, familyCarrierCounts, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { UTILITY_CONTAINER_DEFAULT_ORDER, defaultUtilityOrder,
     COMPANION_STATS, companionHintFor,
+    AFFIX_FAMILIES, familyHintFor, familyCarrierCounts,
     COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
 }

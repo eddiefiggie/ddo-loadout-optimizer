@@ -1404,6 +1404,97 @@
     return out;
   }
 
+  /** #747 — the MIRROR of `capSurplusLines` above: a stat with no cap, whose total
+   *  the solver assembled out of many picks.
+   *
+   *  Two experienced players hit this in one thread and neither found the control
+   *  that answers it. One wrote: "I think the loss of 3 PRR/MRR is inconsequential
+   *  so I am wondering the best way to approach that." The cap is exactly that
+   *  lever — it clamps the credited count so surplus slots fall through to the next
+   *  ranked target — but its only visible label was the placeholder `max`, so one
+   *  player reached for the bonus-type skip grid instead and the other advised
+   *  declaring a credit of 41, which inflates the reported total by 41 the
+   *  character does not have. A working wrong tool ends the search.
+   *
+   *  #748 labelled the control. This names it at the moment the problem is on
+   *  screen, which is the half that issue left open.
+   *
+   *  PURELY DESCRIPTIVE, AND THAT IS THE CORRECTNESS STORY. It quotes the total,
+   *  the pick count, the largest contribution and the sum of the rest — all facts
+   *  about the build as solved. It never says a pick is droppable, never says what
+   *  removing one would cost, and never proposes a cap VALUE.
+   *
+   *  That restraint is not fastidiousness: `docs/solutions/design-patterns/
+   *  redundancy-under-a-shared-cap-must-be-judged-set-consistently.md` records this
+   *  exact judgment going wrong twice in one day at two aggregation levels, because
+   *  contributors that are each individually slack against the intact total can be
+   *  jointly necessary. A sentence that said "this pick only buys you 3" would be
+   *  that bug in player-facing prose. Quoting a sum over a NAMED SET is correct by
+   *  construction for every combination, which is what a per-pick claim cannot be —
+   *  the same reasoning `capSurplusLines` states above.
+   *
+   *  The additivity assumption is GUARDED, not trusted. The sentence only makes
+   *  sense if the credited contributions sum to the displayed total; bonus-type
+   *  losers and cap-clamped placements are already stripped upstream, so they
+   *  should. When they do not — a shape this has not seen — the line is withheld
+   *  rather than quoting arithmetic the player can see is wrong.
+   *
+   *  Silent on presence effects (nothing to cap), on stats the player has already
+   *  capped (that is `capSurplusLines`' subject, and saying both would be noise),
+   *  and below three contributing picks, where there is no slot cost worth naming. */
+  const CAP_OPPORTUNITY_MIN_PICKS = 3;
+  const CAP_OPPORTUNITY_MAX_LINES = 3;
+
+  function capOpportunityLines(rec) {
+    const snap = (rec && rec.snapshot) || rec || {};
+    const q = (rec && rec.query) || snap.query || {};
+    const targets = Array.isArray(q.targets) ? q.targets : [];
+    const capped = snap.capped || {};
+    const effective = snap.effective || {};
+    // Same cheap exits, and the same fail-open contract, as capSurplusLines: a
+    // partial or hand-edited record must not take down the projection every
+    // surface reads from.
+    const uncapped = targets.filter((t) => capped[t] == null);
+    if (!uncapped.length || !Array.isArray(snap.chosen)) return [];
+    let attr;
+    try { attr = attributionByTarget(snap); } catch (e) { return []; }
+
+    const rows = [];
+    for (const stat of uncapped) {
+      const parts = (attr[stat] || []).filter((p) => !isPresence(p) && (p.value > 0));
+      if (parts.length < CAP_OPPORTUNITY_MIN_PICKS) continue;
+      const shown = effective[stat];
+      if (shown == null || !(shown > 0)) continue;
+      const sum = parts.reduce((n, p) => n + (p.value || 0), 0);
+      // The guard. Credited contributions must account for the displayed total, or
+      // the breakdown below it would not add up on screen.
+      if (sum !== shown) continue;
+      const sorted = parts.slice()
+        .sort((a, b) => (b.value - a.value) || String(a.source).localeCompare(String(b.source)));
+      const top = sorted[0];
+      const tail = sum - top.value;
+      if (!(tail > 0)) continue;            // one pick carries it all; a cap frees nothing
+      rows.push({ stat, shown, picks: parts.length, top, tail });
+    }
+    // Worst first — the stat spending the most picks is the one worth reading.
+    rows.sort((a, b) => (b.picks - a.picks) || (b.tail - a.tail) || a.stat.localeCompare(b.stat));
+
+    const out = [];
+    for (const r of rows.slice(0, CAP_OPPORTUNITY_MAX_LINES)) {
+      out.push(`${r.stat} reached ${r.shown} across ${r.picks} picks — ${r.top.value} from `
+        + `${r.top.source}, and ${r.tail} from the other ${r.picks - 1} between them. `
+        + `If a lower number is enough for your build, set a Max cap on ${r.stat} in `
+        + `its Advanced panel: the solve stops crediting past the cap and those slots `
+        + `fall through to your next priority. Nothing here says any one pick is `
+        + `droppable — several may be carrying your other priorities too.`);
+    }
+    if (rows.length > CAP_OPPORTUNITY_MAX_LINES) {
+      const rest = rows.slice(CAP_OPPORTUNITY_MAX_LINES).map((r) => r.stat);
+      out.push(`The same is true of ${rest.join(", ")}.`);
+    }
+    return out;
+  }
+
   /** #683 — one mechanic, two wiki spellings, stacking unsettled.
    *
    *  Fires when the player has ranked at least one spelling of a disclosed family.
@@ -2533,6 +2624,11 @@
         // a recipient reading a shared build cannot otherwise tell that some of the
         // gear it prescribes is buying nothing.
         capSurplusNotice: capSurplusLines(rec),
+        // #747 — the mirror: a ranked stat with NO cap whose total the solve
+        // assembled out of many picks. Same channel and same reason as the line
+        // above — a recipient reading a shared build cannot otherwise tell how
+        // many slots one stat consumed, nor that a cap would free them.
+        capOpportunityNotice: capOpportunityLines(rec),
         // #110 (U7/U9) — the blocklist disclosure: empty array when no block
         // touched the solve. A shared build asserting optimality with silent
         // exclusions is the solve-visible-but-share-invisible failure.
@@ -3202,7 +3298,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, mrrCapLine, conditionalNoticeLines, splitMechanicLine, capSurplusLines, packFilterNoticeLines, setFilterNoticeLines,
+    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, mrrCapLine, conditionalNoticeLines, splitMechanicLine, capSurplusLines, capOpportunityLines, CAP_OPPORTUNITY_MIN_PICKS, packFilterNoticeLines, setFilterNoticeLines,
     essenceNoticeLines, greenSteelNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)
