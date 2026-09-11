@@ -65,9 +65,21 @@ def test_prose_only_tiered_item_is_flagged_not_fabricated():
 
 def test_variants_carry_default_restriction_and_armor_fields():
     armor = expand_item(_free_text(slot="Armor", enhancements=["Physical Sheltering +10"]))
-    assert armor[0]["restrictions"] == "unknown"
+    # R18 (#740) — the `restrictions: "unknown"` literal this used to pin is GONE.
+    # It had no producer and no consumer for long enough that the wizard advertised
+    # a race filter the project did not have. A record the race harvest does not
+    # cover now carries no race field at all, and every gate fails open on absence.
+    assert "restrictions" not in armor[0]
+    assert "race_req" not in armor[0]
     # No native `type` -> armor_type stays "unknown" (fail-open)
     assert armor[0]["armor_type"] == "unknown"
+
+
+def test_variant_carries_a_stamped_race_requirement():
+    """R18 (#740) — a record the harvest gated expands into variants that carry it."""
+    item = _free_text(slot="Bracers", enhancements=["Physical Sheltering +10"])
+    item["race_req"] = "Aasimar Scourge"
+    assert expand_item(item)[0]["race_req"] == "Aasimar Scourge"
 
 
 def test_native_armor_stamps_lowercase_armor_type():

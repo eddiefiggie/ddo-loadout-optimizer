@@ -15,9 +15,12 @@ const SLOT_CARDINALITY = { Ring: 2 }; // one of every other worn slot
  *  wiki page. This is an allowlist and not a set-membership test on purpose.
  *
  *  Duplicate-wearability is DDO's per-item Unique Equipped property, and the
- *  dataset carries nothing about it: `restrictions` is the literal string
- *  "unknown" on 426 of 427 rings, no ring carries a `unique_equipped` field, and
- *  the only such flag in the tree is on augments. The wiki line that motivated
+ *  dataset carries nothing about it: no ring carries a `unique_equipped` field, and
+ *  the only such flag in the tree is on augments. (This paragraph used to cite
+ *  `restrictions` being the literal "unknown" on 426 of 427 rings. That field is
+ *  gone — R18/#740 replaced it with the wiki-sourced `race_req`, which answers a
+ *  different question and says nothing about duplicate-wearability.) The wiki
+ *  line that motivated
  *  this feature — "2 rings, identical or not, can be used for the set bonus" —
  *  says how set bonuses COUNT when two rings are worn; it presupposes wearability
  *  rather than establishing it, and it is one item's page. Gating on set
@@ -484,6 +487,33 @@ const FORGED_RACES = new Set(["warforged", "bladeforged"]);
 function isForgedRace(race) {
   return !!race && FORGED_RACES.has(String(race).toLowerCase());
 }
+/** R18 (#740) — does `playerRace` satisfy an item's stated `race_req`?
+ *
+ *  STRICT EXACT MATCH is the ruling: the wiki states one race string per item and
+ *  never says whether a base race may equip its Iconic's gear, so an item reading
+ *  "Aasimar Scourge" admits Aasimar Scourge and nobody else. Widening that would be
+ *  inferring a game rule, which this project does not do.
+ *
+ *  The ONE equivalence is Warforged/Bladeforged, and it is not a new claim — it is
+ *  `FORGED_RACES` above, which the docent rule in variantConflict has used since
+ *  R6/AE1. Reused rather than restated on purpose: a strict string compare over the
+ *  203 Warforged-gated records would refuse them (docents included) to a Bladeforged
+ *  character, regressing a shipped rule in the largest bucket in the data. Spelling
+ *  a second Forged predicate here instead would let the two drift.
+ *
+ *  Note the asymmetry, which is deliberate: Bladeforged satisfies a Warforged
+ *  requirement because both are Forged and wear the same body-slot gear, but a
+ *  Warforged does NOT satisfy a "Bladeforged" requirement — that is the ordinary
+ *  Iconic case the strict ruling refuses, and FORGED_RACES is consulted only when
+ *  the ITEM asks for Warforged. */
+function raceMeets(playerRace, required) {
+  const p = String(playerRace || "").toLowerCase();
+  const r = String(required || "").toLowerCase();
+  if (!r) return true;                       // no stated gate -> fail open
+  if (p === r) return true;
+  if (r === "warforged" && FORGED_RACES.has(p)) return true;
+  return false;
+}
 /** Docent detection: the native schema's `type` is authoritative ("Docents"), with
  *  the name regex kept as a fallback for records that predate the type field. (A
  *  name-only check missed docents like "Legendary Scale-Stone of Avarice" that carry
@@ -760,6 +790,20 @@ function variantConflict(v, query, gates) {
     if (g.forged && !doc) return "Forged races equip a docent, not body armor";
     if (!g.forged && doc) return "docents are for Forged races";
   }
+
+  // R18 (#740) — Race → race-locked gear. The rule directly above matches on
+  // `slot === "Armor"` × docent-ness and fires on NO other slot, which is why a
+  // gnome was offered Aasimar Scourge bracers: there was no gate to leak past.
+  // This covers the other 162 gated variants across 12 further slots, including
+  // the non-body Forged gear (Cloak, Trinket, Rings, Weapon) the docent rule
+  // cannot see by construction.
+  //
+  // Fail-open on an absent `race_req`, matching the alignment gate below: the
+  // field is emitted only where the wiki STATES a lock, so absent means no stated
+  // requirement — true of ~7,800 records the harvest never covered and of the 165
+  // it covered that state no gate. Never treat unknown as restricted.
+  if (query.race && v.race_req && !raceMeets(query.race, v.race_req))
+    return `requires the ${v.race_req} race`;
 
   // R7 — Armor-type proficiency: keep only body armor whose concrete armor_type
   // is in the character's proficiency set. Gated on the dedicated wizard field
@@ -2110,7 +2154,7 @@ if (typeof module !== "undefined" && module.exports) {
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     dinoWeaponVariant, dinoSlotKeys,
-    isForgedRace, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
+    isForgedRace, raceMeets, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
     UTILITY_SENTINEL,
     CRAFTING_RUNGS, craftingRung, craftingRungRank, normalizeRung, isSolarLunarColor,
     rungExcludesNicheCrafting, rungExcludesSolarLunar, rungExcludesAllAugments,

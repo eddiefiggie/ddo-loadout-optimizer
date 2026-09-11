@@ -145,7 +145,17 @@ def _make_variant(item, ml, tier_label, parsed):
         "scaling": parsed["scaling"],
         "roll_groups": parsed["rolls"],
         "flagged": parsed["flagged"],
-        "restrictions": "unknown",             # sourced later (R18); fail-open
+        # R18 (#740) — the wiki-sourced race lock, stamped by src/race_requirement.py
+        # onto the planner record this variant expands from. Replaces the
+        # `"restrictions": "unknown"` literal that sat here on all 9,194 records with
+        # no producer and no consumer for long enough that the wizard advertised a
+        # filter the project did not have.
+        #
+        # Emitted ONLY when the wiki states a gate, for the reason the quarantine
+        # marker below spells out: this is true of ~380 records, and stamping a null
+        # on the other ~7,800 costs bandwidth in an artifact every visitor downloads.
+        # Absent means no stated gate, and `variantConflict` fails open on it.
+        **({"race_req": item["race_req"]} if item.get("race_req") else {}),
         "armor_type": _armor_type_for(slot, item.get("type")),  # U2 SSOT: from native `type`
         # #162 — wiki-sourced item material (shields + body armor), the field
         # gear-planner has no equivalent for. Stamped at build so the artifact is

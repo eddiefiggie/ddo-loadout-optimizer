@@ -41,6 +41,7 @@ from src import band_frontier as band_mod
 from src import set_catalog as set_catalog_mod
 from src import harvest as harvest_mod
 from src import material as material_mod
+from src import race_requirement as race_req_mod
 from src import speed_split as speed_split_mod
 from src import parrying_split as parrying_split_mod
 from src import riposte_split as riposte_split_mod
@@ -369,6 +370,11 @@ ER_SHARD_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "elemental_resistance.json")
 MATERIAL_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "item_material.json")
 MATERIAL_CLASS_PATH = os.path.join(HERE, "data", "seed", "compendium", "material_classification.json")
+# R18 (#740) — the race gate's two evidence layers: the wiki's verbatim string
+# (#749's harvest) and the curated reading of each value. Separate on purpose, so a
+# refreshed harvest carrying a new value fails the build instead of falling through.
+RACE_SHARD_PATH = os.path.join(HERE, "data", "seed", "compendium", "race_requirement.json")
+RACE_VOCAB_PATH = os.path.join(HERE, "data", "seed", "compendium", "race_vocabulary.json")
 # The slots the material gate covers (#162). Docents are the Forged body slot and
 # the oath is moot for Forged, so they stay out.
 SHIELD_TYPES = {"Bucklers", "Small shields", "Large shields", "Tower shields"}
@@ -1018,6 +1024,20 @@ def build() -> dict:
     _material_checked = material_mod.assert_coverage(
         planner_records, _material_shard,
         SHIELD_TYPES, BODY_ARMOR_TYPES)
+
+    # R18 (#740) — stamp the wiki-sourced race lock. Before this, `restrictions` was
+    # the literal "unknown" on every record and no consumer read it, so 173 items
+    # were recommendable to races that cannot equip them.
+    #
+    # The vocabulary guard runs BEFORE the stamp, not after: an unclassified
+    # race_text would stamp nothing and fail open, which is indistinguishable from
+    # an item that genuinely has no gate. Failing first is what makes the gap
+    # visible instead of silent.
+    _race_shard = harvest_mod.load_shard(RACE_SHARD_PATH, "race_req")
+    _race_vocab = vocabulary_mod._load(RACE_VOCAB_PATH)
+    _race_vocab_checked = race_req_mod.assert_vocabulary(_race_shard, _race_vocab)
+    _race_stamp = race_req_mod.apply(planner_records, _race_shard, _race_vocab)
+    _race_coverage = race_req_mod.coverage(planner_records)
 
     enriched_items = planner_records
 
@@ -2063,6 +2083,13 @@ def build() -> dict:
                 "tooltip_guard_checked": _er_guard["checked"],
                 "tooltip_guard_compared": _er_guard["compared"]},
             "material_coverage": {**_material_stamp, **_material_coverage},
+            # R18 (#740). `vocabulary_checked` is the guard's own receipt: the number
+            # of harvested entries whose race_text was classified. A build where that
+            # reads 0 has an inert gate, which is why assert_vocabulary refuses it.
+            "race_requirement_coverage": {
+                **_race_stamp, **_race_coverage,
+                "vocabulary_checked": _race_vocab_checked,
+            },
             # The curated metal/non-metal map the druidic-oath gate reads. A
             # material absent from this map is UNKNOWN, and the gate fails open.
             "material_classification": material_mod.classification(_material_class),
