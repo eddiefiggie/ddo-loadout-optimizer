@@ -1149,6 +1149,9 @@ function buildQuery(state, vocab, items) {
     // #539 — the set pins, copied so the solve reads a snapshot rather than live
     // state, exactly as the blocklist above does.
     pinnedSets: Array.isArray(state.pinnedSets) ? state.pinnedSets.slice() : [],
+    // #742 — the augment pins. A plain string array like `pinnedSets`; the model
+    // resolves it once and threads it to every gate that would otherwise drop it.
+    pinnedAugments: Array.isArray(state.pinnedAugments) ? state.pinnedAugments.slice() : [],
     // Sets whose member items must not be candidates. Absent/empty = exclude nothing.
     excludedSets: Array.isArray(state.excludedSets) ? state.excludedSets.slice() : [],
     // U6 — set-augment ownership gate. A Set of owned set-augment `set` names;
@@ -1445,6 +1448,43 @@ function pinnableSets(dataset) {
 
 /** Add set names to the pin list, ignoring duplicates. Returns the new list plus
  *  what was actually added, so the caller can report rather than re-derive. */
+/** #742 — the augment pin.
+ *
+ *  A plain string array of variant ids, mirroring `pinnedSets` and `blocklist`,
+ *  because an augment pin is NOT slot-keyed. Augments are placed by aggregate
+ *  per-colour capacity, so the constraint a pin can express is "this augment is
+ *  placed", never "this augment in that item". `AUGMENT_PIN_NOTE` is the sentence
+ *  that says so, and it is not decoration — see below. */
+const AUGMENT_PIN_NOTE = "Placed wherever it fits \u2014 an augment pin cannot choose which item wears it.";
+
+/** True for a record that can carry an augment pin. */
+function augmentPinnable(v) {
+  return !!(v && (v.category === "augment" || v.aug_color));
+}
+
+/** Add an augment pin. Idempotent, and ignores an empty id. */
+function addAugmentPin(pinnedAugments, id) {
+  const list = Array.isArray(pinnedAugments) ? pinnedAugments.slice() : [];
+  if (id == null || id === "" || list.includes(id)) return list;
+  list.push(id);
+  return list;
+}
+
+/** Remove an augment pin. */
+function removeAugmentPin(pinnedAugments, id) {
+  return (Array.isArray(pinnedAugments) ? pinnedAugments : []).filter((x) => x !== id);
+}
+
+/** #742 — pins naming an id the catalog no longer carries. Same contract as
+ *  `setPinStale`: reported so a saved build says what it lost, never silently
+ *  dropped. */
+function augmentPinStale(pinnedAugments, dataset) {
+  if (!Array.isArray(pinnedAugments) || !pinnedAugments.length) return [];
+  const known = new Set(((dataset && dataset.items) || [])
+    .filter(augmentPinnable).map((v) => pinIdOf(v)));
+  return pinnedAugments.filter((id) => !known.has(id));
+}
+
 function addSetPins(pinnedSets, names) {
   const have = new Set(pinnedSets || []);
   const added = [];
@@ -2755,7 +2795,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
+  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, AUGMENT_PIN_NOTE, augmentPinnable, addAugmentPin, removeAugmentPin, augmentPinStale, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -3336,7 +3376,12 @@ ${(() => {
     const _CARD = (typeof SLOT_CARDINALITY !== "undefined") ? SLOT_CARDINALITY : { Ring: 2 };
     const PIN_WORN_LABELS = new Set([..._WORN, "Main Hand", "Off Hand"]);
     const PIN_CAP = 30;
+    // #742 — augments are pinnable now, but NOT as a worn-slot pin. A worn pin
+    // means "this item in this slot"; an augment pin can only mean "this augment
+    // is placed", because placement is aggregate per-colour capacity. The two
+    // stay separate predicates so a colour can never end up in `slotConstraints`.
     const isPinnable = (v) => PIN_WORN_LABELS.has(pinWornSlotOf(v)) && v.category !== "augment";
+    const searchable = (v) => isPinnable(v) || augmentPinnable(v);
     const slotCardOf = (slot) => _CARD[slot] || 1;
     const itemByPinId = (id) => dataset.items.find((v) => pinIdOf(v) === id) || null;
 
@@ -3371,7 +3416,7 @@ ${(() => {
       const ql = q.toLowerCase();
       // eslint-disable-next-line no-undef
       const verified = filterVariants(dataset.items, { verification: "verified" });
-      const matches = verified.filter((v) => isPinnable(v)
+      const matches = verified.filter((v) => searchable(v)
         && `${v.source_item || ""} ${v.variant_id || ""}`.toLowerCase().includes(ql));
       const rank = (v) => { const n = (v.source_item || v.variant_id || "").toLowerCase(); return n === ql ? 0 : n.startsWith(ql) ? 1 : 2; };
       matches.sort((a, b) => rank(a) - rank(b) || (a.source_item || "").localeCompare(b.source_item || ""));
@@ -3389,6 +3434,21 @@ ${(() => {
         // but a one-handed weapon that is still exactly one action labelled with its
         // worn slot, so nothing changes; a one-handed weapon gets Main hand FIRST
         // (the default, preserving existing muscle memory) plus an Off hand action.
+        // #742 — an augment row gets ONE action and says what the pin does not
+        // promise. The note is on the row where the player commits, not tucked in
+        // a panel they may never open: shipping an augment-only pin while implying
+        // it chooses a host would be a new defect, and the player likeliest to hit
+        // it is the one who asked for this.
+        if (augmentPinnable(v)) {
+          const pinnedAug = new Set(state.pinnedAugments || []);
+          const on = pinnedAug.has(id) || blockedIds.has(id);
+          return `<button type="button" class="wz-pin-hit wz-pin-hit-aug"
+            data-pin-aug="${esc(id)}"${on ? " disabled" : ""}
+            aria-label="Pin the augment ${esc(name)}">
+            <span class="wz-pin-hit-name">${esc(name)}</span>
+            <span class="wz-pin-hit-slot">Augment${pinnedAug.has(id) ? " \u00b7 pinned" : blockedIds.has(id) ? " \u00b7 blocked" : ""}</span>
+            <span class="wz-pin-aug-note">${esc(AUGMENT_PIN_NOTE)}</span></button>`;
+        }
         const hands = pinHandsFor(v);
         const acts = hands.map((h, i) => `<button type="button" class="wz-pin-hit${i ? " wz-pin-hit-alt" : ""}"
             data-pin-id="${esc(id)}" data-pin-hand="${esc(h)}"${already ? " disabled" : ""}
@@ -3401,6 +3461,12 @@ ${(() => {
       box.querySelectorAll(".wz-pin-hit[data-pin-id]").forEach((b) => b.onclick = () => {
         const it = itemByPinId(b.dataset.pinId);
         if (it) { addPin(it, b.dataset.pinHand); renderPinList(); renderPinResults(); }
+      });
+      // #742 — the augment pin. A separate handler because it writes a different
+      // shape: a flat id list, never `slotConstraints`.
+      box.querySelectorAll(".wz-pin-hit[data-pin-aug]").forEach((b) => b.onclick = () => {
+        state.pinnedAugments = addAugmentPin(state.pinnedAugments, b.dataset.pinAug);
+        renderPinList(); renderPinResults();
       });
     }
 

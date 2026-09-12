@@ -2473,6 +2473,14 @@
       // blocked, so a blockless build's exports are unchanged.
       ["Blocked", (Array.isArray(i.blocklist) && i.blocklist.length)
         ? `${i.blocklist.length} — ${i.blocklist.join("; ")}` : ""],
+      // #742 — the augment pins travel with the shared build, beside the blocklist
+      // and for the same reason: a reader re-solving must reach the same answer.
+      // A pinned augment can be the ONLY reason a loadout looks the way it does —
+      // it is forced whether or not it scores — so a share that omitted it would
+      // be unreproducible. Omit-when-unset, so a pinless build's exports are
+      // byte-identical to before.
+      ["Pinned augments", (Array.isArray(i.pinnedAugments) && i.pinnedAugments.length)
+        ? `${i.pinnedAugments.length} — ${i.pinnedAugments.join("; ")}` : ""],
       ["Priorities", (i.priorities || []).join(" > ")],
     ].filter(([, v]) => v !== "" && v != null);
   }

@@ -178,3 +178,121 @@ test("#742 gate 3: augBest admits a pinned augment that advances nothing", () =>
 
   console.log(`\n${passed} passed`);
 })();
+
+// ---- U1: state, the control, and what the control promises ------------------
+
+const W = require("../web/wizard.js");
+
+test("#742 U1: augmentPinnable admits augments and nothing else", () => {
+  assert.ok(W.augmentPinnable({ category: "augment" }));
+  assert.ok(W.augmentPinnable({ aug_color: { color: "Red" } }));
+  assert.ok(!W.augmentPinnable({ category: "item", slot: "Weapon" }));
+  assert.ok(!W.augmentPinnable(null));
+});
+
+test("#742 U1: add is idempotent and remove is exact", () => {
+  assert.deepStrictEqual(W.addAugmentPin([], DECON), [DECON]);
+  assert.deepStrictEqual(W.addAugmentPin([DECON], DECON), [DECON], "no duplicate");
+  assert.deepStrictEqual(W.addAugmentPin([], ""), [], "an empty id is not a pin");
+  assert.deepStrictEqual(W.removeAugmentPin([DECON, "X"], DECON), ["X"]);
+});
+
+test("#742 U1: a pin naming an unknown augment is reported stale, not dropped", () => {
+  const ds = { items: [{ variant_id: DECON, category: "augment" }] };
+  assert.deepStrictEqual(W.augmentPinStale([DECON], ds), []);
+  assert.deepStrictEqual(W.augmentPinStale([DECON, "Ghost Augment"], ds), ["Ghost Augment"]);
+});
+
+test("#742 U1/R6: the control states that the pin cannot choose a host", () => {
+  // The honesty of this whole feature lives in one sentence, and it is the
+  // sentence most likely to be softened later by someone reading it as hedging.
+  // Issue #742 itself proposed that pinning the weapon AND the augment expresses
+  // "Deconstructor in my weapon" — it does not, because placement is aggregate
+  // per-colour capacity across every equipped item.
+  const note = W.AUGMENT_PIN_NOTE;
+  assert.ok(/cannot/i.test(note), "it must say what the pin cannot do");
+  assert.ok(!/\b(in your weapon|in this item|choose the slot|that item)\b/i.test(note),
+    `the note must not imply host selection: ${note}`);
+});
+
+test("#742 U1/R6: the augment row renders the note, not just a tooltip", () => {
+  const src = fs.readFileSync(path.join(ROOT, "web", "wizard.js"), "utf8");
+  const row = src.slice(src.indexOf("data-pin-aug="), src.indexOf("const hands = pinHandsFor(v)"));
+  assert.ok(/AUGMENT_PIN_NOTE/.test(row),
+    "the note must render in the row where the player commits");
+  assert.ok(!/title=/.test(row), "a tooltip is not a disclosure — it must be on screen");
+});
+
+test("#742 U1: an augment never enters slotConstraints", () => {
+  // A worn pin means 'this item in this slot'. An augment pin cannot mean that,
+  // so the two predicates stay separate and a colour can never be slot-keyed.
+  const src = fs.readFileSync(path.join(ROOT, "web", "wizard.js"), "utf8");
+  const pred = /const isPinnable = \(v\) =>([^;]*);/.exec(src);
+  assert.ok(pred, "isPinnable moved — re-find it");
+  assert.ok(/category !== "augment"/.test(pred[1]),
+    "the WORN pin predicate must still exclude augments");
+});
+
+test("#742 U1: buildQuery carries the pins through", () => {
+  const q = W.buildQuery({ ml: 30, priorities: [], pinnedAugments: [DECON],
+    race: "Human", armor: "Light", pool: "all", ownedNames: new Set(),
+    slotConstraints: {}, bounds: {}, credits: {}, exclusions: {} }, { known: new Set() }, []);
+  assert.deepStrictEqual(q.pinnedAugments, [DECON]);
+});
+
+test("#742 U1: an absent pin list reads as none, not as undefined", () => {
+  const q = W.buildQuery({ ml: 30, priorities: [], race: "Human", armor: "Light",
+    pool: "all", ownedNames: new Set(), slotConstraints: {}, bounds: {},
+    credits: {}, exclusions: {} }, { known: new Set() }, []);
+  assert.deepStrictEqual(q.pinnedAugments, [],
+    "a build saved before this shipped must reload solving what it solved before");
+});
+
+test("#742 U5: the pin is on the saved-field allowlist", () => {
+  const src = fs.readFileSync(path.join(ROOT, "web", "persist.js"), "utf8");
+  assert.ok(/"pinnedAugments"/.test(src),
+    "a reload that drops the pin silently widens a constraint the player set");
+});
+
+// ---- U3/U5: suppression reporting and the export surface --------------------
+
+test("#742 U3: an unsatisfiable pin is reported, never silently dropped", () => {
+  // The `continue` that skips an augment with no compatible open slot is the one
+  // path where the pin genuinely cannot be honoured. Before this it dropped the
+  // pin in total silence: a build with no augment and no reason.
+  const src = fs.readFileSync(path.join(ROOT, "web", "solver.js"), "utf8");
+  // Anchor forward from the branch's OPENING, not backward from a comment inside
+  // it — the first draft of this guard sliced backwards from the comment and so
+  // looked at everything except the branch it meant to check.
+  const open = src.indexOf("const fits = (aug.fits_slots || [])");
+  assert.ok(open > 0, "the unplaceable branch moved — re-find it");
+  const close = src.indexOf("-> unplaceable", open);
+  assert.ok(close > open, "the branch's closing marker moved");
+  const branch = src.slice(open, close);
+  assert.ok(/augPinReport\.push/.test(branch),
+    "a pinned augment that cannot be placed must be reported");
+  assert.ok(/pinnedAugs\.has/.test(branch),
+    "and only when it is actually pinned — an unplaceable unpinned augment is not news");
+});
+
+test("#742 U3: the report reaches the result", () => {
+  const src = fs.readFileSync(path.join(ROOT, "web", "solver.js"), "utf8");
+  assert.ok(/augPinReport: program\.augPinReport/.test(src),
+    "the report must travel on the result, or nothing can render it");
+});
+
+test("#742 U5: the pin appears in the shared inputs every export reads", () => {
+  // projection.js is the single content source for all five outputs, so landing
+  // it here is what makes 'every export' automatic rather than five edits.
+  const src = fs.readFileSync(path.join(ROOT, "web", "projection.js"), "utf8");
+  assert.ok(/"Pinned augments"/.test(src),
+    "a pinned augment can be the only reason a loadout looks as it does — a share that omits it is unreproducible");
+});
+
+test("#742 U5: a build with no augment pin exports exactly as before", () => {
+  // The omit-when-unset filter. Without it every pinless export grows a blank row.
+  const src = fs.readFileSync(path.join(ROOT, "web", "projection.js"), "utf8");
+  const row = src.slice(src.indexOf('["Pinned augments"'), src.indexOf('["Priorities"'));
+  assert.ok(/length\)/.test(row) && /: ""/.test(row),
+    "the row must collapse to an empty string when nothing is pinned");
+});

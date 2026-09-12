@@ -974,6 +974,12 @@ input.wz-ml { width: 120px; }
   font-family: inherit; font-size: var(--fs-sm); }
 .wz-pin-hit:hover:not([disabled]) { border-color: var(--accent); }
 .wz-pin-hit[disabled] { opacity: 0.55; cursor: default; }
+/* #742 — the augment pin row. The note is part of the CONTROL, not a tooltip:
+   an augment pin cannot choose which item wears the augment, and the player is
+   committing at exactly this moment. Muted and small so it reads as a caveat
+   rather than competing with the name, but never hidden. */
+.wz-pin-aug-note { display: block; color: var(--faint); font-size: var(--fs-xs); line-height: 1.3; }
+.wz-pin-hit-aug { align-items: flex-start; text-align: left; }
 .wz-pin-hit-slot { color: var(--faint); font-size: var(--fs-xs); white-space: nowrap; }
 /* plan 003 U5 (R6) — a one-handed weapon offers a hand target: the primary action
    stays Main hand (unchanged muscle memory) and the Off hand action sits beside it. */

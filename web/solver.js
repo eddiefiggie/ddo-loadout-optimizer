@@ -517,6 +517,7 @@ function buildProgram(model) {
   // the query, so the solver and the pool cannot disagree about what is pinned.
   const pinnedAugs = (model.pinnedAugments instanceof Set)
     ? model.pinnedAugments : new Set(model.pinnedAugments || []);
+  const augPinReport = []; // #742 — pins the pool cannot satisfy
   const augBest = new Map(); // aug variant -> Map("stat||type" -> best value)
   for (const aug of model.augments || []) {
     const best = new Map();
@@ -555,7 +556,24 @@ function buildProgram(model) {
   const augByUnique = new Map();  // Unique-Equipped id -> [place indicators]
   for (const [aug, best] of augBest) {
     const fits = (aug.fits_slots || []).filter((c) => presentColors.has(c));
-    if (!fits.length) continue; // no compatible open slot anywhere -> unplaceable
+    if (!fits.length) {
+      // #742 — a PINNED augment with no compatible open slot anywhere is the one
+      // case the pin genuinely cannot be honoured. Report it; never erase it.
+      // The pin stays in the player's state so it returns when the condition
+      // lifts — an augment unplaceable under one ML cap is placeable under
+      // another, exactly as a set pin is
+      // (suppress-dont-erase-user-constraints-on-transient-invalidity.md).
+      // Without this the `continue` below drops the pin in total silence, and the
+      // player gets a build with no augment and no reason.
+      if (pinnedAugs.has(aug.variant_id)) {
+        augPinReport.push({
+          variant_id: aug.variant_id,
+          color: (aug.aug_color || {}).color || null,
+          reason: "no equipped item has an open slot of a compatible colour",
+        });
+      }
+      continue; // no compatible open slot anywhere -> unplaceable
+    }
     const colorVars = [];       // one placement binary per compatible present color
     for (const sc of fits) {
       const p = "p" + pc++;
@@ -1580,7 +1598,7 @@ function buildProgram(model) {
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
     extraVars, extraConstraints, penaltyKeys, augMeta, placeMeta, setMeta,
     // #742 — the reporting step needs this too; see `augmentsPlaced` below.
-    pinnedAugs, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, lgsMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
+    pinnedAugs, augPinReport, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, lgsMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
     // #91 (U3) — the Utility tier's stage state: whether the sentinel is
     // ranked, the per-effect indicator binaries, and their name/ceiling meta.
     utilityEnabled, utilityVars, utilityMeta,
@@ -2389,7 +2407,9 @@ function readSolution(res, program, precomputedVisible) {
       setAugmentsPlaced.push({ ...meta, slot_color: setAugColorByY.get(y) || "Colorless" });
     }
   }
-  const out = { chosen, effective, augmentsPlaced, setsActive, dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, lgsPlaced, essPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced,
+  const out = { chosen, effective, augmentsPlaced, setsActive,
+    // #742 — pins the pool could not satisfy. Reported, never erased.
+    augPinReport: program.augPinReport || [], dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, lgsPlaced, essPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced,
     // #449 U1 (KTD9) — the achieved/ceiling census, built HERE rather than in
     // solveLexicographic so the tieBreak:false alternatives path (solveConstrained,
     // which spreads this object) carries its OWN numbers. renderBuild is generic
