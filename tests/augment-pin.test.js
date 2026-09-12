@@ -296,3 +296,58 @@ test("#742 U5: a build with no augment pin exports exactly as before", () => {
   assert.ok(/length\)/.test(row) && /: ""/.test(row),
     "the row must collapse to an empty string when nothing is pinned");
 });
+
+// ---- Browser-pass regressions: the pin was invisible once set ---------------
+//
+// #742 shipped with every unit test green and TWO defects that only a rendered
+// page showed. Both are the same root cause: the pin was written to a NEW list
+// that two existing readers did not know about.
+//
+//   1. the section summary counted only `slotConstraints`, so it read
+//      "nothing pinned" while the player was looking at a pinned augment;
+//   2. the pinned-items list rendered only `slotConstraints`, so it said "No
+//      pinned items yet" — and there was NO WAY TO REMOVE an augment pin.
+//
+// The lesson is narrow and repeatable: when a feature adds a parallel state
+// list, every reader of the original list is a candidate defect, and a unit test
+// that asserts the WRITE will not find them. These guards assert the READS.
+
+test("#742 regression: the pool summary counts augment pins", () => {
+  const src = fs.readFileSync(path.join(ROOT, "web", "wizard.js"), "utf8");
+  const open = src.indexOf('case "pin": {');
+  assert.ok(open > 0, "the pin summary moved — re-find it");
+  const body = src.slice(open, src.indexOf('case "block"', open));
+  assert.ok(/pinnedAugments/.test(body),
+    'the summary read "nothing pinned" while an augment was pinned');
+});
+
+test("#742 regression: the pinned list renders augment pins with a remove control", () => {
+  const src = fs.readFileSync(path.join(ROOT, "web", "wizard.js"), "utf8");
+  const open = src.indexOf("function renderPinList()");
+  assert.ok(open > 0, "renderPinList moved — re-find it");
+  const body = src.slice(open, open + 4000);
+  assert.ok(/data-unpin-aug/.test(body),
+    "an augment pin with no remove control cannot be undone by the player");
+  assert.ok(/removeAugmentPin/.test(body), "the remove control must actually unpin");
+});
+
+test("#742 regression: the augment rows render even when item pins exist", () => {
+  // The first fix only handled the augments-ONLY branch, so a build with both
+  // kinds of pin would have shown the item pins and silently dropped the
+  // augment rows — the same invisibility, one branch over.
+  const src = fs.readFileSync(path.join(ROOT, "web", "wizard.js"), "utf8");
+  const open = src.indexOf("function renderPinList()");
+  const body = src.slice(open, open + 6000);
+  assert.ok(/box\.innerHTML = augRows \+ /.test(body),
+    "the item-pin render must include the augment rows, not replace them");
+});
+
+test("#742 regression: the remove handler is re-bound after every render", () => {
+  // innerHTML replaces the nodes, so a handler bound once is dead after the next
+  // write. Both write sites must re-bind.
+  const src = fs.readFileSync(path.join(ROOT, "web", "wizard.js"), "utf8");
+  const open = src.indexOf("function renderPinList()");
+  const body = src.slice(open, open + 6000);
+  assert.ok((body.match(/bindAugUnpin\(\)/g) || []).length >= 2,
+    "each innerHTML write needs its own re-bind, or the ✕ stops working");
+});
