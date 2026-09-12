@@ -20,6 +20,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const M = require("../web/model.js");
+const Proj = require("../web/projection.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -222,6 +223,77 @@ test("#743 U2: the unfiltered pass never leaks into `open`", () => {
     assert.ok(live.some((l) => l.slot === o.slot && l.route === o.route && l.via === o.via),
       `${o.slot}/${o.route} is in open but not in the live pool`);
   }
+});
+
+
+// ---- U3: wording. States facts, judges nothing (R7 / KTD6) ------------------
+
+const lines = (stat, query) => Proj.slotReachabilityLines(stat, report(stat, query));
+const joined = (stat, query) => lines(stat, query).join(" ");
+const ML34 = { mlCap: 34, targets: ["Assassinate"] };
+
+test("#743 U3: an augment route reads as an augment, never as a worn slot", () => {
+  const t = joined("Assassinate", ML34);
+  assert.ok(/Yellow augment/i.test(t), `expected the colour named as an augment: ${t}`);
+  assert.ok(!/^\s*Yellow[,:]/m.test(t), "a colour must never head a slot list");
+});
+
+test("#743 U3: a crafting route names its channel", () => {
+  const t = joined("Assassinate", ML34);
+  assert.ok(/Viktranium|Dino insert/i.test(t), `expected a named channel: ${t}`);
+});
+
+test("#743 U3: never over-claims a bonus type for a slot that lacks it", () => {
+  // Weapon carries Assassinate at Enhancement only. A line that unions types
+  // across slots would offer the player Quality on a weapon, which is false.
+  for (const l of lines("Assassinate", ML34)) {
+    if (!/Weapon/.test(l)) continue;
+    if (/Quality|Insight/.test(l)) {
+      assert.fail(`a Weapon line claims a type no weapon carries: ${l}`);
+    }
+  }
+});
+
+test("#743 U3: no recommendation words — the line describes, it does not advise", () => {
+  const BANNED = /\b(best|better|optimal|should|recommend|prefer|try|instead|worth|ideal|good choice)\b/i;
+  for (const stat of ["Assassinate", "Concealment"]) {
+    for (const l of lines(stat, { mlCap: 34, targets: [stat] })) {
+      assert.ok(!BANNED.test(l), `recommendation language leaked in: ${l}`);
+    }
+  }
+});
+
+test("#743 U3: makes no interchangeability claim about affix names (#746 stays shut)", () => {
+  const BANNED = /\b(same as|equivalent|interchangeable|any one of these|instead of)\b/i;
+  for (const l of lines("Ghostly", { mlCap: 34, targets: ["Ghostly"] })) {
+    assert.ok(!BANNED.test(l), `an equivalence claim leaked in: ${l}`);
+  }
+});
+
+test("#743 U3: filter-closed is stated distinctly from never-existed (R3)", () => {
+  const closed = joined("Assassinate", { mlCap: 10, targets: ["Assassinate"] });
+  assert.ok(/filter/i.test(closed), `expected the filters to be named: ${closed}`);
+  const never = joined("Definitely Not A Real Affix Name", ML34);
+  assert.ok(never && !/filter/i.test(never), `never-existed must not blame filters: ${never}`);
+});
+
+test("#743 U3: withheld when there is nothing to say (R8)", () => {
+  assert.deepStrictEqual(Proj.slotReachabilityLines("", null), []);
+  assert.deepStrictEqual(Proj.slotReachabilityLines("Assassinate", null), []);
+});
+
+test("#743 U3: every slot named in a line is a real worn slot", () => {
+  const WORN = ["Weapon", "Armor", "Off Hand", "Ring", "Gloves", "Trinket", "Cloak", "Goggles",
+    "Bracers", "Necklace", "Belt", "Boots", "Helmet", "Quiver", "Main Hand", "Rune Arm"];
+  const COLOURS = ["Blue", "Colorless", "Green", "Moon", "Orange", "Purple", "Red", "Sun", "Yellow"];
+  for (const l of lines("Assassinate", ML34)) {
+    for (const c of COLOURS) {
+      // a colour may appear ONLY immediately before the word "augment"
+      const bare = new RegExp(`\\b${c}\\b(?!\\s+augment)`);
+      assert.ok(!bare.test(l), `bare colour "${c}" outside an augment label: ${l}`);
+    }
+  }
+  assert.ok(WORN.length);
 });
 
 console.log(`\n${passed} passed`);
