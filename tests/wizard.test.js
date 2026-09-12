@@ -2139,7 +2139,15 @@ test("KTD1: opening a panel WRITES to the set", () => {
   // The other half of the seam: without the toggle binding nothing is ever
   // recorded, so every rebuild renders every panel closed.
   const wire = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList"));
-  assert.ok(/ontoggle\s*=\s*\(\)\s*=>\s*openPanelToggle\(d\.dataset\.adv,\s*d\.open\)/.test(wire),
+  // Pins the PROPERTY — the toggle calls openPanelToggle with this panel's own
+  // stat and open state — not the expression syntax around it. The previous form
+  // required the handler to be a one-line arrow whose entire body was that call,
+  // so #743 adding a second statement to the same handler turned it red while the
+  // seam it protects was untouched. That is
+  // docs/solutions/conventions/a-source-guard-must-pin-the-property-not-the-syntax-beside-it.md
+  // exactly: match the call, and let the handler grow around it.
+  assert.ok(/ontoggle\s*=/.test(wire), "each panel binds a toggle handler");
+  assert.ok(/openPanelToggle\(d\.dataset\.adv,\s*d\.open\)/.test(wire),
     "each panel's toggle records its own stat and open state");
 });
 

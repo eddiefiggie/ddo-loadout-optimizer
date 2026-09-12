@@ -1175,6 +1175,22 @@ input.wz-ml { width: 120px; }
   border-left: 2px solid var(--qualify); padding-left: var(--sp-2); }
 .wz-adv-ceiling.is-confirmed { border-left-color: var(--accent); }
 .wz-adv-ceiling.is-disclosed { border-left-color: var(--qualify); }
+/* #743 — per-effect slot reachability. Read-only, like `.wz-adv-ceiling` above
+   and styled as its sibling: nothing here is ever written into a bound, so it
+   must not look editable. Takes a full line inside the panel BODY rather than
+   competing on the row, which is also what keeps it clear of #744 step 2 — that
+   rework moves the panel as a unit and never has to know this exists.
+
+   `flex-basis: 100%` because `.wz-adv-body` is a wrapping flex container; an
+   auto-width block would size to its longest line and render the rest as a
+   narrow column, the same trap the `.wz-adv` comment above records. */
+.wz-adv-reach-slot { flex-basis: 100%; }
+.wz-adv-reach { margin: 0; line-height: 1.45; color: var(--muted);
+  border-left: 2px solid var(--border-2); padding-left: var(--sp-2); }
+.wz-adv-reach-lead { margin: 0 0 2px; color: var(--text); }
+/* Each route on its own line: the list is long for a widely-carried effect, and
+   wrapping them into one paragraph made the slot names impossible to scan. */
+.wz-adv-reach-row { margin: 0; }
 /* U2 — declared stat credits. Repeatable, unlike the fixed min/max pair, so the
    group takes a full-width line inside the panel rather than competing for space
    with the bound inputs. */

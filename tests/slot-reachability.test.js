@@ -21,6 +21,7 @@ const fs = require("fs");
 const path = require("path");
 const M = require("../web/model.js");
 const Proj = require("../web/projection.js");
+const W = require("../web/wizard.js");
 
 let passed = 0;
 function test(name, fn) {
@@ -294,6 +295,88 @@ test("#743 U3: every slot named in a line is a real worn slot", () => {
     }
   }
   assert.ok(WORN.length);
+});
+
+
+// ---- U4: the panel render ---------------------------------------------------
+//
+// NO BROWSER PASS WAS AVAILABLE when this shipped, so these assert the markup and
+// the source seams in node, and nothing here claims a visual check was done.
+
+const WSRC = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf8");
+const CSS = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf8");
+
+/** Slice between two markers, anchoring the close to the open (tests/wizard.test.js
+ *  keeps the same helper, and for the same reason: the unanchored form silently
+ *  returns "" when the closing marker also appears earlier in the file). */
+function between(src, open, close, label) {
+  const a = src.indexOf(open);
+  assert.ok(a >= 0, `${label}: opening marker not found — ${open}`);
+  const b = src.indexOf(close, a);
+  assert.ok(b >= a, `${label}: closing marker not found after the opening — ${close}`);
+  return src.slice(a, b);
+}
+
+test("#743 U4: the hint renders its lines, one element each", () => {
+  const h = W.reachHintHTML("Assassinate",
+    ["Native, Enhancement: Weapon.", "Closed by your current filters: Boots (Native)."]);
+  assert.ok(/wz-adv-reach/.test(h));
+  assert.strictEqual((h.match(/wz-adv-reach-row/g) || []).length, 2);
+});
+
+test("#743 U4: withheld entirely when there is nothing to say (R8)", () => {
+  assert.strictEqual(W.reachHintHTML("Assassinate", []), "");
+  assert.strictEqual(W.reachHintHTML("Assassinate", null), "");
+  assert.strictEqual(W.reachHintHTML("", ["anything"]), "");
+});
+
+test("#743 U4: the stat name and the lines are escaped", () => {
+  const h = W.reachHintHTML("Ass<i>x", ["<script>alert(1)</script>"]);
+  assert.ok(!/<i>/.test(h), "unescaped markup leaked from the stat name");
+  assert.ok(!/<script>/.test(h), "unescaped markup leaked from a line");
+  assert.ok(/&lt;script&gt;/.test(h));
+});
+
+test("#743 U4: the hint is read-only — no input, no control", () => {
+  const h = W.reachHintHTML("Assassinate", ["Native, Enhancement: Weapon."]);
+  assert.ok(!/<input|<button|<select|contenteditable/i.test(h),
+    "a disclosure must not look editable; nothing here is ever written to a bound");
+});
+
+test("#743 U4: the slot sits INSIDE .wz-adv-body (which keeps #744 step 2 clear)", () => {
+  const panel = between(WSRC, "function advancedHTML(", "function bonusTypesHTML(", "advancedHTML");
+  const body = panel.indexOf("wz-adv-body");
+  const slot = panel.indexOf("reachPlaceholderHTML(stat)");
+  const close = panel.indexOf("</div></details>");
+  assert.ok(body >= 0, "the panel body marker is present");
+  assert.ok(slot > body && close > slot,
+    "the placeholder must render between the .wz-adv-body opening and the panel close");
+});
+
+test("#743 U4: it renders EMPTY and is filled on open, never eagerly", () => {
+  // The performance contract, and it is load-bearing: resolving every row eagerly
+  // cost ~129ms for twelve priorities, and renderRankedList rebuilds on every drag.
+  const ph = between(WSRC, "function reachPlaceholderHTML(", "function fillReachability(", "placeholder");
+  assert.ok(/data-reach-slot=/.test(ph), "the placeholder carries its stat");
+  assert.ok(!/slotReachability/.test(ph), "the placeholder must not resolve reachability at render time");
+  assert.ok(/details\.wz-adv\[open\]/.test(WSRC), "the fill only touches OPEN panels");
+});
+
+test("#743 U4: a panel restored open is filled too, not left blank", () => {
+  const bind = between(WSRC, "d.ontoggle = () =>", "// D1 ", "toggle binding");
+  assert.ok(/if \(d\.open\) fillReachability/.test(bind), "opening a panel fills it");
+  assert.ok(/fillReachability\(ol\);/.test(bind), "a render also fills already-open panels");
+});
+
+test("#743 U4: the fill cannot take the priorities step down", () => {
+  const fill = between(WSRC, "function fillReachability(", "function advancedHTML(", "fillReachability");
+  assert.ok(/try \{/.test(fill) && /catch/.test(fill),
+    "a disclosure must fail silent-and-empty, never throw into the priorities step");
+});
+
+test("#743 U4: the CSS gives the slot a full line inside the wrapping flex body", () => {
+  assert.ok(/\.wz-adv-reach-slot\s*\{[^}]*flex-basis:\s*100%/.test(CSS),
+    "an auto-width block in .wz-adv-body renders as a narrow column");
 });
 
 console.log(`\n${passed} passed`);

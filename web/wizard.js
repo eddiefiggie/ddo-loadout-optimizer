@@ -566,6 +566,18 @@ var _statCeilingHintFor = (typeof statCeilingHintFor !== "undefined")
   ? statCeilingHintFor
   // eslint-disable-next-line global-require
   : require("./model.js").statCeilingHintFor;
+// #743 — reachability: the model resolves WHICH routes exist, projection words
+// them. Bridged browser-global-first then require(), the same two-runtime shape
+// as `_statCeilingHintFor` above and `_wzNoDropWording` below.
+var _slotReachabilityReport = (typeof slotReachabilityReport !== "undefined")
+  ? slotReachabilityReport
+  // eslint-disable-next-line global-require
+  : require("./model.js").slotReachabilityReport;
+var _slotReachabilityLines = (function () {
+  const P = (typeof Projection !== "undefined") ? Projection
+    : (typeof require !== "undefined" ? require("./projection.js") : null);
+  return (P && P.slotReachabilityLines) || (() => []);
+})();
 /** #346 (U3, KTD3) — which rung a saved character loads at.
  *
  *  Extracted and exported because this is the highest-consequence line in the
@@ -1344,6 +1356,35 @@ var _wzNoDropWording = (function () {
     : (typeof require !== "undefined" ? require("./projection.js") : null);
   return (P && P.NO_DROP_SOURCE_WORDING) || "no known live drop source";
 })();
+
+/** The same 5-character escape the DOM closure's `esc` falls back to, available
+ *  at module scope. `esc` is defined inside `window.App.ready` and so is out of
+ *  reach here; duplicating the escape is safer than exporting markup that has
+ *  not been escaped at all. Escapes the apostrophe too — an older local helper
+ *  missed it, and a stat name reaches this from free-typed player input. */
+function wzEsc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/** #743 — the slot-reachability disclosure, as markup. Pure, so the wording and
+ *  the escaping are testable without a DOM.
+ *
+ *  Empty string for no lines, matching `ceilingHintHTML`'s absent case: the
+ *  element is not rendered at all rather than rendered blank, so a row with
+ *  nothing to say costs no space (R8).
+ *
+ *  Read-only by construction — a <div> of <p>, no input, no control, nothing
+ *  that writes to `adv`. It must never look editable, for the same reason
+ *  `.wz-adv-ceiling` must not: nothing here is ever put into the Max box. */
+function reachHintHTML(stat, lines) {
+  const rows = Array.isArray(lines) ? lines.filter(Boolean) : [];
+  if (!stat || !rows.length) return "";
+  return `<div class="wz-adv-reach" data-reach="${wzEsc(stat)}">`
+    + `<p class="wz-adv-reach-lead">Where ${wzEsc(stat)} can come from, with your current filters:</p>`
+    + rows.map((l) => `<p class="wz-adv-reach-row">${wzEsc(l)}</p>`).join("")
+    + "</div>";
+}
 
 /** Per-row disclosure note for the pin/block search results — the moment of
  *  choosing an item is where this matters most. Shaped like the existing state
@@ -2714,7 +2755,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
+  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -4134,6 +4175,47 @@ ${(() => {
         + `${esc(hint.line)}</p>`;
     }
 
+    /** #743 — the reachability slot, rendered EMPTY and filled when the panel is
+     *  opened (`fillReachability`).
+     *
+     *  Lazy because the answer is not cheap and the panel is collapsed by
+     *  default. Resolving it for every row eagerly cost ~129ms for twelve
+     *  priorities, and `renderRankedList` rebuilds on every drag, bound edit and
+     *  reorder — so the row a player is dragging would stutter to compute
+     *  sentences nobody has opened. Opening one row pays ~10ms, once, at the
+     *  moment the player asked for it.
+     *
+     *  Deliberately not cached: a cache would have to be invalidated on every
+     *  input that feeds `buildQuery` — ML, packs, blocks, rung, race, armor — and
+     *  a stale reachability line is a wrong claim about the current solve, which
+     *  is worse than recomputing 10ms of work a player triggered by hand. */
+    function reachPlaceholderHTML(stat) {
+      return `<div class="wz-adv-reach-slot" data-reach-slot="${esc(stat)}"></div>`;
+    }
+
+    /** Fill every OPEN, still-empty reachability slot under `root`. Called after a
+     *  render (panels restored open by `panelOpenAttr` must not stay blank) and
+     *  on toggle-open. Fails silent-and-empty rather than throwing: this is a
+     *  disclosure, and it must never be able to take the priorities step down. */
+    function fillReachability(root) {
+      if (!root || typeof dataset === "undefined" || !dataset) return;
+      const slots = root.querySelectorAll("details.wz-adv[open] .wz-adv-reach-slot");
+      for (const el of slots) {
+        if (el.innerHTML) continue;                       // already resolved
+        const stat = el.dataset.reachSlot;
+        if (!stat) continue;
+        try {
+          const query = buildQuery(state, vocab, dataset.items);
+          const report = _slotReachabilityReport(stat, dataset.items, query, {
+            dinoInserts: dataset.dino_inserts, viktranium: dataset.viktranium,
+            seal: dataset.seal, legendaryGreenSteel: dataset.legendary_green_steel,
+            essenceCrafting: dataset.essence_crafting,
+          });
+          el.innerHTML = reachHintHTML(stat, _slotReachabilityLines(stat, report));
+        } catch (e) { /* disclosure only: leave the slot empty */ }
+      }
+    }
+
     function advancedHTML(stat, i, adv) {
       return `<details class="wz-adv" data-adv="${esc(stat)}"${panelOpenAttr(stat)}>
         <summary>${advSummaryHTML(adv)}</summary>
@@ -4145,6 +4227,7 @@ ${(() => {
             <label class="wz-bound-field"><span class="wz-bound-lbl">Max <em>cap</em></span>
               <input class="wz-bound" type="number" min="0" step="1" inputmode="numeric" data-max="${i}" value="${esc(adv.cap == null ? "" : adv.cap)}" placeholder="none" aria-label="${esc(stat)} maximum (cap)" draggable="false"></label></span>
           ${ceilingHintHTML(stat)}
+          ${reachPlaceholderHTML(stat)}
           ${adv.required ? `<p class="wz-adv-req-note">This effect is required: the solve must include it, giving up higher-ranked stats if that is what it takes. <button type="button" class="wz-clear-req" data-clearreq="${i}">Clear requirement</button></p>` : ""}
           <p class="wz-adv-note">${ADVANCED_PANEL_HELP.min}</p>
           <p class="wz-adv-note">${ADVANCED_PANEL_HELP.max}</p>
@@ -4214,8 +4297,17 @@ ${(() => {
       // U2/KTD1 — the open set is the only thing that carries panel state across
       // the `innerHTML` rebuild above, so bind the write point on every render.
       ol.querySelectorAll("details.wz-adv").forEach((d) => {
-        d.ontoggle = () => openPanelToggle(d.dataset.adv, d.open);
+        d.ontoggle = () => {
+          openPanelToggle(d.dataset.adv, d.open);
+          // #743 — resolve the reachability slot at the moment it becomes
+          // visible, never on render. See `reachPlaceholderHTML`.
+          if (d.open) fillReachability(ol);
+        };
       });
+      // #743 — panels restored OPEN by `panelOpenAttr` never fire `ontoggle`, so
+      // without this they would sit blank until the player closed and reopened
+      // them. Same rebuild seam as the binding above.
+      fillReachability(ol);
       // D1 — the rebuild destroys the focused element. Without restoring focus, a
       // player who uses a bulk control gets the panel they expect but a caret
       // nowhere: focus falls to <body> and they must re-find the row by mouse or

@@ -1050,23 +1050,27 @@ function slotReachabilityFor(stat, variants, pools) {
   // loadout — aggregate per-colour capacity is the solver's business and is not
   // consulted here. This claims the route EXISTS, never that it is free, and the
   // wording in projection.js must not imply otherwise.
-  const coloursSupplying = new Set();
+  // Colour -> the bonus types augments of that colour supply, resolved ONCE.
+  // This used to be recomputed inside the host loop, which made the augment join
+  // O(hosts x colours x augments) — 9,194 x ~3 x 1,147, or ~1.2s to fill twelve
+  // priority rows. The panel re-renders on every drag, so that was not a
+  // micro-optimisation; it was the difference between shipping this and not.
+  const colourTypes = new Map();
   for (const a of augments) {
-    if (!_typesSupplying(a, stat).length) continue;
+    const types = _typesSupplying(a, stat);
+    if (!types.length) continue;
     const c = (a.aug_color || {}).color || a.slot;
-    if (c) coloursSupplying.add(c);
+    if (!c) continue;
+    if (!colourTypes.has(c)) colourTypes.set(c, []);
+    const acc = colourTypes.get(c);
+    for (const t of types) if (!acc.includes(t)) acc.push(t);
   }
-  if (coloursSupplying.size) {
+  if (colourTypes.size) {
     for (const v of hosts) {
       const declared = ((v.augment_slots_norm || {}).colors) || [];
       for (const c of declared) {
-        if (!coloursSupplying.has(c)) continue;
-        const types = [];
-        for (const a of augments) {
-          if (((a.aug_color || {}).color || a.slot) !== c) continue;
-          for (const t of _typesSupplying(a, stat)) if (!types.includes(t)) types.push(t);
-        }
-        add(v.slot, "augment", c, types);
+        const types = colourTypes.get(c);
+        if (types) add(v.slot, "augment", c, types);
       }
     }
   }
