@@ -3196,8 +3196,12 @@ if (typeof window !== "undefined" && window.App) {
           // predates the stale-summary one and was hidden by it — the summary was
           // only written by `stepPool()`, so a wrong value and a never-updated
           // value looked identical. Every other caller iterates the slots.
+          // #742 — augment pins count here too. They are a separate list because
+          // they are not slot-keyed, and leaving them out made the summary read
+          // "nothing pinned" while the player was looking at a pinned augment.
           const c = Object.values(state.slotConstraints || {})
-            .reduce((n, con) => n + _pinnedVariantIds(con).length, 0);
+            .reduce((n, con) => n + _pinnedVariantIds(con).length, 0)
+            + n(state.pinnedAugments);
           return c ? `${c} pinned` : "nothing pinned";
         }
         case "block": {
@@ -3476,7 +3480,27 @@ ${(() => {
       const box = document.getElementById("wz-pin-list");
       if (!box) return;
       const pins = currentPins();
-      if (!pins.length) { box.innerHTML = `<p class="wz-pin-empty">No pinned items yet — search above to force a specific item into the build.</p>`; return; }
+      // #742 — augment pins render as their own rows. Without this the pin was
+      // recorded, the search row said "pinned", and the list still said "No
+      // pinned items yet" — so a player could pin an augment and then had NO WAY
+      // TO REMOVE IT. Found by looking at the page; every unit test passed.
+      const augPins = Array.isArray(state.pinnedAugments) ? state.pinnedAugments : [];
+      const augRows = augPins.map((id) => `<div class="wz-pin-row">
+          <span class="wz-pin-row-name">${esc(id)}</span>
+          <span class="wz-pin-row-slot">Augment — ${esc(AUGMENT_PIN_NOTE)}</span>
+          <button type="button" class="wz-pin-del" data-unpin-aug="${esc(id)}"
+            aria-label="Remove the augment pin on ${esc(id)}">✕</button>
+        </div>`).join("");
+      if (!pins.length && !augRows) { box.innerHTML = `<p class="wz-pin-empty">No pinned items yet — search above to force a specific item into the build.</p>`; return; }
+      /** Bind the augment-pin remove buttons. Called after EVERY write to
+       *  `box.innerHTML` below, because each one replaces the nodes. */
+      const bindAugUnpin = () => {
+        box.querySelectorAll("[data-unpin-aug]").forEach((b) => b.onclick = () => {
+          state.pinnedAugments = removeAugmentPin(state.pinnedAugments, b.dataset.unpinAug);
+          renderPinList(); renderPinResults();
+        });
+      };
+      if (!pins.length) { box.innerHTML = augRows; bindAugUnpin(); return; }
       const query = buildQuery(state, vocab, dataset && dataset.items);
       // Aggregate guard: a character equips at most ONE Artifact, but each pin is
       // honored, so pinning 2+ Artifacts with the opt-in on would force an illegal
@@ -3490,7 +3514,7 @@ ${(() => {
       const mutexWarn = dualPinMutexConflict(pins, itemByPinId)
         ? `<p class="wz-pin-mutexwarn">⚠ You've pinned a two-handed weapon and an off-hand item, but a two-handed weapon uses both hands — the solver can't equip both. Unpin one.</p>`
         : "";
-      box.innerHTML = mutexWarn + artWarn + pins.map(({ slot, id }) => {
+      box.innerHTML = augRows + mutexWarn + artWarn + pins.map(({ slot, id }) => {
         const it = itemByPinId(id);
         const name = it ? (it.source_item || it.variant_id) : id;
         // plan 003 U5 — three states, in precedence order. The per-variant gate list
@@ -3508,6 +3532,7 @@ ${(() => {
             : "");
         return `<div class="wz-pin-row"><span class="wz-pin-name">${esc(name)}</span><span class="wz-pin-slot">${esc(slot)}</span>${flag}<button type="button" class="wz-pin-x" data-unpin-slot="${esc(slot)}" data-unpin-id="${esc(id)}" aria-label="Remove ${esc(name)}">×</button></div>`;
       }).join("");
+      bindAugUnpin();   // #742 — this render replaced the nodes too
       box.querySelectorAll(".wz-pin-x").forEach((b) => b.onclick = () => {
         removePin(b.dataset.unpinSlot, b.dataset.unpinId); renderPinList(); renderPinResults();
       });
