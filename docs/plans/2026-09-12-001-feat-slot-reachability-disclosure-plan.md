@@ -117,9 +117,10 @@ declared host colours, and the five crafting channels.
 
 **Deferred to Follow-Up Work:**
 
-- The same disclosure in Browse, and in the picker before an effect is ranked.
-  The player currently must rank an effect to learn it is unreachable; that is a
-  real limitation of the chosen placement and worth its own issue.
+- **#753** — the same disclosure in Browse, and in the picker before an effect is
+  ranked. The player currently must rank an effect to learn it is unreachable;
+  that is a real limitation of the chosen placement. Filed before this plan's PR
+  merged, per AGENTS.md.
 
 ---
 
