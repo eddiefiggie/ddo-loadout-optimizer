@@ -936,6 +936,226 @@ function eligible(variants, query) {
 }
 
 // ---------------------------------------------------------------------------
+// #743 — PER-EFFECT SLOT REACHABILITY.
+//
+// "The effect exists, I ranked it first, and I wanted it in a slot that can
+// never supply it." `CONCEPTS.md` names three ways a ranked target reaches zero
+// — nothing carries it, the filters removed every source, and an Outbid target.
+// This is a fourth question, and the nastiest, because the target does NOT reach
+// zero: ranking `Assassinate` top succeeds, the solver takes it from Gloves or a
+// Ring and reports optimal. That is a correct answer to a question the player
+// did not ask, and the app had no way to say so.
+//
+// Read this whole block before widening it. Two things here are load-bearing:
+//
+//   1. It takes an ALREADY-FILTERED variant list. Callers pass
+//      `eligible(variants, query)`, so this shares one predicate with the pool
+//      the solver sees and cannot contradict the solve. Any future gate added to
+//      `variantConflict` is inherited rather than needing a parallel update here
+//      — which is the failure `an-override-exemption-only-covers-the-gates-
+//      downstream-of-it.md` records, where a gate living in only one of two
+//      paths dropped a pin in silence.
+//   2. It sweeps EVERY source pool, not `items[]`. Augments, dino inserts,
+//      Viktranium, seals, Legendary Green Steel and Essence Crafting are separate
+//      pools the solver receives as distinct arguments. A view that iterates only
+//      the canonical array silently omits them — exactly the defect
+//      `browse-visibility-for-separate-source-pools.md` records, where 55 Dino
+//      inserts were invisible to Browse while the solver used them. Here that bug
+//      would under-report precisely the crafting routes this issue is about.
+//
+// Returns DATA, never prose: `{ slot, route, via, bonusTypes }`. Wording lives in
+// projection.js so the reachability tests can assert routes without asserting
+// sentences, and so a copy edit can never change what is claimed to be reachable.
+// ---------------------------------------------------------------------------
+
+/** Overrides module across runtimes, mirroring `_taxonomy()` above. Used for the
+ *  `name`/`stat` and `type`/`bonus_type` accessor pair — worn items and crafted
+ *  pool rows spell both fields differently and this code reads both shapes. */
+function _overridesMod() {
+  if (typeof Overrides !== "undefined") return Overrides;
+  if (typeof require !== "undefined") {
+    try { return require("./overrides.js"); } catch (e) { /* absent: no-op */ }
+  }
+  return null;
+}
+function _affixStat(a) {
+  const O = _overridesMod();
+  if (O && O.readStat) return O.readStat(a);
+  return a && (Object.prototype.hasOwnProperty.call(a, "stat") ? a.stat : a.name);
+}
+function _affixType(a) {
+  const O = _overridesMod();
+  if (O && O.readType) return O.readType(a);
+  return a && (Object.prototype.hasOwnProperty.call(a, "type") ? a.type : a.bonus_type);
+}
+
+/** An augment is an item by storage but never a WORN SLOT: its `slot` field
+ *  holds a colour (`Yellow`, `Sun`), not a place on the character. Reporting
+ *  `Yellow` beside `Gloves` would be a category error the player has to unpick,
+ *  so the two are split here and rejoined only through a host's declared slot. */
+function _isAugment(v) {
+  return !!(v && (v.aug_color || v.category === "augment"));
+}
+
+/** Every affix a record carries, across the two shapes. A crafted pool row may
+ *  be ATOMIC (`affixes[]`, one craft granting several effects) or flat
+ *  (`{stat, bonus_type}`), and both still read — the same back-compat the
+ *  Viktranium and Dino pools keep in `buildModel`. */
+function _affixesOf(rec) {
+  if (!rec) return [];
+  if (Array.isArray(rec.affixes) && rec.affixes.length) return rec.affixes;
+  return _affixStat(rec) ? [rec] : [];
+}
+
+/** The bonus types a record supplies for `stat`, or [] when it supplies none. */
+function _typesSupplying(rec, stat) {
+  const out = [];
+  for (const a of _affixesOf(rec)) {
+    if (_affixStat(a) !== stat) continue;
+    const t = _affixType(a);
+    if (t && !out.includes(t)) out.push(t);
+  }
+  return out;
+}
+
+/** Which slots can supply `stat`, by which route, at which bonus types.
+ *
+ *  @param stat     the canonical affix name, as the picker vocabulary spells it
+ *  @param variants the ALREADY-FILTERED variant list (see note 1 above)
+ *  @param pools    `{ dinoInserts, viktranium, seal, legendaryGreenSteel, essenceCrafting }`
+ *  @returns `[{ slot, route, via, bonusTypes }]` — `route` is one of
+ *           `native` | `augment` | `dino` | `viktranium` | `seal` | `lgs` |
+ *           `essence`; `via` names the colour or channel key, or null.
+ */
+function slotReachabilityFor(stat, variants, pools) {
+  if (!stat || !Array.isArray(variants)) return [];
+  const p = pools || {};
+  const out = new Map(); // `slot||route||via` -> record, so a slot is named once
+  const add = (slot, route, via, types) => {
+    if (!slot || !types.length) return;
+    const key = `${slot}||${route}||${via || ""}`;
+    const prev = out.get(key);
+    if (!prev) { out.set(key, { slot, route, via: via || null, bonusTypes: [...types] }); return; }
+    for (const t of types) if (!prev.bonusTypes.includes(t)) prev.bonusTypes.push(t);
+  };
+
+  // --- native affixes on equippable items ---------------------------------
+  const hosts = [];
+  const augments = [];
+  for (const v of variants) (_isAugment(v) ? augments : hosts).push(v);
+  for (const v of hosts) add(v.slot, "native", null, _typesSupplying(v, stat));
+
+  // --- augments, joined to hosts by the host's DECLARED colour -------------
+  // A host declaring a colour is not the same as that slot being FREE in a given
+  // loadout — aggregate per-colour capacity is the solver's business and is not
+  // consulted here. This claims the route EXISTS, never that it is free, and the
+  // wording in projection.js must not imply otherwise.
+  // Colour -> the bonus types augments of that colour supply, resolved ONCE.
+  // This used to be recomputed inside the host loop, which made the augment join
+  // O(hosts x colours x augments) — 9,194 x ~3 x 1,147, or ~1.2s to fill twelve
+  // priority rows. The panel re-renders on every drag, so that was not a
+  // micro-optimisation; it was the difference between shipping this and not.
+  const colourTypes = new Map();
+  for (const a of augments) {
+    const types = _typesSupplying(a, stat);
+    if (!types.length) continue;
+    const c = (a.aug_color || {}).color || a.slot;
+    if (!c) continue;
+    if (!colourTypes.has(c)) colourTypes.set(c, []);
+    const acc = colourTypes.get(c);
+    for (const t of types) if (!acc.includes(t)) acc.push(t);
+  }
+  if (colourTypes.size) {
+    for (const v of hosts) {
+      const declared = ((v.augment_slots_norm || {}).colors) || [];
+      for (const c of declared) {
+        const types = colourTypes.get(c);
+        if (types) add(v.slot, "augment", c, types);
+      }
+    }
+  }
+
+  // --- crafting channels, each joined on the host's own declaration --------
+  // Every channel is (host declares a typed slot) x (pool row fits that slot).
+  // Spelled per channel rather than generalized: the join keys genuinely differ,
+  // and a shared abstraction over five two-field joins reads worse than five
+  // explicit ones and hides which key a wrong answer came from.
+  const chan = (list, hostKeys, fits, route) => {
+    const supplying = (list || []).filter((o) => _typesSupplying(o, stat).length);
+    if (!supplying.length) return;
+    for (const v of hosts) {
+      for (const k of hostKeys(v)) {
+        for (const o of supplying) {
+          if (!fits(o, k, v)) continue;
+          add(v.slot, route, null, _typesSupplying(o, stat));
+        }
+      }
+    }
+  };
+
+  // Dino: host `dino_slots_norm` holds `"Claw||Weapon"` keys; an insert is
+  // keyed by (dino_type, category). Compare on the bare pair — `dinoSlotKeys`
+  // appends a weapon-pool variant for the dominance guard, which is a solver
+  // concern and would never match a pool row.
+  chan(p.dinoInserts, (v) => (v.dino_slots_norm || []),
+    (o, k) => k === `${o.dino_type}||${o.category}`, "dino");
+
+  // Viktranium ("Lamordia"): host `lamordia_slots` is `{type, category}` at the
+  // host's tier; an option is keyed by (slot_type, category, tier).
+  chan(p.viktranium, (v) => (v.lamordia_slots || []).map((s) => ({ s, tier: lamordiaTier(v) })),
+    (o, k) => o.slot_type === k.s.type && o.category === k.s.category
+      && (o.tier == null || k.tier == null || o.tier === k.tier), "viktranium");
+
+  // Seal ("Sealed in X"): host `seal_slots` is `{seal_type, category}`.
+  chan(p.seal, (v) => (v.seal_slots || []),
+    (o, k) => o.seal_type === k.seal_type, "seal");
+
+  // Legendary Green Steel: host `legendary_green_steel_tiers` is `{tier, item_class}`.
+  chan(p.legendaryGreenSteel, (v) => (v.legendary_green_steel_tiers || []),
+    (o, k) => o.tier === k.tier && o.item_class === k.item_class, "lgs");
+
+  // Essence Crafting: host `essence_slots` is `{menu}`.
+  chan(p.essenceCrafting, (v) => (v.essence_slots || []),
+    (o, k) => o.menu === k.menu, "essence");
+
+  return [...out.values()];
+}
+
+/** #743 (U2) — reachability for `stat` under a query, split into the two answers
+ *  a player can act on differently.
+ *
+ *  `CONCEPTS.md` already names both as routes to a zero — "nothing carries it"
+ *  and "the filters removed every source" — and the difference matters: one is a
+ *  setting the player can change, the other is the catalog. Saying only "no" for
+ *  both would send someone hunting for a gate that was never shut.
+ *
+ *  Runs the index TWICE, and the asymmetry between the passes is the safety
+ *  property: the live pass produces what is OFFERED, the unfiltered pass only
+ *  CLASSIFIES what the live pass already excluded. Nothing reachable solely in
+ *  the unfiltered pass ever reaches `open`, so the disclosure can never hand the
+ *  player a route their own settings removed.
+ *
+ *  The live pool is `filterEligiblePool(eligible(...))`, not bare `eligible(...)`
+ *  — the blocklist, set exclusions and pack filter run past `eligible`, and
+ *  reading only the first half would report a blocked item as reachable and
+ *  quietly contradict the solve.
+ *
+ *  @returns `{ open, closedByFilters, anyCatalogRoute }`
+ */
+function slotReachabilityReport(stat, variants, query, pools) {
+  const q = query || {};
+  const open = slotReachabilityFor(stat, filterEligiblePool(eligible(variants, q), q).elig, pools);
+  const all = slotReachabilityFor(stat, variants, pools);
+  const key = (r) => `${r.slot}||${r.route}||${r.via || ""}`;
+  const openKeys = new Set(open.map(key));
+  return {
+    open,
+    closedByFilters: all.filter((r) => !openKeys.has(key(r))),
+    anyCatalogRoute: all.length > 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // #539 — the SET PIN. "Deliver this set, or tell me you cannot."
 //
 // The nearest thing a player had was ranking the stats a set grants, which does
@@ -1384,6 +1604,93 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
 
 /** Build the abstract model. Returns worn slots (filtered + pruned), the
  *  augment source pool, the Dino insert pool, and the target list. */
+/** #743 — the POST-`eligible` pool filters, in one place because two callers now
+ *  need the same answer. `eligible()` is not the whole gate: the blocklist, set
+ *  exclusions and the pack filter run AFTER it, inside this chain, and a caller
+ *  that stops at `eligible()` sees items the solve will never offer.
+ *
+ *  That split is deliberate and documented (#110/KTD1 below): `variantConflict`
+ *  means "this character can never equip this", and `reconcilePinLegality`
+ *  deletes any pin whose conflict is non-null, so a block expressed there would
+ *  let a corrupted import silently destroy a pin. The gate is right where it is.
+ *
+ *  What was wrong is that it lived only inside `buildModel`. #743 needs the same
+ *  pool to answer "which slots can supply this effect", and re-deriving it there
+ *  is precisely the drift `an-override-exemption-only-covers-the-gates-downstream-
+ *  of-it.md` records — #721 dropped a pin in silence because one of two paths
+ *  learned a gate the other did not. Extracted verbatim, attribution and ordering
+ *  intact, so the disclosure and the solve cannot disagree.
+ *
+ *  @returns `{ elig, blocked, setExcluded, packExcluded, packUncheckable,
+ *             excludedSets, ownedPacks }` — the arrays feed the result
+ *           disclosures, which is why nothing here is discarded.
+ */
+function filterEligiblePool(eligAll, query) {
+  const excludedSets = Array.isArray(query.excludedSets) && query.excludedSets.length
+    ? new Set(query.excludedSets) : null;
+  const setExcluded = [];
+  const ownedPacks = Array.isArray(query.ownedPacks) ? new Set(query.ownedPacks) : null;
+  const packExcluded = [];
+  const packUncheckable = { count: 0 };
+  const blockedIds = new Set(Array.isArray(query.blocklist) ? query.blocklist : []);
+  const blocked = [];
+  let elig = eligAll;
+  if (blockedIds.size) {
+    // #547 — a block names an ITEM, not a catalog record. 45 items are carried as
+    // two records, `X` and `X [Crafted]` (the same thing after its Essence
+    // Crafting slots are used), and blocking one used to hand the player the
+    // other: identical slot, identical numbers, and a disclosure truthfully
+    // reporting an exclusion, so the block read as ignored.
+    //
+    // The gate is NOT wrong and does not move. What widens is what a blocked id
+    // resolves to: `block_identity` (stamped in dataset.js from a build-time
+    // DERIVED and asserted pairing, never a name-suffix test here). A first pass
+    // collects the identity of every record the player actually named; the second
+    // blocks anything sharing one.
+    //
+    // Deliberately still upstream of dominanceFilter, and this does not soften
+    // that: blocking a winner must still leave the genuine runner-up standing.
+    // The twin was never a runner-up — it is the same offer.
+    const blockedIdentities = new Set();
+    for (const cand of eligAll) {
+      if (blockedIds.has(variantKey(cand)) && cand.block_identity) {
+        blockedIdentities.add(cand.block_identity);
+      }
+    }
+    elig = [];
+    for (const cand of eligAll) {
+      const hit = blockedIds.has(variantKey(cand))
+        || (cand.block_identity && blockedIdentities.has(cand.block_identity));
+      (hit ? blocked : elig).push(cand);
+    }
+  }
+
+  // Applied BEFORE the pack filter and after the blocklist, so a variant that is both
+  // blocked and in an excluded set is attributed to the block — the more specific act.
+  if (excludedSets) {
+    const kept = [];
+    for (const cand of elig) {
+      const sets = (cand.set_bonus || []).map((sb) => sb && sb.set).filter(Boolean);
+      (sets.some((nm) => excludedSets.has(nm)) ? setExcluded : kept).push(cand);
+    }
+    elig = kept;
+  }
+
+  // #246 — applied AFTER the blocklist so a variant the player both blocked and
+  // does not own is attributed to the block, which is the reason they chose.
+  if (ownedPacks) {
+    const kept = [];
+    for (const cand of elig) {
+      const pack = cand.location_pack || null;
+      if (!pack || pack === "Free to Play") { packUncheckable.count += 1; kept.push(cand); continue; }
+      if (ownedPacks.has(pack)) { kept.push(cand); continue; }
+      packExcluded.push(cand);
+    }
+    elig = kept;
+  }
+  return { elig, blocked, setExcluded, packExcluded, packUncheckable, excludedSets, ownedPacks };
+}
+
 function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, legendaryGreenSteel = [], augmentSetDefs = {}, utilityCountingSet = null, nearlyCompletePerItem = {}, essenceCrafting = []) {
   // #245 — the niche-crafting opt-out. A craftable option slot makes its host a
   // wildcard for every rankable stat (the Viktranium pool alone reaches 126), so
@@ -1588,68 +1895,11 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // is the true inverse of a set pin and is coherent, but it is a different feature with
   // a different disclosure, and offering both behind one label would leave a player
   // unsure which one they picked.
-  const excludedSets = Array.isArray(query.excludedSets) && query.excludedSets.length
-    ? new Set(query.excludedSets) : null;
-  const setExcluded = [];
-  const ownedPacks = Array.isArray(query.ownedPacks) ? new Set(query.ownedPacks) : null;
-  const packExcluded = [];
-  const packUncheckable = { count: 0 };
-  const blockedIds = new Set(Array.isArray(query.blocklist) ? query.blocklist : []);
-  const blocked = [];
-  let elig = eligAll;
-  if (blockedIds.size) {
-    // #547 — a block names an ITEM, not a catalog record. 45 items are carried as
-    // two records, `X` and `X [Crafted]` (the same thing after its Essence
-    // Crafting slots are used), and blocking one used to hand the player the
-    // other: identical slot, identical numbers, and a disclosure truthfully
-    // reporting an exclusion, so the block read as ignored.
-    //
-    // The gate is NOT wrong and does not move. What widens is what a blocked id
-    // resolves to: `block_identity` (stamped in dataset.js from a build-time
-    // DERIVED and asserted pairing, never a name-suffix test here). A first pass
-    // collects the identity of every record the player actually named; the second
-    // blocks anything sharing one.
-    //
-    // Deliberately still upstream of dominanceFilter, and this does not soften
-    // that: blocking a winner must still leave the genuine runner-up standing.
-    // The twin was never a runner-up — it is the same offer.
-    const blockedIdentities = new Set();
-    for (const cand of eligAll) {
-      if (blockedIds.has(variantKey(cand)) && cand.block_identity) {
-        blockedIdentities.add(cand.block_identity);
-      }
-    }
-    elig = [];
-    for (const cand of eligAll) {
-      const hit = blockedIds.has(variantKey(cand))
-        || (cand.block_identity && blockedIdentities.has(cand.block_identity));
-      (hit ? blocked : elig).push(cand);
-    }
-  }
-
-  // Applied BEFORE the pack filter and after the blocklist, so a variant that is both
-  // blocked and in an excluded set is attributed to the block — the more specific act.
-  if (excludedSets) {
-    const kept = [];
-    for (const cand of elig) {
-      const sets = (cand.set_bonus || []).map((sb) => sb && sb.set).filter(Boolean);
-      (sets.some((nm) => excludedSets.has(nm)) ? setExcluded : kept).push(cand);
-    }
-    elig = kept;
-  }
-
-  // #246 — applied AFTER the blocklist so a variant the player both blocked and
-  // does not own is attributed to the block, which is the reason they chose.
-  if (ownedPacks) {
-    const kept = [];
-    for (const cand of elig) {
-      const pack = cand.location_pack || null;
-      if (!pack || pack === "Free to Play") { packUncheckable.count += 1; kept.push(cand); continue; }
-      if (ownedPacks.has(pack)) { kept.push(cand); continue; }
-      packExcluded.push(cand);
-    }
-    elig = kept;
-  }
+  // #743 — one shared chain (see `filterEligiblePool`): `eligible()` is not the
+  // whole gate, and the reachability disclosure reads the same pool this does.
+  const { elig: eligFiltered, blocked, setExcluded, packExcluded, packUncheckable,
+    excludedSets, ownedPacks } = filterEligiblePool(eligAll, query);
+  let elig = eligFiltered;
 
   // Pinned variant ids (U6): kept through the dominance pre-filter so a pinned
   // item's pick var always exists for its `= 1` constraint. Empty when absent.
@@ -2150,6 +2400,7 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = { poolStatNames, setIntrinsicCaps, setSplitMechanics, splitMechanicFor, setConditionalDisclosures, conditionalDisclosureFor,
     intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, MRR_CAP_BY_ARMOR, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
+    slotReachabilityFor, slotReachabilityReport, filterEligiblePool,
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,

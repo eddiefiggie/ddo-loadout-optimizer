@@ -1445,6 +1445,105 @@
   const CAP_OPPORTUNITY_MIN_PICKS = 3;
   const CAP_OPPORTUNITY_MAX_LINES = 3;
 
+  /** #743 (U3) — the per-effect slot reachability disclosure, as text.
+   *
+   *  The sibling of `capOpportunityLines` below, and it keeps the same line:
+   *  DESCRIPTIVE, never advisory. It says where an effect can come from. It does
+   *  not rank slots, does not call a route better, does not propose a change, and
+   *  does not claim two affix names are the same effect (#746 is wiki-gated and
+   *  stays that way). Tests assert against a banned-word list because the drift
+   *  to guard against — a descriptive line quietly acquiring a recommendation —
+   *  looks like an improvement when someone makes it.
+   *
+   *  Slots are grouped by IDENTICAL bonus-type set rather than listed under a
+   *  union of types. That is the difference between true and false here: unioning
+   *  Assassinate's types across slots would offer the player Quality on a weapon,
+   *  and no weapon carries it at Quality. Grouping is correct by construction for
+   *  every combination, the same reason `capOpportunityLines` quotes a sum over a
+   *  named set instead of a per-item claim.
+   *
+   *  Takes the U2 report rather than a query, so the wording layer cannot decide
+   *  what is reachable — it only renders what model.js resolved.
+   */
+  const REACH_ROUTE_LABEL = {
+    native: "Native",
+    dino: "Dino insert",
+    viktranium: "Viktranium crafting",
+    seal: "Seal",
+    lgs: "Legendary Green Steel",
+    essence: "Essence Crafting",
+  };
+  function reachRouteLabel(r) {
+    if (r.route === "augment") return `${r.via} augment`;
+    return REACH_ROUTE_LABEL[r.route] || r.route;
+  }
+  /** `[{label, types, slots}]` — one row per (route, identical type-set). */
+  function reachGroups(routes) {
+    const by = new Map();
+    for (const r of routes || []) {
+      const types = [...r.bonusTypes].sort();
+      const key = `${reachRouteLabel(r)}||${types.join("+")}`;
+      if (!by.has(key)) by.set(key, { label: reachRouteLabel(r), types, slots: [] });
+      const g = by.get(key);
+      if (!g.slots.includes(r.slot)) g.slots.push(r.slot);
+    }
+    return [...by.values()];
+  }
+  function slotReachabilityLines(stat, report) {
+    if (!stat || !report) return [];
+    const open = report.open || [];
+    const closed = report.closedByFilters || [];
+    if (!open.length && !closed.length) {
+      // Never-existed. Deliberately does NOT mention filters: blaming a gate that
+      // was never shut sends the player hunting for a setting to change.
+      return report.anyCatalogRoute === false
+        ? [`No item, augment or crafting option in the catalog carries ${stat}.`]
+        : [];
+    }
+    const out = [];
+    for (const g of reachGroups(open)) {
+      out.push(`${g.label}, ${g.types.join(" + ")}: ${g.slots.sort().join(", ")}.`);
+    }
+    // The closed line reports only slots with NO open route at all, and that
+    // narrowing is deliberate rather than a length trim. The player's question is
+    // "can I get it HERE", so a slot they can already reach some other way is
+    // answered — telling them a SECOND route to the same slot is shut adds a
+    // sentence and no decision. Reporting every closed route instead produced a
+    // line naming thirteen slots at ML 10, nearly all of them already open
+    // natively, which buries the two that actually changed.
+    //
+    // Nothing is hidden by this: a slot named here is unreachable under the
+    // current query, and a slot named in the lines above is reachable. Between
+    // them every slot the player asked about is accounted for.
+    const openSlots = new Set(open.map((r) => r.slot));
+    const shutOnly = closed.filter((r) => !openSlots.has(r.slot));
+    if (shutOnly.length) {
+      // Grouped by SLOT, listing that slot's shut routes — the inverse of the
+      // open lines above, and deliberately so. The slot is the unit of the
+      // player's question ("can I get it HERE"), and grouping by route instead
+      // printed the same slot four times: "Boots (Native); Boots, Off Hand
+      // (Yellow augment); Boots, Off Hand (Dino insert); Boots (Viktranium)".
+      //
+      // The routes are kept rather than reduced to a bare slot list because they
+      // are the actionable half: a slot shut only on a Yellow augment tells the
+      // player which filter to reconsider. Bonus types are dropped — the query
+      // removed every one of them here, so they name nothing available.
+      const bySlot = new Map();
+      for (const r of shutOnly) {
+        if (!bySlot.has(r.slot)) bySlot.set(r.slot, []);
+        const labels = bySlot.get(r.slot);
+        const label = reachRouteLabel(r);
+        if (!labels.includes(label)) labels.push(label);
+      }
+      const shut = [...bySlot.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))
+        .map(([slot, labels]) => `${slot} (${labels.join(", ")})`).join("; ");
+      // Named as the player's own settings, because that is the half they can act
+      // on — and stated as a fact about this query, never as a suggestion to undo.
+      out.push(`Closed by your current filters: ${shut}.`);
+    }
+    return out;
+  }
+
   function capOpportunityLines(rec) {
     const snap = (rec && rec.snapshot) || rec || {};
     const q = (rec && rec.query) || snap.query || {};
@@ -3298,7 +3397,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, mrrCapLine, conditionalNoticeLines, splitMechanicLine, capSurplusLines, capOpportunityLines, CAP_OPPORTUNITY_MIN_PICKS, packFilterNoticeLines, setFilterNoticeLines,
+    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, mrrCapLine, conditionalNoticeLines, splitMechanicLine, capSurplusLines, capOpportunityLines, CAP_OPPORTUNITY_MIN_PICKS, slotReachabilityLines, packFilterNoticeLines, setFilterNoticeLines,
     essenceNoticeLines, greenSteelNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)

@@ -1229,3 +1229,48 @@ test("#687: a saved override on a retired Legendary Green Steel channel is re-ad
   assert.ok(sample, "the live pool mints weapon tier-2 keys under the new channel");
 });
 
+
+// ---- #743: readStat, and why it prefers the OPPOSITE field to readType -------
+//
+// Two pools carry BOTH field names, and each would be read wrongly by the rule
+// that is correct for bonus type. This is a live-data guard, not a fixture one:
+// it reads the built dataset, so a pipeline change that starts stamping `name`
+// on item affixes (or drops `stat` from a pool) fails here rather than silently
+// emptying a source family out of every reachability answer.
+
+test("#743: readStat prefers `stat`, so a seal's empty `name` never wins", () => {
+  assert.strictEqual(O.readStat({ name: "", stat: "Legendary Ash" }), "Legendary Ash");
+});
+
+test("#743: readStat ignores an essence row's DISPLAY label in `name`", () => {
+  assert.strictEqual(
+    O.readStat({ name: "Essence Crafting: Charisma", stat: "Charisma" }), "Charisma");
+});
+
+test("#743: readStat still reads a worn item affix, which has only `name`", () => {
+  assert.strictEqual(O.readStat({ name: "Assassinate", type: "Enhancement" }), "Assassinate");
+});
+
+test("#743: no item affix in the built dataset carries `stat`", () => {
+  // The premise that makes "stat wins" safe for worn affixes. If this ever goes
+  // red, readStat's preference has to be re-derived, not patched at a call site.
+  const ds = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+  let withStat = 0, total = 0;
+  for (const it of ds.items) for (const a of (it.affixes || [])) {
+    total++;
+    if (Object.prototype.hasOwnProperty.call(a, "stat")) withStat++;
+  }
+  assert.ok(total > 0, "expected item affixes to inspect");
+  assert.strictEqual(withStat, 0, `${withStat} of ${total} item affixes carry \`stat\``);
+});
+
+test("#743: every seal and essence row still resolves to a real stat name", () => {
+  const ds = JSON.parse(fs.readFileSync(
+    path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+  for (const row of [...(ds.seal || []), ...(ds.essence_crafting || [])]) {
+    const s = O.readStat(row);
+    assert.ok(s && String(s).trim(), `row resolved to an empty stat: ${JSON.stringify(row).slice(0, 120)}`);
+    assert.ok(!/^Essence Crafting:/.test(s), `resolved to a display label, not a stat: ${s}`);
+  }
+});
