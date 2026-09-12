@@ -185,6 +185,11 @@
     // build that was solved under a pin must come back holding it, or a reload
     // silently drops a constraint the player set.
     "pinnedSets",
+    // #742 — the augment pins. A plain string array like `pinnedSets` and
+    // `blocklist`, and ABSENT means none: a character saved before augment pinning
+    // shipped reloads solving exactly what it solved before, the same contract
+    // `ownedPacks` and `augCeiling` set.
+    "pinnedAugments",
     // Sets whose gear is kept out of the search. A plain string array like `blocklist`
     // and `pinnedSets`: a build solved with an exclusion must come back holding it, or
     // a reload silently widens the pool the player narrowed.
