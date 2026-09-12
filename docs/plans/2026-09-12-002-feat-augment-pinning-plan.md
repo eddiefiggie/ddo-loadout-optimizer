@@ -150,6 +150,22 @@ currently knows about pins:
 | 1 | Pool filter | `filterEligiblePool(eligible(...))`, `web/model.js` | ML cap, augment ceiling, rung, blocklist, packs all apply |
 | 2 | Dominance prune | augment pool build, `web/model.js` | called **without** `pinnedIds` — worn slots pass it, augments do not |
 | 3 | Target-advancement | `augBest`, `web/solver.js` | an augment advancing nothing gets no placement variable at all |
+| 4 | **Result reporting** | `augmentsPlaced`, `web/solver.js` | reports a placement only when a contribution it gates **fired and is visible** |
+
+**Gate 4 was found during implementation, not planning, and it is the one this
+plan got wrong.** The first three were verified up front; the fourth only showed
+itself when all three were satisfied and the end-to-end test still failed. The
+augment was genuinely placed — `pu5 = 1` was in the program and the solve was
+optimal — and reported nowhere, because the reporting step deliberately withholds
+a placement that grants nothing, so as not to prescribe useless farming. That rule
+is right for the case it was written for and wrong for a pin: the player named
+this augment, it is really in the build, and it is really consuming a colour slot.
+Left unfixed, the loadout would show a consumed slot with nothing in it.
+
+That is the same lesson one gate further out than expected, and it is worth
+stating plainly: **the count of gates was itself a guess.** What caught it was the
+end-to-end test, exactly as KTD2 predicted — three gate-local guards were green
+while the chain was broken.
 
 Gate 3 is fatal for `Deconstructor` specifically: its three affixes are
 `Adamantine` (Bool), `Destruction` (Bool), and a Rust-damage line that is not

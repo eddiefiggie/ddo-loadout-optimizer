@@ -652,6 +652,11 @@ function queryGates(query) {
   for (const c of Object.values(query.slotConstraints || {})) {
     for (const id of pinnedVariantIds(c)) pinnedIds.add(id);
   }
+  // #742 — gate 1. An augment pin joins the SAME set the worn pins use, which is
+  // what switches on the augment-ceiling exemption already written below and left
+  // inert for exactly this day. One set, so the floor and the ceiling cannot
+  // disagree about what "pinned" means.
+  for (const id of pinnedAugmentIds(query)) pinnedIds.add(id);
   return {
     cap: query.mlCap,
     floor: query.mlFloor,                                  // optional item-level floor
@@ -928,6 +933,34 @@ function pinnedVariantIds(c) {
   if (Array.isArray(c.variant_ids)) return c.variant_ids.filter((id) => id != null);
   if (c.variant_id != null) return [c.variant_id];
   return [];
+}
+
+/** #742 — the pinned AUGMENT ids. A plain string array on the query, like
+ *  `blocklist` and `pinnedSets`, because an augment pin is not slot-keyed:
+ *  augments are placed by aggregate per-colour capacity, so a pin can say
+ *  "this augment is placed" but never "this augment in that item".
+ *
+ *  Resolved ONCE and threaded to every gate that could drop it. A pinned augment
+ *  has to survive three of them, and none knew about pins before this:
+ *
+ *    1. `queryGates` / `variantConflict` — the ML floor and the #339 augment
+ *       ceiling. That exemption was already written and left deliberately inert
+ *       ("it records the rule for the day augment pinning exists"); feeding this
+ *       set into `pinnedIds` is what switches it on.
+ *    2. the augment pool's `dominanceFilter` — called without the `pinnedIds`
+ *       every worn slot passes, so a pinned augment could be pruned as dominated.
+ *    3. `augBest` in solver.js — admits only augments advancing a ranked target,
+ *       which is fatal for the augment this issue is named for.
+ *
+ *  Do NOT re-derive this at a call site. `an-override-exemption-only-covers-the-
+ *  gates-downstream-of-it.md` is the record of what that costs: #721 dropped a
+ *  pin in silence because one of two paths learned a gate the other did not. */
+function pinnedAugmentIds(query) {
+  const out = new Set();
+  const list = query && query.pinnedAugments;
+  if (!Array.isArray(list)) return out;
+  for (const id of list) if (id != null && id !== "") out.add(String(id));
+  return out;
 }
 
 function eligible(variants, query) {
@@ -1907,6 +1940,11 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   for (const c of Object.values(query.slotConstraints || {})) {
     for (const id of pinnedVariantIds(c)) pinnedIds.add(id);
   }
+  // #742 — the pinned augments, resolved once for gates 2 and 3. Kept SEPARATE
+  // from `pinnedIds` here even though `queryGates` merges them: `pinnedIds` below
+  // feeds worn-slot dominance and the Artifact exemption, neither of which should
+  // start seeing augment ids.
+  const pinnedAugs = pinnedAugmentIds(query);
   // plan 003 U2 — the player's EXPLICIT pins, snapshotted before the Artifact
   // exemption below widens `pinnedIds`. R3's off-hand escape hatch is "unless the
   // player pins one", so it must read this narrow set: reusing the widened one would
@@ -2061,7 +2099,10 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   }
   const augments = [];
   for (const [, group] of augByColor) {
-    augments.push(...dominanceFilter(group, targetSet, mlCap));
+    // #742 — gate 2. Worn slots have always passed `pinnedIds` here; the augment
+    // pool did not, so a pinned augment dominated by another of its colour was
+    // pruned before the solver ever saw it. Same argument position, same meaning.
+    augments.push(...dominanceFilter(group, targetSet, mlCap, undefined, pinnedAugs));
   }
 
   // #199 — the wiki-sourced intrinsic ceilings, narrowed to the stats this solve
@@ -2133,6 +2174,9 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
 
   return {
     query, targets: query.targets, worn, augments,
+    // #742 — gate 3 rides on the model rather than being re-read from the query
+    // in solver.js, so the solver and the pool agree on one resolved set.
+    pinnedAugments: pinnedAugs,
     // #110 (U2) — eligible-but-blocked variants, retained for the disclosure's
     // attribution. Never re-enters any pool below.
     blocked,
@@ -2401,7 +2445,7 @@ if (typeof module !== "undefined" && module.exports) {
     intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, MRR_CAP_BY_ARMOR, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     slotReachabilityFor, slotReachabilityReport, filterEligiblePool,
-    classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
+    classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, pinnedAugmentIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     dinoWeaponVariant, dinoSlotKeys,

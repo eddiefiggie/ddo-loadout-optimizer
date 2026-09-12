@@ -513,6 +513,10 @@ function buildProgram(model) {
   // be objective-neutral under bucket-max anyway). Host attribution (which item
   // gets which augment) is reconstructed deterministically in results.js, off the
   // solver's critical path. Precompute each pool augment's best per-bucket value.
+  // #742 — the pinned augments, read off the MODEL rather than re-derived from
+  // the query, so the solver and the pool cannot disagree about what is pinned.
+  const pinnedAugs = (model.pinnedAugments instanceof Set)
+    ? model.pinnedAugments : new Set(model.pinnedAugments || []);
   const augBest = new Map(); // aug variant -> Map("stat||type" -> best value)
   for (const aug of model.augments || []) {
     const best = new Map();
@@ -525,7 +529,14 @@ function buildProgram(model) {
       const k = `${s.stat}||${_equivType(s.bonus_type)}`;
       if (targetSet.has(s.stat) && val > 0 && (!best.has(k) || best.get(k).value < val)) best.set(k, { value: val, affix: null });
     }
-    if (best.size) augBest.set(aug, best); // only augments advancing a target
+    // #742 — a PINNED augment enters regardless of whether it advances a target.
+    // `best.size` alone is fatal for the case this feature exists for:
+    // Deconstructor's only distinctive affix is unrankable, so it advances
+    // nothing, so it would get no placement variable and the pin would be
+    // unsatisfiable with nothing on screen. The exemption stays scoped to pins —
+    // widening it to every augment would mint placement binaries for the whole
+    // pool and quietly enlarge every program.
+    if (best.size || pinnedAugs.has(aug.variant_id)) augBest.set(aug, best);
   }
   // Open-slot supply per color: Σ over candidate items of (open slots of that
   // color on the item) · x_item. A color's placements can't exceed its supply.
@@ -569,7 +580,13 @@ function buildProgram(model) {
     extraVars.push(place);
     placeMeta.set(place, { variant_id: aug.variant_id, color: (aug.aug_color || {}).color, wiki_url: aug.wiki_url });
     extraConstraints.push(`${colorVars.join(" + ")} - ${place} = 0`); // placed iff one color fires
-    extraConstraints.push(`${place} <= 1`);                           // at most one slot consumed
+    // #742 — a pinned augment is FORCED, not merely permitted. Without this the
+    // objective has no reason to place one that scores nothing, so the pin would
+    // be admitted to the pool (above) and then simply never chosen. `= 1` rather
+    // than `<= 1`: the player named a constraint, and its cost is theirs to see.
+    extraConstraints.push(pinnedAugs.has(aug.variant_id)
+      ? `${place} = 1`                                                // pinned: must be placed
+      : `${place} <= 1`);                                             // at most one slot consumed
     for (const [k, ab] of best) {                                     // buckets gated by the placement
       if (!zByBucket.has(k)) zByBucket.set(k, []);
       zByBucket.get(k).push(zOf([place], ab.value, ab.affix, aug.variant_id));
@@ -1561,7 +1578,9 @@ function buildProgram(model) {
     // tracked stat it also feeds is capped and slack.
     flooredStats: Object.keys(model.floors || {}),
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
-    extraVars, extraConstraints, penaltyKeys, augMeta, placeMeta, setMeta, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, lgsMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
+    extraVars, extraConstraints, penaltyKeys, augMeta, placeMeta, setMeta,
+    // #742 — the reporting step needs this too; see `augmentsPlaced` below.
+    pinnedAugs, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, lgsMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
     // #91 (U3) — the Utility tier's stage state: whether the sentinel is
     // ranked, the per-effect indicator binaries, and their name/ceiling meta.
     utilityEnabled, utilityVars, utilityMeta,
@@ -2274,9 +2293,20 @@ function readSolution(res, program, precomputedVisible) {
   for (const [pu, meta] of program.placeMeta || []) {
     if (fired.has(pu)) firedAugIds.add(meta.variant_id);
   }
+  // #742 — a PINNED augment is reported whether or not a contribution it gates
+  // fired. The fired-and-visible rule above is right for the case it was written
+  // for (do not prescribe farming for a placement that grants nothing), but a
+  // pinned augment is not a recommendation the solver made — it is one the player
+  // named, and it really is in the build, really consuming a colour slot. The
+  // augment this feature exists for grants NOTHING scorable, so under the
+  // unmodified rule it would be placed, occupy a slot, and appear nowhere: the
+  // loadout would show a consumed slot with nothing in it.
+  const pinnedAugIds = (program.pinnedAugs instanceof Set)
+    ? program.pinnedAugs : new Set(program.pinnedAugs || []);
   const augmentsPlaced = [];
   for (const [p, meta] of program.augMeta || []) {
-    if (prim(p) > 0.5 && firedAugIds.has(meta.variant_id)) augmentsPlaced.push(meta);
+    if (prim(p) <= 0.5) continue;
+    if (firedAugIds.has(meta.variant_id) || pinnedAugIds.has(meta.variant_id)) augmentsPlaced.push(meta);
   }
   const setsActive = [];
   for (const [s, meta] of program.setMeta || []) if (prim(s) > 0.5) setsActive.push(meta);
