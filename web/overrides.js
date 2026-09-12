@@ -264,6 +264,43 @@
   }
   function readType(affix) { return affix ? affix[typeKeyOf(affix)] : undefined; }
 
+  /** The affix's STAT NAME, across both record shapes — the sibling of
+   *  `readType` for the other field that is spelled two ways. An item affix
+   *  records it as `name`; a crafted pool row records it as `stat`.
+   *
+   *  `stat` WINS when both are present. That is the opposite of `typeKeyOf`'s
+   *  preference above, and the asymmetry is real rather than an oversight —
+   *  measured against the built dataset:
+   *
+   *    - 0 of 44,325 item affixes carry `stat`, and all 44,325 carry `name`,
+   *      so preferring `stat` can never mis-read a worn affix.
+   *    - All 48 `seal` rows carry BOTH, with `name` an empty string and `stat`
+   *      the real effect. A `name`-wins rule returns "" for every seal.
+   *    - All 25 `essence_crafting` rows carry BOTH, and there `name` is a
+   *      DISPLAY LABEL, not a stat: `"Essence Crafting: Charisma"` beside
+   *      `"Charisma"`. A `name`-wins rule silently keys the whole channel on a
+   *      label that matches no affix anywhere.
+   *
+   *  So the two pools that carry both fields would BOTH be read wrongly by the
+   *  rule that is correct for bonus type. This was not theoretical: #743 shipped
+   *  `name`-wins first and every seal route vanished, which is the failure mode
+   *  `browse-visibility-for-separate-source-pools.md` describes — a whole source
+   *  family invisible while the solver goes on using it.
+   *
+   *  Added for #743, the first code that reads stat names from worn items AND
+   *  all five crafting pools in one pass. It lives here beside `readType` per
+   *  `docs/solutions/conventions/one-concept-under-two-field-names-needs-one-
+   *  accessor.md` rather than becoming a third spelling at the call site.
+   *  `web/solver.js:411` still reads `affix.name || affix.stat` inline and
+   *  should adopt this — left alone only because #743 promised no solver change.
+   *  Note that inline form has the same bug for seals: `"" || stat` happens to
+   *  fall through, but `"Essence Crafting: Charisma" || stat` does not. */
+  function readStat(affix) {
+    if (!affix) return undefined;
+    if (Object.prototype.hasOwnProperty.call(affix, "stat")) return affix.stat;
+    return Object.prototype.hasOwnProperty.call(affix, "name") ? affix.name : undefined;
+  }
+
   /** The composed key. `type` is passed in rather than read off the row, because
    *  every caller that identifies an override needs the CATALOG's type — which is
    *  the stamp when one is applied, exactly as `catalogTypeOrLive` does for items.
@@ -830,7 +867,7 @@
     OVERRIDE_FROM, ELIGIBLE_CACHE, OVERRIDE_LIMIT,
     isEligible, classifyPool, eligibleAffixes, isCompositeComponent,
     overrideKey, isWellFormed, migrateOverride, matchAffixes, resolveMatch, catalogTypeOrLive,
-    eachPoolAffix, poolOverrideKey, matchPoolAffixes, poolAffixEligible, readType, poolIndex,
+    eachPoolAffix, poolOverrideKey, matchPoolAffixes, poolAffixEligible, readType, readStat, poolIndex,
     resolveOverrides, resolvePoolMatch, keyMinusType, sameOverrideSet,
     pickerEntries, poolPickerEntries, poolPickerEntriesFor, poolAddressable, isPoolAddressable, managerRows,
     applyOverrides, withdrawOverrides, catalogTypeOf,
