@@ -140,4 +140,88 @@ test("#743: routes carry no recommendation — data only, no prose", () => {
   }
 });
 
+
+// ---- U2: "your filters closed this" vs "the catalog never had it" -----------
+//
+// R3. These are the two zero routes CONCEPTS.md already names, and the player can
+// act on only one of them. The distinction is the whole reason the live pool is
+// read twice: the unfiltered pass exists ONLY to classify, and its routes are
+// never presented as available.
+
+const report = (stat, query) => M.slotReachabilityReport(stat, dataset.items, query, POOLS);
+const has = (list, slot, route) => list.some((r) => r.slot === slot && r.route === route);
+
+test("#743 U2: at ML 34 the weapon augment route is open", () => {
+  const r = report("Assassinate", { mlCap: 34, targets: ["Assassinate"] });
+  assert.ok(has(r.open, "Weapon", "augment"), "Legendary Thirteen + Vol. 3 are both in range at 34");
+});
+
+test("#743 U2: at ML 30 the weapon augment route survives on the lower pair", () => {
+  // Legendary Thirteen is ML 31 and Vol. 3 is ML 32, so both drop out — but
+  // Thirteen (ML 16) and Vol. 1 (ML 18) still carry the route. The route stays
+  // OPEN; only its value falls. A classifier keyed on the endgame pair alone
+  // would wrongly report this closed.
+  const r = report("Assassinate", { mlCap: 30, targets: ["Assassinate"] });
+  assert.ok(has(r.open, "Weapon", "augment"), "Thirteen + Vol. 1 still reach it at ML 30");
+});
+
+test("#743 U2: below both Yellow augments the weapon route is FILTER-CLOSED, not absent", () => {
+  const r = report("Assassinate", { mlCap: 10, targets: ["Assassinate"] });
+  assert.ok(!has(r.open, "Weapon", "augment"), "no Yellow Assassinate augment is legal at ML 10");
+  assert.ok(has(r.closedByFilters, "Weapon", "augment"),
+    "the route exists in the catalog, so it must classify as closed by filters");
+});
+
+test("#743 U2: blocking the named weapons closes the NATIVE weapon route", () => {
+  const named = dataset.items
+    .filter((x) => x.slot === "Weapon" && (x.affixes || []).some((a) => a.name === "Assassinate"))
+    .map((x) => x.variant_id || x.source_item);
+  assert.ok(named.length, "expected named Assassinate weapons to block");
+  const r = report("Assassinate", { mlCap: 34, targets: ["Assassinate"], blocklist: named });
+  assert.ok(!has(r.open, "Weapon", "native"), "every native carrier was blocked");
+  assert.ok(has(r.closedByFilters, "Weapon", "native"), "a block is a filter, so this is filter-closed");
+});
+
+test("#743 U2: the blocklist is honoured at all — the pool filter runs past eligible()", () => {
+  // Guards the #721 shape directly: the blocklist lives in buildModel's chain,
+  // DOWNSTREAM of eligible(). A reachability read that stopped at eligible()
+  // would report a blocked item as reachable and quietly contradict the solve.
+  const open = report("Assassinate", { mlCap: 34, targets: ["Assassinate"] }).open;
+  const named = dataset.items
+    .filter((x) => x.slot === "Weapon" && (x.affixes || []).some((a) => a.name === "Assassinate"))
+    .map((x) => x.variant_id || x.source_item);
+  const blockedOpen = report("Assassinate", { mlCap: 34, targets: ["Assassinate"], blocklist: named }).open;
+  assert.ok(has(open, "Weapon", "native") && !has(blockedOpen, "Weapon", "native"),
+    "blocking changed nothing, so the blocklist is not reaching this read");
+});
+
+test("#743 U2: an effect nothing carries is never-existed, not filter-closed", () => {
+  const r = report("Definitely Not A Real Affix Name", { mlCap: 34 });
+  assert.deepStrictEqual(r.open, []);
+  assert.deepStrictEqual(r.closedByFilters, []);
+  assert.strictEqual(r.anyCatalogRoute, false);
+});
+
+test("#743 U2: a route open under the query is not also reported as closed", () => {
+  const r = report("Assassinate", { mlCap: 34, targets: ["Assassinate"] });
+  for (const o of r.open) {
+    assert.ok(!r.closedByFilters.some((c) => c.slot === o.slot && c.route === o.route && c.via === o.via),
+      `${o.slot}/${o.route} appears in both lists`);
+  }
+});
+
+test("#743 U2: the unfiltered pass never leaks into `open`", () => {
+  // The safety property that makes the second pass legitimate: everything in
+  // `open` must also be reachable under the query, or the disclosure would offer
+  // the player a route their own settings removed.
+  const q = { mlCap: 10, targets: ["Assassinate"] };
+  const r = report("Assassinate", q);
+  const live = M.slotReachabilityFor("Assassinate",
+    M.filterEligiblePool(M.eligible(dataset.items, q), q).elig, POOLS);
+  for (const o of r.open) {
+    assert.ok(live.some((l) => l.slot === o.slot && l.route === o.route && l.via === o.via),
+      `${o.slot}/${o.route} is in open but not in the live pool`);
+  }
+});
+
 console.log(`\n${passed} passed`);

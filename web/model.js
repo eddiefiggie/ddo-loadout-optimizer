@@ -1117,6 +1117,40 @@ function slotReachabilityFor(stat, variants, pools) {
   return [...out.values()];
 }
 
+/** #743 (U2) — reachability for `stat` under a query, split into the two answers
+ *  a player can act on differently.
+ *
+ *  `CONCEPTS.md` already names both as routes to a zero — "nothing carries it"
+ *  and "the filters removed every source" — and the difference matters: one is a
+ *  setting the player can change, the other is the catalog. Saying only "no" for
+ *  both would send someone hunting for a gate that was never shut.
+ *
+ *  Runs the index TWICE, and the asymmetry between the passes is the safety
+ *  property: the live pass produces what is OFFERED, the unfiltered pass only
+ *  CLASSIFIES what the live pass already excluded. Nothing reachable solely in
+ *  the unfiltered pass ever reaches `open`, so the disclosure can never hand the
+ *  player a route their own settings removed.
+ *
+ *  The live pool is `filterEligiblePool(eligible(...))`, not bare `eligible(...)`
+ *  — the blocklist, set exclusions and pack filter run past `eligible`, and
+ *  reading only the first half would report a blocked item as reachable and
+ *  quietly contradict the solve.
+ *
+ *  @returns `{ open, closedByFilters, anyCatalogRoute }`
+ */
+function slotReachabilityReport(stat, variants, query, pools) {
+  const q = query || {};
+  const open = slotReachabilityFor(stat, filterEligiblePool(eligible(variants, q), q).elig, pools);
+  const all = slotReachabilityFor(stat, variants, pools);
+  const key = (r) => `${r.slot}||${r.route}||${r.via || ""}`;
+  const openKeys = new Set(open.map(key));
+  return {
+    open,
+    closedByFilters: all.filter((r) => !openKeys.has(key(r))),
+    anyCatalogRoute: all.length > 0,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // #539 — the SET PIN. "Deliver this set, or tell me you cannot."
 //
@@ -2362,7 +2396,7 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = { poolStatNames, setIntrinsicCaps, setSplitMechanics, splitMechanicFor, setConditionalDisclosures, conditionalDisclosureFor,
     intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, MRR_CAP_BY_ARMOR, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
-    slotReachabilityFor,
+    slotReachabilityFor, slotReachabilityReport, filterEligiblePool,
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
