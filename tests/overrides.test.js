@@ -632,8 +632,8 @@ test("#88 U6: every eligible pool row is addressable, and keys are unique across
   });
   assert.deepStrictEqual([...channels].sort(), [
     "dino_inserts", "legendary_green_steel", "nearly_complete", "nearly_complete_per_item",
-    "seal", "viktranium",
-  ], "all six channels are walked (#687 folded the two Legendary Green Steel channels into one)");
+    "seal", "slavers", "viktranium",
+  ], "all seven channels are walked (#687 folded the two Legendary Green Steel channels into one; #766 added slavers)");
   // #423 re-ratification — was 976 / 894. The ruling that R7's load-generated
   // exclusion reaches the crafted channels removed exactly the 278 rows carrying
   // a `via` expansion receipt: 184 viktranium, 54 dino_inserts, 40 nearly_complete.
@@ -655,8 +655,12 @@ test("#88 U6: every eligible pool row is addressable, and keys are unique across
   // 278 Viktranium / dino / Nearly Complete receipts above. Measured per channel:
   // green_steel 100 -> 82 eligible rows, every other channel unchanged, and the 18
   // umbrella-named rows are the whole difference (0 `* Skills` stats remain).
-  assert.strictEqual(rows, 687, "the eligible pool-row population");
-  assert.strictEqual(seen.size, 664, "distinct keys");
+  // #766 re-ratification — was 687 / 664. The eight Slaver's pools add 184
+  // options; the two Suffix `Resistance` umbrellas expand into six `via`-stamped
+  // save rows, which R7 excludes exactly as it excludes the receipts above, and
+  // the umbrella rows themselves are gone — so 184 - 2 - 2 = 180 eligible rows.
+  assert.strictEqual(rows, 867, "the eligible pool-row population");
+  assert.strictEqual(seen.size, 844, "distinct keys");   // #766: +180, every Slaver's row distinct
 });
 
 test("#88 U6: three same-stat seal entries at different bonus types get three distinct keys", () => {

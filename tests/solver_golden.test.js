@@ -495,26 +495,34 @@ function test(name, fn) {
   // the re-ratification was accepted for, so a future regression that quietly
   // put the option back on weapons fails here with a reason rather than as an
   // unexplained loadout diff.
+  // #766 re-ratification — the twins' ratified loadout moved AGAIN: with the
+  // Slave Lord's Sorcery set reachable through the Slaver's Set Bonus slot, both
+  // solves now wear six Slave Lords pieces awakened into one set (+4 Artifact on
+  // every school at 5 pieces) for +1 Necromancy Focus with nothing above it lost,
+  // and the Viktranium accessory host that carried the Quality DC craft is no
+  // longer in the loadout. So the relocation is pinned where it lives — the POOL
+  // — rather than on a loadout that no longer picks it: the fact #365 shipped is
+  // that the option sits in the Accessory table, and that is true whichever
+  // build wins. The provenance twins still move identically (asserted below).
+  test("#365 — the Quality DC option lives in the Viktranium ACCESSORY pool, its Exceptional sibling on Weapon", () => {
+    const vik = dataset().viktranium;
+    const quality = vik.filter((v) => v.name === "Woeful: Quality Spell Focus Mastery");
+    assert.ok(quality.length >= 1, "the relocated Quality DC option is in the pool");
+    assert.ok(quality.every((v) => v.category === "Accessory"),
+      "and keyed to Accessory — a Weapon key means the relocation regressed");
+    assert.ok(quality.every((v) => v.affixes.every((a) => a.bonus_type === "Quality" && a.value === 2)),
+      "carrying the wiki's +2 Quality bonus on every spell school");
+    const exceptional = vik.filter((v) => v.name === "Woeful: Exceptional Spell Focus Mastery");
+    assert.ok(exceptional.length >= 1 && exceptional.every((v) => v.category === "Weapon"),
+      "the Exceptional sibling stays a Weapon option — one option moved, not the family");
+  });
   const DC_TWINS = ["provenance-alias-sacred-dc-ml34",
                     "provenance-components-sacred-dc-ml34"];
-  for (const name of DC_TWINS) {
-    test(`#365 — ${name} crafts the Quality DC on an ACCESSORY host`, () => {
-      const placed = details[name].vikPlaced;
-      const quality = placed.filter((v) => v.name === "Woeful: Quality Spell Focus Mastery");
-      assert.strictEqual(quality.length, 1,
-        "the relocated Quality DC option is crafted exactly once");
-      assert.strictEqual(quality[0].category, "Accessory",
-        "and on an Accessory host — crafting it on a Weapon means the relocation regressed");
-      assert.ok(quality[0].affixes.every((a) => a.bonus_type === "Quality" && a.value === 2),
-        "carrying the wiki's +2 Quality bonus on every spell school");
-      // Its genuinely-weapon sibling stays a weapon craft in the same solve, so
-      // the relocation moved one option and not the family.
-      const exceptional = placed.filter(
-        (v) => v.name === "Woeful: Exceptional Spell Focus Mastery");
-      assert.ok(exceptional.every((v) => v.category === "Weapon"),
-        "the Exceptional sibling is still crafted on a Weapon host");
-    });
-  }
+  test("#365/#766 — the provenance twins still solve identically", () => {
+    const [a, b] = DC_TWINS.map((n) => solves[n]);
+    assert.deepStrictEqual(a.perTarget, b.perTarget);
+    assert.deepStrictEqual(a.chosen, b.chosen);
+  });
 
   for (const name of goldenNames) {
     test(`golden solve unchanged: ${name}`, () => {

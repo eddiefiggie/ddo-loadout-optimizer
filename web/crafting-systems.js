@@ -57,6 +57,24 @@
       result_label: "Sun/Moon augment",
       slot_types: ["Sun", "Moon"], station_name: null,
     },
+    // #766 — Slaver's crafting. `station_name` is null on purpose: the wiki's name
+    // for the station was not readable when this shipped and is not inferred
+    // (docs/plans/2026-09-14-007). The membership fork below keys on the
+    // station STRING the build stamps, which is the data's own vocabulary.
+    "slavers": {
+      system_id: "slavers", system_name: "Slaver's crafting",
+      expansion: "The Slave Lords", mechanism_kind: "augment_assignment",
+      action_label: "Craft Slaver's {slot_type} slot: {effect}",
+      result_label: "Slaver's crafting option",
+      slot_types: ["Prefix", "Suffix", "Extra", "Bonus"], station_name: null,
+    },
+    "slavers-set-bonus": {
+      system_id: "slavers-set-bonus", system_name: "Slaver's Set Bonus",
+      expansion: "The Slave Lords", mechanism_kind: "selectable_set_membership",
+      action_label: "Craft Slaver's Set Bonus: {set_name}",
+      result_label: "Slaver's Set Bonus",
+      slot_type: "Set Bonus", station_name: null,
+    },
     "nearly-completed": {
       system_id: "nearly-completed", system_name: "Nearly Completed",
       expansion: "Terror of Demogorgon", mechanism_kind: "selectable_affix",
@@ -78,6 +96,7 @@
   const STATION_TO_SYSTEM = {
     "Cannith Repurposing Station": "vecna-lost-purpose",
     "Dinosaur Bone crafting": "isle-of-dread-set-bonus",
+    "Slaver's crafting": "slavers-set-bonus",   // #766
   };
 
   function get(systemId) {

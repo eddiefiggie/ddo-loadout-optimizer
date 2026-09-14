@@ -45,8 +45,8 @@ from src import crafting_coverage as cc  # noqa: E402
 # they are named individually, and asserted by the per-item scenarios at the foot
 # of this file, because a slot-level count cannot tell a covered host from an
 # uncovered one.
-BASELINE_UNSERVED_LABELS = 30
-BASELINE_UNSERVED_ITEM_SLOTS = 336
+BASELINE_UNSERVED_LABELS = 20   # #766 took Slaver's ten labels off the list
+BASELINE_UNSERVED_ITEM_SLOTS = 282   # 336 - 24 typed Slaver's slots - 30 Set Bonus slots
 
 # #371 — the per-item split as measured on the built dataset.
 BASELINE_PER_ITEM_DECLARERS = 65
@@ -144,6 +144,8 @@ def full_dataset(per_item=True, **overrides):
         # `served_labels` refuses a pool that walks zero records, so a fixture
         # missing this one fails on THAT rather than on what the test is about.
         "essence_crafting": [{"menu": "Prefix"}],
+        # #766 — keyed by `pool_key`, which IS the host label.
+        "slavers": [{"pool_key": "Slaver's Prefix Slot", "slot": "Prefix", "tier": "heroic"}],
         "nearly_complete_per_item": {PER_ITEM_HOST: [dict(PER_ITEM_OPTION)]},
     }
     data.update(overrides)
@@ -195,6 +197,15 @@ def test_the_pools_earlier_heuristics_falsely_flagged_are_served():
     assert served.get("Lost Purpose") == "membership_set_defs"
     assert served.get("Legendary Lost Purpose") == "membership_set_defs"
     assert served.get(cc.DINO_SET_BONUS_LABEL) == "membership_set_defs"
+    # #766 — Slaver's crafting: the four typed slots by the `slavers` pool, keyed
+    # by each record's own `pool_key`; the Set Bonus slot by chosen membership.
+    for slot in ("Prefix", "Suffix", "Extra", "Bonus"):
+        assert served.get(f"Slaver's {slot} Slot") == "slavers", slot
+        assert served.get(f"Legendary Slaver's {slot} Slot") == "slavers", slot
+    assert served.get("Slaver's Set Bonus") == "membership_set_defs"
+    assert served.get("Legendary Slaver's Set Bonus") == "membership_set_defs"
+    for label in ("Slaver's Prefix Slot", "Slaver's Set Bonus", "Legendary Slaver's Bonus Slot"):
+        assert label not in cc.UNSERVED_ALLOWLIST, label
 
 
 def test_a_qualified_label_normalizes_to_the_pool_it_names():
@@ -242,16 +253,19 @@ def test_a_renamed_pool_key_strands_its_slots_and_fails():
 
 
 def test_a_label_the_allowlist_covers_does_not_fail():
-    """The allowlist is what keeps the 35 known gaps from being noise."""
+    """The allowlist is what keeps the 25 known gaps from being noise.
+
+    #766 — this used `Slaver's Prefix Slot` as its example gap until that pool
+    was served; a Rune Arm Essence menu is the standing unsourced one now."""
     data = full_dataset(items=[
         augment("Topaz", ["Blue"]),
-        item("Chains", ["Blue Augment Slot", "Slaver's Prefix Slot"]),
+        item("Rune Arm", ["Blue Augment Slot", "Essence Crafting: Rune Arm - Prefix"]),
     ])
 
-    with allowlist("Slaver's Prefix Slot"), per_item_exceptions():
+    with allowlist("Essence Crafting: Rune Arm - Prefix"), per_item_exceptions():
         cov = cc.check(data)
 
-    assert cov["unserved"] == {"Slaver's Prefix Slot": 1}
+    assert cov["unserved"] == {"Essence Crafting: Rune Arm - Prefix": 1}
     assert cov["unserved_item_slots"] == 1
 
 
@@ -271,6 +285,7 @@ def test_each_pool_raises_distinguishably_when_it_walks_zero_records():
         "seal": {"seal": []},
         "legendary_green_steel": {"legendary_green_steel": []},
         "essence_crafting": {"essence_crafting": []},
+        "slavers": {"slavers": []},
         "nearly_complete_per_item": {"nearly_complete_per_item": {}},
     }
     assert set(empty) == set(cc.POOL_READERS), "a pool was added without a vacuity case"

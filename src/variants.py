@@ -201,6 +201,10 @@ def _make_variant(item, ml, tier_label, parsed):
         # lamordia_slots). One marker for both blank classes; the class rides on
         # each slot so the pool is keyed by (item_class, tier).
         "legendary_green_steel_tiers": item.get("legendary_green_steel_tiers"),
+        # #766 — Slaver's crafting: typed slots [{slot, tier}] the solver crafts one
+        # option per, and the Set Bonus tier the build turns into a membership slot.
+        "slavers_slots": item.get("slavers_slots"),
+        "slavers_set_bonus": item.get("slavers_set_bonus"),
         # Essence Crafting Trinket menus [{menu:"Prefix"},…] — one single-pick
         # choice slot each, the Gem of Many Facets' three (#193/#599).
         "essence_slots": item.get("essence_slots"),

@@ -91,8 +91,8 @@ const W = require("../web/wizard.js");
 
 test("the index covers every stamped option row and nothing else", () => {
   const idx = W.craftOptionIndex(DS);
-  assert.strictEqual(idx.length, 812, "index size is the stamped population");
-  assert.strictEqual(new Set(idx.map((r) => r.id)).size, 812, "ids stay unique through the index");
+  assert.strictEqual(idx.length, 996, "index size is the stamped population");
+  assert.strictEqual(new Set(idx.map((r) => r.id)).size, 996, "ids stay unique through the index");
   for (const r of idx) {
     assert.ok(r.id.startsWith("craft:"), r.id);
     assert.ok(r.name, `row with no display name: ${r.id}`);

@@ -199,6 +199,23 @@ REGISTRY = {
         "non-goal; each tier's own effect is what is offered.",
         host_marker="legendary_green_steel_tiers",
         expects_stations=("Legendary Altar",)),
+    "slavers": _c(
+        ATOMIC, ("spell_focus",), VERIFIED_SAFE, True,
+        "#766 — Slaver's crafting, the four typed slots (Prefix / Suffix / Extra / "
+        "Bonus) at heroic and legendary: one record per craftable option carrying "
+        "its own `affixes` list, keyed by (slot, tier), sourced natively from the "
+        "eight `(Legendary )Slaver's <Slot> Slot` menus. 184 source options -> 184 "
+        "records, no option split. The tier is read from the LABEL, not the host's "
+        "ML: `Legendary Chains` is ML 28, below Viktranium's ML-30 boundary, so an "
+        "ML-derived tier would file a legendary host under the heroic pool. The "
+        "Suffix pools carry `Resistance`, the all-saves umbrella, expanded INSIDE the "
+        "option by the spell_focus pass declared here (the Legendary Green Steel "
+        "rule): one craft, three saves, one record. Reachable: the six "
+        "`Chains` / `Five Rings` / `Shackles` hosts declare `slavers_slots`, four each. "
+        "The Set Bonus slot is NOT this container — it is chosen membership through "
+        "`membership_set_defs`, per host, and the pool names that resolve to no set "
+        "def are disclosed in `metadata.slavers_coverage.set_names_unresolved`.",
+        host_marker="slavers_slots"),
     "essence_crafting": _c(
         FLAT, (), VERIFIED_SAFE, True,
         "Essence Crafting Trinket menus, the Gem of Many Facets' three (#193/#599). "
@@ -258,7 +275,7 @@ NON_CONTAINERS = {
 # unnoticed. Discovery catches an undeclared container that reaches the gate; this
 # catches the other direction — a declaration deleted, or a container added to the
 # registry without anyone revisiting the count.
-EXPECTED_CONTAINER_COUNT = 8
+EXPECTED_CONTAINER_COUNT = 9
 
 
 def describe() -> list:

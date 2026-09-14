@@ -127,6 +127,13 @@ async function solveFixture(fx, env) {
     // are never dominated) and the golden would ratify loadouts that swap in a
     // crafting host and then craft nothing — churn with no gain, pinned forever.
     dataset.nearly_complete_per_item,
+    // Essence Crafting is deliberately NOT threaded (the note above: widening the
+    // golden to it is its own re-ratification), so its positional slot is empty.
+    [],
+    // #766 — Slaver's crafting IS threaded: `Legendary Chains` / `Five Rings` /
+    // `Shackles` are ML 28 and candidates on every ML 28+ fixture, so a capture
+    // without the pool would ratify loadouts the app no longer produces.
+    dataset.slavers,
   );
   const r = await solveLexicographic(model, highs);
   return {

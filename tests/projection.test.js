@@ -2572,3 +2572,55 @@ test("#681: a build that crafted nothing down is untouched", () => {
   assert.strictEqual(view.loadout.find((r) => /Many Facets/.test(r.item)).ml, 30,
     "with nothing crafted down, the host reports its printed ML");
 });
+
+// ---- #766: Slaver's slots are declared structure too ------------------------------
+test("#766: declared Slaver's slots equal placed plus disclosed-empty, in declared order, keyed by slot AND tier", () => {
+  const declared = [{ slot: "Prefix", tier: "legendary" }, { slot: "Suffix", tier: "legendary" },
+                    { slot: "Extra", tier: "legendary" }, { slot: "Bonus", tier: "legendary" }];
+  const placed = [{ item: "Legendary Chains", slot: "Suffix", tier: "legendary", name: "Resistance +8 (Enhancement)" },
+                  { item: "Legendary Chains", slot: "Prefix", tier: "heroic", name: "odd" }];
+  const rows = P.slaversSlotRows(declared, placed);
+  assert.deepStrictEqual(rows.map((r) => r.slot), ["Prefix", "Suffix", "Extra", "Bonus", "Prefix"], "declared order, then the odd placement");
+  assert.deepStrictEqual(rows.map((r) => !!r.placement), [false, true, false, false, true]);
+  assert.strictEqual(rows[4].placement.name, "odd", "a placement matching no declared (slot, tier) is kept rather than dropped");
+  assert.deepStrictEqual(P.slaversSlotRows(undefined, []), []);
+  assert.strictEqual(P.slaversSlotRows([], [{ item: "X", slot: "Prefix", tier: "heroic" }]).length, 1, "no declaration: placements pass through");
+});
+
+test("#766: a Slaver's craft labels with its slot, and an empty declared slot says why", () => {
+  const o = { slot: "Prefix", tier: "legendary", stat: "Charisma", bonus_type: "Enhancement", value: 13, unit: "flat" };
+  const label = P.craftLabel(o, "slavers");
+  assert.ok(label.startsWith("Slaver's Prefix slot: "), label);
+  assert.strictEqual(P.craftStepLabel(o, "slavers"), "Slaver's Prefix slot");
+  assert.strictEqual(P.craftRowLabel(o, "slavers").where, "Prefix slot");
+  assert.strictEqual(P.CRAFT_SECTION_LABEL.slavers, "Slaver's crafting");
+  const empty = P.craftLabel({ slot: "Extra", tier: "legendary" }, "slaversEmpty");
+  assert.ok(/^Slaver's Extra slot: left empty — no option adds to your ranked stats$/.test(empty), empty);
+  assert.strictEqual(P.craftRowLabel({ slot: "Extra" }, "slaversEmpty").what, "left empty");
+  assert.strictEqual(P.CRAFT_SECTION_LABEL.slaversEmpty, "Slaver's crafting");
+});
+
+test("#766: an equipped Slaver's host's empty slots reach the shared content model, filled and empty interleaved", () => {
+  const rec = {
+    name: "SLV", inputs: { ml: 28, priorities: ["Charisma"], pool: "all" },
+    snapshot: {
+      status: "optimal", perTarget: { Charisma: 13 },
+      chosen: [{ slot: "Belt", variant: { variant_id: "Legendary Chains", source_item: "Legendary Chains",
+        minimum_level: 28, affixes: [],
+        slavers_slots: [{ slot: "Prefix", tier: "legendary" }, { slot: "Suffix", tier: "legendary" },
+                        { slot: "Extra", tier: "legendary" }, { slot: "Bonus", tier: "legendary" }] } }],
+      slaversPlaced: [{ item: "Legendary Chains", slot: "Bonus", tier: "legendary", name: "Charisma +3 (Quality)",
+        stat: "Charisma", bonus_type: "Quality", value: 3, unit: "flat" }],
+    },
+  };
+  const view = P.project(rec);
+  const belt = view.loadout.find((it) => it.item === "Legendary Chains");
+  assert.ok(belt, "the host is in the loadout view");
+  assert.deepStrictEqual(belt.crafting.map((c) => c.family), ["slaversEmpty", "slaversEmpty", "slaversEmpty", "slavers"],
+    "four declared slots, in slot order, the last one filled");
+  assert.strictEqual(belt.crafting[3].label, "Slaver's Bonus slot: Charisma +3 Quality");
+  const maps = P.buildCraftMaps(rec.snapshot);
+  const rows = R.craftRowsFor(rec.snapshot.chosen[0].variant, 0, maps);
+  assert.deepStrictEqual(rows.map((r) => r.family), ["slaversEmpty", "slaversEmpty", "slaversEmpty", "slavers"]);
+  assert.ok(rows[0].empty && rows[2].empty && !rows[3].empty);
+});

@@ -1,6 +1,6 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-09-05",
+ "generated": "2026-09-14",
  "dataset": "web/data/items.json (9194 items)",
  "fixture_count": 24,
  "solves": {
@@ -917,7 +917,7 @@
     "Enchantment Focus": 31,
     "Evocation Focus": 32,
     "Illusion Focus": 31,
-    "Necromancy Focus": 24,
+    "Necromancy Focus": 25,
     "Transmutation Focus": 25
    },
    "effective": {
@@ -926,13 +926,13 @@
     "Enchantment Focus": 31,
     "Evocation Focus": 32,
     "Illusion Focus": 31,
-    "Necromancy Focus": 24,
+    "Necromancy Focus": 25,
     "Transmutation Focus": 25
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Docent of the Artblade's Reflection"
+     "variant": "Legendary Executioner's Docent"
     },
     {
      "slot": "Belt",
@@ -948,11 +948,11 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Lamordian Elegant Cloak"
+     "variant": "Legendary Slave Master's Cloak"
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Baron Aubrecker's Monogrammed Gloves"
+     "variant": "Legendary Darstil's Gloves"
     },
     {
      "slot": "Goggles",
@@ -960,7 +960,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Malicia's Crown (level 12)"
+     "variant": "Legendary Executioner's Helm"
     },
     {
      "slot": "Main Hand",
@@ -980,11 +980,11 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Band of Mental Magic"
+     "variant": "Legendary Spinneret"
     },
     {
      "slot": "Trinket",
-     "variant": "The Bloodstained Letter"
+     "variant": "Legendary Symbol of the Slave Lords"
     }
    ]
   },
@@ -996,7 +996,7 @@
     "Enchantment Focus": 31,
     "Evocation Focus": 32,
     "Illusion Focus": 31,
-    "Necromancy Focus": 24,
+    "Necromancy Focus": 25,
     "Transmutation Focus": 25
    },
    "effective": {
@@ -1005,13 +1005,13 @@
     "Enchantment Focus": 31,
     "Evocation Focus": 32,
     "Illusion Focus": 31,
-    "Necromancy Focus": 24,
+    "Necromancy Focus": 25,
     "Transmutation Focus": 25
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Docent of the Artblade's Reflection"
+     "variant": "Legendary Executioner's Docent"
     },
     {
      "slot": "Belt",
@@ -1027,11 +1027,11 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Lamordian Elegant Cloak"
+     "variant": "Legendary Slave Master's Cloak"
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Baron Aubrecker's Monogrammed Gloves"
+     "variant": "Legendary Darstil's Gloves"
     },
     {
      "slot": "Goggles",
@@ -1039,7 +1039,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Malicia's Crown (level 12)"
+     "variant": "Legendary Executioner's Helm"
     },
     {
      "slot": "Main Hand",
@@ -1059,11 +1059,11 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Band of Mental Magic"
+     "variant": "Legendary Spinneret"
     },
     {
      "slot": "Trinket",
-     "variant": "The Bloodstained Letter"
+     "variant": "Legendary Symbol of the Slave Lords"
     }
    ]
   },
@@ -1465,17 +1465,17 @@
    "status": "optimal",
    "perTarget": {
     "Armor Class": 171,
-    "Reflex Save": 34,
-    "Will Save": 34,
-    "Fortitude Save": 33,
-    "Physical Sheltering": 124
+    "Reflex Save": 38,
+    "Will Save": 38,
+    "Fortitude Save": 37,
+    "Physical Sheltering": 117
    },
    "effective": {
     "Armor Class": 171,
-    "Reflex Save": 34,
-    "Will Save": 34,
-    "Fortitude Save": 33,
-    "Physical Sheltering": 124
+    "Reflex Save": 38,
+    "Will Save": 38,
+    "Fortitude Save": 37,
+    "Physical Sheltering": 117
    },
    "chosen": [
     {
@@ -1524,7 +1524,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Band of Faith and Fortress"
+     "variant": "Five Rings"
     },
     {
      "slot": "Ring",

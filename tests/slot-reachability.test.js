@@ -41,6 +41,7 @@ const POOLS = {
   seal: dataset.seal || [],
   legendaryGreenSteel: dataset.legendary_green_steel || [],
   essenceCrafting: dataset.essence_crafting || [],
+  slavers: dataset.slavers || [],   // #766
 };
 
 /** Every route for `stat` over the whole catalog (no query filtering). */
@@ -506,6 +507,17 @@ test("#753: a refused add clears the line, and a multi-name expansion reports no
     "the refusal path clears the reach line");
   assert.ok(/landed\.length === 1 && landed\[0\] !== _utilitySentinel \? landed\[0\] : null/.test(add),
     "exactly one landed name is described; an expansion or the Utility tier is not");
+});
+
+test("#766: a Slaver's host's typed slots are a route, keyed by the host's own (slot, tier)", () => {
+  const belt = at(routes("Charisma"), "Belt", "slavers");
+  assert.strictEqual(belt.length, 1, "Belt reaches Charisma through Slaver's crafting (Chains / Legendary Chains)");
+  assert.ok(belt[0].bonusTypes.includes("Enhancement") && belt[0].bonusTypes.includes("Quality"),
+    "Prefix (Enhancement) and Bonus (Quality) both supply it");
+  assert.strictEqual(at(routes("Charisma"), "Helmet", "slavers").length, 0,
+    "a Set Bonus carrier with no typed slot is not a route");
+  assert.strictEqual(at(routes("Will Save"), "Boots", "slavers").length, 1,
+    "Shackles reach a save through the Suffix Resistance umbrella, expanded inside the option");
 });
 
 console.log(`\n${passed} passed`);

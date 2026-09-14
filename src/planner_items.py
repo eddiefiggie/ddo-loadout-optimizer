@@ -35,6 +35,7 @@ import os
 import re
 
 from src.seal import normalize_seal_type
+from src import slavers as slavers_mod
 from src import essence_pool
 
 RAW_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "seed",
@@ -182,6 +183,33 @@ def _lgs_tiers(crafting):
     return [{"tier": t, "item_class": k} for k, t in sorted(slots)]
 
 
+def _slavers_slots(crafting):
+    """#766 — Slaver's crafting typed host slots from the crafting[] list. Each
+    `"(Legendary )Slaver's <Prefix|Suffix|Extra|Bonus> Slot"` label becomes
+    `{slot, tier}` — the tier read from the LABEL, because `Legendary Chains` is
+    ML 28 and an ML-derived tier would file it under the heroic pool. Deduped by
+    (slot, tier); emitted in the catalog's slot order, heroic before legendary."""
+    found = {}
+    for c in crafting or []:
+        parsed = slavers_mod.parse_label(c) if isinstance(c, str) else None
+        if parsed:
+            found[parsed] = None
+    order = {s: i for i, s in enumerate(slavers_mod.SLOTS)}
+    return [{"slot": s, "tier": t}
+            for (s, t) in sorted(found, key=lambda k: (slavers_mod.TIERS.index(k[1]), order[k[0]]))]
+
+
+def _slavers_set_bonus(crafting):
+    """#766 — the Slaver's Set Bonus tier marker: `"Legendary Slaver's Set Bonus"`
+    -> 'legendary', `"Slaver's Set Bonus"` -> 'heroic'. None if absent. The build
+    turns it into a chosen-membership slot (membership.attach_slavers_set_bonus_slots)."""
+    tiers = [t for t in (slavers_mod.parse_set_bonus_label(c) for c in crafting or []
+                         if isinstance(c, str)) if t]
+    if not tiers:
+        return None
+    return "legendary" if "legendary" in tiers else "heroic"
+
+
 def _lost_purpose(crafting):
     """Vecna "Lost Purpose" tier marker: `"Legendary Lost Purpose"` -> 'legendary',
     `"Lost Purpose"` -> 'heroic'. None if absent."""
@@ -247,6 +275,14 @@ def _record(it, verified_seal_types, nc_per_item_hosts=None):
     lgs = _lgs_tiers(it.get("crafting"))
     if lgs:
         rec["legendary_green_steel_tiers"] = lgs
+    # #766 — Slaver's crafting: the four typed slots and the Set Bonus tier, both
+    # read structurally from `crafting[]` (the label carries the tier).
+    slv = _slavers_slots(it.get("crafting"))
+    if slv:
+        rec["slavers_slots"] = slv
+    slv_set = _slavers_set_bonus(it.get("crafting"))
+    if slv_set:
+        rec["slavers_set_bonus"] = slv_set
     return rec
 
 
@@ -273,6 +309,8 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
     collapsed = host_owned = 0
     seal_hosts = lamordia_hosts = nearly_hosts = lost_purpose_hosts = 0
     lgs_hosts = {"accessory": 0, "weapon": 0}
+    slavers_hosts = {t: 0 for t in slavers_mod.TIERS}
+    slavers_set_bonus_hosts = {t: 0 for t in slavers_mod.TIERS}
     nc_per_item_hosts_marked = 0
     for it in raw:
         name = it.get("name")
@@ -296,6 +334,10 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
             lost_purpose_hosts += 1
         for _cls in {sl["item_class"] for sl in rec.get("legendary_green_steel_tiers") or []}:
             lgs_hosts[_cls] += 1
+        for _t in {sl["tier"] for sl in rec.get("slavers_slots") or []}:
+            slavers_hosts[_t] += 1
+        if rec.get("slavers_set_bonus"):
+            slavers_set_bonus_hosts[rec["slavers_set_bonus"]] += 1
         records.append(rec)
 
     stats = {
@@ -309,5 +351,9 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
         "planner_lost_purpose_hosts": lost_purpose_hosts,
         # #194/#687 — Legendary Green Steel blanks, by class: 8 accessory, 40 weapon.
         "planner_legendary_green_steel_hosts": dict(lgs_hosts),
+        # #766 — Slaver's crafting: 3 typed-slot hosts per tier; 18 Set Bonus
+        # carriers per tier (the 3 hosts plus 15 named items).
+        "planner_slavers_hosts": dict(slavers_hosts),
+        "planner_slavers_set_bonus_hosts": dict(slavers_set_bonus_hosts),
     }
     return records, stats

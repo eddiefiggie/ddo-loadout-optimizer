@@ -244,6 +244,8 @@
     // rewritten by `migrateOverride` on load, so a player's correction survives
     // the rename.
     { channel: "legendary_green_steel", multi: true, disc: function (e) { return [e.item_class, e.tier]; } },
+    // #766 — Slaver's crafting, keyed by (slot, tier), the same multi-affix shape.
+    { channel: "slavers", multi: true, disc: function (e) { return [e.slot, e.tier]; } },
     { channel: "nearly_complete", multi: true, disc: function (e) { return [e.category, e.tier]; } },
     { channel: "viktranium", multi: true, disc: function (e) { return [e.slot_type, e.category, e.tier]; } },
     { channel: "dino_inserts", multi: true, disc: function (e) { return [e.category, e.dino_type]; } },
