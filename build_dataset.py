@@ -394,7 +394,15 @@ def load_cannith_tiers(path: str = CANNITH_TIERS_PATH) -> dict:
     otherwise read, this one supplies affixes for items it read as empty. Neither ever
     overwrites a native affix.
 
-    Returns `{item_name: [{name,type,value}, …]}`. Missing file -> {}."""
+    #591 — the same entries carry the item's tier-granted AUGMENT SLOTS as
+    `crafting[]` labels (`slots`). A slot is host capacity, not an affix: it has no
+    bonus type to source and no value to verify, and the solver already bounds each
+    colour's augment placements by the slots the equipped items carry. The overlay
+    appends them to the record's own `crafting[]` so `planner_items` lifts and
+    `colors` normalizes them exactly as it does a natively-parsed slot.
+
+    Returns `{item_name: {"affixes": [{name,type,value}, …], "slots": [label, …]}}`,
+    keeping an entry that has either. Missing file -> {}."""
     if not os.path.exists(path):
         return {}
     with open(path, encoding="utf-8") as fh:
@@ -403,29 +411,42 @@ def load_cannith_tiers(path: str = CANNITH_TIERS_PATH) -> dict:
     for name, entry in (raw.get("items") or {}).items():
         rows = [{"name": a["name"], "type": a["type"], "value": str(a["value"])}
                 for a in entry.get("final") or []]
-        if rows:
-            out[name] = rows
+        slots = [str(x) for x in entry.get("slots") or []]
+        if rows or slots:
+            out[name] = {"affixes": rows, "slots": slots}
     return out
 
 
-def apply_cannith_tiers(records: list, overlay: dict) -> dict:
+def apply_cannith_tiers(records: list, overlay: dict, known_slots=None) -> dict:
     """Apply the #313 overlay ADDITIVELY, with the same anti-double-count guard.
 
     An overlay affix is SKIPPED when the record already carries that `(name, type)`,
     so a future upstream refresh that starts parsing these tiers cannot produce a
     doubled value — the overlay simply goes quiet, item by item, and the coverage
-    numbers in `metadata` say so."""
+    numbers in `metadata` say so.
+
+    #591 — augment slots are appended to the record's `crafting[]` under the same
+    rule, per item rather than per label: a record that ALREADY carries any
+    `"<Color> Augment Slot"` marker is one upstream has started parsing, and the
+    overlay's slots are skipped wholesale rather than counted against it one by one
+    (two Green slots on one item would be a real fact the wiki could state, so a
+    per-label dedupe is not a double-count guard, it is a guess). `known_slots`, when
+    given, is the frozen crafting-slot registry: a label outside it fails the build,
+    because the overlay runs AFTER `assert_crafting_vocab` validates the native
+    markers and must not become the one path a new slot vocabulary skips."""
     by_name = {}
     for r in records:
         by_name.setdefault(r.get("name"), r)
     items_filled = affixes_added = affixes_skipped = 0
+    items_slotted = slots_added = slots_skipped = 0
     for name in sorted(overlay):
         rec = by_name.get(name)
         if rec is None:
             continue
+        entry = overlay[name]
         existing = {(a.get("name"), a.get("type")) for a in rec.get("affixes") or []}
         added = 0
-        for aff in overlay[name]:
+        for aff in entry["affixes"]:
             key = (aff["name"], aff["type"])
             if key in existing:
                 affixes_skipped += 1
@@ -436,10 +457,37 @@ def apply_cannith_tiers(records: list, overlay: dict) -> dict:
         if added:
             items_filled += 1
             affixes_added += added
+        slots = entry.get("slots") or []
+        if slots:
+            for label in slots:
+                if known_slots is not None and label not in known_slots:
+                    raise ValueError(
+                        f"cannith tier overlay: {name!r} grants {label!r}, which is not in "
+                        "the frozen crafting-slot registry (new-slot event)")
+            native = [c for c in rec.get("crafting") or []
+                      if isinstance(c, str) and c.endswith(" Augment Slot")]
+            if native:
+                slots_skipped += len(slots)
+            else:
+                rec.setdefault("crafting", []).extend(slots)
+                # The planner record lifted `augment_slots` from `crafting[]` when it
+                # was built, before this overlay ran. Re-run the SAME lift rather
+                # than extending the list by hand, so there is one derivation rule
+                # and this path cannot drift from it.
+                rec["augment_slots"] = planner_mod._augment_slots(rec["crafting"])
+                items_slotted += 1
+                slots_added += len(slots)
     return {
         "items_filled": items_filled,
         "affixes_added": affixes_added,
         "affixes_skipped_already_present": affixes_skipped,
+        # #591 — the augment-slot half: how many items gained their tier slots, and
+        # how many labels went on. `slots_skipped_already_present` counts labels an
+        # upstream-parsed record made redundant; nonzero means the wiki half and
+        # gear-planner now disagree about who owns these slots, and is worth a look.
+        "items_slotted": items_slotted,
+        "slots_added": slots_added,
+        "slots_skipped_already_present": slots_skipped,
         "overlay_items": sorted(overlay),
         "missing_from_roster": sorted(n for n in overlay if by_name.get(n) is None),
     }
@@ -802,7 +850,14 @@ def build() -> dict:
     # #313 — applied AFTER the gap overlay so its anti-double-count guard sees any
     # affix that one restored, and before every downstream normalization stage so a
     # tier affix travels the identical path a natively-parsed one does.
-    _cannith_coverage = apply_cannith_tiers(planner_records, load_cannith_tiers())
+    # #591 — the same overlay carries the tier-granted augment slots, validated
+    # against the frozen crafting-slot registry that `assert_crafting_vocab` above
+    # checked the native markers against, so the overlay cannot admit a label it
+    # would have rejected.
+    _cannith_coverage = apply_cannith_tiers(
+        planner_records, load_cannith_tiers(),
+        known_slots=set(vocabulary_mod._registry_list(
+            vocabulary_mod._load(vocabulary_mod.CRAFTING_SLOT_REGISTRY_PATH), "crafting_slots")))
     # #207 — wiki-sourced VALUE corrections. Separate from the additive overlay
     # above, which cannot overwrite by design. Runs after it so a corrected value
     # applies to the final affix block, and fails the build when its recorded

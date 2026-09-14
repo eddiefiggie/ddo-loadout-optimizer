@@ -54,8 +54,21 @@ that exact item line, not our opinion about it. An affix with no such sibling is
 quarantined: the Mournlode Docent family has no parsed tier at all, so none of its
 enchantments can be typed and none are admitted.
 
-Augment slots, clickie charges, and the one ambiguous line are quarantined by their
-own rules below. So is any BUNDLED enchantment — `Heightened Awareness`, `Parrying`,
+AUGMENT SLOTS ARE CAPACITY, NOT AFFIXES (#591)
+
+`Adds Green Augment Slot` is not an enchantment with a bonus type and a magnitude; it
+is a host slot, the thing an augment goes INTO. The pipeline already models that as a
+per-variant field — `crafting[]` carries `"<Color> Augment Slot"`, `planner_items`
+lifts it to `augment_slots`, `colors` normalizes it, and the solver bounds each
+colour's augment placements by that supply. So these lines are routed to a third
+output, `slots`, as the exact `crafting[]` label, and the overlay appends them to the
+record's own `crafting[]` so they travel the identical path a natively-parsed slot
+does. They were quarantined here for two weeks as "not an affix", which was true and
+was also the wrong question: the 33 worn items gain 40 slots the wiki states outright,
+needing no bonus type and no valuation.
+
+Clickie charges and the one ambiguous line are quarantined by their own rules below.
+So is any BUNDLED enchantment — `Heightened Awareness`, `Parrying`,
 `Riposte`, `Speed` — for a reason worth stating plainly, because the guards that
 caught it are the ones that matter most here.
 
@@ -120,14 +133,17 @@ def resolve_lines(raw):
     return list(cur)
 
 def parse_line(line):
-    """One resolved line -> an affix dict, or a quarantine dict.
+    """One resolved line -> an affix dict, a slot label, or a quarantine dict.
 
-    Returns `("affix", {...})` or `("quarantine", {...})`. Never guesses: anything
+    Returns `("affix", {...})`, `("slot", "<Color> Augment Slot")` or
+    `("quarantine", {...})`. Never guesses: anything
     whose shape is not one of the four numeric forms below becomes a Bool presence,
     and anything ambiguous or non-passive is quarantined.
     """
     if AUGMENT_SLOT.match(line):
-        return "quarantine", _quarantine(line, "augment slot, not an affix")
+        # Not an affix — host capacity. `resolve()` routes it to `slots`; a caller
+        # that only wants affixes sees it as a quarantine and drops it, as before.
+        return "slot", line
     if "Charges" in line:
         # A clickie is an activated ability with a daily charge budget, not a passive
         # stat. Crediting it as one would report a number the player does not wear.
@@ -151,16 +167,31 @@ def parse_line(line):
         return "affix", {"name": m.group("name").strip(), "value": int(m.group("v")), "unit": "flat"}
     return "affix", {"name": line, "value": 1, "unit": "bool"}
 
+def resolve_slots(raw):
+    """raw block -> the `crafting[]` labels of every augment slot the fully-upgraded
+    item carries, in wiki order. `["Colorless Augment Slot", "Green Augment Slot"]`
+    for an item whose Tier 2 adds one and Tier 3 the other. The label is emitted
+    verbatim because it IS the `crafting[]` vocabulary — `planner_items._augment_slots`
+    strips the suffix, `colors.normalize_slots` canonicalizes the colour, and an
+    unknown colour is disclosed there rather than guessed here."""
+    return [line for line in resolve_lines(raw) if AUGMENT_SLOT.match(line)]
+
 def resolve(raw, known_names=None, bundled_names=()):
-    """raw block -> {"affixes": [...], "quarantined": [...]}.
+    """raw block -> {"affixes": [...], "slots": [...], "quarantined": [...]}.
 
     `known_names` is the admit gate. When supplied, an affix whose name is not in it
     is quarantined rather than minted — the exclude-until-verified rule, applied so
     this shard can never introduce vocabulary the catalog has not seen elsewhere.
+
+    `slots` is the augment-slot capacity (#591): the `crafting[]` labels, not affixes,
+    and never quarantined — they carry no bonus type to source and no value to verify.
     """
     affixes, quarantined = [], []
+    slots = resolve_slots(raw)
     for line in resolve_lines(raw):
         kind, payload = parse_line(line)
+        if kind == "slot":
+            continue
         if kind == "quarantine":
             quarantined.append(payload)
             continue
@@ -174,7 +205,7 @@ def resolve(raw, known_names=None, bundled_names=()):
             quarantined.append(_quarantine(line, f"affix name {payload['name']!r} is not in the catalog vocabulary"))
             continue
         affixes.append(payload)
-    return {"affixes": affixes, "quarantined": quarantined}
+    return {"affixes": affixes, "slots": slots, "quarantined": quarantined}
 
 
 def sibling_types(records, family_of, aliases=None):

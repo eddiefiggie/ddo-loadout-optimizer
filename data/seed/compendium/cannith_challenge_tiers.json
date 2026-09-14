@@ -5,10 +5,11 @@
     "harvested": "2026-08-29",
     "source": "ddowiki.com item pages, same-origin paced harvest per docs/wiki-evidence/harvest-method.md",
     "why": "gear-planner emits NO enchantments for a Vaults item whose wiki page uses the 'Upgradeable - Tier N' layout; it emits only a marker affix (VotAU on worn gear, 'Upgradeable - Tier' on weapons). 97 of the 140 Vaults variants are stat-less as a result. This shard covers the 33 WORN variants; the 64 weapon variants are tracked separately (see _meta.weapons_deferred).",
-    "scope": "Worn gear only. Weapons are excluded deliberately - their tier enchantments are almost entirely bane/proc effects (Dragon Bane, Tidal Burst, Crushing Wave, Incandescence) that this optimizer does not value numerically; see #331 for proc valuation, which is the prerequisite for them being worth anything.",
-    "weapons_deferred": "64 weapon variants across 13 families carry the same 'Upgradeable - Tier' gap. Harvested and measured in the same pass; not admitted here.",
+    "scope": "Worn gear only. The 64 weapon variants are #591: re-scoped 2026-09-14 to the same augment-slot capacity this shard now admits (their Tier 3 'Adds Purple Augment Slot'); their tier text is on the FAMILY wiki pages and is not yet harvested. Their bane/proc enchantments stay unvalued permanently (#331 closed not-planned) - a scope boundary, not a prerequisite.",
+    "weapons_deferred": "64 weapon variants across 33 families carry the same 'Upgradeable - Tier' gap. Measured in the 2026-08-29 pass; their raw text was NOT committed. Tracked in #591.",
     "tier_choice": "final - the fully-upgraded Tier 3 state. Matches the project's founding position that theoretical best-in-slot assumes access to everything (README, and the attainability non-goal in AGENTS.md). Every tier's raw text is kept below so a different choice never needs a re-harvest.",
     "raw_is_authoritative": "`raw` is the verbatim rendered Enchantments block, tier headers included, with ' / ' separating lines. `final` is DERIVED from it by src/cannith_tiers.py, and tests/test_cannith_tiers.py re-derives every entry and fails on any disagreement - so a hand-edited `final` cannot ship.",
+    "slots_are_capacity": "#591 (2026-09-14): `slots` is the augment-slot capacity each fully-upgraded item carries, as `crafting[]` labels (`Green Augment Slot`), DERIVED from `raw` by src/cannith_tiers.resolve_slots and re-derived by the tests. An augment slot is a host field, not an affix - the overlay appends these to the record's own crafting[] so the existing lift (planner_items) and colour normalization (colors) run unchanged. Before this they were quarantined as 'augment slot, not an affix', which was true and left 40 wiki-stated slots on the floor.",
     "bundled_enchantments_quarantined": [
       "Heightened Awareness",
       "Parrying",
@@ -64,14 +65,13 @@
           "type_source": "catalog-wide uniform type"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Evocation Focus I",
           "reason": "affix name 'Evocation Focus I' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -114,6 +114,9 @@
           "type_source": "Blasting Chime family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Cacophonic Guard",
@@ -122,10 +125,6 @@
         {
           "raw": "Evocation Focus I",
           "reason": "affix name 'Evocation Focus I' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -168,12 +167,10 @@
           "type_source": "Blasting Chime family sibling"
         }
       ],
-      "quarantined": [
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
-        }
-      ]
+      "slots": [
+        "Green Augment Slot"
+      ],
+      "quarantined": []
     },
     "Bracers of Wind (level 11)": {
       "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Wind_(level_11)",
@@ -206,14 +203,13 @@
           "type_source": "Bracers of Wind family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Dodge +8%",
           "reason": "bonus type unsourced: no sibling in the 'Bracers of Wind' family carries 'Dodge', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -256,14 +252,13 @@
           "type_source": "Bracers of Wind family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Dodge +9%",
           "reason": "bonus type unsourced: no sibling in the 'Bracers of Wind' family carries 'Dodge', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -298,12 +293,10 @@
           "type_source": "Bracers of Wind family sibling"
         }
       ],
-      "quarantined": [
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
-        }
-      ]
+      "slots": [
+        "Green Augment Slot"
+      ],
+      "quarantined": []
     },
     "Cloak of Flames (level 11)": {
       "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_Flames_(level_11)",
@@ -328,6 +321,9 @@
           "type_source": "Cloak of Flames family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Heightened Awareness 2",
@@ -336,10 +332,6 @@
         {
           "raw": "Fire Absorption +24%",
           "reason": "bonus type unsourced: no sibling in the 'Cloak of Flames' family carries 'Fire Absorption', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -374,6 +366,9 @@
           "type_source": "Cloak of Flames family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Heightened Awareness 2",
@@ -382,10 +377,6 @@
         {
           "raw": "Fire Absorption +27%",
           "reason": "bonus type unsourced: no sibling in the 'Cloak of Flames' family carries 'Fire Absorption', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -412,14 +403,13 @@
           "type_source": "Cloak of Flames family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Heightened Awareness 1",
           "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -462,6 +452,10 @@
           "type_source": "Blasting Chime family sibling"
         }
       ],
+      "slots": [
+        "Colorless Augment Slot",
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Cacophonic Guard",
@@ -470,14 +464,6 @@
         {
           "raw": "Evocation Focus II",
           "reason": "affix name 'Evocation Focus II' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Colorless Augment Slot",
-          "reason": "augment slot, not an affix"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -520,18 +506,14 @@
           "type_source": "Bracers of Wind family sibling"
         }
       ],
+      "slots": [
+        "Colorless Augment Slot",
+        "Green Augment Slot"
+      ],
       "quarantined": [
-        {
-          "raw": "Colorless Augment Slot",
-          "reason": "augment slot, not an affix"
-        },
         {
           "raw": "Dodge +11%",
           "reason": "bonus type unsourced: no sibling in the 'Bracers of Wind' family carries 'Dodge', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -566,22 +548,18 @@
           "type_source": "Cloak of Flames family sibling"
         }
       ],
+      "slots": [
+        "Colorless Augment Slot",
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Heightened Awareness 4",
           "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
         },
         {
-          "raw": "Colorless Augment Slot",
-          "reason": "augment slot, not an affix"
-        },
-        {
           "raw": "Fire Absorption +30%",
           "reason": "bonus type unsourced: no sibling in the 'Cloak of Flames' family carries 'Fire Absorption', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -624,14 +602,14 @@
           "type_source": "catalog-wide uniform type"
         }
       ],
+      "slots": [
+        "Colorless Augment Slot",
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Protection from Evil",
           "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Protection from Evil', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Colorless Augment Slot",
-          "reason": "augment slot, not an affix"
         },
         {
           "raw": "Protection +9",
@@ -640,10 +618,6 @@
         {
           "raw": "Resistance +9",
           "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -686,22 +660,18 @@
           "type_source": "Ring of Master Artifice family sibling"
         }
       ],
+      "slots": [
+        "Colorless Augment Slot",
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Reconstruct — 1 Charges (Recharged/Day:1)",
           "reason": "clickie charge, not a passive stat"
         },
         {
-          "raw": "Colorless Augment Slot",
-          "reason": "augment slot, not an affix"
-        },
-        {
           "raw": "Repair Systems",
           "reason": "affix name 'Repair Systems' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -744,18 +714,14 @@
           "type_source": "Ring of the Stalker family sibling"
         }
       ],
+      "slots": [
+        "Colorless Augment Slot",
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Insightful Deception +4",
           "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Colorless Augment Slot",
-          "reason": "augment slot, not an affix"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -806,18 +772,14 @@
           "type_source": "Rock Boots family sibling"
         }
       ],
+      "slots": [
+        "Colorless Augment Slot",
+        "Green Augment Slot"
+      ],
       "quarantined": [
-        {
-          "raw": "Colorless Augment Slot",
-          "reason": "augment slot, not an affix"
-        },
         {
           "raw": "Acid Absorption +30%",
           "reason": "bonus type unsourced: no sibling in the 'Rock Boots' family carries 'Acid Absorption', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -852,11 +814,11 @@
           "type_source": "Spare Hand family sibling"
         }
       ],
+      "slots": [
+        "Colorless Augment Slot",
+        "Green Augment Slot"
+      ],
       "quarantined": [
-        {
-          "raw": "Colorless Augment Slot",
-          "reason": "augment slot, not an affix"
-        },
         {
           "raw": "Riposte +5",
           "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
@@ -872,10 +834,6 @@
         {
           "raw": "Doublestrike 12%",
           "reason": "bonus type unsourced: no sibling in the 'Spare Hand' family carries 'Doublestrike', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -902,6 +860,9 @@
           "type_source": "catalog-wide uniform type"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Protection from Evil",
@@ -914,10 +875,6 @@
         {
           "raw": "Resistance +6",
           "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -952,6 +909,9 @@
           "type_source": "catalog-wide uniform type"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Protection from Evil",
@@ -964,10 +924,6 @@
         {
           "raw": "Resistance +7",
           "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -994,6 +950,7 @@
           "type_source": "catalog-wide uniform type"
         }
       ],
+      "slots": [],
       "quarantined": [
         {
           "raw": "Protection +3",
@@ -1028,6 +985,9 @@
           "type_source": "catalog-wide uniform type"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Protection +5",
@@ -1036,10 +996,6 @@
         {
           "raw": "Resistance +5",
           "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -1082,14 +1038,13 @@
           "type_source": "Ring of Master Artifice family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Repair Moderate Damage — 1 Charges (Recharged/Day:1)",
           "reason": "clickie charge, not a passive stat"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -1132,14 +1087,13 @@
           "type_source": "Ring of Master Artifice family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Reconstruct — 1 Charges (Recharged/Day:1)",
           "reason": "clickie charge, not a passive stat"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -1182,14 +1136,13 @@
           "type_source": "Ring of Master Artifice family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Repair Moderate Damage — 1 Charges (Recharged/Day:1)",
           "reason": "clickie charge, not a passive stat"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -1216,14 +1169,13 @@
           "type_source": "Ring of the Stalker family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Insightful Deception +3",
           "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -1258,14 +1210,13 @@
           "type_source": "Ring of the Stalker family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Insightful Deception +3",
           "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -1284,14 +1235,13 @@
           "type_source": "Ring of the Stalker family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Insightful Deception +2",
           "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -1334,11 +1284,10 @@
           "type_source": "Rock Boots family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
-        },
         {
           "raw": "Mythic Boot Boost +1 or +3",
           "reason": "wiki states two values with no rule for which applies"
@@ -1392,12 +1341,10 @@
           "type_source": "Rock Boots family sibling"
         }
       ],
-      "quarantined": [
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
-        }
-      ]
+      "slots": [
+        "Green Augment Slot"
+      ],
+      "quarantined": []
     },
     "Rock Boots (level 7)": {
       "wiki_url": "https://ddowiki.com/page/Item:Rock_Boots_(level_7)",
@@ -1430,12 +1377,10 @@
           "type_source": "Rock Boots family sibling"
         }
       ],
-      "quarantined": [
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
-        }
-      ]
+      "slots": [
+        "Green Augment Slot"
+      ],
+      "quarantined": []
     },
     "Spare Hand (level 11)": {
       "wiki_url": "https://ddowiki.com/page/Item:Spare_Hand_(level_11)",
@@ -1468,6 +1413,9 @@
           "type_source": "Spare Hand family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Insightful Combat Mastery +3",
@@ -1476,10 +1424,6 @@
         {
           "raw": "Riposte +3",
           "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -1514,6 +1458,9 @@
           "type_source": "Spare Hand family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Insightful Combat Mastery +4",
@@ -1522,10 +1469,6 @@
         {
           "raw": "Riposte +4",
           "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     },
@@ -1552,6 +1495,9 @@
           "type_source": "Spare Hand family sibling"
         }
       ],
+      "slots": [
+        "Green Augment Slot"
+      ],
       "quarantined": [
         {
           "raw": "Riposte +2",
@@ -1560,10 +1506,6 @@
         {
           "raw": "Insightful Combat Mastery +3",
           "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Green Augment Slot",
-          "reason": "augment slot, not an affix"
         }
       ]
     }
