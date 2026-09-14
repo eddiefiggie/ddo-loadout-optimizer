@@ -966,6 +966,18 @@ input.wz-ml { width: 120px; }
 /* #562 — the browse zero-result hint. Full-width so it breaks the control row
    rather than squeezing between two selects, and muted like every other hint. */
 .browse-hint { flex-basis: 100%; font-size: var(--fs-sm); color: var(--faint); margin: var(--sp-2) 0 0; }
+/* #753 — the catalog reachability note, between the filters and the count.
+   Styled as the reference block it is, matching `.wz-adv-reach` in the wizard's
+   Advanced panel: a quiet left rule, muted text, one route per line. Read-only
+   by construction — nothing here is ever written back into a filter, so it must
+   not look like a control. */
+.browse-reach { margin: var(--sp-3) 0 0; padding-left: var(--sp-2);
+  border-left: 2px solid var(--border-2); font-size: var(--fs-sm); color: var(--muted); }
+.browse-reach-lead { margin: 0 0 2px; color: var(--text); }
+/* Each route on its own line. The wizard's version records why: wrapping them
+   into one paragraph made the slot names impossible to scan, and a widely
+   carried effect has a long list. */
+.browse-reach-row { margin: 0; line-height: 1.45; }
 .wz-pin-results { display: flex; flex-direction: column; gap: 2px; margin-top: var(--sp-2); max-height: 15rem; overflow-y: auto; }
 .wz-pin-results:empty { display: none; }
 .wz-pin-hit { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3);

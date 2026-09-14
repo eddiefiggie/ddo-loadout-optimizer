@@ -33,6 +33,61 @@ var _browseNoDropWording = (function () {
   return (P && P.NO_DROP_SOURCE_WORDING) || "no known live drop source";
 })();
 
+// #753 — per-effect slot reachability, Browse's half. Same browser-global-first,
+// require()-under-node bridging as above. The wording stays owned by
+// projection.js so Browse cannot drift from the Advanced panel's version of the
+// same answer; the scan itself is model.js's.
+var _browseReachReport = (typeof slotReachabilityReport !== "undefined")
+  ? slotReachabilityReport
+  : (typeof require !== "undefined" ? require("./model.js").slotReachabilityReport : null);
+var _browseReachLines = (function () {
+  const P = (typeof Projection !== "undefined") ? Projection
+    : (typeof require !== "undefined" ? require("./projection.js") : null);
+  return (P && P.slotReachabilityLines) || null;
+})();
+
+/** #753 — the reachability answer for one affix, CATALOG-WIDE, memoized by name.
+ *
+ *  Three decisions here, and each is load-bearing rather than incidental.
+ *
+ *  1. It reads `dataset.items`, NOT the browsable row list. `browsableItems`
+ *     concatenates synthetic display rows for the Dino, Nearly-Complete,
+ *     Viktranium and compendium pools, and `slotReachabilityFor` takes those
+ *     pools SEPARATELY through its `pools` argument — so handing it the browsable
+ *     list would count every crafted route twice.
+ *
+ *  2. The query is empty on purpose: this is the whole catalog, not Browse's
+ *     filters. Browse's `ML <=` box is a display filter over `itemMl`, while the
+ *     solver's `mlCap` drives eligibility, scaling and the augment ceiling — they
+ *     are different predicates, and feeding one to the other would put a claim on
+ *     screen that the data does not support. The heading says "whole catalog" so
+ *     the scope is stated rather than implied.
+ *
+ *  3. Which is also what makes the memo SAFE. A report is ~65ms measured, and
+ *     `render()` runs on every keystroke in the search box — recomputing per
+ *     render would make typing unusable. Because the query is constant, the
+ *     answer for a given affix cannot go stale within a session, so a plain
+ *     name-keyed cache needs no invalidation. A filter-dependent answer would.
+ *
+ *  Fails silent-and-empty, never throwing into the render: Browse is reference,
+ *  and a disclosure must not be able to take the roster down. */
+var _browseReachCache = new Map();
+function browseReachLines(stat, dataset) {
+  if (!stat || !dataset || !_browseReachReport || !_browseReachLines) return [];
+  if (_browseReachCache.has(stat)) return _browseReachCache.get(stat);
+  let lines = [];
+  try {
+    const report = _browseReachReport(stat, dataset.items || [], {}, {
+      dinoInserts: dataset.dino_inserts, viktranium: dataset.viktranium,
+      seal: dataset.seal, legendaryGreenSteel: dataset.legendary_green_steel,
+      essenceCrafting: dataset.essence_crafting,
+    });
+    lines = _browseReachLines(stat, report) || [];
+  } catch (e) { lines = []; }
+  _browseReachCache.set(stat, lines);
+  return lines;
+}
+
 /** Badge HTML for a wiki-confirmed sourceless item's status cell; "" otherwise.
  *  Only-when-set: absence of the flag is the default and renders nothing. Pure
  *  (unit-tested); the wording is code-owned, so no esc() dependency here. */
@@ -532,6 +587,17 @@ function initBrowse(dataset, vocab, hooks) {
     <button id="f-clear" type="button">Clear</button>
     <p id="f-craft-hint" class="browse-hint" role="status" hidden></p>`;
 
+  // #753 — the reachability note lives BETWEEN the controls and the count, so it
+  // reads as an answer about the affix just chosen rather than a property of the
+  // rows below it. Created once here rather than written into the overlay markup
+  // in wizard.js: Browse owns its own disclosures, and initBrowse is a no-op
+  // until the panel exists, so there is nothing to keep in sync.
+  const reachBox = document.createElement("div");
+  reachBox.id = "browse-reach";
+  reachBox.className = "browse-reach";
+  reachBox.hidden = true;
+  controls.insertAdjacentElement("afterend", reachBox);
+
   const read = () => {
     // U4 — the option value carries which mode it is: `affix:` (item carries it)
     // or `set:` (a set grants it). A bare value is treated as an affix so an older
@@ -555,6 +621,7 @@ function initBrowse(dataset, vocab, hooks) {
     const cond = read();
     const rows = filterVariants(items, cond);
     status.textContent = `${rows.length} of ${items.length} items`;
+    renderReach(cond);
     // #562 — when a search finds nothing, say whether the thing typed was a
     // CRAFTING SLOT rather than an item name. Those labels are printed in every
     // share export and shown in the compendium, so a player can read one on their
@@ -671,6 +738,28 @@ function initBrowse(dataset, vocab, hooks) {
     }
   }
 
+  /** #753 — "which slots can supply this effect", for the surface where a player
+   *  researching gear already is.
+   *
+   *  Only in AFFIX mode. A set-bonus filter (`setStat`) asks a different question
+   *  — which sets grant this — and answering it with slot routes for the bare
+   *  affix name would be a wrong answer to a question nobody asked. "Any affix"
+   *  has no subject at all, so there is nothing to report and the box hides.
+   *
+   *  The heading states the scope. The ML box above can be filtering the roster
+   *  to level 10 while this names a route that needs level 30, and without the
+   *  words "whole catalog" that reads as a contradiction rather than a broader
+   *  answer. */
+  function renderReach(cond) {
+    const stat = (cond && cond.stat) || "";
+    if (!stat) { reachBox.hidden = true; reachBox.innerHTML = ""; return; }
+    const lines = browseReachLines(stat, dataset);
+    if (!lines.length) { reachBox.hidden = true; reachBox.innerHTML = ""; return; }
+    reachBox.innerHTML = `<p class="browse-reach-lead">Where ${esc(stat)} can come from, in the whole catalog:</p>`
+      + lines.map((l) => `<p class="browse-reach-row">${esc(l)}</p>`).join("");
+    reachBox.hidden = false;
+  }
+
   function clearAll() {
     ["f-query", "f-stat", "f-slot", "f-ml", "f-verif", "f-craft"].forEach((id) => {
       const el = document.getElementById(id);
@@ -702,5 +791,5 @@ if (typeof window !== "undefined") {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { filterVariants, variantStats, variantSetStats,
     variantCraftingSlots, craftingSlotNames, craftingSearchHint, CRAFTING_OLD_NAMES,
-    BROWSE_ROW_CAP, affixText, affixEntries, presenceMarker, setChipText, collectSetDefs, resolveSetGranted, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems, noDropBadge };
+    BROWSE_ROW_CAP, affixText, affixEntries, presenceMarker, setChipText, collectSetDefs, resolveSetGranted, dinoInsertRow, ncRow, vikRow, compendiumRow, browsableItems, noDropBadge, browseReachLines };
 }
