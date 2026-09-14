@@ -107,20 +107,49 @@ their own paced tooltip harvest before these items can carry them.
 |---|---|
 | Variants covered | 33 of 33 worn |
 | Affixes admitted | 108 |
-| Quarantined | 40 augment slots, 19 unknown names, 17 unsourced types, 8 bundled, 4 clickies, 1 ambiguous |
+| Augment slots admitted as host capacity | 40, on 32 variants (#591, 2026-09-14) |
+| Quarantined | 19 unknown names, 17 unsourced types, 8 bundled, 4 clickies, 1 ambiguous |
 | Golden solves changed | **none** — an ML32+ solve does not want ML7–20 gear |
 
 The reported case is fixed: `Epic Cloak of Flames` now carries `Combustion Equipment 122`
 and `Fire Lore Equipment 18` — the exact values #313's body names as the hand-declared
 workaround.
 
-## Deferred: the 64 weapons
+## Augment slots are capacity, not affixes (#591)
 
-Harvested and measured in the same pass, not admitted. Their tier enchantments are almost
-entirely bane and proc effects — `Dragon Bane`, `Tidal Burst`, `Crushing Wave`,
-`Incandescence`, `Screaming` — which this optimizer does not value numerically. **#331**
-(proc magnitude, rate and uptime valuation) is the prerequisite for them being worth
-anything, so admitting them now would add records that score nothing.
+For two weeks the shard quarantined every `Adds Green Augment Slot` and
+`Adds Colorless Augment Slot` line as "augment slot, not an affix". True, and the wrong
+question. An augment slot is the thing an augment goes INTO — a host field the pipeline
+already models: `crafting[]` carries `"<Color> Augment Slot"`, `planner_items` lifts it
+to `augment_slots`, `colors` normalizes it, and the solver bounds each colour's augment
+placements by the slots the equipped items carry. It needs no bonus type and no
+valuation, which makes it the one part of the tier text that was never hard.
+
+So the resolver now emits a third output, `slots` — the label verbatim, because it *is*
+the `crafting[]` vocabulary — and the overlay appends it to the record's own
+`crafting[]` and re-runs the planner's lift, so the slot travels the identical path a
+natively-parsed one does. `slots` is derived from `raw` and re-derived by the tests, like
+`final`; a slot line that is also still quarantined fails the suite. The overlay refuses
+a label outside the frozen crafting-slot registry, because it runs after the registry
+gate validated the native markers and must not be the one path a new label skips.
+
+| | |
+|---|---|
+| Slots admitted | 40 — 24 variants gain a Green, 8 gain Colorless + Green |
+| Variants slotted | 32 of 33 — `Mournlode Docent (level 4)` has no tier block, so no slot |
+| Skipped as already native | 0 — gear-planner emits none of these; a nonzero here means it started |
+| Golden solves changed | **none** — same ML reason as above |
+
+## Deferred: the 64 weapons — see #591
+
+**Not harvested.** They were measured in the 2026-08-29 pass, but no raw text was
+committed, and their tier text lives on the **family** wiki pages (a `{{Turnin7}}` table,
+one complete list per level row), not on the variant pages this shard reads. #591 is
+re-scoped to the same deliverable as the section above: their Tier 3
+`Adds Purple Augment Slot`, as host capacity, once a wiki window harvests the Tier 3 row
+per variant into this shard's `raw` shape. The bane and proc lines — `Dragon Bane`,
+`Tidal Burst`, `Crushing Wave`, `Incandescence`, `Screaming` — stay unvalued permanently:
+**#331** closed as not-planned, so that is a scope boundary, not a prerequisite.
 
 Harvest method: `docs/wiki-evidence/harvest-method.md`. All 33 blocks were verified
 byte-faithful against the live pages by per-item hash before transcription was trusted.

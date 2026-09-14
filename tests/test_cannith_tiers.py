@@ -106,6 +106,54 @@ def test_a_bundled_enchantment_is_refused_even_when_its_name_is_known():
                      "a folded bundled enchantment must never be admitted at face value")
     _in("tooltip", out["quarantined"][0]["reason"])
 
+def test_an_augment_slot_is_capacity_not_an_affix_and_not_a_quarantine():
+    """#591 — the wiki's `Adds Green Augment Slot` is a host slot, the thing an
+    augment goes INTO. It has no bonus type to source and no value to verify, so it
+    is neither minted as an affix nor dropped as a quarantine: it comes out as the
+    exact `crafting[]` label the pipeline's own slot lift reads."""
+    out = CT.resolve("Upgradeable - Tier 1 / Seeker +9 / "
+                     "Upgradeable - Tier 2 / Adds Colorless Augment Slot / "
+                     "Upgradeable - Tier 3 / Adds Green Augment Slot",
+                     known_names={"Seeker"})
+    _eq(out["slots"], ["Colorless Augment Slot", "Green Augment Slot"],
+        "both tier slots, in wiki order, as crafting[] labels")
+    _eq(out["quarantined"], [], "a slot is not a quarantine")
+    _eq([a["name"] for a in out["affixes"]], ["Seeker"], "and not an affix either")
+
+def test_the_overlay_puts_the_slot_on_the_record_through_the_native_lift():
+    """The overlay appends to `crafting[]` and re-runs the planner's own lift, so
+    `augment_slots` on the record is derived by the one rule every native slot
+    uses. A record that already carries a native slot marker is one upstream has
+    started parsing: its overlay slots are skipped wholesale and counted."""
+    overlay = {
+        "Fresh": {"affixes": [], "slots": ["Green Augment Slot"]},
+        "Parsed": {"affixes": [], "slots": ["Green Augment Slot"]},
+    }
+    fresh = {"name": "Fresh", "affixes": [], "crafting": [], "augment_slots": []}
+    parsed = {"name": "Parsed", "affixes": [], "crafting": ["Green Augment Slot"],
+              "augment_slots": ["Green"]}
+    cov = B.apply_cannith_tiers([fresh, parsed], overlay,
+                                known_slots={"Green Augment Slot"})
+    _eq(fresh["crafting"], ["Green Augment Slot"])
+    _eq(fresh["augment_slots"], ["Green"], "lifted by planner_items._augment_slots")
+    _eq(parsed["crafting"], ["Green Augment Slot"], "not doubled")
+    _eq(parsed["augment_slots"], ["Green"], "not doubled")
+    _eq((cov["items_slotted"], cov["slots_added"], cov["slots_skipped_already_present"]),
+        (1, 1, 1))
+
+def test_the_overlay_refuses_a_slot_label_outside_the_frozen_registry():
+    """The overlay runs AFTER assert_crafting_vocab validated the native markers,
+    so it must not be the one path a new slot vocabulary skips."""
+    rec = {"name": "X", "affixes": [], "crafting": [], "augment_slots": []}
+    try:
+        B.apply_cannith_tiers([rec], {"X": {"affixes": [], "slots": ["Mauve Augment Slot"]}},
+                              known_slots={"Green Augment Slot"})
+    except ValueError as e:
+        _in("Mauve Augment Slot", str(e))
+        _eq(rec["crafting"], [], "nothing appended before the refusal")
+        return
+    raise AssertionError("an unregistered slot label was admitted")
+
 
 
 def test_every_final_is_rederived_from_its_own_raw():
@@ -132,13 +180,13 @@ def test_every_final_is_rederived_from_its_own_raw():
     uni = CT.uniform_types(planner, aliases)
 
     _true(shard["items"], "refuse to pass over an empty shard")
-    checked = 0
+    checked = slots_seen = 0
     for name, entry in shard["items"].items():
         fam = fam_of(name)
         expected = []
         for line in CT.resolve_lines(entry["raw"]):
             kind, p = CT.parse_line(line)
-            if kind == "quarantine" or p["name"] in BUNDLED or p["name"] not in known:
+            if kind != "affix" or p["name"] in BUNDLED or p["name"] not in known:
                 continue
             hit = sib.get((p["name"], fam)) or uni.get(p["name"])
             if not hit:
@@ -147,8 +195,17 @@ def test_every_final_is_rederived_from_its_own_raw():
             expected.append((rn, ty, p["value"], p["unit"]))
         got = [(a["name"], a["type"], a["value"], a["unit"]) for a in entry["final"]]
         _eq(got, expected, f"{name}: stored `final` disagrees with its own `raw`")
+        # #591 — `slots` is derived too, by the same standard: nothing here trusts
+        # the stored list, and a slot line must never ALSO sit in `quarantined`.
+        _eq(entry["slots"], CT.resolve_slots(entry["raw"]),
+            f"{name}: stored `slots` disagrees with its own `raw`")
+        for q in entry["quarantined"]:
+            _true(not CT.AUGMENT_SLOT.match(q["raw"]),
+                  f"{name}: {q['raw']!r} is a slot and is still quarantined")
+        slots_seen += len(entry["slots"])
         checked += 1
     _eq(checked, 33, "every entry re-derived")
+    _eq(slots_seen, 40, "the 40 wiki-stated slots are all derived, none left on the floor")
 
 def test_the_guard_refuses_to_inspect_zero_records():
     """Prove a guard fails before trusting it: the coverage assertions above are
@@ -213,6 +270,36 @@ def test_the_build_stamps_what_the_overlay_actually_did():
     _eq(cov["missing_from_roster"], [],
                      "an overlay entry naming an item the roster lacks is a stale key")
     _gt(cov["affixes_added"], 0)
+    # #591 — the slot half. 32 of the 33 entries state a slot (Mournlode Docent
+    # (level 4) has no tier block at all); 40 labels between them. A skip means the
+    # wiki half and gear-planner now both claim these slots — worth a look, not a
+    # silent pass.
+    _eq((cov["items_slotted"], cov["slots_added"]), (32, 40))
+    _eq(cov["slots_skipped_already_present"], 0)
+
+def test_every_shard_slot_reaches_its_variant_as_host_capacity():
+    """#591 end to end: the seed's `slots` come out of the build as the variant's
+    normalized `augment_slots_norm.colors` — the field the solver bounds augment
+    placements by — with nothing quarantined on the way. Driven through the built
+    dataset, not a hand-built record, so it covers the overlay, the planner lift and
+    the colour normalization together. Refuses to inspect zero records."""
+    ds = _dataset()
+    shard = _shard()
+    by_id = {v["variant_id"]: v for v in ds["items"]}
+    checked = colors_seen = 0
+    for name, entry in shard["items"].items():
+        want = [lbl[: -len(" Augment Slot")] for lbl in entry["slots"]]
+        v = by_id[name]
+        norm = v["augment_slots_norm"]
+        _eq(norm["colors"], want, f"{name}: slot capacity did not reach the variant")
+        _eq(norm["quarantined"], [], f"{name}: a wiki-stated slot colour was quarantined")
+        _eq(v["augment_slots"], want, f"{name}: the lifted list disagrees with the seed")
+        for lbl in entry["slots"]:
+            _in(lbl, v["crafting"], f"{name}: label missing from crafting[]")
+        colors_seen += len(want)
+        checked += 1
+    _eq(checked, 33, "every shard entry checked against its variant")
+    _eq(colors_seen, 40, "refuse to pass over a shard that states no slots")
 
 def test_the_reported_item_carries_the_values_the_report_named():
     """data/bug_reports.txt report 2: 'cannith challenge items don't have any stats'.
