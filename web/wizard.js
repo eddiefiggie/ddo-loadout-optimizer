@@ -2018,6 +2018,123 @@ function dropIndexFor(from, to, after) {
   return after ? (to > from ? to : to + 1) : (to > from ? to - 1 : to);
 }
 
+// ---- #745 — priority groups as LINKED ROWS --------------------------------
+//
+// A group is a maximal run of rows each linked to the row above it, and
+// `state.priorityLinks` is the list of stat names so linked. That is the whole
+// data model. It is deliberately not `{name, members[]}`: a member object can
+// drift from the list (a member removed, a member moved out), while a link on
+// a name is meaningful iff the name and its predecessor are adjacent — and the
+// move rules below make non-adjacency impossible except by unlinking.
+//
+// The constraint everything here is built around: a group is a REORDERING
+// CONVENIENCE over an order that stays strictly ranked. Members keep distinct
+// ranks, moving the block moves all of them, and nothing lets members tie.
+// Anything else is the weighted-sum non-goal in AGENTS.md wearing a hat.
+//
+// Moves NEVER edit links. Linking, deleting, a preset landing, a whole-list
+// replace and the load path are the only writers, each with one rule below.
+
+/** `[{start, end}]` over RANKED indices — the Utility sentinel is never in a
+ *  span. A link on index 0 is meaningless and ignored. Pure. */
+function groupsOf(ranked, links) {
+  const list = Array.isArray(ranked) ? ranked : [];
+  const set = new Set(Array.isArray(links) ? links : []);
+  const last = lastRankedIndex(list);
+  const spans = [];
+  for (let i = 0; i <= last; i++) {
+    if (i > 0 && set.has(list[i])) spans[spans.length - 1].end = i;
+    else spans.push({ start: i, end: i });
+  }
+  return spans;
+}
+function spanOf(ranked, links, i) {
+  const n = Number(i);
+  return groupsOf(ranked, links).find((sp) => n >= sp.start && n <= sp.end) || null;
+}
+
+/** Move the whole run containing `from` so that the row at `from` lands at `to`
+ *  — the same post-removal frame `movePriority` takes, and the same meaning:
+ *  "put THIS row here", which is what the ⤒ ↑ ↓ ⤓ buttons pass (`i ± 1`). The
+ *  head follows by its offset from the clicked row, so ↑ on the middle of a
+ *  block moves the block up one; a contract in the head's frame would have made
+ *  that a no-op, and the first smoke test caught exactly that. Clamped so the
+ *  entire run fits above the sentinel. A run of one IS movePriority, so every
+ *  pre-#745 behaviour is the degenerate case. Pure. */
+function movePriorityGroup(ranked, links, from, to) {
+  const list = Array.isArray(ranked) ? ranked : [];
+  const src = Number(from);
+  if (!Number.isInteger(src) || src < 0 || src > lastRankedIndex(list)) return list.slice();
+  const span = spanOf(list, links, src);
+  if (!span) return list.slice();
+  const len = span.end - span.start + 1;
+  if (len === 1) return movePriority(list, src, to);
+  if (Number.isNaN(Number(to))) return list.slice();
+  const out = list.slice();
+  const run = out.splice(span.start, len);
+  // With the run removed, the head may land anywhere from 0 to one past the
+  // last remaining ranked row — that last slot is "directly above the sentinel".
+  const maxHead = lastRankedIndex(out) + 1;
+  const n = Number(to) - (src - span.start);           // clicked-row frame -> head frame
+  const dest = !Number.isFinite(n) ? (n > 0 ? maxHead : 0) : Math.max(0, Math.min(Math.trunc(n), maxHead));
+  if (dest === span.start) return list.slice();
+  out.splice(dest, 0, ...run);
+  return out;
+}
+
+/** A drop that would land INSIDE a group snaps to its boundary: before the head
+ *  or after the tail. Without this, dragging a stray row into the middle of a
+ *  block would split it silently. Pure. */
+function snapDropToGroup(ranked, links, to, after) {
+  const span = spanOf(ranked, links, to);
+  if (!span || span.start === span.end) return { to: Number(to), after: !!after };
+  return after ? { to: span.end, after: true } : { to: span.start, after: false };
+}
+
+/** `dropIndexFor` for a run of `len` rows starting at `from`: the head's final
+ *  index when dropped {before|after} pre-removal index `to`. `len === 1` is
+ *  exactly `dropIndexFor`, and a test pins that. A target inside the run is a
+ *  no-op. Pure. */
+function dropIndexForRun(from, len, to, after) {
+  if (to >= from && to < from + len) return from;
+  const base = to > from ? to - len : to;
+  return after ? base + 1 : base;
+}
+
+/** Links after deleting the row at pre-deletion index `at`. The row that
+ *  followed stays linked iff the deleted row was itself linked — the block
+ *  continues one shorter — otherwise the follower becomes a new head. Deleting
+ *  a head must never leave the next member "linked" to whatever sits above.
+ *  Takes the list BEFORE the splice, because it needs both neighbours. Pure. */
+function linksAfterDelete(rankedBefore, links, at) {
+  const list = Array.isArray(rankedBefore) ? rankedBefore : [];
+  const set = new Set(Array.isArray(links) ? links : []);
+  const gone = list[at], follower = list[at + 1];
+  const goneLinked = set.has(gone);
+  set.delete(gone);
+  if (follower != null && !goneLinked) set.delete(follower);
+  return [...set];
+}
+
+/** A preset bundle keeps its identity after it lands: every NEWLY landed name
+ *  except the first is linked to the one above it. `addBundle` appends new
+ *  names one after another above the sentinel, so the landed run is contiguous
+ *  by construction; a member the player already had ranked stays where they
+ *  put it and is NOT pulled in (see the plan's scope boundary). Pure. */
+function linksAfterBundle(before, after, links) {
+  const was = new Set(Array.isArray(before) ? before : []);
+  const landed = (Array.isArray(after) ? after : []).filter((p) => !was.has(p) && p !== _utilitySentinel);
+  return [...new Set([...(Array.isArray(links) ? links : []), ...landed.slice(1)])];
+}
+
+/** Keep only links whose name is still ranked — the load path, after the
+ *  migration and both heal steps. A migration that expands a linked name lands
+ *  the expansion unlinked; the migration notice already says something moved. */
+function pruneLinks(ranked, links) {
+  const set = new Set((Array.isArray(ranked) ? ranked : []).filter((p) => p !== _utilitySentinel));
+  return [...new Set((Array.isArray(links) ? links : []).filter((p) => set.has(p)))];
+}
+
 function movePriority(ranked, from, to) {
   const out = (Array.isArray(ranked) ? ranked : []).slice();
   const src = Number(from);
@@ -2850,7 +2967,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, AUGMENT_PIN_NOTE, augmentPinnable, addAugmentPin, removeAugmentPin, augmentPinStale, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
+  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor, groupsOf, spanOf, movePriorityGroup, snapDropToGroup, dropIndexForRun, linksAfterDelete, linksAfterBundle, pruneLinks, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, AUGMENT_PIN_NOTE, augmentPinnable, addAugmentPin, removeAugmentPin, augmentPinStale, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -2911,6 +3028,9 @@ if (typeof window !== "undefined" && window.App) {
       // the roster was the day they saved. An ARRAY means the player curated it, and
       // is frozen against roster changes on purpose — their list is theirs.
       utilityContainer: null,
+      // #745 — priority groups as linked rows: the stat names linked to the row
+      // above them. Persisted (a group that vanished on reload would be a lie).
+      priorityLinks: [],
       // #348 (U6) — transient panel state: the search box's text and the last
       // refusal message. Deliberately NOT persisted — neither is part of the build.
       utilityQuery: "", utilityStatus: "",
@@ -4189,7 +4309,13 @@ ${(() => {
         // row has, because "do not pursue utility at all" is still a choice.
         if (p === _utilitySentinel) return utilityRowHTML(i);
         const adv = advancedRowModel(p, state, vocab);
-        return `<li data-i="${i}">
+        // #745 — a linked row continues the block above; the row before a linked
+        // row heads it. Both get the bracket so the run reads as one thing.
+        const _links = state.priorityLinks || [];
+        const _isLinked = i > 0 && _links.includes(p);
+        const _isHead = !_isLinked && _links.includes(state.priorities[i + 1]) && state.priorities[i + 1] !== _utilitySentinel;
+        const _cls = _isLinked ? ' class="wz-linked"' : (_isHead ? ' class="wz-group-head"' : "");
+        return `<li data-i="${i}"${_cls}>
         <span class="wz-grip" title="drag to reorder" aria-hidden="true">⋮⋮</span>
         <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${isPresenceOnly(p, vocab) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it. A min of 1 makes it a hard requirement; there is no magnitude to maximize.">on/off</span>` : ""}</span>
         ${adv.suppressed ? "" : advancedHTML(p, i, adv)}
@@ -4216,9 +4342,14 @@ ${(() => {
       const last = lastRankedIndex(state.priorities);
       const atTop = i === 0;
       const atBottom = i === last;
-      const b = (data, glyph, label, off) =>
-        `<button data-${data}="${i}"${off ? " disabled" : ""} aria-label="${label}" title="${label}">${glyph}</button>`;
+      // #745 — the link toggle. `aria-pressed` carries the state to AT and to the
+      // pressed style; the label says which way it will go. Disabled on the first
+      // ranked row, which has nothing above it to link to.
+      const linked = i > 0 && (state.priorityLinks || []).includes(state.priorities[i]);
+      const b = (data, glyph, label, off, extra = "") =>
+        `<button data-${data}="${i}"${off ? " disabled" : ""}${extra} aria-label="${label}" title="${label}">${glyph}</button>`;
       return `<span class="wz-ctl">${
+        b("link", "⛓", linked ? "unlink from the row above" : "link to the row above", atTop, ` aria-pressed="${linked}"`)}${
         b("top", "⤒", "move to top", atTop)}${
         b("up", "↑", "move up", atTop)}${
         b("down", "↓", "move down", atBottom)}${
@@ -4576,12 +4707,27 @@ ${(() => {
         // #744 — all four moves through the one primitive. `top`/`bottom` pass a
         // saturating index rather than a computed one, so neither this handler nor
         // the markup needs to know where the pinned Utility sentinel sits.
-        if (b.dataset.top != null) { state.priorities = movePriority(state.priorities, +b.dataset.top, 0); }
-        else if (b.dataset.up != null) { const i = +b.dataset.up; state.priorities = movePriority(state.priorities, i, i - 1); }
-        else if (b.dataset.down != null) { const i = +b.dataset.down; state.priorities = movePriority(state.priorities, i, i + 1); }
-        else if (b.dataset.bottom != null) { state.priorities = movePriority(state.priorities, +b.dataset.bottom, Infinity); }
+        if (b.dataset.top != null) { state.priorities = movePriorityGroup(state.priorities, state.priorityLinks, +b.dataset.top, 0); }
+        else if (b.dataset.up != null) { const i = +b.dataset.up; state.priorities = movePriorityGroup(state.priorities, state.priorityLinks, i, i - 1); }
+        else if (b.dataset.down != null) { const i = +b.dataset.down; state.priorities = movePriorityGroup(state.priorities, state.priorityLinks, i, i + 1); }
+        else if (b.dataset.bottom != null) { state.priorities = movePriorityGroup(state.priorities, state.priorityLinks, +b.dataset.bottom, Infinity); }
+        // #745 — link/unlink this row to the one above. A build mutation like
+        // every sibling (markDirty above), and persisted. Focus returns to the
+        // same toggle: linking does not move the row, so its index holds (D1).
+        else if (b.dataset.link != null) {
+          const i = +b.dataset.link; const p = state.priorities[i];
+          if (i > 0 && p && p !== _utilitySentinel) {
+            const set = new Set(state.priorityLinks || []);
+            if (set.has(p)) set.delete(p); else set.add(p);
+            state.priorityLinks = [...set];
+          }
+          after = () => { const t = ol.querySelector(`button[data-link="${i}"]`); if (t) t.focus(); };
+        }
         else if (b.dataset.del != null) {
           const p = state.priorities[+b.dataset.del];
+          // #745 — BEFORE the splice: the rule needs the deleted row's follower and
+          // whether the deleted row was itself linked, both read off the pre-delete list.
+          state.priorityLinks = linksAfterDelete(state.priorities, state.priorityLinks, +b.dataset.del);
           state.priorities.splice(+b.dataset.del, 1);
           if (state.targetCaps) delete state.targetCaps[p];   // drop the removed stat's bounds
           if (state.targetFloors) delete state.targetFloors[p];
@@ -4789,16 +4935,26 @@ ${(() => {
        *  the edge, which is where the row will land. */
       const targetAt = (x, y) => {
         const el = document.elementFromPoint(x, y);
-        const li = el && el.closest ? el.closest("li[data-i]") : null;
-        if (!li || !ol.contains(li)) return null;
-        const r = li.getBoundingClientRect();
-        return { li, to: +li.dataset.i, after: y > r.top + r.height / 2 };
+        const hit = el && el.closest ? el.closest("li[data-i]") : null;
+        if (!hit || !ol.contains(hit)) return null;
+        const r = hit.getBoundingClientRect();
+        // #745 — snap to a group boundary HERE and nowhere else, so the indicator
+        // and the drop share one answer: what the player sees is where it lands.
+        // The first browser run had the snap only on the commit, and the indicator
+        // lit the middle of a block the drop then correctly refused to split.
+        const snapped = snapDropToGroup(state.priorities, state.priorityLinks, +hit.dataset.i, r.top + r.height / 2 < y);
+        const li = rowsOf()[snapped.to] || hit;
+        return { li, to: snapped.to, after: snapped.after };
       };
       /** A native drag drew a ghost image; a pointer drag draws nothing, so
        *  without this the gesture has no visible destination. */
       const showIndicator = (t) => {
         clearIndicator();
         if (!t || !drag || t.to === drag.from) return;
+        // #745 — a target inside the grabbed row's OWN block is a no-op drop
+        // (dropIndexForRun returns the head), so it gets no indicator either.
+        const own = spanOf(state.priorities, state.priorityLinks, drag.from);
+        if (own && t.to >= own.start && t.to <= own.end) return;
         t.li.classList.add(t.after ? "wz-drop-after" : "wz-drop-before");
       };
       /** One exit for every way a drag ends: drop, Escape, pointercancel (the
@@ -4826,7 +4982,13 @@ ${(() => {
           // The SAME primitive the ⤒ ↑ ↓ ⤓ buttons call: one rule, so drag and
           // buttons cannot disagree about where the bottom is (#744 step 1), and
           // the #348 clamp above the pinned Utility row rides along with it.
-          state.priorities = movePriority(state.priorities, d.from, dropIndexFor(d.from, d.target.to, d.target.after));
+          // #745 — `d.target` is already snapped to a group boundary (targetAt owns
+          // that, in one place), so the whole run containing the source moves there.
+          const srcSpan = spanOf(state.priorities, state.priorityLinks, d.from) || { start: d.from, end: d.from };
+          // dropIndexForRun answers in the HEAD's frame; movePriorityGroup takes the
+          // grabbed row's, so the grabbed row's offset within its run is added back.
+          const head = dropIndexForRun(srcSpan.start, srcSpan.end - srcSpan.start + 1, d.target.to, d.target.after);
+          state.priorities = movePriorityGroup(state.priorities, state.priorityLinks, d.from, head + (d.from - srcSpan.start));
           rerender();
         }
       };
@@ -5854,6 +6016,9 @@ ${(() => {
       const _uHeal = healUtilityContainer(state.priorities, !!i.utility_container_aware);
       state.priorities = _uHeal.priorities;
       state.utilityHealNotice = _uHeal.message;
+      // #745 — after the migration and BOTH heals, so a link only survives on a
+      // name that is still ranked. Absent on every pre-feature save -> [].
+      state.priorityLinks = pruneLinks(state.priorities, Array.isArray(i.priorityLinks) ? i.priorityLinks : []);
       state.slotConstraints = i.slotConstraints || {};
       state.constraintsDirty = false;   // loaded constraints are the saved state, not a pending change
       // #110 (U5/U6) — the load-path blocklist reconciliation: a save holding a
@@ -7030,7 +7195,10 @@ ${(() => {
         root.querySelectorAll(".wz-bundle[data-bundle]").forEach((btn) => {
           btn.onclick = () => {
             markDirty();
+            const _before = (state.priorities || []).slice();
             state.priorities = addBundle(btn.dataset.bundle, state.priorities, vocab);
+            // #745 — a preset bundle keeps its identity after it lands.
+            state.priorityLinks = linksAfterBundle(_before, state.priorities, state.priorityLinks);
             renderRanked();
           };
         });
@@ -7111,6 +7279,10 @@ ${(() => {
               const next = applySavedBundle(rec, state.priorities, vocab);
               markDirty();
               state.priorities = next.priorities;
+              // #745 — a whole-list replace CLEARS links. Pruning by name would let
+              // a stale link survive by coincidence and manufacture a group the
+              // player never made.
+              state.priorityLinks = [];
               state.targetFloors = next.targetFloors;
               state.targetCaps = next.targetCaps;
               renderRanked();

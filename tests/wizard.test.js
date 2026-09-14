@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { armorTypesFor, canSolve, DRUID_ARMOR, bundleStaleNames, staleBundleText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor } = require("../web/wizard.js");
+const { armorTypesFor, canSolve, DRUID_ARMOR, bundleStaleNames, staleBundleText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor, groupsOf, spanOf, movePriorityGroup, snapDropToGroup, dropIndexForRun, linksAfterDelete, linksAfterBundle, pruneLinks } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -1782,9 +1782,11 @@ test("#169: the disclosure banner escapes its message", () => {
   test("U2: deleting a priority row drops EVERY credit on that stat", () => {
     // AE5 via A1 — a keyed input that outlives its row is the orphaned-bound
     // defect already recorded in this repo, and a stat can carry several credits.
-    const at = WIZARD_SRC.indexOf("dataset.del != null");
-    assert.ok(at > 0);
-    const branch = WIZARD_SRC.slice(at, at + 900);
+    // Re-ratified by #745: this used to slice a fixed 900 characters from the
+    // branch's start, and the #745 link-pruning lines pushed the credit sweep
+    // past that window. Anchored to the branch's last statement instead — the
+    // invariant is about what the branch DOES, not how long it is.
+    const branch = srcBetween(WIZARD_SRC, "dataset.del != null", "openPanelSweep(p);", "delete branch");
     assert.ok(/declaredCredits/.test(branch), "the delete branch sweeps credits");
     assert.ok(/for \(const \[k, c\] of Object\.entries\(state\.declaredCredits\)\)/.test(branch),
       "it iterates rather than deleting a single stat-keyed entry");
@@ -2773,7 +2775,8 @@ test("#744 step 3 (re-ratified): autoscroll arms only once the drag is armed, an
     "start() comes after the threshold arms the drag — a tap on the grip never arms the scroller");
   const end = srcBetween(wire, "const endDrag = (commit) => {", "const onMove", "endDrag");
   assert.ok(/dragAutoScroll\.stop\(\)/.test(end), "the one exit stops it");
-  assert.ok(end.indexOf("dragAutoScroll.stop()") < end.indexOf("movePriority("),
+  // #745 moved the commit onto the group primitive; the ordering it protects is unchanged.
+  assert.ok(end.indexOf("dragAutoScroll.stop()") < end.indexOf("movePriorityGroup("),
     "before the commit");
   assert.ok(end.indexOf("dragAutoScroll.stop()") < end.indexOf("rerender()"),
     "and before the rerender that destroys the dragged row");
@@ -2868,7 +2871,9 @@ test("#744: a drop against a rebuilt list is dropped, never committed", () => {
   const end = srcBetween(wire, "const endDrag = (commit) => {", "const onMove", "endDrag");
   assert.ok(/commit && d\.armed && d\.target && ol\.contains\(d\.li\) && d\.target\.to !== d\.from/.test(end),
     "commit requires: armed, a target, the source row still in THIS list, and a real move");
-  assert.ok(/movePriority\(state\.priorities, d\.from, dropIndexFor\(/.test(end),
+  // #745 — the buttons and the drop both go through the GROUP primitive now, with
+  // the drop's head-frame answer converted to the grabbed row's frame first.
+  assert.ok(/movePriorityGroup\(state\.priorities, state\.priorityLinks, d\.from, head \+ \(d\.from - srcSpan\.start\)\)/.test(end),
     "and goes through the same primitive as the buttons");
 });
 
@@ -2901,6 +2906,166 @@ test("#744: the markup and CSS make the grip the drag affordance and nothing els
   assert.ok(/pointer-events:\s*none/.test(dragging), "the carried row is transparent to hit-testing");
   assert.ok(/\.wz-ranked > li\.wz-drop-before/.test(css) && /\.wz-ranked > li\.wz-drop-after/.test(css),
     "both drop indicators exist — a pointer drag draws no ghost, so this is the only destination cue");
+});
+
+
+// ---- #745 — priority groups as linked rows ------------------------------------
+//
+// A group is a maximal run of rows each linked to the row above it. The tests
+// below pin the one constraint the feature is built around: a group is a
+// REORDERING CONVENIENCE over an order that stays strictly ranked. Nothing here
+// may let members tie, and every move keeps the flat list a flat list.
+
+const GMP = require("../web/wizard.js").movePriority;
+const GSENT = require("../web/model.js").UTILITY_SENTINEL;
+
+test("#745: groupsOf — a link joins a row to the one above; index 0 and the sentinel never join", () => {
+  const L = ["A", "B", "C", "D", "E", GSENT];
+  assert.deepStrictEqual(groupsOf(L, []), [0, 1, 2, 3, 4].map((i) => ({ start: i, end: i })), "no links: every row its own run");
+  assert.deepStrictEqual(groupsOf(L, ["C", "D"]), [{ start: 0, end: 0 }, { start: 1, end: 3 }, { start: 4, end: 4 }], "C and D linked: B,C,D is one run");
+  assert.deepStrictEqual(groupsOf(L, ["A"]), groupsOf(L, []), "a link on the first row means nothing");
+  assert.deepStrictEqual(groupsOf(L, [GSENT]), groupsOf(L, []), "the sentinel is never in a run");
+  assert.ok(groupsOf(L, ["C", "D"]).every((s) => s.end < L.indexOf(GSENT)), "no span reaches the sentinel");
+  assert.strictEqual(spanOf(L, ["C", "D"], 2).start, 1, "spanOf finds the run a member belongs to");
+});
+
+test("#745: a run of one IS movePriority — every pre-#745 behaviour is the degenerate case", () => {
+  const L = ["A", "B", "C", "D", "E", GSENT];
+  for (let from = 0; from < 5; from++) for (const to of [-Infinity, -1, 0, 1, 2, 3, 4, 5, 9, Infinity, NaN]) {
+    assert.deepStrictEqual(movePriorityGroup(L, [], from, to), GMP(L, from, to), `from ${from} to ${to}`);
+  }
+});
+
+test("#745: moving ANY member moves the whole run, order kept, clamped above the sentinel", () => {
+  const L = ["A", "B", "C", "D", "E", GSENT], links = ["C", "D"];   // run: B,C,D at 1..3
+  for (const member of [1, 2, 3]) {
+    assert.deepStrictEqual(movePriorityGroup(L, links, member, member - 1), ["B", "C", "D", "A", "E", GSENT], `↑ on index ${member} moves the block up one`);
+    assert.deepStrictEqual(movePriorityGroup(L, links, member, member + 1), ["A", "E", "B", "C", "D", GSENT], `↓ on index ${member} moves the block down one`);
+    assert.deepStrictEqual(movePriorityGroup(L, links, member, 0), ["B", "C", "D", "A", "E", GSENT], `⤒ on index ${member}`);
+    assert.deepStrictEqual(movePriorityGroup(L, links, member, Infinity), ["A", "E", "B", "C", "D", GSENT], `⤓ on index ${member} lands directly above the sentinel`);
+  }
+  // The contract that the first smoke test caught: `to` is where the CLICKED row
+  // lands. In the head's frame, ↑ on the middle member was a no-op.
+  assert.notDeepStrictEqual(movePriorityGroup(L, links, 2, 1), L, "↑ on the middle member is not a no-op");
+  // Invariants that make this a reordering convenience and nothing more.
+  for (const to of [0, 1, 2, 3, 4, Infinity]) {
+    const out = movePriorityGroup(L, links, 2, to);
+    assert.deepStrictEqual([...out].sort(), [...L].sort(), "membership never changes");
+    assert.strictEqual(new Set(out).size, out.length, "every rank stays distinct — nothing ties");
+    assert.strictEqual(out[out.length - 1], GSENT, "the sentinel stays last");
+    const i = out.indexOf("B");
+    assert.deepStrictEqual(out.slice(i, i + 3), ["B", "C", "D"], "the run's internal order is kept");
+  }
+  assert.deepStrictEqual(movePriorityGroup(L, links, 2, NaN), L, "NaN is a no-op, not a move to the top");
+});
+
+test("#745: dropIndexForRun generalises dropIndexFor, and a target inside the run is a no-op", () => {
+  for (let from = 0; from < 6; from++) for (let to = 0; to < 6; to++) for (const after of [false, true]) {
+    if (to === from) continue;
+    assert.strictEqual(dropIndexForRun(from, 1, to, after), dropIndexFor(from, to, after), `len 1 == dropIndexFor (${from},${to},${after})`);
+  }
+  assert.strictEqual(dropIndexForRun(1, 3, 2, true), 1, "dropping a 3-run onto its own middle does nothing");
+  // A 3-run at 1..3 dropped after E(4): E moves up to 1 once the run is removed,
+  // so the head lands at 2. Before A(0): head lands at 0.
+  assert.strictEqual(dropIndexForRun(1, 3, 4, true), 2);
+  assert.strictEqual(dropIndexForRun(1, 3, 0, false), 0);
+});
+
+test("#745: a drop into the middle of a block snaps to its boundary", () => {
+  const L = ["A", "B", "C", "D", "E", GSENT], links = ["C", "D"];
+  assert.deepStrictEqual(snapDropToGroup(L, links, 2, false), { to: 1, after: false }, "before C -> before the head B");
+  assert.deepStrictEqual(snapDropToGroup(L, links, 2, true), { to: 3, after: true }, "after C -> after the tail D");
+  assert.deepStrictEqual(snapDropToGroup(L, links, 4, true), { to: 4, after: true }, "a singleton target is unchanged");
+  // End to end: dragging E (a singleton) to between C and D lands it AFTER the block.
+  const snapped = snapDropToGroup(L, links, 2, true);
+  const out = movePriorityGroup(L, links, 4, dropIndexForRun(4, 1, snapped.to, snapped.after));
+  assert.deepStrictEqual(out, ["A", "B", "C", "D", "E", GSENT].slice(0, 5).concat(GSENT), "E after D is where it already was");
+  const out2 = movePriorityGroup(L, links, 4, dropIndexForRun(4, 1, snapDropToGroup(L, links, 2, false).to, false));
+  assert.deepStrictEqual(out2, ["A", "E", "B", "C", "D", GSENT], "E 'before C' lands before the block's head, never inside it");
+});
+
+test("#745: deleting a member — the follower stays linked iff the deleted row was", () => {
+  const L = ["A", "B", "C", "D", "E", GSENT], links = ["C", "D"];   // B heads C,D
+  assert.deepStrictEqual(linksAfterDelete(L, links, 1).sort(), ["D"], "delete the head B: C becomes the new head, D stays linked to C");
+  assert.deepStrictEqual(linksAfterDelete(L, links, 2).sort(), ["D"], "delete the middle C: D stays linked, now to B");
+  assert.deepStrictEqual(linksAfterDelete(L, links, 3).sort(), ["C"], "delete the tail D: just gone");
+  assert.deepStrictEqual(linksAfterDelete(L, links, 0).sort(), ["C", "D"], "delete unrelated A: untouched");
+  // The rule it exists for: deleting a head must never leave the next member
+  // "linked" to whatever sits above.
+  const afterHeadGone = ["A", "C", "D", "E", GSENT];
+  assert.deepStrictEqual(groupsOf(afterHeadGone, linksAfterDelete(L, links, 1)), [{ start: 0, end: 0 }, { start: 1, end: 2 }, { start: 3, end: 3 }],
+    "C,D is still one run of two — not A,C,D as a run of three");
+});
+
+test("#745: a preset bundle keeps its identity after it lands; an already-ranked member is not pulled in", () => {
+  const before = ["Constitution", "Dodge", GSENT];
+  const after = ["Constitution", "Dodge", "Melee Power", "Doublestrike", "Accuracy", GSENT];   // what addBundle lands
+  assert.deepStrictEqual(linksAfterBundle(before, after, []).sort(), ["Accuracy", "Doublestrike"],
+    "every NEWLY landed name except the first is linked — Melee Power heads the block");
+  assert.deepStrictEqual(linksAfterBundle(before, after, ["Dodge"]).sort(), ["Accuracy", "Dodge", "Doublestrike"], "existing links are kept");
+  assert.deepStrictEqual(linksAfterBundle(before, before, []), [], "nothing landed, nothing linked");
+  assert.ok(!linksAfterBundle(before, after, []).includes("Constitution"), "a member the player already had stays where they put it");
+  assert.ok(!linksAfterBundle([], [GSENT, "X"], []).includes(GSENT), "the sentinel is never linked");
+});
+
+test("#745: pruneLinks keeps only links whose name is still ranked", () => {
+  assert.deepStrictEqual(pruneLinks(["A", "B", GSENT], ["B", "Gone", GSENT, "B"]), ["B"], "dropped, dedup'd, sentinel excluded");
+  assert.deepStrictEqual(pruneLinks(["A"], null), []);
+});
+
+test("#745: the wiring — every writer of links has exactly its one rule", () => {
+  // From renderRankedList onward: every region this test reads (the delete and
+  // link branches, the drop commit, the preset and saved applies, the load path)
+  // sits after it, and the whole-file slice also counted snapDropToGroup's
+  // DEFINITION as a "site" — which made the correct code fail this test.
+  const wire = codeOnly(WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList")));
+  // Delete prunes BEFORE the splice: the rule needs both neighbours off the pre-delete list.
+  const del = srcBetween(wire, "else if (b.dataset.del != null) {", "openPanelSweep(p);", "delete branch");
+  assert.ok(del.indexOf("linksAfterDelete(state.priorities, state.priorityLinks, +b.dataset.del)") < del.indexOf("state.priorities.splice(+b.dataset.del, 1)"),
+    "links are pruned from the pre-delete list, before the splice");
+  // A preset landing links; a saved-bundle replace clears.
+  assert.ok(/const _before = \(state\.priorities \|\| \[\]\)\.slice\(\);\s*state\.priorities = addBundle\(/.test(wire), "the preset apply captures the list before landing");
+  assert.ok(/state\.priorityLinks = linksAfterBundle\(_before, state\.priorities, state\.priorityLinks\)/.test(wire), "and links the landed run");
+  const saved = srcBetween(wire, "const next = applySavedBundle(rec, state.priorities, vocab);", "renderRanked();", "saved apply");
+  assert.ok(/state\.priorityLinks = \[\];/.test(saved), "a whole-list replace clears links rather than pruning by name");
+  // Load restores AFTER the migration and both heals.
+  const load = srcBetween(wire, "state.priorities = healUtilityTier(", "state.slotConstraints = i.slotConstraints", "load path");
+  assert.ok(load.indexOf("state.priorities = _uHeal.priorities;") < load.indexOf("state.priorityLinks = pruneLinks(state.priorities"),
+    "links are pruned against the fully healed list");
+  // The link toggle writes the side-car and returns focus to itself (D1).
+  const link = srcBetween(wire, "else if (b.dataset.link != null) {", "else if (b.dataset.btall", "link branch");
+  assert.ok(/state\.priorityLinks = \[\.\.\.set\];/.test(link), "the toggle writes the side-car");
+  assert.ok(/after = \(\) => \{ const t = ol\.querySelector\(`button\[data-link="\$\{i\}"\]`\)/.test(link), "and restores focus to the same toggle");
+  // Moves never edit links — the trap the plan names. No move branch touches priorityLinks.
+  const moves = srcBetween(wire, "if (b.dataset.top != null)", "else if (b.dataset.link != null)", "move branches");
+  assert.ok(!/priorityLinks = /.test(moves), "a move never writes links; adjacency is preserved by the primitive");
+  // The snap lives in targetAt and NOWHERE else, so the indicator and the drop
+  // share one answer — what the player sees is where it lands. The first browser
+  // run had it only on the commit, and the indicator lit the middle of a block.
+  const tgt = srcBetween(wire, "const targetAt = (x, y) => {", "const showIndicator", "targetAt");
+  assert.ok(/snapDropToGroup\(state\.priorities, state\.priorityLinks, \+hit\.dataset\.i/.test(tgt), "targetAt snaps");
+  assert.ok(/const li = rowsOf\(\)\[snapped\.to\] \|\| hit;/.test(tgt), "and lights the SNAPPED row, not the hovered one");
+  assert.strictEqual((wire.match(/snapDropToGroup\(/g) || []).length, 1, "exactly one snap site in the renderer");
+  const drop = srcBetween(wire, "const srcSpan = spanOf(state.priorities, state.priorityLinks, d.from)", "rerender();", "drop commit");
+  assert.ok(/d\.target\.to, d\.target\.after\)/.test(drop), "the commit trusts the already-snapped target");
+  assert.ok(/head \+ \(d\.from - srcSpan\.start\)/.test(drop), "the head-frame answer is converted to the grabbed row's frame");
+  // No indicator inside the grabbed row's own block: that drop is a no-op.
+  const ind = srcBetween(wire, "const showIndicator = (t) => {", "const endDrag", "showIndicator");
+  assert.ok(/t\.to >= own\.start && t\.to <= own\.end\) return;/.test(ind), "a target within the source's own span shows nothing");
+});
+
+test("#745: the row carries the bracket classes, and the CSS draws them without breaking the grid", () => {
+  const row = srcBetween(WIZARD_SRC, "function rankedHTML()", "function reorderControlsHTML", "rankedHTML");
+  assert.ok(/class="wz-linked"/.test(row) && /class="wz-group-head"/.test(row), "members and heads are classed");
+  assert.ok(/state\.priorities\[i \+ 1\] !== _utilitySentinel/.test(row), "a row above the sentinel is never a head");
+  const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+  const rule = srcBetween(css, ".wz-ranked > li.wz-group-head, .wz-ranked > li.wz-linked {", "}", "bracket rule");
+  // 3px border + 10px padding == the 1px + 12px every other row has, so the grip
+  // column stays aligned down the list; and border-left, not box-shadow, because
+  // the drop indicator owns box-shadow and a linked row must still show a drop.
+  assert.ok(/border-left:\s*3px solid var\(--accent\)/.test(rule) && /padding-left:\s*10px/.test(rule), "the bracket gives back its width in padding");
+  assert.ok(!/box-shadow/.test(rule), "and does not fight the drop indicator for box-shadow");
+  assert.ok(/\.wz-ctl button\[aria-pressed="true"\]/.test(css), "the pressed toggle is styled");
 });
 
 console.log(`\n${passed} passed`);
@@ -5771,12 +5936,17 @@ test("#744: movePriority refuses an out-of-range or non-integer source", () => {
   assert.deepStrictEqual(movePriority(list, 0, Infinity), ["B", "A"], "but Infinity still means bottom");
 });
 
-test("#744: every ranked row renders five controls, disabled at the ends", () => {
+test("#744 (re-ratified by #745): every ranked row renders six controls, disabled at the ends", () => {
   const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
   const ctl = srcBetween(src, "function reorderControlsHTML", "\n    }", "#744 controls");
-  for (const d of ["top", "up", "down", "bottom", "del"]) {
+  // #745 added the link toggle as a sixth control. It carries its state on
+  // aria-pressed (which also drives the pressed style) and is disabled on the
+  // first ranked row, which has nothing above it to link to.
+  for (const d of ["link", "top", "up", "down", "bottom", "del"]) {
     assert.ok(ctl.includes(`b("${d}"`), `the ${d} control is rendered`);
   }
+  assert.ok(/b\("link", "⛓", linked \? "unlink from the row above" : "link to the row above", atTop, ` aria-pressed="\$\{linked\}"`\)/.test(ctl),
+    "the link toggle states which way it will go, carries aria-pressed, and is off at the top");
   // The disabled rule comes from the shared helper, not a re-spelled predicate.
   assert.ok(ctl.includes("lastRankedIndex(state.priorities)"),
     "the bottom is asked for, never recomputed inline");
@@ -5795,8 +5965,12 @@ test("#744: the click handler and the drop handler share one reorder primitive",
     "no hand-written swap remains");
   assert.ok(!/state\.priorities\.splice\(to, 0, m\)/.test(src),
     "the drop handler no longer splices directly");
-  assert.strictEqual((src.match(/movePriority\(state\.priorities/g) || []).length, 5,
-    "four buttons plus the drop handler, all through movePriority");
+  // #745 — the five sites now go through the GROUP primitive, and NONE bypass
+  // it: a direct movePriority on state would move one member out of its block.
+  assert.strictEqual((src.match(/movePriorityGroup\(state\.priorities, state\.priorityLinks/g) || []).length, 5,
+    "four buttons plus the drop handler, all through movePriorityGroup");
+  assert.strictEqual((src.match(/movePriority\(state\.priorities/g) || []).length, 0,
+    "and nothing reaches around it to move a single row");
 });
 
 test("#747: both bounds carry a visible label naming the concept", () => {

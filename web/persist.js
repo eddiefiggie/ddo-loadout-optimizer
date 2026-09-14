@@ -228,6 +228,11 @@
     // every untouched container at today's roster, and collapsing [] to null would
     // silently refill a container the player deliberately emptied.
     "utilityContainer", "utility_container_aware",
+    // #745 — priority groups as linked rows: the stat names linked to the row
+    // above them. Additive and optional — absent on every save before this
+    // shipped, read as "no groups". A group that vanished on reload would be
+    // the side-car's promise broken, so it is on the allowlist like its sibling.
+    "priorityLinks",
     // #88 U5 (R20/R22/KTD5) — the player's bonus-type overrides. Each entry
     // records the type its target affix carried when it was written, which is
     // what makes drift detectable rather than silently absorbed. Absent on a
@@ -269,6 +274,10 @@
         // Preserve the null/array distinction exactly; anything else is treated as
         // untouched rather than guessed at.
         inputs.utilityContainer = Array.isArray(s.utilityContainer) ? s.utilityContainer.slice() : null;
+      } else if (k === "priorityLinks") {
+        // #745 — a copied, string-only array; anything else reads as no groups.
+        inputs.priorityLinks = Array.isArray(s.priorityLinks)
+          ? s.priorityLinks.filter((x) => typeof x === "string" && x) : [];
       } else if (k === "utility_tier_aware") {
         // #91 (U4/KTD8) — always `true`, never read from state: the marker means
         // "this record was written by tier-aware code", which is a property of
