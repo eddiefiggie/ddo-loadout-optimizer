@@ -347,7 +347,10 @@ test("#743 U4: the slot sits INSIDE .wz-adv-body (which keeps #744 step 2 clear)
   const panel = between(WSRC, "function advancedHTML(", "function bonusTypesHTML(", "advancedHTML");
   const body = panel.indexOf("wz-adv-body");
   const slot = panel.indexOf("reachPlaceholderHTML(stat)");
-  const close = panel.indexOf("</div></details>");
+  // #744 step 2 — the panel closes with a plain </div> now: it was a <details>
+  // and is a grid-placed sibling div. The invariant is unchanged — the slot must
+  // render inside the panel BODY, which is what moves as a unit.
+  const close = panel.indexOf("</div></div>");
   assert.ok(body >= 0, "the panel body marker is present");
   assert.ok(slot > body && close > slot,
     "the placeholder must render between the .wz-adv-body opening and the panel close");
@@ -359,12 +362,15 @@ test("#743 U4: it renders EMPTY and is filled on open, never eagerly", () => {
   const ph = between(WSRC, "function reachPlaceholderHTML(", "function fillReachability(", "placeholder");
   assert.ok(/data-reach-slot=/.test(ph), "the placeholder carries its stat");
   assert.ok(!/slotReachability/.test(ph), "the placeholder must not resolve reachability at render time");
-  assert.ok(/details\.wz-adv\[open\]/.test(WSRC), "the fill only touches OPEN panels");
+  assert.ok(/\.wz-adv-panel:not\(\[hidden\]\)/.test(WSRC), "the fill only touches OPEN panels");
 });
 
 test("#743 U4: a panel restored open is filled too, not left blank", () => {
-  const bind = between(WSRC, "d.ontoggle = () =>", "// D1 ", "toggle binding");
-  assert.ok(/if \(d\.open\) fillReachability/.test(bind), "opening a panel fills it");
+  // #744 step 2 — <details> reported its own state through `ontoggle`; a button
+  // does not, so the click handler owns the transition and `open` is computed
+  // there. Same two fills, same order, different write point.
+  const bind = between(WSRC, "t.onclick = () =>", "// D1 ", "toggle binding");
+  assert.ok(/if \(open\) fillReachability/.test(bind), "opening a panel fills it");
   assert.ok(/fillReachability\(ol\);/.test(bind), "a render also fills already-open panels");
 });
 

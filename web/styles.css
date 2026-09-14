@@ -1104,10 +1104,37 @@ input.wz-ml { width: 120px; }
 .wz-addrow input { flex: 1; background: var(--panel-2); color: var(--text); border: 1px solid var(--border-2);
   border-radius: var(--radius-sm); padding: 10px 12px; min-height: var(--tap); }
 .wz-addrow input:focus { outline: none; box-shadow: var(--ring); border-color: var(--accent); }
-.wz-ranked { list-style: none; padding: 0; margin: var(--sp-3) 0 0; max-width: 34rem; }
-.wz-ranked li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); background: var(--panel-2);
+/* #744 step 2 — the cap was a flat 34rem, so a twelve-priority list showed about
+   six rows no matter how wide the window was, and reordering (the whole job of
+   this step) was done through a viewport showing half the list. Still bounded:
+   an unbounded row would stretch five small controls across a 2000px monitor
+   with the name marooned at the far left. */
+.wz-ranked { list-style: none; padding: 0; margin: var(--sp-3) 0 0; max-width: min(100%, 60rem); }
+/* GRID, not flex. The row has a fixed set of slots and one full-width panel
+   beneath them, which is a two-row grid; expressing it as a wrapping flex line
+   is what forced the panel onto a line of its own even when collapsed, costing
+   a line on every magnitude row. Columns: grip, rank, name, Advanced, controls. */
+.wz-ranked > li { display: grid; grid-template-columns: auto auto 1fr auto auto;
+  align-items: center; gap: var(--sp-2); background: var(--panel-2);
   border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 9px 12px; margin-bottom: var(--sp-2); }
-.wz-ranked li.dragging { opacity: 0.5; border-color: var(--accent); }
+/* Everything on the control line is pinned to row 1 explicitly. Auto-placement
+   would flow the panel into the first free cell instead of giving it its own
+   row, and would put the reorder controls after it. */
+.wz-ranked > li > .wz-grip { grid-column: 1; grid-row: 1; }
+.wz-ranked > li > .wz-rk { grid-column: 2; grid-row: 1; }
+.wz-ranked > li > .wz-nm { grid-column: 3; grid-row: 1; min-width: 0; }
+.wz-ranked > li > .wz-adv-toggle { grid-column: 4; grid-row: 1; }
+.wz-ranked > li > .wz-ctl { grid-column: 5; grid-row: 1; }
+/* The panel spans every column on its own row. `1 / -1` is what the <details>
+   it replaced could not do: its body was rendered through a UA shadow tree and
+   stayed one column wide even with this declaration computing correctly. */
+.wz-ranked > li > .wz-adv-panel { grid-column: 1 / -1; grid-row: 2; margin-top: 2px;
+  padding-top: 6px; border-top: 1px dashed var(--border-2); font-size: 0.88em; color: var(--muted); }
+/* A presence row renders no Advanced control at all, leaving column 4 empty and
+   zero-width. The controls stay right-aligned regardless because `.wz-nm` is the
+   `1fr` track that absorbs the slack, so magnitude and presence rows still line
+   up down the list. */
+.wz-ranked > li.dragging { opacity: 0.5; border-color: var(--accent); }
 .wz-grip { color: var(--faint); cursor: grab; letter-spacing: -2px; }
 .wz-rk { width: 22px; height: 22px; border-radius: var(--radius-sm); background: var(--accent); color: var(--accent-ink);
   font-size: var(--fs-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; }
@@ -1131,42 +1158,36 @@ input.wz-ml { width: 120px; }
    treatment as its sibling because it is the same kind of fact: a bound the
    player set, which they should not have to open the panel to see. */
 .wz-adv-cap { color: var(--muted); font-weight: 550; }
-/* plan 005 — the per-row Advanced disclosure. Takes its own full-width line
-   below the row rather than competing for space on it: `.wz-ranked li` is a flex
-   container, so an auto-width <details> would size to its collapsed summary and
-   render the open panel as a ~5rem column of wrapped text. `flex-basis: 100%` is
-   what drops it to its own line — the same mechanism `.wz-credits` uses below,
-   and the reason it stays on the details rather than moving to `[open]`: a
-   width that changes on open would make the summary jump lines under the cursor.
+/* plan 005 / #744 step 2 — the per-row Advanced disclosure, as an inline TOGGLE
+   on the control line plus a panel on the row beneath it.
+
+   It was a <details>/<summary> taking a whole flex line, collapsed or not, which
+   cost a line on every magnitude row and is half of what made the list too tall
+   to reorder. The row is a grid now, and the two halves are separate elements so
+   each can be placed independently — a <details> cannot do this: its body renders
+   through a UA shadow tree and does not participate in the parent grid, measured
+   in Chromium at one column wide with `grid-column: 1 / -1` computing correctly.
 
    Quieter than the reorder controls by design. The row's job is the ORDER; this
    is the affordance you reach for only when you have a specific number in mind. */
-/* `order: 1` is load-bearing, not cosmetic. `.wz-adv` sits before `.wz-ctl` in
-   DOM order (the panel belongs to the row it describes), and `flex-basis: 100%`
-   makes it consume a whole flex line — which pushed the reorder buttons onto a
-   THIRD line on every magnitude row, while presence rows stayed on one. That is
-   exactly the misalignment R1 and R2 exist to remove. Ordering it last puts the
-   controls back inline and leaves the panel on its own line beneath them. */
-.wz-adv { order: 1; flex-basis: 100%; margin-top: 2px; padding-top: 6px;
-  border-top: 1px dashed var(--border-2); font-size: 0.88em; color: var(--muted); }
-/* NOT `display: flex`. Chrome drops the disclosure triangle entirely when a
-   <summary> is a flex container, so the control rendered as plain grey text with
-   nothing marking it as expandable — the one affordance the whole row depends on.
-   Left as the default list-item, with an explicit marker so the open/closed state
-   is visible in every engine rather than relying on the UA default. */
-.wz-adv > summary { cursor: pointer; color: var(--faint); padding: 2px 0;
-  min-height: var(--tap-sm, 24px); list-style: none; }
-.wz-adv > summary::-webkit-details-marker { display: none; }
-.wz-adv > summary::before { content: "▸"; display: inline-block; width: 1em;
+.wz-adv-toggle { cursor: pointer; color: var(--faint); padding: 2px var(--sp-2);
+  min-height: var(--tap-sm, 24px); font-size: 0.88em; text-align: left;
+  background: none; border: 1px solid transparent; border-radius: var(--r-1, 6px);
+  font-family: inherit; white-space: nowrap; }
+/* The marker is drawn here rather than inherited from a UA: <details> supplied a
+   triangle and a button supplies nothing, and the triangle IS the affordance
+   that says the row has more behind it. Rotating it is the only open/closed
+   signal on a collapsed row, so it is not decorative. */
+.wz-adv-toggle::before { content: "▸"; display: inline-block; width: 1em;
   color: var(--faint); transition: transform 0.12s ease; }
-.wz-adv[open] > summary::before { transform: rotate(90deg); }
-.wz-adv > summary:hover { color: var(--text); }
-.wz-adv > summary:focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--r-1, 6px); }
+.wz-adv-toggle[aria-expanded="true"]::before { transform: rotate(90deg); }
+.wz-adv-toggle:hover { color: var(--text); border-color: var(--border-2); }
+.wz-adv-toggle:focus-visible { outline: none; box-shadow: var(--ring); }
+.wz-adv-toggle[aria-expanded="true"] { color: var(--text); }
 /* R5 — the collapsed row still shows that settings are applied. Part of the
-   summary's TEXT, not a decorative dot: a purely visual mark would hide the
+   toggle's TEXT, not a decorative dot: a purely visual mark would hide the
    state from screen-reader users instead of from everyone. */
 .wz-adv-badge { color: var(--accent); font-weight: 600; }
-.wz-adv[open] > summary { color: var(--text); margin-bottom: var(--sp-2); }
 .wz-adv-body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); padding-bottom: 2px; }
 .wz-adv-lead, .wz-adv-note { flex-basis: 100%; margin: 0; line-height: 1.45; }
 .wz-adv-lead { color: var(--text); }
@@ -1185,11 +1206,13 @@ input.wz-ml { width: 120px; }
    and styled as its sibling: nothing here is ever written into a bound, so it
    must not look editable. Takes a full line inside the panel BODY rather than
    competing on the row, which is also what keeps it clear of #744 step 2 — that
-   rework moves the panel as a unit and never has to know this exists.
+   rework moves the panel as a unit and never has to know this exists. That held:
+   step 2 replaced the <details> around this with a toggle and a grid-placed
+   panel, and nothing in this block changed.
 
    `flex-basis: 100%` because `.wz-adv-body` is a wrapping flex container; an
    auto-width block would size to its longest line and render the rest as a
-   narrow column, the same trap the `.wz-adv` comment above records. */
+   narrow column, the same trap the `.wz-adv-toggle` comment above records. */
 .wz-adv-reach-slot { flex-basis: 100%; }
 .wz-adv-reach { margin: 0; line-height: 1.45; color: var(--muted);
   border-left: 2px solid var(--border-2); padding-left: var(--sp-2); }

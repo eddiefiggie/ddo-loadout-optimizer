@@ -1030,14 +1030,22 @@ function openPanelClear() {
   openPanels.clear();
   return openPanels;
 }
-/** The `open` attribute text for one row's panel — the READ side of the set.
+/** The open-state attribute text for one row's panel — the READ side of the set.
  *  Exported so the read seam is covered by behavior rather than by a regex over
  *  the markup: deleting the read is the mutation that silently reverts KTD1
  *  entirely (every panel renders closed, so the panel snaps shut on the click
  *  it exists to survive) while a source assertion on the surrounding template
- *  still passes. */
+ *  still passes.
+ *
+ *  #744 step 2 — the panel is no longer a <details>, so there are now TWO halves
+ *  to state and they must never disagree: the toggle's `aria-expanded` and the
+ *  panel's `hidden`. One function emits both, from one lookup, so a row cannot
+ *  render as an expanded control over a hidden panel. `panelOpenAttr` keeps its
+ *  name and its single-`stat` signature; only the shape of what it returns
+ *  changed, and the set behind it is untouched. */
 function panelOpenAttr(stat) {
-  return openPanels.has(stat) ? " open" : "";
+  const open = openPanels.has(stat);
+  return { open, toggle: ` aria-expanded="${open}"`, panel: open ? "" : " hidden" };
 }
 
 /** Pure state -> solver query mapping (no DOM). Exported for unit tests.
@@ -4180,7 +4188,7 @@ ${(() => {
         <span class="wz-rk wz-rk-pinned" title="Not ranked — pursued only after every stat above">·</span>
         <span class="wz-nm">${esc(_utilitySentinel)} <span class="rank-tag" title="Pursued only if there is room, after every ranked stat is locked. Anything you actually need belongs in the list above, not here.">nice to have</span>
           <span class="wz-util-summary">${esc(containerSummary(list))}</span></span>
-        ${containerPanelHTML(list)}
+        ${containerPanelHTML(list, i)}
         <span class="wz-ctl"><button data-del="${i}" aria-label="remove">✕</button></span></li>`;
     }
 
@@ -4193,7 +4201,7 @@ ${(() => {
     /** #348 (U6/R4, KTD9) — the curation panel. A list manager, sharing only the name
      *  with the numeric Advanced panel: reorder, remove, and a search-first add over
      *  every targetable presence effect. */
-    function containerPanelHTML(list) {
+    function containerPanelHTML(list, i) {
       const q = state.utilityQuery || "";
       const rows = list.length
         ? list.map((n, j) => `<li class="wz-util-item"><span class="wz-util-pos">${j + 1}</span>
@@ -4202,8 +4210,9 @@ ${(() => {
               <button type="button" data-udown="${j}" ${j === list.length - 1 ? "disabled" : ""} aria-label="move ${esc(n)} down">↓</button>
               <button type="button" data-udel="${j}" aria-label="remove ${esc(n)}">✕</button></span></li>`).join("")
         : `<li class="wz-hint">${esc(containerSummary([]))}</li>`;
-      return `<details class="wz-adv wz-util-panel" data-adv="${esc(_utilitySentinel)}"${panelOpenAttr(_utilitySentinel)}>
-        <summary>Curate (${list.length}/${UTILITY_CONTAINER_CAP})</summary>
+      const st = panelOpenAttr(_utilitySentinel);
+      return `<button type="button" class="wz-adv-toggle wz-util-toggle" data-adv="${esc(_utilitySentinel)}" aria-controls="${advPanelId(i)}"${st.toggle}>Curate (${list.length}/${UTILITY_CONTAINER_CAP})</button>
+        <div class="wz-adv-panel wz-util-panel" id="${advPanelId(i)}" data-adv-panel="${esc(_utilitySentinel)}"${st.panel}>
         <div class="wz-adv-body">
           <p class="wz-help">These are pursued in this order, after every stat above is locked. The first one is secured before the second is attempted.</p>
           <ol class="wz-util-list">${rows}</ol>
@@ -4212,18 +4221,24 @@ ${(() => {
           </label>
           <div class="wz-util-sugg">${containerSuggHTML(list, q)}</div>
           <p class="wz-util-status" role="status">${esc(state.utilityStatus || "")}</p>
-        </div></details>`;
+        </div></div>`;
     }
 
     // U2/U3 — one row's Advanced panel: everything optional, behind one closed
     // disclosure, so the default row is just rank, name, and reorder (R1).
     //
-    // `<details>`/`<summary>` rather than a button plus a hidden div: keyboard
-    // operation and AT semantics come free, and `toggle` is the write point for
-    // the open set (KTD1). A presence row renders `.wz-adv-none` instead — R6
-    // gives it no control. The placeholder is a zero-width marker, NOT a reserved
-    // column — `.wz-adv-none` is display:none, and R2's alignment comes from
-    // `.wz-nm` being the flex-grow element (see styles.css).
+    // A button plus a hidden div, NOT `<details>`/`<summary>`. It was the latter
+    // until #744 step 2, for the good reason that keyboard operation and AT
+    // semantics come free — but the row became a grid, and a <details> cannot put
+    // its summary inline on the control line while its body spans the row
+    // beneath: the body is rendered through a UA shadow tree and does not
+    // participate in the parent grid (measured, see the plan). `aria-expanded` +
+    // `aria-controls` + `hidden` reproduce what was lost; the click handler in
+    // renderRankedList is now the write point for the open set (KTD1).
+    //
+    // A presence row renders NO control at all — R6 gives it none — leaving the
+    // Advanced column empty and zero-width. Alignment down the list comes from
+    // `.wz-nm` being the `1fr` track that absorbs the slack (see styles.css).
     //
     // The badge is part of the summary's TEXT, not a visual-only chip: R5 is
     // about not losing a setting when the panel closes, and a purely visual mark
@@ -4290,7 +4305,7 @@ ${(() => {
      *  disclosure, and it must never be able to take the priorities step down. */
     function fillReachability(root) {
       if (!root || typeof dataset === "undefined" || !dataset) return;
-      const slots = root.querySelectorAll("details.wz-adv[open] .wz-adv-reach-slot");
+      const slots = root.querySelectorAll(".wz-adv-panel:not([hidden]) .wz-adv-reach-slot");
       for (const el of slots) {
         if (el.innerHTML) continue;                       // already resolved
         const stat = el.dataset.reachSlot;
@@ -4307,9 +4322,25 @@ ${(() => {
       }
     }
 
+    /** #744 step 2 — an explicit disclosure button plus a sibling panel, NOT a
+     *  <details>. The row is a grid, and the panel body has to be a grid item of
+     *  that grid so it can span the full second line while the toggle stays
+     *  inline on the first. A <details> cannot give both halves: its children are
+     *  rendered through a UA shadow tree, and `display: contents` on it was
+     *  measured in Chromium to (a) lose the closed-state hiding entirely and
+     *  (b) leave the body one column wide with `grid-column: 1 / -1` applied and
+     *  computing correctly. That is browser-internal behavior with no guarantee
+     *  either way, so the split is in the markup instead.
+     *
+     *  `aria-expanded` + `aria-controls` + `hidden` reproduce what <details> gave
+     *  for free. The panel id is keyed by INDEX rather than by stat name because
+     *  it must be a valid id token and stat names carry spaces and periods. */
+    function advPanelId(i) { return `wz-adv-panel-${i}`; }
+
     function advancedHTML(stat, i, adv) {
-      return `<details class="wz-adv" data-adv="${esc(stat)}"${panelOpenAttr(stat)}>
-        <summary>${advSummaryHTML(adv)}</summary>
+      const st = panelOpenAttr(stat);
+      return `<button type="button" class="wz-adv-toggle" data-adv="${esc(stat)}" aria-controls="${advPanelId(i)}"${st.toggle}>${advSummaryHTML(adv)}</button>
+        <div class="wz-adv-panel" id="${advPanelId(i)}" data-adv-panel="${esc(stat)}"${st.panel}>
         <div class="wz-adv-body">
           <p class="wz-adv-lead">${ADVANCED_PANEL_HELP.lead}</p>
           <span class="wz-bounds">
@@ -4324,7 +4355,7 @@ ${(() => {
           <p class="wz-adv-note">${ADVANCED_PANEL_HELP.max}</p>
           ${adv.canCredit ? `<p class="wz-adv-note">${ADVANCED_PANEL_HELP.credit}</p>
           ${bonusTypesHTML(stat, adv)}` : ""}
-        </div></details>`;
+        </div></div>`;
     }
 
     // U2 — the declared-credit sub-rows for one priority. Repeatable, unlike the
@@ -4387,15 +4418,26 @@ ${(() => {
       ol.innerHTML = rankedHTML();
       // U2/KTD1 — the open set is the only thing that carries panel state across
       // the `innerHTML` rebuild above, so bind the write point on every render.
-      ol.querySelectorAll("details.wz-adv").forEach((d) => {
-        d.ontoggle = () => {
-          openPanelToggle(d.dataset.adv, d.open);
+      // #744 step 2 — <details> toggled itself and reported state through
+      // `ontoggle`; a button does neither, so the click handler owns the whole
+      // transition: flip the panel, state it on the control, THEN record it. The
+      // two DOM writes are what `panelOpenAttr` emits on the next render, so they
+      // are made together here for the same reason it returns them together.
+      ol.querySelectorAll(".wz-adv-toggle").forEach((t) => {
+        const panel = ol.querySelector(`#${t.getAttribute("aria-controls")}`);
+        t.onclick = () => {
+          if (!panel) return;
+          const open = panel.hidden;                      // about to become open
+          panel.hidden = !open;
+          t.setAttribute("aria-expanded", String(open));
+          openPanelToggle(t.dataset.adv, open);
           // #743 — resolve the reachability slot at the moment it becomes
           // visible, never on render. See `reachPlaceholderHTML`.
-          if (d.open) fillReachability(ol);
+          if (open) fillReachability(ol);
         };
       });
-      // #743 — panels restored OPEN by `panelOpenAttr` never fire `ontoggle`, so
+      // #743 — panels restored OPEN by `panelOpenAttr` are rendered open rather
+      // than clicked open, so the toggle handler above never runs for them and
       // without this they would sit blank until the player closed and reopened
       // them. Same rebuild seam as the binding above.
       fillReachability(ol);
@@ -4404,20 +4446,28 @@ ${(() => {
       // nowhere: focus falls to <body> and they must re-find the row by mouse or
       // tab from the top of the list. Re-query AFTER the rebuild, by data
       // attribute rather than a built selector, so a stat name never needs escaping.
-      const focusSummary = (stat) => ol.querySelectorAll("details.wz-adv")
-        .forEach((d) => { if (d.dataset.adv === stat) { const s = d.querySelector("summary"); if (s) s.focus(); } });
+      const focusSummary = (stat) => ol.querySelectorAll(".wz-adv-toggle")
+        .forEach((t) => { if (t.dataset.adv === stat) t.focus(); });
       // R5 — the bound and credit-value inputs deliberately do NOT rerender: a
       // rebuild mid-keystroke would destroy the field under the caret. But the
       // badge is computed during the rebuild, so without this it stays one render
       // behind — a player types a floor, collapses the row, and sees nothing.
       // Patch just the summary instead, from the same model the render uses.
-      const refreshBadge = (stat) => ol.querySelectorAll("details.wz-adv").forEach((d) => {
-        if (d.dataset.adv !== stat) return;
-        const s = d.querySelector("summary");
-        if (s) s.innerHTML = advSummaryHTML(advancedRowModel(stat, state, vocab));
+      const refreshBadge = (stat) => ol.querySelectorAll(".wz-adv-toggle").forEach((t) => {
+        if (t.dataset.adv !== stat) return;
+        t.innerHTML = advSummaryHTML(advancedRowModel(stat, state, vocab));
       });
 
-      ol.querySelectorAll("button").forEach((b) => b.onclick = () => {
+      // #744 step 2 — `:not(.wz-adv-toggle)` is load-bearing twice over, and the
+      // panel would still open without it, so nothing else would catch a
+      // regression here. The Advanced control became a <button> in this change,
+      // which puts it inside this net: (1) this binding runs AFTER the toggle
+      // wiring above and assigns `onclick` too, so it would REPLACE the toggle's
+      // handler outright and the dispatch chain below matches none of its data
+      // attributes — the control would go inert; (2) `markDirty()` on the first
+      // line would mark the build dirty for merely opening a panel to READ a
+      // disclosure, which mutates nothing.
+      ol.querySelectorAll("button:not(.wz-adv-toggle)").forEach((b) => b.onclick = () => {
         markDirty();   // #428 U5 — every ranked-list button mutates the build
         let after = null;
         // #744 — all four moves through the one primitive. `top`/`bottom` pass a
@@ -4620,7 +4670,12 @@ ${(() => {
         // `tagName === "SPAN"`, and a drag on the relocated explainer prose has
         // "P", so both would start a row reorder instead of toggling or selecting.
         // Anything inside the panel is panel interaction, never a drag handle.
-        li.ondragstart = (e) => { const t = e.target; if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || (t.closest && t.closest("details.wz-adv")))) { e.preventDefault(); return; } from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
+        // KTD6 — anything inside the panel, or the control that opens it, is panel
+        // interaction and never a drag handle. #744 step 2 split the <details>
+        // into two siblings, so this covers BOTH: a selector that named only the
+        // panel would let a drag start on the toggle and reorder the row instead
+        // of opening it.
+        li.ondragstart = (e) => { const t = e.target; if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || (t.closest && t.closest(".wz-adv-panel, .wz-adv-toggle")))) { e.preventDefault(); return; } from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
         li.ondragend = () => { li.classList.remove("dragging"); from = null; };
         li.ondragover = (e) => e.preventDefault();
         li.ondrop = (e) => {
