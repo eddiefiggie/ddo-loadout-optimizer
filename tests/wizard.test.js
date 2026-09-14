@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { armorTypesFor, canSolve, DRUID_ARMOR, bundleStaleNames, staleBundleText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice } = require("../web/wizard.js");
+const { armorTypesFor, canSolve, DRUID_ARMOR, bundleStaleNames, staleBundleText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -2691,6 +2691,109 @@ test("#235: the real vocabulary marks Enhanced Ki untyped-only and nothing else"
   });
 }
 
+
+
+// ---- #744 step 3 — autoscroll while dragging a priority row ------------------
+
+/** #744 step 3 — strip comments before a POSITIONAL source assertion.
+ *
+ *  Written because it caught me: the drop-handler test compared the index of
+ *  `dragAutoScroll.stop()` against the index of `rerender()`, and passed the
+ *  wrong verdict because the comment ABOVE the call explains the trap and names
+ *  `rerender()` in its prose. The assertion was reading my own commentary as
+ *  code. Any test that asserts "X comes before Y" in source has to see code only,
+ *  or well-commented code is exactly what defeats it. */
+function codeOnly(src) {
+  return String(src).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+}
+
+test("#744 step 3: the scroll curve is signed, clamped, and zero in the middle", () => {
+  // Re-measured before building: twelve priorities at 1200x900 still run 372px
+  // off the bottom on main at 09142026.2, even after step 2 halved the row
+  // height, because the bundles grid puts the list start at y=486.
+  const v = dragScrollVelocity;
+  assert.strictEqual(v(450, 900), 0, "the middle of the viewport does not scroll");
+  assert.ok(v(10, 900) < 0, "near the top scrolls UP");
+  assert.ok(v(890, 900) > 0, "near the bottom scrolls DOWN");
+  assert.strictEqual(v(0, 900), -DRAG_SCROLL_MAX, "clamped at the top edge");
+  assert.strictEqual(v(900, 900), DRAG_SCROLL_MAX, "clamped at the bottom edge");
+  // Just outside the band is exactly zero — an off-by-one here means the page
+  // creeps while the pointer sits in the middle of the list.
+  assert.strictEqual(v(DRAG_SCROLL_EDGE, 900), 0, "the top band is exclusive at its inner edge");
+  assert.strictEqual(v(900 - DRAG_SCROLL_EDGE, 900), 0, "and so is the bottom band");
+  // Ramps with depth rather than being flat: a constant speed overshoots a short
+  // correction and crawls on a long haul.
+  assert.ok(Math.abs(v(5, 900)) > Math.abs(v(80, 900)), "deeper into the band is faster");
+});
+
+test("#744 step 3: the curve refuses degenerate input instead of scrolling wildly", () => {
+  const v = dragScrollVelocity;
+  for (const bad of [[NaN, 900], [10, NaN], [10, 0], [10, -5], [undefined, undefined]]) {
+    assert.strictEqual(v(bad[0], bad[1]), 0, `must be inert for ${JSON.stringify(bad)}`);
+  }
+  // Infinity is the case the `Number.isFinite` guard UNIQUELY covers, and this
+  // assertion exists because corrupting that guard proved nothing without it: for
+  // NaN, 0 and negative viewports the `edge <= 0` check and NaN comparison
+  // semantics already return 0, so the isFinite line was load-bearing for exactly
+  // one input and the test was guarding none of it. Without the guard this
+  // returns -17: `Math.floor(Infinity / 2)` is Infinity, `Math.min` picks the
+  // 96px band, and the top band then swallows the whole viewport.
+  assert.strictEqual(v(10, Infinity), 0, "a non-finite viewport is inert, not a full-speed scroll");
+  // A viewport too short for two full bands would otherwise put every position
+  // inside BOTH, so the midpoint must still read zero rather than fighting itself.
+  const tiny = 100;
+  assert.strictEqual(v(tiny / 2, tiny), 0, "the midpoint of a short viewport is still neutral");
+  assert.ok(v(1, tiny) < 0 && v(tiny - 1, tiny) > 0, "and its edges still scroll the right way");
+});
+
+test("#744 step 3: the loop is armed after the guard and stopped on BOTH exits", () => {
+  const wire = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList"));
+  const ds = codeOnly(srcBetween(wire, "li.ondragstart", "li.ondragend", "dragstart"));
+  // Armed only once the guard has decided this is really a row drag — a drag the
+  // guard refused (panel, toggle, input) must never arm the scroller.
+  assert.ok(ds.indexOf("e.preventDefault(); return;") < ds.indexOf("dragAutoScroll.start()"),
+    "start() comes after the guard's refusal path");
+  const de = srcBetween(wire, "li.ondragend", "li.ondragover", "dragend");
+  assert.ok(/dragAutoScroll\.stop\(\)/.test(de), "a cancelled drag stops it");
+  // The drop path needs its OWN stop, and it must come first: rerender() replaces
+  // ol.innerHTML and destroys the <li> whose ondragend is the other stop, and
+  // dragend on a removed element is not reliably delivered. Without this, every
+  // SUCCESSFUL drop can leave the loop running and the page scrolling itself.
+  const dr = codeOnly(srcBetween(wire, "li.ondrop = (e) => {", "});", "drop"));
+  assert.ok(/dragAutoScroll\.stop\(\)/.test(dr), "a successful drop stops it too");
+  assert.ok(dr.indexOf("dragAutoScroll.stop()") < dr.indexOf("rerender()"),
+    "and stops BEFORE the rerender that destroys the dragged row");
+  assert.ok(dr.indexOf("dragAutoScroll.stop()") < dr.indexOf("if (from === null"),
+    "and before the early return, so no path skips it");
+});
+
+test("#744 step 3: one document listener ever, and it never preventDefaults", () => {
+  const ctl = srcBetween(WIZARD_SRC, "const dragAutoScroll = (function ()", "function renderRankedList", "controller");
+  // renderRankedList rebuilds on every reorder. A controller built inside it
+  // would add a listener per rebuild and remove none.
+  assert.ok(WIZARD_SRC.indexOf("const dragAutoScroll") < WIZARD_SRC.indexOf("function renderRankedList"),
+    "the controller is created once, outside the per-render function");
+  assert.ok(/if \(listening\) return;/.test(ctl), "start() is idempotent");
+  assert.ok(/removeEventListener\("dragover"/.test(ctl), "stop() removes the listener");
+  assert.ok(/cancelAnimationFrame\(raf\)/.test(ctl), "and cancels the pending frame");
+  // It only needs clientY. Declaring the whole document a drop target would
+  // change drop semantics for a bug that is about scrolling.
+  const handler = codeOnly(srcBetween(ctl, "const onDragOver", "return {", "onDragOver"));
+  assert.ok(!/preventDefault/.test(handler), "the document listener must not preventDefault");
+});
+
+test("#744 step 3: a velocity plus a frame loop, not scrolling from the event", () => {
+  // `dragover` fires while the pointer MOVES. Holding still inside the band — the
+  // gesture a player makes waiting for a long list to come round — stops the
+  // events, so scrolling straight from the handler stalls exactly when it is most
+  // wanted. Only the loop keeps going.
+  const ctl = srcBetween(WIZARD_SRC, "const dragAutoScroll = (function ()", "function renderRankedList", "controller");
+  assert.ok(/requestAnimationFrame\(tick\)/.test(ctl), "a frame loop does the scrolling");
+  const handler = codeOnly(srcBetween(ctl, "const onDragOver", "return {", "onDragOver"));
+  assert.ok(!/scrollBy/.test(handler), "the event handler sets a velocity, it does not scroll");
+  assert.ok(/vel = dragScrollVelocity\(e\.clientY, window\.innerHeight\)/.test(handler),
+    "and it sets that velocity from the shared curve");
+});
 
 console.log(`\n${passed} passed`);
 

@@ -1978,6 +1978,32 @@ function insertAboveTrailingSentinel(ranked, stat) {
  *  no sentinel (the player removed it) clamps to `length - 1` as normal.
  *
  *  Pure — returns a new array, like `insertAboveTrailingSentinel` above. */
+/** #744 step 3 — how fast to scroll while a priority row is being dragged, given
+ *  the pointer's viewport Y. Pure, and module-level rather than buried in the
+ *  drag controller, so the curve is unit-testable without a DOM: this is the part
+ *  with the arithmetic, and the part a reader will want to change.
+ *
+ *  Negative scrolls up, positive down, zero outside both bands. Speed ramps with
+ *  depth into the band rather than being constant — a flat speed makes a short
+ *  correction overshoot and a long haul feel slow. Clamped at the very edge.
+ *
+ *  `DRAG_SCROLL_EDGE` is the whole point of the change: the browser's own
+ *  edge-scroll during a native drag is a few pixels, which is what the reporter
+ *  meant by "needs to be at the very edge of the window". */
+var DRAG_SCROLL_EDGE = 96;
+var DRAG_SCROLL_MAX = 18;
+function dragScrollVelocity(clientY, viewportH) {
+  const y = Number(clientY), h = Number(viewportH);
+  if (!Number.isFinite(y) || !Number.isFinite(h) || h <= 0) return 0;
+  // A viewport too short for two bands would make every position "in" both; the
+  // bands are halved rather than overlapping, so the midpoint still reads zero.
+  const edge = Math.min(DRAG_SCROLL_EDGE, Math.floor(h / 2));
+  if (edge <= 0) return 0;
+  if (y < edge) return -Math.ceil(DRAG_SCROLL_MAX * (edge - y) / edge);
+  if (y > h - edge) return Math.ceil(DRAG_SCROLL_MAX * (y - (h - edge)) / edge);
+  return 0;
+}
+
 function movePriority(ranked, from, to) {
   const out = (Array.isArray(ranked) ? ranked : []).slice();
   const src = Number(from);
@@ -2810,7 +2836,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, AUGMENT_PIN_NOTE, augmentPinnable, addAugmentPin, removeAugmentPin, augmentPinStale, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
+  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, AUGMENT_PIN_NOTE, augmentPinnable, addAugmentPin, removeAugmentPin, augmentPinStale, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -4422,6 +4448,62 @@ ${(() => {
     // Generic ranked-list renderer: reused by the priorities step and the
     // in-results "Adjust & re-solve" panel (U3). `rerender` re-renders that
     // same list after a mutation.
+    /** #744 step 3 — autoscroll while dragging a priority row.
+     *
+     *  The reporter: dragging "needs to be at the very edge of the window to
+     *  scroll up/down". Measured on `main` at 09142026.2, twelve priorities at
+     *  1200x900 still run 372px off the bottom even after step 2 halved the row
+     *  height, because the bundles grid puts the list start at y=486.
+     *
+     *  It scrolls the WINDOW, and that is a measurement rather than a preference:
+     *  walking up from `#wz-ranked` there is no scrollable ancestor at all
+     *  (`html` is `overflow-y: visible`, the document is what scrolls). The
+     *  container-based version anyone would write by default silently does
+     *  nothing here.
+     *
+     *  Why a velocity plus a frame loop rather than scrolling straight from the
+     *  event: `dragover` fires while the pointer MOVES. Hold still inside the
+     *  edge band — exactly what a player does while waiting for a long list to
+     *  come round — and the events stop, so scrolling from the handler would
+     *  stall at the moment it is most wanted. The handler sets a velocity; the
+     *  loop keeps scrolling until the pointer leaves the band or the drag ends.
+     *
+     *  Created ONCE here rather than inside `renderRankedList`, which rebuilds on
+     *  every reorder: a controller built per render would add a document listener
+     *  per rebuild and never remove the old ones. */
+    const dragAutoScroll = (function () {
+      let vel = 0, raf = null, listening = false;
+      const tick = () => {
+        if (!vel) { raf = null; return; }
+        window.scrollBy(0, vel);
+        raf = requestAnimationFrame(tick);
+      };
+      const onDragOver = (e) => {
+        // No preventDefault: this only needs clientY, and declaring the whole
+        // document a valid drop target would change drop semantics for a bug
+        // that is about scrolling.
+        vel = dragScrollVelocity(e.clientY, window.innerHeight);
+        if (vel && raf === null) raf = requestAnimationFrame(tick);
+      };
+      return {
+        start() {
+          if (listening) return;                       // idempotent: one listener, ever
+          document.addEventListener("dragover", onDragOver);
+          listening = true;
+        },
+        /** Unconditional and idempotent. A drag that ends off-window, an Escape
+         *  cancel, or a rerender mid-drag must not leave the loop running: a loop
+         *  outliving its drag scrolls the page under the player with nothing being
+         *  dragged, which is worse than the bug this fixes. */
+        stop() {
+          vel = 0;
+          if (raf !== null) { cancelAnimationFrame(raf); raf = null; }
+          if (listening) { document.removeEventListener("dragover", onDragOver); listening = false; }
+        },
+        _active() { return { listening, running: raf !== null, vel }; },
+      };
+    })();
+
     function renderRankedList(ol, rerender) {
       if (!ol) return;
       ol.innerHTML = rankedHTML();
@@ -4684,11 +4766,24 @@ ${(() => {
         // into two siblings, so this covers BOTH: a selector that named only the
         // panel would let a drag start on the toggle and reorder the row instead
         // of opening it.
-        li.ondragstart = (e) => { const t = e.target; if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || (t.closest && t.closest(".wz-adv-panel, .wz-adv-toggle")))) { e.preventDefault(); return; } from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); };
-        li.ondragend = () => { li.classList.remove("dragging"); from = null; };
+        li.ondragstart = (e) => { const t = e.target; if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || (t.closest && t.closest(".wz-adv-panel, .wz-adv-toggle")))) { e.preventDefault(); return; } from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", "");
+          // #744 step 3 — AFTER the guard above, so a drag the guard refused never
+          // arms the scroller.
+          dragAutoScroll.start(); };
+        // `dragend` fires for a cancelled drag too (Escape, or a drop outside the
+        // window), which is why the stop lives here and not in `ondrop`: a drop
+        // handler alone would leave the loop running on every cancelled drag.
+        li.ondragend = () => { li.classList.remove("dragging"); from = null; dragAutoScroll.stop(); };
         li.ondragover = (e) => e.preventDefault();
         li.ondrop = (e) => {
           e.preventDefault();
+          // #744 step 3 — stop FIRST, before the early return and before the
+          // rerender below. `rerender()` replaces `ol.innerHTML`, destroying the
+          // very <li> whose `ondragend` is the other stop, and dragend on a
+          // removed element is not reliably delivered — so on a SUCCESSFUL drop,
+          // the drag-end stop is the one that may never run. `stop()` is
+          // idempotent, so a dragend that does still fire costs nothing.
+          dragAutoScroll.stop();
           const to = +li.dataset.i;
           if (from === null || to === from) return;
           // #348 (U6/R1) — the pinned row is not draggable, but it is still a DROP
