@@ -2124,15 +2124,25 @@ test("KTD1: the markup READS the open set — the seam, not just the Set", () =>
   // The mutation that reverts KTD1 entirely is deleting the read from the
   // template: every panel then renders closed, so the panel snaps shut on the
   // very click it exists to survive. The Set-API tests below cannot see that.
+  // #744 step 2 — the panel is a button plus a hidden div rather than a
+  // <details>, so the read returns BOTH halves of the open state instead of one
+  // ` open`. The seam is unchanged and so is what this pins: only the opened stat
+  // reads open, and the markup must actually render what the function returns.
+  // The two halves are asserted TOGETHER because a row that renders an expanded
+  // control over a hidden panel is the new way to break this silently.
   openPanelClear();
-  assert.strictEqual(panelOpenAttr("Constitution"), "", "closed by default");
+  assert.deepStrictEqual(panelOpenAttr("Constitution"),
+    { open: false, toggle: ' aria-expanded="false"', panel: " hidden" }, "closed by default");
   openPanelToggle("Constitution", true);
-  assert.strictEqual(panelOpenAttr("Constitution"), " open");
-  assert.strictEqual(panelOpenAttr("Dodge"), "", "only the opened stat");
+  assert.deepStrictEqual(panelOpenAttr("Constitution"),
+    { open: true, toggle: ' aria-expanded="true"', panel: "" });
+  assert.strictEqual(panelOpenAttr("Dodge").open, false, "only the opened stat");
   openPanelClear();
-  assert.strictEqual(panelOpenAttr("Constitution"), "");
+  assert.strictEqual(panelOpenAttr("Constitution").open, false);
   const panel = srcBetween(WIZARD_SRC, "function advancedHTML", "function bonusTypesHTML", "advancedHTML");
-  assert.ok(/\$\{panelOpenAttr\(stat\)\}/.test(panel), "the markup renders that attribute");
+  assert.ok(/panelOpenAttr\(stat\)/.test(panel), "the markup consults the read seam");
+  assert.ok(/\$\{st\.toggle\}/.test(panel) && /\$\{st\.panel\}/.test(panel),
+    "and renders BOTH halves — an expanded control over a hidden panel is incoherent");
 });
 
 test("KTD1: opening a panel WRITES to the set", () => {
@@ -2146,9 +2156,20 @@ test("KTD1: opening a panel WRITES to the set", () => {
   // seam it protects was untouched. That is
   // docs/solutions/conventions/a-source-guard-must-pin-the-property-not-the-syntax-beside-it.md
   // exactly: match the call, and let the handler grow around it.
-  assert.ok(/ontoggle\s*=/.test(wire), "each panel binds a toggle handler");
-  assert.ok(/openPanelToggle\(d\.dataset\.adv,\s*d\.open\)/.test(wire),
+  //
+  // #744 step 2 — <details> reported its own state through `ontoggle`; a button
+  // does not, so the click handler flips the panel and computes `open` itself.
+  // Still the property, not the syntax: match the call and let the handler grow.
+  assert.ok(/\.wz-adv-toggle"\)\.forEach/.test(wire), "each panel binds its toggle control");
+  assert.ok(/onclick\s*=/.test(wire), "which binds a click handler");
+  assert.ok(/openPanelToggle\(t\.dataset\.adv,\s*open\)/.test(wire),
     "each panel's toggle records its own stat and open state");
+  // The button must also STATE the transition it just made. <details> did this
+  // for free; nothing else in the suite would notice an aria-expanded left stale,
+  // and a screen-reader user would be told the panel is shut while it is open.
+  assert.ok(/panel\.hidden = !open/.test(wire), "the click flips the panel");
+  assert.ok(/setAttribute\("aria-expanded", String\(open\)\)/.test(wire),
+    "and states it on the control");
 });
 
 test("R5: refreshBadge writes the shared summary, not just anything", () => {
@@ -2187,8 +2208,12 @@ test("KTD6: the drag guard covers the whole panel, not just INPUT/SELECT", () =>
   // row reorder instead of toggling or selecting.
   const at = WIZARD_SRC.indexOf("li.ondragstart");
   const guard = WIZARD_SRC.slice(at, at + 320);
-  assert.ok(/closest\("details\.wz-adv"\)/.test(guard),
-    "anything inside the panel is panel interaction, never a drag handle");
+  // #744 step 2 split the <details> into two siblings — the toggle on the control
+  // line and the panel on the row beneath — so ONE selector no longer covers
+  // both. A guard naming only the panel would let a drag start on the toggle and
+  // reorder the row instead of opening it, which is this test's whole subject.
+  assert.ok(/closest\("\.wz-adv-panel, \.wz-adv-toggle"\)/.test(guard),
+    "anything inside the panel, or the control that opens it, is panel interaction");
   assert.ok(/tagName === "INPUT"/.test(guard) && /tagName === "SELECT"/.test(guard),
     "and the original tagName clauses survive for controls outside the panel");
 });
@@ -2224,15 +2249,74 @@ test("bundles: a hidden sub-row is actually hidden", () => {
   assert.ok(!/hidden/.test(html), "no container is rendered hidden");
 });
 
-test("R1/R2: the Advanced panel is ordered after the reorder controls", () => {
-  // `.wz-adv` precedes `.wz-ctl` in DOM order and takes a full flex line, so
-  // without an explicit order it pushed ↑ ↓ ✕ onto a third line on every
-  // magnitude row while presence rows stayed on one — the exact misalignment
-  // this change exists to remove.
+test("R1/R2 (#744 step 2): the row is a grid, and the panel has its own row", () => {
+  // Was: `.wz-adv { order: 1; flex-basis: 100% }`, which kept the panel on a line
+  // of its own and kept it from pushing ↑ ↓ ✕ onto a THIRD line. Both
+  // declarations are gone with the flex row, so the invariant they protected —
+  // a magnitude row is ONE line closed, and the controls never get displaced —
+  // is re-pinned here against the grid that replaced them. Without this the line
+  // count would become unguarded, which is the mutation that silently undoes the
+  // whole point of step 2.
   const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
-  const rule = srcBetween(css, ".wz-adv {", ".wz-adv >", ".wz-adv rule");
-  assert.ok(/order:\s*1/.test(rule), ".wz-adv carries an explicit order so it lays out last");
-  assert.ok(/flex-basis:\s*100%/.test(rule), "and still takes its own line");
+  const row = srcBetween(css, ".wz-ranked > li {", ".wz-ranked > li >", ".wz-ranked li rule");
+  assert.ok(/display:\s*grid/.test(row), "the row is a grid, not a wrapping flex line");
+  assert.ok(/grid-template-columns:\s*auto auto 1fr auto auto/.test(row),
+    "five columns: grip, rank, name, Advanced, controls");
+
+  // Everything on the control line is pinned to row 1 EXPLICITLY. Auto-placement
+  // would flow the panel into the first free cell instead of its own row, which
+  // is exactly the two-line row this change exists to remove.
+  for (const cls of ["wz-grip", "wz-rk", "wz-nm", "wz-adv-toggle", "wz-ctl"]) {
+    const rule = srcBetween(css, `.wz-ranked > li > .${cls} {`, "}", `${cls} placement`);
+    assert.ok(/grid-row:\s*1/.test(rule), `.${cls} is pinned to the control line`);
+  }
+  const panel = srcBetween(css, ".wz-ranked > li > .wz-adv-panel {", "}", "panel placement");
+  assert.ok(/grid-column:\s*1 \/ -1/.test(panel), "the panel spans every column");
+  assert.ok(/grid-row:\s*2/.test(panel), "on its own row beneath the controls");
+
+  // The toggle is column 4 and the controls column 5 — the panel summary is
+  // INLINE on the control line, which is the line this step reclaims.
+  const tog = srcBetween(css, ".wz-ranked > li > .wz-adv-toggle {", "}", "toggle placement");
+  const ctl = srcBetween(css, ".wz-ranked > li > .wz-ctl {", "}", "ctl placement");
+  assert.ok(/grid-column:\s*4/.test(tog) && /grid-column:\s*5/.test(ctl),
+    "Advanced sits inline, before the reorder controls");
+
+  // The CHILD combinator is load-bearing, and a browser check is what caught it.
+  // `.wz-ranked li` is a descendant selector that also matches `.wz-util-item` —
+  // the Utility panel's own nested list — and it OUTRANKS that class's own
+  // `display: flex`. It was harmless while both said flex; turning the priority
+  // row into a five-column grid silently turned those nested rows into one too,
+  // stranding their ✕ at the far right against an empty `1fr` track.
+  assert.ok(!/^\.wz-ranked li\b/m.test(css),
+    "the row grid is scoped to direct children, never to every nested <li>");
+});
+
+test("#744 step 2: the Advanced toggle is EXCLUDED from the generic button handler", () => {
+  // The trap this change introduced, and the panel would still open without the
+  // fix, so nothing else in the suite would catch it.
+  //
+  // renderRankedList binds `onclick` to every button in the list, and that
+  // binding runs AFTER the toggle wiring. The Advanced control became a <button>
+  // in step 2, so an unqualified selector would (1) REPLACE the toggle's own
+  // handler — the dispatch chain matches none of its data attributes, so the
+  // control goes inert — and (2) call markDirty() for merely opening a panel to
+  // READ a disclosure, which mutates nothing.
+  const wire = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList"));
+  assert.ok(/querySelectorAll\("button:not\(\.wz-adv-toggle\)"\)/.test(wire),
+    "the generic ranked-list handler skips the Advanced toggle");
+  // And the order that makes it necessary is itself the hazard: assert the toggle
+  // is bound FIRST, so a future reorder does not quietly restore the overwrite.
+  assert.ok(wire.indexOf('.wz-adv-toggle").forEach') < wire.indexOf('querySelectorAll("button:not'),
+    "the toggle is wired before the generic handler that would otherwise clobber it");
+});
+
+test("#744 step 2: the list is no longer capped at one 34rem column", () => {
+  // The other half of the density blocker, and independent of the row layout.
+  const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+  const rule = srcBetween(css, ".wz-ranked {", "}", ".wz-ranked rule");
+  assert.ok(!/34rem/.test(rule), "the flat 34rem cap is gone");
+  assert.ok(/max-width:\s*min\(100%,\s*60rem\)/.test(rule),
+    "still bounded — an unbounded row strands the name at the far left of a wide monitor");
 });
 
 // ---- U2/KTD1 — the open-panel set --------------------------------------------
