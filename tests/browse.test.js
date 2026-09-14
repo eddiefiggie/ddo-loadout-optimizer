@@ -547,7 +547,6 @@ test("#380: every counted chip is marked, and no not-counted chip is", () => {
     `no not-counted chip may carry a marker (${strayMarks}/${notCountedChips}) — #380`);
 });
 
-console.log(`\n${passed} passed`);
 
 // ---------------------------------------------------------------------------
 // #426 — a synthesized crafted row carries the provenance the override picker
@@ -697,3 +696,92 @@ test("#564: the catalog is far larger than the cap, so the notice is load-bearin
   assert.ok(items.length > B.BROWSE_ROW_CAP * 4,
     `${items.length} items against a ${B.BROWSE_ROW_CAP} cap — truncation is the normal case`);
 });
+
+// ---- #753: catalog reachability in Browse ------------------------------------
+//
+// The second of #753's two homes. The wizard's half answers "where can this come
+// from, under YOUR filters"; Browse has no character, so it answers the catalog
+// question — and that difference is what every test below is really about.
+
+const RAWDS = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
+const BSRC = fs.readFileSync(path.join(__dirname, "..", "web", "browse.js"), "utf-8");
+
+test("#753: Browse reads dataset.items, NOT the browsable row list", () => {
+  // The double-count trap, and it is silent: `browsableItems` concatenates
+  // synthetic display rows for the Dino, Nearly-Complete, Viktranium and
+  // compendium pools, while `slotReachabilityFor` takes those pools SEPARATELY
+  // through its `pools` argument. Feeding it the browsable list counts every
+  // crafted route twice and still returns plausible-looking lines.
+  const fn = BSRC.slice(BSRC.indexOf("function browseReachLines("));
+  assert.ok(/_browseReachReport\(stat, dataset\.items \|\| \[\]/.test(fn),
+    "the scan runs over dataset.items");
+  assert.ok(!/browsableItems/.test(fn.slice(0, fn.indexOf("}\n"))),
+    "and never over the browsable rows, which already contain the pool rows");
+  // Non-vacuity: the two lists really do differ, so the distinction is load-bearing.
+  assert.ok(browsableItems(RAWDS).length > (RAWDS.items || []).length,
+    "browsableItems adds pool rows — if it ever stops, this trap is gone and so is this test");
+});
+
+test("#753: the catalog answer ignores Browse's filters, by construction", () => {
+  // Browse's `ML <=` box filters the DISPLAYED rows over `itemMl`; the solver's
+  // `mlCap` drives eligibility, scaling and the augment ceiling. They are
+  // different predicates, and passing one as the other would put a claim on
+  // screen the data does not support. An empty query is the honest scope.
+  const fn = BSRC.slice(BSRC.indexOf("function browseReachLines("), BSRC.indexOf("function noDropBadge"));
+  assert.ok(/dataset\.items \|\| \[\], \{\},/.test(fn), "the report is asked for the whole catalog");
+  assert.ok(!/maxMl|mlCap/.test(fn), "Browse's ML filter is never fed to the model as a cap");
+  // And the heading has to SAY so, or an ML-filtered roster beside a level-30
+  // route reads as a contradiction rather than a broader answer.
+  assert.ok(/in the whole catalog:/.test(BSRC), "the note states its scope");
+});
+
+test("#753: the answer is memoized, because render() runs on every keystroke", () => {
+  // #564 already records that `render()` is bound to `input`. A ~65ms report per
+  // render would make typing in the search box unusable; the memo is what makes
+  // this affordable, and the constant query is what makes the memo correct.
+  const a = B.browseReachLines("Assassinate", RAWDS);
+  const b = B.browseReachLines("Assassinate", RAWDS);
+  assert.ok(a.length > 0, "Assassinate has routes to report");
+  assert.strictEqual(a, b, "the same array instance comes back — it was cached, not recomputed");
+  assert.ok(/_browseReachCache/.test(BSRC), "a cache exists");
+});
+
+test("#753: reported only in AFFIX mode, never for a set-bonus filter", () => {
+  // A set filter asks which SETS grant the effect. Answering that with slot
+  // routes for the bare affix name is a wrong answer to a question nobody asked.
+  const fn = BSRC.slice(BSRC.indexOf("function renderReach("), BSRC.indexOf("function clearAll("));
+  assert.ok(/const stat = \(cond && cond\.stat\) \|\| ""/.test(fn),
+    "it reads cond.stat, which read() leaves empty in set mode");
+  assert.ok(!/setStat/.test(fn), "and never consults setStat");
+  assert.ok(/if \(!stat\) \{ reachBox\.hidden = true/.test(fn),
+    "no affix chosen means nothing to report, and the box hides");
+});
+
+test("#753: fails silent-and-empty — a disclosure cannot take the roster down", () => {
+  assert.deepStrictEqual(B.browseReachLines("", RAWDS), []);
+  assert.deepStrictEqual(B.browseReachLines("Acid", null), []);
+  assert.deepStrictEqual(B.browseReachLines(null, null), []);
+  const fn = BSRC.slice(BSRC.indexOf("function browseReachLines("), BSRC.indexOf("function noDropBadge"));
+  assert.ok(/try \{/.test(fn) && /catch \(e\) \{ lines = \[\]; \}/.test(fn),
+    "a throw inside the scan must not reach render()");
+});
+
+test("#753: Browse and the Advanced panel share ONE wording source", () => {
+  // Browse bridges to projection.js rather than formatting its own lines. Two
+  // renderers for one answer drift, and the discipline the wording carries
+  // (augment routes named as augments, never ranking a slot) would drift with it.
+  assert.ok(/_browseReachLines = \(function \(\) \{[\s\S]{0,200}?P\.slotReachabilityLines/.test(BSRC),
+    "the lines come from projection.js");
+  const lines = B.browseReachLines("Assassinate", RAWDS);
+  const Proj = require("../web/projection.js");
+  const M = require("../web/model.js");
+  const rep = M.slotReachabilityReport("Assassinate", RAWDS.items, {}, {
+    dinoInserts: RAWDS.dino_inserts, viktranium: RAWDS.viktranium, seal: RAWDS.seal,
+    legendaryGreenSteel: RAWDS.legendary_green_steel, essenceCrafting: RAWDS.essence_crafting });
+  assert.deepStrictEqual(lines, Proj.slotReachabilityLines("Assassinate", rep),
+    "Browse's lines ARE projection's lines, not a re-rendering of them");
+  // The augment discipline is the one most easily lost, so assert it survives here.
+  assert.ok(lines.some((l) => /augment,/.test(l)), "an augment route is named as an augment");
+});
+
+console.log(`\n${passed} passed`);

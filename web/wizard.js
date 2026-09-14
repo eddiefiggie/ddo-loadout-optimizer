@@ -578,6 +578,13 @@ var _slotReachabilityLines = (function () {
     : (typeof require !== "undefined" ? require("./projection.js") : null);
   return (P && P.slotReachabilityLines) || (() => []);
 })();
+/** #753 — the one-line form, for the picker's status area. Same fallback shape as
+ *  its sibling above: an empty answer, never a throw, if projection is absent. */
+var _slotReachabilitySummary = (function () {
+  const P = (typeof Projection !== "undefined") ? Projection
+    : (typeof require !== "undefined" ? require("./projection.js") : null);
+  return (P && P.slotReachabilitySummary) || (() => "");
+})();
 /** #346 (U3, KTD3) — which rung a saved character loads at.
  *
  *  Extracted and exported because this is the highest-consequence line in the
@@ -3925,6 +3932,7 @@ ${(() => {
         <ol class="wz-ranked" id="wz-ranked"></ol>
         <p class="wz-draghelp">Drag the ⋮⋮ handle to reorder, or use the ⤒ ↑ ↓ ⤓ buttons — jump to top or bottom, or step one place (these work on touch and keyboard).</p>
         <p id="wz-status" class="wz-status"></p>
+        <p id="wz-reach" class="wz-reach-note" role="status" aria-live="polite"></p>
         <div class="wz-actions"><button class="btn ghost" data-back>← Back</button><span class="wz-spacer"></span>
           ${saveControl("ghost")}<button class="btn primary" data-solve>Solve ⚡</button></div>
       </section>`;
@@ -3977,6 +3985,7 @@ ${(() => {
               <button class="btn ghost" id="wz-radd-btn">Add</button>
             </div>
             <p id="wz-radd-status" class="wz-status"></p>
+            <p id="wz-radd-reach" class="wz-reach-note" role="status" aria-live="polite"></p>
             <ol class="wz-ranked" id="wz-rranked"></ol>
             <div class="wz-adjust-row">
               <span class="wz-help" style="margin:0">Gear pool:</span>
@@ -4705,6 +4714,63 @@ ${(() => {
       return document.getElementById("wz-status") || document.getElementById("wz-radd-status");
     }
 
+    /** #753 — the reach line of whichever picker is on screen. Mirrors
+     *  `pickerStatusEl` above, including its fallback order, because the Adjust
+     *  panel hosts the same add-a-stat row and silently dropped every message it
+     *  produced until #404 gave it one.
+     *
+     *  A SEPARATE element rather than an append to the status line, which #753
+     *  asked for in those words. Two reasons beyond length: `.wz-status` is
+     *  `color: var(--quarantined)` and everything it carries today is a warning,
+     *  a refusal or a substitution — reachability is a plain description and must
+     *  not read as a problem — and it carries no `aria-live`, which a line filled
+     *  a frame later needs or a screen reader never hears it. */
+    function pickerReachEl() {
+      return document.getElementById("wz-reach") || document.getElementById("wz-radd-reach");
+    }
+
+    /** #753 — the add-time reachability fill.
+     *
+     *  A full report is ~65ms against the built catalog, measured, which is 6.5x
+     *  what the issue estimated and far too much to spend before the list
+     *  re-renders. So the add lands and paints first and this arrives a frame
+     *  later; `yieldToPaint` owns the hidden-tab hazard (#578 — rAF is not
+     *  delivered to a hidden tab, so a bare nested-frame wait parks forever).
+     *
+     *  `_reachSeq` is the staleness guard, and it is not optional: three quick
+     *  adds start three ~65ms reports, and without a token the line ends up
+     *  describing whichever finished last rather than the stat the player last
+     *  added. Only the newest request may write.
+     *
+     *  Fails silent-and-empty, never throwing into the add path — the same
+     *  contract `fillReachability` keeps for the panel, restated here because
+     *  this is a second, independent caller of the same model code. */
+    let _reachSeq = 0;
+    function fillPickerReach(stat) {
+      const el = pickerReachEl();
+      if (!el) return;
+      el.textContent = "";
+      if (!stat || typeof dataset === "undefined" || !dataset) return;
+      const seq = ++_reachSeq;
+      Promise.resolve(yieldToPaint()).then(() => {
+        if (seq !== _reachSeq) return;                     // a newer add superseded this
+        let line = "";
+        try {
+          const query = buildQuery(state, vocab, dataset.items);
+          const report = _slotReachabilityReport(stat, dataset.items, query, {
+            dinoInserts: dataset.dino_inserts, viktranium: dataset.viktranium,
+            seal: dataset.seal, legendaryGreenSteel: dataset.legendary_green_steel,
+            essenceCrafting: dataset.essence_crafting,
+          });
+          line = _slotReachabilitySummary(stat, report) || "";
+        } catch (e) { return; }                            // disclosure only
+        // Re-read the element: the list re-rendered between the add and now, and
+        // on the Adjust panel that rebuild replaces the node this closure captured.
+        const now = pickerReachEl();
+        if (now && seq === _reachSeq) now.textContent = line;
+      });
+    }
+
     /** Add a target affix; returns true if it landed (caller re-renders the list). */
     function addPriority(v) {
       markDirty();
@@ -4712,13 +4778,27 @@ ${(() => {
       const _dn = _datasetNormalizer();
       // U11 (R15) — the decision (canonicalize, alias-substitute, validate, dedupe)
       // lives in the shared pure resolver; this wrapper owns state + disclosure.
+      // #753 — the list BEFORE the add, so the newly-landed name can be named by
+      // difference. `v` is the raw typed text and may be an alias, a casing
+      // variant or the Utility tier, so it is not the name that reaches the list.
+      const before = Array.isArray(state.priorities) ? state.priorities.slice() : [];
       const res = resolvePriorityAdd(v, vocab, state.priorities);
       if (!res.ok) {
         // `message` is absent for a duplicate or a blank entry — say nothing, as before.
         if (status && res.message != null) status.textContent = res.message;
+        // #753 — a refused add must not leave the PREVIOUS add's reach line
+        // standing: it would read as a statement about the name just refused.
+        fillPickerReach(null);
         return false;
       }
       state.priorities = res.priorities;
+      // #753 — disclose reachability only when exactly ONE name landed. An alias
+      // that expands into several adds them all, and picking one of those to
+      // describe would be arbitrary; the Utility tier is a container, not an
+      // effect, and has no reachability to report. Both cases clear the line
+      // instead, which `fillPickerReach(null)` does.
+      const landed = res.priorities.filter((p) => !before.includes(p));
+      fillPickerReach(landed.length === 1 && landed[0] !== _utilitySentinel ? landed[0] : null);
       if (!res.substitutions.length) {
         // #404 — the one case where a SUCCESSFUL add still has something to say.
         // Clearing the line here is what left two reporters hunting for a stat

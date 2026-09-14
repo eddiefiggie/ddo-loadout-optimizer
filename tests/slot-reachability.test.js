@@ -385,4 +385,127 @@ test("#743 U4: the CSS gives the slot a full line inside the wrapping flex body"
     "an auto-width block in .wz-adv-body renders as a narrow column");
 });
 
+
+// ---- #753: the one-line form, at the moment of the ADD -----------------------
+//
+// #743 answers "where can this come from" in a panel the player must open. This
+// is the same answer, compressed, arriving without them opening anything.
+//
+// The issue's own framing was wrong and these tests encode the corrected one: it
+// claimed the panel arrives "one step later than the moment the question occurs"
+// because the panel needs a RANKED row. Adding IS ranking — `addPriority` appends
+// to `state.priorities` — so the row exists immediately. The real gap is that the
+// disclosure needed a click nothing advertised, which is #747's failure mode.
+
+test("#753: a narrowly-carried effect NAMES its slots, a widely-carried one counts", () => {
+  // The split is the whole value, not a length trim: thirteen slot names tell a
+  // player nothing they will read, and "Weapon only" is the case the reporter was
+  // actually in — they wanted an effect in a slot that can never supply it.
+  const narrow = { open: [{ slot: "Weapon", route: "native", bonusTypes: ["Enhancement"] }],
+                   closedByFilters: [], anyCatalogRoute: true };
+  assert.strictEqual(Proj.slotReachabilitySummary("Acid", narrow),
+    "Acid can come from Weapon only.");
+  const two = { open: [{ slot: "Off Hand", route: "native", bonusTypes: ["Bool"] },
+                       { slot: "Weapon", route: "native", bonusTypes: ["Bool"] }],
+                closedByFilters: [], anyCatalogRoute: true };
+  assert.strictEqual(Proj.slotReachabilitySummary("Vorpal", two),
+    "Vorpal can come from Off Hand and Weapon only.");
+  // Over the limit: a count, plus the pointer to where the routes actually are.
+  const wide = { open: "Armor Belt Boots Bracers Cloak".split(" ")
+                   .map((slot) => ({ slot, route: "native", bonusTypes: ["Enhancement"] })),
+                 closedByFilters: [], anyCatalogRoute: true };
+  assert.strictEqual(Proj.slotReachabilitySummary("Constitution", wide),
+    "Constitution can come from 5 slots. Open Advanced on its row for the routes.");
+});
+
+test("#753: only slots with NO open route count as closed", () => {
+  // The same narrowing the full form applies, and for the same reason: a slot the
+  // player can already reach another way is answered, so naming a second shut
+  // route to it adds a sentence and no decision. Weapon is open natively here, so
+  // its shut augment route must NOT be counted.
+  const rep = { open: [{ slot: "Weapon", route: "native", bonusTypes: ["Enhancement"] }],
+                closedByFilters: [{ slot: "Weapon", route: "augment", via: "Yellow", bonusTypes: ["Enhancement"] },
+                                  { slot: "Boots", route: "native", bonusTypes: ["Enhancement"] }],
+                anyCatalogRoute: true };
+  assert.strictEqual(Proj.slotReachabilitySummary("Acid", rep),
+    "Acid can come from Weapon only. Your filters closed 1 other. Open Advanced on its row for the routes.");
+});
+
+test("#753: every route shut, and never-existed, are DIFFERENT sentences", () => {
+  // #743's founding discipline: blaming a gate that was never shut sends the
+  // player hunting for a setting to change, so the never-existed case must not
+  // mention filters. That distinction is the one most easily lost in a rewording.
+  const allShut = { open: [], closedByFilters: [{ slot: "Weapon", route: "native", bonusTypes: ["Enhancement"] }],
+                    anyCatalogRoute: true };
+  const s = Proj.slotReachabilitySummary("Acid", allShut);
+  assert.ok(/filters closed every route/.test(s), "a shut-out effect blames the filters");
+  const never = { open: [], closedByFilters: [], anyCatalogRoute: false };
+  const n = Proj.slotReachabilitySummary("Nonesuch", never);
+  assert.ok(!/filter/i.test(n), "never-existed must NOT mention filters");
+  assert.strictEqual(n, "No item, augment or crafting option in the catalog carries Nonesuch.");
+  // Verbatim the full form's sentence for the same fact — two wordings would drift.
+  assert.ok(Proj.slotReachabilityLines("Nonesuch", never).includes(n),
+    "the never-existed sentence is shared with the full form, not re-written");
+});
+
+test("#753: withheld entirely when there is nothing to say", () => {
+  assert.strictEqual(Proj.slotReachabilitySummary("X", { open: [], closedByFilters: [], anyCatalogRoute: true }), "");
+  assert.strictEqual(Proj.slotReachabilitySummary(null, null), "");
+  assert.strictEqual(Proj.slotReachabilitySummary("", { open: [] }), "");
+});
+
+test("#753: the summary stays DESCRIPTIVE — it ranks nothing and proposes no pick", () => {
+  // Same line held on the full form and on #747's notice. A summary is where this
+  // erodes first, because compressing invites a verb.
+  const rep = { open: [{ slot: "Weapon", route: "native", bonusTypes: ["Enhancement"] },
+                       { slot: "Off Hand", route: "augment", via: "Yellow", bonusTypes: ["Enhancement"] }],
+                closedByFilters: [], anyCatalogRoute: true };
+  const s = Proj.slotReachabilitySummary("Acid", rep);
+  assert.ok(!/\b(best|better|should|recommend|instead|prefer|optimal|try)\b/i.test(s),
+    `the summary must not advise: ${s}`);
+});
+
+test("#753: the fill is async, token-guarded, and cannot throw into the add path", () => {
+  // Three quick adds start three ~65ms reports. Without the token the line ends up
+  // describing whichever FINISHED last rather than the stat last added, and that
+  // is invisible in any single-add test.
+  const fn = between(WSRC, "function fillPickerReach(", "function addPriority(", "fillPickerReach");
+  assert.ok(/yieldToPaint\(\)/.test(fn), "the report is computed off the paint path");
+  assert.ok(/const seq = \+\+_reachSeq/.test(fn), "each fill takes a sequence token");
+  assert.ok(/seq !== _reachSeq/.test(fn), "and a superseded fill declines to write");
+  assert.ok(/try \{/.test(fn) && /catch/.test(fn),
+    "a disclosure must fail silent-and-empty, never throw into the add path");
+  // The element is re-read after the await: the list re-renders between the add
+  // and the write, and on the Adjust panel that rebuild replaces the node.
+  assert.ok(/const now = pickerReachEl\(\)/.test(fn), "the element is re-read after the yield");
+});
+
+test("#753: the reach line is its OWN element, not an append to the status line", () => {
+  // #753 asked for exactly this, in those words. `.wz-status` is
+  // `color: var(--quarantined)` and everything it carries is a warning, a refusal
+  // or a substitution; reachability is a plain description and must not read as a
+  // problem. It also needs aria-live, which the status line does not carry.
+  assert.ok(/id="wz-reach" class="wz-reach-note"/.test(WSRC), "the priorities step hosts a reach line");
+  assert.ok(/id="wz-radd-reach" class="wz-reach-note"/.test(WSRC), "and so does the Adjust panel");
+  assert.ok(/wz-reach-note[^>]*aria-live="polite"/.test(WSRC),
+    "a line filled a frame after the add needs aria-live or a screen reader never hears it");
+  const add = between(WSRC, "function addPriority(", "// ---- solve (real engine)", "addPriority");
+  assert.ok(/fillPickerReach\(/.test(add), "the add path fills it");
+  assert.ok(!/status\.textContent = \[res\.companionHint, res\.familyHint, /.test(add),
+    "and does NOT append reachability onto the status line");
+  const css = between(CSS, ".wz-reach-note {", "}", "reach-note rule");
+  assert.ok(!/--quarantined/.test(css), "the reach line is not tinted as a warning");
+});
+
+test("#753: a refused add clears the line, and a multi-name expansion reports nothing", () => {
+  // A stale line after a refusal reads as a statement about the name just
+  // refused. An alias that expands into several adds them all, and describing one
+  // of those would be arbitrary.
+  const add = between(WSRC, "function addPriority(", "// ---- solve (real engine)", "addPriority");
+  assert.ok(/if \(status && res\.message != null\) status\.textContent = res\.message;\s*\n[\s\S]{0,220}?fillPickerReach\(null\);/.test(add),
+    "the refusal path clears the reach line");
+  assert.ok(/landed\.length === 1 && landed\[0\] !== _utilitySentinel \? landed\[0\] : null/.test(add),
+    "exactly one landed name is described; an expansion or the Utility tier is not");
+});
+
 console.log(`\n${passed} passed`);

@@ -1544,6 +1544,63 @@
     return out;
   }
 
+  /** #753 — the one-line form of the same report, for the moment of the ADD.
+   *
+   *  `slotReachabilityLines` above is the full answer and needs a panel to hold
+   *  it: ten lines for `Assassinate`. This is the same facts compressed to a
+   *  sentence that fits an inline status line, and it lives here rather than in
+   *  the wizard so both forms inherit one discipline and its tests — descriptive
+   *  only, augment routes named as augments, never ranks a slot, never calls a
+   *  route better, never proposes a pick.
+   *
+   *  The split at three slots is where the value is, not a length trim. A widely
+   *  carried effect reports a COUNT, because thirteen slot names tell a player
+   *  nothing they will read; a narrowly carried one NAMES them, because that is
+   *  the case the reporter was actually in — they wanted an effect in a slot that
+   *  can never supply it, and the count alone would not have said so.
+   *
+   *  Returns "" when there is nothing to say, so the caller writes nothing rather
+   *  than clearing a line to an empty string that still occupies space. */
+  const REACH_SUMMARY_NAME_LIMIT = 3;
+  function slotReachabilitySummary(stat, report) {
+    if (!stat || !report) return "";
+    const open = report.open || [];
+    const closed = report.closedByFilters || [];
+    if (!open.length && !closed.length) {
+      // Never-existed. Same sentence as the full form, deliberately verbatim: it
+      // is the same fact, and two wordings for it would drift apart.
+      return report.anyCatalogRoute === false
+        ? `No item, augment or crafting option in the catalog carries ${stat}.`
+        : "";
+    }
+    const openSlots = [...new Set(open.map((r) => r.slot))].sort();
+    // Every route shut. Stated as a fact about this query and NOT as a suggestion
+    // to undo a setting, matching the full form's closed line.
+    if (!openSlots.length) {
+      return `${stat} exists in the catalog, but your filters closed every route to it.`;
+    }
+    // Only slots with NO open route count as closed, the same narrowing the full
+    // form applies and for the same reason: a slot reachable another way is
+    // already answered, so naming a second shut route to it adds no decision.
+    const openSet = new Set(openSlots);
+    const shutSlots = [...new Set(closed.filter((r) => !openSet.has(r.slot)).map((r) => r.slot))];
+    const named = openSlots.length === 1 ? openSlots[0]
+      : openSlots.slice(0, -1).join(", ") + " and " + openSlots[openSlots.length - 1];
+    const where = openSlots.length <= REACH_SUMMARY_NAME_LIMIT
+      ? `${stat} can come from ${named} only.`
+      : `${stat} can come from ${openSlots.length} slots.`;
+    const shut = shutSlots.length
+      ? ` Your filters closed ${shutSlots.length} other${shutSlots.length === 1 ? "" : "s"}.`
+      : "";
+    // The pointer rides the summary only when the panel holds more than this line
+    // already said — naming a control that would tell them nothing new is how a
+    // disclosure becomes noise. Pointing AT information is not a recommendation
+    // about gear; #747's notice names the cap as available on the same principle.
+    const more = openSlots.length > REACH_SUMMARY_NAME_LIMIT || shutSlots.length
+      ? " Open Advanced on its row for the routes." : "";
+    return where + shut + more;
+  }
+
   function capOpportunityLines(rec) {
     const snap = (rec && rec.snapshot) || rec || {};
     const q = (rec && rec.query) || snap.query || {};
@@ -3405,7 +3462,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, mrrCapLine, conditionalNoticeLines, splitMechanicLine, capSurplusLines, capOpportunityLines, CAP_OPPORTUNITY_MIN_PICKS, slotReachabilityLines, packFilterNoticeLines, setFilterNoticeLines,
+    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, mrrCapLine, conditionalNoticeLines, splitMechanicLine, capSurplusLines, capOpportunityLines, CAP_OPPORTUNITY_MIN_PICKS, slotReachabilityLines, slotReachabilitySummary, REACH_SUMMARY_NAME_LIMIT, packFilterNoticeLines, setFilterNoticeLines,
     essenceNoticeLines, greenSteelNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)
