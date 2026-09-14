@@ -4,9 +4,10 @@ An item declares its crafting slots as free-text labels (`crafting: ["Red Augmen
 Slot", "Claw (Accessory)", "Sealed in Fire", ...]`). A *pool* is what the solver
 can actually put into such a slot. When a label no pool serves appears, the slot
 is inert: the player sees it in the compendium and the solver crafts nothing into
-it. 35 such labels exist today (415 item-slot declarations) — Slaver's crafting,
-Essence Crafting, the "One of the following" random-effect wordings — and each is
-a known, deliberate gap.
+it. 25 such labels exist today — Essence Crafting's unsourced menus and the
+"One of the following" random-effect wordings — and each is a known, deliberate
+gap (Slaver's crafting left this list in #766; its pools were in the catalog all
+along).
 
 This module turns that baseline into a build gate, so a snapshot refresh cannot
 quietly strand a pool. It fails in **both** directions:
@@ -111,17 +112,9 @@ UNSERVED_ALLOWLIST = frozenset({
     "Essence Crafting: Rune Arm - Extra",
     "Essence Crafting: Rune Arm - Prefix",
     "Essence Crafting: Rune Arm - Suffix",
-    # Slaver's crafting — heroic and legendary. No pool.
-    "Slaver's Bonus Slot",
-    "Slaver's Extra Slot",
-    "Slaver's Prefix Slot",
-    "Slaver's Suffix Slot",
-    "Slaver's Set Bonus",
-    "Legendary Slaver's Bonus Slot",
-    "Legendary Slaver's Extra Slot",
-    "Legendary Slaver's Prefix Slot",
-    "Legendary Slaver's Suffix Slot",
-    "Legendary Slaver's Set Bonus",
+    # #766 — Slaver's crafting is SERVED now: the four typed slots by the `slavers`
+    # pool, the Set Bonus slot by `membership_set_defs`. The entry that stood here
+    # said "No pool", which was true of the pipeline and false of the catalog.
     # #371 — `Nearly Finished` and `Almost There` were here, as "browse-visible
     # but not solver-wired". They are now SERVED by `nearly_complete_per_item`
     # (see POOL_READERS below), so the blanket entry would be a lie. The 22
@@ -168,10 +161,19 @@ def _augment_set_defs(dataset):
 def _membership_set_defs(dataset):
     defs = dataset.get("membership_set_defs") or {}
     dino = set(membership.dino_pool())
+    # #766 — the Slaver's Set Bonus sets, keyed through the same mapping the
+    # attach function reads the pool by, so the label cannot drift from the menu.
+    slavers_sets = {n for t in ("heroic", "legendary")
+                    for n in membership.slavers_set_names_for_tier(t)}
     labels = set()
     for name, d in defs.items():
         if name in dino:
             labels.add(DINO_SET_BONUS_LABEL)
+            continue
+        if name in slavers_sets:
+            label = membership._SLAVERS_SET_KEY.get(d.get("tier"))
+            if label:
+                labels.add(label)
             continue
         # The Vecna half: `membership._LOST_PURPOSE_KEY` is the mapping the
         # builder itself reads the pool through, so the label cannot drift away
@@ -180,6 +182,13 @@ def _membership_set_defs(dataset):
         if label:
             labels.add(label)
     return len(defs), labels
+
+
+def _slavers(dataset):
+    """#766 — keyed by each record's own `pool_key`, which IS the host label
+    (`slavers.pool_key`): the menu key and the `crafting[]` label are one string."""
+    recs = dataset.get("slavers") or []
+    return len(recs), {r["pool_key"] for r in recs if r.get("pool_key")}
 
 
 def _viktranium(dataset):
@@ -254,6 +263,7 @@ POOL_READERS = {
     "dino_inserts": _dino_inserts,
     "seal": _seal,
     "legendary_green_steel": _legendary_green_steel,
+    "slavers": _slavers,
     "essence_crafting": _essence_crafting,
 }
 

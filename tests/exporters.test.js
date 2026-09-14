@@ -1904,6 +1904,8 @@ const CUELESS_ON_PURPOSE = {
   // #194 — the same rule for a declared Legendary Green Steel altar the solve
   // left empty, on either half.
   lgsEmpty: "an empty declared altar tier, not a craft",
+  // #766 — a declared Slaver's slot the solve left empty, same rule.
+  slaversEmpty: "an empty declared Slaver's slot, not a craft",
 };
 
 test("#193: every craft family the loadout can emit carries an export cue", () => {

@@ -133,6 +133,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // deliberately carries no cue (the `vikEmpty` rule: an empty altar is not a
       // craft to go and apply).
       lgs: ["💠", "Legendary Green Steel"],
+      // #766 — Slaver's crafting; `slaversEmpty` carries no cue, the `vikEmpty` rule.
+      slavers: ["⛓️", "Slaver's crafting"],
       joker: ["🃏", "Wildcard set"], membership: ["🔗", "Set craft"],
       // #193 — without an entry here `craftStr` renders the row bare, so an
       // Essence craft read as an ordinary affix line in every text export while
@@ -173,7 +175,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const colors = ["red", "yellow", "blue", "green", "orange", "purple", "colorless"]
       .map((k) => cue("color", k, fmt)).join("  ");
     const moon = ["Lunar", "Solar"].map((k) => cue("moon", k, fmt)).join("  ");
-    const craft = ["dino", "nc", "roll", "vik", "seal", "lgs", "essence", "joker",
+    const craft = ["dino", "nc", "roll", "vik", "seal", "lgs", "slavers", "essence", "joker",
       "membership", "augmentset"]
       .map((k) => cue("craft", k, fmt)).join("  ");
     return `Legend — augment slots: ${colors} · ${moon} · crafting: ${craft}`;

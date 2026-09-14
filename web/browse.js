@@ -80,7 +80,7 @@ function browseReachLines(stat, dataset) {
     const report = _browseReachReport(stat, dataset.items || [], {}, {
       dinoInserts: dataset.dino_inserts, viktranium: dataset.viktranium,
       seal: dataset.seal, legendaryGreenSteel: dataset.legendary_green_steel,
-      essenceCrafting: dataset.essence_crafting,
+      essenceCrafting: dataset.essence_crafting, slavers: dataset.slavers,
     });
     lines = _browseReachLines(stat, report) || [];
   } catch (e) { lines = []; }

@@ -33,7 +33,7 @@ DATASET = os.path.join(ROOT, "web", "data", "items.json")
 sys.path.insert(0, ROOT)
 from src import container_registry as cr  # noqa: E402
 from src import crafting_catalog, dino, nearly_complete, seal  # noqa: E402
-from src import legendary_green_steel, viktranium  # noqa: E402
+from src import legendary_green_steel, slavers, viktranium  # noqa: E402
 from src import essence_pool  # noqa: E402
 from src.spell_focus import PROVENANCE_KEY  # noqa: E402
 
@@ -381,6 +381,9 @@ def test_registry_declares_every_single_pick_container_with_a_verdict():
         # above: a crafted Essence effect grants exactly ONE stat by construction,
         # so there is no multi-affix option for a flat shape to split.
         "essence_crafting":         (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
+        # #766 — Slaver's crafting: ATOMIC, the Suffix `Resistance` umbrella expanded
+        # one level in, reachable through the six Chains / Five Rings / Shackles hosts.
+        "slavers":                  (cr.ATOMIC, ("spell_focus",), cr.VERIFIED_SAFE, True),
         "roll_groups":              (cr.FLAT,   (),               cr.VERIFIED_SAFE, False),
     }
     actual = {name: (shape, exps, verdict, reachable)
@@ -433,6 +436,7 @@ def _shipped_source_options():
         "nearly_complete_per_item": nc["per_item_source_options"],
         "seal": seal.build_seal(catalog)["source_options"],
         "legendary_green_steel": legendary_green_steel.build_legendary_green_steel(catalog)["source_options"],
+        "slavers": slavers.build_slavers(catalog)["source_options"],
         # #193 — Essence Crafting's source is the seed shards, not the crafting
         # catalog, so it is recomputed from the pool builder instead. Still an
         # independent path from the shipped dataset: the builder re-reads
@@ -469,7 +473,7 @@ def test_gate_passes_on_the_built_dataset():
 
     stats = cr.check(data, _shipped_source_options())
 
-    assert stats["checked"] == 8   # #687 folded green_steel + thunder_forged into one
+    assert stats["checked"] == 9   # #687 folded green_steel + thunder_forged into one; #766 added slavers
     assert stats["compared"] > 700, stats
     assert stats["records"]["viktranium"] > 0
     assert stats["records"]["dino_inserts"] > 0
@@ -556,12 +560,15 @@ def test_build_metadata_discloses_the_gate_coverage():
     # #193 — essence_crafting: three verified Gem of Many Facets tiers carry
     # `essence_slots`. #194/#687 — the one Legendary Green Steel pool is reached
     # by its 48 blanks (8 accessories, 40 weapons).
-    assert cov["hosts"] == {"essence_crafting": 3, "legendary_green_steel": 48}
+    # #766 — the six Slaver's hosts carry `slavers_slots`.
+    assert cov["hosts"] == {"essence_crafting": 3, "legendary_green_steel": 48, "slavers": 6}
     # And every declared expansion pass left evidence it ran.
     assert cov["expanded_affixes"]["viktranium"] > 0
     assert cov["expanded_affixes"]["dino_inserts"] > 0
     # #194 — the accessory options' 18 ability-skills umbrellas expand in place.
     assert cov["expanded_affixes"]["legendary_green_steel"] > 0
+    # #766 — the Suffix pools' `Resistance` umbrella expands in place (three saves).
+    assert cov["expanded_affixes"]["slavers"] > 0
 
 
 def test_viktranium_spell_focus_craft_is_one_option_carrying_seven_schools():

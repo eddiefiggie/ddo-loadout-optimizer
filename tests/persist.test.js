@@ -998,4 +998,10 @@ test("#745: links round-trip exactly, and a pre-feature save reads as no groups"
   assert.deepStrictEqual(loadCharacter("Junk", st).inputs.priorityLinks, ["Dodge"], "non-strings and empties are dropped on read");
 });
 
+test("#766: a saved result keeps its Slaver's placements", () => {
+  const placed = [{ item: "Legendary Chains", slot: "Prefix", tier: "legendary", name: "Charisma +13 (Enhancement)" }];
+  assert.deepStrictEqual(stripResult({ status: "optimal", slaversPlaced: placed }).slaversPlaced, placed,
+    "slaversPlaced is on the save allowlist — a restored build must not lose its crafts");
+});
+
 if (!process.exitCode) console.log(`\n${passed} passed`);

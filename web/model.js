@@ -1055,10 +1055,10 @@ function _typesSupplying(rec, stat) {
  *
  *  @param stat     the canonical affix name, as the picker vocabulary spells it
  *  @param variants the ALREADY-FILTERED variant list (see note 1 above)
- *  @param pools    `{ dinoInserts, viktranium, seal, legendaryGreenSteel, essenceCrafting }`
+ *  @param pools    `{ dinoInserts, viktranium, seal, legendaryGreenSteel, slavers, essenceCrafting }`
  *  @returns `[{ slot, route, via, bonusTypes }]` — `route` is one of
  *           `native` | `augment` | `dino` | `viktranium` | `seal` | `lgs` |
- *           `essence`; `via` names the colour or channel key, or null.
+ *           `slavers` | `essence`; `via` names the colour or channel key, or null.
  */
 function slotReachabilityFor(stat, variants, pools) {
   if (!stat || !Array.isArray(variants)) return [];
@@ -1150,6 +1150,12 @@ function slotReachabilityFor(stat, variants, pools) {
   // Essence Crafting: host `essence_slots` is `{menu}`.
   chan(p.essenceCrafting, (v) => (v.essence_slots || []),
     (o, k) => o.menu === k.menu, "essence");
+
+  // #766 — Slaver's crafting: host `slavers_slots` is `{slot, tier}`, and the
+  // option is keyed by the same pair. The tier rides on the slot (read from the
+  // host's label at build time), so no ML-derived tier is consulted here.
+  chan(p.slavers, (v) => (v.slavers_slots || []),
+    (o, k) => o.slot === k.slot && o.tier === k.tier, "slavers");
 
   return [...out.values()];
 }
@@ -1429,6 +1435,14 @@ function dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts = null, essencePoo
   const lgsA = countColors((A.legendary_green_steel_tiers || []).map((s) => `${s.item_class}||${s.tier}`));
   const lgsB = countColors((B.legendary_green_steel_tiers || []).map((s) => `${s.item_class}||${s.tier}`));
   for (const [k, n] of lgsB) if ((lgsA.get(k) || 0) < n) return false;
+  // #766 — Slaver's crafting typed slots, the same trap in its purest form: the
+  // six hosts carry NO affix at all (an augment slot and four craft slots), so
+  // without this clause any belt, ring or boots with one ranked affix prunes
+  // them before the solver sees them — and a pinned-host solve would never show
+  // it. A must offer at least as many of each (slot, tier) as B.
+  const slvA = countColors((A.slavers_slots || []).map((s) => `${s.slot}||${s.tier}`));
+  const slvB = countColors((B.slavers_slots || []).map((s) => `${s.slot}||${s.tier}`));
+  for (const [k, n] of slvB) if ((slvA.get(k) || 0) < n) return false;
   // Wildcard set-piece (Gem of Many Facets) joker: its set-completion value lives in
   // joker_set_groups (pools of sets it can complete toward a threshold), outside
   // variantBuckets AND outside set_bonus (the build clears the Gem's fixed set). So a
@@ -1724,7 +1738,7 @@ function filterEligiblePool(eligAll, query) {
   return { elig, blocked, setExcluded, packExcluded, packUncheckable, excludedSets, ownedPacks };
 }
 
-function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, legendaryGreenSteel = [], augmentSetDefs = {}, utilityCountingSet = null, nearlyCompletePerItem = {}, essenceCrafting = []) {
+function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, legendaryGreenSteel = [], augmentSetDefs = {}, utilityCountingSet = null, nearlyCompletePerItem = {}, essenceCrafting = [], slavers = []) {
   // #245 — the niche-crafting opt-out. A craftable option slot makes its host a
   // wildcard for every rankable stat (the Viktranium pool alone reaches 126), so
   // under strict lexicographic priority a Lamordia base is never worse and
@@ -1741,7 +1755,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // these option pools are model-level collections.
   if (rungExcludesNicheCrafting(craftingRung(query))) {
     dinoInserts = []; nearlyComplete = []; viktranium = []; seal = [];
-    legendaryGreenSteel = []; essenceCrafting = [];
+    legendaryGreenSteel = []; essenceCrafting = []; slavers = [];   // #766 — Slaver's crafting is niche crafting too
     nearlyCompletePerItem = {};   // #371 — Nearly Finished / Almost There
     membershipSetDefs = {};   // chosen set-membership (Lost Purpose / Dino Set Bonus)
     augmentSetDefs = {};      // set-bonus augments are Dino crafting too
@@ -1776,6 +1790,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     seal = sift(seal);
     legendaryGreenSteel = sift(legendaryGreenSteel);
     essenceCrafting = sift(essenceCrafting);
+    slavers = sift(slavers);
     // Per-item pools are keyed by host, so each host's list is sifted and a host
     // left with nothing keeps an empty list rather than vanishing — a missing key
     // and an empty pool mean different things to `nearly_complete_per_item`'s
@@ -2167,6 +2182,10 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // player ranked. Shared with Viktranium deliberately — three containers now have
   // this shape and a fourth reading it differently is how they drift apart.
   const lgsPool = (legendaryGreenSteel || []).filter((o) => o && vikAdvances(o));
+  // #766 — Slaver's crafting, the same ATOMIC shape read through the same predicate:
+  // a Suffix `Resistance` craft grants three saves in one record, so any one of
+  // them on target keeps the option.
+  const slaversPool = (slavers || []).filter((o) => o && vikAdvances(o));
   // #539 — classify the set pins against the ELIGIBLE pool. Done here, with the
   // pool and both def dicts in scope, so a pin the query cannot satisfy is named
   // as such instead of reaching the solver and coming back as a bare INFEASIBLE.
@@ -2228,7 +2247,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     dinoInserts: dinoPool, nearlyComplete: ncPool, viktranium: vikPool, seal: sealPool,
     // #371 — `{host name: [option]}`, read per host via the item's `nc_per_item_slots`.
     nearlyCompletePerItem: ncPerItemPool,
-    legendaryGreenSteel: lgsPool, essenceCrafting: essencePool,
+    legendaryGreenSteel: lgsPool, slavers: slaversPool, essenceCrafting: essencePool,
     essenceCoverage: _ESSENCE_COVERAGE,
     membershipSetDefs: membershipSetDefs || {},
     // U6 — set-augment definitions (piece thresholds + affixes), forwarded like
@@ -2418,7 +2437,7 @@ function poolStatNames(model) {
     }
   }
   const pools = [model.augments, model.dinoInserts, model.nearlyComplete, model.viktranium,
-                 model.seal, model.legendaryGreenSteel, model.essenceCrafting];
+                 model.seal, model.legendaryGreenSteel, model.slavers, model.essenceCrafting];
   for (const pool of pools) {
     for (const o of pool || []) {
       if (o && o.stat) out.add(o.stat);

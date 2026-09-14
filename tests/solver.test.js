@@ -3211,7 +3211,8 @@ async function withCrossAdd(map, fn) {
     const fs = require("fs");
     const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     const defs = data.membership_set_defs || {};
-    assert.ok(Object.keys(defs).length === 28, "items.json exports all 28 membership set defs (22 Vecna + 6 Dino)");
+    // #766 — plus the four Slaver's sets the catalog defines (Might / Sorcery, both tiers).
+    assert.ok(Object.keys(defs).length === 32, "items.json exports all 32 membership set defs (22 Vecna + 6 Dino + 4 Slaver's)");
     const SET = "Legendary Vol's Influence";
     assert.ok(defs[SET], "the real Legendary Vol's Influence def is present");
     const lp = (slotName) => memberHost(`LP-${slotName}`, slotName, [SET]);
@@ -3225,6 +3226,75 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual(r.effective["Universal Spell Power"], 25, "the set's real +25 Artifact USP reaches the total");
     assert.strictEqual((r.membershipPlaced || []).length, 3, "three membership picks prescribed");
     assert.ok(r.membershipPlaced.every((m) => m.station === "Cannith Repurposing Station"), "prescriptions name the station");
+  });
+
+  // ---- #766 Slaver's crafting: four typed slots keyed by (slot, tier), the tier
+  // read from the host's LABEL at build time — `Legendary Chains` is ML 28 ----
+  function slvHost(id, slotName, slots, affixes) {
+    const v = item(id, slotName, affixes || []);
+    v.slavers_slots = slots.map(([s, t]) => ({ slot: s, tier: t }));
+    return v;
+  }
+  function slvOpt(slotName, tier, name, affixes) {
+    return { slot: slotName, tier, name,
+      affixes: affixes.map(([stat, bonus_type, value]) => ({ stat, bonus_type, value, unit: "flat" })) };
+  }
+
+  await test("#766: a Slaver's host crafts one option per declared slot, at its LABEL tier", async () => {
+    const POOL = [
+      slvOpt("Prefix", "heroic", "Charisma +5 (Enhancement)", [["Charisma", "Enhancement", 5]]),
+      slvOpt("Prefix", "legendary", "Charisma +13 (Enhancement)", [["Charisma", "Enhancement", 13]]),
+      slvOpt("Prefix", "legendary", "Strength +13 (Enhancement)", [["Strength", "Enhancement", 13]]),
+      slvOpt("Bonus", "legendary", "Charisma +3 (Quality)", [["Charisma", "Quality", 3]]),
+      slvOpt("Suffix", "legendary", "Resistance +8 (Enhancement)",
+        [["Fortitude Save", "Enhancement", 8], ["Reflex Save", "Enhancement", 8], ["Will Save", "Enhancement", 8]]),
+    ];
+    const model = {
+      targets: ["Charisma", "Will Save"], mlCap: 28, slavers: POOL,
+      worn: [slot("Belt", [slvHost("Legendary Chains", "Belt",
+        [["Prefix", "legendary"], ["Suffix", "legendary"], ["Extra", "legendary"], ["Bonus", "legendary"]])])],
+    };
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.status, "optimal");
+    assert.strictEqual(r.effective.Charisma, 16,
+      "legendary Prefix 13 + Bonus Quality 3 stack; the heroic +5 never reaches an ML-28 host's legendary slot");
+    assert.strictEqual(r.effective["Will Save"], 8, "the three-save umbrella craft counts through the save that was ranked");
+    assert.deepStrictEqual(r.slaversPlaced.map((p) => `${p.slot}:${p.tier}:${p.name}`).sort(), [
+      "Bonus:legendary:Charisma +3 (Quality)",
+      "Prefix:legendary:Charisma +13 (Enhancement)",
+      "Suffix:legendary:Resistance +8 (Enhancement)",
+    ], "one pick per slot — Charisma OR Strength in Prefix, never both; Extra left empty");
+    assert.ok(r.slaversPlaced.every((p) => p.item === "Legendary Chains"), "every placement names its host");
+    assert.strictEqual(r.slaversPlaced.find((p) => p.slot === "Suffix").affixes.length, 3,
+      "the whole option rides along: a multi-affix craft is self-describing");
+  });
+
+  await test("#766: an option is never craftable into a slot of the other tier", () => {
+    const p1 = S.buildProgram({ targets: ["Charisma"], mlCap: 28,
+      slavers: [slvOpt("Prefix", "heroic", "Charisma +5 (Enhancement)", [["Charisma", "Enhancement", 5]])],
+      worn: [slot("Belt", [slvHost("Legendary Chains", "Belt", [["Prefix", "legendary"]])])] });
+    assert.strictEqual(p1.slaversMeta.size, 0, "a heroic option does not reach a legendary slot");
+    const p2 = S.buildProgram({ targets: ["Charisma"], mlCap: 8,
+      slavers: [slvOpt("Prefix", "legendary", "Charisma +13 (Enhancement)", [["Charisma", "Enhancement", 13]])],
+      worn: [slot("Belt", [slvHost("Chains", "Belt", [["Prefix", "heroic"]])])] });
+    assert.strictEqual(p2.slaversMeta.size, 0, "a legendary option does not reach a heroic slot");
+    const p3 = S.buildProgram({ targets: ["Charisma"], mlCap: 28,
+      slavers: [slvOpt("Suffix", "legendary", "Charisma +13 (Enhancement)", [["Charisma", "Enhancement", 13]])],
+      worn: [slot("Belt", [slvHost("Legendary Chains", "Belt", [["Prefix", "legendary"]])])] });
+    assert.strictEqual(p3.slaversMeta.size, 0, "nor into a slot of another name");
+  });
+
+  await test("#766: a craft rides its host — when a plain belt wins the slot nothing is crafted", async () => {
+    const model = { targets: ["Charisma"], mlCap: 28,
+      slavers: [slvOpt("Prefix", "legendary", "Charisma +13 (Enhancement)", [["Charisma", "Enhancement", 13]])],
+      worn: [slot("Belt", [slvHost("Legendary Chains", "Belt", [["Prefix", "legendary"]]),
+                           item("Plain Belt", "Belt", [["Charisma", "Enhancement", 20]])])] };
+    // The option IS offered (one pick var, gated `n - x_host <= 0`) — asserted so
+    // this test cannot pass on a tree where the pool simply does not exist.
+    assert.strictEqual(S.buildProgram(model).slaversMeta.size, 1, "the option is minted against the host");
+    const r = await S.solveLexicographic(model, highs);
+    assert.strictEqual(r.effective.Charisma, 20);
+    assert.deepStrictEqual(r.slaversPlaced, [], "the craft is gated on its host being equipped");
   });
 
   // ---- Legendary Green Steel, WEAPON class (multi-tier choice-slot; one pool

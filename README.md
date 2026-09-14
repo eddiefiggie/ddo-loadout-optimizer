@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 09142026.7 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 09142026.8 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 
 ---
@@ -59,6 +59,7 @@ You can also point it at **only the gear you actually own** by importing a Trove
 | **Legendary Green Steel** (ML 26 blanks, three Legendary Altars) | ✅ 116 recipes (81 accessory + 35 weapon) on 48 blanks (8 accessories + 40 weapons). One effect is chosen per altar tier, independently. The bonus a *matched* tier combination unlocks (the Dominion / Opposition / Ethereal / Material aspects) is not modelled and the result says so — the exhaustive combinatorial space is a standing non-goal. Heroic Green Steel (ML 11–12) has no recipe data and stays browse-only |
 | Thunder-Forged | ❌ no recipes loaded. The pool that once shipped under this name is Legendary Green Steel's weapon half — the menu keys are generic and the mapping was an inference (#653). Since #687 both blank classes live in ONE `legendary_green_steel` container; real Thunder-Forged (Magma Forge) has no menu in the catalog. |
 | **Essence Crafting** (Gem of Many Facets) | ✅ partial — the Gem's three Trinket menus are solved, choosing from 25 of the 170 effects those menus offer in game. An effect is offered only once its placement, its bonus type and its level curve are all sourced from the wiki; the result says so. Melee, Ring and Rune Arm menus are ⏳ not yet |
+| **Slaver's crafting** (Chains / Five Rings / Shackles, heroic and legendary) | ✅ the four typed slots (Prefix / Suffix / Extra / Bonus) from the catalog's own pools, one effect each, and the Set Bonus slot as a chosen Slave Lord's set. One pool name the catalog defines no set for is disclosed per build rather than mapped (#766) |
 | Filigrees | ⏳ not yet |
 
 ## Why you can trust the numbers

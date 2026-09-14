@@ -57,7 +57,8 @@ def test_no_two_options_share_a_key():
                 f"duplicate key {k!r}\n  first: {seen[k]}\n  second: {(pool, host, rec.get('name'))}\n"
                 "Widen the discriminator in src/craft_identity.py POOL_KEY.")
         seen[k] = (pool, host, rec.get("name"))
-    assert len(seen) == 812, f"option population is {len(seen)}, expected 812"
+    # 812 before #766; the eight Slaver's pools add 184 options.
+    assert len(seen) == 996, f"option population is {len(seen)}, expected 996"
 
 
 def test_the_quarterstaff_flag_is_load_bearing():
@@ -84,7 +85,8 @@ def test_the_quarterstaff_flag_is_load_bearing():
 
 def test_the_build_publishes_its_own_coverage():
     cov = _dataset()["metadata"]["craft_identity_coverage"]
-    assert cov["stamped"] == cov["distinct"] == 812
+    assert cov["stamped"] == cov["distinct"] == 996
+    assert cov["by_pool"]["slavers"] == 184   # #766
     assert cov["by_pool"][ci.PER_ITEM_POOL] == 147, (
         "the per-item Nearly Complete pools are in scope — a handle that cannot "
         "name them is a gap, not a scope line")

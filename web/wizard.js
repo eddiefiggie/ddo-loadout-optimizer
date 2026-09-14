@@ -1679,6 +1679,7 @@ const CRAFT_FAMILY_LABEL = {
   dino_inserts: "Dinosaur Bone insert",
   nearly_complete: "Nearly Complete",
   legendary_green_steel: "Legendary Green Steel",
+  slavers: "Slaver's crafting",
   essence_crafting: "Essence Crafting",
   nearly_complete_per_item: "Nearly Finished / Almost There",
 };
@@ -1706,6 +1707,7 @@ function craftOptionWhere(pool, rec, host) {
   if (pool === "dino_inserts") return `${rec.dino_type || ""} · ${rec.category || ""}`.trim();
   if (pool === "seal") return `${rec.seal_type || ""} seal`;
   if (pool === "legendary_green_steel") return `Tier ${rec.tier}`;
+  if (pool === "slavers") return `${rec.slot || ""} slot · ${rec.tier || ""}`.trim();
   if (pool === "essence_crafting") return `${rec.menu || ""} menu`;
   return rec.category || "";
 }
@@ -1725,7 +1727,7 @@ function craftOptionIndex(dataset) {
     });
   };
   for (const pool of ["seal", "viktranium", "dino_inserts", "nearly_complete",
-    "legendary_green_steel", "essence_crafting"]) {
+    "legendary_green_steel", "slavers", "essence_crafting"]) {
     for (const rec of (dataset && dataset[pool]) || []) push(pool, rec);
   }
   const perItem = (dataset && dataset.nearly_complete_per_item) || {};
@@ -4495,7 +4497,7 @@ ${(() => {
           const report = _slotReachabilityReport(stat, dataset.items, query, {
             dinoInserts: dataset.dino_inserts, viktranium: dataset.viktranium,
             seal: dataset.seal, legendaryGreenSteel: dataset.legendary_green_steel,
-            essenceCrafting: dataset.essence_crafting,
+            essenceCrafting: dataset.essence_crafting, slavers: dataset.slavers,
           });
           el.innerHTML = reachHintHTML(stat, _slotReachabilityLines(stat, report));
         } catch (e) { /* disclosure only: leave the slot empty */ }
@@ -5096,7 +5098,7 @@ ${(() => {
           const report = _slotReachabilityReport(stat, dataset.items, query, {
             dinoInserts: dataset.dino_inserts, viktranium: dataset.viktranium,
             seal: dataset.seal, legendaryGreenSteel: dataset.legendary_green_steel,
-            essenceCrafting: dataset.essence_crafting,
+            essenceCrafting: dataset.essence_crafting, slavers: dataset.slavers,
           });
           line = _slotReachabilitySummary(stat, report) || "";
         } catch (e) { return; }                            // disclosure only
@@ -5683,7 +5685,7 @@ ${(() => {
           // "Almost There"), keyed by host name. Threaded as an ARGUMENT like
           // every other pool; the solver reaches a host's options through its
           // own `nc_per_item_slots` marker.
-          dataset.nearly_complete_per_item, dataset.essence_crafting);
+          dataset.nearly_complete_per_item, dataset.essence_crafting, dataset.slavers);
         const t0 = performance.now();
         // #582 — the abandon predicate. Supplying it is what turns on the solver's
         // stage-boundary yields; every other caller omits it and runs unchanged.
@@ -6062,7 +6064,7 @@ ${(() => {
           // "Almost There"), keyed by host name. Threaded as an ARGUMENT like
           // every other pool; the solver reaches a host's options through its
           // own `nc_per_item_slots` marker.
-          dataset.nearly_complete_per_item, dataset.essence_crafting);
+          dataset.nearly_complete_per_item, dataset.essence_crafting, dataset.slavers);
         // fresh:false + the original stamp so a later Save preserves staleness (see saveCurrentCharacter).
         state.lastRun = { model, result: snap, query, fresh: false, stampedBuildId: rec.stampedBuildId || null };
         state.loadedStale = !!(rec.stampedBuildId && currentBuildId() && rec.stampedBuildId !== currentBuildId());

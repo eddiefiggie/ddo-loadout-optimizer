@@ -33,6 +33,7 @@ from src import nearly_complete as nc_mod
 from src import viktranium as vik_mod
 from src import seal as seal_mod
 from src import legendary_green_steel as lgs_mod
+from src import slavers as slavers_mod
 from src import essence_pool as essence_mod
 from src import membership as membership_mod
 from src import augment_sets as augment_sets_mod
@@ -1645,6 +1646,10 @@ def build() -> dict:
     split_mechanics_mod.assert_population(
         _split_mechanics, _split_measured, inspected=len(variants))
     membership_mod.attach_lost_purpose_slots(variants, membership_defs)
+    # #766 — the Slaver's Set Bonus slot, same primitive. The names its pools
+    # offer that resolved to no set def are returned here and disclosed in
+    # `slavers_coverage` below, never mapped onto a near-miss.
+    _slv_membership = membership_mod.attach_slavers_set_bonus_slots(variants, membership_defs)
     variants, cov = verify_mod.apply(variants)          # per-affix verification gate
 
     # U4 — Dino Set-Bonus: activate the chosen-set-membership slot on the Dinosaur
@@ -1842,6 +1847,56 @@ def build() -> dict:
                 f"{_cls} host carries a tier. The pool would be inert while the coverage "
                 f"gate reports the labels served — the overstatement this gate exists to prevent.")
 
+    # #766 — Slaver's crafting: the four typed slots on the six hosts, one pool
+    # keyed by (slot, tier), sourced natively. ATOMIC, and expanded exactly as the
+    # Legendary Green Steel pool above: one level IN, inside the option's own affix
+    # list. The Suffix pools carry `Resistance` (the all-saves umbrella), which
+    # `spell_focus` expands into the three saves — one craft, three saves, ONE
+    # record. Expanding across the record list would be the fan-out defect the
+    # registry gate exists to catch, and leaving it folded would credit a save
+    # nobody ranked by that name.
+    slv = slavers_mod.build_slavers(crafting)
+    for _opt in slv["records"]:
+        if _opt.get("affixes"):
+            _opt["affixes"] = spell_focus_mod.expand_affixes(_opt["affixes"])
+            _via = next((a.get(spell_focus_mod.PROVENANCE_KEY) for a in _opt["affixes"]
+                         if a.get(spell_focus_mod.PROVENANCE_KEY)), None)
+            if _via and spell_focus_mod.is_universal(_opt.get("name")):
+                _opt["name"] = _via
+    # The hosts: only a `verified` host keeps its slots (the Legendary Green Steel
+    # rule above), counted per tier so the coverage says what each tier reaches.
+    _slv_active, _slv_pending = {}, {}
+    _slv_tier_hosts = {t: 0 for t in slavers_mod.TIERS}
+    _slv_tier_slots = {t: 0 for t in slavers_mod.TIERS}
+    for v in variants:
+        if not v.get("slavers_slots"):
+            continue
+        if v.get("verification") == essence_mod.REQUIRED_VERIFICATION:
+            _slv_active[v["source_item"]] = len(v["slavers_slots"])
+            for _t in {_slot["tier"] for _slot in v["slavers_slots"]}:
+                _slv_tier_hosts[_t] += 1
+            for _slot in v["slavers_slots"]:
+                _slv_tier_slots[_slot["tier"]] += 1
+        else:
+            _slv_pending[v["source_item"]] = len(v["slavers_slots"])
+            v["slavers_slots"] = None
+    slv["coverage"]["hosts_active"] = len(_slv_active)
+    slv["coverage"]["slots_active"] = sum(_slv_active.values())
+    slv["coverage"]["hosts_pending"] = sorted(_slv_pending)
+    slv["coverage"]["set_bonus_hosts"] = _slv_membership["hosts"]
+    slv["coverage"]["set_names_unresolved"] = _slv_membership["set_names_unresolved"]
+    for _t in slavers_mod.TIERS:
+        slv["coverage"]["by_tier"][_t]["hosts_active"] = _slv_tier_hosts[_t]
+        slv["coverage"]["by_tier"][_t]["slots_active"] = _slv_tier_slots[_t]
+        if not _slv_tier_hosts[_t]:
+            raise SystemExit(
+                f"Slaver's crafting ({_t}): the pool has options but NO verified host carries "
+                "a slot. The pool would be inert while the coverage gate reports the labels "
+                "served — the overstatement this gate exists to prevent.")
+    if not _slv_membership["hosts"]:
+        raise SystemExit("Slaver's crafting: no variant received a Set Bonus membership slot; "
+                         "the `(Legendary )Slaver's Set Bonus` labels would read as served by nothing.")
+
     # Essence Crafting — the Gem of Many Facets' three Trinket menus (#193/#599).
     # An option is offered only when its PLACEMENT, BONUS TYPE and ML CURVE are all
     # sourced; `catalog_stats` is passed so an option naming a stat nothing else
@@ -1932,6 +1987,7 @@ def build() -> dict:
         "nearly_complete_per_item": nc["per_item_source_options"],
         "seal": sl["source_options"],
         "legendary_green_steel": lgs["source_options"],
+        "slavers": slv["source_options"],
         # One record per (menu, effect) by construction — the pool has no
         # multi-affix option to split, so source options and records are the
         # same population and the gate's equality check is exact.
@@ -2048,6 +2104,9 @@ def build() -> dict:
             "viktranium_coverage": vik["coverage"],
             "seal_coverage": sl["coverage"],
             "legendary_green_steel_coverage": lgs["coverage"],
+            # #766 — Slaver's crafting: pool, hosts per tier, the Set Bonus
+            # membership hosts, and the set names its pools name that no def resolves.
+            "slavers_coverage": slv["coverage"],
             "essence_crafting_coverage": essence["coverage"],
             "membership_coverage": membership_mod.coverage(membership_defs),
             "augment_set_coverage": membership_mod.coverage(augment_set_defs),
@@ -2299,6 +2358,7 @@ def build() -> dict:
         "viktranium": vik["records"],
         "seal": sl["records"],
         "legendary_green_steel": lgs["records"],
+        "slavers": slv["records"],
         "essence_crafting": essence["records"],
         "membership_set_defs": membership_defs,
         # U2 — the 21 Augment-Set defs (3-piece Set Bonuses), same shape as
@@ -2342,7 +2402,7 @@ def build() -> dict:
     # each pool's DERIVED keying (`fits_slots`, `dino_type`, `seal_type`,
     # `category`), none of which exists in gearplanner_crafting.json. A declared
     # slot label no pool can fill is an inert slot — visible in the compendium,
-    # uncraftable by the solver — and 35 such labels are allowlisted as known
+    # uncraftable by the solver — and 25 such labels are allowlisted as known
     # gaps. A NEW one fails the build, and so does an allowlist entry the data no
     # longer justifies. Stamped as metadata (`labels_validated` is the validated
     # universe, not the walked one) so nobody hand-recounts a different predicate.

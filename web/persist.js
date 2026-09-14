@@ -34,7 +34,7 @@
     // are NOT on this list: a save never writes them again. They are read-only
     // legacy keys that `migrateResult` folds into `lgsPlaced` on load, stamping
     // the item class each old key implied (tf -> weapon, gs -> accessory).
-    "lgsPlaced", "essPlaced", "essenceReport", "greenSteelReport", "membershipPlaced", "setAugmentsPlaced",
+    "lgsPlaced", "slaversPlaced", "essPlaced", "essenceReport", "greenSteelReport", "membershipPlaced", "setAugmentsPlaced",
     // #539 — what the player's set pins did. Kept for the same reason blockReport
     // is: `program` is dropped on save and KTD6 forbids re-solving on load, so a
     // restored build could not otherwise say whether a pin landed, was suppressed,

@@ -1085,7 +1085,7 @@ function _craftingAffixTriples(ds) {
   // above left every one of its 116 options out of the picker, which cost
   // nothing only while no host could reach them. Now 48 blanks can.
   for (const pool of [ds.viktranium, ds.dino_inserts, ds.nearly_complete,
-                      ds.legendary_green_steel]) {
+                      ds.legendary_green_steel, ds.slavers]) {   // #766
     for (const o of pool || []) {
       const affs = (o.affixes && o.affixes.length) ? o.affixes : [o];
       for (const a of affs) push(a.stat, a.bonus_type, a.value);

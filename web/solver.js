@@ -493,6 +493,7 @@ function buildProgram(model) {
   const vikMeta = new Map(); // Viktranium placement var -> {item, slot_type, category, name, affixes, stat, bonus_type, value, unit, tier, wiki_url}
   const sealMeta = new Map(); // seal placement var -> {item, seal_type, category, stat, bonus_type, value, unit, wiki_url}
   const lgsMeta = new Map();  // Legendary Green Steel pick var -> {item, tier, item_class, name, affixes, stat, bonus_type, value, unit, wiki_url} (#194/#687)
+  const slaversMeta = new Map();  // #766 — Slaver's crafting pick var -> {item, slot, tier, name, affixes, stat, bonus_type, value, unit}
   const essMeta = new Map();  // Essence Crafting pick var -> {item, menu, effect, stat, bonus_type, value, unit, wiki_url}
   const memberMeta = new Map(); // membership pick var -> {host, set, station} (chosen set-membership: Cannith / Dino Set-Bonus)
 
@@ -1109,6 +1110,48 @@ function buildProgram(model) {
     ? opt.affixes
     : (opt.stat ? [{ stat: opt.stat, bonus_type: opt.bonus_type, value: opt.value, unit: opt.unit }] : []));
 
+  // #766 — Slaver's crafting: a four-slot choice-slot. `slavers_slots` is a list
+  // of [{slot, tier}], one per typed slot the host declares (Prefix / Suffix /
+  // Extra / Bonus); each may craft ONE option from the pool keyed by the SAME
+  // (slot, tier) pair — an independent Σ n <= 1 per slot, gated on the host, the
+  // Legendary Green Steel loop below with the key renamed. The tier is the
+  // host's LABEL tier, stamped at build time, never derived from ML here:
+  // `Legendary Chains` is ML 28 and would otherwise fall under the heroic pool.
+  let slvc = 0;
+  for (const xv of xVars) {
+    const slots = xv.variant.slavers_slots || [];
+    if (!slots.length) continue;
+    for (const slot of slots) {
+      const slotVars = [];
+      for (const opt of model.slavers || []) {
+        if (opt.slot !== slot.slot || opt.tier !== slot.tier) continue;
+        const affixes = _craftAffixes(opt);
+        const onTarget = affixes.filter((a) => targetSet.has(a.stat) && a.value > 0);
+        if (!onTarget.length) continue;
+        const n = "slv" + slvc++;
+        extraVars.push(n);
+        const lead = onTarget[0];
+        slaversMeta.set(n, {
+          item: xv.variant.variant_id, slot: slot.slot, tier: slot.tier, name: opt.name,
+          affixes: affixes.map((a) => ({
+            stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat",
+            ...(a.via ? { via: a.via } : {}),
+          })),
+          stat: lead.stat, bonus_type: lead.bonus_type, value: lead.value,
+          unit: lead.unit || "flat", wiki_url: opt.wiki_url,
+        });
+        slotVars.push(n);
+        extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
+        for (const a of onTarget) {
+          const k = `${a.stat}||${_equivType(a.bonus_type)}`;
+          if (!zByBucket.has(k)) zByBucket.set(k, []);
+          zByBucket.get(k).push(zOf([n], a.value, a, xv.variant.variant_id));
+        }
+      }
+      if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // single pick per slot
+    }
+  }
+
   // Legendary Green Steel (#194, ONE pool for both blank classes since #687) — a
   // multi-tier choice-slot. `legendary_green_steel_tiers` is a list of slots
   // [{tier, item_class}], one per Legendary Altar the blank declares (Invasion /
@@ -1598,7 +1641,7 @@ function buildProgram(model) {
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
     extraVars, extraConstraints, penaltyKeys, augMeta, placeMeta, setMeta,
     // #742 — the reporting step needs this too; see `augmentsPlaced` below.
-    pinnedAugs, augPinReport, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, lgsMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
+    pinnedAugs, augPinReport, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, lgsMeta, slaversMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
     // #91 (U3) — the Utility tier's stage state: whether the sentinel is
     // ranked, the per-effect indicator binaries, and their name/ceiling meta.
     utilityEnabled, utilityVars, utilityMeta,
@@ -1896,7 +1939,7 @@ function preferColorlessSetAugments(program, highs, prevRes, locks, extraBase) {
   // could otherwise flip reported sets, crafts, or suppression flags with
   // identical totals — display churn the settle stage exists to prevent.
   for (const meta of [program.setMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
-                      program.vikMeta, program.sealMeta, program.lgsMeta,
+                      program.vikMeta, program.sealMeta, program.lgsMeta, program.slaversMeta,
                       program.essMeta]) {
     pinVarsAt(pin, at, meta ? [...meta.keys()] : []);
   }
@@ -1915,7 +1958,7 @@ function preferColorlessSetAugments(program, highs, prevRes, locks, extraBase) {
 // the report endorses.
 function hiddenPlacementGateFn(program, visible) {
   const placementMetas = [program.placeMeta, program.dinoMeta, program.ncMeta, program.rollMeta,
-                          program.vikMeta, program.sealMeta, program.lgsMeta,
+                          program.vikMeta, program.sealMeta, program.lgsMeta, program.slaversMeta,
                           program.essMeta];
   return (g) => !visible.has(g) && placementMetas.some((m) => m && m.has(g));
 }
@@ -1964,6 +2007,7 @@ function breakdownByTarget(program, prim, precomputedVisible) {
     if (program.rollMeta && program.rollMeta.has(gate)) { const m = program.rollMeta.get(gate); return { kind: "roll", label: "choice slot", slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.vikMeta && program.vikMeta.has(gate)) { const m = program.vikMeta.get(gate); return { kind: "vik", label: `Slot ${m.slot_type} Viktranium augment`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.lgsMeta && program.lgsMeta.has(gate)) { const m = program.lgsMeta.get(gate); return { kind: "lgs", label: `Legendary Green Steel Tier ${m.tier}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
+    if (program.slaversMeta && program.slaversMeta.has(gate)) { const m = program.slaversMeta.get(gate); return { kind: "slavers", label: `Slaver's ${m.slot} slot`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.essMeta && program.essMeta.has(gate)) { const m = program.essMeta.get(gate); return { kind: "essence", label: `Essence Crafting ${m.menu}: ${m.effect}`, slot: slotOfItem.get(m.item) || null, hostIds: [m.item] }; }
     if (program.placeMeta && program.placeMeta.has(gate)) return { kind: "augment", label: program.placeMeta.get(gate).variant_id };
     return { kind: "other", label: gate };
@@ -2095,7 +2139,7 @@ function computeScale(program) {
     + (program.dinoMeta ? program.dinoMeta.size : 0) + (program.ncMeta ? program.ncMeta.size : 0)
     + (program.rollMeta ? program.rollMeta.size : 0) + (program.vikMeta ? program.vikMeta.size : 0)
     + (program.sealMeta ? program.sealMeta.size : 0) + (program.memberMeta ? program.memberMeta.size : 0)
-    + (program.lgsMeta ? program.lgsMeta.size : 0)
+    + (program.lgsMeta ? program.lgsMeta.size : 0) + (program.slaversMeta ? program.slaversMeta.size : 0)
     + (program.essMeta ? program.essMeta.size : 0);
   return { variants: program.xVars.length, crafts, stages: (program.targetList || []).length + 1 };
 }
@@ -2340,6 +2384,8 @@ function readSolution(res, program, precomputedVisible) {
   for (const [n, meta] of program.sealMeta || []) if (prim(n) > 0.5 && fired.has(n)) sealPlaced.push(meta);
   const lgsPlaced = [];
   for (const [n, meta] of program.lgsMeta || []) if (prim(n) > 0.5 && fired.has(n)) lgsPlaced.push(meta);
+  const slaversPlaced = [];   // #766
+  for (const [n, meta] of program.slaversMeta || []) if (prim(n) > 0.5 && fired.has(n)) slaversPlaced.push(meta);
   // Essence Crafting picks (#193/#599). Reported per menu so the player can read
   // the Gem as three separate crafts rather than one lump — it is three slots and
   // they are spent independently.
@@ -2409,7 +2455,7 @@ function readSolution(res, program, precomputedVisible) {
   }
   const out = { chosen, effective, augmentsPlaced, setsActive,
     // #742 — pins the pool could not satisfy. Reported, never erased.
-    augPinReport: program.augPinReport || [], dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, lgsPlaced, essPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced,
+    augPinReport: program.augPinReport || [], dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, lgsPlaced, slaversPlaced, essPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced,
     // #449 U1 (KTD9) — the achieved/ceiling census, built HERE rather than in
     // solveLexicographic so the tieBreak:false alternatives path (solveConstrained,
     // which spreads this object) carries its OWN numbers. renderBuild is generic
@@ -2458,7 +2504,7 @@ function readSolution(res, program, precomputedVisible) {
       }
     });
     const craftMetas = [program.ncMeta, program.rollMeta, program.vikMeta,
-      program.sealMeta, program.lgsMeta, program.essMeta];
+      program.sealMeta, program.lgsMeta, program.slaversMeta, program.essMeta];
     const carrierOf = (gate) => {
       const xi = xIndex.get(gate);
       if (xi !== undefined) {
@@ -3141,7 +3187,7 @@ async function solveLexicographic(model, highs, opts = {}) {
     augmentsPlaced: sol.augmentsPlaced, setsActive: sol.setsActive,
     dinoPlaced: sol.dinoPlaced, ncPlaced: sol.ncPlaced, rollPlaced: sol.rollPlaced,
     vikPlaced: sol.vikPlaced, sealPlaced: sol.sealPlaced, jokerPlaced: sol.jokerPlaced,
-    lgsPlaced: sol.lgsPlaced, essPlaced: sol.essPlaced,
+    lgsPlaced: sol.lgsPlaced, slaversPlaced: sol.slaversPlaced, essPlaced: sol.essPlaced,
     // #193/#599 — stamped whenever the solve COULD craft, not only when it did.
     // A Gem that was offered 25 options and took none is exactly the player who
     // should be told the menu was short, and a build that crafted nothing still
@@ -3917,11 +3963,12 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     ...(program.augMeta ? program.augMeta.keys() : []), ...(program.dinoMeta ? program.dinoMeta.keys() : []),
     ...(program.ncMeta ? program.ncMeta.keys() : []), ...(program.vikMeta ? program.vikMeta.keys() : []),
     ...(program.sealMeta ? program.sealMeta.keys() : []), ...(program.lgsMeta ? program.lgsMeta.keys() : []),
+    ...(program.slaversMeta ? program.slaversMeta.keys() : []),
     ...(program.essMeta ? program.essMeta.keys() : []),
   ];
   const optCrafts = (optimum.augmentsPlaced || []).length + (optimum.dinoPlaced || []).length
     + (optimum.ncPlaced || []).length + (optimum.vikPlaced || []).length + (optimum.sealPlaced || []).length
-    + (optimum.lgsPlaced || []).length
+    + (optimum.lgsPlaced || []).length + (optimum.slaversPlaced || []).length
     + (optimum.essPlaced || []).length;
   if (craftVars.length && optCrafts > 0) {
     const relaxedAll = ranked.map((s) => ({ stat: s, value: per[s], give: alternativeGive(per[s]) }));   // #91 (KTD7) — no sentinel lock entry
@@ -3934,7 +3981,7 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
     const solCrafts = sol.status === "optimal"
       ? (sol.augmentsPlaced || []).length + (sol.dinoPlaced || []).length
         + (sol.ncPlaced || []).length + (sol.vikPlaced || []).length + (sol.sealPlaced || []).length
-        + (sol.lgsPlaced || []).length
+        + (sol.lgsPlaced || []).length + (sol.slaversPlaced || []).length
         + (sol.essPlaced || []).length
       : optCrafts;
     // Only surface when it genuinely uses fewer crafts (a same-count different build

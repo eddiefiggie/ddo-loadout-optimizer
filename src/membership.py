@@ -26,6 +26,7 @@ from src.affix_parser import BONUS_TYPES
 from src import umbrella
 from src import set_catalog
 from src import crafting_catalog
+from src import slavers
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = "Cannith Repurposing Station"
@@ -91,10 +92,35 @@ def set_names_for_tier(tier: str, catalog: dict = None) -> list:
     return names
 
 
+# #766 — Slaver's crafting. The `(Legendary )Slaver's Set Bonus` menu pools name
+# the three Slave Lord's sets a host may join, the same way the Lost Purpose
+# menus name the Vecna sets. Definitions come from the set catalog, and a pool
+# name the catalog does not define is DROPPED and disclosed, never mapped: today
+# the heroic and legendary pools each say `Slave Lord's Endurance` where the
+# catalog defines `Slave's Endurance`, and mapping one onto the other is an
+# unsourced rename (plan 2026-09-14-007).
+SLAVERS_STATION = slavers.STATION
+_SLAVERS_SET_KEY = dict(slavers.SET_BONUS_KEYS)
+_SLAVERS_NAME_CACHE = {}
+
+
+def slavers_set_names_for_tier(tier: str, catalog: dict = None) -> list:
+    """The Slaver's Set Bonus pool's set names for a tier, native order, memoized
+    off the default catalog like `set_names_for_tier`."""
+    if catalog is None and tier in _SLAVERS_NAME_CACHE:
+        return list(_SLAVERS_NAME_CACHE[tier])
+    names = slavers.set_names_for_tier(tier, catalog)
+    if catalog is None:
+        _SLAVERS_NAME_CACHE[tier] = list(names)
+    return names
+
+
 def all_set_names() -> list:
     """Every set the chosen-membership primitive can grant: the 22 Vecna (Heroic +
-    Legendary) plus the 6 Isle of Dread Dino sets."""
-    return set_names_for_tier("heroic") + set_names_for_tier("legendary") + list(_DINO_SETS)
+    Legendary), the 6 Isle of Dread Dino sets, and the Slaver's Set Bonus sets
+    (#766) the catalog defines."""
+    return (set_names_for_tier("heroic") + set_names_for_tier("legendary") + list(_DINO_SETS)
+            + slavers_set_names_for_tier("heroic") + slavers_set_names_for_tier("legendary"))
 
 
 def dino_pool(defs: dict = None) -> list:
@@ -249,6 +275,37 @@ def attach_dino_set_bonus_slots(variants, defs: dict = None) -> int:
         v["set_membership_slot"] = {"pool": pool, "station": DINO_STATION}
         n += 1
     return n
+
+
+def attach_slavers_set_bonus_slots(variants, defs: dict = None) -> dict:
+    """#766 — in place: every variant carrying a `slavers_set_bonus` tier marker gets a
+    `set_membership_slot` over the same-tier Slaver's sets, crafted at the Slaver's
+    station. Same primitive as Lost Purpose and the Dino Set-Bonus; a host that
+    already carries a membership slot is left as-is.
+
+    Returns `{hosts, set_names_unresolved}`: the count attached, and — per tier — the
+    pool names that resolved to NO set def and were therefore dropped from every
+    pool. That list is the disclosure the plan promised; `build_dataset` stamps it
+    into `metadata.slavers_coverage`, and a name on it is a correction to source,
+    not a pool to widen by hand."""
+    resolved, unresolved = {}, {}
+    for tier in ("heroic", "legendary"):
+        names = slavers_set_names_for_tier(tier)
+        resolved[tier] = [n for n in names if defs is None or n in defs]
+        missing = [n for n in names if defs is not None and n not in defs]
+        if missing:
+            unresolved[tier] = missing
+    n = 0
+    for v in variants:
+        tier = v.get("slavers_set_bonus")
+        if tier not in resolved or v.get("set_membership_slot"):
+            continue
+        intrinsic = {s.get("set") for s in v.get("set_bonus") or []}
+        intrinsic.update(v.get("sets") or [])
+        pool = [name for name in resolved[tier] if name not in intrinsic]
+        v["set_membership_slot"] = {"pool": pool, "station": SLAVERS_STATION}
+        n += 1
+    return {"hosts": n, "set_names_unresolved": unresolved}
 
 
 def coverage(defs: dict) -> dict:

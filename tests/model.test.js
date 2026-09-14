@@ -2868,3 +2868,46 @@ test("#648/real data: the niche-crafting rung restores the pre-fix prune", () =>
   }
   assert.strictEqual(n, 0, "no pool, no protection");
 });
+
+// ---- #766 Slaver's crafting ---------------------------------------------------
+test("#766: an affix item does NOT dominate a Slaver's host it cannot match", () => {
+  // The six hosts carry NO affix at all; without the dominance clause any belt
+  // with one ranked affix prunes them before the solver sees them — a defect a
+  // pinned-host solve can never show.
+  const real = v("Real", "Belt", [["Charisma", "Enhancement", 12]]);
+  const host = v("Legendary Chains", "Belt", []);
+  host.slavers_slots = [{ slot: "Prefix", tier: "legendary" }, { slot: "Suffix", tier: "legendary" }];
+  const targets = new Set(["Charisma"]);
+  assert.strictEqual(M.dominates(real, host, targets, 28), false, "a rival lacking the Slaver's slots cannot dominate the host");
+  assert.strictEqual(M.dominanceFilter([real, host], targets, 28, 1).length, 2, "the affix-less host survives");
+  const otherTier = v("Chains", "Belt", [["Charisma", "Enhancement", 12]]);
+  otherTier.slavers_slots = [{ slot: "Prefix", tier: "heroic" }, { slot: "Suffix", tier: "heroic" }];
+  assert.strictEqual(M.dominates(otherTier, host, targets, 28), false, "the same slots at the OTHER tier do not cover");
+  const fewer = v("Fewer", "Belt", [["Charisma", "Enhancement", 12]]);
+  fewer.slavers_slots = [{ slot: "Prefix", tier: "legendary" }];
+  assert.strictEqual(M.dominates(fewer, host, targets, 28), false, "one slot does not cover two");
+  const peer = v("Peer", "Belt", [["Charisma", "Enhancement", 12]]);
+  peer.slavers_slots = [{ slot: "Prefix", tier: "legendary" }, { slot: "Suffix", tier: "legendary" }];
+  assert.strictEqual(M.dominates(peer, host, targets, 28), true, "same slots plus a real affix dominates");
+});
+
+test("#766: buildModel keeps target-advancing Slaver's options by ANY affix, sifts a blocked one, and empties at the rung", () => {
+  const host = v("Legendary Chains", "Belt", []);
+  host.slavers_slots = [{ slot: "Suffix", tier: "legendary" }];
+  const res = { slot: "Suffix", tier: "legendary", name: "Resistance +8 (Enhancement)",
+    block_key: "craft:slavers:Suffix|legendary:Resistance +8 (Enhancement)",
+    affixes: [{ stat: "Fortitude Save", bonus_type: "Enhancement", value: 8, unit: "flat" },
+              { stat: "Will Save", bonus_type: "Enhancement", value: 8, unit: "flat" }] };
+  const off = { slot: "Suffix", tier: "legendary", name: "Acid Lore +10 (Equipment)",
+    block_key: "craft:slavers:Suffix|legendary:Acid Lore +10 (Equipment)",
+    affixes: [{ stat: "Acid Lore", bonus_type: "Equipment", value: 10, unit: "flat" }] };
+  const q = { mlCap: 28, targets: ["Will Save"] };
+  const build = (query) => M.buildModel([host], query, [], [], [], [], {}, [], {}, null, {}, [], [res, off]);
+  assert.deepStrictEqual(build(q).slavers.map((o) => o.name), ["Resistance +8 (Enhancement)"],
+    "kept through its SECOND affix; the off-target option dropped");
+  const blocked = build({ ...q, blocklist: [res.block_key] });
+  assert.deepStrictEqual(blocked.slavers, [], "a craft: block withholds the option");
+  assert.deepStrictEqual(blocked.craftBlocked.map((o) => o.name), ["Resistance +8 (Enhancement)"], "and retains it for the disclosure");
+  assert.deepStrictEqual(build({ ...q, craftingRung: "no-niche-crafting" }).slavers, [], "the niche-crafting rung empties the pool");
+  assert.ok(M.poolStatNames({ worn: [], slavers: [res] }).has("Will Save"), "the pool's stats reach the picker vocabulary");
+});

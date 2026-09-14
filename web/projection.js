@@ -215,6 +215,8 @@
     // menu, and `pool` is what separates them. Same fork `craftLabel` makes.
     if (family === "nc") return o.pool || "Nearly Completed";
     if (family === "dino") return `${o.dino_type} insert`;
+    // #766 — a Slaver's Suffix `Resistance` craft is a three-save bundle.
+    if (family === "slavers") return `Slaver's ${o.slot} slot`;
     // Unreachable from the table below; named rather than silently interpolating
     // an undefined field into player-facing text if a channel is added carelessly.
     return "crafted";
@@ -1131,7 +1133,7 @@
     // entirely on Viktranium or seals is exactly the player who most needs to know
     // the ladder exists, and counting augments alone left them with no notice.
     const crafts = ["vikPlaced", "sealPlaced", "ncPlaced", "dinoPlaced", "lgsPlaced",
-      "essPlaced", "membershipPlaced", "setAugmentsPlaced"]
+      "slaversPlaced", "essPlaced", "membershipPlaced", "setAugmentsPlaced"]
       .reduce((n, k) => n + ((snap[k] || []).length), 0);
     if (!augs && !crafts) return null;   // nothing to give up; no advice worth crowding the results with
     const gems = (snap.augmentsPlaced || [])
@@ -1471,6 +1473,7 @@
     viktranium: "Viktranium crafting",
     seal: "Seal",
     lgs: "Legendary Green Steel",
+    slavers: "Slaver's crafting",
     essence: "Essence Crafting",
   };
   function reachRouteLabel(r) {
@@ -1981,6 +1984,7 @@
       ncByItem: byItemMap(build.ncPlaced), rollByItem: byItemMap(build.rollPlaced),
       vikByItem, sealByItem: byItemMap(build.sealPlaced),
       lgsByItem: byItemMap(build.lgsPlaced),
+      slaversByItem: byItemMap(build.slaversPlaced),   // #766
       essByItem: byItemMap(build.essPlaced), jokerByHost,
       membershipByHost, setAugByHost,
     };
@@ -2051,6 +2055,26 @@
     return vikSlotRows(variant, placed)
       .filter((r) => !r.placement)
       .map((r) => ({ slot_type: r.slot_type, category: r.category }));
+  }
+
+  /** #766 — one row per DECLARED Slaver's slot, filled or empty, in the host's
+   *  declared order (Prefix / Suffix / Extra / Bonus): the `tierSlotRows` rule
+   *  keyed on (slot, tier). A placement matching no declared slot is still
+   *  reported, for the reason `vikSlotRows` gives. */
+  function slaversSlotRows(declared, placed) {
+    const list = (placed || []).slice();
+    const asRow = (p) => ({ slot: p.slot, tier: p.tier, placement: p });
+    const slots = (declared || []).filter((s) => s && s.slot);
+    if (!slots.length) return list.map(asRow);
+    const used = new Set();
+    const rows = slots.map((s) => ({ slot: s.slot, tier: s.tier, placement: null }));
+    for (const r of rows) {
+      for (let k = 0; k < list.length; k++) {
+        if (!used.has(k) && list[k].slot === r.slot && list[k].tier === r.tier) { used.add(k); r.placement = list[k]; break; }
+      }
+    }
+    for (let k = 0; k < list.length; k++) if (!used.has(k)) rows.push(asRow(list[k]));
+    return rows;
   }
 
   /** #194 — one row per DECLARED Legendary Green Steel tier, filled or empty, in
@@ -2128,6 +2152,8 @@
       // #194 — the tier IS the slot: a Legendary Green Steel blank takes one
       // effect at each of three altars.
       case "lgs": return `Legendary Green Steel T${o.tier}`;
+      // #766 — the slot IS the craft: a Slaver's host takes one effect per typed slot.
+      case "slavers": return `Slaver's ${o.slot} slot`;
       // #193/#599 — the menu is named because the Gem has three of them and they
       // are spent independently; "Essence Crafting" alone would read as one craft.
       case "essence": return `Essence Crafting ${o.menu}`;
@@ -2191,6 +2217,11 @@
       case "lgs": return { where: `Tier ${o.tier}`, what: craftValue(o), system: sys(family),
         title: `Legendary Green Steel ${o.item_class || "blank"} tier — craft at the Legendary Altar` };
       case "lgsEmpty": return { where: `Tier ${o.tier}`, what: "left empty",
+        system: sys(family), title: craftLabel(o, family) };
+      // #766 — Slaver's slot rows, filled and declared-but-empty (the `lgsEmpty` rule).
+      case "slavers": return { where: `${o.slot} slot`, what: craftValue(o), system: sys(family),
+        title: `Slaver's ${o.slot} slot (${o.tier})` };
+      case "slaversEmpty": return { where: `${o.slot} slot`, what: "left empty",
         system: sys(family), title: craftLabel(o, family) };
       case "essence": return { where: `${o.menu} menu`, what: craftValue(o), system: sys(family),
         title: `Essence Crafting ${o.menu}: ${o.effect}` };
@@ -2264,7 +2295,8 @@
   const CRAFT_SECTION_LABEL = {
     vik: "Viktranium", vikEmpty: "Viktranium", nc: "Nearly Completed",
     dino: "Dino crafting", seal: "Seal crafting", lgs: "Legendary Green Steel",
-    lgsEmpty: "Legendary Green Steel", roll: "Choice slots", essence: "Essence Crafting",
+    lgsEmpty: "Legendary Green Steel", slavers: "Slaver's crafting", slaversEmpty: "Slaver's crafting",
+    roll: "Choice slots", essence: "Essence Crafting",
     // #472 — the set-yielding families. `membership` is a fallback only: that case
     // reads its system name from the CraftingSystems registry, because the two
     // stations behind the one primitive are two different systems.
@@ -2318,6 +2350,10 @@
       // for the same reason: an empty altar must not vanish from the item.
       case "lgsEmpty":
         return `Legendary Green Steel T${o.tier}: left empty — no option adds to your ranked stats`;
+      // #766 — a Slaver's craft names its slot; an empty declared slot is disclosed.
+      case "slavers": return `Slaver's ${o.slot} slot: ${craftValue(o)}`;
+      case "slaversEmpty":
+        return `Slaver's ${o.slot} slot: left empty — no option adds to your ranked stats`;
       // #193 — the EFFECT is named whenever it differs from the stat, because
       // that name is the shard the player has to go and make: `Insightful
       // Constitution` is a different recipe from `Constitution`, and a shared
@@ -2584,6 +2620,12 @@
       out.push(r.placement
         ? { family: "lgs", label: craftLabel(r.placement, "lgs") }
         : { family: "lgsEmpty", label: craftLabel(r, "lgsEmpty"), tier: r.tier });
+    }
+    // #766 — declared Slaver's slots, filled and empty, in slot order.
+    for (const r of slaversSlotRows(v.slavers_slots, (maps.slaversByItem && maps.slaversByItem.get(v.variant_id)) || [])) {
+      out.push(r.placement
+        ? { family: "slavers", label: craftLabel(r.placement, "slavers") }
+        : { family: "slaversEmpty", label: craftLabel(r, "slaversEmpty"), slot: r.slot, tier: r.tier });
     }
     for (const n of (maps.essByItem && maps.essByItem.get(v.variant_id)) || []) out.push({ family: "essence", label: craftLabel(n, "essence") });
     for (const j of maps.jokerByHost.get(v.variant_id) || []) out.push({ family: "joker", label: craftLabel(j, "joker") });
@@ -3455,7 +3497,7 @@
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
-    buildCraftMaps, craftLabel, craftValue, unfilledVikSlots, vikSlotRows, tierSlotRows, lunarSolar, setAugmentSlotRule,
+    buildCraftMaps, craftLabel, craftValue, unfilledVikSlots, vikSlotRows, tierSlotRows, slaversSlotRows, lunarSolar, setAugmentSlotRule,
     // #471 — the split craft label + section caption for the Loadout card's row
     // language. Generated from the same fields as craftLabel, beside it (KTD6).
     craftRowLabel, CRAFT_SECTION_LABEL,

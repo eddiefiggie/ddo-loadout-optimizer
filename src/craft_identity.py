@@ -80,6 +80,8 @@ POOL_KEY = {
     "dino_inserts": lambda r: f"{r.get('dino_type')}|{r.get('category')}{_qs(r)}",
     "nearly_complete": lambda r: str(r.get("category")),
     "legendary_green_steel": lambda r: str(r.get("tier")),
+    # #766 — the slot and the tier locate a Slaver's option in its pool.
+    "slavers": lambda r: f"{r.get('slot')}|{r.get('tier')}",
     "essence_crafting": lambda r: str(r.get("menu")),
 }
 

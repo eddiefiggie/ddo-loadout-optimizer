@@ -15,7 +15,9 @@ ITEMS = os.path.join(os.path.dirname(__file__), "..", "web", "data", "items.json
 
 def test_build_membership_set_defs_shape():
     defs = membership.build_membership_set_defs()
-    assert len(defs) == 28, f"expected 28 set defs (22 Vecna + 6 Dino), got {len(defs)}"
+    # #766 — plus the 4 Slaver's sets the catalog defines (Might and Sorcery at each
+    # tier; the pools' `Slave Lord's Endurance` resolves to no def and is disclosed).
+    assert len(defs) == 32, f"expected 32 set defs (22 Vecna + 6 Dino + 4 Slaver's), got {len(defs)}"
     vol = defs["Legendary Vol's Influence"]
     assert vol["tier"] == "legendary"
     stats = {(a["stat"], a["bonus_type"], a["value"]) for t in vol["tiers"] for a in t["affixes"]}
@@ -84,9 +86,9 @@ def test_items_json_exports_membership_set_defs():
     with open(ITEMS, encoding="utf-8") as fh:
         data = json.load(fh)
     m = data.get("membership_set_defs")
-    assert m and len(m) == 28, "items.json exports all 28 membership set defs (22 Vecna + 6 Dino)"
+    assert m and len(m) == 32, "items.json exports all 32 membership set defs (22 Vecna + 6 Dino + 4 Slaver's)"
     cov = data["metadata"].get("membership_coverage")
-    assert cov and cov["sets"] == 28 and cov["tiers"] >= 26
+    assert cov and cov["sets"] == 32 and cov["tiers"] >= 30   # #766: +4 Slaver's sets
 
 
 def test_fire_over_morgrave_raid_gear_are_forbidden_knowledge_members():
