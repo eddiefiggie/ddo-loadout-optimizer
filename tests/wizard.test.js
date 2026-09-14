@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { armorTypesFor, canSolve, DRUID_ARMOR, bundleStaleNames, staleBundleText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX } = require("../web/wizard.js");
+const { armorTypesFor, canSolve, DRUID_ARMOR, bundleStaleNames, staleBundleText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -1756,17 +1756,27 @@ test("#169: the disclosure banner escapes its message", () => {
 
   // ---- DOM behaviour, asserted against the source (this suite has no jsdom) ----
 
-  test("U2: the drag guard matches SELECT as well as INPUT", () => {
-    // draggable="false" on a child does not stop the nearest draggable ancestor
-    // from becoming the drag source, and stopPropagation on pointerdown does not
-    // suppress the native drag — the tagName test is the part that works, and a
-    // <select> does not match `tagName === "INPUT"`.
-    const at = WIZARD_SRC.indexOf("li.ondragstart");
-    assert.ok(at > 0, "the drag handler exists");
-    const fn = WIZARD_SRC.slice(at, at + 420);
-    assert.ok(/tagName === "SELECT"/.test(fn),
-      "the bonus-type <select> would otherwise start a row reorder when dragged");
-    assert.ok(/tagName === "INPUT"/.test(fn), "and the original input guard is intact");
+  test("U2 (re-ratified by #744): an input or select can no longer start a drag, by construction", () => {
+    // This test used to pin a tagName allowlist inside `li.ondragstart`: with the
+    // whole <li> as the native drag source, dragging the bonus-type <select> or a
+    // bound <input> started a row reorder, and the guard was the fix. #744 made
+    // the GRIP the only drag source, so the defect is impossible rather than
+    // guarded against — and the invariant this test protects is restated as the
+    // construction that makes it so. Both halves are needed: no native source on
+    // the row, and exactly one pointer source, which is the grip.
+    assert.ok(!/li\.ondragstart/.test(WIZARD_SRC), "the native drag handler is gone");
+    const row = srcBetween(WIZARD_SRC, "function rankedHTML()", "function reorderControlsHTML", "rankedHTML");
+    assert.ok(!/draggable="true"/.test(row), "the row is no longer a native drag source");
+    const wire = codeOnly(WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList")));
+    assert.ok(/querySelector\(":scope > \.wz-grip:not\(\.wz-grip-pinned\)"\)/.test(wire),
+      "the grip is the drag source");
+    // Not "one onpointerdown": the panel's inputs and buttons carry their own
+    // `onpointerdown = (e) => e.stopPropagation()` guards. The invariant is that
+    // exactly ONE handler creates a drag, and it is the grip's.
+    assert.strictEqual((wire.match(/drag = \{ from:/g) || []).length, 1,
+      "exactly one handler creates a drag — one source, so no allowlist");
+    const down = srcBetween(wire, "grip.onpointerdown = (e) => {", "        };\n      });", "pointerdown");
+    assert.ok(/drag = \{ from:/.test(down), "and it is the grip's pointerdown");
   });
 
   test("U2: deleting a priority row drops EVERY credit on that stat", () => {
@@ -2202,20 +2212,24 @@ test("F2: a declared credit on a dual-nature stat survives to the query", () => 
   assert.deepStrictEqual(buildQuery(s2, rv).declaredCredits, {});
 });
 
-test("KTD6: the drag guard covers the whole panel, not just INPUT/SELECT", () => {
-  // A click on the count badge has tagName SPAN and a drag on the relocated
-  // prose has P — the tagName allowlist misses both, so either would start a
-  // row reorder instead of toggling or selecting.
-  const at = WIZARD_SRC.indexOf("li.ondragstart");
-  const guard = WIZARD_SRC.slice(at, at + 320);
-  // #744 step 2 split the <details> into two siblings — the toggle on the control
-  // line and the panel on the row beneath — so ONE selector no longer covers
-  // both. A guard naming only the panel would let a drag start on the toggle and
-  // reorder the row instead of opening it, which is this test's whole subject.
-  assert.ok(/closest\("\.wz-adv-panel, \.wz-adv-toggle"\)/.test(guard),
-    "anything inside the panel, or the control that opens it, is panel interaction");
-  assert.ok(/tagName === "INPUT"/.test(guard) && /tagName === "SELECT"/.test(guard),
-    "and the original tagName clauses survive for controls outside the panel");
+test("KTD6 (re-ratified by #744): the panel and its toggle cannot start a drag, and the pinned grip cannot either", () => {
+  // KTD6 pinned a `closest(".wz-adv-panel, .wz-adv-toggle")` refusal inside the
+  // native drag handler: a click on the count badge (SPAN) or the panel prose (P)
+  // started a row reorder, because the whole <li> was the drag source. With the
+  // grip as the only source, a panel click is structurally not a drag — there is
+  // no handler on the panel to refuse. What still needs pinning is the ONE
+  // exclusion that survives the rewrite: the pinned Utility row's grip (#348),
+  // which was never draggable and must not become so now that grips are sources.
+  const wire = codeOnly(WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList")));
+  assert.ok(/:not\(\.wz-grip-pinned\)/.test(wire), "the pinned Utility grip is excluded from drag sources");
+  assert.ok(/if \(!grip\) return;/.test(wire), "and a row without a source grip binds nothing");
+  // The panel and toggle keep their OWN pointer guard for the drag, which is
+  // that no drag listener is bound anywhere near them: the only pointerdown in
+  // the renderer is on the grip (asserted in the U2 test above), and the grip is
+  // a sibling of the panel, never an ancestor of it.
+  const row = srcBetween(WIZARD_SRC, "function rankedHTML()", "function reorderControlsHTML", "rankedHTML");
+  assert.ok(row.indexOf('class="wz-grip"') < row.indexOf("advancedHTML(p, i, adv)"),
+    "the grip precedes the panel as a sibling in the row");
 });
 
 test("D1: a bulk control restores focus after the rebuild", () => {
@@ -2746,53 +2760,147 @@ test("#744 step 3: the curve refuses degenerate input instead of scrolling wildl
   assert.ok(v(1, tiny) < 0 && v(tiny - 1, tiny) > 0, "and its edges still scroll the right way");
 });
 
-test("#744 step 3: the loop is armed after the guard and stopped on BOTH exits", () => {
-  const wire = WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList"));
-  const ds = codeOnly(srcBetween(wire, "li.ondragstart", "li.ondragend", "dragstart"));
-  // Armed only once the guard has decided this is really a row drag — a drag the
-  // guard refused (panel, toggle, input) must never arm the scroller.
-  assert.ok(ds.indexOf("e.preventDefault(); return;") < ds.indexOf("dragAutoScroll.start()"),
-    "start() comes after the guard's refusal path");
-  const de = srcBetween(wire, "li.ondragend", "li.ondragover", "dragend");
-  assert.ok(/dragAutoScroll\.stop\(\)/.test(de), "a cancelled drag stops it");
-  // The drop path needs its OWN stop, and it must come first: rerender() replaces
-  // ol.innerHTML and destroys the <li> whose ondragend is the other stop, and
-  // dragend on a removed element is not reliably delivered. Without this, every
-  // SUCCESSFUL drop can leave the loop running and the page scrolling itself.
-  const dr = codeOnly(srcBetween(wire, "li.ondrop = (e) => {", "});", "drop"));
-  assert.ok(/dragAutoScroll\.stop\(\)/.test(dr), "a successful drop stops it too");
-  assert.ok(dr.indexOf("dragAutoScroll.stop()") < dr.indexOf("rerender()"),
-    "and stops BEFORE the rerender that destroys the dragged row");
-  assert.ok(dr.indexOf("dragAutoScroll.stop()") < dr.indexOf("if (from === null"),
-    "and before the early return, so no path skips it");
+test("#744 step 3 (re-ratified): autoscroll arms only once the drag is armed, and every exit stops it", () => {
+  // Was: armed after the native dragstart's guard, stopped in BOTH dragend and
+  // drop because a successful drop's rerender() destroyed the <li> whose dragend
+  // was the other stop. The pointer drag has ONE exit, `endDrag`, reached from
+  // pointerup, pointercancel, lostpointercapture and Escape — so the invariant
+  // becomes: start() lives behind the movement threshold, and endDrag() stops
+  // the scroller before it can commit or rerender.
+  const wire = codeOnly(WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList")));
+  const mv = srcBetween(wire, "const onMove = (e) => {", "const onScroll", "onMove");
+  assert.ok(mv.indexOf("drag.armed = true") < mv.indexOf("dragAutoScroll.start()"),
+    "start() comes after the threshold arms the drag — a tap on the grip never arms the scroller");
+  const end = srcBetween(wire, "const endDrag = (commit) => {", "const onMove", "endDrag");
+  assert.ok(/dragAutoScroll\.stop\(\)/.test(end), "the one exit stops it");
+  assert.ok(end.indexOf("dragAutoScroll.stop()") < end.indexOf("movePriority("),
+    "before the commit");
+  assert.ok(end.indexOf("dragAutoScroll.stop()") < end.indexOf("rerender()"),
+    "and before the rerender that destroys the dragged row");
+  // Every way a drag ends routes through that one exit.
+  for (const m of [/const onUp = .*endDrag\(true\)/, /const onCancel = .*endDrag\(false\)/,
+                   /onlostpointercapture = \(\) => endDrag\(false\)/, /"Escape".*endDrag\(false\)/]) {
+    assert.ok(m.test(wire), `an exit routes through endDrag: ${m}`);
+  }
 });
 
-test("#744 step 3: one document listener ever, and it never preventDefaults", () => {
-  const ctl = srcBetween(WIZARD_SRC, "const dragAutoScroll = (function ()", "function renderRankedList", "controller");
-  // renderRankedList rebuilds on every reorder. A controller built inside it
-  // would add a listener per rebuild and remove none.
+test("#744 step 3 (re-ratified): the controller has no document listener, and the drag removes every one it adds", () => {
+  // Was: one document `dragover` listener ever, added by start() and removed by
+  // stop(), never preventDefaulting. The native drag is gone and so is that
+  // listener: the controller is now fed by `update(clientY)` from pointermove.
+  // The drag itself adds document listeners for its own life, and the invariant
+  // that replaces the old one is that endDrag removes EVERY listener the
+  // pointerdown added — an orphaned document pointerup handler would commit a
+  // stale drag against a list that has since been rebuilt.
+  const ctl = codeOnly(srcBetween(WIZARD_SRC, "const dragAutoScroll = (function ()", "function renderRankedList", "controller"));
   assert.ok(WIZARD_SRC.indexOf("const dragAutoScroll") < WIZARD_SRC.indexOf("function renderRankedList"),
     "the controller is created once, outside the per-render function");
-  assert.ok(/if \(listening\) return;/.test(ctl), "start() is idempotent");
-  assert.ok(/removeEventListener\("dragover"/.test(ctl), "stop() removes the listener");
-  assert.ok(/cancelAnimationFrame\(raf\)/.test(ctl), "and cancels the pending frame");
-  // It only needs clientY. Declaring the whole document a drop target would
-  // change drop semantics for a bug that is about scrolling.
-  const handler = codeOnly(srcBetween(ctl, "const onDragOver", "return {", "onDragOver"));
-  assert.ok(!/preventDefault/.test(handler), "the document listener must not preventDefault");
+  assert.ok(!/addEventListener/.test(ctl), "the controller listens to nothing — it is fed by update()");
+  assert.ok(/update\(clientY\)/.test(ctl), "and update(clientY) is that feed");
+  assert.ok(/cancelAnimationFrame\(raf\)/.test(ctl), "stop() cancels the pending frame");
+  const wire = codeOnly(WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList")));
+  // The end marker is the handler's own close, not the first `};` — the drag
+  // object literal closes with one too, two lines in, and slicing there would
+  // stop before the listeners this test exists to check.
+  const down = srcBetween(wire, "grip.onpointerdown = (e) => {", "        };\n      });", "pointerdown");
+  const end = srcBetween(wire, "const endDrag = (commit) => {", "const onMove", "endDrag");
+  for (const ev of ["pointermove", "pointerup", "pointercancel", "keydown"]) {
+    assert.ok(new RegExp(`document\\.addEventListener\\("${ev}"`).test(down), `pointerdown adds ${ev} on the document`);
+    assert.ok(new RegExp(`document\\.removeEventListener\\("${ev}"`).test(end), `and endDrag removes ${ev}`);
+  }
+  assert.ok(/window\.removeEventListener\("scroll"/.test(end), "and the wheel-follow scroll listener");
+  // On the DOCUMENT, not the grip, on purpose: setPointerCapture throws for a
+  // pointer that is not active (every synthetic PointerEvent, and a real pointer
+  // released between pointerdown and the call). Document listeners see the
+  // events with or without capture; grip listeners only with it.
+  assert.ok(/try \{ grip\.setPointerCapture\(e\.pointerId\); \} catch/.test(down),
+    "setPointerCapture is wrapped — it must never throw into the priorities step");
+  assert.ok(!/grip\.onpointermove|grip\.onpointerup/.test(wire),
+    "move and up are never bound on the grip, where an uncaptured drag would lose them");
 });
 
-test("#744 step 3: a velocity plus a frame loop, not scrolling from the event", () => {
-  // `dragover` fires while the pointer MOVES. Holding still inside the band — the
-  // gesture a player makes waiting for a long list to come round — stops the
-  // events, so scrolling straight from the handler stalls exactly when it is most
-  // wanted. Only the loop keeps going.
-  const ctl = srcBetween(WIZARD_SRC, "const dragAutoScroll = (function ()", "function renderRankedList", "controller");
+test("#744 step 3 (re-ratified): a velocity plus a frame loop, fed by pointermove", () => {
+  // `pointermove`, like `dragover` before it, fires while the pointer MOVES.
+  // Holding still inside the band stops the events, so scrolling from the
+  // handler stalls exactly when it is most wanted. Only the loop keeps going.
+  const ctl = codeOnly(srcBetween(WIZARD_SRC, "const dragAutoScroll = (function ()", "function renderRankedList", "controller"));
   assert.ok(/requestAnimationFrame\(tick\)/.test(ctl), "a frame loop does the scrolling");
-  const handler = codeOnly(srcBetween(ctl, "const onDragOver", "return {", "onDragOver"));
-  assert.ok(!/scrollBy/.test(handler), "the event handler sets a velocity, it does not scroll");
-  assert.ok(/vel = dragScrollVelocity\(e\.clientY, window\.innerHeight\)/.test(handler),
-    "and it sets that velocity from the shared curve");
+  const upd = srcBetween(ctl, "update(clientY) {", "},", "update");
+  assert.ok(!/scrollBy/.test(upd), "update() sets a velocity, it does not scroll");
+  assert.ok(/vel = dragScrollVelocity\(clientY, window\.innerHeight\)/.test(upd),
+    "from the shared curve");
+  const wire = codeOnly(WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList")));
+  assert.ok(/dragAutoScroll\.update\(e\.clientY\)/.test(wire), "and pointermove is what feeds it");
+});
+
+// ---- #744 — the pointer drag itself --------------------------------------------
+
+test("#744: dropIndexFor converts a drop target to the index movePriority takes", () => {
+  // movePriority takes the FINAL index of the moved row (post-removal), which is
+  // what the buttons pass. A drop is a pre-removal target index plus an edge.
+  // The four enumerated cases first, then the property that actually matters:
+  // after the move, the carried row sits immediately on the chosen side of the
+  // row that was under the pointer — for every from/to/edge in a real list.
+  assert.strictEqual(dropIndexFor(0, 2, true), 2,  "A(0) after C(2): [B,C,A,D]");
+  assert.strictEqual(dropIndexFor(0, 3, false), 2, "A(0) before D(3): [B,C,A,D]");
+  assert.strictEqual(dropIndexFor(3, 1, false), 1, "D(3) before B(1): [A,D,B,C]");
+  assert.strictEqual(dropIndexFor(3, 0, true), 1,  "D(3) after A(0): [A,D,B,C]");
+  const list = ["A", "B", "C", "D", "E", "F"];
+  for (let from = 0; from < list.length; from++) {
+    for (let to = 0; to < list.length; to++) {
+      if (to === from) continue;
+      for (const after of [false, true]) {
+        const out = require("../web/wizard.js").movePriority(list, from, dropIndexFor(from, to, after));
+        const carried = list[from], target = list[to];
+        const ci = out.indexOf(carried), ti = out.indexOf(target);
+        assert.strictEqual(ci, after ? ti + 1 : ti - 1,
+          `${carried}(${from}) ${after ? "after" : "before"} ${target}(${to}) -> ${out.join("")}`);
+      }
+    }
+  }
+});
+
+test("#744: a drop against a rebuilt list is dropped, never committed", () => {
+  // If the list was rebuilt beneath the drag, the source index no longer means
+  // what it did. Cancelling reads as a missed drop; committing moves the WRONG
+  // row. The check is that the source <li> is still in this list.
+  const wire = codeOnly(WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList")));
+  const end = srcBetween(wire, "const endDrag = (commit) => {", "const onMove", "endDrag");
+  assert.ok(/commit && d\.armed && d\.target && ol\.contains\(d\.li\) && d\.target\.to !== d\.from/.test(end),
+    "commit requires: armed, a target, the source row still in THIS list, and a real move");
+  assert.ok(/movePriority\(state\.priorities, d\.from, dropIndexFor\(/.test(end),
+    "and goes through the same primitive as the buttons");
+});
+
+test("#744: the wheel half — the indicator follows a scroll with a stationary pointer", () => {
+  // The whole reason the native drag had to go. A wheel scroll changes what is
+  // under the pointer without a pointermove, so the drop target must be
+  // recomputed from the LAST pointer position on scroll.
+  const wire = codeOnly(WIZARD_SRC.slice(WIZARD_SRC.indexOf("function renderRankedList")));
+  assert.ok(/window\.addEventListener\("scroll", onScroll, \{ passive: true \}\)/.test(wire),
+    "a passive scroll listener is added when the drag arms");
+  assert.ok(/const onScroll = \(\) => \{ if \(drag && drag\.armed\) \{ drag\.target = targetAt\(drag\.lastX, drag\.lastY\)/.test(wire),
+    "and it recomputes the target from the last known pointer position");
+  assert.ok(/drag\.lastX = e\.clientX; drag\.lastY = e\.clientY;/.test(wire),
+    "which pointermove keeps current");
+});
+
+test("#744: the markup and CSS make the grip the drag affordance and nothing else", () => {
+  const row = srcBetween(WIZARD_SRC, "function rankedHTML()", "function reorderControlsHTML", "rankedHTML");
+  assert.ok(/class="wz-grip" title="drag to reorder" aria-hidden="true"/.test(row),
+    "the grip is a pointer affordance hidden from AT — the buttons are the keyboard path");
+  const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+  const grip = srcBetween(css, "\n.wz-grip {", "}", ".wz-grip");
+  // The load-bearing line for touch: on the grip only, a finger on the grip drags
+  // and a finger anywhere else on the row still scrolls the page. On the row it
+  // would kill page scrolling over the list.
+  assert.ok(/touch-action:\s*none/.test(grip), "touch-action: none on the grip");
+  assert.ok(!/\.wz-ranked > li \{[^}]*touch-action/.test(css), "and NOT on the row");
+  const dragging = srcBetween(css, ".wz-ranked > li.dragging {", "}", ".dragging");
+  // What lets elementFromPoint see the row BENEATH the carried one.
+  assert.ok(/pointer-events:\s*none/.test(dragging), "the carried row is transparent to hit-testing");
+  assert.ok(/\.wz-ranked > li\.wz-drop-before/.test(css) && /\.wz-ranked > li\.wz-drop-after/.test(css),
+    "both drop indicators exist — a pointer drag draws no ghost, so this is the only destination cue");
 });
 
 console.log(`\n${passed} passed`);
