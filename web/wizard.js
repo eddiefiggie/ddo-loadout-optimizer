@@ -2004,6 +2004,20 @@ function dragScrollVelocity(clientY, viewportH) {
   return 0;
 }
 
+/** #744 — a drop target to the index `movePriority` takes.
+ *
+ *  `movePriority` takes the FINAL index of the moved row — its index once the
+ *  source has been removed, which is what the ⤒ ↑ ↓ ⤓ buttons pass. A pointer
+ *  drop is a target row's index in the list BEFORE removal, plus which edge of
+ *  it the pointer was over. Converted here rather than teaching movePriority a
+ *  second frame of reference. Enumerated from the four cases of {before, after}
+ *  x {target above source, target below source}; `to === from` never reaches
+ *  here (the caller treats it as no-op). Pure; module-level so it is testable
+ *  without a DOM. */
+function dropIndexFor(from, to, after) {
+  return after ? (to > from ? to : to + 1) : (to > from ? to - 1 : to);
+}
+
 function movePriority(ranked, from, to) {
   const out = (Array.isArray(ranked) ? ranked : []).slice();
   const src = Number(from);
@@ -2836,7 +2850,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, AUGMENT_PIN_NOTE, augmentPinnable, addAugmentPin, removeAugmentPin, augmentPinStale, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
+  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, AUGMENT_PIN_NOTE, augmentPinnable, addAugmentPin, removeAugmentPin, augmentPinStale, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -4175,8 +4189,8 @@ ${(() => {
         // row has, because "do not pursue utility at all" is still a choice.
         if (p === _utilitySentinel) return utilityRowHTML(i);
         const adv = advancedRowModel(p, state, vocab);
-        return `<li data-i="${i}" draggable="true">
-        <span class="wz-grip" title="drag to reorder">⋮⋮</span>
+        return `<li data-i="${i}">
+        <span class="wz-grip" title="drag to reorder" aria-hidden="true">⋮⋮</span>
         <span class="wz-rk">${i + 1}</span><span class="wz-nm">${esc(p)}${isPresenceOnly(p, vocab) ? ` <span class="rank-tag" title="On/off effect — the solver secures an item that has it. A min of 1 makes it a hard requirement; there is no magnitude to maximize.">on/off</span>` : ""}</span>
         ${adv.suppressed ? "" : advancedHTML(p, i, adv)}
         ${reorderControlsHTML(i)}</li>`;
@@ -4462,45 +4476,43 @@ ${(() => {
      *  nothing here.
      *
      *  Why a velocity plus a frame loop rather than scrolling straight from the
-     *  event: `dragover` fires while the pointer MOVES. Hold still inside the
+     *  event: `pointermove` fires while the pointer MOVES. Hold still inside the
      *  edge band — exactly what a player does while waiting for a long list to
      *  come round — and the events stop, so scrolling from the handler would
      *  stall at the moment it is most wanted. The handler sets a velocity; the
      *  loop keeps scrolling until the pointer leaves the band or the drag ends.
      *
      *  Created ONCE here rather than inside `renderRankedList`, which rebuilds on
-     *  every reorder: a controller built per render would add a document listener
-     *  per rebuild and never remove the old ones. */
+     *  every reorder, so the frame loop has exactly one owner however many times
+     *  the list is rebuilt beneath it. */
     const dragAutoScroll = (function () {
-      let vel = 0, raf = null, listening = false;
+      let vel = 0, raf = null, active = false;
       const tick = () => {
-        if (!vel) { raf = null; return; }
+        if (!active || !vel) { raf = null; return; }
         window.scrollBy(0, vel);
         raf = requestAnimationFrame(tick);
       };
-      const onDragOver = (e) => {
-        // No preventDefault: this only needs clientY, and declaring the whole
-        // document a valid drop target would change drop semantics for a bug
-        // that is about scrolling.
-        vel = dragScrollVelocity(e.clientY, window.innerHeight);
-        if (vel && raf === null) raf = requestAnimationFrame(tick);
-      };
       return {
-        start() {
-          if (listening) return;                       // idempotent: one listener, ever
-          document.addEventListener("dragover", onDragOver);
-          listening = true;
+        /** Arm. Idempotent. Nothing scrolls until `update` reports a position. */
+        start() { active = true; },
+        /** Feed the pointer's viewport Y. The VELOCITY is what persists between
+         *  calls: `pointermove` stops firing for a stationary pointer, and the
+         *  loop keeps scrolling from the last velocity until told otherwise —
+         *  which is the whole reason it is a loop and not a scroll-from-the-event. */
+        update(clientY) {
+          if (!active) return;
+          vel = dragScrollVelocity(clientY, window.innerHeight);
+          if (vel && raf === null) raf = requestAnimationFrame(tick);
         },
-        /** Unconditional and idempotent. A drag that ends off-window, an Escape
-         *  cancel, or a rerender mid-drag must not leave the loop running: a loop
-         *  outliving its drag scrolls the page under the player with nothing being
-         *  dragged, which is worse than the bug this fixes. */
+        /** Unconditional and idempotent. Every way a drag ends calls this, and
+         *  several of them fire together for one drag; a loop that outlives its
+         *  drag scrolls the page with nothing being carried, which is worse than
+         *  the bug this exists to fix. */
         stop() {
-          vel = 0;
+          active = false; vel = 0;
           if (raf !== null) { cancelAnimationFrame(raf); raf = null; }
-          if (listening) { document.removeEventListener("dragover", onDragOver); listening = false; }
         },
-        _active() { return { listening, running: raf !== null, vel }; },
+        _active() { return { active, running: raf !== null, vel }; },
       };
     })();
 
@@ -4749,52 +4761,119 @@ ${(() => {
           refreshBadge(stat);
         };
       });
-      let from = null;
-      ol.querySelectorAll("li[draggable]").forEach((li) => {
-        // The tagName test is the part that actually suppresses the drag —
-        // `draggable="false"` on a child does not stop the nearest draggable
-        // ancestor from becoming the drag source, and stopPropagation on
-        // pointerdown does not suppress the native drag either. U2 adds a
-        // <select>, which `tagName === "INPUT"` does not match, so match both.
-        // U2/KTD6 adds a subtree clause. The tagName test alone is not enough once
-        // the panel exists: a click on the count badge inside the <summary> has
-        // `tagName === "SPAN"`, and a drag on the relocated explainer prose has
-        // "P", so both would start a row reorder instead of toggling or selecting.
-        // Anything inside the panel is panel interaction, never a drag handle.
-        // KTD6 — anything inside the panel, or the control that opens it, is panel
-        // interaction and never a drag handle. #744 step 2 split the <details>
-        // into two siblings, so this covers BOTH: a selector that named only the
-        // panel would let a drag start on the toggle and reorder the row instead
-        // of opening it.
-        li.ondragstart = (e) => { const t = e.target; if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || (t.closest && t.closest(".wz-adv-panel, .wz-adv-toggle")))) { e.preventDefault(); return; } from = +li.dataset.i; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", "");
-          // #744 step 3 — AFTER the guard above, so a drag the guard refused never
-          // arms the scroller.
-          dragAutoScroll.start(); };
-        // `dragend` fires for a cancelled drag too (Escape, or a drop outside the
-        // window), which is why the stop lives here and not in `ondrop`: a drop
-        // handler alone would leave the loop running on every cancelled drag.
-        li.ondragend = () => { li.classList.remove("dragging"); from = null; dragAutoScroll.stop(); };
-        li.ondragover = (e) => e.preventDefault();
-        li.ondrop = (e) => {
-          e.preventDefault();
-          // #744 step 3 — stop FIRST, before the early return and before the
-          // rerender below. `rerender()` replaces `ol.innerHTML`, destroying the
-          // very <li> whose `ondragend` is the other stop, and dragend on a
-          // removed element is not reliably delivered — so on a SUCCESSFUL drop,
-          // the drag-end stop is the one that may never run. `stop()` is
-          // idempotent, so a dragend that does still fire costs nothing.
-          dragAutoScroll.stop();
-          const to = +li.dataset.i;
-          if (from === null || to === from) return;
-          // #348 (U6/R1) — the pinned row is not draggable, but it is still a DROP
-          // TARGET, and dropping onto it would splice a ranked stat below it. Clamp
-          // to the last position above the container rather than ignoring the drop:
-          // ignoring reads as a broken drag, clamping does what the player meant.
-          // #744 — that clamp now lives inside `movePriority`, which is also what
-          // the ⤒/⤓ buttons call. One rule, so drag and buttons cannot disagree
-          // about where the bottom is.
-          state.priorities = movePriority(state.priorities, from, to);
-          from = null; rerender();
+      // #744 — pointer drag, replacing the native HTML5 drag.
+      //
+      // Why not native DnD: a native drag session is the browser's own input
+      // loop, and it delivers neither wheel nor pointer events to the page for
+      // the life of the drag. The reporter's "mousewheel scroll doesn't work
+      // while dragging" IS that, and it cannot be fixed inside the model (#759
+      // fixed the edge-hunting half inside it; this is the other half). It also
+      // gives touch nothing at all. Pointer events unify mouse, touch and pen,
+      // and because there is no drag session the wheel keeps working.
+      //
+      // Grip-only, BY CONSTRUCTION, and this is the load-bearing choice. The
+      // native drag made the whole <li> the source, which is why the KTD6 guard
+      // existed: a click on the badge, the panel prose, the toggle, an input or
+      // a select would start a reorder, and every one of those was a real
+      // defect. With the grip as the only source that whole class is impossible
+      // rather than guarded against. It is also what makes touch sane — see
+      // `touch-action` on `.wz-grip` in styles.css. The pinned Utility grip is
+      // excluded; it was never draggable and #348 says why.
+      const DRAG_THRESHOLD = 4;   // px of travel before a tap on the grip becomes a drag
+      let drag = null;            // { from, li, grip, pointerId, x0, y0, lastX, lastY, armed, target }
+      const rowsOf = () => [...ol.querySelectorAll(":scope > li[data-i]")];
+      const clearIndicator = () => rowsOf().forEach((r) => r.classList.remove("wz-drop-before", "wz-drop-after"));
+      /** Which row is under (x, y), and which half of it. The dragged row is
+       *  `pointer-events: none` for the life of the drag, so hit-testing sees the
+       *  row BENEATH the pointer rather than the one being carried. Half decides
+       *  the edge, which is where the row will land. */
+      const targetAt = (x, y) => {
+        const el = document.elementFromPoint(x, y);
+        const li = el && el.closest ? el.closest("li[data-i]") : null;
+        if (!li || !ol.contains(li)) return null;
+        const r = li.getBoundingClientRect();
+        return { li, to: +li.dataset.i, after: y > r.top + r.height / 2 };
+      };
+      /** A native drag drew a ghost image; a pointer drag draws nothing, so
+       *  without this the gesture has no visible destination. */
+      const showIndicator = (t) => {
+        clearIndicator();
+        if (!t || !drag || t.to === drag.from) return;
+        t.li.classList.add(t.after ? "wz-drop-after" : "wz-drop-before");
+      };
+      /** One exit for every way a drag ends: drop, Escape, pointercancel (the
+       *  browser took the pointer — a touch that became a system gesture), and
+       *  lostpointercapture (the list was rebuilt under the pointer). Idempotent,
+       *  because several of those fire together for a single drag. */
+      const endDrag = (commit) => {
+        if (!drag) return;
+        const d = drag; drag = null;
+        dragAutoScroll.stop();
+        window.removeEventListener("scroll", onScroll);
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+        document.removeEventListener("pointercancel", onCancel);
+        document.removeEventListener("keydown", onKey);
+        d.li.classList.remove("dragging");
+        clearIndicator();
+        try { if (d.grip.hasPointerCapture && d.grip.hasPointerCapture(d.pointerId)) d.grip.releasePointerCapture(d.pointerId); }
+        catch (e) { /* already released */ }
+        // `ol.contains(d.li)`: if the list was rebuilt beneath the drag, the source
+        // index no longer means what it did, so the drop is dropped. Cancelling
+        // reads as a missed drop; committing against a rebuilt list moves the
+        // wrong row.
+        if (commit && d.armed && d.target && ol.contains(d.li) && d.target.to !== d.from) {
+          // The SAME primitive the ⤒ ↑ ↓ ⤓ buttons call: one rule, so drag and
+          // buttons cannot disagree about where the bottom is (#744 step 1), and
+          // the #348 clamp above the pinned Utility row rides along with it.
+          state.priorities = movePriority(state.priorities, d.from, dropIndexFor(d.from, d.target.to, d.target.after));
+          rerender();
+        }
+      };
+      const onMove = (e) => {
+        if (!drag || e.pointerId !== drag.pointerId) return;
+        drag.lastX = e.clientX; drag.lastY = e.clientY;
+        if (!drag.armed) {
+          if (Math.abs(e.clientX - drag.x0) < DRAG_THRESHOLD && Math.abs(e.clientY - drag.y0) < DRAG_THRESHOLD) return;
+          drag.armed = true;
+          drag.li.classList.add("dragging");
+          dragAutoScroll.start();
+          // The WHEEL changes what is under a stationary pointer without a
+          // pointermove, and the indicator must follow it — that is the half of
+          // the report this whole change exists for.
+          window.addEventListener("scroll", onScroll, { passive: true });
+        }
+        dragAutoScroll.update(e.clientY);
+        drag.target = targetAt(e.clientX, e.clientY);
+        showIndicator(drag.target);
+      };
+      const onScroll = () => { if (drag && drag.armed) { drag.target = targetAt(drag.lastX, drag.lastY); showIndicator(drag.target); } };
+      const onUp = (e) => { if (drag && e.pointerId === drag.pointerId) endDrag(true); };
+      const onCancel = (e) => { if (drag && e.pointerId === drag.pointerId) endDrag(false); };
+      const onKey = (e) => { if (e.key === "Escape" && drag) { e.preventDefault(); endDrag(false); } };
+      rowsOf().forEach((li) => {
+        const grip = li.querySelector(":scope > .wz-grip:not(.wz-grip-pinned)");
+        if (!grip) return;                                 // the pinned Utility row is not a source
+        grip.onpointerdown = (e) => {
+          if (drag || (e.pointerType === "mouse" && e.button !== 0)) return;
+          e.preventDefault();                              // no text selection, no focus jump
+          drag = { from: +li.dataset.i, li, grip, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY,
+                   lastX: e.clientX, lastY: e.clientY, armed: false, target: null };
+          // TRAP: setPointerCapture throws InvalidStateError for a pointer that is
+          // not active — every synthetic PointerEvent a test dispatches, and a real
+          // pointer released between pointerdown and here. The listeners below are
+          // on the DOCUMENT rather than the grip precisely so an uncaptured drag
+          // still works: with capture the events are retargeted to the grip and
+          // still bubble to the document; without it they fire on whatever is
+          // under the pointer and still bubble to the document. Capture only adds
+          // "keep the events coming when the pointer leaves the window". Nothing
+          // here may throw into the priorities step.
+          try { grip.setPointerCapture(e.pointerId); } catch (err) { /* uncaptured drag */ }
+          grip.onlostpointercapture = () => endDrag(false);
+          document.addEventListener("pointermove", onMove);
+          document.addEventListener("pointerup", onUp);
+          document.addEventListener("pointercancel", onCancel);
+          document.addEventListener("keydown", onKey);
         };
       });
     }

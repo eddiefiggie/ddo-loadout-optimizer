@@ -1146,8 +1146,25 @@ input.wz-ml { width: 120px; }
    zero-width. The controls stay right-aligned regardless because `.wz-nm` is the
    `1fr` track that absorbs the slack, so magnitude and presence rows still line
    up down the list. */
-.wz-ranked > li.dragging { opacity: 0.5; border-color: var(--accent); }
-.wz-grip { color: var(--faint); cursor: grab; letter-spacing: -2px; }
+/* #744 — pointer drag. `pointer-events: none` on the row being dragged is what
+   lets `elementFromPoint` see the row UNDERNEATH the pointer: capture delivers
+   the dragged grip its own events regardless of hit-testing, so nothing is lost
+   by making it transparent to hit-testing for the life of the drag. */
+.wz-ranked > li.dragging { opacity: 0.5; border-color: var(--accent); pointer-events: none; }
+/* The drop indicator. A native drag drew a ghost image; a pointer drag draws
+   nothing, so without this the gesture has no visible destination. Upper or
+   lower half of the target row decides the edge, matching where the row will
+   land. `outline` rather than `border` so the row does not reflow as it lights. */
+.wz-ranked > li.wz-drop-before { box-shadow: 0 -2px 0 0 var(--accent); }
+.wz-ranked > li.wz-drop-after  { box-shadow: 0  2px 0 0 var(--accent); }
+/* `touch-action: none` on the GRIP ONLY, and this is the load-bearing line for
+   touch: it tells the browser this element handles its own gestures, so a finger
+   on the grip drags — while a finger anywhere else on the row still scrolls the
+   page as it always did. On the row it would kill page scrolling over the list.
+   `user-select: none` stops a long-press from turning the ⋮⋮ into a text
+   selection on the same touch. */
+.wz-grip { color: var(--faint); cursor: grab; letter-spacing: -2px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.wz-ranked > li.dragging .wz-grip { cursor: grabbing; }
 .wz-rk { width: 22px; height: 22px; border-radius: var(--radius-sm); background: var(--accent); color: var(--accent-ink);
   font-size: var(--fs-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .wz-nm { flex: 1; font-weight: 550; }
