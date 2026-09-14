@@ -80,3 +80,18 @@ change: a degenerate-input guard survived its corruption test entirely, because
 `edge <= 0` and NaN comparison semantics already returned 0 for every input the
 test tried. The guard was load-bearing for exactly one value (`Infinity`), and
 until that value was in the test, the test was guarding nothing.
+
+## The sibling trap: a fixed-length window
+
+The same change surfaced the other way a source assertion can be about the
+wrong thing. A test sliced `WIZARD_SRC.slice(at, at + 900)` from the start of
+the delete branch and looked for the credit sweep inside it. Three inserted
+lines above the sweep pushed it past character 900, and a correct branch went
+red for being *longer*, not for being wrong.
+
+A fixed window asserts a length; an anchored slice (`srcBetween(src, start,
+end)`) asserts a region. Anchor both ends on statements the invariant is about
+— here, the branch's first and last — so the assertion survives every insertion
+that does not touch what it protects. The pass count is the tell: a window
+that was "long enough" the day it was written is a slow-moving assertion about
+line count wearing a test's name.

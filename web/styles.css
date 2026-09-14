@@ -1150,6 +1150,15 @@ input.wz-ml { width: 120px; }
    lets `elementFromPoint` see the row UNDERNEATH the pointer: capture delivers
    the dragged grip its own events regardless of hit-testing, so nothing is lost
    by making it transparent to hit-testing for the life of the drag. */
+/* #745 — a group's bracket. The head and every linked member widen the LEFT
+   border to an accent rule and give back the 2px in padding, so the grip column
+   stays aligned with ungrouped rows; the gap between them closes so the run reads
+   as one block. `border-left`, not `box-shadow`: the drop indicator below owns
+   box-shadow, and a linked row must still be able to show where a drop lands. */
+.wz-ranked > li.wz-group-head, .wz-ranked > li.wz-linked { border-left: 3px solid var(--accent); padding-left: 10px; }
+.wz-ranked > li.wz-group-head { border-bottom-left-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0; }
+.wz-ranked > li.wz-linked { border-top-left-radius: 0; border-top-right-radius: 0; border-top-color: transparent; }
+.wz-ranked > li.wz-linked:has(+ li.wz-linked) { border-bottom-left-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0; }
 .wz-ranked > li.dragging { opacity: 0.5; border-color: var(--accent); pointer-events: none; }
 /* The drop indicator. A native drag drew a ghost image; a pointer drag draws
    nothing, so without this the gesture has no visible destination. Upper or
@@ -1283,6 +1292,8 @@ input.wz-ml { width: 120px; }
   justify-content: center; border-radius: var(--radius-sm); cursor: pointer; }
 .wz-ctl button:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
 .wz-ctl button:disabled { opacity: 0.35; cursor: not-allowed; }
+/* #745 — the link toggle when this row is linked to the one above. */
+.wz-ctl button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
 .wz-hint { color: var(--faint); font-style: italic; list-style: none; }
 .wz-draghelp { font-size: var(--fs-xs); color: var(--faint); margin: var(--sp-2) 0 0; }
 .wz-status { color: var(--quarantined); font-size: var(--fs-sm); min-height: 1.2em; }

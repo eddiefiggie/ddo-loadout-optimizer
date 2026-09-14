@@ -493,7 +493,6 @@ test("#91 U4/R2: a removed sentinel stays removed in the saved record — still 
     "the marker is what tells the load path this removal was deliberate");
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed`);
 
 // ---------------------------------------------------------------------------
 // #348 (U7, R11/KTD3/KTD4) — the container and its second-generation marker.
@@ -976,3 +975,27 @@ test("#687: loadCharacter and allCharacters migrate on READ and leave storage as
   assert.ok(raw.Old.result.tfPlaced && !raw.Old.result.lgsPlaced, "storage is untouched until the next save (downgrade bridge)");
 });
 
+// ---------------------------------------------------------------------------
+// #745 — priority groups as linked rows: the side-car must survive the round-trip.
+// ---------------------------------------------------------------------------
+
+test("#745: INPUT_KEYS carries priorityLinks — a group that vanished on reload would break the side-car's promise", () => {
+  assert.ok(INPUT_KEYS.includes("priorityLinks"), "on the save allowlist, like utilityContainer");
+});
+
+test("#745: links round-trip exactly, and a pre-feature save reads as no groups", () => {
+  const st = fakeStorage();
+  saveCharacter(serializeCharacter("Grouped", { ...state, priorityLinks: ["Melee Power", "Doublestrike"] }, lastRun, "idc"), st);
+  const back = JSON.parse(JSON.stringify(loadCharacter("Grouped", st)));
+  assert.deepStrictEqual(back.inputs.priorityLinks, ["Melee Power", "Doublestrike"], "contents and order survive JSON exactly as localStorage stores it");
+  // Absent (every save before this shipped) -> [], never undefined and never null.
+  const { priorityLinks, ...pre } = state;
+  saveCharacter(serializeCharacter("Pre", pre, lastRun, "idc"), st);
+  assert.deepStrictEqual(loadCharacter("Pre", st).inputs.priorityLinks, [], "a pre-feature save reads as no groups");
+  // Only strings survive: a hand-edited or corrupted record cannot smuggle in
+  // anything the renderer would then try to match against stat names.
+  saveCharacter(serializeCharacter("Junk", { ...state, priorityLinks: ["Dodge", 3, null, "", { a: 1 }] }, lastRun, "idc"), st);
+  assert.deepStrictEqual(loadCharacter("Junk", st).inputs.priorityLinks, ["Dodge"], "non-strings and empties are dropped on read");
+});
+
+if (!process.exitCode) console.log(`\n${passed} passed`);
