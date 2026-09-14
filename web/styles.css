@@ -1234,6 +1234,19 @@ input.wz-ml { width: 120px; }
 .wz-hint { color: var(--faint); font-style: italic; list-style: none; }
 .wz-draghelp { font-size: var(--fs-xs); color: var(--faint); margin: var(--sp-2) 0 0; }
 .wz-status { color: var(--quarantined); font-size: var(--fs-sm); min-height: 1.2em; }
+/* #753 — the add-time reachability line. Its own element beside `.wz-status`
+   rather than appended to it, which the issue asked for in those words.
+   Deliberately NOT `--quarantined`: everything the status line carries is a
+   warning, a refusal or a substitution, and this is a plain description of where
+   an effect can come from. Tinting it like a problem would tell the player
+   something is wrong every time they add a perfectly ordinary stat.
+
+   No `min-height`. The status line reserves its own so the layout does not jump
+   when a message appears; this line is EMPTY on most adds and reserving a second
+   blank row under the picker on every one of them buys nothing. It is filled a
+   frame after the add (see `fillPickerReach`), so the one reflow it can cause is
+   its own. */
+.wz-reach-note { color: var(--muted); font-size: var(--fs-sm); margin: 2px 0 0; line-height: 1.45; }
 
 .wz-results-head { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3); flex-wrap: wrap; }
 
