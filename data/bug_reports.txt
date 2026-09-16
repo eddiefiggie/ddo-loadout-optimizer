@@ -915,3 +915,74 @@ NEGATIVE RESULT, recorded so it is not retried: detecting unvalued compound
 Bools by name-matching them against numeric crafted options finds two rows and
 MISSES `Shadow Striker` — `Woeful Shadow` and `Shadow Striker` do not share
 enough tokens. Name similarity is not the signal; the tier-family sweep is.
+
+--------------------------------------------------------------------------------
+2026-09-16 — three reports from one player (verbatim)
+--------------------------------------------------------------------------------
+1. "I was just able to acquire a blank Cannith Crafted (Essence Crafting) dagger
+   with red augment and put it at level 36 with Assassinate and Insightful
+   Assassinate with Armor Piercing on it. Is there a way to select it, as an
+   Offhand weapon, so that the builder can see it has the highest Assassinate
+   (insightful as well) on it and just to look for Quality Assassinate instead of
+   the other two stats, so that other critical gear can slot into the Priority
+   List accruing?"
+
+2. "Pinning an augment to one build seems to pin the augment to ALL my saved
+   builds. Thats not what I had in mind :)"
+
+3. "Please add the option for use to add a few of our own items into the mix for
+   the optimizer to consider. I have a couple of CC rings I am considering and it
+   would be much easier if I could enter those into the optimizer rather than
+   have to fake them by adding a weak ring and manually adding the effects
+   through advanced priorities."
+
+TRIAGE: 1 and 3 are ONE feature (#773). Neither is a request to model Cannith
+crafting — both are "let me describe an item I already own". 2 is a real defect
+(#772) and it had THREE SIBLINGS.
+
+Full reasoning in docs/plans/2026-09-16-001-user-feedback-batch-custom-items-and-
+state-leak-plan.md. Four things worth keeping here:
+
+(a) THE LEAK WAS FOUR KEYS, NOT ONE. `state.pinnedAugments` had no assignment
+    anywhere in loadCharacter — not a wrong one, none. Nor did `excludedSets`,
+    `ownedPacks` or `excludedTypes`. Same mechanism every time: `state` outlives
+    a character, so a saved input with no unconditional reset stays live from the
+    previous build AND is written into the loaded build's record on the next
+    save. Not cosmetic — permanent.
+
+    The prose above #518's farming-notice reset already NAMED this family ("the
+    documented leak family"). Naming it did not stop the next four. The fix
+    therefore ships a guard that reads INPUT_KEYS and asserts an assignment per
+    key, with three documented exemptions. It caught its first real case inside
+    the same change: adding `customItems` for #773 turned it red before the
+    restore was written.
+
+(b) THE DAGGER IS NOT REACHABLE THROUGH ESSENCE CRAFTING, AND THAT IS #764.
+    The seed shard DOES hold placements["Melee weapons"] with Assassinate,
+    Insightful Assassinate and Armor-Piercing. But src/essence_pool.py is
+    Trinket-only (HOST_SLOT_TYPE = "Trinket"), the only live hosts are the three
+    Gem of Many Facets [Crafted] records, and 135 of 157 effects carry no sourced
+    bonus type. Wiki-gated. #773 routes AROUND it for a player who has already
+    done the crafting; it does not close it.
+
+(c) "INSIGHTFUL ASSASSINATE" IS `Assassinate` TYPED `Insight`. The reporter's
+    mental model matches the tool's bucket model exactly: the catalog carries
+    Assassinate at Enhancement (37 items), Insight (13), Quality (9) and Artifact
+    (3). So "look for Quality Assassinate instead of the other two" is a precise
+    description of what a correctly-modelled custom dagger should cause, and it
+    is what the solve test asserts.
+
+(d) THE WORKAROUND THEY DESCRIBE CANNOT DO WHAT THEY WANT, and the reason is
+    worth keeping. A declared credit is (stat, bonus_type, value) with an EMPTY
+    gate list — it competes in its bucket and frees a slot, but it is
+    slot-agnostic, so it can never put an item in your off hand. That is exactly
+    the gap between "fake it with a weak ring" and report 1, and it is why a
+    custom ITEM is a different feature from a bigger credit.
+
+NEGATIVE RESULT, recorded so it is not retried: an opaque `custom:<uid>` id for a
+player-authored item is the safer-looking choice and is wrong. This app treats
+`variant_id` as BOTH identity and display text — the catalog's own ids are
+human-readable ("Hydra's Heart (Tier 3)") — so the opaque form rendered the
+player's dagger as the literal string `custom:1` on the paperdoll and in all six
+exports. The id is the name plus " (yours)" instead, which also makes the
+disclosure structural.

@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { armorTypesFor, canSolve, DRUID_ARMOR, bundleStaleNames, staleBundleText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor, groupsOf, spanOf, movePriorityGroup, snapDropToGroup, dropIndexForRun, linksAfterDelete, linksAfterBundle, pruneLinks } = require("../web/wizard.js");
+const { armorTypesFor, canSolve, DRUID_ARMOR, bundleStaleNames, staleBundleText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor, groupsOf, spanOf, movePriorityGroup, snapDropToGroup, dropIndexForRun, linksAfterDelete, linksAfterBundle, pruneLinks, customStatOptions, datalistStats } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -1166,8 +1166,8 @@ test("Gear pool: every subsection is the same fold, and none is left flat", () =
   const folds = step.match(/poolFold\("([a-z]+)"/g) || [];
   const keys = folds.map((m) => m.slice('poolFold("'.length, -1));
   assert.deepStrictEqual(keys.sort(),
-    ["block", "overrides", "packs", "pin", "setaug", "setex", "setpin"],
-    "every Gear pool subsection goes through poolFold");
+    ["block", "custom", "overrides", "packs", "pin", "setaug", "setex", "setpin"],
+    "every Gear pool subsection goes through poolFold (#773 added the player's own items)");
   assert.ok(!/class="wz-pinbox/.test(step),
     "no subsection is still a flat wz-pinbox — that is the shape this replaced");
 });
@@ -1176,7 +1176,7 @@ test("Gear pool: every fold states its own condition while closed", () => {
   // A fold that names itself and nothing else hides a setting the player made.
   // Each key must have a status branch, and none may fall through to "".
   const fn = srcBetween(WIZARD_SRC, "function poolStatus(key)", "function stepPool()", "poolStatus");
-  for (const key of ["pin", "block", "packs", "setaug", "setpin", "setex", "overrides"]) {
+  for (const key of ["pin", "block", "packs", "setaug", "setpin", "setex", "overrides", "custom"]) {
     assert.ok(new RegExp(`case "${key}":`).test(fn), `${key} has no status branch`);
   }
 });
@@ -5704,6 +5704,237 @@ test("#518: loading another build clears a takeover notice raised for the last o
 });
 
 // ---------------------------------------------------------------------------
+// #772 — the per-character leak, closed as a CLASS rather than as four fields.
+//
+// `state` outlives any one character. A key on `INPUT_KEYS` — the allowlist that
+// decides what a save writes — with no unconditional assignment on the load path
+// therefore stays live from the previous build, and the next save persists it
+// into the loaded build's record. Four keys had no assignment: `pinnedAugments`
+// (the reported case: pin an augment on one build, load a second, the pin is on
+// the second too, and saving it makes that permanent), `excludedSets`,
+// `ownedPacks` and `excludedTypes`.
+//
+// The prose above #518's takeover reset already named this family. Naming it is
+// not a guard — the next input key added to `INPUT_KEYS` would leak in exactly
+// the same silence. Both sides of "every saved input is reset on load" are
+// readable here, so `AGENTS.md` says assert it rather than date it.
+
+const { INPUT_KEYS } = require("../web/persist.js");
+
+/** Keys on `INPUT_KEYS` that correctly have NO `state.<key> =` on the load path,
+ *  each with the reason it is not a leak. Deliberately tiny and deliberately
+ *  explicit: an exemption is a claim that a key is not per-character state, and
+ *  every one of these is a save MARKER or a read-only legacy key rather than a
+ *  field the wizard carries.
+ *
+ *  Asserted to be a SUBSET of INPUT_KEYS below, so a rename cannot leave a dead
+ *  entry here quietly exempting nothing while the real key leaks. */
+const LOAD_RESET_EXEMPT = {
+  // #346 (U3) — read-only legacy: `rungFromInputs(i)` derives `state.craftingRung`
+  // from it, and pickInputs no longer writes it. It is never live state.
+  excludeCraftingSystems: "legacy input, folded into craftingRung by rungFromInputs",
+  // #91 (U4/KTD8) and #348 (U7) — generation markers, not state. Each is READ off
+  // the record (`!!i.utility_tier_aware`) to pick a healing branch, and stamped
+  // unconditionally by pickInputs. There is no `state.utility_tier_aware`.
+  utility_tier_aware: "save marker read by healUtilityTier; never held on state",
+  utility_container_aware: "save marker read by healUtilityContainer; never held on state",
+};
+
+test("#772: every saved input is reset on the load path, or is a documented marker", () => {
+  const region = fnBody(WIZARD_SRC, "function loadCharacter(", 4);
+  const exempt = Object.keys(LOAD_RESET_EXEMPT);
+  for (const k of exempt) {
+    assert.ok(INPUT_KEYS.includes(k),
+      `the exemption list names "${k}", which is not on INPUT_KEYS — a stale exemption ` +
+      `hides nothing and reads as coverage`);
+  }
+  const leaking = INPUT_KEYS
+    .filter((k) => !exempt.includes(k))
+    .filter((k) => !new RegExp(`state\\.${k}\\s*=`).test(region));
+  assert.deepStrictEqual(leaking, [],
+    `these saved inputs are never assigned in loadCharacter, so they stay live from the ` +
+    `previously loaded build and the next save writes them into this one's record: ` +
+    `${leaking.join(", ")}`);
+});
+
+test("#772: the four reported leaks each restore with an explicit absent-to-default branch", () => {
+  const region = fnBody(WIZARD_SRC, "function loadCharacter(", 4);
+  // Not merely "assigned" — assigned from the RECORD, with the absent branch
+  // written out. `state.pinnedAugments = []` would pass the sweep above while
+  // silently discarding a pin the player saved, which is the opposite defect.
+  for (const k of ["pinnedAugments", "excludedSets", "ownedPacks", "excludedTypes"]) {
+    assert.ok(new RegExp(`state\\.${k} = [^;]*\\bi\\.${k}\\b`, "s").test(region),
+      `${k} must be restored FROM the saved record, not just cleared`);
+  }
+  // `ownedPacks` is the one nullable member: `null` means the pack question was
+  // never answered, which filters nothing, while `[]` means the player owns none.
+  // Collapsing them would empty the roster for every save written before #246.
+  const packs = /state\.ownedPacks = [\s\S]*?;/.exec(region);
+  assert.ok(packs && /:\s*null;/.test(packs[0]),
+    "an absent ownedPacks must load as null (no filter), never as an empty list");
+  // The three string arrays sanitize at the boundary, like pinnedSets/blocklist:
+  // a hand-edited backup can carry non-strings, and those render as ghost rows
+  // the strict-equality removers can never delete.
+  for (const k of ["pinnedAugments", "excludedSets", "ownedPacks"]) {
+    const m = new RegExp(`state\\.${k} = [\\s\\S]*?;`).exec(region);
+    assert.ok(m && /typeof x === "string"/.test(m[0]),
+      `${k} must sanitize its elements at the load boundary`);
+  }
+});
+
+test("#772: pickInputs round-trips the four keys, so the restore has something to read", () => {
+  // The other half of the contract, and the reason the sweep above is not enough
+  // on its own: a key restored on load but dropped on save reads exactly like the
+  // leak it replaced — the pin survives until you reload, then vanishes.
+  const { pickInputs } = require("../web/persist.js");
+  const out = pickInputs({
+    pinnedAugments: ["Deconstructor"],
+    excludedSets: ["Quickblade"],
+    ownedPacks: ["Isle of Dread"],
+    excludedTypes: { "Constitution||Quality": { stat: "Constitution", bonus_type: "Quality" } },
+  }, "Leaky");
+  assert.deepStrictEqual(out.pinnedAugments, ["Deconstructor"]);
+  assert.deepStrictEqual(out.excludedSets, ["Quickblade"]);
+  assert.deepStrictEqual(out.ownedPacks, ["Isle of Dread"]);
+  assert.deepStrictEqual(out.excludedTypes,
+    { "Constitution||Quality": { stat: "Constitution", bonus_type: "Quality" } });
+});
+
+// ---------------------------------------------------------------------------
+// #773 — the wizard's side of player-authored items: the load-boundary
+// sanitizer, the uid allocator, and the panel's wiring.
+
+const W772 = require("../web/wizard.js");
+const CI772 = require("../web/custom-items.js");
+
+test("#773: the load boundary keeps an entry it cannot validate, and repairs its uid", () => {
+  // The rule every saved list in this app follows: an entry the current build
+  // cannot honour is LABELLED, never dropped. Dropping it would make a saved item
+  // vanish on reload, which is indistinguishable from never having saved it.
+  const out = W772.restoreCustomItems([
+    { uid: 3, name: "Fine", slot: "Ring", ml: 30, affixes: [{ stat: "Constitution", bonus_type: "Quality", value: 3 }] },
+    { name: "No uid", slot: "Ring", ml: 30, affixes: [] },
+    { uid: 3, name: "Duplicate uid", slot: "Ring", ml: 30, affixes: [] },
+    { uid: "junk", name: "Bad uid", slot: "Ring", ml: 30, affixes: [] },
+  ]);
+  assert.strictEqual(out.length, 4, "nothing is dropped");
+  const uids = out.map((e) => e.uid);
+  assert.strictEqual(new Set(uids).size, 4, `uids must be unique; got ${uids.join(", ")}`);
+  for (const u of uids) assert.ok(Number.isInteger(u) && u >= 1, `bad uid ${u}`);
+});
+
+test("#773: the load boundary sanitizes types, so a hand-edited backup cannot make a ghost row", () => {
+  // persist.js's stated reason for sanitizing at the READ boundary: a bad row
+  // stored back into localStorage outlives the session that produced it.
+  const [e] = W772.restoreCustomItems([{
+    uid: 1, name: 42, slot: null, type: undefined, ml: "30",
+    augments: ["Red", 7, "", null],
+    affixes: [{ stat: 5, bonus_type: null, value: "3" }],
+  }]);
+  assert.strictEqual(typeof e.name, "string");
+  assert.strictEqual(typeof e.slot, "string");
+  assert.strictEqual(typeof e.type, "string");
+  assert.strictEqual(e.ml, 30);
+  assert.deepStrictEqual(e.augments, ["Red", "7"], "empties dropped, everything else a trimmed string");
+  assert.strictEqual(typeof e.affixes[0].stat, "string");
+  assert.strictEqual(typeof e.affixes[0].bonus_type, "string");
+});
+
+test("#773: a non-object row is discarded rather than becoming an unnamed ghost", () => {
+  assert.deepStrictEqual(W772.restoreCustomItems(["nope", null, 7, []]), []);
+  assert.deepStrictEqual(W772.restoreCustomItems(null), []);
+  assert.deepStrictEqual(W772.restoreCustomItems(undefined), []);
+});
+
+test("#773: the next uid is one past the highest in use, never the list length", () => {
+  // Derived from the list, not persisted: a saved counter and a saved list can
+  // disagree, and only the list is the truth about which ids are taken. Keying
+  // on length would re-issue a uid after a delete and move a pin onto another item.
+  assert.strictEqual(W772.nextCustomUid([]), 1);
+  assert.strictEqual(W772.nextCustomUid([{ uid: 1 }, { uid: 9 }]), 10);
+  assert.strictEqual(W772.nextCustomUid([{ uid: 4 }]), 5, "not 2 — the length is not the answer");
+  assert.strictEqual(W772.nextCustomUid(null), 1);
+});
+
+test("#773: isPlayerAuthored reads the marker, and agrees with the module", () => {
+  const rec = CI772.toVariant({ uid: 1, name: "Mine", slot: "Ring", ml: 30, augments: [],
+    affixes: [{ stat: "Constitution", bonus_type: "Quality", value: 3 }] });
+  assert.strictEqual(W772.isPlayerAuthored(rec), true);
+  assert.strictEqual(W772.isPlayerAuthored({ variant_id: "Mine (yours)" }), false,
+    "a name-shaped impostor with no marker is not player-authored");
+  assert.strictEqual(W772.isPlayerAuthored(null), false);
+});
+
+test("#773: the solve pool is widened at ONE seam, and browse is not touched", () => {
+  // `poolItems()` is the whole contract: every surface that offers, resolves or
+  // explains an item reads it, and `dataset.items` is never mutated. A second,
+  // divergent widening is the bug this asserts against — a custom item the pin
+  // search cannot find is one that cannot be forced into a slot, which is the
+  // reported use case.
+  const src = WIZARD_SRC;
+  assert.ok(/function poolItems\(\)/.test(src), "the seam exists");
+  assert.ok(/return mine\.length \? \(dataset\.items \|\| \[\]\)\.concat\(mine\)/.test(src),
+    "…and it CONCATENATES rather than mutating dataset.items");
+  // The pin flow must read it: both the search that offers items and the lookup
+  // that resolves a saved pin.
+  const pinResolve = srcBetween(src, "const itemByPinId =", "\n", "itemByPinId");
+  assert.ok(/poolItems\(\)/.test(pinResolve),
+    "a pinned custom item must resolve, or the pin list shows it as a lost id");
+  assert.ok(/filterVariants\(poolItems\(\)/.test(src),
+    "the pin search must offer the player's own items");
+});
+
+test("#773: the owned pool appends the player's items AFTER its filter, never through it", () => {
+  // A Trove export lists what the CATALOG knows the player has. An item they
+  // typed in is owned by construction and by definition absent from that export,
+  // so filtering it would delete exactly the gear inventory mode exists to include.
+  const fn = fnBody(WIZARD_SRC, "function candidateItems(", 4);
+  const owned = fn.slice(fn.indexOf("ownedPoolAdmits"));
+  assert.ok(/\.concat\(customVariants\(\)\)/.test(owned),
+    "the owned branch appends the custom items after the filter");
+});
+
+test("#773: deleting a described item takes its pin with it", () => {
+  // A pin naming a deleted item is a slot constraint pointing at nothing, which
+  // slotConstraintBodies documents as a SILENT no-op — the solve would quietly
+  // stop honouring a pin the player can no longer see or remove.
+  const region = srcBetween(WIZARD_SRC, "data-custom-rm]", "renderCustomList(); renderCustomForm();", "delete handler");
+  assert.ok(/removePinFrom\(/.test(region), "the delete removes the pin");
+  assert.ok(/Object\.keys\(state\.slotConstraints/.test(region),
+    "…in whichever slot holds it, since a weapon can be pinned to either hand");
+});
+
+test("#773: renaming a described item MIGRATES its pin rather than stranding it", () => {
+  // The cost of making the id the display name, paid where it is incurred. Named
+  // in custom-items.js's header as the reason the opaque id was rejected.
+  const region = srcBetween(WIZARD_SRC, "data-custom-save]", "renderPinList();", "save handler");
+  assert.ok(/M\.customId\(before\)/.test(region), "the OLD id is computed from the pre-edit entry");
+  assert.ok(/applyPinId\(/.test(region) && /removePinFrom\(/.test(region),
+    "and the pin is moved, not merely dropped");
+});
+
+test("#773: nothing reaches the saved list until it validates", () => {
+  // So the pool can never contain a half-typed item, and abandoning an edit
+  // cannot corrupt the saved entry. The draft lives outside state.customItems.
+  const region = srcBetween(WIZARD_SRC, "data-custom-save]", "renderPinList();", "save handler");
+  const validateAt = region.indexOf("M.validateEntry(");
+  const writeAt = region.indexOf("state.customItems =");
+  assert.ok(validateAt > 0 && writeAt > validateAt,
+    "the write to state.customItems must come after the validation, not before it");
+  assert.ok(/if \(!v\.ok\)/.test(region) && /d\.errors = v\.errors/.test(region),
+    "and a refusal renders the reasons rather than failing silently");
+});
+
+test("#773: the draft is session state and is NOT on the saved-input allowlist", () => {
+  // Which item you are part-way through describing is a fact about this session,
+  // not about the build — the same rule `loadedName` follows.
+  const { INPUT_KEYS: IK772 } = require("../web/persist.js");
+  assert.ok(IK772.includes("customItems"), "the LIST is saved");
+  assert.ok(!IK772.includes("customDraft"), "the DRAFT is not");
+  assert.ok(!IK772.includes("customUid"), "nor the uid counter, which is derived on load");
+});
+
+// ---------------------------------------------------------------------------
 // #548 — the quota wording. The old text was "Storage full — remove some saves."
 // It named the wrong thing: four saved builds are ~150 KB of a ~5 MB budget,
 // about 3%, while the version store had grown without a cap. Following that
@@ -5992,4 +6223,52 @@ test("#747: an active cap is named in the collapsed summary, beside Required", (
   // A floor already reads as "Required" there; naming it twice would be two
   // labels for one fact, so only the cap gets a number.
   assert.ok(/adv\.required/.test(sum), "Required is still the floor's word");
+});
+
+test("#773: the effect picker offers only names the form will accept", () => {
+  // 874 of the 1,191 names in `datalistStats` are presence/boolean effects
+  // (`Acid`, `Aberration Bane`, the weapon procs) with no typed bucket to carry a
+  // magnitude. Offering one and then refusing it is the worst version of a
+  // picker: the player follows the autocomplete and is told no.
+  const v = pickerVocabulary(realData);
+  const opts = customStatOptions(v);
+  assert.ok(opts.length > 100, "a real list, not an empty one");
+  const wrong = opts.filter((s) => !canDeclareCredit(s, v));
+  assert.deepStrictEqual(wrong, [],
+    `these are offered but would be refused: ${wrong.slice(0, 8).join(", ")}`);
+  // It is strictly narrower than the priority picker's list, which legitimately
+  // offers presence effects — a Bool can be RANKED even though it cannot be given
+  // a number.
+  const all = datalistStats(v);
+  assert.ok(opts.length < all.length, "the custom list is the narrower of the two");
+  for (const s of opts) assert.ok(all.includes(s), `${s} is not even a picker name`);
+  // The Utility sentinel is a container, not an affix, and can never be engraved.
+  assert.ok(!opts.some((s) => /Utility effects/i.test(s)), "the sentinel is not an effect");
+  // And the stats the reported items actually carry are all there.
+  for (const s of ["Assassinate", "Armor-Piercing", "Constitution", "Melee Power", "Doublestrike"]) {
+    assert.ok(opts.includes(s), `${s} must be offerable on a described item`);
+  }
+});
+
+test("#773: the custom-item form renders its OWN datalist, on the step it lives on", () => {
+  // `wz-stats` lives in stepPriorities() and `wz-stats2` in stepResults(), and a
+  // step renders only its own body — so pointing at either from the Gear pool
+  // step gives an input with no suggestions while the help text says to pick from
+  // the list. That is silent: the field still accepts typing.
+  const form = fnBody(WIZARD_SRC, "function renderCustomForm(", 4);
+  assert.ok(/list="wz-custom-stats"/.test(form), "the effect input names its own list");
+  assert.ok(/<datalist id="wz-custom-stats">/.test(form), "…and that list is rendered here");
+  assert.ok(/customStatOptions\(vocab\)/.test(form), "…from the filtered options, not the raw picker list");
+  const pool = srcBetween(WIZARD_SRC, "function stepPool()", "// U3 — pre-solve item pinning helpers", "stepPool");
+  assert.ok(!/id="wz-stats"/.test(pool), "the Gear pool step does not own wz-stats — which is why this matters");
+});
+
+test("#773: loading another build clears a half-typed item, like every other per-character reset", () => {
+  // The #772 family again, in the one place this feature could rejoin it: a
+  // draft open on build A, still on screen under build B, adds A's item to B on
+  // save. Asserted here rather than waiting for the report, because the whole
+  // point of #772's guard is that naming a leak family does not close it.
+  const region = fnBody(WIZARD_SRC, "function loadCharacter(", 4);
+  assert.ok(/customDraft = null;/.test(region),
+    "the draft is cleared on every load, beside blockStage and farmingTakeover");
 });
