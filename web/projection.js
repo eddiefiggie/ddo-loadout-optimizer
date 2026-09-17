@@ -786,6 +786,13 @@
   // exported for every surface; a per-surface respelling is the drift this
   // constant exists to forbid.
   const NO_DROP_SOURCE_WORDING = "no known live drop source";
+  /** #773 — the per-item player-authored disclosure, ONE spelling for every
+   *  surface, for the reason NO_DROP_SOURCE_WORDING is one: a share whose reader
+   *  cannot tell which numbers came from the wiki and which came from the sender
+   *  is the solve-visible-but-share-invisible failure this projection layer exists
+   *  to prevent — and here the stakes are higher, because the recipient of a
+   *  shared build has no other way to know at all. */
+  const PLAYER_AUTHORED_WORDING = "described by the player \u2014 not wiki-sourced";
 
   // #614 — the penalty disclosure. It began life saying penalties were NOT
   // counted, because they were not: the solver discarded every negative affix and
@@ -2698,6 +2705,11 @@
         // dataset field: an unverified item carries no key at all, so no
         // surface can render a note the wiki evidence lacks (R2/R5).
         ...(v.no_drop_source ? { noDropSource: NO_DROP_SOURCE_WORDING } : {}),
+        // #773 — same only-when-set shape, same reason: a catalog item carries no
+        // key, so no surface can print a caveat that does not apply, and an item
+        // the player described carries it in EVERY format including the portable
+        // JSON, which inherits this view verbatim.
+        ...(v.player_authored === true ? { playerAuthored: PLAYER_AUTHORED_WORDING } : {}),
         // #614 — signed penalties the solver discarded, carried as the shared
         // content model so no export can show the pick without the caveat. Same
         // only-when-set shape as noDropSource above: an item with no penalty
@@ -3345,6 +3357,30 @@
         + ` Unpin to keep this solve to gear you own.` }];
   }
 
+  /** #773 — the player-authored items IN THE SOLVED LOADOUT.
+   *
+   *  The unconditional half of the custom-item bargain. Everything else this tool
+   *  reports traces to the DDO Wiki, and that traceability is the product; an item
+   *  the player typed in does not weaken it, but only while the result says which
+   *  numbers were theirs. So this is not an "actionable" notice with something to
+   *  fix — it is QUALIFYING, the class used for a statement that changes how the
+   *  answer should be read.
+   *
+   *  Keyed on the CHOSEN loadout, never on the declared list: an item the player
+   *  described and the solver did not pick has not influenced this answer, and
+   *  saying it did would be its own inaccuracy.
+   *  `facts`: `{ playerAuthored: [display names] }`. */
+  function playerAuthoredNoticeEntries(facts, esc) {
+    const e = esc || _asText;
+    const names = ((facts || {}).playerAuthored || []).filter(Boolean);
+    if (!names.length) return [];
+    const one = names.length === 1;
+    return [{ id: "player-authored", title: "YOUR OWN ITEMS", class: NOTICE_QUALIFYING,
+      sentence: `${e(names.join(", "))} ${one ? "is an item" : "are items"} you described yourself.`
+        + ` ${one ? "Its numbers are" : "Their numbers are"} yours, not wiki-sourced, so this loadout is`
+        + ` only as right as what you entered. Everything else in it is sourced as usual.` }];
+  }
+
   /** U3 (plan 2026-08-05-001) — the two zero-source causes. Two different player
    *  actions, so two entries: a stat no data carries has no resolution path, and a
    *  stat the filters removed does. `facts`: `{ absent, filtered, owned,
@@ -3508,14 +3544,14 @@
     essenceNoticeLines, greenSteelNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)
-    NO_DROP_SOURCE_WORDING,
+    NO_DROP_SOURCE_WORDING, PLAYER_AUTHORED_WORDING,
     // #614 — the one unmodelled-penalty disclosure wording + its two helpers
     // (results card and every exporter read them from here; never respell)
     PENALTY_COUNTED_WORDING, itemPenalties, penaltyDisclosure,
     // #110 — the blocklist disclosure sentences
     blockNoticeLines, setPinNoticeLines,
     // U10 — the four multi-fact notices, one addressable entry per fired branch
-    artifactNoticeEntries, pinnedUnownedNoticeEntries, zeroSourceNoticeEntries, boundNoticeEntries,
+    artifactNoticeEntries, pinnedUnownedNoticeEntries, playerAuthoredNoticeEntries, zeroSourceNoticeEntries, boundNoticeEntries,
     NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMATIONAL,
     // constraint header helpers (exporters delegates to these)
     constraintPairs, constraintLines,

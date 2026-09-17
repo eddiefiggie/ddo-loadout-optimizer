@@ -190,6 +190,13 @@
     // shipped reloads solving exactly what it solved before, the same contract
     // `ownedPacks` and `augCeiling` set.
     "pinnedAugments",
+    // #773 — the player's own items. An array of ENTRY objects (name, slot, type,
+    // ml, augment colours, affixes), never the minted catalog-shaped records: the
+    // entry is what the player typed and the record is derived from it on every
+    // load, so a build saved today re-mints against tomorrow's normalizer instead
+    // of carrying a frozen copy of an old one. Absent on a pre-feature save, which
+    // reads as none — the same contract `pinnedAugments` and `augCeiling` set.
+    "customItems",
     // Sets whose gear is kept out of the search. A plain string array like `blocklist`
     // and `pinnedSets`: a build solved with an exclusion must come back holding it, or
     // a reload silently widens the pool the player narrowed.

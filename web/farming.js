@@ -50,6 +50,13 @@
       const v = c.variant || {};
       const id = v.variant_id;
       if (!id) continue;
+      // #773 — an item the player described is one they already hold: they typed
+      // it in BECAUSE they have it. Listing it here would put the thing they
+      // crafted on a checklist of things to go and get, under "no source
+      // recorded" — which is true of the catalog and false of them. This is the
+      // same judgement the owned-pool disclosure makes when it declines to
+      // report a described item as "pinned, not owned".
+      if (v.player_authored === true) continue;
       const prev = out.get(id);
       if (prev) { prev.copies += 1; prev.slots.push(c.slot); continue; }
       out.set(id, {

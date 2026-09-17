@@ -296,6 +296,12 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
   // sentence or nothing. Trusted constant text, no user-derived parts, so no
   // per-format escaping is needed.
   function noDropStr(it) { return it.noDropSource || ""; }
+  // #773 — the player-authored disclosure, same shape and same rule as #262: the
+  // projected entry carries the shared phrase itself, so every format prints the
+  // identical sentence or nothing. Rendered at each of the four sites below
+  // rather than only carried, because carrying is necessary and not sufficient —
+  // an item whose numbers the sender typed must not reach a reader unlabelled.
+  function authoredStr(it) { return it.playerAuthored || ""; }
   // #681 — the crafted-down disclosure, same shape and same rule as #262: a
   // per-item note rides with the item it qualifies, in EVERY format. Without it an
   // export reads "Legendary Gem of Many Facets (ML 25)", which is the exact
@@ -331,6 +337,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // #262 — the disclosure rides with the item it qualifies, in every format.
       const nd = noDropStr(it);
       if (nd) out += `  - ⚠ ${nd}\n`;
+      const pa = authoredStr(it);
+      if (pa) out += `  - ✎ ${pa}\n`;
       const cd = craftedStr(it);
       if (cd) out += `  - ⚒ ${mdEsc(cd)}\n`;
     }
@@ -405,6 +413,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // #262 — the disclosure rides with the item it qualifies, in every format.
       const nd = noDropStr(it);
       if (nd) out += `\n  [*]⚠ ${nd}`;
+      const pa = authoredStr(it);
+      if (pa) out += `\n  [*]✎ ${pa}`;
       const cd = craftedStr(it);
       if (cd) out += `\n  [*]⚒ ${bbEsc(cd)}`;
       out += `\n`;
@@ -477,6 +487,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       const craftCell = it.crafting.map((cr) => craftStr(cr, (s) => s, "csv"))
         .concat(carriedStr(it, (s) => s) || [])
         .concat(noDropStr(it) || [])
+        .concat(authoredStr(it) || [])
         .concat(craftedStr(it) || [])
         .join(" | ");
       rows.push(csvRow([
@@ -561,6 +572,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       const craftCell = it.crafting.map((cr) => craftStr(cr, htmlEsc, "md"))
         .concat(carried ? [`⚒ ${carried}`] : [])
         .concat(nd ? [`⚠ ${nd}`] : [])
+        .concat(authoredStr(it) ? [`✎ ${htmlEsc(authoredStr(it))}`] : [])
         .concat(craftedStr(it) ? [`⚒ ${htmlEsc(craftedStr(it))}`] : [])
         .join("<br>");
       h += `<tr><td>${htmlEsc(it.slot)}</td><td>${htmlEsc(it.item)}</td><td>${htmlEsc(it.ml)}</td>`
@@ -790,6 +802,11 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // below the split is where a gearset can say it (the importable half must
       // stay a pure gear list).
       if (it.noDropSource) noDropLines.push(`  ${it.slot} (${it.item}) — ${it.noDropSource}`);
+      // #773 — an item the sender described joins the same commentary block. The
+      // importable half stays a pure gear list, so this is where a gearset can
+      // say it at all, and it must: the recipient is importing numbers that never
+      // came from the wiki.
+      if (it.playerAuthored) noDropLines.push(`  ${it.slot} (${it.item}) — ${it.playerAuthored}`);
     }
     // Augments are listed here as well as on the gear lines: DDOBuilder matches an
     // augment by scanning its own description text, and our affix vocabulary does

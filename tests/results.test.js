@@ -2773,9 +2773,9 @@ test("#448: the registry is the ONLY source — nothing classifies a notice but 
     "NOTICE_TABLE is derived from the registry, in registry order");
   assert.strictEqual(single.length, 21, "the twenty-one single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one, #701 the MRR cap one, #747 the cap-opportunity one)");
   assert.deepStrictEqual(split.map((n) => n.name),
-    ["artifactNotice", "pinnedUnownedNotice", "boundNotice", "zeroSourceNotice"],
-    "and the four multi-fact notices come through their U10 entry functions "
-    + "(#721 added the owned-pool pin disclosure)");
+    ["artifactNotice", "pinnedUnownedNotice", "playerAuthoredNotice", "boundNotice", "zeroSourceNotice"],
+    "and the five multi-fact notices come through their U10 entry functions "
+    + "(#721 added the owned-pool pin disclosure, #773 the player-authored one)");
 
   for (const n of single) {
     assert.strictEqual(typeof n.render, "function", `${n.name}: no render`);
@@ -2800,7 +2800,7 @@ test("#448: registry ORDER is the on-screen order within a class, and splits lea
   // so the array's order is load-bearing rather than cosmetic. Pinned so a reorder
   // is a deliberate edit.
   assert.deepStrictEqual(R.NOTICES.map((n) => n.name), [
-    "artifactNotice", "pinnedUnownedNotice", "boundNotice", "zeroSourceNotice",
+    "artifactNotice", "pinnedUnownedNotice", "playerAuthoredNotice", "boundNotice", "zeroSourceNotice",
     "staleSnapshotNotice", "outbidNotice", "saturationNotice", "emptySlotNotice",
     "absorptionQuarantineNotice", "craftingExcludedNotice", "augCeilingNotice",
     "dodgeMaxDexNotice", "jumpSoftCapNotice", "mrrCapNotice", "conditionalNotice", "splitMechanicNotice", "capSurplusNotice", "capOpportunityNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",

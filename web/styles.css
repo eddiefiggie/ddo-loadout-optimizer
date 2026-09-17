@@ -2299,3 +2299,30 @@ input.wz-ml { width: 120px; }
 /* Disabled until the type is ticked — the number qualifies a skip, it does not
    stand on its own, and an editable box on an unticked row invited exactly that. */
 .wz-btype-val:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* #773 — the custom-item panel. Rows reuse `.wz-pin-row`; these are the parts a
+   described item needs that a pinned one does not: the affix summary, the
+   could-not-be-used flag, and the entry form. */
+.wz-custom-row { flex-wrap: wrap; }
+.wz-custom-affixes { flex: 1 1 100%; color: var(--muted); font-size: var(--fs-xs); }
+.wz-custom-bad { border-color: var(--quarantined); }
+.wz-pin-flag { flex: 1 1 100%; color: var(--quarantined); font-size: var(--fs-xs); margin: 0; }
+.wz-custom-form { margin-top: var(--sp-3); padding: var(--sp-3); background: var(--panel-2);
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm); }
+.wz-custom-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: var(--sp-3); }
+.wz-custom-colors { margin-bottom: var(--sp-3); }
+.wz-custom-affix { display: flex; gap: var(--sp-2); align-items: center; margin-bottom: var(--sp-2); }
+.wz-custom-affix input[type="text"] { flex: 2 1 10rem; }
+.wz-custom-affix select { flex: 1 1 8rem; }
+.wz-custom-affix input[type="number"] { flex: 0 0 5.5rem; }
+.wz-custom-affix input, .wz-custom-affix select,
+.wz-custom-form .wz-field input, .wz-custom-form .wz-field select {
+  background: var(--panel); color: var(--text); border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm); padding: 8px 10px; font-family: inherit; font-size: var(--fs-sm); }
+.wz-custom-affix input:focus, .wz-custom-affix select:focus,
+.wz-custom-form .wz-field input:focus, .wz-custom-form .wz-field select:focus {
+  outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+/* The refusal list. Errors are whole sentences naming the field and the reason,
+   so they are rendered as prose rows rather than as a terse badge. */
+.wz-custom-errors { margin: var(--sp-3) 0 0; padding-left: var(--sp-4); color: var(--quarantined);
+  font-size: var(--fs-sm); }

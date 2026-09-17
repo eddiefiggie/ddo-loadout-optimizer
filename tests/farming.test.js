@@ -346,3 +346,16 @@ test("#518: renaming a character to its own name is a no-op success", () => {
 });
 
 console.log(`\n${passed} passed`);
+
+test("#773: an item the player described is not on the farming checklist", () => {
+  // They typed it in because they have it. Listing it as something to go and
+  // get — under "no source recorded", which is true of the catalog and false of
+  // them — is the worst place to be wrong about acquisition.
+  const snap = { chosen: [
+    { slot: "Ring", variant: { variant_id: "Real Ring", minimum_level: 30, location_quest: "Somewhere" } },
+    { slot: "Off Hand", variant: { variant_id: "My dagger (yours)", minimum_level: 36, player_authored: true } },
+  ] };
+  const entries = F.equippedEntries(snap);
+  assert.deepStrictEqual(entries.map((e) => e.item), ["Real Ring"],
+    "only the catalog item is something to farm");
+});

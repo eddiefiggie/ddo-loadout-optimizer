@@ -1261,6 +1261,12 @@ function pinnedUnownedNames(pool, ownedNames, slotConstraints, items, owns) {
   for (const v of items || []) {
     const id = pinIdOf(v);
     if (!pinned.has(id) || seen.has(id) || owns(v)) continue;
+    // #773 — a player-authored item is owned BY CONSTRUCTION: the player typed it
+    // in because they have it. It is absent from every Trove export by definition
+    // (the export lists what the catalog knows), so without this it would be
+    // reported as "pinned but your import does not list it" on every owned-pool
+    // solve — a warning about the one item in the build that needs none.
+    if (v && v.player_authored === true) continue;
     seen.add(id);
     out.push(v.source_item || id);
   }
@@ -1471,6 +1477,93 @@ function pinnableSets(dataset) {
  *  placed", never "this augment in that item". `AUGMENT_PIN_NOTE` is the sentence
  *  that says so, and it is not decoration — see below. */
 const AUGMENT_PIN_NOTE = "Placed wherever it fits \u2014 an augment pin cannot choose which item wears it.";
+
+// #773 — player-authored items. The module is pure and no-DOM; these helpers are
+// the wizard's side of it: the load-boundary sanitizer, the uid allocator, and
+// the derivation of the minted records from the saved entries.
+function _customItemsModule() {
+  // eslint-disable-next-line no-undef
+  if (typeof CustomItems !== "undefined") return CustomItems;
+  // eslint-disable-next-line global-require
+  if (typeof require !== "undefined") { try { return require("./custom-items.js"); } catch (e) { /* absent */ } }
+  return null;
+}
+
+/** The saved list, sanitized at the load boundary.
+ *
+ *  Entries are structurally cleaned here and NOT validated. An entry that no
+ *  longer validates — a stat name this build retired, a bonus type that left the
+ *  vocabulary — must still reach the panel so the player can see it and repair
+ *  it. That is the rule the blocklist, the set pins and the augment pins all
+ *  follow: a saved entry the current roster cannot honour is labelled, never
+ *  dropped, because a constraint that vanishes on reload is indistinguishable
+ *  from one that was never set.
+ *
+ *  A uid is assigned to any entry missing or duplicating one, because `customId`
+ *  derives the pin target from it: entries sharing a uid would share an id, and a
+ *  pin on one would silently equip the other.
+ *
+ *  Sanitizing at the READ boundary, not only at entry, for persist.js's stated
+ *  reason — a hand-edited backup can carry anything, and a bad row stored back
+ *  into localStorage outlives the session that produced it. */
+function restoreCustomItems(saved) {
+  const out = [];
+  const seen = new Set();
+  let next = 1;
+  for (const raw of (Array.isArray(saved) ? saved : [])) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+    let uid = Number(raw.uid);
+    if (!Number.isInteger(uid) || uid < 1 || seen.has(uid)) {
+      while (seen.has(next)) next += 1;
+      uid = next;
+    }
+    seen.add(uid);
+    out.push({
+      uid,
+      name: String(raw.name == null ? "" : raw.name).trim(),
+      slot: String(raw.slot == null ? "" : raw.slot).trim(),
+      type: String(raw.type == null ? "" : raw.type).trim(),
+      ml: (raw.ml == null || raw.ml === "") ? null : Number(raw.ml),
+      augments: (Array.isArray(raw.augments) ? raw.augments : [])
+        .map((x) => String(x == null ? "" : x).trim()).filter(Boolean),
+      affixes: (Array.isArray(raw.affixes) ? raw.affixes : []).map((a) => ({
+        stat: String((a && a.stat) == null ? "" : a.stat).trim(),
+        bonus_type: String((a && a.bonus_type) == null ? "" : a.bonus_type).trim(),
+        value: ((a && a.value) == null || a.value === "") ? null : Number(a.value),
+      })),
+    });
+  }
+  return out;
+}
+
+/** The next uid to hand out: one past the highest in use.
+ *
+ *  DERIVED from the list rather than persisted alongside it. A saved counter and
+ *  a saved list can disagree — an import, a hand-edit, a partial write — and only
+ *  the list is the truth about which ids are taken. */
+function nextCustomUid(list) {
+  let max = 0;
+  for (const e of (Array.isArray(list) ? list : [])) {
+    const n = Number(e && e.uid);
+    if (Number.isInteger(n) && n > max) max = n;
+  }
+  return max + 1;
+}
+
+/** The catalog-shaped records for a saved list, plus the entries that could not
+ *  be minted. Returns `{ variants, rejected }`; an absent module yields neither,
+ *  which is the pre-feature behaviour. */
+function customVariantsFor(list, vocab, catalogNames) {
+  const M = _customItemsModule();
+  if (!M) return { variants: [], rejected: [] };
+  return M.customPool(list, { vocab, catalogNames, canDeclare: canDeclareCredit });
+}
+
+/** True for a variant this player typed in rather than the catalog supplying. */
+function isPlayerAuthored(v) {
+  const M = _customItemsModule();
+  return M ? M.isCustomVariant(v) : !!(v && v.player_authored === true);
+}
 
 /** True for a record that can carry an augment pin. */
 function augmentPinnable(v) {
@@ -2398,6 +2491,26 @@ function datalistStats(vocab) {
   return out;
 }
 
+/** #773 — the stat options a custom item's effect row may offer.
+ *
+ *  A SEPARATE list from `datalistStats`, and narrower on purpose. Two names must
+ *  not appear here:
+ *
+ *   - the Utility sentinel, which is a container rather than an affix and cannot
+ *     be engraved on an item at all;
+ *   - any stat `validateEntry` would refuse — a presence-only effect like
+ *     `Ghost Touch` has no typed bucket for a magnitude, and an untyped-only stat
+ *     has no bonus type to pick.
+ *
+ *  Offering a name the form then rejects is the worst version of a picker: the
+ *  player follows the autocomplete and is told no. Filtering here makes the
+ *  refusal a backstop for a typed name rather than the first thing they hit.
+ *  (#774 will widen this when on/off effects become expressible.) Pure. */
+function customStatOptions(vocab) {
+  const out = (vocab && Array.isArray(vocab.suggestions)) ? vocab.suggestions.slice() : [];
+  return out.filter((s) => s !== _utilitySentinel && canDeclareCredit(s, vocab));
+}
+
 /** U11 (R15) — decide what adding `name` to `priorities` should produce. Pure: the
  *  caller owns the DOM and the rest of `state`, so this half is unit-testable while
  *  `addPriority` (inside the window-gated IIFE) stays a thin wrapper.
@@ -2970,6 +3083,7 @@ function yieldToPaint() {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor, groupsOf, spanOf, movePriorityGroup, snapDropToGroup, dropIndexForRun, linksAfterDelete, linksAfterBundle, pruneLinks, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, AUGMENT_PIN_NOTE, augmentPinnable, addAugmentPin, removeAugmentPin, augmentPinStale, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
+    restoreCustomItems, nextCustomUid, customVariantsFor, isPlayerAuthored, customStatOptions,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -3059,6 +3173,15 @@ if (typeof window !== "undefined" && window.App) {
       ownedPacks: null,
       excludedSets: [],
       pinnedSets: [],
+      // #773 — the player's own items, as ENTRIES (see persist.js). Born empty:
+      // a player who defines none solves exactly what they solved before.
+      customItems: [],
+      // The counter behind `customId`. Monotonic within a character and never
+      // reused, so a pin can never slide onto a different item when an earlier
+      // one is deleted. It is derived from the list on load rather than saved —
+      // see `nextCustomUid` — because a saved counter and a saved list can
+      // disagree, and only the list is the truth.
+      customUid: 1,
       // #428 U3 (R20) — the name of the saved build currently being edited, or
       // "" for an unsaved one. Transient by design: it is NOT on INPUT_KEYS,
       // because which record you loaded is a fact about this session, not about
@@ -3401,6 +3524,10 @@ if (typeof window !== "undefined" && window.App) {
           const c = n(state.excludedSets);
           return c ? `${c} excluded` : "nothing excluded";
         }
+        case "custom": {
+          const c = n(state.customItems);
+          return c ? `${c} of your own` : "none of your own";
+        }
         case "overrides": {
           const c = n(state.overrideApplied);
           return c ? `${c} correction${c === 1 ? "" : "s"}` : "nothing corrected";
@@ -3458,6 +3585,16 @@ if (typeof window !== "undefined" && window.App) {
               <small>Use only augments your export lists, plus the ones anyone can buy or trade for.
                 Off by default — augments otherwise come from the full catalog.</small></span></label>
         </div>
+        ${poolFold("custom", "Items you own that this tool does not", poolStatus("custom"), `
+          <p class="wz-adv-note">Crafted something the catalog has never heard of \u2014 a Cannith-crafted ring,
+            an Essence-crafted weapon \u2014 and want it considered? Describe it here and it joins the search as a
+            real item: it can be pinned into a slot, it fills its slot like anything else, and the solver spends
+            the rest of the build on what it does <em>not</em> already cover.</p>
+          <p class="wz-adv-note"><strong>These numbers are yours, not wiki-sourced.</strong> Everything else in this
+            tool traces to the DDO Wiki, and that is what makes the answer provable. An item you type in is only as
+            right as what you typed \u2014 so a build that uses one says so on the result and in every export.</p>
+          <div id="wz-custom-list" class="wz-pin-list"></div>
+          <div id="wz-custom-form"></div>`)}
         ${poolFold("pin", "Pin specific items", poolStatus("pin"), `
           <p class="wz-adv-note">Force gear you have already decided on into the build.</p>
           <div class="wz-addrow">
@@ -3564,7 +3701,10 @@ ${(() => {
     const isPinnable = (v) => PIN_WORN_LABELS.has(pinWornSlotOf(v)) && v.category !== "augment";
     const searchable = (v) => isPinnable(v) || augmentPinnable(v);
     const slotCardOf = (slot) => _CARD[slot] || 1;
-    const itemByPinId = (id) => dataset.items.find((v) => pinIdOf(v) === id) || null;
+    // #773 — resolved against the WIDENED pool. A pinned custom item that failed
+    // to resolve here would render in the pin list as an unknown id and read as a
+    // pin the tool had lost.
+    const itemByPinId = (id) => poolItems().find((v) => pinIdOf(v) === id) || null;
 
     function currentPins() {
       const out = [];
@@ -3593,10 +3733,14 @@ ${(() => {
       const input = document.getElementById("wz-pin-search");
       if (!box || !input) return;
       const q = (input.value || "").trim();
-      if (!q) { box.innerHTML = `<p class="wz-pin-hint">Type an item name to search the catalog.</p>`; return; }
+      if (!q) { box.innerHTML = `<p class="wz-pin-hint">Type an item name to search the catalog \u2014 your own items are in here too.</p>`; return; }
       const ql = q.toLowerCase();
+      // #773 — the WIDENED pool. Pinning is how a custom item is forced into a
+      // named slot, which is the reported use case; searching `dataset.items`
+      // here would define the items and then hide them from the one control that
+      // makes them useful.
       // eslint-disable-next-line no-undef
-      const verified = filterVariants(dataset.items, { verification: "verified" });
+      const verified = filterVariants(poolItems(), { verification: "verified" });
       const matches = verified.filter((v) => searchable(v)
         && `${v.source_item || ""} ${v.variant_id || ""}`.toLowerCase().includes(ql));
       const rank = (v) => { const n = (v.source_item || v.variant_id || "").toLowerCase(); return n === ql ? 0 : n.startsWith(ql) ? 1 : 2; };
@@ -3678,7 +3822,7 @@ ${(() => {
         });
       };
       if (!pins.length) { box.innerHTML = augRows; bindAugUnpin(); return; }
-      const query = buildQuery(state, vocab, dataset && dataset.items);
+      const query = buildQuery(state, vocab, poolItems());
       // Aggregate guard: a character equips at most ONE Artifact, but each pin is
       // honored, so pinning 2+ Artifacts with the opt-in on would force an illegal
       // multi-Artifact build. Warn (don't block — the pins are the player's choice).
@@ -3735,6 +3879,14 @@ ${(() => {
       if (!_craftIndex) _craftIndex = craftOptionIndex(dataset);
       return _craftIndex;
     }
+
+    // #773 — the catalog's display names, memoized for the same reason the craft
+    // index is: it is built from 9,194 records and is consulted on every
+    // keystroke in the custom-item name field. The CATALOG is fixed for the life
+    // of the page, so one build is enough; the player's own names are not in it
+    // (a custom item is refused if it collides with a catalog name, which is what
+    // this set answers).
+    let _catalogNames = null;
 
     function renderBlockStage() {
       const box = document.getElementById("wz-block-stage");
@@ -3940,6 +4092,269 @@ ${(() => {
         }
       }
       return [...n.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    }
+
+
+    // ---------------------------------------------------------------------
+    // #773 — the custom-item panel. Two renderers and one draft.
+    //
+    // The draft is UI-transient and lives OUTSIDE `state.customItems`: an item is
+    // only in the list once it validates, so the pool can never contain a
+    // half-typed row, and abandoning an edit cannot corrupt the saved entry. It
+    // is also deliberately NOT on INPUT_KEYS — a draft is a fact about this
+    // session, not about the build, the same rule `loadedName` follows.
+    let customDraft = null;
+
+    function blankDraft() {
+      return { uid: null, name: "", slot: "", type: "", ml: "", augments: [],
+        affixes: [{ stat: "", bonus_type: "", value: "" }], errors: [] };
+    }
+
+    function renderCustomList() {
+      refreshPoolStatus("custom");
+      const box = document.getElementById("wz-custom-list");
+      if (!box) return;
+      const list = state.customItems || [];
+      if (!list.length) {
+        box.innerHTML = `<p class="wz-pin-empty">You have not described any items of your own.</p>`
+          + `<div class="wz-addrow"><button type="button" class="btn ghost sm" data-custom-new>Describe an item…</button></div>`;
+        wireCustomList(box);
+        return;
+      }
+      // Rejections are keyed by uid so a broken entry is labelled IN PLACE rather
+      // than listed separately — the player needs to see which of their items is
+      // the one that stopped counting, not that "an item" did.
+      const bad = new Map();
+      for (const r of customRejections()) {
+        if (r && r.entry && r.entry.uid != null) bad.set(r.entry.uid, r.errors || []);
+      }
+      const M = _customItemsModule();
+      const rows = list.map((e) => {
+        const why = bad.get(e.uid);
+        const affixes = (e.affixes || [])
+          .map((a) => `${wzEsc(a.bonus_type)} ${wzEsc(a.stat)} ${wzEsc(a.value)}`).join(" · ");
+        const where = e.type ? `${wzEsc(e.slot)} · ${wzEsc(e.type)}` : wzEsc(e.slot);
+        // A rejected entry is shown, kept and explained — never dropped. Same rule
+        // as a stale block id or a set pin naming a renamed set.
+        const flag = why && why.length
+          ? `<p class="wz-pin-flag" role="status">Not in the search right now — ${wzEsc(why[0])}</p>`
+          : "";
+        return `<div class="wz-pin-row wz-custom-row${why ? " wz-custom-bad" : ""}">
+          <span class="wz-pin-name">${wzEsc(e.name || "(unnamed)")}</span>
+          <span class="wz-pack-count">ML ${wzEsc(e.ml == null ? "?" : e.ml)} · ${where}</span>
+          <span class="wz-custom-affixes">${affixes || "no effects"}</span>
+          <button type="button" class="btn ghost sm" data-custom-edit="${wzEsc(e.uid)}">Edit</button>
+          <button type="button" class="wz-pin-x" data-custom-rm="${wzEsc(e.uid)}" aria-label="Remove ${wzEsc(e.name)}">×</button>
+          ${flag}</div>`;
+      }).join("");
+      const capped = M && list.length >= M.CUSTOM_LIMIT;
+      box.innerHTML = rows + `<div class="wz-addrow">
+        <button type="button" class="btn ghost sm" data-custom-new${capped ? " disabled" : ""}>Describe another item…</button>
+        ${capped ? `<span class="wz-help">${wzEsc(M.CUSTOM_LIMIT)} is the limit for one build.</span>` : ""}</div>`;
+      wireCustomList(box);
+    }
+
+    function wireCustomList(box) {
+      box.querySelectorAll("[data-custom-new]").forEach((b) => b.onclick = () => {
+        customDraft = blankDraft(); renderCustomForm();
+      });
+      box.querySelectorAll("[data-custom-edit]").forEach((b) => b.onclick = () => {
+        const uid = Number(b.dataset.customEdit);
+        const e = (state.customItems || []).find((x) => x.uid === uid);
+        if (!e) return;
+        customDraft = {
+          uid: e.uid, name: e.name, slot: e.slot, type: e.type,
+          ml: e.ml == null ? "" : String(e.ml),
+          augments: (e.augments || []).slice(),
+          affixes: (e.affixes || []).map((a) => ({
+            stat: a.stat, bonus_type: a.bonus_type, value: a.value == null ? "" : String(a.value) })),
+          errors: [],
+        };
+        if (!customDraft.affixes.length) customDraft.affixes.push({ stat: "", bonus_type: "", value: "" });
+        renderCustomForm();
+      });
+      box.querySelectorAll("[data-custom-rm]").forEach((b) => b.onclick = () => {
+        const uid = Number(b.dataset.customRm);
+        const e = (state.customItems || []).find((x) => x.uid === uid);
+        if (!e) return;
+        // A pin on the item being deleted has to go with it, in WHICHEVER slot
+        // holds it (a weapon can be pinned to either hand). Leaving it would
+        // strand a slot constraint pointing at nothing, which
+        // `slotConstraintBodies` documents as a SILENT no-op — the solve would
+        // quietly stop honouring a pin the player can no longer see or remove.
+        const M0 = _customItemsModule();
+        const id = M0 ? M0.customId(e) : null;
+        if (id) {
+          for (const slot of Object.keys(state.slotConstraints || {})) {
+            removePinFrom(state.slotConstraints, slot, id, slotCardOf);
+          }
+        }
+        state.customItems = (state.customItems || []).filter((x) => x.uid !== uid);
+        if (customDraft && customDraft.uid === uid) customDraft = null;
+        state.constraintsDirty = true; markDirty();
+        renderCustomList(); renderCustomForm();
+      });
+    }
+
+    function renderCustomForm() {
+      const box = document.getElementById("wz-custom-form");
+      if (!box) return;
+      if (!customDraft) { box.innerHTML = ""; return; }
+      const M = _customItemsModule();
+      if (!M) { box.innerHTML = ""; return; }
+      const d = customDraft;
+      const slots = M.customSlots();
+      const types = M.typesForSlot(d.slot);
+      const btypes = M.bonusTypes();
+      const colors = M.augmentColors();
+      const opt = (v, sel) => `<option value="${wzEsc(v)}"${v === sel ? " selected" : ""}>${wzEsc(v)}</option>`;
+      // Its OWN datalist, with its own id, rendered inside this form. `wz-stats`
+      // and `wz-stats2` both live in stepPriorities() and stepResults(), and a
+      // step renders only its own body — so pointing at either from here would
+      // have given the player an input with no suggestions at all while the help
+      // text told them to "pick the effect name from the list". Same reason
+      // `wz-stats2` exists rather than being shared.
+      const statOpts = customStatOptions(vocab);
+      const affixRows = d.affixes.map((a, ix) => `<div class="wz-custom-affix">
+        <input type="text" list="wz-custom-stats" data-nodirty data-custom-stat="${ix}" value="${wzEsc(a.stat)}"
+               placeholder="Effect, e.g. Assassinate" autocomplete="off">
+        <select data-custom-bt="${ix}"><option value="">Bonus type…</option>${btypes.map((t) => opt(t, a.bonus_type)).join("")}</select>
+        <input type="number" min="1" step="1" data-nodirty data-custom-val="${ix}" value="${wzEsc(a.value)}" placeholder="Value">
+        <button type="button" class="wz-pin-x" data-custom-affix-rm="${ix}" aria-label="Remove this effect">×</button>
+      </div>`).join("");
+      box.innerHTML = `<div class="wz-custom-form">
+        <datalist id="wz-custom-stats">${statOpts.map((x) => `<option value="${wzEsc(x)}">`).join("")}</datalist>
+        <div class="wz-custom-grid">
+          <label class="wz-field"><span class="wz-label">Name</span>
+            <input type="text" data-nodirty id="wz-custom-name" value="${wzEsc(d.name)}"
+                   maxlength="${wzEsc(M.NAME_MAX)}" placeholder="e.g. My Cannith dagger" autocomplete="off"></label>
+          <label class="wz-field"><span class="wz-label">Slot</span>
+            <select id="wz-custom-slot"><option value="">Choose…</option>${slots.map((x) => opt(x, d.slot)).join("")}</select></label>
+          ${types ? `<label class="wz-field"><span class="wz-label">Type</span>
+            <select id="wz-custom-type"><option value="">Choose…</option>${types.map((x) => opt(x, d.type)).join("")}</select></label>` : ""}
+          <label class="wz-field"><span class="wz-label">Minimum level</span>
+            <input type="number" data-nodirty id="wz-custom-ml" min="${wzEsc(M.ML_MIN)}" max="${wzEsc(M.ML_MAX)}"
+                   step="1" value="${wzEsc(d.ml)}" placeholder="36"></label>
+        </div>
+        <p class="wz-label">Augment slots on it</p>
+        <div class="wz-seg wz-custom-colors">${colors.map((c) =>
+          `<label class="wz-check wz-check-inline"><input type="checkbox" data-custom-color="${wzEsc(c)}"${d.augments.indexOf(c) >= 0 ? " checked" : ""}>
+            <span class="wz-check-body"><span class="wz-label">${wzEsc(c)}</span></span></label>`).join("")}</div>
+        <p class="wz-label">What it grants</p>
+        <p class="wz-help">Pick the effect name from the list and say which bonus type it is — that is what
+          decides whether it stacks with your other gear or is overwritten by it. An in-game
+          “Insightful Assassinate” is <em>Assassinate</em> with the <em>Insight</em> bonus type.</p>
+        ${affixRows}
+        <div class="wz-addrow"><button type="button" class="btn ghost sm" data-custom-affix-add>+ Another effect</button></div>
+        ${d.errors.length ? `<ul class="wz-custom-errors" role="alert">${d.errors.map((e) => `<li>${wzEsc(e)}</li>`).join("")}</ul>` : ""}
+        <div class="wz-addrow">
+          <button type="button" class="btn primary sm" data-custom-save>${d.uid == null ? "Add this item" : "Save changes"}</button>
+          <button type="button" class="btn ghost sm" data-custom-cancel>Cancel</button>
+        </div>
+      </div>`;
+      wireCustomForm(box);
+    }
+
+    function wireCustomForm(box) {
+      // Every field writes straight into the draft. The form is NOT re-rendered on
+      // each keystroke — that would move focus and lose the caret — except where a
+      // choice changes what the form offers (the slot decides whether there is a
+      // Type control at all).
+      const nm = document.getElementById("wz-custom-name");
+      if (nm) nm.oninput = (e) => { customDraft.name = e.target.value; };
+      const ml = document.getElementById("wz-custom-ml");
+      if (ml) ml.oninput = (e) => { customDraft.ml = e.target.value; };
+      const slot = document.getElementById("wz-custom-slot");
+      if (slot) slot.onchange = (e) => {
+        customDraft.slot = e.target.value;
+        // A type belonging to the previous slot is cleared rather than carried:
+        // "Daggers" on a Ring would fail validation with a message about a field
+        // the player cannot see.
+        customDraft.type = "";
+        renderCustomForm();
+      };
+      const ty = document.getElementById("wz-custom-type");
+      if (ty) ty.onchange = (e) => { customDraft.type = e.target.value; };
+      box.querySelectorAll("[data-custom-color]").forEach((cb) => cb.onchange = (e) => {
+        const c = e.target.getAttribute("data-custom-color");
+        customDraft.augments = e.target.checked
+          ? customDraft.augments.concat([c]).filter((x, i, a) => a.indexOf(x) === i)
+          : customDraft.augments.filter((x) => x !== c);
+      });
+      box.querySelectorAll("[data-custom-stat]").forEach((el) => el.oninput = (e) => {
+        customDraft.affixes[Number(e.target.dataset.customStat)].stat = e.target.value;
+      });
+      box.querySelectorAll("[data-custom-bt]").forEach((el) => el.onchange = (e) => {
+        customDraft.affixes[Number(e.target.dataset.customBt)].bonus_type = e.target.value;
+      });
+      box.querySelectorAll("[data-custom-val]").forEach((el) => el.oninput = (e) => {
+        customDraft.affixes[Number(e.target.dataset.customVal)].value = e.target.value;
+      });
+      box.querySelectorAll("[data-custom-affix-rm]").forEach((b) => b.onclick = () => {
+        const ix = Number(b.dataset.customAffixRm);
+        customDraft.affixes = customDraft.affixes.filter((_, i) => i !== ix);
+        if (!customDraft.affixes.length) customDraft.affixes.push({ stat: "", bonus_type: "", value: "" });
+        renderCustomForm();
+      });
+      box.querySelectorAll("[data-custom-affix-add]").forEach((b) => b.onclick = () => {
+        if (customDraft.affixes.length >= _customItemsModule().AFFIX_MAX) return;
+        customDraft.affixes.push({ stat: "", bonus_type: "", value: "" });
+        renderCustomForm();
+      });
+      box.querySelectorAll("[data-custom-cancel]").forEach((b) => b.onclick = () => {
+        customDraft = null; renderCustomForm();
+      });
+      box.querySelectorAll("[data-custom-save]").forEach((b) => b.onclick = () => {
+        const M = _customItemsModule();
+        const d = customDraft;
+        const uid = d.uid == null ? state.customUid : d.uid;
+        const candidate = { uid, name: d.name, slot: d.slot, type: d.type, ml: d.ml,
+          augments: d.augments.slice(), affixes: d.affixes.slice() };
+        // Validated against the SAME names the solve will use, and refused with
+        // the reasons on screen. Nothing reaches `state.customItems` until it
+        // would actually mint — so the pool can never hold a half-described item.
+        // `otherNames` is the player's OTHER items, excluding the one being
+        // edited — so a duplicate is refused in the form, where it can be fixed,
+        // rather than surviving into the list and reappearing as a rejection row.
+        // Excluding self matters: without it, saving an edit that did not change
+        // the name would refuse the item for colliding with itself.
+        const otherNames = new Set((state.customItems || [])
+          .filter((x) => x.uid !== d.uid).map((x) => x.name));
+        const v = M.validateEntry(candidate, {
+          vocab, catalogNames: catalogNameSet(), otherNames, canDeclare: canDeclareCredit });
+        if (!v.ok) { d.errors = v.errors; renderCustomForm(); return; }
+        if (d.uid == null) {
+          if ((state.customItems || []).length >= M.CUSTOM_LIMIT) {
+            d.errors = [`You can describe at most ${M.CUSTOM_LIMIT} items of your own on one build.`];
+            renderCustomForm(); return;
+          }
+          state.customItems = (state.customItems || []).concat([v.entry]);
+          state.customUid = nextCustomUid(state.customItems);
+        } else {
+          const before = (state.customItems || []).find((x) => x.uid === d.uid);
+          state.customItems = (state.customItems || []).map((x) => (x.uid === d.uid ? v.entry : x));
+          // The id IS the name (see custom-items.js), so a rename moves it. A pin
+          // still naming the old id would be a slot constraint pointing at
+          // nothing, which `slotConstraintBodies` documents as a SILENT no-op:
+          // the solve would quietly stop honouring a pin the player can still see
+          // in the pin list. Migrate it in the same breath as the rename.
+          const oldId = before ? M.customId(before) : null;
+          const newId = M.customId(v.entry);
+          if (oldId && newId && oldId !== newId) {
+            for (const slot of Object.keys(state.slotConstraints || {})) {
+              const ids = _pinnedVariantIds(state.slotConstraints[slot]);
+              if (!ids.includes(oldId)) continue;
+              removePinFrom(state.slotConstraints, slot, oldId, slotCardOf);
+              applyPinId(state.slotConstraints, slot, newId, slotCardOf);
+            }
+          }
+        }
+        customDraft = null;
+        state.constraintsDirty = true; markDirty();
+        renderCustomList(); renderCustomForm();
+        // The pin list can be showing this item under its old name.
+        if (typeof renderPinList === "function") renderPinList();
+      });
     }
 
     function renderSetExResults() {
@@ -4493,8 +4908,8 @@ ${(() => {
         const stat = el.dataset.reachSlot;
         if (!stat) continue;
         try {
-          const query = buildQuery(state, vocab, dataset.items);
-          const report = _slotReachabilityReport(stat, dataset.items, query, {
+          const query = buildQuery(state, vocab, poolItems());
+          const report = _slotReachabilityReport(stat, poolItems(), query, {
             dinoInserts: dataset.dino_inserts, viktranium: dataset.viktranium,
             seal: dataset.seal, legendaryGreenSteel: dataset.legendary_green_steel,
             essenceCrafting: dataset.essence_crafting, slavers: dataset.slavers,
@@ -5094,8 +5509,8 @@ ${(() => {
         if (seq !== _reachSeq) return;                     // a newer add superseded this
         let line = "";
         try {
-          const query = buildQuery(state, vocab, dataset.items);
-          const report = _slotReachabilityReport(stat, dataset.items, query, {
+          const query = buildQuery(state, vocab, poolItems());
+          const report = _slotReachabilityReport(stat, poolItems(), query, {
             dinoInserts: dataset.dino_inserts, viktranium: dataset.viktranium,
             seal: dataset.seal, legendaryGreenSteel: dataset.legendary_green_steel,
             essenceCrafting: dataset.essence_crafting, slavers: dataset.slavers,
@@ -5387,6 +5802,55 @@ ${(() => {
       });
     }
 
+    /** #773 — the player's own items, minted fresh from the saved entries.
+     *
+     *  Derived on every read rather than cached on `state`, for the reason the
+     *  override overlay is re-applied rather than stored: the entries are the
+     *  truth and the records are a projection of them through the CURRENT
+     *  vocabulary and normalizer. A cached record would survive an edit to the
+     *  entry that produced it, and the solve would then use numbers the panel no
+     *  longer shows. Twelve items is the ceiling, so the cost is nil. */
+    function customVariants() {
+      return customVariantsFor(state.customItems, vocab, catalogNameSet()).variants;
+    }
+
+    /** The entries that could not be minted, with the reasons — rendered in the
+     *  panel and reported on load, never silently skipped. */
+    function customRejections() {
+      return customVariantsFor(state.customItems, vocab, catalogNameSet()).rejected;
+    }
+
+    /** The catalog's display names, for the name-collision refusal. Built once per
+     *  call from the fetched roster; `validateEntry` owns what it means. */
+    function catalogNameSet() {
+      if (!_catalogNames) {
+        _catalogNames = new Set();
+        for (const v of dataset.items || []) {
+          const n = v && (v.source_item || v.variant_id);
+          if (n) _catalogNames.add(n);
+        }
+      }
+      return _catalogNames;
+    }
+
+    /** #773 — the whole roster the wizard reasons about: the catalog PLUS this
+     *  character's own items.
+     *
+     *  Every surface that offers, resolves or explains an item reads this rather
+     *  than `dataset.items`, because a custom item the pin search cannot find is
+     *  a custom item that cannot be forced into a slot — which is the reported
+     *  use case (a crafted off-hand dagger, pinned, so the solver spends the rest
+     *  of the build on what the dagger does not already cover).
+     *
+     *  `dataset.items` is never mutated. Browse, the set pickers and the block
+     *  picker keep reading the catalog alone: a custom item belongs to no set,
+     *  and deleting it is the way to stop it being considered, so a blocklist
+     *  entry for one would be a second control for the same thing. */
+    function poolItems() {
+      const mine = customVariants();
+      return mine.length ? (dataset.items || []).concat(mine) : (dataset.items || []);
+    }
+
     function candidateItems() {
       if (state.pool === "owned" && state.ownedNames) {
         // Base items: always restricted to the export (KTD4/R13).
@@ -5409,9 +5873,15 @@ ${(() => {
         // upstream of buildModel, so the pin exemptions inside variantConflict
         // cannot reach it and a pinned unowned item was dropped in silence.
         const pinned = pinnedIdSet(state.slotConstraints);
-        return dataset.items.filter((v) => ownedPoolAdmits(v, owns, pinned, state.ownedAugments));
+        // #773 — the player's own items are appended AFTER the owned filter, never
+        // through it. A Trove export lists what the catalog knows the player has;
+        // an item the player typed in is owned by construction and by definition
+        // absent from that export, so filtering it would delete exactly the gear
+        // inventory mode exists to include.
+        return dataset.items.filter((v) => ownedPoolAdmits(v, owns, pinned, state.ownedAugments))
+          .concat(customVariants());
       }
-      return dataset.items;
+      return poolItems();
     }
     function overlay(on, title, sub) {
       let el = document.getElementById("wz-solve-overlay");
@@ -5636,7 +6106,7 @@ ${(() => {
         // outside it, a rejection would wedge the UI with the guard stuck on.
         await yieldToPaint();
         const h = await getHighs();
-        const query = buildQuery(state, vocab, dataset && dataset.items);
+        const query = buildQuery(state, vocab, poolItems());
         // R4a — suppress pins illegal for THIS config from the solve WITHOUT mutating
         // persistent state: reconcile a COPY, so an illegal pin is only dropped for the
         // current (illegal) solve and is honored again once the config makes it legal
@@ -5915,6 +6385,49 @@ ${(() => {
       state.blocklist = Array.isArray(i.blocklist)
         ? i.blocklist.filter((x) => typeof x === "string" && x)
         : [];
+      // #772 — the same unconditional restore, for the three saved inputs that
+      // never got one. `state` outlives any one character, so a key on
+      // `INPUT_KEYS` with no assignment HERE stays live from the previous build,
+      // and the next save writes it into that build's record: the leak is not
+      // only in the session, it is persisted. The reported case is
+      // `pinnedAugments` — pin an augment on one build, load a second, and the
+      // pin is on the second too — but the mechanism is the shape, not the key,
+      // and it had three other instances. A source guard in tests/wizard.test.js
+      // now asserts EVERY key on `INPUT_KEYS` is assigned on this path, because
+      // "all of them are reset" is a claim about a list and both sides are
+      // readable (`AGENTS.md`: a completeness claim needs a guard).
+      //
+      // Sanitized at the boundary for the reason the two above are: a
+      // hand-edited backup can carry non-strings, which render as ghost rows
+      // that `removeAugmentPin`'s strict comparison could never remove.
+      state.pinnedAugments = Array.isArray(i.pinnedAugments)
+        ? i.pinnedAugments.filter((x) => typeof x === "string" && x) : [];
+      state.excludedSets = Array.isArray(i.excludedSets)
+        ? i.excludedSets.filter((x) => typeof x === "string" && x) : [];
+      // NULLABLE on purpose, and the absent branch is `null` rather than `[]`:
+      // null means "not answered", which filters nothing, while `[]` means the
+      // player ticked no packs and owns none. Collapsing the two would silently
+      // empty the roster for every pre-feature save.
+      state.ownedPacks = Array.isArray(i.ownedPacks)
+        ? i.ownedPacks.filter((x) => typeof x === "string" && x) : null;
+      // Keyed `stat||bonusType` like `declaredCredits`, and reset in the same
+      // breath for the same reason — the skip grid is the other half of one
+      // picker, so a leak here solves the loaded build over bonus types this
+      // player never skipped for it.
+      state.excludedTypes = (i.excludedTypes && typeof i.excludedTypes === "object")
+        ? { ...i.excludedTypes } : {};
+      // #773 — the player's own items. Restored as ENTRIES and re-minted into
+      // records on demand, and the uid counter is rebuilt from the restored list
+      // rather than persisted: a saved counter that disagreed with the list would
+      // hand the next new item an id an existing pin already points at.
+      state.customItems = restoreCustomItems(i.customItems);
+      state.customUid = nextCustomUid(state.customItems);
+      // The half-typed item is per-character UI state too, and this is the same
+      // family #772 is about: a draft left open on build A, still on screen under
+      // build B, would add A's item to B the moment it was saved. Cleared
+      // unconditionally, beside `blockStage` and `farmingTakeover`, rather than
+      // waiting for someone to report it.
+      customDraft = null;
       // review fix — the STAGED selection is per-character UI state too: ticks
       // staged on the previous character must not commit into this one.
       blockStage.clear();
@@ -6039,7 +6552,7 @@ ${(() => {
       // results view).
       const _target = stepOnLoad(i, snap);
       if (_target === "results") {
-        const query = rec.query || buildQuery(state, vocab, dataset && dataset.items);
+        const query = rec.query || buildQuery(state, vocab, poolItems());
         // #91 (U3, KTD3) — same counting-set threading as the solve path above.
         // eslint-disable-next-line no-undef
         const model = buildModel(candidateItems(), query, dataset.dino_inserts, dataset.nearly_complete,
@@ -7035,6 +7548,10 @@ ${(() => {
         // re-renders itself, so this is the only binding site.
         renderPackList();
         renderSetExResults(); renderSetExList();
+        // #773 — the custom-item panel. Both halves render on step entry: the list
+        // owns its own handlers and re-renders itself, and the form renders empty
+        // unless a draft is open, so this is the only binding site.
+        renderCustomList(); renderCustomForm();
         // U6 — set-augment availability checkboxes write into state.ownedSetAugments (a Set).
         //
         // #509 — every write goes through ONE sync, because a full render() is not
