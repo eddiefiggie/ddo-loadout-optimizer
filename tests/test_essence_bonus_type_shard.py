@@ -18,6 +18,7 @@ Insight to the FORMER `Exceptional Seeker` instead.
 """
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -26,6 +27,7 @@ sys.path.insert(0, ROOT)
 SHARD_PATH = os.path.join(ROOT, "data", "seed", "compendium", "essence_bonus_type.json")
 PLACEMENTS_PATH = os.path.join(ROOT, "data", "seed", "compendium", "essence_crafting.json")
 EVIDENCE_PATH = os.path.join(ROOT, "docs", "wiki-evidence", "essence-crafting-bonus-types.md")
+TOOLTIP_PATH = os.path.join(ROOT, "data", "seed", "compendium", "affix_tooltip.json")
 
 # The bucket vocabulary the built dataset actually uses. A harvested type outside
 # this set would key a bucket nothing else lands in, which silently makes the
@@ -49,6 +51,41 @@ def _roster():
     with open(PLACEMENTS_PATH) as fh:
         placements = json.load(fh)["placements"]
     return {e for menus in placements.values() for eff in menus.values() for e in eff}
+
+
+def _tooltips():
+    with open(TOOLTIP_PATH) as fh:
+        return json.load(fh)["harvested"]
+
+
+def _catalog_types_in(text):
+    """The bonus types a tooltip NAMES, in order, restricted to buckets the catalog
+    knows. Restricting to `CATALOG_TYPES` is deliberate: a tooltip reading "a bonus
+    to your attack rolls" names no type at all, and a word the catalog does not
+    bucket on could not be used as one anyway. Both are absences, not findings."""
+    lower = {t.lower(): t for t in CATALOG_TYPES}
+    out = []
+    for m in re.finditer(r"\b([A-Za-z]+(?:\s+[A-Za-z]+)?)\s+bonus\b", text or "", re.I):
+        phrase = m.group(1).strip().lower()
+        for candidate in (phrase, phrase.split()[-1]):
+            if candidate in lower:
+                out.append(lower[candidate])
+                break
+    return list(dict.fromkeys(out))
+
+
+def _tooltip_vs_crafted():
+    """Every effect with BOTH a wiki-stated crafted type and a tooltip naming a
+    catalog type, split by whether the two agree. Computed, never listed."""
+    tips, agree, disagree = _tooltips(), [], []
+    for name, rec in _shard()["harvested"].items():
+        if rec.get("provenance") != "stated":
+            continue
+        named = _catalog_types_in((tips.get(name) or {}).get("tooltip"))
+        if not named:
+            continue
+        (agree if rec["value"]["bonus_type"] in named else disagree).append(name)
+    return sorted(agree), sorted(disagree)
 
 
 def test_every_harvested_name_is_a_real_craftable_effect():
@@ -147,3 +184,84 @@ def test_the_evidence_document_and_the_shard_agree_on_the_count():
     with open(EVIDENCE_PATH) as fh:
         text = fh.read()
     assert "22 of 157" in text, "the evidence doc's coverage claim must match the shard"
+
+
+def test_a_carrier_tooltip_is_not_admissible_for_a_crafted_type():
+    """#764 — 39 of the untyped effects have a tooltip in `affix_tooltip.json`, which
+    looks like 39 free types. Tested where the answer is already known: of the 22
+    effects with a wiki-stated CRAFTED type, the ones that ALSO carry a tooltip
+    would all agree if a carrier's tooltip were admissible.
+
+    Three do not, and each is a different shape of the same mistake — a tooltip
+    states its CARRIER's type, which is not the type Essence Crafting grants.
+
+    Recomputed from both shards on every run rather than dated, so a re-harvest
+    that changes any of it fails here instead of quietly restoring the shortcut.
+    """
+    agree, disagree = _tooltip_vs_crafted()
+    overlap = len(agree) + len(disagree)
+
+    # Refuse to inspect zero records: an empty overlap proves nothing and would
+    # otherwise read as "no disagreement found".
+    assert overlap >= 10, (
+        f"only {overlap} effects carry both a stated crafted type and a tooltip naming a "
+        "catalog type — too few to test admissibility on. Check the extractor before "
+        "reading this as a clean result.")
+
+    assert disagree == ["Constitution", "Healing Amplification", "Seeker"], (
+        f"the carrier-tooltip disagreements changed: {disagree}. Re-read the #764 section "
+        "of the evidence doc before touching it — the whole inadmissibility finding rests "
+        "on this set.")
+
+    tips = _tooltips()
+    # `Constitution` and `Seeker` are engraved under a VARIANT label, so the tooltip
+    # is not even about the same affix.
+    assert tips["Constitution"]["label"] == "Quality Constitution +1"
+    assert tips["Seeker"]["label"] == "Exceptional Seeker +5"
+
+    # `Healing Amplification` is the load-bearing one: an EXACT label match that
+    # still names a different bucket. It is what forbids the obvious rescue of
+    # trusting a tooltip whose label equals the effect name.
+    heal = tips["Healing Amplification"]
+    assert heal["label"] == "Healing Amplification", (
+        "the exact-label counter-example lost its exact label — without it, 'only trust "
+        "a label-matched tooltip' becomes arguable again")
+    assert _catalog_types_in(heal["tooltip"]) == ["Exceptional"]
+    assert _shard()["harvested"]["Healing Amplification"]["value"]["bonus_type"] == "Competence"
+
+    # The doc states these counts; both sides are readable, so assert rather than date.
+    with open(EVIDENCE_PATH) as fh:
+        text = fh.read()
+    assert f"agrees on {len(agree)} and **contradicts on {len(disagree)}**" in text, (
+        f"the evidence doc's admissibility count must match the shards: {len(agree)} agree, "
+        f"{len(disagree)} contradict")
+
+
+def test_the_effects_with_a_carrier_tooltip_stayed_unsourced():
+    """The shortcut, specifically not taken. Every effect this harvest could not type
+    but which HAS a carrier tooltip must still be `unsourced` — typing it from the
+    tooltip is the inference the test above forbids, and it would be invisible
+    afterwards because a wrong type looks exactly like a right one."""
+    tips, shard = _tooltips(), _shard()["harvested"]
+    typed_from_a_tooltip = []
+    for name, rec in shard.items():
+        if rec.get("provenance") != "stated":
+            continue
+        raw = (rec.get("raw") or "")
+        tip = (tips.get(name) or {}).get("tooltip")
+        # A record whose evidence is the tooltip text, or whose join names a carrier
+        # item, is typed from the wrong source.
+        if tip and raw.strip() and raw.strip() in tip:
+            typed_from_a_tooltip.append(name)
+    assert not typed_from_a_tooltip, (
+        f"typed from a carrier tooltip rather than a statement about crafting: "
+        f"{typed_from_a_tooltip}")
+
+    # And the population that shortcut would have raided is still refused.
+    untyped_with_a_tooltip = sorted(
+        n for n in _roster()
+        if n in tips and tips[n].get("tooltip")
+        and shard.get(n, {}).get("provenance") != "stated")
+    assert len(untyped_with_a_tooltip) >= 30, (
+        f"only {len(untyped_with_a_tooltip)} untyped effects carry a tooltip — this guard "
+        "is meant to watch a population of ~39; re-read #764 if it has collapsed")
