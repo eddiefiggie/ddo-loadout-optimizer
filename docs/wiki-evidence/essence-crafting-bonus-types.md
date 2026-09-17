@@ -112,6 +112,71 @@ than statements:
 The second is a genuine cross-check between two independently harvested shards,
 and it is why the ability numbers can be trusted rather than merely accepted.
 
+## A carrier's tooltip is NOT admissible for a crafted type (2026-09-17, #764)
+
+`affix_tooltip.json` (#713) holds one rendered tooltip per rankable affix name,
+read from a named item's page. Of the Trinket menus' untyped effects — the 112 in
+`metadata.essence_crafting_coverage.skipped['no-bonus-type']`, read off the built
+dataset on 2026-09-17 — **39 have an entry in it**. That looks like 39 free types.
+It is not one, and the shortcut is closed rather than merely discouraged.
+
+(The 112 and the 39 are a claim about the BUILT dataset's Trinket population, not
+about the 157-effect roster this document's coverage table counts. The guards
+below assert the admissibility finding, which is computable from the two seed
+shards alone; the 112 is re-derivable from the stamp named above.)
+
+### Tested where the answer is already known
+
+12 of the 22 effects with a wiki-stated CRAFTED type also carry a harvested
+tooltip. If a carrier's tooltip were admissible it would agree on all 12. It
+agrees on 9 and **contradicts on 3**:
+
+| Effect | Crafted type (this document) | Carrier tooltip says | Carrier |
+|---|---|---|---|
+| `Constitution` | Enhancement | **Quality** | `Aegis of Aosu'riel` |
+| `Seeker` | Enhancement | **Insight** | `Adamantine Cloak of the Wolf` |
+| `Healing Amplification` | Competence | **Exceptional** | `A Garbage Can Lid` |
+
+### Three shapes, and why narrowing cannot rescue it
+
+**The tooltip is keyed by our canonical stat name; the wiki engraves a variant
+label.** `Constitution`'s entry is engraved `Quality Constitution +1` and reads
+"a +1 Quality bonus to Constitution" — evidence about a *different affix*, filed
+under `Constitution` because the harvest keys by our name.
+
+**`Seeker` is the trap this document already records**, one layer out. Its entry
+is engraved `Exceptional Seeker +5`, and the sentence quoted under *The rule this
+harvest turns on* says outright that the FORMER Exceptional Seeker is the Insight
+one. The tooltip corroborates the wiki and is still not about crafted `Seeker`.
+
+**`Healing Amplification` closes the door.** Its label is exactly
+`Healing Amplification` — no variant prefix, an exact name match — and it still
+reads Exceptional where the crafted effect is Competence. So the obvious rescue,
+*trust only a tooltip whose label matches the effect name*, does not work either.
+
+The mechanism is in the harvested `raw`: an effect page groups its sources under
+`=== <Type> bonus ===` headings, and Essence Crafting sits under **Competence**
+on that page while other carriers sit under other headings. **A different carrier
+granting the same-named effect in a different bucket is ordinary, not anomalous.**
+A tooltip states its carrier's type. That is the whole of what it states.
+
+Independently, **6 of the 39** are not engraved under the effect they are keyed
+to at all: `Accuracy` -> `Attack Bonus +4`, `False Life` -> `Vitality +25`,
+`Doubleshot` -> `Insightful Doubleshot 5%`, `Sheltering` ->
+`Insightful Sheltering +9`, `Repair` -> `Repair Amplification`, `Wizardry` ->
+`Wizardry II`.
+
+### The rule, and the guard
+
+This is *no effect is typed by its own name* one step out: **no effect is typed by
+a different carrier's tooltip.** Both are a pattern standing in for a statement,
+which is what the provenance model exists to refuse.
+
+`test_a_carrier_tooltip_is_not_admissible_for_a_crafted_type` recomputes the
+overlap and the disagreements from both shards on every run rather than dating
+this claim, and `test_the_effects_with_a_carrier_tooltip_stayed_unsourced` pins
+that the shortcut was not quietly taken. **#764's scope is 112, not 73.**
+
 ## What this does and does not unblock
 
 **WIRED 2026-08-29.** The partial capability below is now live for the Gem — see
