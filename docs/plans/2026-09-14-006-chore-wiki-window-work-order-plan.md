@@ -10,7 +10,8 @@ product_contract_source: ce-plan-bootstrap
 
 # Wiki Window Work Order - Plan
 
-**Issues:** #746 (the Ghost Touch ruling), #591 half B (the 64 Cannith weapons).
+**Issues:** #746 (the Ghost Touch ruling), #591 half B (the 64 Cannith weapons),
+and #769 (the Slaver's set name) — added 2026-09-17, see the addendum.
 **Base:** `main` at `09142026.6`.
 
 ---
@@ -112,3 +113,61 @@ Either way: navigate to a ddowiki page first, keep the pacing, and if it says
   #591 per its re-scope; the dump carries their text verbatim, so a follow-up can
   admit them without a re-harvest. File it separately if it is wanted.
 - **#196 (Filigrees)** is not touched.
+
+---
+
+## Addendum, 2026-09-17 — a third read rides the window (#769)
+
+This plan was written at `09142026.6`, before #768 shipped Slaver's crafting. That
+PR left one deferral, now filed as **#769**: the Slaver's Set Bonus pools name
+`Slave Lord's Endurance` where the set catalog defines `Slave's Endurance`, so
+`src/membership.py` drops the name, discloses it in
+`metadata.slavers_coverage.set_names_unresolved`, and **no Slaver's host can be
+solved into the Endurance set at either tier**. The issue says to add the page to
+this read; it was not listed, because it did not exist yet.
+
+`scripts/browser/read_slavers_set_names.js` is the third snippet. Run it in the
+same window, after the other two.
+
+**Why it is a read and not a harvest.** `Named item sets` (pageid 9371) is where
+every other set definition in this project came from, and it states each set's
+name. One page, plus the six candidate set titles.
+
+**Why the wiki is needed at all, when the shards look decisive.** Checked across
+all three gear-planner shards on 2026-09-17:
+
+| | Might | Sorcery | Endurance |
+|---|---|---|---|
+| `gearplanner_crafting.json` pools | `Slave Lord's` | `Slave Lord's` | `Slave Lord's` |
+| `gearplanner_sets.json` catalog | `Slave Lord's` | `Slave Lord's` | **`Slave's`** |
+
+Two of three agree on both sides and only Endurance differs, so the catalog is
+the side breaking its own pattern — which makes the answer *look* obvious and is
+still an inference from a pattern, not a source. Reading the page is cheap; the
+rename it licenses is permanent.
+
+**A redirect is an answer.** If one spelling redirects to the other, that is the
+wiki naming its own canonical title, and the snippet records the target verbatim.
+
+**The guard, and the proof it fails.** "Found no mismatch" and "the read did not
+work" must not look alike, so a zero-`Slave*` index read and an unreadable index
+each abort loudly and return no `summaryText`. Verified offline with the API
+mocked, six checks: the index lines extract with context, a redirect target is
+captured, a missing title is recorded rather than guessed around, both failure
+paths shout, and `summaryText` carries none of `| = & ?`. Then the guard block was
+deleted from a scratch copy and the same checks re-run — the neutered copy
+returns a cheerful `index Slave lines 0` summary that reads exactly like a clean
+result, which is the defect the guard exists to prevent.
+
+### What comes back, and where it goes
+
+| From | Paste into | Then |
+|---|---|---|
+| `window.__sl` dump (#769) | the #769 thread, or `docs/wiki-evidence/slavers-set-names.md` | one name correction through the existing seam, citing the URL; **never an alias** |
+
+The correction is repo-side work with tests, like the other two: whichever side
+the wiki contradicts gets renamed at its source shard, and `set_names_unresolved`
+must come back empty at both tiers with the stamping guard still refusing zero
+pools inspected. That change touches `data/seed/`, so it owes a stamp bump; this
+work order does not (`docs/` and `scripts/` are outside
+`src/build_stamp.py`'s player-facing prefixes).
