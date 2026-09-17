@@ -122,16 +122,22 @@ for (const [label, entry, pattern] of REFUSALS) {
   });
 }
 
-test("#773: a presence-only effect is refused BY NAME, not silently given a number", () => {
-  // The one refusal a player is most likely to hit and least likely to guess:
-  // Ghost Touch and True Seeing are on/off, so there is no typed bucket for a
-  // magnitude to join. The same gate a declared credit passes.
+test("#773 -> #774: a presence-only effect is no longer refused, it is a flag", () => {
+  // This test used to assert the OPPOSITE, and the change is deliberate. #773
+  // shipped without on/off effects and refused them by name; #774 admits them as
+  // flags, because the measurement showed the Utility tier counts them through
+  // the ordinary bucket machinery with no special case (see the solve test).
+  //
+  // Kept rather than deleted, and pointed at the population it used to refuse, so
+  // the reversal is legible to whoever finds this next instead of looking like a
+  // guard someone quietly dropped.
   const presence = [...(vocab.presence || [])].filter((s) => !canDeclareCredit(s, vocab));
   assert.ok(presence.length, "the vocabulary has presence-only stats to test with");
-  const v = C.validateEntry(dagger({ affixes: [{ stat: presence[0], bonus_type: "Quality", value: 2 }] }), ctx);
-  assert.ok(!v.ok);
-  assert.ok(v.errors.some((e) => e.includes(presence[0]) && /on\/off/i.test(e)),
-    `the refusal must name the stat and say why; got: ${v.errors.join(" | ")}`);
+  for (const stat of presence.slice(0, 25)) {
+    const v = C.validateEntry(dagger({ affixes: [{ stat, presence: true }] }), ctx);
+    assert.deepStrictEqual(v.errors, [], `${stat} was refused: ${v.errors.join(" | ")}`);
+    assert.deepStrictEqual(v.entry.affixes, [{ stat, presence: true }]);
+  }
 });
 
 test("#773: the no-context fallback is the SAME rule as wizard.js's canDeclareCredit", () => {
@@ -328,4 +334,100 @@ test("#773: a build that placed none of the player's items discloses nothing", (
   assert.strictEqual(C.playerAuthoredNotice([{ slot: "Ring", variant: dataset.items[0] }]), null);
   assert.strictEqual(C.playerAuthoredNotice([]), null);
   assert.strictEqual(C.playerAuthoredNotice(null), null);
+});
+
+// ---------------------------------------------------------------------------
+// #774 — on/off effects. A presence-only stat is a FLAG: no bonus type, no
+// magnitude, minted as `Bool` exactly as the catalog carries it.
+//
+// The measurement that shaped this is in custom-items-solve.test.js: a described
+// item carrying `Ghost Touch` is counted by the Utility tier through the ordinary
+// bucket machinery, and the tier's own receipt already credits it under the
+// `(yours)` name. Neither the solver nor the tier needed a line of new code —
+// which is why this file only has to prove the validator and the mint.
+
+const PRESENCE_NAME = "Ghost Touch";
+
+test("#774: a presence-only effect is ACCEPTED, and stored as a flag", () => {
+  const v = C.validateEntry(dagger({
+    affixes: [{ stat: PRESENCE_NAME, presence: true }] }), ctx);
+  assert.deepStrictEqual(v.errors, [], "no refusal");
+  assert.deepStrictEqual(v.entry.affixes, [{ stat: PRESENCE_NAME, presence: true }],
+    "a flag carries neither a bonus type nor a value");
+});
+
+test("#774: a flag mints as Bool 1, the shape the catalog uses", () => {
+  const rec = C.toVariant(C.validateEntry(dagger({
+    affixes: [{ stat: PRESENCE_NAME, presence: true }] }), ctx).entry);
+  assert.deepStrictEqual(rec.affixes, [
+    { name: PRESENCE_NAME, type: "Bool", value: "1", eligible: true },
+  ]);
+  // The same shape a catalog item carries it in — asserted against the real
+  // roster, not assumed, because that identity is the whole reason the Utility
+  // tier needs no special case.
+  const carrier = dataset.items.find((it) => (it.affixes || [])
+    .some((a) => a && a.name === PRESENCE_NAME && a.type === "Bool"));
+  assert.ok(carrier, `no catalog item carries ${PRESENCE_NAME} as Bool`);
+});
+
+test("#774: a stat's typed and flag forms cannot be mixed up", () => {
+  // Numeric and flag rows coexist on one item, each keeping its own shape.
+  const v = C.validateEntry(dagger({ affixes: [
+    { stat: "Assassinate", bonus_type: "Quality", value: 3 },
+    { stat: PRESENCE_NAME, presence: true },
+  ] }), ctx);
+  assert.deepStrictEqual(v.errors, []);
+  assert.strictEqual(v.entry.affixes.length, 2);
+  assert.strictEqual(v.entry.affixes[0].presence, undefined, "a typed row is not a flag");
+  assert.strictEqual(v.entry.affixes[1].presence, true);
+  assert.strictEqual(v.entry.affixes[1].bonus_type, undefined, "a flag carries no bonus type");
+});
+
+test("#774: a presence stat is a flag even when the entry claims a type and value", () => {
+  // The form stops offering those controls once it knows the stat is on/off, so
+  // a leftover value is stale UI state rather than something the player asked
+  // for. Dropping it silently is right; refusing would strand them on a row they
+  // cannot fix.
+  const v = C.validateEntry(dagger({
+    affixes: [{ stat: PRESENCE_NAME, bonus_type: "Quality", value: 7 }] }), ctx);
+  assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
+  assert.deepStrictEqual(v.entry.affixes, [{ stat: PRESENCE_NAME, presence: true }]);
+});
+
+test("#774: an untyped-only stat is still refused, and the reason is its own", () => {
+  // The third kind, and the one that stays out: a real magnitude carried untyped
+  // on every source. There is no bonus type to pick and no bucket a value would
+  // join, so it is neither a flag nor a typed row.
+  const untyped = [...(vocab.untypedOnly || [])];
+  assert.ok(untyped.length, "the vocabulary has untyped-only stats to test with");
+  const v = C.validateEntry(dagger({
+    affixes: [{ stat: untyped[0], bonus_type: "Quality", value: 3 }] }), ctx);
+  assert.ok(!v.ok);
+  assert.ok(v.errors.some((e) => e.includes(untyped[0]) && /no bonus type anywhere/i.test(e)),
+    `the refusal must name the stat and its own reason; got: ${v.errors.join(" | ")}`);
+  // And it must NOT be mistaken for the on/off case, which is now accepted.
+  assert.ok(!v.errors.some((e) => /on\/off/i.test(e)),
+    "an untyped-only stat is not an on/off effect");
+});
+
+test("#774: the presence fallback is the SAME rule as wizard.js's isPresenceOnly", () => {
+  // The same guard the `canDeclare` fallback carries, for the same reason: the
+  // module cannot require wizard.js back, so agreement is asserted over the real
+  // vocabulary rather than hoped for. This is the assertion that caught the
+  // missing `magnitude` clause on the sibling predicate.
+  const { isPresenceOnly } = require("../web/wizard.js");
+  const names = [...(vocab.known || [])];
+  const disagree = names.filter((s) =>
+    C.isPresenceEffect(s, vocab, { isPresenceOnly }) !== C.isPresenceEffect(s, vocab, null));
+  assert.deepStrictEqual(disagree, [],
+    `injected and fallback presence predicates disagree on: ${disagree.slice(0, 8).join(", ")}`);
+});
+
+test("#774: an item whose ONLY effect is a flag is legal", () => {
+  // A crafted Ghost Touch ring with nothing else on it is a real item, and the
+  // "at least one effect" rule must count a flag as an effect.
+  const v = C.validateEntry({ uid: 1, name: "My ghostly ring", slot: "Ring", ml: 30,
+    augments: [], affixes: [{ stat: PRESENCE_NAME, presence: true }] }, ctx);
+  assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
+  assert.ok(v.ok);
 });

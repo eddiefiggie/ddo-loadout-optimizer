@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 09162026.1 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 09172026.1 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 
 ---
@@ -61,7 +61,7 @@ You can also point it at **only the gear you actually own** by importing a Trove
 | **Essence Crafting** (Gem of Many Facets) | ✅ partial — the Gem's three Trinket menus are solved, choosing from 25 of the 170 effects those menus offer in game. An effect is offered only once its placement, its bonus type and its level curve are all sourced from the wiki; the result says so. Melee, Ring and Rune Arm menus are ⏳ not yet |
 | **Slaver's crafting** (Chains / Five Rings / Shackles, heroic and legendary) | ✅ the four typed slots (Prefix / Suffix / Extra / Bonus) from the catalog's own pools, one effect each, and the Set Bonus slot as a chosen Slave Lord's set. One pool name the catalog defines no set for is disclosed per build rather than mapped (#766) |
 | Filigrees | ⏳ not yet |
-| **Items you describe yourself** (Cannith/Essence-crafted gear the wiki has no record of) | ✅ up to 12 per build. Name it, pick its slot, level, augment colours and effects, and it joins the search as a real item — pinnable into a slot, counted in the stacking buckets, filling around the rest of your gear. Its stats and bonus types come from the same lists the tool uses, so it can be ranked. **These numbers are yours, not wiki-sourced**, so the item is shown as "(yours)" everywhere it appears and every result and export says so |
+| **Items you describe yourself** (Cannith/Essence-crafted gear the wiki has no record of) | ✅ up to 12 per build. Name it, pick its slot, level, augment colours and effects, and it joins the search as a real item — pinnable into a slot, counted in the stacking buckets, filling around the rest of your gear. Effects can be numbers (a stat plus its bonus type) or on/off toggles like Ghost Touch and True Seeing, which count for the Utility tier exactly as a named item's would. Names come from the same lists the tool uses, so everything you enter can be ranked. **These numbers are yours, not wiki-sourced**, so the item is shown as "(yours)" everywhere it appears and every result and export says so |
 
 ## Why you can trust the numbers
 
