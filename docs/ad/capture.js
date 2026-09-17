@@ -1,24 +1,20 @@
-// Re-shoot the five ad screenshots. Companion to `annotate.py`, which crops and
-// annotates what this writes into `raw/`.
+// Re-shoot the five ad screenshots, annotated and cropped, ready to publish.
 //
-// #770 — the set went stale because re-shooting them "belonged to nobody": it was
-// five hand-taken screenshots with no recipe, so nobody re-took them when the UI
-// moved underneath. This is the recipe.
+// #770 — the set went stale because re-taking it "belonged to nobody": five
+// hand-taken screenshots and a renderer that only ran on one machine. So this
+// does the whole job in one command, on any machine with Chromium:
 //
-// WHY IT SPEAKS CDP DIRECTLY, with no Playwright: in the build container the
-// package registries are closed, so `npm i playwright` is not available. Node 22's
-// built-in WebSocket is enough to drive Chromium over the DevTools protocol, and
-// that keeps this script dependency-free wherever it runs.
+//   python3 -m http.server 8777 --directory web     # or: .claude/launch.json
+//   node docs/ad/capture.js
 //
-//   python3 -m http.server 8777 --directory web      # or: .claude/launch.json
-//   node docs/ad/capture.js                          # writes docs/ad/raw/*.jpg
-//   python3 docs/ad/annotate.py                      # crops + annotates (needs Pillow)
+// It writes `raw/*.jpg` (the unannotated window shots, kept so a crop can be
+// re-aimed without re-shooting) and `web/screenshots/ad/*.png` (what `ad.txt`
+// links). It replaces the old `annotate.py`, whose Pillow dependency and macOS
+// font paths meant it could not run in CI or in a build container — half the
+// reason nobody re-ran it. Callouts are drawn as DOM over the live page and
+// captured by the browser, so they use the same font stack the app itself does.
 //
-// `annotate.py` resolves macOS system fonts, so the annotate step is happiest on a
-// Mac; this capture step runs anywhere Chromium does.
-//
-// CHROME: override with CHROME=/path/to/chrome. The default is the Playwright
-// Chromium that ships in the Claude Code container image.
+// CHROME: override with CHROME=/path/to/chrome. ORIGIN: override the server.
 
 const { spawn } = require("child_process");
 const fs = require("fs");
@@ -28,8 +24,36 @@ const CHROME = process.env.CHROME || "/opt/pw-browsers/chromium-1194/chrome-linu
 const ORIGIN = process.env.ORIGIN || "http://127.0.0.1:8777";
 const PORT = 9222;
 const RAW = path.join(__dirname, "raw");
+const OUT = path.join(__dirname, "..", "..", "web", "screenshots", "ad");
 const WIDTH = 1280;   // the step nav wraps below ~1200 now that "Your data" is in it
 const HEIGHT = 1600;
+
+
+// The callouts and crops, in each RAW's own coordinate space (1280x1600).
+// A crop is (left, top, right, bottom); a callout is placed at `xy` with an
+// arrow to `target`, and must sit INSIDE its crop or it is cut off.
+const SHOTS = {
+  "1-character": {
+    crop: [128, 0, 1180, 450],
+    calls: [["Lock in how you actually play — level cap, race, armor proficiency, then combat style below, down to a dual-wield off-hand.", [700, 120], [400, 372], 300]],
+  },
+  "2-priorities": {
+    crop: [105, 110, 890, 1320],
+    calls: [["Rank what matters. The solver maxes #1, then #2 without giving up any of #1 — that order IS the objective.", [516, 700], [189, 985], 330]],
+  },
+  "3-loadout": {
+    crop: [128, 660, 1180, 1170],
+    calls: [["Exact crafting steps per slot — every augment, gem and seal needed to build it.", [900, 700], [700, 1120], 250]],
+  },
+  "4-proof": {
+    crop: [128, 690, 900, 1170],
+    calls: [["It shows its work: every point traced to the exact item and bonus type, against the ceiling it could reach.", [140, 850], [600, 820], 300]],
+  },
+  "5-upgrades": {
+    crop: [128, 80, 1180, 385],
+    calls: [["You set what a suggestion may cost — free upgrades only, by default. Your ranking is never traded away behind your back.", [880, 110], [700, 212], 270]],
+  },
+};
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -72,24 +96,81 @@ async function browser(run) {
   });
   await send("Page.enable");
 
-  const b = {
+  const api = {
     goto: (url) => send("Page.navigate", { url }),
     eval: async (expr) => {
       const r = await send("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true });
       if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || "eval failed");
       return r.result.value;
     },
-    /** Capture `clip` (full-page coords) as a JPEG, matching the existing raws. */
-    shot: async (file, clip) => {
+    /** The raw: a plain window shot, kept so a crop can be re-aimed later. */
+    raw: async (file, clip) => {
       const r = await send("Page.captureScreenshot", {
         format: "jpeg", quality: 88, captureBeyondViewport: true, clip: { ...clip, scale: 1 },
       });
       fs.mkdirSync(RAW, { recursive: true });
-      fs.writeFileSync(path.join(RAW, file), Buffer.from(r.data, "base64"));
-      console.log("  wrote raw/%s  %dx%d", file, Math.round(clip.width), Math.round(clip.height));
+      fs.writeFileSync(path.join(RAW, file + ".jpg"), Buffer.from(r.data, "base64"));
+    },
+    /** The published PNG: draw this shot's callouts over the live page, capture
+     *  the crop, then take the overlay back down so it cannot leak into the next
+     *  shot. Coordinates in SHOTS are raw-space; `frameY` maps them onto the page. */
+    annotated: async (name, frameY) => {
+      const { crop, calls } = SHOTS[name];
+      await api.eval(`(() => {
+        const ACCENT = "#639bff", BG = "rgba(11,17,33,0.94)", FG = "#eef2fa";
+        const host = document.createElement("div");
+        host.id = "__ad_overlay";
+        host.style.cssText = "position:absolute;left:0;top:0;width:100%;height:0;z-index:2147483647;pointer-events:none";
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("style", "position:absolute;left:0;top:0;overflow:visible");
+        svg.setAttribute("width", "1"); svg.setAttribute("height", "1");
+        host.appendChild(svg);
+        for (const [text, xy, target, maxw] of ${JSON.stringify(calls)}) {
+          const x = xy[0], y = xy[1] + ${frameY};
+          const tx = target[0], ty = target[1] + ${frameY};
+          const box = document.createElement("div");
+          box.style.cssText = "position:absolute;box-sizing:border-box;left:" + x + "px;top:" + y +
+            "px;max-width:" + maxw + "px;background:" + BG + ";border:3px solid " + ACCENT +
+            ";border-radius:11px;padding:13px;color:" + FG +
+            ";font:400 21px/28px system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
+          box.textContent = text;
+          host.appendChild(box);
+          document.body.appendChild(host);
+          // the arrow starts at the box edge facing the target
+          const r = box.getBoundingClientRect();
+          const cx = r.left + r.width / 2, cy = r.top + scrollY + r.height / 2;
+          const ang = Math.atan2(ty - cy, tx - cx);
+          const sx = cx + (r.width / 2 + 2) * Math.cos(ang), sy = cy + (r.height / 2 + 2) * Math.sin(ang);
+          const line = document.createElementNS(svgNS, "line");
+          line.setAttribute("x1", sx); line.setAttribute("y1", sy);
+          line.setAttribute("x2", tx); line.setAttribute("y2", ty);
+          line.setAttribute("stroke", ACCENT); line.setAttribute("stroke-width", "4");
+          svg.appendChild(line);
+          const ah = 15;
+          const head = document.createElementNS(svgNS, "polygon");
+          head.setAttribute("points", [
+            tx + "," + ty,
+            (tx - ah * Math.cos(ang - 0.5)) + "," + (ty - ah * Math.sin(ang - 0.5)),
+            (tx - ah * Math.cos(ang + 0.5)) + "," + (ty - ah * Math.sin(ang + 0.5)),
+          ].join(" "));
+          head.setAttribute("fill", ACCENT);
+          svg.appendChild(head);
+        }
+        document.body.appendChild(host);
+        return 1; })()`);
+      await sleep(250);
+      const r = await send("Page.captureScreenshot", {
+        format: "png", captureBeyondViewport: true,
+        clip: { x: crop[0], y: crop[1] + frameY, width: crop[2] - crop[0], height: crop[3] - crop[1], scale: 1 },
+      });
+      fs.mkdirSync(OUT, { recursive: true });
+      fs.writeFileSync(path.join(OUT, name + ".png"), Buffer.from(r.data, "base64"));
+      await api.eval(`(() => { const o = document.getElementById("__ad_overlay"); if (o) o.remove(); return 1; })()`);
+      console.log("  %s.png  %dx%d   (raw/%s.jpg)", name, crop[2] - crop[0], crop[3] - crop[1], name);
     },
   };
-  try { return await run(b); } finally { ws.close(); proc.kill(); }
+  try { return await run(api); } finally { ws.close(); proc.kill(); }
 }
 
 /** Click the first button whose trimmed label matches. Throws rather than
@@ -120,6 +201,13 @@ const frame = async (b, sel, bias = 90) => {
   return { x: 0, y: Math.min(y, max), width: WIDTH, height: HEIGHT };
 };
 
+/** Frame the shot, write its raw, then write the annotated PNG from the same frame. */
+const shoot = async (b, name, sel, bias) => {
+  const f = await frame(b, sel, bias);
+  await b.raw(name, f);
+  await b.annotated(name, f.y);
+};
+
 async function main() {
   await browser(async (b) => {
     await b.goto(ORIGIN + "/");
@@ -145,7 +233,7 @@ async function main() {
     await sleep(800);
 
     console.log("1 · character");
-    await b.shot("1-character.jpg", await frame(b, "#wz-ml", 260));
+    await shoot(b, "1-character", "#wz-ml", 260);
 
     await click(b, /^Continue/i, "character -> pool");
     await click(b, /^Continue/i, "pool -> priorities");
@@ -163,7 +251,7 @@ async function main() {
       await sleep(600);
     }
     console.log("2 · priorities");
-    await b.shot("2-priorities.jpg", await frame(b, ".wz-ranked", 320));
+    await shoot(b, "2-priorities", ".wz-ranked", 320);
 
     // --- solve --------------------------------------------------------------
     await click(b, /^Solve/i, "solve");
@@ -172,7 +260,7 @@ async function main() {
     await sleep(2500);
 
     console.log("3 · loadout");
-    await b.shot("3-loadout.jpg", await frame(b, ".pd-grid, .paperdoll, .wz-card", 150));
+    await shoot(b, "3-loadout", ".pd-grid, .paperdoll, .wz-card", 150);
 
     const tab = async (name) => {
       const ok = await b.eval(`(() => { const t = [...document.querySelectorAll('button,[role=tab],a')]
@@ -182,7 +270,7 @@ async function main() {
     };
     await tab("Ranked Priorities");
     console.log("4 · proof");
-    await b.shot("4-proof.jpg", await frame(b, ".wz-card, .wz-panel, main", 120));
+    await shoot(b, "4-proof", ".wz-card, .wz-panel, main", 120);
 
     // --- 5: the Upgrades search (#499 retired the Alternatives tab) ----------
     await tab("Loadout");
@@ -196,9 +284,9 @@ async function main() {
     }
     console.log("   upgrades says:", (await b.eval("(document.querySelector('.upg-out')||{}).innerText?.replace(/\\s+/g,' ').trim()||''")).slice(0, 120));
     console.log("5 · upgrades");
-    await b.shot("5-upgrades.jpg", await frame(b, ".upg-controls", 190));
+    await shoot(b, "5-upgrades", ".upg-controls", 190);
   });
-  console.log("\nnow run:  python3 docs/ad/annotate.py");
+  console.log("\nwrote web/screenshots/ad/*.png — what ad.txt links.");
 }
 
 main().catch((e) => { console.error("capture failed:", e.message); process.exit(1); });
