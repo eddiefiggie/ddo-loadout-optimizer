@@ -197,5 +197,61 @@ function baseState(over) {
     }
   });
 
+  // --- #774: an on/off effect on a described item ------------------------
+  //
+  // The claim the whole issue turned on: does a player-supplied flag reach the
+  // Utility tier, and does the tier's receipt say whose it is? Both are measured
+  // here rather than reasoned about, because both were the open design questions
+  // and the answer decided how much code #774 needed (almost none).
+  const FLAG = "Ghost Touch";
+  const ghostRing = {
+    uid: 2, name: "My ghostly ring", slot: "Ring", ml: 30, augments: [],
+    affixes: [
+      { stat: "Constitution", bonus_type: "Quality", value: 3 },
+      { stat: FLAG, presence: true },
+    ],
+  };
+  const flagMinted = C.customPool([ghostRing], { vocab, catalogNames });
+  const flagPool = dataset.items.concat(flagMinted.variants);
+
+  const withFlag = await solve(baseState({
+    ml: 30, priorities: ["Constitution", "Utility effects"],
+    style: "one-hand", weaponTypes: [], offHandWeapons: [], twoWeaponFighting: false,
+    slotConstraints: { Ring: { type: "pin", variant_id: "My ghostly ring (yours)" } },
+  }), flagPool);
+
+  test("#774: a described item's on/off effect mints and the solve stays optimal", () => {
+    assert.deepStrictEqual(flagMinted.rejected, []);
+    const bool = flagMinted.variants[0].affixes.find((a) => a.name === FLAG);
+    assert.ok(bool, `${FLAG} is not on the minted record`);
+    assert.strictEqual(bool.type, "Bool");
+    assert.strictEqual(withFlag.result.status, "optimal");
+  });
+
+  test("#774: the Utility tier COUNTS a flag the player supplied", () => {
+    // Counted through the ordinary bucket machinery — the tier mints one
+    // indicator per counting-set name with any contribution, and a player's
+    // `Bool` is a contribution like the catalog's. No special case exists, and
+    // this is the assertion that says none is needed.
+    assert.ok(vocab.utilityCounting.has(FLAG), `${FLAG} must be on the counting roster`);
+    const effects = ((withFlag.result.utilityReport || {}).effects) || [];
+    const hit = effects.find((e) => e.name === FLAG);
+    assert.ok(hit, `the tier did not count ${FLAG}; counted: ${effects.map((e) => e.name).join(", ")}`);
+  });
+
+  test("#774: the tier's receipt credits the player's item, under its marked name", () => {
+    // The disclosure obligation the issue raised, and it is already met: the
+    // receipt names the carrier, and a described item's name carries `(yours)`.
+    // That is the structural half of #773's disclosure doing the work here for
+    // free — which is why #774 needed no new reporting.
+    const ring = (withFlag.result.chosen || []).find((c) => c.slot === "Ring"
+      && c.variant.variant_id === "My ghostly ring (yours)");
+    assert.ok(ring, "the described ring was not placed, so the receipt proves nothing");
+    const hit = (((withFlag.result.utilityReport || {}).effects) || [])
+      .find((e) => e.name === FLAG);
+    assert.strictEqual(hit.item, "My ghostly ring (yours)",
+      "the credited carrier must be the player's item, named as theirs");
+  });
+
   console.log(`\n  ${passed} passed`);
 })().catch((e) => { console.error("ERR", (e && e.stack) || e); process.exit(1); });

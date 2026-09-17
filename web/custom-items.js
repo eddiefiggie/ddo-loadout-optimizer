@@ -224,6 +224,28 @@
     return true;
   }
 
+  /** Is this stat an ON/OFF effect — carried as a flag, with no magnitude?
+   *
+   *  Injected like `_canDeclare` above and for the same cycle reason, with the
+   *  same fallback contract: it reads exactly the two vocabulary sets
+   *  `wizard.js`'s `isPresenceOnly` reads, and `tests/custom-items.test.js`
+   *  asserts the two agree over every name in the real vocabulary.
+   *
+   *  The distinction matters because it decides which of THREE outcomes a stat
+   *  gets. A stat with a typed bucket takes a bonus type and a number. A
+   *  presence-only stat takes neither and is minted as a `Bool`. A stat that is
+   *  untyped-only — a real magnitude carried untyped on every source, as
+   *  `Enhanced Ki` is — is refused: it is neither a flag nor a thing with a
+   *  bucket to name, and guessing `Untyped` for it would key a bucket the gear
+   *  cannot join. */
+  function _isPresenceOnly(stat, vocab, ctx) {
+    if (ctx && typeof ctx.isPresenceOnly === "function") return ctx.isPresenceOnly(stat, vocab);
+    var presence = vocab && vocab.presence;
+    var magnitude = vocab && vocab.magnitude;
+    if (!presence || typeof presence.has !== "function" || !presence.has(stat)) return false;
+    return !(magnitude && typeof magnitude.has === "function" && magnitude.has(stat));
+  }
+
   /** Validate one player-entered item against the live vocabularies.
    *
    *  Returns `{ ok, errors: [sentence], entry }` — `entry` is the CLEANED copy
@@ -307,12 +329,29 @@
           + "Pick the name from the list.");
         continue;
       }
-      // The same gate a declared credit passes, reused rather than restated. A
-      // presence-only effect (Ghost Touch, True Seeing) has no typed bucket, so a
-      // number on it would name nothing and read as a setting that did something.
+      // #774 — the on/off branch. A presence-only effect (Ghost Touch, True
+      // Seeing, Freedom of Movement) is a FLAG: it has no typed bucket, so it
+      // takes no bonus type and no number, and `toVariant` mints it as a `Bool`
+      // exactly as the catalog carries it. It then counts for the Utility tier
+      // through the ordinary bucket machinery, with no special case anywhere —
+      // and because a custom item's name carries the `(yours)` suffix, the
+      // tier's own receipt already credits it as the player's. Both facts were
+      // measured through the real solver before this branch was written; see
+      // tests/custom-items-solve.test.js.
+      //
+      // The player's typed bonus type and value are DROPPED rather than refused:
+      // the form stops offering them once it knows the stat is on/off, so a
+      // leftover value is stale UI state rather than something they asked for.
+      if (_isPresenceOnly(stat, vocab, c)) {
+        affixes.push({ stat: stat, presence: true });
+        continue;
+      }
+      // Neither a flag nor a typed magnitude: a real number carried untyped on
+      // every source (`Enhanced Ki`). There is no bonus type to pick and no
+      // bucket the gear would join, so it is refused by name rather than guessed.
       if (!_canDeclare(stat, vocab, c)) {
-        errors.push("“" + stat + "” is an on/off effect rather than a number, so it has no bonus type "
-          + "to carry a value. Custom items cannot supply those yet.");
+        errors.push("“" + stat + "” carries no bonus type anywhere in the game data, so there is no "
+          + "stacking bucket for a value on it to join. Custom items cannot supply it.");
         continue;
       }
       if (types.length && types.indexOf(bt) < 0) {
@@ -380,8 +419,14 @@
       augment_slots_norm: { colors: colors.slice(), quarantined: [] },
       set_bonus: [],
       parsed_set_bonuses: [],
+      // #774 — an on/off effect is minted as `Bool` with value 1, which is
+      // exactly how the catalog carries `Ghost Touch` and its peers. Nothing
+      // downstream needs to know it came from a player: the bucket machinery,
+      // the Utility tier's indicator and its receipt all read the same shape.
       affixes: (Array.isArray(e.affixes) ? e.affixes : []).map(function (a) {
-        return { name: a.stat, type: a.bonus_type, value: String(a.value), eligible: true };
+        return a && a.presence
+          ? { name: a.stat, type: "Bool", value: "1", eligible: true }
+          : { name: a.stat, type: a.bonus_type, value: String(a.value), eligible: true };
       }),
       eligible_affix_count: (Array.isArray(e.affixes) ? e.affixes.length : 0),
       scaling: [],
@@ -472,6 +517,7 @@
     customSlots: customSlots, augmentColors: augmentColors, typesForSlot: typesForSlot,
     bonusTypes: bonusTypes,
     customId: customId, isCustomId: isCustomId, isCustomVariant: isCustomVariant,
+    isPresenceEffect: function (stat, vocab, ctx) { return _isPresenceOnly(stat, vocab, ctx); },
     validateEntry: validateEntry, toVariant: toVariant, customPool: customPool,
     playerAuthoredNotice: playerAuthoredNotice,
   };

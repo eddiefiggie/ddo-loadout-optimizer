@@ -231,6 +231,38 @@ guard.
 **Deferred to follow-up work:** #774 (on/off effects on a described item), filed
 before this PR merged per `AGENTS.md` — prose in a plan is not a queue.
 
+### Addendum, 2026-09-17: #774 was three questions and two answered themselves
+
+The deferral listed three things to decide: whether a player may assert an effect
+the Utility tier counts, whether it must be on the counting roster, and how the
+form should ask for it. A probe through the real solver — a hand-minted record
+carrying `Ghost Touch` as a `Bool`, pinned into a Ring — settled the first two
+before a line was written:
+
+- **The tier already counts it.** The counting indicator is minted per
+  counting-set name with ANY contribution in that name's buckets, and a
+  player's `Bool` is a contribution exactly as the catalog's is. No solver
+  change, no tier change.
+- **The receipt already credits it correctly**, reading `Ghost Touch — from
+  My ghostly ring (yours)`. That is #773's structural disclosure doing the work
+  unaided: the receipt names the carrier, and a described item's name carries the
+  suffix. The disclosure obligation the deferral raised was already met.
+
+So #774 reduced to validation and one form control, and the third question — the
+form — answered itself once the first two did: the row's SHAPE follows the
+effect, dropping the bonus-type and value controls rather than disabling them,
+because a disabled control still reads as a question.
+
+The work that remained was the **third** kind of stat, which the deferral had not
+separated out: untyped-only names like `Enhanced Ki`, which carry a real
+magnitude and no bonus type anywhere. They are neither a flag nor a typed row and
+stay refused, now with their own sentence instead of being lumped in with the
+on/off refusal they no longer share.
+
+Worth keeping: **the probe is why this was cheap.** Reasoning from the issue body
+would have produced a Utility-tier change and a new receipt field, both of which
+the measurement showed were already there.
+
 ---
 
 ## Verification boundary, stated last because it qualifies everything above

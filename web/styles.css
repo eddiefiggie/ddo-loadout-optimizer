@@ -2326,3 +2326,8 @@ input.wz-ml { width: 120px; }
    so they are rendered as prose rows rather than as a terse badge. */
 .wz-custom-errors { margin: var(--sp-3) 0 0; padding-left: var(--sp-4); color: var(--quarantined);
   font-size: var(--fs-sm); }
+
+/* #774 — an on/off effect's row. It has no bonus type and no value, so the two
+   controls are replaced by a note that says what the row is rather than leaving
+   a gap the player would read as something failing to render. */
+.wz-custom-affix-flag .wz-custom-flag { flex: 1 1 10rem; color: var(--muted); font-size: var(--fs-xs); }

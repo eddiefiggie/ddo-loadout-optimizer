@@ -6225,15 +6225,15 @@ test("#747: an active cap is named in the collapsed summary, beside Required", (
   assert.ok(/adv\.required/.test(sum), "Required is still the floor's word");
 });
 
-test("#773: the effect picker offers only names the form will accept", () => {
-  // 874 of the 1,191 names in `datalistStats` are presence/boolean effects
-  // (`Acid`, `Aberration Bane`, the weapon procs) with no typed bucket to carry a
-  // magnitude. Offering one and then refusing it is the worst version of a
-  // picker: the player follows the autocomplete and is told no.
+test("#773/#774: the effect picker offers only names the form will accept", () => {
+  // The invariant is unchanged and the population is not: offering a name and
+  // then refusing it is the worst version of a picker, but since #774 a name is
+  // acceptable in EITHER form — a typed magnitude or an on/off flag. Only the
+  // untyped-only third kind is still refused.
   const v = pickerVocabulary(realData);
   const opts = customStatOptions(v);
   assert.ok(opts.length > 100, "a real list, not an empty one");
-  const wrong = opts.filter((s) => !canDeclareCredit(s, v));
+  const wrong = opts.filter((s) => !canDeclareCredit(s, v) && !isPresenceOnly(s, v));
   assert.deepStrictEqual(wrong, [],
     `these are offered but would be refused: ${wrong.slice(0, 8).join(", ")}`);
   // It is strictly narrower than the priority picker's list, which legitimately
@@ -6271,4 +6271,66 @@ test("#773: loading another build clears a half-typed item, like every other per
   const region = fnBody(WIZARD_SRC, "function loadCharacter(", 4);
   assert.ok(/customDraft = null;/.test(region),
     "the draft is cleared on every load, beside blockStage and farmingTakeover");
+});
+
+// ---------------------------------------------------------------------------
+// #774 — on/off effects reach the panel: the picker offers them, the row changes
+// shape for them, and the load boundary keeps the marker that says which kind a
+// stored effect is.
+
+test("#774: the effect picker now offers on/off effects, and still refuses untyped-only", () => {
+  // #773 filtered the list to stats that can take a bonus type and a number,
+  // which excluded every flag. Widening it is the visible half of #774: a player
+  // cannot type `Ghost Touch` if the list never suggests it.
+  const v = pickerVocabulary(realData);
+  const opts = new Set(customStatOptions(v));
+  const presence = [...(v.presence || [])].filter((s) => !canDeclareCredit(s, v));
+  assert.ok(presence.length > 5, "a real presence population");
+  const missing = presence.filter((s) => !opts.has(s));
+  assert.deepStrictEqual(missing, [],
+    `these on/off effects are expressible but not offered: ${missing.slice(0, 8).join(", ")}`);
+  // The untyped-only third kind is still refused by validateEntry, so it must
+  // still stay out of the list — offering it would be the exact defect #773's
+  // filter was added to fix.
+  const untypedOffered = [...(v.untypedOnly || [])].filter((s) => opts.has(s));
+  assert.deepStrictEqual(untypedOffered, [],
+    `untyped-only stats are offered but would be refused: ${untypedOffered.join(", ")}`);
+  assert.ok(!opts.has("Utility effects"), "the sentinel is still not an effect");
+});
+
+test("#774: the affix row drops the bonus type and value for an on/off effect", () => {
+  // Asking for a bonus type on a flag is asking a question with no right answer.
+  const form = fnBody(WIZARD_SRC, "function renderCustomForm(", 4);
+  assert.ok(/isPresenceOnly\(/.test(form), "the row's shape is decided by the shared predicate");
+  assert.ok(/wz-custom-flag/.test(form), "…and a flag row says what it is");
+  // The two controls must be inside the NON-flag branch, not rendered and hidden:
+  // a disabled select still submits its value and still reads as a question.
+  const rows = srcBetween(form, "const affixRows", "}).join(\"\");", "affixRows");
+  const flagArm = rows.slice(rows.indexOf("isFlag"), rows.indexOf(": `<select"));
+  assert.ok(!/data-custom-bt/.test(flagArm) && !/data-custom-val/.test(flagArm),
+    "a flag row must not render the bonus-type or value controls at all");
+});
+
+test("#774: the stat field re-renders on commit, not on every keystroke", () => {
+  // The row can only change shape once the stat is known, and re-rendering per
+  // character would move the caret out of the field being typed into.
+  const fn = fnBody(WIZARD_SRC, "function wireCustomForm(", 4);
+  const region = srcBetween(fn, "[data-custom-stat]", "[data-custom-bt]", "stat handlers");
+  assert.ok(/el\.oninput = /.test(region), "the draft stays current per keystroke");
+  assert.ok(/el\.onchange = /.test(region), "…and the re-render happens on commit");
+  const onchange = region.slice(region.indexOf("el.onchange"));
+  assert.ok(/renderCustomForm\(\)/.test(onchange), "the commit handler re-renders");
+  assert.ok(/presence/.test(onchange), "…and records which kind of effect it is");
+});
+
+test("#774: the load boundary coerces the on/off marker to a real boolean", () => {
+  // A hand-edited backup can carry anything. A truthy string here would read as a
+  // flag on a stat that has a magnitude, and the item would grant a toggle
+  // instead of its number.
+  const [e] = W772.restoreCustomItems([{
+    uid: 1, name: "Mine", slot: "Ring", ml: 30,
+    affixes: [{ stat: "Ghost Touch", presence: "yes" }, { stat: "Constitution", bonus_type: "Quality", value: 3 }],
+  }]);
+  assert.strictEqual(e.affixes[0].presence, true);
+  assert.strictEqual(e.affixes[1].presence, false, "absent means not a flag, as a real boolean");
 });

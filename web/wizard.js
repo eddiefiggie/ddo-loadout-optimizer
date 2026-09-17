@@ -1530,6 +1530,11 @@ function restoreCustomItems(saved) {
         stat: String((a && a.stat) == null ? "" : a.stat).trim(),
         bonus_type: String((a && a.bonus_type) == null ? "" : a.bonus_type).trim(),
         value: ((a && a.value) == null || a.value === "") ? null : Number(a.value),
+        // #774 — the on/off marker. A hand-edited backup can carry anything, so
+        // it is coerced to a real boolean here rather than trusted: a truthy
+        // string would read as a presence effect on a stat that has a magnitude,
+        // and the item would then grant a flag instead of its number.
+        presence: !!(a && a.presence),
       })),
     });
   }
@@ -1556,7 +1561,7 @@ function nextCustomUid(list) {
 function customVariantsFor(list, vocab, catalogNames) {
   const M = _customItemsModule();
   if (!M) return { variants: [], rejected: [] };
-  return M.customPool(list, { vocab, catalogNames, canDeclare: canDeclareCredit });
+  return M.customPool(list, { vocab, catalogNames, canDeclare: canDeclareCredit, isPresenceOnly });
 }
 
 /** True for a variant this player typed in rather than the catalog supplying. */
@@ -2491,24 +2496,28 @@ function datalistStats(vocab) {
   return out;
 }
 
-/** #773 — the stat options a custom item's effect row may offer.
+/** #773/#774 — the stat options a custom item's effect row may offer.
  *
- *  A SEPARATE list from `datalistStats`, and narrower on purpose. Two names must
- *  not appear here:
+ *  A SEPARATE list from `datalistStats`, and narrower on purpose. Two kinds of
+ *  name must not appear here:
  *
  *   - the Utility sentinel, which is a container rather than an affix and cannot
  *     be engraved on an item at all;
- *   - any stat `validateEntry` would refuse — a presence-only effect like
- *     `Ghost Touch` has no typed bucket for a magnitude, and an untyped-only stat
- *     has no bonus type to pick.
+ *   - an untyped-only stat, which `validateEntry` refuses: it carries a real
+ *     magnitude but no bonus type anywhere, so there is no bucket for a value on
+ *     it to join and no flag to set instead.
  *
  *  Offering a name the form then rejects is the worst version of a picker: the
  *  player follows the autocomplete and is told no. Filtering here makes the
  *  refusal a backstop for a typed name rather than the first thing they hit.
- *  (#774 will widen this when on/off effects become expressible.) Pure. */
+ *
+ *  #774 WIDENED this to presence-only effects (`Ghost Touch`, `True Seeing`),
+ *  which are now expressible as on/off rows. They were excluded while the form
+ *  could only ask for a bonus type and a number. Pure. */
 function customStatOptions(vocab) {
   const out = (vocab && Array.isArray(vocab.suggestions)) ? vocab.suggestions.slice() : [];
-  return out.filter((s) => s !== _utilitySentinel && canDeclareCredit(s, vocab));
+  return out.filter((s) => s !== _utilitySentinel
+    && (canDeclareCredit(s, vocab) || isPresenceOnly(s, vocab)));
 }
 
 /** U11 (R15) — decide what adding `name` to `priorities` should produce. Pure: the
@@ -4107,7 +4116,7 @@ ${(() => {
 
     function blankDraft() {
       return { uid: null, name: "", slot: "", type: "", ml: "", augments: [],
-        affixes: [{ stat: "", bonus_type: "", value: "" }], errors: [] };
+        affixes: [{ stat: "", bonus_type: "", value: "", presence: false }], errors: [] };
     }
 
     function renderCustomList() {
@@ -4167,10 +4176,11 @@ ${(() => {
           ml: e.ml == null ? "" : String(e.ml),
           augments: (e.augments || []).slice(),
           affixes: (e.affixes || []).map((a) => ({
-            stat: a.stat, bonus_type: a.bonus_type, value: a.value == null ? "" : String(a.value) })),
+            stat: a.stat, bonus_type: a.bonus_type,
+            value: a.value == null ? "" : String(a.value), presence: !!a.presence })),
           errors: [],
         };
-        if (!customDraft.affixes.length) customDraft.affixes.push({ stat: "", bonus_type: "", value: "" });
+        if (!customDraft.affixes.length) customDraft.affixes.push({ stat: "", bonus_type: "", value: "", presence: false });
         renderCustomForm();
       });
       box.querySelectorAll("[data-custom-rm]").forEach((b) => b.onclick = () => {
@@ -4215,13 +4225,37 @@ ${(() => {
       // text told them to "pick the effect name from the list". Same reason
       // `wz-stats2` exists rather than being shared.
       const statOpts = customStatOptions(vocab);
-      const affixRows = d.affixes.map((a, ix) => `<div class="wz-custom-affix">
-        <input type="text" list="wz-custom-stats" data-nodirty data-custom-stat="${ix}" value="${wzEsc(a.stat)}"
-               placeholder="Effect, e.g. Assassinate" autocomplete="off">
-        <select data-custom-bt="${ix}"><option value="">Bonus type…</option>${btypes.map((t) => opt(t, a.bonus_type)).join("")}</select>
-        <input type="number" min="1" step="1" data-nodirty data-custom-val="${ix}" value="${wzEsc(a.value)}" placeholder="Value">
-        <button type="button" class="wz-pin-x" data-custom-affix-rm="${ix}" aria-label="Remove this effect">×</button>
-      </div>`).join("");
+      // #774 — the row's SHAPE follows the effect. A presence-only stat is a
+      // flag: it has no bonus type and no magnitude, so asking for either would
+      // be asking a question with no right answer. The row collapses to the name
+      // plus a note saying what it is.
+      //
+      // The kind is decided by the same predicate `validateEntry` uses, so the
+      // form can never offer a control the validator will then refuse. It is
+      // re-read on `change` (blur or Enter) rather than on every keystroke: a
+      // re-render per character would move the caret out of the field being typed
+      // into, which is worse than a row that settles a moment late.
+      const _statKind = (rawStat) => {
+        const t = String(rawStat || "").trim();
+        if (!t) return "";
+        const cn = (vocab && typeof vocab.canonical === "function") ? vocab.canonical(t) : t;
+        return isPresenceOnly(cn, vocab) ? "flag" : "typed";
+      };
+      const affixRows = d.affixes.map((a, ix) => {
+        const isFlag = _statKind(a.stat) === "flag";
+        const tail = isFlag
+          ? `<span class="wz-custom-flag">on/off \u2014 no bonus type or value</span>`
+          : `<select data-custom-bt="${ix}"><option value="">Bonus type\u2026</option>`
+            + `${btypes.map((t) => opt(t, a.bonus_type)).join("")}</select>`
+            + `<input type="number" min="1" step="1" data-nodirty data-custom-val="${ix}"`
+            + ` value="${wzEsc(a.value)}" placeholder="Value">`;
+        return `<div class="wz-custom-affix${isFlag ? " wz-custom-affix-flag" : ""}">`
+          + `<input type="text" list="wz-custom-stats" data-nodirty data-custom-stat="${ix}"`
+          + ` value="${wzEsc(a.stat)}" placeholder="Effect, e.g. Assassinate" autocomplete="off">`
+          + tail
+          + `<button type="button" class="wz-pin-x" data-custom-affix-rm="${ix}"`
+          + ` aria-label="Remove this effect">\u00d7</button></div>`;
+      }).join("");
       box.innerHTML = `<div class="wz-custom-form">
         <datalist id="wz-custom-stats">${statOpts.map((x) => `<option value="${wzEsc(x)}">`).join("")}</datalist>
         <div class="wz-custom-grid">
@@ -4281,8 +4315,25 @@ ${(() => {
           ? customDraft.augments.concat([c]).filter((x, i, a) => a.indexOf(x) === i)
           : customDraft.augments.filter((x) => x !== c);
       });
-      box.querySelectorAll("[data-custom-stat]").forEach((el) => el.oninput = (e) => {
-        customDraft.affixes[Number(e.target.dataset.customStat)].stat = e.target.value;
+      box.querySelectorAll("[data-custom-stat]").forEach((el) => {
+        // `oninput` keeps the draft current per keystroke; `onchange` (blur or
+        // Enter) is what re-renders, so a row that turns out to name an on/off
+        // effect drops its bonus-type and value controls without the caret
+        // jumping out of the field mid-word.
+        el.oninput = (e) => {
+          customDraft.affixes[Number(e.target.dataset.customStat)].stat = e.target.value;
+        };
+        el.onchange = (e) => {
+          const ix = Number(e.target.dataset.customStat);
+          const stat = String(e.target.value || "").trim();
+          customDraft.affixes[ix].stat = stat;
+          // The marker the validator reads. Set here rather than inferred at save
+          // time so the stored entry says which kind it is, and a later
+          // vocabulary change cannot silently reinterpret it.
+          customDraft.affixes[ix].presence = !!(stat
+            && isPresenceOnly(vocab.canonical ? vocab.canonical(stat) : stat, vocab));
+          renderCustomForm();
+        };
       });
       box.querySelectorAll("[data-custom-bt]").forEach((el) => el.onchange = (e) => {
         customDraft.affixes[Number(e.target.dataset.customBt)].bonus_type = e.target.value;
@@ -4298,7 +4349,7 @@ ${(() => {
       });
       box.querySelectorAll("[data-custom-affix-add]").forEach((b) => b.onclick = () => {
         if (customDraft.affixes.length >= _customItemsModule().AFFIX_MAX) return;
-        customDraft.affixes.push({ stat: "", bonus_type: "", value: "" });
+        customDraft.affixes.push({ stat: "", bonus_type: "", value: "", presence: false });
         renderCustomForm();
       });
       box.querySelectorAll("[data-custom-cancel]").forEach((b) => b.onclick = () => {
@@ -4321,7 +4372,8 @@ ${(() => {
         const otherNames = new Set((state.customItems || [])
           .filter((x) => x.uid !== d.uid).map((x) => x.name));
         const v = M.validateEntry(candidate, {
-          vocab, catalogNames: catalogNameSet(), otherNames, canDeclare: canDeclareCredit });
+          vocab, catalogNames: catalogNameSet(), otherNames,
+          canDeclare: canDeclareCredit, isPresenceOnly });
         if (!v.ok) { d.errors = v.errors; renderCustomForm(); return; }
         if (d.uid == null) {
           if ((state.customItems || []).length >= M.CUSTOM_LIMIT) {
