@@ -62,13 +62,20 @@ type. No hand-waving — you can see precisely where your Constitution
 
 
 ----------------------------------------------------------------
- 5.  EXPLORE THE TRADE-OFFS
+ 5.  TRADE-OFFS — ONLY IF YOU ASK FOR THEM
 ----------------------------------------------------------------
-Near-optimal alternatives show exactly what you'd gain and give up
-to complete a different set, free up a slot, or take fewer crafting
-steps. Click any one to inspect it against the optimum.
+Your ranking is never quietly traded away. The Upgrades search
+looks for builds that hit the SAME totals while completing another
+set, freeing a slot, cutting crafting steps, or picking up a stat
+you never ranked — free upgrades, by default.
 
-   [ SCREENSHOT -> https://eddiefiggie.github.io/ddo-loadout-optimizer/screenshots/ad/5-alternatives.png ]
+Want to know what a real trade would cost? You set the bar ("give
+up nothing", or up to 2/5/10% of a priority), or ask the price of
+one specific thing and it answers straight: reachable, and here is
+exactly what it costs you. Nothing is ever swapped behind your back
+to make a number look better.
+
+   [ SCREENSHOT -> https://eddiefiggie.github.io/ddo-loadout-optimizer/screenshots/ad/5-upgrades.png ]
 
 
 ----------------------------------------------------------------

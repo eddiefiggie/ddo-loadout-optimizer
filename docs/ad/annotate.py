@@ -58,17 +58,27 @@ def callout(im, xy, text, target, maxw=320):
         d.text((x+pad, ty0), l, font=F, fill=WHITE); ty0 += lh
 
 # (raw file, crop box (l,t,r,b), [ (callout_text, callout_xy, target_xy, maxw) ... ])
+#
+# Coordinates are in the RAW's own space (1280x1600 window shots from
+# `capture.js`), and callouts are drawn BEFORE the crop — so a callout box has to
+# sit inside its crop box or it is cut off. Re-shoot with `capture.js`, then tune
+# here; the two steps are split so a crop can be re-aimed without re-shooting.
 CFG = {
- "1-character.jpg": ((66,232,772,700), [
-   ("Lock in how you actually play — fighting style, weapon type, even a dual-wield off-hand weapon.", (392,362), (176,662), 330)]),
- "2-priorities.jpg": ((66,176,1004,816), [
-   ("Rank what matters. The solver maxes #1, then #2 without giving up any of #1 — that order IS the objective.", (612,505), (205,529), 330)]),
- "3-loadout.jpg": ((66,132,1004,812), [
-   ("Exact crafting steps per slot — every augment and seal needed to build it.", (792,470), (600,555), 200)]),
- "4-proof.jpg": ((100,492,1004,722), [
-   ("It shows its work: every point traced to the exact item and bonus type.", (560,505), (300,632), 300)]),
- "5-alternatives.jpg": ((100,496,1004,952), [
-   ("Near-optimal trade-offs — see exactly what you gain and what you give up.", (566,800), (350,605), 320)]),
+ # level, race and armor proficiency — the "only show gear you can equip" promise
+ "1-character.jpg": ((128,0,1180,450), [
+   ("Lock in how you actually play — level cap, race, armor proficiency, then combat style below, down to a dual-wield off-hand.", (700,120), (360,390), 300)]),
+ # the ranked list: grip, jump-to-end, link-into-a-group, inline Advanced summary
+ "2-priorities.jpg": ((105,110,890,1320), [
+   ("Rank what matters. The solver maxes #1, then #2 without giving up any of #1 — that order IS the objective. Drag, jump or link rows into a group.", (516,700), (300,985), 330)]),
+ # per-slot gear with its stats, augments AND the crafting steps to build it
+ "3-loadout.jpg": ((128,660,1180,1170), [
+   ("Exact crafting steps per slot — every augment, gem and seal needed to build it.", (900,700), (700,1120), 250)]),
+ # every point traced to an item and a bonus type, against the reachable ceiling
+ "4-proof.jpg": ((128,690,1180,1170), [
+   ("It shows its work: every point traced to the exact item and bonus type, against the ceiling it could reach.", (140,850), (600,820), 300)]),
+ # #499 retired the Alternatives tab; the Upgrades search replaced it
+ "5-upgrades.jpg": ((128,80,1180,385), [
+   ("You set what a suggestion may cost — free upgrades only, by default. Your ranking is never traded away behind your back.", (880,110), (400,212), 270)]),
 }
 
 for fn,(crop,calls) in CFG.items():
