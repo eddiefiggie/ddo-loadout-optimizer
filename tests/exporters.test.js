@@ -22,10 +22,10 @@ require("../web/model.js").setSplitMechanics([{
   issue: 683,
 }]);
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
+  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
 }
 
 const rec = {
@@ -1143,7 +1143,7 @@ test("U8/R8: an export of a build with no expanded affix is unchanged", () => {
     "native affixes render exactly as before");
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed`);
+if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`);
 
 // ---------------------------------------------------------------------------
 // #245 — the craft-carried line and the opt-out scope disclosure must ride

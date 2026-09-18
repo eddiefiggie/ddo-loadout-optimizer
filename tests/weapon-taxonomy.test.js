@@ -4,10 +4,10 @@ const fs = require("fs");
 const path = require("path");
 const T = require("../web/weapon-taxonomy.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
+  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
 }
 
 const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8"));
@@ -110,4 +110,4 @@ test("U2: S&B main hand draws from the one-handed weapon bucket", () => {
 });
 
 
-if (!process.exitCode) console.log(`\n${passed} passed`);
+if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`);

@@ -16,10 +16,10 @@
 const assert = require("assert");
 const { yieldToPaint, PAINT_STALL_FALLBACK_MS } = require("../web/wizard.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 async function test(name, fn) {
   try { await fn(); console.log("PASS", name); passed++; }
-  catch (e) { console.error("FAIL", name, "\n ", e.stack || e.message); process.exitCode = 1; }
+  catch (e) { console.error("FAIL", name, "\n ", e.stack || e.message); failed++; process.exitCode = 1; }
 }
 
 (async () => {
@@ -165,5 +165,5 @@ async function test(name, fn) {
     });
   });
 
-  console.log(`\n${passed} passed`);
+  console.log(`\n${passed} passed, ${failed} failed`);
 })();

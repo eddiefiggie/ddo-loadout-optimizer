@@ -47,10 +47,10 @@ const CORRECTIONS = JSON.parse(fs.readFileSync(
 const CREDITED_AS = { "Legendary Conditioning": "Conditioning" };
 const creditedAs = (canon) => CREDITED_AS[canon] || canon;
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
+  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
 }
 
 // ---------------------------------------------------------------------------
@@ -618,5 +618,5 @@ const MIGRATED = new Set([
       `${SCD} must credit the max of its Legendary sources, not their sum (got ${got})`);
   });
 
-  console.log(`\n${passed} passed`);
+  console.log(`\n${passed} passed, ${failed} failed`);
 })().catch((e) => { console.error(e); process.exit(1); });

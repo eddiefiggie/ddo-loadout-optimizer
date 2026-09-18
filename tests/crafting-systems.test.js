@@ -2,10 +2,10 @@
 const assert = require("assert");
 const { SYSTEMS, get, systemForStation, actionLabel } = require("../web/crafting-systems.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
+  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
 }
 
 test("every system resolves its correct labels", () => {
@@ -55,4 +55,4 @@ test("viktranium's slot_types is the in-game order: Melancholic, Dolorous, Miser
   assert.deepStrictEqual(get("viktranium").slot_types, ["Melancholic", "Dolorous", "Miserable", "Woeful"]);
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed`);
+if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`);

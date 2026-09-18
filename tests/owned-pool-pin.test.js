@@ -16,10 +16,10 @@ const assert = require("assert");
 const W = require("../web/wizard.js");
 const P = require("../web/projection.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); process.exitCode = 1; }
+  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
 }
 
 const OWNED = "Dinosaur Bone Heavy Crossbow";
@@ -112,4 +112,4 @@ test("the notice says what was included and how to undo it", () => {
     "no notice when nothing was overridden");
 });
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);

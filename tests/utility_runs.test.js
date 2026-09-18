@@ -39,10 +39,10 @@ const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js")
 const ROOT = path.join(__dirname, "..");
 const EB = "Enhancement Bonus (Weapon)";
 
-let passed = 0;
+let passed = 0, failed = 0;
 function check(name, fn) {
   try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); process.exitCode = 1; }
+  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
 }
 
 (async () => {
@@ -340,5 +340,5 @@ function check(name, fn) {
   });
   console.log(`    ${attr.binding} ${r4.perTarget[attr.binding]} -> ${r6.perTarget[attr.binding]}, ${FOM} ${r6.perTarget[FOM]}`);
 
-  console.log(`\n${passed} passed`);
+  console.log(`\n${passed} passed, ${failed} failed`);
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -2,7 +2,7 @@
 const assert = require("assert");
 const { activeTab, nextTab, TAB_IDS } = require("../web/app.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try {
     fn();
@@ -10,7 +10,7 @@ function test(name, fn) {
     passed++;
   } catch (e) {
     console.error(`FAIL ${name}\n  ${e.message}`);
-    process.exitCode = 1;
+    failed++; process.exitCode = 1;
   }
 }
 
@@ -54,4 +54,4 @@ test("nextTab ignores non-navigation keys", () => {
   assert.strictEqual(nextTab("browse", "Enter"), "browse");
 });
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);

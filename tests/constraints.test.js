@@ -3,10 +3,10 @@ const assert = require("assert");
 const M = require("../web/model.js");
 const S = require("../web/solver.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); process.exitCode = 1; }
+  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
 }
 
 function v(name, slot, con, opts = {}) {
@@ -150,4 +150,4 @@ test("U2/B5 buildModel: BOTH rings of a two-ring list survive the dominance pre-
   assert.ok(ids.includes("RingB") && ids.includes("RingC"), "both pinned rings survived dominance");
 });
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);

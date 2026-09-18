@@ -11,10 +11,10 @@
 const assert = require("assert");
 const P = require("../web/projection.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
+  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
 }
 
 const part = (source, value, bonus_type = "Enhancement") =>
@@ -140,4 +140,4 @@ test("#747: worst first, capped at three lines, with the rest named once", () =>
     "the overflow is named once rather than repeating the whole sentence");
 });
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);

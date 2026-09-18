@@ -9,10 +9,10 @@ const data = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
 ));
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); process.exitCode = 1; }
+  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
 }
 
 // minimal synthetic variant factory
@@ -1906,7 +1906,7 @@ test("#235: an untyped affix and an explicit Untyped one keep separate buckets, 
 });
 
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);
 
 // ---------------------------------------------------------------------------
 // #346 (U1) — the crafting/augment ladder that replaced #245's boolean. A

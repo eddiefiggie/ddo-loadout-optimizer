@@ -121,10 +121,10 @@ function dataset() {
   return _ds;
 }
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); process.exitCode = 1; }
+  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
 }
 
 (async () => {
@@ -537,7 +537,7 @@ function test(name, fn) {
     });
   }
 
-  console.log(`\n${passed} passed`);
+  console.log(`\n${passed} passed, ${failed} failed`);
 })().catch((e) => { console.error(e); process.exit(1); });
 
 // #110 (U10) — the blocklist A/B pair's integrity guard, mirroring the

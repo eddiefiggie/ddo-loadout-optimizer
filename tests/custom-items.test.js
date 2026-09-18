@@ -20,9 +20,10 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
+let passed = 0, failed = 0;
 const test = (name, fn) => {
-  try { fn(); console.log("PASS " + name); }
-  catch (e) { console.log("FAIL " + name + " \n  " + (e && e.message)); process.exitCode = 1; }
+  try { fn(); console.log("PASS " + name); passed++; }
+  catch (e) { console.log("FAIL " + name + " \n  " + (e && e.message)); failed++; process.exitCode = 1; }
 };
 
 const C = require("../web/custom-items.js");
@@ -431,3 +432,5 @@ test("#774: an item whose ONLY effect is a flag is legal", () => {
   assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
   assert.ok(v.ok);
 });
+
+console.log(`\n${passed} passed, ${failed} failed`);

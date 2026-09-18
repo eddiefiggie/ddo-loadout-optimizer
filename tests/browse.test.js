@@ -11,10 +11,10 @@ const data = normalizeDataset(JSON.parse(
 ));
 const items = data.items;
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); process.exitCode = 1; }
+  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
 }
 
 test("filter by stat returns exactly items carrying that stat", () => {
@@ -784,4 +784,4 @@ test("#753: Browse and the Advanced panel share ONE wording source", () => {
   assert.ok(lines.some((l) => /augment,/.test(l)), "an augment route is named as an augment");
 });
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);

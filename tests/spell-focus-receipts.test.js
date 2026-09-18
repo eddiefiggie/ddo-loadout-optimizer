@@ -10,10 +10,10 @@ const assert = require("assert");
 const P = require("../web/projection.js");
 const Solver = require("../web/solver.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
+  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
 }
 
 // A solved result whose Necromancy total comes from two sources: a native school
@@ -158,4 +158,4 @@ test("AE6: the Markdown export renders the SAME collapsed line the app renders",
   assert.ok(md.includes(appLine), "and the share export renders the same text, character for character");
 });
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);

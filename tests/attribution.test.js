@@ -8,10 +8,10 @@ const R = require("../web/results.js");
 const vendor = path.join(__dirname, "..", "web", "vendor") + "/";
 const Highs = require(vendor + "highs.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 async function test(name, fn) {
   try { await fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); process.exitCode = 1; }
+  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
 }
 
 function item(id, slot, affixes) {
@@ -304,5 +304,5 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     } finally { CAM.setCrossAdd({}); }
   });
 
-  console.log(`\n${passed} passed`);
+  console.log(`\n${passed} passed, ${failed} failed`);
 })();
