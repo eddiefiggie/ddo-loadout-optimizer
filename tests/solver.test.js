@@ -3211,8 +3211,11 @@ async function withCrossAdd(map, fn) {
     const fs = require("fs");
     const data = normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
     const defs = data.membership_set_defs || {};
-    // #766 — plus the four Slaver's sets the catalog defines (Might / Sorcery, both tiers).
-    assert.ok(Object.keys(defs).length === 32, "items.json exports all 32 membership set defs (22 Vecna + 6 Dino + 4 Slaver's)");
+    // #766 — plus the Slaver's sets the catalog defines.
+    // #769 — SIX of them, not four. Both tiers of the Endurance set were unreachable
+    // while the crafting pool spelled it `Slave Lord's Endurance` and the catalog
+    // defined `Slave's Endurance`: the name was dropped and its def never exported.
+    assert.ok(Object.keys(defs).length === 34, "items.json exports all 34 membership set defs (22 Vecna + 6 Dino + 6 Slaver's)");
     const SET = "Legendary Vol's Influence";
     assert.ok(defs[SET], "the real Legendary Vol's Influence def is present");
     const lp = (slotName) => memberHost(`LP-${slotName}`, slotName, [SET]);
