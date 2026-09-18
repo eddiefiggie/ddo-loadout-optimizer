@@ -46,6 +46,13 @@ def load_catalog(path: str = CRAFTING_PATH) -> dict:
     validates every augment name against the frozen registry. Applying it at one
     would have left the other inspecting a different catalog, which is the shape of
     bug that takes a day to find. One seam, so no consumer can see a partial view.
+
+    #769 — the crafting set-name corrections merge here for the same reason. A
+    `set`-bearing option names the set a host may JOIN, and when that spelling
+    disagrees with the set catalog's, `membership` drops the name and the set
+    becomes unreachable at every tier that carries it. Correcting it at the load
+    point means every consumer — the build, the coverage stamp, the referential
+    integrity check — reads one spelling.
     """
     with open(path, encoding="utf-8") as fh:
         data = json.load(fh)
@@ -53,7 +60,9 @@ def load_catalog(path: str = CRAFTING_PATH) -> dict:
         raise CraftingCatalogError(
             f"crafting catalog at {path!r} is {type(data).__name__}, expected a dict of pools")
     from src import augment_tier_gap
+    from src import crafting_set_names
     augment_tier_gap.apply(data, augment_tier_gap.load())
+    crafting_set_names.apply(data, crafting_set_names.load())
     return data
 
 

@@ -131,10 +131,19 @@ test("#374: the correction roster is the declaration, and every entry is armed",
   // bonus to Spell Critical Damage — the name five set tiers already used. It carries
   // no `merge_into_existing` because the two names sit in different channels, so the
   // collision guard never fires; it is asserted by name below for that reason.
-  assert.strictEqual(CORRECTIONS.length, 24,
-    "24 armed variants — 13 upstream-spelling corrections (#374), 10 " +
-    "evidence-bound merges (#632, #615, #639, #649) and 1 wiki-name correction " +
-    "(#672); a new entry needs its own assertion, not a bump");
+  // #769 — 25, and the 25th is the MIRROR of the 24th. `Spell Critical Damage`
+  // pre-existed in the sets channel and the rename brought three gems onto it; here
+  // `Spell Save` pre-exists in the ITEMS channel (93 affixes) and the rename brings
+  // two set tiers onto it. Same kind, opposite direction, and neither is a merge
+  // because neither canonical is present in the channel its source lives in.
+  // What makes this one worth its own line: `Spell Saves` occurs FOUR times in the
+  // whole corpus, all inside the two `Slave's Endurance` set tiers, so it is
+  // invisible to every channel but one and a refresh that touched only items would
+  // never notice it. It existed unreachable until #769 admitted the set.
+  assert.strictEqual(CORRECTIONS.length, 25,
+    "25 armed variants — 13 upstream-spelling corrections (#374), 10 " +
+    "evidence-bound merges (#632, #615, #639, #649) and 2 wiki-name corrections " +
+    "(#672, #769); a new entry needs its own assertion, not a bump");
   assert.strictEqual(CORRECTIONS.filter((c) => c.merge_into_existing).length, 10,
     "ten entries are merges, and a merge must cite the wiki page that says the " +
     "two names are one stat");
@@ -156,6 +165,17 @@ test("#374: the correction roster is the declaration, and every entry is armed",
   assert.ok(!wikiName.merge_into_existing,
     "it is NOT a merge — the two names never collide in one channel, so stamping " +
     "`via` would invent a distinction the wiki does not draw");
+  // #769, asserted by name for the sharpest version of the same reason: this source
+  // lives ONLY in two set tiers, so nothing in the items channel can keep it honest.
+  const setsOnly = CORRECTIONS.find((c) => c.source_name === "Spell Saves");
+  assert.ok(setsOnly, "the sets-channel spelling of the spell-save stat is declared");
+  assert.strictEqual(setsOnly.canonical_name, "Spell Save");
+  assert.ok(setsOnly.evidence && /Resistance_\(enchantment\)/.test(setsOnly.wiki_url || ""),
+    "it cites the page that states the mechanic in the singular, which is also where " +
+    "`Spell Save` redirects — not the set page that merely carries the plural");
+  assert.ok(!setsOnly.merge_into_existing,
+    "it is NOT a merge — the canonical is absent from the sets channel, so nothing " +
+    "collapses and stamping `via` would invent a distinction the wiki does not draw");
   for (const c of CORRECTIONS) {
     assert.ok(!c.pending_upstream,
       `${c.source_name} still carries a pending_upstream marker — it is not armed`);

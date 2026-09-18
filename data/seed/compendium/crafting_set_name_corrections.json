@@ -1,0 +1,26 @@
+{
+ "_README": "#769 — wiki-sourced corrections to a SET NAME inside a gear-planner crafting pool. Applied by src/crafting_set_names.py at crafting_catalog.load_catalog, the single load point. Every occurrence of source_set in the named pool becomes canonical_set. The crafting catalog names the set a host may JOIN; the set catalog defines what that set GRANTS. When the two spell the same set differently, membership drops the unmatched name and discloses it — this shard is where that disagreement is settled from the wiki, once.",
+ "_guards": "The build FAILS when source_set is no longer in the pool (upstream changed or adopted the name, so the rename is a silent no-op — delete the entry) or when canonical_set is ALREADY in the pool (renaming onto it would collapse two options into one and shrink the pool a host may choose from). Every entry must cite wiki_url + verified + evidence; an unsourced rename is an inference, not a correction.",
+ "_why_not_an_alias": "An alias would assert the two spellings are the same set without saying which one the game uses, and the app would still have to pick one to render. The wiki states a name; minting it at the source ends the disagreement, and src/membership.py resolves it like any other name with no special case.",
+ "_the_trap_this_shard_records": "The pattern argued for the opposite fix. Slave Lord's Might and Slave Lord's Sorcery are spelled identically in BOTH files, and only Endurance differs — which makes the set catalog look like the side breaking its own pattern, and makes renaming the CATALOG look obvious. The wiki says the catalog is right and the crafting pool is the stale side. Reading the page cost one request and reversed the obvious answer; that is the whole reason this project does not infer a value.",
+ "corrections": [
+  {
+   "pool": "Slaver's Set Bonus",
+   "source_set": "Slave Lord's Endurance",
+   "canonical_set": "Slave's Endurance",
+   "wiki_url": "https://ddowiki.com/page/Named_item_sets",
+   "verified": "2026-09-18",
+   "evidence": "Named item sets (pageid 9371) — the page every other set definition in this project came from — states the three Slave Lords Crafting set names as anchored headings: {{Anchor|Slave Lord's Might}}'''Slave Lord's Might [ML:8/28]''', {{Anchor|Slave Lord's Sorcery}}'''Slave Lord's Sorcery [ML:8/28]''', and {{Anchor|Slave's Endurance}}'''Slave's Endurance [ML:8/28]'''. The Endurance set is spelled Slave's, without Lord's. Might and Sorcery are the controls and both read as expected, so the read worked and the Endurance spelling is the finding. None of the six candidate set titles exists as a standalone page and none redirects, so the index is the whole statement. See docs/wiki-evidence/slavers-set-names.md.",
+   "reason": "The Slaver's Set Bonus pool named Slave Lord's Endurance where gearplanner_sets.json defines Slave's Endurance, so src/membership.py dropped the name and stamped it into metadata.slavers_coverage.set_names_unresolved. No Slaver's host could be solved into the Endurance set at either tier — one of the three sets the crafting station offers was off the table. The set catalog is correct; the crafting pool carries the stale spelling."
+  },
+  {
+   "pool": "Legendary Slaver's Set Bonus",
+   "source_set": "Legendary Slave Lord's Endurance",
+   "canonical_set": "Legendary Slave's Endurance",
+   "wiki_url": "https://ddowiki.com/page/Named_item_sets",
+   "verified": "2026-09-18",
+   "evidence": "Same statement as the heroic entry: Named item sets (pageid 9371) carries ONE anchored heading per set covering both tiers, marked [ML:8/28] — ML 8 heroic and ML 28 legendary — so {{Anchor|Slave's Endurance}}'''Slave's Endurance [ML:8/28]''' is the wiki's spelling for the legendary tier too. gearplanner_sets.json independently defines Legendary Slave's Endurance, matching. The wiki does not name the Legendary variants separately and this entry does not claim it does; the tier prefix is the catalog's own established form, used by Legendary Slave Lord's Might and Legendary Slave Lord's Sorcery alike.",
+   "reason": "The legendary half of the same defect. Both tiers' pools carried the Lord's spelling, so both tiers disclosed an unresolved name and neither could reach the Endurance set."
+  }
+ ]
+}
