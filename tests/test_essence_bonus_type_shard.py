@@ -265,3 +265,47 @@ def test_the_effects_with_a_carrier_tooltip_stayed_unsourced():
     assert len(untyped_with_a_tooltip) >= 30, (
         f"only {len(untyped_with_a_tooltip)} untyped effects carry a tooltip — this guard "
         "is meant to watch a population of ~39; re-read #764 if it has collapsed")
+
+
+def test_the_shard_covers_the_whole_roster():
+    """#764 — every craftable effect has been SEARCHED, and the shard says so.
+
+    A completeness claim needs a guard rather than a date (AGENTS.md). "The roster
+    has been fully searched" is a claim about a population readable at build time,
+    so it is asserted: an effect with no entry is one nobody has looked up, and it
+    is indistinguishable — from the coverage numbers alone — from one that was
+    looked up and found silent. Those are different facts and the shard must
+    separate them.
+
+    Before this, 59 of the 157 had no entry at all. They were searched in one pass
+    on 2026-09-18 and none could be typed; each now carries an `unsourced` record
+    naming what was read. The next effect the wiki adds to a placement table will
+    fail here rather than sit unexamined."""
+    roster = _roster()
+    shard = _shard()["harvested"]
+    unsearched = sorted(roster - set(shard))
+    assert not unsearched, (
+        f"{len(unsearched)} craftable effect(s) have no bonus-type entry, so nothing "
+        f"records whether the wiki was ever asked: {unsearched[:12]}")
+
+
+def test_an_unsourced_entry_still_says_what_was_read():
+    """An `unsourced` record whose `raw` is empty is worse than no record: it claims
+    a search happened and shows nothing for it. Every one must name what it saw —
+    a page that does not exist, a page that is silent, or a mention carrying no
+    type — so a later reader can judge the search rather than repeat it."""
+    thin = []
+    for name, rec in _shard()["harvested"].items():
+        if rec.get("provenance") != "unsourced":
+            continue
+        raw = (rec.get("raw") or "").strip()
+        if not raw or not rec.get("harvested"):
+            thin.append(name)
+    assert not thin, f"unsourced entries that record no reading and no date: {thin}"
+
+
+def test_the_roster_is_not_vacuously_covered():
+    """Refuse to pass over an empty population: an empty roster or an empty shard
+    would make both guards above succeed while asserting nothing."""
+    assert len(_roster()) >= 150, f"roster collapsed to {len(_roster())}"
+    assert len(_shard()["harvested"]) >= 150, "shard collapsed"
