@@ -379,3 +379,54 @@ Constitution +15 Enhancement:
 
 Both are correct only because the type is known. Without it the first would have
 read 28.
+
+---
+
+## The roster is now fully searched, and the answer is no (2026-09-18, #764)
+
+**Harvest:** in-app Browser pane, same-origin, 2026-09-18.
+**Population:** the 59 roster effects that had no shard entry at all — not
+"unsourced", but never looked up. The other 98 were searched on 2026-08-29.
+
+**None of the 59 could be typed.** The shard now covers all 157: **22 stated, 135
+unsourced.**
+
+| what was read | effects |
+|---|---|
+| own page absent; base page exists and carries no Essence/Cannith Crafting line | 37 |
+| own page exists and carries no such line | 11 |
+| neither the own page nor the base page exists | 9 |
+| base page names the system but states no type | 2 |
+
+Two passes, because the first was not enough on its own. The direct-title read
+found 48 of the 59 have no page: almost every `Insightful X` form is not a page,
+which is consistent with the redirects recorded above. So each was re-read against
+its BASE page — `Insightful Assassinate` against `Assassinate` — since that is
+exactly how the six abilities were typed ("*[[Essence Crafting]] items may come
+with a +1 - +7 Insight bonus*" lives on each ability's own page). The base pages
+are silent.
+
+The 2 that mention the system are `Deadly` and `Search`, reached via `Insightful
+Deadly` and `Insightful Search`. Both were **already** in this shard as
+`unsourced` from 2026-08-29, carrying the same lines this pass found
+independently — a useful check that the two harvests agree on method, not just on
+conclusion.
+
+### What this settles, and what it does not
+
+**It closes "do the wiki pass."** #764 reads as though 112 effects are untyped
+because nobody has looked. They are untyped because **the wiki does not state
+it**. Re-running the search is not a route to a larger menu.
+
+It does **not** mean the types are unknowable — a rendered-tooltip read of a
+crafted item in game, or a wiki edit, could still state one. It means no statement
+exists *to harvest today*, and the 135 records say so individually rather than
+leaving a coverage number to imply it.
+
+**Why record a search that found nothing.** An effect with no entry and an effect
+whose page was read and said nothing produce the same coverage count and are
+different facts. Writing the second down is what stops the next sweep spending a
+wiki window rediscovering it — the failure `AGENTS.md` records as a note existing
+"specifically so a later audit does not re-raise it". `test_the_shard_covers_the_whole_roster`
+turns that from a dated claim into a guard: an effect the wiki adds to a placement
+table later fails the build rather than sitting unexamined.
