@@ -2,7 +2,7 @@
 
 The load-bearing test here is `test_every_final_is_rederived_from_its_own_raw`: the
 seed carries both the verbatim wiki text and the resolved affixes, and that test
-re-derives the second from the first for all 33 entries. A hand-edited `final` — the
+re-derives the second from the first for all 113 entries. A hand-edited `final` — the
 one failure mode nobody could catch by reading, because a wrong stat is
 indistinguishable from a right one in a finished loadout — cannot ship past it.
 """
@@ -180,7 +180,7 @@ def test_every_final_is_rederived_from_its_own_raw():
     uni = CT.uniform_types(planner, aliases)
 
     _true(shard["items"], "refuse to pass over an empty shard")
-    checked = slots_seen = 0
+    checked = slots_seen = slots_only_seen = 0
     for name, entry in shard["items"].items():
         fam = fam_of(name)
         expected = []
@@ -194,7 +194,26 @@ def test_every_final_is_rederived_from_its_own_raw():
             rn, ty = hit
             expected.append((rn, ty, p["value"], p["unit"]))
         got = [(a["name"], a["type"], a["value"], a["unit"]) for a in entry["final"]]
-        _eq(got, expected, f"{name}: stored `final` disagrees with its own `raw`")
+        # #591 half B — an entry may declare `admit: "slots_only"`, which admits the
+        # tier-granted augment slot and deliberately NOT the enchantments the same
+        # `raw` would yield. The issue puts them out of scope twice and asks for a
+        # separate follow-up rather than folding them in here.
+        #
+        # The marker is guarded so it can never be used vacuously. An entry whose
+        # `raw` derives NOTHING has no scope to decline, so declaring slots_only on
+        # it would be decoration hiding an empty harvest — exactly the "found
+        # nothing" / "asked nothing" confusion this repo refuses elsewhere. It must
+        # also say why, in its own entry, so the exemption can be retired by reading
+        # rather than by archaeology.
+        if entry.get("admit") == "slots_only":
+            _eq(got, [], f"{name}: slots_only must store no `final`")
+            _true(expected, f"{name}: declares slots_only but its `raw` derives "
+                            "nothing — the marker is decorating an empty harvest")
+            _true((entry.get("admit_reason") or "").strip(),
+                  f"{name}: slots_only with no stated reason cannot be retired by review")
+            slots_only_seen += 1
+        else:
+            _eq(got, expected, f"{name}: stored `final` disagrees with its own `raw`")
         # #591 — `slots` is derived too, by the same standard: nothing here trusts
         # the stored list, and a slot line must never ALSO sit in `quarantined`.
         _eq(entry["slots"], CT.resolve_slots(entry["raw"]),
@@ -204,8 +223,15 @@ def test_every_final_is_rederived_from_its_own_raw():
                   f"{name}: {q['raw']!r} is a slot and is still quarantined")
         slots_seen += len(entry["slots"])
         checked += 1
-    _eq(checked, 33, "every entry re-derived")
-    _eq(slots_seen, 40, "the 40 wiki-stated slots are all derived, none left on the floor")
+    # #591 half B — 113 not 33: the 80 weapon variants joined the 33 worn ones.
+    _eq(checked, 113, "every entry re-derived")
+    # 120 not 40: +80. The 64 weapons that grant a slot contribute 80 labels, not
+    # 64, because the 16 Epic variants add a Colorless slot at Tier 2 AND a Purple
+    # at Tier 3. The remaining 16 weapon variants are the level-4 rows, which are
+    # not upgradeable at all and correctly derive NO slot — they are kept in the
+    # shard rather than dropped so their raw proves the absence.
+    _eq(slots_seen, 120, "the 120 wiki-stated slots are all derived, none left on the floor")
+    _eq(slots_only_seen, 80, "every weapon entry is slots_only, and no worn entry is")
 
 def test_the_guard_refuses_to_inspect_zero_records():
     """Prove a guard fails before trusting it: the coverage assertions above are
@@ -270,11 +296,15 @@ def test_the_build_stamps_what_the_overlay_actually_did():
     _eq(cov["missing_from_roster"], [],
                      "an overlay entry naming an item the roster lacks is a stale key")
     _gt(cov["affixes_added"], 0)
-    # #591 — the slot half. 32 of the 33 entries state a slot (Mournlode Docent
-    # (level 4) has no tier block at all); 40 labels between them. A skip means the
-    # wiki half and gear-planner now both claim these slots — worth a look, not a
-    # silent pass.
-    _eq((cov["items_slotted"], cov["slots_added"]), (32, 40))
+    # #591 — the slot half. Was (32, 40) for the worn shard alone: 32 of the 33
+    # entries state a slot (Mournlode Docent (level 4) has no tier block at all).
+    # Half B adds the 80 weapon variants: 64 of them state a slot, contributing 80
+    # labels because the 16 Epic ones add a Colorless at Tier 2 AND a Purple at
+    # Tier 3. 32 + 64 = 96 items, 40 + 80 = 120 labels. The other 16 weapons are
+    # the level-4 rows, not upgradeable and correctly slotless.
+    # A skip means the wiki half and gear-planner now both claim these slots —
+    # worth a look, not a silent pass.
+    _eq((cov["items_slotted"], cov["slots_added"]), (96, 120))
     _eq(cov["slots_skipped_already_present"], 0)
 
 def test_every_shard_slot_reaches_its_variant_as_host_capacity():
@@ -298,8 +328,57 @@ def test_every_shard_slot_reaches_its_variant_as_host_capacity():
             _in(lbl, v["crafting"], f"{name}: label missing from crafting[]")
         colors_seen += len(want)
         checked += 1
-    _eq(checked, 33, "every shard entry checked against its variant")
-    _eq(colors_seen, 40, "refuse to pass over a shard that states no slots")
+    # #591 half B — 113 entries, 120 colours. Both move together with the shard;
+    # the per-entry assertions above are what actually prove the capacity landed.
+    _eq(checked, 113, "every shard entry checked against its variant")
+    _eq(colors_seen, 120, "refuse to pass over a shard that states no slots")
+
+def test_591b_the_weapons_carry_their_tier_granted_slot_and_nothing_else():
+    """#591 half B, end to end on the built dataset.
+
+    The weapons were the half that never shipped: 80 Vaults variants reaching the
+    solver with no augment slot at all, while the wiki states one on every
+    upgradeable tier. This pins what admitting them did, and — just as important —
+    what it deliberately did NOT do."""
+    ds = _dataset()
+    shard = _shard()
+    weapons = {n: e for n, e in shard["items"].items() if e.get("admit") == "slots_only"}
+    _eq(len(weapons), 80, "the 80 weapon variants are in the shard")
+
+    by_id = {v["variant_id"]: v for v in ds["items"]}
+    slotted = [n for n, e in weapons.items() if e["slots"]]
+    _eq(len(slotted), 64, "64 grant a slot; the other 16 are the level-4 rows")
+
+    # Every level-4 row is slotless, and nothing else is. Stated as a partition so a
+    # future variant that loses its slot cannot hide inside the count.
+    bare = sorted(n for n, e in weapons.items() if not e["slots"])
+    _eq(bare, sorted(n for n in weapons if n.endswith("(level 4)")),
+        "exactly the level-4 rows are slotless — they are not upgradeable")
+
+    purple = [n for n, e in weapons.items() if "Purple Augment Slot" in e["slots"]]
+    _eq(len(purple), 64, "every slotted weapon grants Purple")
+    # #591's body named Purple only. The Epic variants also add a Colorless at
+    # Tier 2, which is why the label count is 80 and not 64.
+    both = sorted(n for n, e in weapons.items() if len(e["slots"]) == 2)
+    _eq(len(both), 16, "the 16 Epic variants grant Colorless AND Purple")
+    _true(all(n.startswith("Epic ") for n in both),
+          "and only the Epic ones do")
+
+    ml8 = by_id["Mournlode Longsword (level 8)"]
+    _eq(ml8["augment_slots_norm"]["colors"], ["Purple"])
+    _eq(ml8["augment_slots_norm"]["quarantined"], [])
+    epic = by_id["Epic Mournlode Longsword"]
+    _eq(epic["augment_slots_norm"]["colors"], ["Colorless", "Purple"])
+
+    # The scope boundary, asserted rather than trusted: admitting the slot must not
+    # have admitted the weapons' enchantments. `Enhancement Bonus` is on all 80 raw
+    # blocks and is the one a later pass is most likely to let slip in.
+    for n in weapons:
+        _eq(shard["items"][n]["final"], [], f"{n}: slots_only stores no affixes")
+        names = {a.get("name") for a in by_id[n].get("affixes") or []}
+        _notin("Enhancement Bonus", names,
+               f"{n}: half B admitted an enchantment it declared out of scope")
+
 
 def test_the_reported_item_carries_the_values_the_report_named():
     """data/bug_reports.txt report 2: 'cannith challenge items don't have any stats'.

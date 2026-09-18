@@ -1,1513 +1,2539 @@
 {
-  "_meta": {
-    "title": "Cannith Challenge (Vaults of the Artificers) upgrade-tier enchantments",
-    "issue": 313,
-    "harvested": "2026-08-29",
-    "source": "ddowiki.com item pages, same-origin paced harvest per docs/wiki-evidence/harvest-method.md",
-    "why": "gear-planner emits NO enchantments for a Vaults item whose wiki page uses the 'Upgradeable - Tier N' layout; it emits only a marker affix (VotAU on worn gear, 'Upgradeable - Tier' on weapons). 97 of the 140 Vaults variants are stat-less as a result. This shard covers the 33 WORN variants; the 64 weapon variants are tracked separately (see _meta.weapons_deferred).",
-    "scope": "Worn gear only. The 64 weapon variants are #591: re-scoped 2026-09-14 to the same augment-slot capacity this shard now admits (their Tier 3 'Adds Purple Augment Slot'); their tier text is on the FAMILY wiki pages and is not yet harvested. Their bane/proc enchantments stay unvalued permanently (#331 closed not-planned) - a scope boundary, not a prerequisite.",
-    "weapons_deferred": "64 weapon variants across 18 families (by dataset source_item; the issue thread's '33 families' was a mis-carry of the 33 WORN items) carry the same 'Upgradeable - Tier' gap. Measured in the 2026-08-29 pass; their raw text was NOT committed. Tracked in #591; the paste-ready harvest is scripts/browser/harvest_cannith_weapon_families.js.",
-    "tier_choice": "final - the fully-upgraded Tier 3 state. Matches the project's founding position that theoretical best-in-slot assumes access to everything (README, and the attainability non-goal in AGENTS.md). Every tier's raw text is kept below so a different choice never needs a re-harvest.",
-    "raw_is_authoritative": "`raw` is the verbatim rendered Enchantments block, tier headers included, with ' / ' separating lines. `final` is DERIVED from it by src/cannith_tiers.py, and tests/test_cannith_tiers.py re-derives every entry and fails on any disagreement - so a hand-edited `final` cannot ship.",
-    "slots_are_capacity": "#591 (2026-09-14): `slots` is the augment-slot capacity each fully-upgraded item carries, as `crafting[]` labels (`Green Augment Slot`), DERIVED from `raw` by src/cannith_tiers.resolve_slots and re-derived by the tests. An augment slot is a host field, not an affix - the overlay appends these to the record's own crafting[] so the existing lift (planner_items) and colour normalization (colors) run unchanged. Before this they were quarantined as 'augment slot, not an affix', which was true and left 40 wiki-stated slots on the floor.",
-    "bundled_enchantments_quarantined": [
-      "Heightened Awareness",
-      "Parrying",
-      "Riposte",
-      "Speed"
-    ]
-  },
-  "items": {
-    "Blasting Chime (level 11)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Blasting_Chime_(level_11)",
-      "ml": 11,
-      "slot": "Trinket",
-      "raw": "Upgradeable - Tier 1 / Weaken Construct / Sonic Lore +12% / Sonic Guard +3 / Resonance +82 / Evocation Focus I / Upgradeable - Tier 2 / Sonic Lore +12% -> Sonic Lore +13% / Resonance +82 -> Resonance +88 / Adds Anthem / Upgradeable - Tier 3 / Sonic Lore +13% -> Sonic Lore +14% / Resonance +88 -> Resonance +94 / Sonic Guard +3 -> Sonic Guard +4 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Weaken Construct",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Weaken Construct",
-          "unit": "bool",
-          "type_source": "Blasting Chime family sibling"
-        },
-        {
-          "name": "Anthem",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Anthem",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Sonic Lore",
-          "type": "Equipment",
-          "value": 14,
-          "wiki_name": "Sonic Lore",
-          "unit": "percent",
-          "type_source": "Blasting Chime family sibling"
-        },
-        {
-          "name": "Sonic Spell Power",
-          "type": "Equipment",
-          "value": 94,
-          "wiki_name": "Resonance",
-          "unit": "flat",
-          "type_source": "Blasting Chime family sibling"
-        },
-        {
-          "name": "Sonic Guard",
-          "type": "Bool",
-          "value": 4,
-          "wiki_name": "Sonic Guard",
-          "unit": "flat",
-          "type_source": "catalog-wide uniform type"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Evocation Focus I",
-          "reason": "affix name 'Evocation Focus I' is not in the catalog vocabulary"
-        }
-      ]
+ "_meta": {
+  "title": "Cannith Challenge (Vaults of the Artificers) upgrade-tier enchantments",
+  "issue": 313,
+  "harvested": "2026-08-29 (33 worn); 2026-09-18 (80 weapons, #591 half B)",
+  "source": "ddowiki.com item pages, same-origin paced harvest per docs/wiki-evidence/harvest-method.md",
+  "why": "gear-planner emits NO enchantments for a Vaults item whose wiki page uses the 'Upgradeable - Tier N' layout; it emits only a marker affix (VotAU on worn gear, 'Upgradeable - Tier' on weapons). 97 of the 140 Vaults variants are stat-less as a result. This shard covers the 33 WORN variants; the 64 weapon variants are tracked separately (see _meta.weapons_deferred).",
+  "scope": "Worn gear AND the 80 Vaults weapon variants. The worn entries carry resolved affixes AND slots; the weapon entries are `admit: slots_only` — the tier-granted augment slot and nothing else, per #591's re-scope. Their bane and proc enchantments stay unvalued permanently (#331, closed not-planned).",
+  "weapons_deferred": "RESOLVED 2026-09-18 by #591 half B. The 80 weapon variants (18 families) are harvested and in this shard. Their tier text came from the PER-VARIANT item pages, not the family pages' {{Turnin}} wikitext the 2026-09-06 mapping described: every variant has its own page carrying the same rendered Enchantments block the worn entries use, which is what `raw_is_authoritative` below has always asked for. That route needs no wikitext and no clipboard paste, because rendered text carries no template pipes. scripts/browser/harvest_cannith_weapon_variants.js is what ran; harvest_cannith_weapon_families.js is kept for the full per-(level, tier) matrix, which this does not supersede.",
+  "tier_choice": "final - the fully-upgraded Tier 3 state. Matches the project's founding position that theoretical best-in-slot assumes access to everything (README, and the attainability non-goal in AGENTS.md). Every tier's raw text is kept below so a different choice never needs a re-harvest.",
+  "raw_is_authoritative": "`raw` is the verbatim rendered Enchantments block, tier headers included, with ' / ' separating lines. `final` is DERIVED from it by src/cannith_tiers.py, and tests/test_cannith_tiers.py re-derives every entry and fails on any disagreement - so a hand-edited `final` cannot ship.",
+  "slots_are_capacity": "#591 (2026-09-14): `slots` is the augment-slot capacity each fully-upgraded item carries, as `crafting[]` labels (`Green Augment Slot`), DERIVED from `raw` by src/cannith_tiers.resolve_slots and re-derived by the tests. An augment slot is a host field, not an affix - the overlay appends these to the record's own crafting[] so the existing lift (planner_items) and colour normalization (colors) run unchanged. Before this they were quarantined as 'augment slot, not an affix', which was true and left 40 wiki-stated slots on the floor.",
+  "bundled_enchantments_quarantined": [
+   "Heightened Awareness",
+   "Parrying",
+   "Riposte",
+   "Speed"
+  ],
+  "weapons_measured": "80 variants, 0 pages missing, 0 refused for carrying guard characters. 64 grant a slot; the other 16 are the level-4 rows, which are not upgradeable and correctly derive none — kept in the shard rather than dropped so their raw proves the absence. 80 labels, not 64: the 16 Epic variants add a Colorless slot at Tier 2 AND a Purple at Tier 3, which #591's body did not anticipate (it named Purple only). Cross-check: the family pages' Turnin rows independently show 4 Purple rows per family, on Tier 3 of levels 8/12/16/Epic, and level 4 with no tier at all — two sources, same answer.",
+  "slots_only": "#591 half B. A weapon entry admits its augment slot and NOT the enchantments its own `raw` would yield (315 affix instances across the 80: Enhancement Bonus on all 80, the four Elemental Resistances, and ~215 bane/proc presence flags). The issue puts them out of scope twice and asks for a separate follow-up rather than folding them in. `test_every_final_is_rederived_from_its_own_raw` honours the marker AND guards it: an entry whose raw derives nothing cannot declare slots_only, so the marker can never decorate an empty harvest, and it must state a reason."
+ },
+ "items": {
+  "Blasting Chime (level 11)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Blasting_Chime_(level_11)",
+   "ml": 11,
+   "slot": "Trinket",
+   "raw": "Upgradeable - Tier 1 / Weaken Construct / Sonic Lore +12% / Sonic Guard +3 / Resonance +82 / Evocation Focus I / Upgradeable - Tier 2 / Sonic Lore +12% -> Sonic Lore +13% / Resonance +82 -> Resonance +88 / Adds Anthem / Upgradeable - Tier 3 / Sonic Lore +13% -> Sonic Lore +14% / Resonance +88 -> Resonance +94 / Sonic Guard +3 -> Sonic Guard +4 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Weaken Construct",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Weaken Construct",
+     "unit": "bool",
+     "type_source": "Blasting Chime family sibling"
     },
-    "Blasting Chime (level 15)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Blasting_Chime_(level_15)",
-      "ml": 15,
-      "slot": "Trinket",
-      "raw": "Upgradeable - Tier 1 / Weaken Construct / Sonic Lore +14% / Cacophonic Guard / Resonance +96 / Evocation Focus I / Anthem / Upgradeable - Tier 2 / Resonance +96 -> Resonance +102 / Sonic Lore +14% -> Sonic Lore +15% / Upgradeable - Tier 3 / Resonance +102 -> Resonance +108 / Sonic Lore +15% -> Sonic Lore +16% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Weaken Construct",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Weaken Construct",
-          "unit": "bool",
-          "type_source": "Blasting Chime family sibling"
-        },
-        {
-          "name": "Anthem",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Anthem",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Sonic Spell Power",
-          "type": "Equipment",
-          "value": 108,
-          "wiki_name": "Resonance",
-          "unit": "flat",
-          "type_source": "Blasting Chime family sibling"
-        },
-        {
-          "name": "Sonic Lore",
-          "type": "Equipment",
-          "value": 16,
-          "wiki_name": "Sonic Lore",
-          "unit": "percent",
-          "type_source": "Blasting Chime family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Cacophonic Guard",
-          "reason": "affix name 'Cacophonic Guard' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Evocation Focus I",
-          "reason": "affix name 'Evocation Focus I' is not in the catalog vocabulary"
-        }
-      ]
+    {
+     "name": "Anthem",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Anthem",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
     },
-    "Blasting Chime (level 7)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Blasting_Chime_(level_7)",
-      "ml": 7,
-      "slot": "Trinket",
-      "raw": "Upgradeable - Tier 1 / Weaken Construct / Sonic Lore +10% / Sonic Guard +2 / Resonance +69 / Upgradeable - Tier 2 / Sonic Lore +10% -> Sonic Lore +11% / Sonic Guard +2 -> Sonic Guard +3 / Resonance +69 -> Resonance +74 / Upgradeable - Tier 3 / Sonic Lore +11% -> Sonic Lore +12% / Resonance +74 -> Resonance +79 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Weaken Construct",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Weaken Construct",
-          "unit": "bool",
-          "type_source": "Blasting Chime family sibling"
-        },
-        {
-          "name": "Sonic Guard",
-          "type": "Bool",
-          "value": 3,
-          "wiki_name": "Sonic Guard",
-          "unit": "flat",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Sonic Lore",
-          "type": "Equipment",
-          "value": 12,
-          "wiki_name": "Sonic Lore",
-          "unit": "percent",
-          "type_source": "Blasting Chime family sibling"
-        },
-        {
-          "name": "Sonic Spell Power",
-          "type": "Equipment",
-          "value": 79,
-          "wiki_name": "Resonance",
-          "unit": "flat",
-          "type_source": "Blasting Chime family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": []
+    {
+     "name": "Sonic Lore",
+     "type": "Equipment",
+     "value": 14,
+     "wiki_name": "Sonic Lore",
+     "unit": "percent",
+     "type_source": "Blasting Chime family sibling"
     },
-    "Bracers of Wind (level 11)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Wind_(level_11)",
-      "ml": 11,
-      "slot": "Bracers",
-      "raw": "Upgradeable - Tier 1 / Magnetism +82 / Lightning Lore +12% / Blurry / Dodge +6% / Upgradeable - Tier 2 / Magnetism +82 -> Magnetism +88 / Lightning Lore +12% -> Lightning Lore +13% / Dodge +6% -> Dodge +7% / Upgradeable - Tier 3 / Magnetism +88 -> Magnetism +94 / Lightning Lore +13% -> Lightning Lore +14% / Dodge +7% -> Dodge +8% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Blurry",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Blurry",
-          "unit": "bool",
-          "type_source": "Bracers of Wind family sibling"
-        },
-        {
-          "name": "Electric Spell Power",
-          "type": "Equipment",
-          "value": 94,
-          "wiki_name": "Magnetism",
-          "unit": "flat",
-          "type_source": "Bracers of Wind family sibling"
-        },
-        {
-          "name": "Lightning Lore",
-          "type": "Equipment",
-          "value": 14,
-          "wiki_name": "Lightning Lore",
-          "unit": "percent",
-          "type_source": "Bracers of Wind family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Dodge +8%",
-          "reason": "bonus type unsourced: no sibling in the 'Bracers of Wind' family carries 'Dodge', and the catalog assigns it more than one type"
-        }
-      ]
+    {
+     "name": "Sonic Spell Power",
+     "type": "Equipment",
+     "value": 94,
+     "wiki_name": "Resonance",
+     "unit": "flat",
+     "type_source": "Blasting Chime family sibling"
     },
-    "Bracers of Wind (level 15)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Wind_(level_15)",
-      "ml": 15,
-      "slot": "Bracers",
-      "raw": "Upgradeable - Tier 1 / Magnetism +96 / Lightning Lore +14% / Blurry / Dodge +8% / Air Guard / Upgradeable - Tier 2 / Magnetism +96 -> Magnetism +102 / Lightning Lore +14% -> Lightning Lore +15% / Upgradeable - Tier 3 / Magnetism +102 -> Magnetism +108 / Lightning Lore +15% -> Lightning Lore +16% / Dodge +8% -> Dodge +9% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Blurry",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Blurry",
-          "unit": "bool",
-          "type_source": "Bracers of Wind family sibling"
-        },
-        {
-          "name": "Air Guard",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Air Guard",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Electric Spell Power",
-          "type": "Equipment",
-          "value": 108,
-          "wiki_name": "Magnetism",
-          "unit": "flat",
-          "type_source": "Bracers of Wind family sibling"
-        },
-        {
-          "name": "Lightning Lore",
-          "type": "Equipment",
-          "value": 16,
-          "wiki_name": "Lightning Lore",
-          "unit": "percent",
-          "type_source": "Bracers of Wind family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Dodge +9%",
-          "reason": "bonus type unsourced: no sibling in the 'Bracers of Wind' family carries 'Dodge', and the catalog assigns it more than one type"
-        }
-      ]
-    },
-    "Bracers of Wind (level 7)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Wind_(level_7)",
-      "ml": 7,
-      "slot": "Bracers",
-      "raw": "Upgradeable - Tier 1 / Magnetism +69 / Lightning Lore +10% / Blurry / Upgradeable - Tier 2 / Magnetism +69 -> Magnetism +74 / Lightning Lore +10% -> Lightning Lore +11% / Upgradeable - Tier 3 / Magnetism +74 -> Magnetism +79 / Lightning Lore +11% -> Lightning Lore +12% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Blurry",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Blurry",
-          "unit": "bool",
-          "type_source": "Bracers of Wind family sibling"
-        },
-        {
-          "name": "Electric Spell Power",
-          "type": "Equipment",
-          "value": 79,
-          "wiki_name": "Magnetism",
-          "unit": "flat",
-          "type_source": "Bracers of Wind family sibling"
-        },
-        {
-          "name": "Lightning Lore",
-          "type": "Equipment",
-          "value": 12,
-          "wiki_name": "Lightning Lore",
-          "unit": "percent",
-          "type_source": "Bracers of Wind family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": []
-    },
-    "Cloak of Flames (level 11)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_Flames_(level_11)",
-      "ml": 11,
-      "slot": "Cloak",
-      "raw": "Upgradeable - Tier 1 / Combustion +82 / Fire Lore +12% / Heightened Awareness 2 / Fire Absorption +21% / Upgradeable - Tier 2 / Combustion +82 -> Combustion +88 / Fire Lore +12% -> Fire Lore +13% / Fire Absorption +21% -> Fire Absorption +22% / Upgradeable - Tier 3 / Combustion +88 -> Combustion +94 / Fire Lore +13% -> Fire Lore +14% / Fire Absorption +22% -> Fire Absorption +24% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Fire Spell Power",
-          "type": "Equipment",
-          "value": 94,
-          "wiki_name": "Combustion",
-          "unit": "flat",
-          "type_source": "Cloak of Flames family sibling"
-        },
-        {
-          "name": "Fire Lore",
-          "type": "Equipment",
-          "value": 14,
-          "wiki_name": "Fire Lore",
-          "unit": "percent",
-          "type_source": "Cloak of Flames family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Heightened Awareness 2",
-          "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
-        },
-        {
-          "raw": "Fire Absorption +24%",
-          "reason": "bonus type unsourced: no sibling in the 'Cloak of Flames' family carries 'Fire Absorption', and the catalog assigns it more than one type"
-        }
-      ]
-    },
-    "Cloak of Flames (level 15)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_Flames_(level_15)",
-      "ml": 15,
-      "slot": "Cloak",
-      "raw": "Upgradeable - Tier 1 / Combustion +96 / Fire Lore +14% / Heightened Awareness 2 / Fire Absorption +24% / Fire Shield (Hot) / Upgradeable - Tier 2 / Combustion +96 -> Combustion +102 / Fire Lore +14% -> Fire Lore +15% / Fire Absorption +24% -> Fire Absorption +25% / Upgradeable - Tier 3 / Combustion +102 -> Combustion +108 / Fire Lore +15% -> Fire Lore +16% / Fire Absorption +25% -> Fire Absorption +27% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Fire Shield (Hot)",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Fire Shield (Hot)",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Fire Spell Power",
-          "type": "Equipment",
-          "value": 108,
-          "wiki_name": "Combustion",
-          "unit": "flat",
-          "type_source": "Cloak of Flames family sibling"
-        },
-        {
-          "name": "Fire Lore",
-          "type": "Equipment",
-          "value": 16,
-          "wiki_name": "Fire Lore",
-          "unit": "percent",
-          "type_source": "Cloak of Flames family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Heightened Awareness 2",
-          "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
-        },
-        {
-          "raw": "Fire Absorption +27%",
-          "reason": "bonus type unsourced: no sibling in the 'Cloak of Flames' family carries 'Fire Absorption', and the catalog assigns it more than one type"
-        }
-      ]
-    },
-    "Cloak of Flames (level 7)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_Flames_(level_7)",
-      "ml": 7,
-      "slot": "Cloak",
-      "raw": "Upgradeable - Tier 1 / Combustion +69 / Fire Lore +10% / Heightened Awareness 1 / Upgradeable - Tier 2 / Combustion +69 -> Combustion +74 / Fire Lore +10% -> Fire Lore +11% / Upgradeable - Tier 3 / Combustion +74 -> Combustion +79 / Fire Lore +11% -> Fire Lore +12% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Fire Spell Power",
-          "type": "Equipment",
-          "value": 79,
-          "wiki_name": "Combustion",
-          "unit": "flat",
-          "type_source": "Cloak of Flames family sibling"
-        },
-        {
-          "name": "Fire Lore",
-          "type": "Equipment",
-          "value": 12,
-          "wiki_name": "Fire Lore",
-          "unit": "percent",
-          "type_source": "Cloak of Flames family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Heightened Awareness 1",
-          "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
-        }
-      ]
-    },
-    "Epic Blasting Chime": {
-      "wiki_url": "https://ddowiki.com/page/Item:Epic_Blasting_Chime",
-      "ml": 20,
-      "slot": "Trinket",
-      "raw": "Upgradeable - Tier 1 / Weaken Construct / Sonic Lore +16% / Cacophonic Guard / Resonance +110 / Evocation Focus II / Anthem / Upgradeable - Tier 2 / Sonic Lore +16% -> Sonic Lore +17% / Resonance +110 -> Resonance +116 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Sonic Lore +17% -> Sonic Lore +18% / Resonance +116 -> Resonance +122 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Weaken Construct",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Weaken Construct",
-          "unit": "bool",
-          "type_source": "Blasting Chime family sibling"
-        },
-        {
-          "name": "Anthem",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Anthem",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Sonic Lore",
-          "type": "Equipment",
-          "value": 18,
-          "wiki_name": "Sonic Lore",
-          "unit": "percent",
-          "type_source": "Blasting Chime family sibling"
-        },
-        {
-          "name": "Sonic Spell Power",
-          "type": "Equipment",
-          "value": 122,
-          "wiki_name": "Resonance",
-          "unit": "flat",
-          "type_source": "Blasting Chime family sibling"
-        }
-      ],
-      "slots": [
-        "Colorless Augment Slot",
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Cacophonic Guard",
-          "reason": "affix name 'Cacophonic Guard' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Evocation Focus II",
-          "reason": "affix name 'Evocation Focus II' is not in the catalog vocabulary"
-        }
-      ]
-    },
-    "Epic Bracers of Wind": {
-      "wiki_url": "https://ddowiki.com/page/Item:Epic_Bracers_of_Wind",
-      "ml": 20,
-      "slot": "Bracers",
-      "raw": "Upgradeable - Tier 1 / Magnetism +110 / Lightning Lore +16% / Blurry / Dodge +9% / Air Guard / Upgradeable - Tier 2 / Magnetism +110 -> Magnetism +116 / Lightning Lore +16% -> Lightning Lore +17% / Dodge +9% -> Dodge +10% / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Magnetism +116 -> Magnetism +122 / Lightning Lore +17% -> Lightning Lore +18% / Dodge +10% -> Dodge +11% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Blurry",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Blurry",
-          "unit": "bool",
-          "type_source": "Bracers of Wind family sibling"
-        },
-        {
-          "name": "Air Guard",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Air Guard",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Electric Spell Power",
-          "type": "Equipment",
-          "value": 122,
-          "wiki_name": "Magnetism",
-          "unit": "flat",
-          "type_source": "Bracers of Wind family sibling"
-        },
-        {
-          "name": "Lightning Lore",
-          "type": "Equipment",
-          "value": 18,
-          "wiki_name": "Lightning Lore",
-          "unit": "percent",
-          "type_source": "Bracers of Wind family sibling"
-        }
-      ],
-      "slots": [
-        "Colorless Augment Slot",
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Dodge +11%",
-          "reason": "bonus type unsourced: no sibling in the 'Bracers of Wind' family carries 'Dodge', and the catalog assigns it more than one type"
-        }
-      ]
-    },
-    "Epic Cloak of Flames": {
-      "wiki_url": "https://ddowiki.com/page/Item:Epic_Cloak_of_Flames",
-      "ml": 20,
-      "slot": "Cloak",
-      "raw": "Upgradeable - Tier 1 / Combustion +110 / Fire Lore +16% / Heightened Awareness 4 / Fire Absorption +27% / Fire Shield (Hot) / Upgradeable - Tier 2 / Combustion +110 -> Combustion +116 / Fire Lore +16% -> Fire Lore +17% / Fire Absorption +27% -> Fire Absorption +28% / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Combustion +116 -> Combustion +122 / Fire Lore +17% -> Fire Lore +18% / Fire Absorption +28% -> Fire Absorption +30% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Fire Shield (Hot)",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Fire Shield (Hot)",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Fire Spell Power",
-          "type": "Equipment",
-          "value": 122,
-          "wiki_name": "Combustion",
-          "unit": "flat",
-          "type_source": "Cloak of Flames family sibling"
-        },
-        {
-          "name": "Fire Lore",
-          "type": "Equipment",
-          "value": 18,
-          "wiki_name": "Fire Lore",
-          "unit": "percent",
-          "type_source": "Cloak of Flames family sibling"
-        }
-      ],
-      "slots": [
-        "Colorless Augment Slot",
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Heightened Awareness 4",
-          "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
-        },
-        {
-          "raw": "Fire Absorption +30%",
-          "reason": "bonus type unsourced: no sibling in the 'Cloak of Flames' family carries 'Fire Absorption', and the catalog assigns it more than one type"
-        }
-      ]
-    },
-    "Epic Mournlode Docent": {
-      "wiki_url": "https://ddowiki.com/page/Item:Epic_Mournlode_Docent",
-      "ml": 20,
-      "slot": "Armor",
-      "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Protection +8 / Resistance +8 / Undead Guard +4 / Protection from Evil / Weaken Undead / Upgradeable - Tier 2 / +5 Enhancement Bonus -> +6 Enhancement Bonus / Undead Guard +4 -> Undead Guard +5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Protection +8 -> Protection +9 / Resistance +8 -> Resistance +9 / Adds Negative Energy Absorption +30% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Weaken Undead",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Weaken Undead",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Enhancement Bonus",
-          "type": "Enhancement",
-          "value": 6,
-          "wiki_name": "Enhancement Bonus",
-          "unit": "flat",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Undead Guard",
-          "type": "Bool",
-          "value": 5,
-          "wiki_name": "Undead Guard",
-          "unit": "flat",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Negative Energy Absorption",
-          "type": "Enhancement",
-          "value": 30,
-          "wiki_name": "Negative Energy Absorption",
-          "unit": "percent",
-          "type_source": "catalog-wide uniform type"
-        }
-      ],
-      "slots": [
-        "Colorless Augment Slot",
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Protection from Evil",
-          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Protection from Evil', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Protection +9",
-          "reason": "affix name 'Protection' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Resistance +9",
-          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-        }
-      ]
-    },
-    "Epic Ring of Master Artifice": {
-      "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Master_Artifice",
-      "ml": 20,
-      "slot": "Ring",
-      "raw": "Upgradeable - Tier 1 / Reconstruct — 1 Charges (Recharged/Day:1) / Wizardry +192 / Reconstruction +110 / Repair Lore +16% / Greater Auto-Repair / Upgradeable - Tier 2 / Wizardry +192 -> Wizardry +206 / Reconstruction +110 -> Reconstruction +116 / Repair Lore +16% -> Repair Lore +17% / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Wizardry +206 -> Wizardry +220 / Reconstruction +116 -> Reconstruction +122 / Repair Lore +17% -> Repair Lore +18% / Adds Repair Systems / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Greater Auto-Repair",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Greater Auto-Repair",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Wizardry",
-          "type": "Enhancement",
-          "value": 220,
-          "wiki_name": "Wizardry",
-          "unit": "flat",
-          "type_source": "Ring of Master Artifice family sibling"
-        },
-        {
-          "name": "Reconstruction",
-          "type": "Equipment",
-          "value": 122,
-          "wiki_name": "Reconstruction",
-          "unit": "flat",
-          "type_source": "Ring of Master Artifice family sibling"
-        },
-        {
-          "name": "Repair Lore",
-          "type": "Equipment",
-          "value": 18,
-          "wiki_name": "Repair Lore",
-          "unit": "percent",
-          "type_source": "Ring of Master Artifice family sibling"
-        }
-      ],
-      "slots": [
-        "Colorless Augment Slot",
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Reconstruct — 1 Charges (Recharged/Day:1)",
-          "reason": "clickie charge, not a passive stat"
-        },
-        {
-          "raw": "Repair Systems",
-          "reason": "affix name 'Repair Systems' is not in the catalog vocabulary"
-        }
-      ]
-    },
-    "Epic Ring of the Stalker": {
-      "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_the_Stalker",
-      "ml": 20,
-      "slot": "Ring",
-      "raw": "Upgradeable - Tier 1 / Manslayer / Insightful Deception +3 / Seeker +9 / Ethereal / Upgradeable - Tier 2 / Ethereal -> Ghostly / Insightful Deception +3 -> Insightful Deception +4 / Seeker +9 -> Seeker +10 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Seeker +10 -> Seeker +11 / Adds Deception +8 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Manslayer",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Manslayer",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Ghostly",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Ghostly",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Seeker",
-          "type": "Enhancement",
-          "value": 11,
-          "wiki_name": "Seeker",
-          "unit": "flat",
-          "type_source": "Ring of the Stalker family sibling"
-        },
-        {
-          "name": "Deception",
-          "type": "Enhancement",
-          "value": 8,
-          "wiki_name": "Deception",
-          "unit": "flat",
-          "type_source": "Ring of the Stalker family sibling"
-        }
-      ],
-      "slots": [
-        "Colorless Augment Slot",
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Insightful Deception +4",
-          "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
-        }
-      ]
-    },
-    "Epic Rock Boots": {
-      "wiki_url": "https://ddowiki.com/page/Item:Epic_Rock_Boots",
-      "ml": 20,
-      "slot": "Boots",
-      "raw": "Upgradeable - Tier 1 / Corrosion +110 / Acid Lore +16% / Stone Prison Guard / Earthgrab Guard / Immunity to Slippery Surfaces / Upgradeable - Tier 2 / Corrosion +110 -> Corrosion +116 / Acid Lore +16% -> Acid Lore +17% / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Corrosion +116 -> Corrosion +122 / Acid Lore +17% -> Acid Lore +18% / Adds Acid Absorption +30% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Stone Prison Guard",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Stone Prison Guard",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Earthgrab Guard",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Earthgrab Guard",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Immunity to Slippery Surfaces",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Immunity to Slippery Surfaces",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Acid Spell Power",
-          "type": "Equipment",
-          "value": 122,
-          "wiki_name": "Corrosion",
-          "unit": "flat",
-          "type_source": "Rock Boots family sibling"
-        },
-        {
-          "name": "Acid Lore",
-          "type": "Equipment",
-          "value": 18,
-          "wiki_name": "Acid Lore",
-          "unit": "percent",
-          "type_source": "Rock Boots family sibling"
-        }
-      ],
-      "slots": [
-        "Colorless Augment Slot",
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Acid Absorption +30%",
-          "reason": "bonus type unsourced: no sibling in the 'Rock Boots' family carries 'Acid Absorption', and the catalog assigns it more than one type"
-        }
-      ]
-    },
-    "Epic Spare Hand": {
-      "wiki_url": "https://ddowiki.com/page/Item:Epic_Spare_Hand",
-      "ml": 20,
-      "slot": "Belt",
-      "raw": "Upgradeable - Tier 1 / Riposte +4 / Insightful Combat Mastery +4 / Staggering Blow / Disable Device +17 / Open Lock +17 / Upgradeable - Tier 2 / Disable Device +17 -> Disable Device +18 / Open Lock +17 -> Open Lock +18 / Adds Use Magic Device +3 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Riposte +4 -> Riposte +5 / Insightful Combat Mastery +4 -> Insightful Combat Mastery +5 / Use Magic Device +3 -> Use Magic Device +4 / Adds Doublestrike 12% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Staggering Blow",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Staggering Blow",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Disable Device",
-          "type": "Competence",
-          "value": 18,
-          "wiki_name": "Disable Device",
-          "unit": "flat",
-          "type_source": "Spare Hand family sibling"
-        },
-        {
-          "name": "Open Lock",
-          "type": "Competence",
-          "value": 18,
-          "wiki_name": "Open Lock",
-          "unit": "flat",
-          "type_source": "Spare Hand family sibling"
-        }
-      ],
-      "slots": [
-        "Colorless Augment Slot",
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Riposte +5",
-          "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
-        },
-        {
-          "raw": "Insightful Combat Mastery +5",
-          "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Use Magic Device +4",
-          "reason": "bonus type unsourced: no sibling in the 'Spare Hand' family carries 'Use Magic Device', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Doublestrike 12%",
-          "reason": "bonus type unsourced: no sibling in the 'Spare Hand' family carries 'Doublestrike', and the catalog assigns it more than one type"
-        }
-      ]
-    },
-    "Mournlode Docent (level 12)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Docent_(level_12)",
-      "ml": 12,
-      "slot": "Armor",
-      "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Protection +5 / Resistance +5 / Undead Guard +3 / Protection from Evil / Upgradeable - Tier 2 / +3 Enhancement Bonus -> +4 Enhancement Bonus / Protection +5 -> Protection +6 / Resistance +5 -> Resistance +6 / Upgradeable - Tier 3 / Undead Guard +3 -> Undead Guard +4 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Enhancement Bonus",
-          "type": "Enhancement",
-          "value": 4,
-          "wiki_name": "Enhancement Bonus",
-          "unit": "flat",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Undead Guard",
-          "type": "Bool",
-          "value": 4,
-          "wiki_name": "Undead Guard",
-          "unit": "flat",
-          "type_source": "catalog-wide uniform type"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Protection from Evil",
-          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Protection from Evil', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Protection +6",
-          "reason": "affix name 'Protection' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Resistance +6",
-          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-        }
-      ]
-    },
-    "Mournlode Docent (level 16)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Docent_(level_16)",
-      "ml": 16,
-      "slot": "Armor",
-      "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Protection +6 / Resistance +6 / Undead Guard +4 / Protection from Evil / Weaken Undead / Upgradeable - Tier 2 / +4 Enhancement Bonus -> +5 Enhancement Bonus / Protection +6 -> Protection +7 / Resistance +6 -> Resistance +7 / Upgradeable - Tier 3 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Undead Guard",
-          "type": "Bool",
-          "value": 4,
-          "wiki_name": "Undead Guard",
-          "unit": "flat",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Weaken Undead",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Weaken Undead",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Enhancement Bonus",
-          "type": "Enhancement",
-          "value": 5,
-          "wiki_name": "Enhancement Bonus",
-          "unit": "flat",
-          "type_source": "catalog-wide uniform type"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Protection from Evil",
-          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Protection from Evil', and the catalog assigns it more than one type"
-        },
-        {
-          "raw": "Protection +7",
-          "reason": "affix name 'Protection' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Resistance +7",
-          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-        }
-      ]
-    },
-    "Mournlode Docent (level 4)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Docent_(level_4)",
-      "ml": 4,
-      "slot": "Armor",
-      "raw": "+1 Enhancement Bonus / Protection +3 / Resistance +3 / Undead Guard +2",
-      "final": [
-        {
-          "name": "Enhancement Bonus",
-          "type": "Enhancement",
-          "value": 1,
-          "wiki_name": "Enhancement Bonus",
-          "unit": "flat",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Undead Guard",
-          "type": "Bool",
-          "value": 2,
-          "wiki_name": "Undead Guard",
-          "unit": "flat",
-          "type_source": "catalog-wide uniform type"
-        }
-      ],
-      "slots": [],
-      "quarantined": [
-        {
-          "raw": "Protection +3",
-          "reason": "affix name 'Protection' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Resistance +3",
-          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-        }
-      ]
-    },
-    "Mournlode Docent (level 8)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Docent_(level_8)",
-      "ml": 8,
-      "slot": "Armor",
-      "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Protection +4 / Resistance +4 / Undead Guard +2 / Upgradeable - Tier 2 / +2 Enhancement Bonus -> +3 Enhancement Bonus / Undead Guard +2 -> Undead Guard +3 / Upgradeable - Tier 3 / Protection +4 -> Protection +5 / Resistance +4 -> Resistance +5 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Enhancement Bonus",
-          "type": "Enhancement",
-          "value": 3,
-          "wiki_name": "Enhancement Bonus",
-          "unit": "flat",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Undead Guard",
-          "type": "Bool",
-          "value": 3,
-          "wiki_name": "Undead Guard",
-          "unit": "flat",
-          "type_source": "catalog-wide uniform type"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Protection +5",
-          "reason": "affix name 'Protection' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Resistance +5",
-          "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-        }
-      ]
-    },
-    "Ring of Master Artifice (level 11)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Master_Artifice_(level_11)",
-      "ml": 11,
-      "slot": "Ring",
-      "raw": "Upgradeable - Tier 1 / Repair Moderate Damage — 1 Charges (Recharged/Day:1) / Wizardry +126 / Reconstruction +82 / Repair Lore +12% / Improved Auto-Repair / Upgradeable - Tier 2 / Wizardry +126 -> Wizardry +140 / Reconstruction +82 -> Reconstruction +88 / Repair Lore +12% -> Repair Lore +13% / Upgradeable - Tier 3 / Wizardry +140 -> Wizardry +154 / Reconstruction +88 -> Reconstruction +94 / Repair Lore +13% -> Repair Lore +14% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Improved Auto-Repair",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Improved Auto-Repair",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Wizardry",
-          "type": "Enhancement",
-          "value": 154,
-          "wiki_name": "Wizardry",
-          "unit": "flat",
-          "type_source": "Ring of Master Artifice family sibling"
-        },
-        {
-          "name": "Reconstruction",
-          "type": "Equipment",
-          "value": 94,
-          "wiki_name": "Reconstruction",
-          "unit": "flat",
-          "type_source": "Ring of Master Artifice family sibling"
-        },
-        {
-          "name": "Repair Lore",
-          "type": "Equipment",
-          "value": 14,
-          "wiki_name": "Repair Lore",
-          "unit": "percent",
-          "type_source": "Ring of Master Artifice family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Repair Moderate Damage — 1 Charges (Recharged/Day:1)",
-          "reason": "clickie charge, not a passive stat"
-        }
-      ]
-    },
-    "Ring of Master Artifice (level 15)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Master_Artifice_(level_15)",
-      "ml": 15,
-      "slot": "Ring",
-      "raw": "Upgradeable - Tier 1 / Reconstruct — 1 Charges (Recharged/Day:1) / Wizardry +159 / Reconstruction +96 / Repair Lore +14% / Improved Auto-Repair / Upgradeable - Tier 2 / Wizardry +159 -> Wizardry +173 / Reconstruction +96 -> Reconstruction +102 / Repair Lore +14% -> Repair Lore +15% / Upgradeable - Tier 3 / Wizardry +173 -> Wizardry +187 / Reconstruction +102 -> Reconstruction +108 / Repair Lore +15% -> Repair Lore +16% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Improved Auto-Repair",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Improved Auto-Repair",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Wizardry",
-          "type": "Enhancement",
-          "value": 187,
-          "wiki_name": "Wizardry",
-          "unit": "flat",
-          "type_source": "Ring of Master Artifice family sibling"
-        },
-        {
-          "name": "Reconstruction",
-          "type": "Equipment",
-          "value": 108,
-          "wiki_name": "Reconstruction",
-          "unit": "flat",
-          "type_source": "Ring of Master Artifice family sibling"
-        },
-        {
-          "name": "Repair Lore",
-          "type": "Equipment",
-          "value": 16,
-          "wiki_name": "Repair Lore",
-          "unit": "percent",
-          "type_source": "Ring of Master Artifice family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Reconstruct — 1 Charges (Recharged/Day:1)",
-          "reason": "clickie charge, not a passive stat"
-        }
-      ]
-    },
-    "Ring of Master Artifice (level 7)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Master_Artifice_(level_7)",
-      "ml": 7,
-      "slot": "Ring",
-      "raw": "Upgradeable - Tier 1 / Repair Moderate Damage — 1 Charges (Recharged/Day:1) / Wizardry +93 / Reconstruction +69 / Repair Lore +10% / Auto-Repair / Upgradeable - Tier 2 / Wizardry +93 -> Wizardry +107 / Reconstruction +69 -> Reconstruction +74 / Repair Lore +10% -> Repair Lore +11% / Upgradeable - Tier 3 / Wizardry +107 -> Wizardry +118 / Reconstruction +74 -> Reconstruction +79 / Repair Lore +11% -> Repair Lore +12% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Auto-Repair",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Auto-Repair",
-          "unit": "bool",
-          "type_source": "Ring of Master Artifice family sibling"
-        },
-        {
-          "name": "Wizardry",
-          "type": "Enhancement",
-          "value": 118,
-          "wiki_name": "Wizardry",
-          "unit": "flat",
-          "type_source": "Ring of Master Artifice family sibling"
-        },
-        {
-          "name": "Reconstruction",
-          "type": "Equipment",
-          "value": 79,
-          "wiki_name": "Reconstruction",
-          "unit": "flat",
-          "type_source": "Ring of Master Artifice family sibling"
-        },
-        {
-          "name": "Repair Lore",
-          "type": "Equipment",
-          "value": 12,
-          "wiki_name": "Repair Lore",
-          "unit": "percent",
-          "type_source": "Ring of Master Artifice family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Repair Moderate Damage — 1 Charges (Recharged/Day:1)",
-          "reason": "clickie charge, not a passive stat"
-        }
-      ]
-    },
-    "Ring of the Stalker (level 11)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_the_Stalker_(level_11)",
-      "ml": 11,
-      "slot": "Ring",
-      "raw": "Upgradeable - Tier 1 / Manslayer / Insightful Deception +2 / Seeker +6 / Upgradeable - Tier 2 / Seeker +6 -> Seeker +7 / Upgradeable - Tier 3 / Insightful Deception +2 -> Insightful Deception +3 / Seeker +7 -> Seeker +8 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Manslayer",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Manslayer",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Seeker",
-          "type": "Enhancement",
-          "value": 8,
-          "wiki_name": "Seeker",
-          "unit": "flat",
-          "type_source": "Ring of the Stalker family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Insightful Deception +3",
-          "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
-        }
-      ]
-    },
-    "Ring of the Stalker (level 15)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_the_Stalker_(level_15)",
-      "ml": 15,
-      "slot": "Ring",
-      "raw": "Upgradeable - Tier 1 / Manslayer / Insightful Deception +3 / Seeker +8 / Ethereal / Upgradeable - Tier 2 / BUG: No change / Upgradeable - Tier 3 / Seeker +8 -> Seeker +9 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Manslayer",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Manslayer",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Ethereal",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Ethereal",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Seeker",
-          "type": "Enhancement",
-          "value": 9,
-          "wiki_name": "Seeker",
-          "unit": "flat",
-          "type_source": "Ring of the Stalker family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Insightful Deception +3",
-          "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
-        }
-      ]
-    },
-    "Ring of the Stalker (level 7)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_the_Stalker_(level_7)",
-      "ml": 7,
-      "slot": "Ring",
-      "raw": "Upgradeable - Tier 1 / Deception +3 / Seeker +5 / Upgradeable - Tier 2 / Deception +3 -> Insightful Deception +2 / Upgradeable - Tier 3 / Seeker +5 -> Seeker +6 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Seeker",
-          "type": "Enhancement",
-          "value": 6,
-          "wiki_name": "Seeker",
-          "unit": "flat",
-          "type_source": "Ring of the Stalker family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Insightful Deception +2",
-          "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
-        }
-      ]
-    },
-    "Rock Boots (level 11)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Rock_Boots_(level_11)",
-      "ml": 11,
-      "slot": "Boots",
-      "raw": "Upgradeable - Tier 1 / Corrosion +82 / Acid Lore +12% / Stone Prison Guard / Upgradeable - Tier 2 / Corrosion +82 -> Corrosion +88 / Acid Lore +12% -> Acid Lore +13% / Adds Immunity to Slippery Surfaces / Upgradeable - Tier 3 / Corrosion +88 -> Corrosion +94 / Acid Lore +13% -> Acid Lore +14% / Adds Green Augment Slot / Mythic Boot Boost +1 or +3",
-      "final": [
-        {
-          "name": "Stone Prison Guard",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Stone Prison Guard",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Immunity to Slippery Surfaces",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Immunity to Slippery Surfaces",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Acid Spell Power",
-          "type": "Equipment",
-          "value": 94,
-          "wiki_name": "Corrosion",
-          "unit": "flat",
-          "type_source": "Rock Boots family sibling"
-        },
-        {
-          "name": "Acid Lore",
-          "type": "Equipment",
-          "value": 14,
-          "wiki_name": "Acid Lore",
-          "unit": "percent",
-          "type_source": "Rock Boots family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Mythic Boot Boost +1 or +3",
-          "reason": "wiki states two values with no rule for which applies"
-        }
-      ]
-    },
-    "Rock Boots (level 15)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Rock_Boots_(level_15)",
-      "ml": 15,
-      "slot": "Boots",
-      "raw": "Upgradeable - Tier 1 / Corrosion +96 / Acid Lore +14% / Stone Prison Guard / Earthgrab Guard / Immunity to Slippery Surfaces / Upgradeable - Tier 2 / Corrosion +96 -> Corrosion +102 / Acid Lore +14% -> Acid Lore +15% / Upgradeable - Tier 3 / Corrosion +102 -> Corrosion +108 / Acid Lore +15% -> Acid Lore +16% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Stone Prison Guard",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Stone Prison Guard",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Earthgrab Guard",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Earthgrab Guard",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Immunity to Slippery Surfaces",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Immunity to Slippery Surfaces",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Acid Spell Power",
-          "type": "Equipment",
-          "value": 108,
-          "wiki_name": "Corrosion",
-          "unit": "flat",
-          "type_source": "Rock Boots family sibling"
-        },
-        {
-          "name": "Acid Lore",
-          "type": "Equipment",
-          "value": 16,
-          "wiki_name": "Acid Lore",
-          "unit": "percent",
-          "type_source": "Rock Boots family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": []
-    },
-    "Rock Boots (level 7)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Rock_Boots_(level_7)",
-      "ml": 7,
-      "slot": "Boots",
-      "raw": "Upgradeable - Tier 1 / Corrosion +69 / Acid Lore +10% / Lesser Stone Prison Guard / Upgradeable - Tier 2 / Corrosion +69 -> Corrosion +74 / Acid Lore +10% -> Acid Lore +11% / Upgradeable - Tier 3 / Corrosion +74 -> Corrosion +79 / Acid Lore +11% -> Acid Lore +12% / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Lesser Stone Prison Guard",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Lesser Stone Prison Guard",
-          "unit": "bool",
-          "type_source": "Rock Boots family sibling"
-        },
-        {
-          "name": "Acid Spell Power",
-          "type": "Equipment",
-          "value": 79,
-          "wiki_name": "Corrosion",
-          "unit": "flat",
-          "type_source": "Rock Boots family sibling"
-        },
-        {
-          "name": "Acid Lore",
-          "type": "Equipment",
-          "value": 12,
-          "wiki_name": "Acid Lore",
-          "unit": "percent",
-          "type_source": "Rock Boots family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": []
-    },
-    "Spare Hand (level 11)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Spare_Hand_(level_11)",
-      "ml": 11,
-      "slot": "Belt",
-      "raw": "Upgradeable - Tier 1 / Riposte +2 / Insightful Combat Mastery +3 / Staggering Blow / Disable Device +14 / Open Lock +14 / Upgradeable - Tier 2 / Riposte +2 -> Riposte +3 / Disable Device +14 -> Disable Device +15 / Open Lock +14 -> Open Lock +15 / Upgradeable - Tier 3 / Disable Device +15 -> Disable Device +16 / Open Lock +15 -> Open Lock +16 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Staggering Blow",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Staggering Blow",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Disable Device",
-          "type": "Competence",
-          "value": 16,
-          "wiki_name": "Disable Device",
-          "unit": "flat",
-          "type_source": "Spare Hand family sibling"
-        },
-        {
-          "name": "Open Lock",
-          "type": "Competence",
-          "value": 16,
-          "wiki_name": "Open Lock",
-          "unit": "flat",
-          "type_source": "Spare Hand family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Insightful Combat Mastery +3",
-          "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Riposte +3",
-          "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
-        }
-      ]
-    },
-    "Spare Hand (level 15)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Spare_Hand_(level_15)",
-      "ml": 15,
-      "slot": "Belt",
-      "raw": "Upgradeable - Tier 1 / Riposte +3 / Insightful Combat Mastery +3 / Staggering Blow / Disable Device +16 / Open Lock +16 / Upgradeable - Tier 2 / Insightful Combat Mastery +3 -> Insightful Combat Mastery +4 / Upgradeable - Tier 3 / Riposte +3 -> Riposte +4 / Disable Device +16 -> Disable Device +17 / Open Lock +16 -> Open Lock +17 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Staggering Blow",
-          "type": "Bool",
-          "value": 1,
-          "wiki_name": "Staggering Blow",
-          "unit": "bool",
-          "type_source": "catalog-wide uniform type"
-        },
-        {
-          "name": "Disable Device",
-          "type": "Competence",
-          "value": 17,
-          "wiki_name": "Disable Device",
-          "unit": "flat",
-          "type_source": "Spare Hand family sibling"
-        },
-        {
-          "name": "Open Lock",
-          "type": "Competence",
-          "value": 17,
-          "wiki_name": "Open Lock",
-          "unit": "flat",
-          "type_source": "Spare Hand family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Insightful Combat Mastery +4",
-          "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
-        },
-        {
-          "raw": "Riposte +4",
-          "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
-        }
-      ]
-    },
-    "Spare Hand (level 7)": {
-      "wiki_url": "https://ddowiki.com/page/Item:Spare_Hand_(level_7)",
-      "ml": 7,
-      "slot": "Belt",
-      "raw": "Upgradeable - Tier 1 / Riposte +2 / Insightful Combat Mastery +2 / Disable Device +10 / Open Lock +10 / Upgradeable - Tier 2 / Disable Device +10 -> Disable Device +11 / Open Lock +10 -> Open Lock +11 / Upgradeable - Tier 3 / Insightful Combat Mastery +2 -> Insightful Combat Mastery +3 / Disable Device +11 -> Disable Device +13 / Open Lock +11 -> Open Lock +13 / Adds Green Augment Slot",
-      "final": [
-        {
-          "name": "Disable Device",
-          "type": "Competence",
-          "value": 13,
-          "wiki_name": "Disable Device",
-          "unit": "flat",
-          "type_source": "Spare Hand family sibling"
-        },
-        {
-          "name": "Open Lock",
-          "type": "Competence",
-          "value": 13,
-          "wiki_name": "Open Lock",
-          "unit": "flat",
-          "type_source": "Spare Hand family sibling"
-        }
-      ],
-      "slots": [
-        "Green Augment Slot"
-      ],
-      "quarantined": [
-        {
-          "raw": "Riposte +2",
-          "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
-        },
-        {
-          "raw": "Insightful Combat Mastery +3",
-          "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
-        }
-      ]
+    {
+     "name": "Sonic Guard",
+     "type": "Bool",
+     "value": 4,
+     "wiki_name": "Sonic Guard",
+     "unit": "flat",
+     "type_source": "catalog-wide uniform type"
     }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Evocation Focus I",
+     "reason": "affix name 'Evocation Focus I' is not in the catalog vocabulary"
+    }
+   ]
+  },
+  "Blasting Chime (level 15)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Blasting_Chime_(level_15)",
+   "ml": 15,
+   "slot": "Trinket",
+   "raw": "Upgradeable - Tier 1 / Weaken Construct / Sonic Lore +14% / Cacophonic Guard / Resonance +96 / Evocation Focus I / Anthem / Upgradeable - Tier 2 / Resonance +96 -> Resonance +102 / Sonic Lore +14% -> Sonic Lore +15% / Upgradeable - Tier 3 / Resonance +102 -> Resonance +108 / Sonic Lore +15% -> Sonic Lore +16% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Weaken Construct",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Weaken Construct",
+     "unit": "bool",
+     "type_source": "Blasting Chime family sibling"
+    },
+    {
+     "name": "Anthem",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Anthem",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Sonic Spell Power",
+     "type": "Equipment",
+     "value": 108,
+     "wiki_name": "Resonance",
+     "unit": "flat",
+     "type_source": "Blasting Chime family sibling"
+    },
+    {
+     "name": "Sonic Lore",
+     "type": "Equipment",
+     "value": 16,
+     "wiki_name": "Sonic Lore",
+     "unit": "percent",
+     "type_source": "Blasting Chime family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Cacophonic Guard",
+     "reason": "affix name 'Cacophonic Guard' is not in the catalog vocabulary"
+    },
+    {
+     "raw": "Evocation Focus I",
+     "reason": "affix name 'Evocation Focus I' is not in the catalog vocabulary"
+    }
+   ]
+  },
+  "Blasting Chime (level 7)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Blasting_Chime_(level_7)",
+   "ml": 7,
+   "slot": "Trinket",
+   "raw": "Upgradeable - Tier 1 / Weaken Construct / Sonic Lore +10% / Sonic Guard +2 / Resonance +69 / Upgradeable - Tier 2 / Sonic Lore +10% -> Sonic Lore +11% / Sonic Guard +2 -> Sonic Guard +3 / Resonance +69 -> Resonance +74 / Upgradeable - Tier 3 / Sonic Lore +11% -> Sonic Lore +12% / Resonance +74 -> Resonance +79 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Weaken Construct",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Weaken Construct",
+     "unit": "bool",
+     "type_source": "Blasting Chime family sibling"
+    },
+    {
+     "name": "Sonic Guard",
+     "type": "Bool",
+     "value": 3,
+     "wiki_name": "Sonic Guard",
+     "unit": "flat",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Sonic Lore",
+     "type": "Equipment",
+     "value": 12,
+     "wiki_name": "Sonic Lore",
+     "unit": "percent",
+     "type_source": "Blasting Chime family sibling"
+    },
+    {
+     "name": "Sonic Spell Power",
+     "type": "Equipment",
+     "value": 79,
+     "wiki_name": "Resonance",
+     "unit": "flat",
+     "type_source": "Blasting Chime family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": []
+  },
+  "Bracers of Wind (level 11)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Wind_(level_11)",
+   "ml": 11,
+   "slot": "Bracers",
+   "raw": "Upgradeable - Tier 1 / Magnetism +82 / Lightning Lore +12% / Blurry / Dodge +6% / Upgradeable - Tier 2 / Magnetism +82 -> Magnetism +88 / Lightning Lore +12% -> Lightning Lore +13% / Dodge +6% -> Dodge +7% / Upgradeable - Tier 3 / Magnetism +88 -> Magnetism +94 / Lightning Lore +13% -> Lightning Lore +14% / Dodge +7% -> Dodge +8% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Blurry",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Blurry",
+     "unit": "bool",
+     "type_source": "Bracers of Wind family sibling"
+    },
+    {
+     "name": "Electric Spell Power",
+     "type": "Equipment",
+     "value": 94,
+     "wiki_name": "Magnetism",
+     "unit": "flat",
+     "type_source": "Bracers of Wind family sibling"
+    },
+    {
+     "name": "Lightning Lore",
+     "type": "Equipment",
+     "value": 14,
+     "wiki_name": "Lightning Lore",
+     "unit": "percent",
+     "type_source": "Bracers of Wind family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Dodge +8%",
+     "reason": "bonus type unsourced: no sibling in the 'Bracers of Wind' family carries 'Dodge', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Bracers of Wind (level 15)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Wind_(level_15)",
+   "ml": 15,
+   "slot": "Bracers",
+   "raw": "Upgradeable - Tier 1 / Magnetism +96 / Lightning Lore +14% / Blurry / Dodge +8% / Air Guard / Upgradeable - Tier 2 / Magnetism +96 -> Magnetism +102 / Lightning Lore +14% -> Lightning Lore +15% / Upgradeable - Tier 3 / Magnetism +102 -> Magnetism +108 / Lightning Lore +15% -> Lightning Lore +16% / Dodge +8% -> Dodge +9% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Blurry",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Blurry",
+     "unit": "bool",
+     "type_source": "Bracers of Wind family sibling"
+    },
+    {
+     "name": "Air Guard",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Air Guard",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Electric Spell Power",
+     "type": "Equipment",
+     "value": 108,
+     "wiki_name": "Magnetism",
+     "unit": "flat",
+     "type_source": "Bracers of Wind family sibling"
+    },
+    {
+     "name": "Lightning Lore",
+     "type": "Equipment",
+     "value": 16,
+     "wiki_name": "Lightning Lore",
+     "unit": "percent",
+     "type_source": "Bracers of Wind family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Dodge +9%",
+     "reason": "bonus type unsourced: no sibling in the 'Bracers of Wind' family carries 'Dodge', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Bracers of Wind (level 7)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Wind_(level_7)",
+   "ml": 7,
+   "slot": "Bracers",
+   "raw": "Upgradeable - Tier 1 / Magnetism +69 / Lightning Lore +10% / Blurry / Upgradeable - Tier 2 / Magnetism +69 -> Magnetism +74 / Lightning Lore +10% -> Lightning Lore +11% / Upgradeable - Tier 3 / Magnetism +74 -> Magnetism +79 / Lightning Lore +11% -> Lightning Lore +12% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Blurry",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Blurry",
+     "unit": "bool",
+     "type_source": "Bracers of Wind family sibling"
+    },
+    {
+     "name": "Electric Spell Power",
+     "type": "Equipment",
+     "value": 79,
+     "wiki_name": "Magnetism",
+     "unit": "flat",
+     "type_source": "Bracers of Wind family sibling"
+    },
+    {
+     "name": "Lightning Lore",
+     "type": "Equipment",
+     "value": 12,
+     "wiki_name": "Lightning Lore",
+     "unit": "percent",
+     "type_source": "Bracers of Wind family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": []
+  },
+  "Calomel Banded Heavy Repeater (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Banded_Heavy_Repeater_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Dragon Bane 3 / Tidal Burst / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Dragon Bane 3 → Dragon Bane 4 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Banded Heavy Repeater (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Banded_Heavy_Repeater_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Banded Light Repeater (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Banded_Light_Repeater_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Dragon Bane 2 / Tidal",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Calomel Banded Light Repeater (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Banded_Light_Repeater_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Dragon Bane 2 / Tidal / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Dragon Bane 2 → Dragon Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Falchion (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Falchion_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Dragon Bane 3 / Tidal Burst / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Dragon Bane 3 → Dragon Bane 4 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Falchion (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Falchion_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Falchion (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Falchion_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Dragon Bane 2 / Tidal",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Calomel Falchion (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Falchion_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Dragon Bane 2 / Tidal / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Dragon Bane 2 → Dragon Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Rapier (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Rapier_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Dragon Bane 3 / Tidal Burst / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Dragon Bane 3 → Dragon Bane 4 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Rapier (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Rapier_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Rapier (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Rapier_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Dragon Bane 2 / Tidal",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Calomel Rapier (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Rapier_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Dragon Bane 2 / Tidal / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Dragon Bane 2 → Dragon Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Scimitar (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Scimitar_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Dragon Bane 3 / Tidal Burst / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Dragon Bane 3 → Dragon Bane 4 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Scimitar (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Scimitar_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Scimitar (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Scimitar_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Dragon Bane 2 / Tidal",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Calomel Scimitar (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Scimitar_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Dragon Bane 2 / Tidal / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Dragon Bane 2 → Dragon Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Strung Long Bow (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Strung_Long_Bow_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Dragon Bane 3 / Tidal Burst / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Dragon Bane 3 → Dragon Bane 4 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Strung Long Bow (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Strung_Long_Bow_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Strung Long Bow (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Strung_Long_Bow_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Dragon Bane 2 / Tidal",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Calomel Strung Long Bow (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Strung_Long_Bow_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Dragon Bane 2 / Tidal / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Dragon Bane 2 → Dragon Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Studded Handwraps (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Studded_Handwraps_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Dragon Bane 3 / Tidal Burst / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Dragon Bane 3 → Dragon Bane 4 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Studded Handwraps (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Studded_Handwraps_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Calomel Studded Handwraps (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Studded_Handwraps_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Dragon Bane 2 / Tidal",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Calomel Studded Handwraps (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Calomel_Studded_Handwraps_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Dragon Bane 2 / Tidal / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Dragon Bane 2 → Dragon Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Cloak of Flames (level 11)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_Flames_(level_11)",
+   "ml": 11,
+   "slot": "Cloak",
+   "raw": "Upgradeable - Tier 1 / Combustion +82 / Fire Lore +12% / Heightened Awareness 2 / Fire Absorption +21% / Upgradeable - Tier 2 / Combustion +82 -> Combustion +88 / Fire Lore +12% -> Fire Lore +13% / Fire Absorption +21% -> Fire Absorption +22% / Upgradeable - Tier 3 / Combustion +88 -> Combustion +94 / Fire Lore +13% -> Fire Lore +14% / Fire Absorption +22% -> Fire Absorption +24% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Fire Spell Power",
+     "type": "Equipment",
+     "value": 94,
+     "wiki_name": "Combustion",
+     "unit": "flat",
+     "type_source": "Cloak of Flames family sibling"
+    },
+    {
+     "name": "Fire Lore",
+     "type": "Equipment",
+     "value": 14,
+     "wiki_name": "Fire Lore",
+     "unit": "percent",
+     "type_source": "Cloak of Flames family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Heightened Awareness 2",
+     "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+    },
+    {
+     "raw": "Fire Absorption +24%",
+     "reason": "bonus type unsourced: no sibling in the 'Cloak of Flames' family carries 'Fire Absorption', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Cloak of Flames (level 15)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_Flames_(level_15)",
+   "ml": 15,
+   "slot": "Cloak",
+   "raw": "Upgradeable - Tier 1 / Combustion +96 / Fire Lore +14% / Heightened Awareness 2 / Fire Absorption +24% / Fire Shield (Hot) / Upgradeable - Tier 2 / Combustion +96 -> Combustion +102 / Fire Lore +14% -> Fire Lore +15% / Fire Absorption +24% -> Fire Absorption +25% / Upgradeable - Tier 3 / Combustion +102 -> Combustion +108 / Fire Lore +15% -> Fire Lore +16% / Fire Absorption +25% -> Fire Absorption +27% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Fire Shield (Hot)",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Fire Shield (Hot)",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Fire Spell Power",
+     "type": "Equipment",
+     "value": 108,
+     "wiki_name": "Combustion",
+     "unit": "flat",
+     "type_source": "Cloak of Flames family sibling"
+    },
+    {
+     "name": "Fire Lore",
+     "type": "Equipment",
+     "value": 16,
+     "wiki_name": "Fire Lore",
+     "unit": "percent",
+     "type_source": "Cloak of Flames family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Heightened Awareness 2",
+     "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+    },
+    {
+     "raw": "Fire Absorption +27%",
+     "reason": "bonus type unsourced: no sibling in the 'Cloak of Flames' family carries 'Fire Absorption', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Cloak of Flames (level 7)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Cloak_of_Flames_(level_7)",
+   "ml": 7,
+   "slot": "Cloak",
+   "raw": "Upgradeable - Tier 1 / Combustion +69 / Fire Lore +10% / Heightened Awareness 1 / Upgradeable - Tier 2 / Combustion +69 -> Combustion +74 / Fire Lore +10% -> Fire Lore +11% / Upgradeable - Tier 3 / Combustion +74 -> Combustion +79 / Fire Lore +11% -> Fire Lore +12% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Fire Spell Power",
+     "type": "Equipment",
+     "value": 79,
+     "wiki_name": "Combustion",
+     "unit": "flat",
+     "type_source": "Cloak of Flames family sibling"
+    },
+    {
+     "name": "Fire Lore",
+     "type": "Equipment",
+     "value": 12,
+     "wiki_name": "Fire Lore",
+     "unit": "percent",
+     "type_source": "Cloak of Flames family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Heightened Awareness 1",
+     "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+    }
+   ]
+  },
+  "Elemental Greataxe of Fire (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Greataxe_of_Fire_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Flaming Burst / Brilliance / Metalline / Cold Resistance +24 / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Cold Resistance +24 → Cold Resistance +26 / Upgradeable - Tier 3 / Cold Resistance +26 → Cold Resistance +29 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Elemental Greataxe of Fire (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Greataxe_of_Fire_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Flaming Burst / Brilliance / Metalline / Incineration / Cold Resistance +30 / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Cold Resistance +30 → Cold Resistance +32 / Upgradeable - Tier 3 / Cold Resistance +32 → Cold Resistance +35 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Elemental Greataxe of Fire (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Greataxe_of_Fire_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Flaming / Cold Resistance +11",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Elemental Greataxe of Fire (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Greataxe_of_Fire_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Flaming / Incandescence / Cold Resistance +18 / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Cold Resistance +18 → Cold Resistance +20 / Upgradeable - Tier 3 / Cold Resistance +20 → Cold Resistance +22 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Elemental Khopesh of Water (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Khopesh_of_Water_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Icy Burst / Paralyzing / Crushing Wave / Fire Resistance +24 / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Fire Resistance +24 → Fire Resistance +26 / Upgradeable - Tier 3 / Fire Resistance +26 → Fire Resistance +29 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Elemental Khopesh of Water (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Khopesh_of_Water_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Icy Burst / Paralyzing / Crushing Wave / Slowburst / Fire Resistance +30 / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Fire Resistance +30 → Fire Resistance +32 / Upgradeable - Tier 3 / Fire Resistance +32 → Fire Resistance +35 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Elemental Khopesh of Water (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Khopesh_of_Water_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Frost / Fire Resistance +11",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Elemental Khopesh of Water (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Khopesh_of_Water_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Frost / Slowburst / Fire Resistance +18 / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Fire Resistance +18 → Fire Resistance +20 / Upgradeable - Tier 3 / Fire Resistance +20 → Fire Resistance +22 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Elemental Longbow of Earth (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Longbow_of_Earth_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Acid Burst / Acid Arrow / Destruction / Acid Resistance +24 / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Acid Resistance +24 → Acid Resistance +26 / Upgradeable - Tier 3 / Acid Resistance +26 → Acid Resistance +29 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Elemental Longbow of Earth (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Longbow_of_Earth_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Acid Burst / Greater Acid Arrow / Stone Prison / Destruction / Acid Resistance +30 / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Acid Resistance +30 → Acid Resistance +32 / Upgradeable - Tier 3 / Acid Resistance +32 → Acid Resistance +35 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Elemental Longbow of Earth (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Longbow_of_Earth_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Acid / Acid Resistance +11",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Elemental Longbow of Earth (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Longbow_of_Earth_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Acid / Acid Arrow / Acid Resistance +18 / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Acid Resistance +18 → Acid Resistance +20 / Upgradeable - Tier 3 / Acid Resistance +20 → Acid Resistance +22 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Elemental Rapier of Air (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Rapier_of_Air_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Shocking Burst / Screaming / Roaring / Electric Resistance +24 / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Electric Resistance +24 → Electric Resistance +26 / Upgradeable - Tier 3 / Electric Resistance +26 → Electric Resistance +29 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Elemental Rapier of Air (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Rapier_of_Air_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Shocking Burst / Screaming / Roaring / Sirocco / Electric Resistance +30 / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Electric Resistance +30 → Electric Resistance +32 / Upgradeable - Tier 3 / Electric Resistance +32 → Electric Resistance +35 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Elemental Rapier of Air (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Rapier_of_Air_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Shock / Electric Resistance +11",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Elemental Rapier of Air (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Elemental_Rapier_of_Air_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Shock / Screaming / Electric Resistance +18 / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Electric Resistance +18 → Electric Resistance +20 / Upgradeable - Tier 3 / Electric Resistance +20 → Electric Resistance +22 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Blasting Chime": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Blasting_Chime",
+   "ml": 20,
+   "slot": "Trinket",
+   "raw": "Upgradeable - Tier 1 / Weaken Construct / Sonic Lore +16% / Cacophonic Guard / Resonance +110 / Evocation Focus II / Anthem / Upgradeable - Tier 2 / Sonic Lore +16% -> Sonic Lore +17% / Resonance +110 -> Resonance +116 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Sonic Lore +17% -> Sonic Lore +18% / Resonance +116 -> Resonance +122 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Weaken Construct",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Weaken Construct",
+     "unit": "bool",
+     "type_source": "Blasting Chime family sibling"
+    },
+    {
+     "name": "Anthem",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Anthem",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Sonic Lore",
+     "type": "Equipment",
+     "value": 18,
+     "wiki_name": "Sonic Lore",
+     "unit": "percent",
+     "type_source": "Blasting Chime family sibling"
+    },
+    {
+     "name": "Sonic Spell Power",
+     "type": "Equipment",
+     "value": 122,
+     "wiki_name": "Resonance",
+     "unit": "flat",
+     "type_source": "Blasting Chime family sibling"
+    }
+   ],
+   "slots": [
+    "Colorless Augment Slot",
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Cacophonic Guard",
+     "reason": "affix name 'Cacophonic Guard' is not in the catalog vocabulary"
+    },
+    {
+     "raw": "Evocation Focus II",
+     "reason": "affix name 'Evocation Focus II' is not in the catalog vocabulary"
+    }
+   ]
+  },
+  "Epic Bracers of Wind": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Bracers_of_Wind",
+   "ml": 20,
+   "slot": "Bracers",
+   "raw": "Upgradeable - Tier 1 / Magnetism +110 / Lightning Lore +16% / Blurry / Dodge +9% / Air Guard / Upgradeable - Tier 2 / Magnetism +110 -> Magnetism +116 / Lightning Lore +16% -> Lightning Lore +17% / Dodge +9% -> Dodge +10% / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Magnetism +116 -> Magnetism +122 / Lightning Lore +17% -> Lightning Lore +18% / Dodge +10% -> Dodge +11% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Blurry",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Blurry",
+     "unit": "bool",
+     "type_source": "Bracers of Wind family sibling"
+    },
+    {
+     "name": "Air Guard",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Air Guard",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Electric Spell Power",
+     "type": "Equipment",
+     "value": 122,
+     "wiki_name": "Magnetism",
+     "unit": "flat",
+     "type_source": "Bracers of Wind family sibling"
+    },
+    {
+     "name": "Lightning Lore",
+     "type": "Equipment",
+     "value": 18,
+     "wiki_name": "Lightning Lore",
+     "unit": "percent",
+     "type_source": "Bracers of Wind family sibling"
+    }
+   ],
+   "slots": [
+    "Colorless Augment Slot",
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Dodge +11%",
+     "reason": "bonus type unsourced: no sibling in the 'Bracers of Wind' family carries 'Dodge', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Epic Calomel Banded Heavy Repeater": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Calomel_Banded_Heavy_Repeater",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Corrosive Salt / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Dragon Bane 4 → Dragon Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Lifedrinker / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Calomel Falchion": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Calomel_Falchion",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Corrosive Salt / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Dragon Bane 4 → Dragon Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Lifedrinker / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Calomel Long Bow": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Calomel_Long_Bow",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Corrosive Salt / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Dragon Bane 4 → Dragon Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Lifedrinker / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Calomel Rapier": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Calomel_Rapier",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Corrosive Salt / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Dragon Bane 4 → Dragon Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Lifedrinker / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Calomel Scimitar": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Calomel_Scimitar",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Corrosive Salt / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Dragon Bane 4 → Dragon Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Lifedrinker / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Calomel Studded Handwraps": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Calomel_Studded_Handwraps",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Corrosive Salt / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Dragon Bane 4 → Dragon Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Lifedrinker / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Cloak of Flames": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Cloak_of_Flames",
+   "ml": 20,
+   "slot": "Cloak",
+   "raw": "Upgradeable - Tier 1 / Combustion +110 / Fire Lore +16% / Heightened Awareness 4 / Fire Absorption +27% / Fire Shield (Hot) / Upgradeable - Tier 2 / Combustion +110 -> Combustion +116 / Fire Lore +16% -> Fire Lore +17% / Fire Absorption +27% -> Fire Absorption +28% / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Combustion +116 -> Combustion +122 / Fire Lore +17% -> Fire Lore +18% / Fire Absorption +28% -> Fire Absorption +30% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Fire Shield (Hot)",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Fire Shield (Hot)",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Fire Spell Power",
+     "type": "Equipment",
+     "value": 122,
+     "wiki_name": "Combustion",
+     "unit": "flat",
+     "type_source": "Cloak of Flames family sibling"
+    },
+    {
+     "name": "Fire Lore",
+     "type": "Equipment",
+     "value": 18,
+     "wiki_name": "Fire Lore",
+     "unit": "percent",
+     "type_source": "Cloak of Flames family sibling"
+    }
+   ],
+   "slots": [
+    "Colorless Augment Slot",
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Heightened Awareness 4",
+     "reason": "'Heightened Awareness' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+    },
+    {
+     "raw": "Fire Absorption +30%",
+     "reason": "bonus type unsourced: no sibling in the 'Cloak of Flames' family carries 'Fire Absorption', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Epic Elemental Greataxe of Fire": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Elemental_Greataxe_of_Fire",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Flaming Burst / Brilliance / Metalline / Greater Incineration / Magma Surge / Cold Resistance +36 / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Cold Resistance +36 → Cold Resistance +38 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Cold Resistance +38 → Cold Resistance +41 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Elemental Khopesh of Water": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Elemental_Khopesh_of_Water",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Icy Burst / Improved Paralyzing / Crushing Wave / Slowburst / Freezing Ice / On items: While you are wearing this item, your melee, ranged, and unarmed attacks gain the Freezing Ice ability. (When the weapon is used, an icy power occasionally comes to the surface, attempting to freeze an enemy solid and encase them in ice.) - (duration: 9 seconds) / On weapons: This Weapon stores the pitiless immovable power of the ice deep within. When this weapon is used, this power occasionally comes to the surface, attempting to freeze an enemy solid and encase them in ice. / Fire Resistance +36 / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Fire Resistance +36 → Fire Resistance +38 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Fire Resistance +38 → Fire Resistance +41 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Elemental Longbow of Earth": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Elemental_Longbow_of_Earth",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Acid Burst / Greater Acid Arrow / Greater Stone Prison / Improved Destruction / Disintegration / Acid Resistance +36 / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Acid Resistance +35 → Acid Resistance +38 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Acid Resistance +38 → Acid Resistance +41 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Elemental Rapier of Air": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Elemental_Rapier_of_Air",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Shocking Burst / Screaming / Improved Roaring / Greater Sirocco / Slicing Winds / Electric Resistance +36 / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Electric Resistance +36 → Electric Resistance +38 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Electric Resistance +38 → Electric Resistance +41 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Mournlode Docent": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Mournlode_Docent",
+   "ml": 20,
+   "slot": "Armor",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Protection +8 / Resistance +8 / Undead Guard +4 / Protection from Evil / Weaken Undead / Upgradeable - Tier 2 / +5 Enhancement Bonus -> +6 Enhancement Bonus / Undead Guard +4 -> Undead Guard +5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Protection +8 -> Protection +9 / Resistance +8 -> Resistance +9 / Adds Negative Energy Absorption +30% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Weaken Undead",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Weaken Undead",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Enhancement Bonus",
+     "type": "Enhancement",
+     "value": 6,
+     "wiki_name": "Enhancement Bonus",
+     "unit": "flat",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Undead Guard",
+     "type": "Bool",
+     "value": 5,
+     "wiki_name": "Undead Guard",
+     "unit": "flat",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Negative Energy Absorption",
+     "type": "Enhancement",
+     "value": 30,
+     "wiki_name": "Negative Energy Absorption",
+     "unit": "percent",
+     "type_source": "catalog-wide uniform type"
+    }
+   ],
+   "slots": [
+    "Colorless Augment Slot",
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Protection from Evil",
+     "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Protection from Evil', and the catalog assigns it more than one type"
+    },
+    {
+     "raw": "Protection +9",
+     "reason": "affix name 'Protection' is not in the catalog vocabulary"
+    },
+    {
+     "raw": "Resistance +9",
+     "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Epic Mournlode Greataxe": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Mournlode_Greataxe",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Radiant Blast / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Undead Bane 4 → Undead Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Blinding Flash / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Mournlode Light Mace": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Mournlode_Light_Mace",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Radiant Blast / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Undead Bane 4 → Undead Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Blinding Flash / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Mournlode Longsword": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Mournlode_Longsword",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Radiant Blast / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Undead Bane 4 → Undead Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Blinding Flash / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Mournlode Maul": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Mournlode_Maul",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Radiant Blast / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Undead Bane 4 → Undead Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Blinding Flash / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Mournlode Shortsword": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Mournlode_Shortsword",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Radiant Blast / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Undead Bane 4 → Undead Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Blinding Flash / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Mournlode Warhammer": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Mournlode_Warhammer",
+   "ml": null,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Radiant Blast / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Undead Bane 4 → Undead Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Blinding Flash / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Colorless Augment Slot",
+    "Purple Augment Slot"
+   ]
+  },
+  "Epic Ring of Master Artifice": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Master_Artifice",
+   "ml": 20,
+   "slot": "Ring",
+   "raw": "Upgradeable - Tier 1 / Reconstruct — 1 Charges (Recharged/Day:1) / Wizardry +192 / Reconstruction +110 / Repair Lore +16% / Greater Auto-Repair / Upgradeable - Tier 2 / Wizardry +192 -> Wizardry +206 / Reconstruction +110 -> Reconstruction +116 / Repair Lore +16% -> Repair Lore +17% / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Wizardry +206 -> Wizardry +220 / Reconstruction +116 -> Reconstruction +122 / Repair Lore +17% -> Repair Lore +18% / Adds Repair Systems / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Greater Auto-Repair",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Greater Auto-Repair",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Wizardry",
+     "type": "Enhancement",
+     "value": 220,
+     "wiki_name": "Wizardry",
+     "unit": "flat",
+     "type_source": "Ring of Master Artifice family sibling"
+    },
+    {
+     "name": "Reconstruction",
+     "type": "Equipment",
+     "value": 122,
+     "wiki_name": "Reconstruction",
+     "unit": "flat",
+     "type_source": "Ring of Master Artifice family sibling"
+    },
+    {
+     "name": "Repair Lore",
+     "type": "Equipment",
+     "value": 18,
+     "wiki_name": "Repair Lore",
+     "unit": "percent",
+     "type_source": "Ring of Master Artifice family sibling"
+    }
+   ],
+   "slots": [
+    "Colorless Augment Slot",
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Reconstruct — 1 Charges (Recharged/Day:1)",
+     "reason": "clickie charge, not a passive stat"
+    },
+    {
+     "raw": "Repair Systems",
+     "reason": "affix name 'Repair Systems' is not in the catalog vocabulary"
+    }
+   ]
+  },
+  "Epic Ring of the Stalker": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_the_Stalker",
+   "ml": 20,
+   "slot": "Ring",
+   "raw": "Upgradeable - Tier 1 / Manslayer / Insightful Deception +3 / Seeker +9 / Ethereal / Upgradeable - Tier 2 / Ethereal -> Ghostly / Insightful Deception +3 -> Insightful Deception +4 / Seeker +9 -> Seeker +10 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Seeker +10 -> Seeker +11 / Adds Deception +8 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Manslayer",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Manslayer",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Ghostly",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Ghostly",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Seeker",
+     "type": "Enhancement",
+     "value": 11,
+     "wiki_name": "Seeker",
+     "unit": "flat",
+     "type_source": "Ring of the Stalker family sibling"
+    },
+    {
+     "name": "Deception",
+     "type": "Enhancement",
+     "value": 8,
+     "wiki_name": "Deception",
+     "unit": "flat",
+     "type_source": "Ring of the Stalker family sibling"
+    }
+   ],
+   "slots": [
+    "Colorless Augment Slot",
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Insightful Deception +4",
+     "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
+    }
+   ]
+  },
+  "Epic Rock Boots": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Rock_Boots",
+   "ml": 20,
+   "slot": "Boots",
+   "raw": "Upgradeable - Tier 1 / Corrosion +110 / Acid Lore +16% / Stone Prison Guard / Earthgrab Guard / Immunity to Slippery Surfaces / Upgradeable - Tier 2 / Corrosion +110 -> Corrosion +116 / Acid Lore +16% -> Acid Lore +17% / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Corrosion +116 -> Corrosion +122 / Acid Lore +17% -> Acid Lore +18% / Adds Acid Absorption +30% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Stone Prison Guard",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Stone Prison Guard",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Earthgrab Guard",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Earthgrab Guard",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Immunity to Slippery Surfaces",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Immunity to Slippery Surfaces",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Acid Spell Power",
+     "type": "Equipment",
+     "value": 122,
+     "wiki_name": "Corrosion",
+     "unit": "flat",
+     "type_source": "Rock Boots family sibling"
+    },
+    {
+     "name": "Acid Lore",
+     "type": "Equipment",
+     "value": 18,
+     "wiki_name": "Acid Lore",
+     "unit": "percent",
+     "type_source": "Rock Boots family sibling"
+    }
+   ],
+   "slots": [
+    "Colorless Augment Slot",
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Acid Absorption +30%",
+     "reason": "bonus type unsourced: no sibling in the 'Rock Boots' family carries 'Acid Absorption', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Epic Spare Hand": {
+   "wiki_url": "https://ddowiki.com/page/Item:Epic_Spare_Hand",
+   "ml": 20,
+   "slot": "Belt",
+   "raw": "Upgradeable - Tier 1 / Riposte +4 / Insightful Combat Mastery +4 / Staggering Blow / Disable Device +17 / Open Lock +17 / Upgradeable - Tier 2 / Disable Device +17 -> Disable Device +18 / Open Lock +17 -> Open Lock +18 / Adds Use Magic Device +3 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Riposte +4 -> Riposte +5 / Insightful Combat Mastery +4 -> Insightful Combat Mastery +5 / Use Magic Device +3 -> Use Magic Device +4 / Adds Doublestrike 12% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Staggering Blow",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Staggering Blow",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Disable Device",
+     "type": "Competence",
+     "value": 18,
+     "wiki_name": "Disable Device",
+     "unit": "flat",
+     "type_source": "Spare Hand family sibling"
+    },
+    {
+     "name": "Open Lock",
+     "type": "Competence",
+     "value": 18,
+     "wiki_name": "Open Lock",
+     "unit": "flat",
+     "type_source": "Spare Hand family sibling"
+    }
+   ],
+   "slots": [
+    "Colorless Augment Slot",
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Riposte +5",
+     "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+    },
+    {
+     "raw": "Insightful Combat Mastery +5",
+     "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
+    },
+    {
+     "raw": "Use Magic Device +4",
+     "reason": "bonus type unsourced: no sibling in the 'Spare Hand' family carries 'Use Magic Device', and the catalog assigns it more than one type"
+    },
+    {
+     "raw": "Doublestrike 12%",
+     "reason": "bonus type unsourced: no sibling in the 'Spare Hand' family carries 'Doublestrike', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Mournlode Docent (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Docent_(level_12)",
+   "ml": 12,
+   "slot": "Armor",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Protection +5 / Resistance +5 / Undead Guard +3 / Protection from Evil / Upgradeable - Tier 2 / +3 Enhancement Bonus -> +4 Enhancement Bonus / Protection +5 -> Protection +6 / Resistance +5 -> Resistance +6 / Upgradeable - Tier 3 / Undead Guard +3 -> Undead Guard +4 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Enhancement Bonus",
+     "type": "Enhancement",
+     "value": 4,
+     "wiki_name": "Enhancement Bonus",
+     "unit": "flat",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Undead Guard",
+     "type": "Bool",
+     "value": 4,
+     "wiki_name": "Undead Guard",
+     "unit": "flat",
+     "type_source": "catalog-wide uniform type"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Protection from Evil",
+     "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Protection from Evil', and the catalog assigns it more than one type"
+    },
+    {
+     "raw": "Protection +6",
+     "reason": "affix name 'Protection' is not in the catalog vocabulary"
+    },
+    {
+     "raw": "Resistance +6",
+     "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Mournlode Docent (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Docent_(level_16)",
+   "ml": 16,
+   "slot": "Armor",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Protection +6 / Resistance +6 / Undead Guard +4 / Protection from Evil / Weaken Undead / Upgradeable - Tier 2 / +4 Enhancement Bonus -> +5 Enhancement Bonus / Protection +6 -> Protection +7 / Resistance +6 -> Resistance +7 / Upgradeable - Tier 3 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Undead Guard",
+     "type": "Bool",
+     "value": 4,
+     "wiki_name": "Undead Guard",
+     "unit": "flat",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Weaken Undead",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Weaken Undead",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Enhancement Bonus",
+     "type": "Enhancement",
+     "value": 5,
+     "wiki_name": "Enhancement Bonus",
+     "unit": "flat",
+     "type_source": "catalog-wide uniform type"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Protection from Evil",
+     "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Protection from Evil', and the catalog assigns it more than one type"
+    },
+    {
+     "raw": "Protection +7",
+     "reason": "affix name 'Protection' is not in the catalog vocabulary"
+    },
+    {
+     "raw": "Resistance +7",
+     "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Mournlode Docent (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Docent_(level_4)",
+   "ml": 4,
+   "slot": "Armor",
+   "raw": "+1 Enhancement Bonus / Protection +3 / Resistance +3 / Undead Guard +2",
+   "final": [
+    {
+     "name": "Enhancement Bonus",
+     "type": "Enhancement",
+     "value": 1,
+     "wiki_name": "Enhancement Bonus",
+     "unit": "flat",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Undead Guard",
+     "type": "Bool",
+     "value": 2,
+     "wiki_name": "Undead Guard",
+     "unit": "flat",
+     "type_source": "catalog-wide uniform type"
+    }
+   ],
+   "slots": [],
+   "quarantined": [
+    {
+     "raw": "Protection +3",
+     "reason": "affix name 'Protection' is not in the catalog vocabulary"
+    },
+    {
+     "raw": "Resistance +3",
+     "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Mournlode Docent (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Docent_(level_8)",
+   "ml": 8,
+   "slot": "Armor",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Protection +4 / Resistance +4 / Undead Guard +2 / Upgradeable - Tier 2 / +2 Enhancement Bonus -> +3 Enhancement Bonus / Undead Guard +2 -> Undead Guard +3 / Upgradeable - Tier 3 / Protection +4 -> Protection +5 / Resistance +4 -> Resistance +5 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Enhancement Bonus",
+     "type": "Enhancement",
+     "value": 3,
+     "wiki_name": "Enhancement Bonus",
+     "unit": "flat",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Undead Guard",
+     "type": "Bool",
+     "value": 3,
+     "wiki_name": "Undead Guard",
+     "unit": "flat",
+     "type_source": "catalog-wide uniform type"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Protection +5",
+     "reason": "affix name 'Protection' is not in the catalog vocabulary"
+    },
+    {
+     "raw": "Resistance +5",
+     "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
+    }
+   ]
+  },
+  "Mournlode Greataxe (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Greataxe_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Righteous / Undead Bane 3 / Brilliance / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Undead Bane 3 → Undead Bane 4 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Greataxe (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Greataxe_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Greataxe (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Greataxe_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Righteous / Undead Bane 2",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Mournlode Greataxe (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Greataxe_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Righteous / Undead Bane 2 / Incandescence / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Undead Bane 2 → Undead Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Light Mace (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Light_Mace_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Righteous / Undead Bane 3 / Brilliance / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Undead Bane 3 → Undead Bane 4 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Light Mace (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Light_Mace_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Light Mace (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Light_Mace_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Righteous / Undead Bane 2",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Mournlode Light Mace (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Light_Mace_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Righteous / Undead Bane 2 / Incandescence / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Undead Bane 2 → Undead Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Longsword (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Longsword_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Righteous / Undead Bane 3 / Brilliance / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Undead Bane 3 → Undead Bane 4 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Longsword (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Longsword_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Longsword (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Longsword_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Righteous / Undead Bane 2",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Mournlode Longsword (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Longsword_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Righteous / Undead Bane 2 / Incandescence / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Undead Bane 2 → Undead Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Maul (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Maul_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Righteous / Undead Bane 3 / Brilliance / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Undead Bane 3 → Undead Bane 4 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Maul (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Maul_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Maul (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Maul_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Righteous / Undead Bane 2",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Mournlode Maul (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Maul_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Righteous / Undead Bane 2 / Incandescence / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Undead Bane 2 → Undead Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Shortsword (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Shortsword_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Righteous / Undead Bane 3 / Brilliance / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Undead Bane 3 → Undead Bane 4 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Shortsword (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Shortsword_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Shortsword (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Shortsword_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Righteous / Undead Bane 2",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Mournlode Shortsword (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Shortsword_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Righteous / Undead Bane 2 / Incandescence / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Undead Bane 2 → Undead Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Warhammer (level 12)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Warhammer_(level_12)",
+   "ml": 12,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Righteous / Undead Bane 3 / Brilliance / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Undead Bane 3 → Undead Bane 4 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Warhammer (level 16)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Warhammer_(level_16)",
+   "ml": 16,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Mournlode Warhammer (level 4)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Warhammer_(level_4)",
+   "ml": 4,
+   "slot": "Weapon",
+   "raw": "+1 Enhancement Bonus / Righteous / Undead Bane 2",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": []
+  },
+  "Mournlode Warhammer (level 8)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Mournlode_Warhammer_(level_8)",
+   "ml": 8,
+   "slot": "Weapon",
+   "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Righteous / Undead Bane 2 / Incandescence / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Undead Bane 2 → Undead Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
+   "admit": "slots_only",
+   "admit_reason": "#591 half B admits the tier-granted augment SLOT and nothing else. The issue puts the weapons' enchantments out of scope twice and says so in the same words both times: Enhancement bonus and Elemental Resistance are 'not needed for this issue and are not what it delivers', and 'admitting them is a separate, small follow-up that should be filed on its own'. The bane and proc lines stay unvalued permanently (#331, closed not-planned). The raw block below is the full verbatim text, so that follow-up needs no re-harvest.",
+   "final": [],
+   "quarantined": [],
+   "slots": [
+    "Purple Augment Slot"
+   ]
+  },
+  "Ring of Master Artifice (level 11)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Master_Artifice_(level_11)",
+   "ml": 11,
+   "slot": "Ring",
+   "raw": "Upgradeable - Tier 1 / Repair Moderate Damage — 1 Charges (Recharged/Day:1) / Wizardry +126 / Reconstruction +82 / Repair Lore +12% / Improved Auto-Repair / Upgradeable - Tier 2 / Wizardry +126 -> Wizardry +140 / Reconstruction +82 -> Reconstruction +88 / Repair Lore +12% -> Repair Lore +13% / Upgradeable - Tier 3 / Wizardry +140 -> Wizardry +154 / Reconstruction +88 -> Reconstruction +94 / Repair Lore +13% -> Repair Lore +14% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Improved Auto-Repair",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Improved Auto-Repair",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Wizardry",
+     "type": "Enhancement",
+     "value": 154,
+     "wiki_name": "Wizardry",
+     "unit": "flat",
+     "type_source": "Ring of Master Artifice family sibling"
+    },
+    {
+     "name": "Reconstruction",
+     "type": "Equipment",
+     "value": 94,
+     "wiki_name": "Reconstruction",
+     "unit": "flat",
+     "type_source": "Ring of Master Artifice family sibling"
+    },
+    {
+     "name": "Repair Lore",
+     "type": "Equipment",
+     "value": 14,
+     "wiki_name": "Repair Lore",
+     "unit": "percent",
+     "type_source": "Ring of Master Artifice family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Repair Moderate Damage — 1 Charges (Recharged/Day:1)",
+     "reason": "clickie charge, not a passive stat"
+    }
+   ]
+  },
+  "Ring of Master Artifice (level 15)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Master_Artifice_(level_15)",
+   "ml": 15,
+   "slot": "Ring",
+   "raw": "Upgradeable - Tier 1 / Reconstruct — 1 Charges (Recharged/Day:1) / Wizardry +159 / Reconstruction +96 / Repair Lore +14% / Improved Auto-Repair / Upgradeable - Tier 2 / Wizardry +159 -> Wizardry +173 / Reconstruction +96 -> Reconstruction +102 / Repair Lore +14% -> Repair Lore +15% / Upgradeable - Tier 3 / Wizardry +173 -> Wizardry +187 / Reconstruction +102 -> Reconstruction +108 / Repair Lore +15% -> Repair Lore +16% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Improved Auto-Repair",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Improved Auto-Repair",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Wizardry",
+     "type": "Enhancement",
+     "value": 187,
+     "wiki_name": "Wizardry",
+     "unit": "flat",
+     "type_source": "Ring of Master Artifice family sibling"
+    },
+    {
+     "name": "Reconstruction",
+     "type": "Equipment",
+     "value": 108,
+     "wiki_name": "Reconstruction",
+     "unit": "flat",
+     "type_source": "Ring of Master Artifice family sibling"
+    },
+    {
+     "name": "Repair Lore",
+     "type": "Equipment",
+     "value": 16,
+     "wiki_name": "Repair Lore",
+     "unit": "percent",
+     "type_source": "Ring of Master Artifice family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Reconstruct — 1 Charges (Recharged/Day:1)",
+     "reason": "clickie charge, not a passive stat"
+    }
+   ]
+  },
+  "Ring of Master Artifice (level 7)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Master_Artifice_(level_7)",
+   "ml": 7,
+   "slot": "Ring",
+   "raw": "Upgradeable - Tier 1 / Repair Moderate Damage — 1 Charges (Recharged/Day:1) / Wizardry +93 / Reconstruction +69 / Repair Lore +10% / Auto-Repair / Upgradeable - Tier 2 / Wizardry +93 -> Wizardry +107 / Reconstruction +69 -> Reconstruction +74 / Repair Lore +10% -> Repair Lore +11% / Upgradeable - Tier 3 / Wizardry +107 -> Wizardry +118 / Reconstruction +74 -> Reconstruction +79 / Repair Lore +11% -> Repair Lore +12% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Auto-Repair",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Auto-Repair",
+     "unit": "bool",
+     "type_source": "Ring of Master Artifice family sibling"
+    },
+    {
+     "name": "Wizardry",
+     "type": "Enhancement",
+     "value": 118,
+     "wiki_name": "Wizardry",
+     "unit": "flat",
+     "type_source": "Ring of Master Artifice family sibling"
+    },
+    {
+     "name": "Reconstruction",
+     "type": "Equipment",
+     "value": 79,
+     "wiki_name": "Reconstruction",
+     "unit": "flat",
+     "type_source": "Ring of Master Artifice family sibling"
+    },
+    {
+     "name": "Repair Lore",
+     "type": "Equipment",
+     "value": 12,
+     "wiki_name": "Repair Lore",
+     "unit": "percent",
+     "type_source": "Ring of Master Artifice family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Repair Moderate Damage — 1 Charges (Recharged/Day:1)",
+     "reason": "clickie charge, not a passive stat"
+    }
+   ]
+  },
+  "Ring of the Stalker (level 11)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_the_Stalker_(level_11)",
+   "ml": 11,
+   "slot": "Ring",
+   "raw": "Upgradeable - Tier 1 / Manslayer / Insightful Deception +2 / Seeker +6 / Upgradeable - Tier 2 / Seeker +6 -> Seeker +7 / Upgradeable - Tier 3 / Insightful Deception +2 -> Insightful Deception +3 / Seeker +7 -> Seeker +8 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Manslayer",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Manslayer",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Seeker",
+     "type": "Enhancement",
+     "value": 8,
+     "wiki_name": "Seeker",
+     "unit": "flat",
+     "type_source": "Ring of the Stalker family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Insightful Deception +3",
+     "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
+    }
+   ]
+  },
+  "Ring of the Stalker (level 15)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_the_Stalker_(level_15)",
+   "ml": 15,
+   "slot": "Ring",
+   "raw": "Upgradeable - Tier 1 / Manslayer / Insightful Deception +3 / Seeker +8 / Ethereal / Upgradeable - Tier 2 / BUG: No change / Upgradeable - Tier 3 / Seeker +8 -> Seeker +9 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Manslayer",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Manslayer",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Ethereal",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Ethereal",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Seeker",
+     "type": "Enhancement",
+     "value": 9,
+     "wiki_name": "Seeker",
+     "unit": "flat",
+     "type_source": "Ring of the Stalker family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Insightful Deception +3",
+     "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
+    }
+   ]
+  },
+  "Ring of the Stalker (level 7)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_the_Stalker_(level_7)",
+   "ml": 7,
+   "slot": "Ring",
+   "raw": "Upgradeable - Tier 1 / Deception +3 / Seeker +5 / Upgradeable - Tier 2 / Deception +3 -> Insightful Deception +2 / Upgradeable - Tier 3 / Seeker +5 -> Seeker +6 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Seeker",
+     "type": "Enhancement",
+     "value": 6,
+     "wiki_name": "Seeker",
+     "unit": "flat",
+     "type_source": "Ring of the Stalker family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Insightful Deception +2",
+     "reason": "affix name 'Insightful Deception' is not in the catalog vocabulary"
+    }
+   ]
+  },
+  "Rock Boots (level 11)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Rock_Boots_(level_11)",
+   "ml": 11,
+   "slot": "Boots",
+   "raw": "Upgradeable - Tier 1 / Corrosion +82 / Acid Lore +12% / Stone Prison Guard / Upgradeable - Tier 2 / Corrosion +82 -> Corrosion +88 / Acid Lore +12% -> Acid Lore +13% / Adds Immunity to Slippery Surfaces / Upgradeable - Tier 3 / Corrosion +88 -> Corrosion +94 / Acid Lore +13% -> Acid Lore +14% / Adds Green Augment Slot / Mythic Boot Boost +1 or +3",
+   "final": [
+    {
+     "name": "Stone Prison Guard",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Stone Prison Guard",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Immunity to Slippery Surfaces",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Immunity to Slippery Surfaces",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Acid Spell Power",
+     "type": "Equipment",
+     "value": 94,
+     "wiki_name": "Corrosion",
+     "unit": "flat",
+     "type_source": "Rock Boots family sibling"
+    },
+    {
+     "name": "Acid Lore",
+     "type": "Equipment",
+     "value": 14,
+     "wiki_name": "Acid Lore",
+     "unit": "percent",
+     "type_source": "Rock Boots family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Mythic Boot Boost +1 or +3",
+     "reason": "wiki states two values with no rule for which applies"
+    }
+   ]
+  },
+  "Rock Boots (level 15)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Rock_Boots_(level_15)",
+   "ml": 15,
+   "slot": "Boots",
+   "raw": "Upgradeable - Tier 1 / Corrosion +96 / Acid Lore +14% / Stone Prison Guard / Earthgrab Guard / Immunity to Slippery Surfaces / Upgradeable - Tier 2 / Corrosion +96 -> Corrosion +102 / Acid Lore +14% -> Acid Lore +15% / Upgradeable - Tier 3 / Corrosion +102 -> Corrosion +108 / Acid Lore +15% -> Acid Lore +16% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Stone Prison Guard",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Stone Prison Guard",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Earthgrab Guard",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Earthgrab Guard",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Immunity to Slippery Surfaces",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Immunity to Slippery Surfaces",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Acid Spell Power",
+     "type": "Equipment",
+     "value": 108,
+     "wiki_name": "Corrosion",
+     "unit": "flat",
+     "type_source": "Rock Boots family sibling"
+    },
+    {
+     "name": "Acid Lore",
+     "type": "Equipment",
+     "value": 16,
+     "wiki_name": "Acid Lore",
+     "unit": "percent",
+     "type_source": "Rock Boots family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": []
+  },
+  "Rock Boots (level 7)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Rock_Boots_(level_7)",
+   "ml": 7,
+   "slot": "Boots",
+   "raw": "Upgradeable - Tier 1 / Corrosion +69 / Acid Lore +10% / Lesser Stone Prison Guard / Upgradeable - Tier 2 / Corrosion +69 -> Corrosion +74 / Acid Lore +10% -> Acid Lore +11% / Upgradeable - Tier 3 / Corrosion +74 -> Corrosion +79 / Acid Lore +11% -> Acid Lore +12% / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Lesser Stone Prison Guard",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Lesser Stone Prison Guard",
+     "unit": "bool",
+     "type_source": "Rock Boots family sibling"
+    },
+    {
+     "name": "Acid Spell Power",
+     "type": "Equipment",
+     "value": 79,
+     "wiki_name": "Corrosion",
+     "unit": "flat",
+     "type_source": "Rock Boots family sibling"
+    },
+    {
+     "name": "Acid Lore",
+     "type": "Equipment",
+     "value": 12,
+     "wiki_name": "Acid Lore",
+     "unit": "percent",
+     "type_source": "Rock Boots family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": []
+  },
+  "Spare Hand (level 11)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Spare_Hand_(level_11)",
+   "ml": 11,
+   "slot": "Belt",
+   "raw": "Upgradeable - Tier 1 / Riposte +2 / Insightful Combat Mastery +3 / Staggering Blow / Disable Device +14 / Open Lock +14 / Upgradeable - Tier 2 / Riposte +2 -> Riposte +3 / Disable Device +14 -> Disable Device +15 / Open Lock +14 -> Open Lock +15 / Upgradeable - Tier 3 / Disable Device +15 -> Disable Device +16 / Open Lock +15 -> Open Lock +16 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Staggering Blow",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Staggering Blow",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Disable Device",
+     "type": "Competence",
+     "value": 16,
+     "wiki_name": "Disable Device",
+     "unit": "flat",
+     "type_source": "Spare Hand family sibling"
+    },
+    {
+     "name": "Open Lock",
+     "type": "Competence",
+     "value": 16,
+     "wiki_name": "Open Lock",
+     "unit": "flat",
+     "type_source": "Spare Hand family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Insightful Combat Mastery +3",
+     "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
+    },
+    {
+     "raw": "Riposte +3",
+     "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+    }
+   ]
+  },
+  "Spare Hand (level 15)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Spare_Hand_(level_15)",
+   "ml": 15,
+   "slot": "Belt",
+   "raw": "Upgradeable - Tier 1 / Riposte +3 / Insightful Combat Mastery +3 / Staggering Blow / Disable Device +16 / Open Lock +16 / Upgradeable - Tier 2 / Insightful Combat Mastery +3 -> Insightful Combat Mastery +4 / Upgradeable - Tier 3 / Riposte +3 -> Riposte +4 / Disable Device +16 -> Disable Device +17 / Open Lock +16 -> Open Lock +17 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Staggering Blow",
+     "type": "Bool",
+     "value": 1,
+     "wiki_name": "Staggering Blow",
+     "unit": "bool",
+     "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Disable Device",
+     "type": "Competence",
+     "value": 17,
+     "wiki_name": "Disable Device",
+     "unit": "flat",
+     "type_source": "Spare Hand family sibling"
+    },
+    {
+     "name": "Open Lock",
+     "type": "Competence",
+     "value": 17,
+     "wiki_name": "Open Lock",
+     "unit": "flat",
+     "type_source": "Spare Hand family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Insightful Combat Mastery +4",
+     "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
+    },
+    {
+     "raw": "Riposte +4",
+     "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+    }
+   ]
+  },
+  "Spare Hand (level 7)": {
+   "wiki_url": "https://ddowiki.com/page/Item:Spare_Hand_(level_7)",
+   "ml": 7,
+   "slot": "Belt",
+   "raw": "Upgradeable - Tier 1 / Riposte +2 / Insightful Combat Mastery +2 / Disable Device +10 / Open Lock +10 / Upgradeable - Tier 2 / Disable Device +10 -> Disable Device +11 / Open Lock +10 -> Open Lock +11 / Upgradeable - Tier 3 / Insightful Combat Mastery +2 -> Insightful Combat Mastery +3 / Disable Device +11 -> Disable Device +13 / Open Lock +11 -> Open Lock +13 / Adds Green Augment Slot",
+   "final": [
+    {
+     "name": "Disable Device",
+     "type": "Competence",
+     "value": 13,
+     "wiki_name": "Disable Device",
+     "unit": "flat",
+     "type_source": "Spare Hand family sibling"
+    },
+    {
+     "name": "Open Lock",
+     "type": "Competence",
+     "value": 13,
+     "wiki_name": "Open Lock",
+     "unit": "flat",
+     "type_source": "Spare Hand family sibling"
+    }
+   ],
+   "slots": [
+    "Green Augment Slot"
+   ],
+   "quarantined": [
+    {
+     "raw": "Riposte +2",
+     "reason": "'Riposte' is a bundled enchantment whose numbers live in its tooltip; admitting it folded would insert an instance its split shard has no evidence for"
+    },
+    {
+     "raw": "Insightful Combat Mastery +3",
+     "reason": "affix name 'Insightful Combat Mastery' is not in the catalog vocabulary"
+    }
+   ]
   }
+ }
 }
