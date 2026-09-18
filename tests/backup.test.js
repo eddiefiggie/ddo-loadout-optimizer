@@ -7,10 +7,10 @@ const {
 } = require("../web/backup.js");
 const { toPortableJSON } = require("../web/exporters.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
+  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
 }
 
 const rec = (name, ml) => ({
@@ -615,7 +615,7 @@ test("#190: an oversized envelope is refused before it is parsed", () => {
   assert.strictEqual(res.error, "oversized");
 });
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);
 
 test("#530: a v2 backup still imports, with no version history", () => {
   // The compatibility window is the promise this panel makes. A v2 file is not

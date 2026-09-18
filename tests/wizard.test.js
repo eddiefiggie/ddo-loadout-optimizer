@@ -46,10 +46,10 @@ const baseState = () => ({ ml: 34, race: "Human", armor: "", oath: "", alignment
 // run at call time, and several call sites precede the plan-005 block below.
 const presenceVocab = { canonical: (v) => v, presence: new Set(["Blurry", "Ghostly"]) };
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); console.log("PASS", name); passed++; }
-  catch (e) { console.error("FAIL", name, "\n ", e.message); process.exitCode = 1; }
+  catch (e) { console.error("FAIL", name, "\n ", e.message); failed++; process.exitCode = 1; }
 }
 
 test("WIZARD_STEPS order", () => {
@@ -3068,7 +3068,7 @@ test("#745: the row carries the bracket classes, and the CSS draws them without 
   assert.ok(/\.wz-ctl button\[aria-pressed="true"\]/.test(css), "the pressed toggle is styled");
 });
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);
 
 // ---------------------------------------------------------------------------
 // #110 U1 — blocklist state reaches the query.

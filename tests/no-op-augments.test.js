@@ -17,10 +17,10 @@ const S = require("../web/solver.js");
 
 const ROOT = path.join(__dirname, "..");
 
-let passed = 0;
+let passed = 0, failed = 0;
 async function test(name, fn) {
   try { await fn(); console.log("  PASS", name); passed++; }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.stack || e.message); process.exitCode = 1; }
+  catch (e) { console.log("  FAIL", name, "\n   ", e.stack || e.message); failed++; process.exitCode = 1; }
 }
 
 function item(id, slot, affixes, colors) {
@@ -97,5 +97,5 @@ const slot = (name, variants, card = 1) => ({ slot: name, cardinality: card, var
       ["Topaz of Conjured Power"], "only the winning augment is placed");
   });
 
-  console.log(`\n${passed} passed`);
+  console.log(`\n${passed} passed, ${failed} failed`);
 })();

@@ -34,10 +34,10 @@ const C = require(path.join(ROOT, "web/custom-items.js"));
 const Proj = require(path.join(ROOT, "web/projection.js"));
 const Exporters = require(path.join(ROOT, "web/exporters.js"));
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); passed += 1; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e && e.message); process.exitCode = 1; }
+  catch (e) { console.log("  FAIL", name, "\n   ", e && e.message); failed++; process.exitCode = 1; }
 }
 
 const DAGGER = {
@@ -253,5 +253,5 @@ function baseState(over) {
       "the credited carrier must be the player's item, named as theirs");
   });
 
-  console.log(`\n  ${passed} passed`);
+  console.log(`\n  ${passed} passed, ${failed} failed`);
 })().catch((e) => { console.error("ERR", (e && e.stack) || e); process.exit(1); });

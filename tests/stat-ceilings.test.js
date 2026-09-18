@@ -10,10 +10,10 @@ const path = require("path");
 const M = require("../web/model.js");
 const W = require("../web/wizard.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
+  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
 }
 
 const CAPS = { Doublestrike: 100, Strikethrough: 400 };
@@ -157,4 +157,4 @@ test("#677 the stale Max help text no longer claims the tool cannot verify caps"
     "the replacement must point at the ceiling line that now carries the fact");
 });
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);

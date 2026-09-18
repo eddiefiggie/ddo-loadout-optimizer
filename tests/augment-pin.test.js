@@ -29,10 +29,10 @@ const path = require("path");
 const M = require("../web/model.js");
 const { solveEnv } = require("./parity/capture_golden.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
+  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
 }
 
 /** The ASYNC runner. Every solve-driven assertion must go through this.
@@ -46,7 +46,7 @@ function test(name, fn) {
  *  cannot fail is worse than no test, because it reads as coverage. */
 async function testAsync(name, fn) {
   try { await fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
+  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
 }
 
 const ROOT = path.join(__dirname, "..");
@@ -115,7 +115,7 @@ test("#742 gate 3: augBest admits a pinned augment that advances nothing", () =>
     env = await solveEnv();
   } catch (e) {
     console.error(`FAIL #742: could not prepare the solve environment\n  ${e.message}`);
-    process.exitCode = 1;
+    failed++; process.exitCode = 1;
     return;
   }
   const { dataset } = env;
@@ -176,7 +176,7 @@ test("#742 gate 3: augBest admits a pinned augment that advances nothing", () =>
       "a block is a hard rule — it must win at the solver, not just in the dialog");
   });
 
-  console.log(`\n${passed} passed`);
+  console.log(`\n${passed} passed, ${failed} failed`);
 })();
 
 // ---- U1: state, the control, and what the control promises ------------------

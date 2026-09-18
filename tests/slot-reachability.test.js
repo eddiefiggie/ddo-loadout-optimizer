@@ -23,10 +23,10 @@ const M = require("../web/model.js");
 const Proj = require("../web/projection.js");
 const W = require("../web/wizard.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
+  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
 }
 
 // Driven against the REAL built catalog, not fixtures. The evidence table in
@@ -520,4 +520,4 @@ test("#766: a Slaver's host's typed slots are a route, keyed by the host's own (
     "Shackles reach a save through the Suffix Resistance umbrella, expanded inside the option");
 });
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);

@@ -6,10 +6,10 @@ const assert = require("assert");
 const V = require("../web/versions.js");
 const R = require("../web/results.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); process.exitCode = 1; }
+  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
 }
 
 /** A localStorage stand-in. `limit` makes the quota path reachable — without it
@@ -293,4 +293,4 @@ test("#530: re-importing the SAME file twice does not duplicate", () => {
   assert.strictEqual(V.listVersions(store).length, 1, "the same save arriving twice is one save");
 });
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);

@@ -2,10 +2,10 @@
 const assert = require("assert");
 const R = require("../web/results.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); process.exitCode = 1; }
+  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
 }
 
 /** #450 — slice a source region between two markers, with the closing search
@@ -2002,7 +2002,7 @@ test("#91 U5: utilityCard takes the build being rendered — an alternative's re
 // ---- on EVERY surface -------------------------------------------------------
 //
 
-console.log(`\n${passed} passed`);
+console.log(`\n${passed} passed, ${failed} failed`);
 
 // #346 (U5, R12, AE7) — a rung can take a stat's last source out of the pool.
 // Twenty targetable stats are augment-only, so telling that player to widen

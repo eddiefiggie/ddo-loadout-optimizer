@@ -6,10 +6,10 @@ const P = require("../web/projection.js");
 const R = require("../web/results.js");
 const Craft = require("../web/crafting-systems.js");
 
-let passed = 0;
+let passed = 0, failed = 0;
 function test(name, fn) {
   try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); process.exitCode = 1; }
+  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
 }
 
 // A rich saved record: a colored augment, a Lunar augment, a Viktranium craft, a
@@ -1127,7 +1127,7 @@ test("#614: the wording is defined ONCE, so no surface can respell it", () => {
     "the phrase itself appears only in projection.js");
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed`);
+if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`);
 
 // ---------------------------------------------------------------------------
 // #245 — the craft-carried disclosure. An item whose every ranked contribution
