@@ -16,6 +16,17 @@ ddowiki tab. Two browser surfaces have been verified:
   `navigate` was enough). The same privacy-guard stripping applies. Reach for it
   for a handful of lookups — validating a player report, an item's Armor Type, a
   set bonus — and for the bulk loop only if the pacing rules below are kept.
+  **The same-origin `/api.php` POST loop works through the pane too**, verified
+  2026-09-18 (#769): all three `scripts/browser/` snippets ran in one session —
+  batched `action=query&prop=revisions` over 20 titles, and per-page
+  `action=parse` — returning real wikitext at the documented pacing. So a snippet
+  written for the DevTools console runs here unchanged; only its RETURN value
+  differs, and that constraint is unchanged (return `summaryText`, never the raw
+  dump). The one thing the pane cannot do is hand the verbatim dump back:
+  `copy()` is DevTools-only, `navigator.clipboard` needs a user gesture, and the
+  privacy guard strips `| = & ?` — which corrupts wikitext beyond use. A harvest
+  whose dump must land in the repo verbatim therefore still ends at a DevTools
+  paste; a read that only has to be *ruled on* does not.
 
 This is the loop that works, and the traps around it.
 

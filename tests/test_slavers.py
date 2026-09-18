@@ -103,10 +103,12 @@ def test_dataset_exposes_the_pool_the_hosts_and_the_membership_slots():
     assert cov["hosts_pending"] == [], cov
     assert cov["by_tier"]["heroic"]["hosts_active"] == cov["by_tier"]["legendary"]["hosts_active"] == 3
     assert cov["set_bonus_hosts"] == 30, cov
-    # The disclosure the plan promised: the pool names the catalog defines no set for.
-    assert cov["set_names_unresolved"] == {
-        "heroic": ["Slave Lord's Endurance"],
-        "legendary": ["Legendary Slave Lord's Endurance"]}, cov["set_names_unresolved"]
+    # #769 — nothing is left unresolved. The pools used to name `Slave Lord's
+    # Endurance` where the catalog defines `Slave's Endurance`, so the name was
+    # dropped and the set was unreachable at BOTH tiers; the wiki says the catalog
+    # is right and `crafting_set_name_corrections.json` renames the pool's spelling.
+    # An empty dict here is the whole fix: every pool name now resolves to a def.
+    assert cov["set_names_unresolved"] == {}, cov["set_names_unresolved"]
 
     hosts = [it for it in data["items"] if it.get("slavers_slots")]
     assert hosts, "refuse to pass over zero hosts"
@@ -131,11 +133,20 @@ def test_dataset_exposes_the_pool_the_hosts_and_the_membership_slots():
     for it in members:
         pool = it["set_membership_slot"]["pool"]
         assert pool, it["source_item"]
-        assert not any("Endurance" in n for n in pool), (it["source_item"], pool)
         for n in pool:
             assert n in data["membership_set_defs"], n
+    # #769 — the Endurance set is REACHABLE now, at both tiers. This assertion was
+    # the inverse before the name correction (`not any("Endurance" in n ...)`), which
+    # is what made the gap visible: one of the three sets the station offers was off
+    # the table for every host.
     helm = next(it for it in members if it["source_item"] == "Executioner's Helm")
-    assert helm["set_membership_slot"]["pool"] == ["Slave Lord's Might", "Slave Lord's Sorcery"]
+    assert helm["set_membership_slot"]["pool"] == [
+        "Slave Lord's Might", "Slave Lord's Sorcery", "Slave's Endurance"]
+    legendary = [it for it in members
+                 if it["source_item"].startswith("Legendary ")]
+    assert legendary, "refuse to pass over zero legendary hosts"
+    for it in legendary:
+        assert "Legendary Slave's Endurance" in it["set_membership_slot"]["pool"], it["source_item"]
 
     # The umbrella expanded INSIDE the option: one record, three saves, provenance kept.
     res = [r for r in data["slavers"] if r["name"].startswith("Resistance") and r["tier"] == "heroic"]
@@ -161,6 +172,10 @@ def test_attach_drops_unresolved_names_and_discloses_them():
     assert taken["set_membership_slot"]["station"] == "other", "an existing slot is left alone"
     assert "set_membership_slot" not in not_a_host
     # Every pool name the defs did not resolve is named, per tier — nothing is mapped.
+    # The DROP MECHANISM is what this pins, with deliberately impoverished defs; it
+    # is unchanged by #769. Only the Endurance spelling moved (`Slave Lord's
+    # Endurance` -> `Slave's Endurance`), because these names come from the real
+    # corrected pool.
     assert out["set_names_unresolved"] == {
-        "heroic": ["Slave Lord's Sorcery", "Slave Lord's Endurance"],
-        "legendary": ["Legendary Slave Lord's Might", "Legendary Slave Lord's Endurance"]}
+        "heroic": ["Slave Lord's Sorcery", "Slave's Endurance"],
+        "legendary": ["Legendary Slave Lord's Might", "Legendary Slave's Endurance"]}

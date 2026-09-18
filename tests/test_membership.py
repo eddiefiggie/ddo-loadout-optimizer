@@ -17,7 +17,9 @@ def test_build_membership_set_defs_shape():
     defs = membership.build_membership_set_defs()
     # #766 — plus the 4 Slaver's sets the catalog defines (Might and Sorcery at each
     # tier; the pools' `Slave Lord's Endurance` resolves to no def and is disclosed).
-    assert len(defs) == 32, f"expected 32 set defs (22 Vecna + 6 Dino + 4 Slaver's), got {len(defs)}"
+    # #769 — six Slaver's sets, not four: the Endurance set resolves at both tiers
+    # now that the crafting pool carries the wiki's spelling of its name.
+    assert len(defs) == 34, f"expected 34 set defs (22 Vecna + 6 Dino + 6 Slaver's), got {len(defs)}"
     vol = defs["Legendary Vol's Influence"]
     assert vol["tier"] == "legendary"
     stats = {(a["stat"], a["bonus_type"], a["value"]) for t in vol["tiers"] for a in t["affixes"]}
@@ -86,9 +88,14 @@ def test_items_json_exports_membership_set_defs():
     with open(ITEMS, encoding="utf-8") as fh:
         data = json.load(fh)
     m = data.get("membership_set_defs")
-    assert m and len(m) == 32, "items.json exports all 32 membership set defs (22 Vecna + 6 Dino + 4 Slaver's)"
+    # #769 — 34, not 32. The Slaver's contribution is SIX, not four: both tiers of
+    # the Endurance set were unreachable while the crafting pool spelled it
+    # `Slave Lord's Endurance` and the catalog defined `Slave's Endurance`, so the
+    # name was dropped and its def never exported. The pool now carries the wiki's
+    # spelling, and all three Slaver's sets resolve at both tiers.
+    assert m and len(m) == 34, "items.json exports all 34 membership set defs (22 Vecna + 6 Dino + 6 Slaver's)"
     cov = data["metadata"].get("membership_coverage")
-    assert cov and cov["sets"] == 32 and cov["tiers"] >= 30   # #766: +4 Slaver's sets
+    assert cov and cov["sets"] == 34 and cov["tiers"] >= 30   # #766/#769: +6 Slaver's sets
 
 
 def test_fire_over_morgrave_raid_gear_are_forbidden_knowledge_members():
