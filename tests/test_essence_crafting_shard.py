@@ -207,21 +207,24 @@ def test_the_curve_join_is_reached_only_through_the_pool_builder():
         "a sourced bonus type or a catalog stat name.")
 
 
-def test_nine_essence_labels_remain_unserved_and_the_trinket_three_do_not():
-    """The player-facing half, now that #193 wired the Gem's menus.
+def test_only_the_two_empty_essence_menus_remain_unserved():
+    """The player-facing half.
 
-    Three of the original twelve are SERVED by the `essence_crafting` pool. The
-    other nine — Melee, Ring, Rune Arm — have no pool at all and are still
-    declared-but-inert, which is what the compendium and every export must keep
-    saying about them. The split is the disclosure: a reader must be able to tell
-    the wired third from the nine that are not.
+    #193 wired the Gem's three Trinket menus; #764 wired the other three families,
+    whose placements had been in the seed since 2026-08-27 while only the pipeline
+    was Trinket-only. This asserted that NINE labels stayed disclosed, which was
+    right then and is wrong now — seven of them are served.
+
+    The two that remain are disclosed for a DIFFERENT reason, and the distinction
+    is the whole point of this guard: a pool exists for both, and every effect in
+    them is untyped, so the pool's offering for those two menus is empty. That is a
+    source gap, not a pipeline gap, and it closes when the wiki states a type — not
+    when someone writes code.
     """
     from src import crafting_coverage
     ec = sorted(x for x in crafting_coverage.UNSERVED_ALLOWLIST if x.startswith("Essence Crafting:"))
-    assert len(ec) == 9, ec
-    for item in ("Melee", "Ring", "Rune Arm"):
-        for part in ("Extra", "Prefix", "Suffix"):
-            assert f"Essence Crafting: {item} - {part}" in ec, f"{item} {part} stopped being disclosed"
+    assert ec == ["Essence Crafting: Melee - Extra",
+                  "Essence Crafting: Rune Arm - Suffix"], ec
     for part in ("Extra", "Prefix", "Suffix"):
         assert f"Essence Crafting: Trinket - {part}" not in ec, (
             f"Trinket {part} is served by the essence_crafting pool now; leaving it "

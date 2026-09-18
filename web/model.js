@@ -453,9 +453,14 @@ function essenceOfferKeys(variant, mlCap, essencePool) {
   if (!menus.length) return out;
   const ml = craftedEssenceMl(variant, mlCap);
   if (!Number.isFinite(ml)) return out;
-  const declared = new Set(menus.map((m) => m.menu));
+  // #764 — keyed on (family, menu), not menu alone. The pool served ONE family
+  // until now, so `menu` was a sufficient key by accident rather than by design;
+  // with Rune Arm, Ring and Melee menus in the same flat pool it stops being one,
+  // and a Rune Arm would craft a Trinket-only effect. The host's own label states
+  // the family and `essence_slots` carries it through.
+  const declared = new Set(menus.map((m) => `${m.family}||${m.menu}`));
   for (const o of essencePool) {
-    if (!declared.has(o.menu)) continue;
+    if (!declared.has(`${o.family}||${o.menu}`)) continue;
     if (ml < (o.min_ml || 1)) continue;
     out.add(`${o.menu}||${o.stat}||${o.bonus_type}`);
   }
@@ -1147,9 +1152,13 @@ function slotReachabilityFor(stat, variants, pools) {
   chan(p.legendaryGreenSteel, (v) => (v.legendary_green_steel_tiers || []),
     (o, k) => o.tier === k.tier && o.item_class === k.item_class, "lgs");
 
-  // Essence Crafting: host `essence_slots` is `{menu}`.
+  // Essence Crafting: host `essence_slots` is `{menu, family}`, and the option is
+  // keyed by the same pair (#764). Matching on `menu` alone would report a stat
+  // reachable on a host whose family cannot actually craft it — the reachability
+  // twin of the solver bug above, and the one that would have shown a player a
+  // route that does not exist.
   chan(p.essenceCrafting, (v) => (v.essence_slots || []),
-    (o, k) => o.menu === k.menu, "essence");
+    (o, k) => o.family === k.family && o.menu === k.menu, "essence");
 
   // #766 — Slaver's crafting: host `slavers_slots` is `{slot, tier}`, and the
   // option is keyed by the same pair. The tier rides on the slot (read from the

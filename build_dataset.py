@@ -1911,7 +1911,7 @@ def build() -> dict:
                 continue
             _catalog_stats.add(_st)
             _catalog_units.setdefault(_st, set()).add(_a.get("unit") or "flat")
-    essence = essence_mod.build_trinket_pool(catalog_stats=_catalog_stats,
+    essence = essence_mod.build_essence_pool(catalog_stats=_catalog_stats,
                                              catalog_units=_catalog_units)
 
     # Only `verified` hosts keep live menus. `Trinket [Crafted]` declares the same

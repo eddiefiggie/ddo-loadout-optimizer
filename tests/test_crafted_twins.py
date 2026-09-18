@@ -28,11 +28,18 @@ def _rec(name, **over):
     return base
 
 
-# A label that is STILL unserved after #193 wired the Trinket menus. The fixture
-# used `Essence Crafting: Trinket - Prefix` until then; once a pool started serving
-# it, every "the pair is clean" test was quietly asserting the divergent case. Rune
-# Arm has no pool at all, which is what these tests need.
-INERT_LABEL = "Essence Crafting: Rune Arm - Prefix"
+# A label NO pool serves. Read from the authority instead of hardcoded, because a
+# hardcoded one has now rotted twice in the same way: the fixture said
+# `Essence Crafting: Trinket - Prefix` until #193 wired those menus, then
+# `Essence Crafting: Rune Arm - Prefix` until #764 wired the other three families.
+# Each time, every "the pair is clean" test silently flipped to asserting the
+# DIVERGENT case — green, and testing the opposite of its name.
+#
+# `UNSERVED_ALLOWLIST` is the set of labels the build asserts no pool fills, so
+# taking one from it cannot drift from what the gate believes. Sorted for
+# determinism, and `test_the_inert_label_is_really_inert` fails loudly if the
+# allowlist ever empties rather than leaving these tests vacuous.
+INERT_LABEL = sorted(crafting_coverage.UNSERVED_ALLOWLIST)[0]
 
 
 def _pair(**crafted_over):
@@ -193,12 +200,24 @@ def test_the_built_dataset_publishes_the_identity():
     # Trinket Essence menus the `essence_crafting` pool now serves. They are still
     # ONE ITEM for blocking, which is what `crafted_twin_identity` is for.
     assert meta["crafted_twin_coverage"] == {
-        "inspected": 45, "pairs": 45, "capacity_divergent": 4}
+        # #764 — 45 not 4. Every `[Crafted]` Rune Arm, Ring and Melee twin now
+        # carries a SERVED label its base does not, which is precisely what
+        # capacity divergence means. +41, matching the 41 hosts the Essence pool
+        # started serving. Recorded rather than raised, by this module's design.
+        "inspected": 45, "pairs": 45, "capacity_divergent": 45}
     divergent = {d["crafted"] for d in meta["crafted_twin_identity_divergent"]}
-    assert divergent == {"Gem of Many Facets [Crafted]",
-                         "Epic Gem of Many Facets [Crafted]",
-                         "Legendary Gem of Many Facets [Crafted]",
-                         "Trinket [Crafted]"}, sorted(divergent)
+    # #764 — the set was the four Trinket declarers; it is now every crafted twin
+    # that declares a served Essence menu, across all four families. Naming all 45
+    # would pin a roster that moves whenever a blank is added, so this pins the
+    # PROPERTY instead: the original four are still in it, and every member's
+    # divergence is an Essence label rather than something unrelated that crept in.
+    for gem in ("Gem of Many Facets [Crafted]", "Epic Gem of Many Facets [Crafted]",
+                "Legendary Gem of Many Facets [Crafted]", "Trinket [Crafted]"):
+        assert gem in divergent, gem
+    assert len(divergent) == 45, sorted(divergent)
+    for d in meta["crafted_twin_identity_divergent"]:
+        assert d["served_labels"], f"{d['crafted']} is divergent for no stated label"
+        assert all(l.startswith("Essence Crafting: ") for l in d["served_labels"]), d
     identity = meta["crafted_twin_identity"]
     assert identity["Legendary Gem of Many Facets [Crafted]"] == "Legendary Gem of Many Facets", \
         "the item #547 was reported about"
@@ -229,3 +248,26 @@ def test_every_shipped_pair_is_a_strict_affix_subset():
                {key(a) for a in base.get("affixes") or []}, name
         checked += 1
     assert checked == 45, f"the loop must actually inspect 45 pairs, saw {checked}"
+
+
+def test_the_inert_label_is_really_inert():
+    """#764 — the fixture's INERT_LABEL is only useful while nothing serves it, and
+    it has silently stopped being inert twice. Reading it from UNSERVED_ALLOWLIST
+    removes the hardcoded drift; this pins the rest:
+
+      * the allowlist is non-empty, so INERT_LABEL is a real label and these tests
+        are not asserting against `None`;
+      * the built dataset agrees the label is unserved, so the allowlist itself has
+        not gone stale in the other direction.
+
+    A test whose fixture quietly starts exercising the opposite case is worse than a
+    missing test, because it reports success for it."""
+    assert crafting_coverage.UNSERVED_ALLOWLIST, "no unserved label left to build the fixture from"
+    assert INERT_LABEL
+    with open(os.path.join(ROOT, "web", "data", "items.json"), encoding="utf-8") as fh:
+        meta = json.load(fh)["metadata"]
+    unserved = (meta.get("crafting_slot_coverage") or {}).get("unserved") or {}
+    served_somewhere = INERT_LABEL not in unserved
+    assert not served_somewhere, (
+        f"{INERT_LABEL!r} is on UNSERVED_ALLOWLIST but the build does not report it "
+        "unserved — the fixture would be exercising the divergent case again")
