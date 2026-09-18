@@ -492,6 +492,73 @@ test("U5: a composite keeps its boolean AND gains its components (additive)", ()
   assert.strictEqual(c.unit, "flat", "percentages store as bare numbers, like Dodge");
 });
 
+// #746 — the Ghost Touch family ruling. See docs/wiki-evidence/ghost-touch-family.md
+// for what the wiki licensed and, just as load-bearing, what it did NOT.
+
+test("#746: Dusk is the third concealment tier, not an uncredited effect", () => {
+  const it = { affixes: [{ name: "Dusk", type: "Bool", value: 1 }] };
+  normalizeItem(it);
+  assert.ok(names(it).includes("Dusk"), "the boolean survives — still targetable as presence");
+  const c = find(it, "Concealment");
+  assert.ok(c, "Dusk mints Concealment, which it did not before this ruling");
+  assert.strictEqual(c.value, 10, "the Miss chance page states Dusk 10%, Blurry 20%, Lesser Displacement 25%");
+  assert.strictEqual(c.type, "Enhancement");
+});
+
+test("#746: the three concealment tiers are one mechanic at three magnitudes", () => {
+  // The point of the Dusk entry: a `Dusk` -> `Lesser Displacement` upgrade used to
+  // cross from an effect crediting NOTHING to one crediting 25. Now it is 10 -> 25.
+  const v = (n) => {
+    const it = { affixes: [{ name: n, type: "Bool", value: 1 }] };
+    normalizeItem(it);
+    return find(it, "Concealment").value;
+  };
+  assert.deepStrictEqual([v("Dusk"), v("Blurry"), v("Lesser Displacement")], [10, 20, 25]);
+});
+
+test("#746: Ghostly credits the two skills the wiki states, at the type it states", () => {
+  for (const n of ["Ghostly", "Enhanced Ghostly"]) {
+    const it = { affixes: [{ name: n, type: "Bool", value: 1 }] };
+    normalizeItem(it);
+    assert.ok(names(it).includes(n), `${n} survives as presence`);
+    for (const skill of ["Hide", "Move Silently"]) {
+      const c = find(it, skill);
+      assert.ok(c, `${n} mints ${skill}`);
+      assert.strictEqual(c.value, 5, "\"+5 enhancement bonus to Hide and Move Silently\"");
+      // The wiki's "(stacks with competence bonus)" is why this MUST be Enhancement:
+      // the catalog carries these skills at Competence and never at Enhancement, so
+      // any other type would collapse into an existing bucket and take a max where
+      // the game stacks.
+      assert.strictEqual(c.type, "Enhancement", `${n}/${skill} must open its own bucket`);
+    }
+  }
+});
+
+test("#746: the ruling did NOT mint a shared stat across the four family names", () => {
+  // The issue proposed minting one shared stat from Ghost Touch / Ghostly /
+  // Ethereal / Ghostbane. The wiki refuses it: they share the incorporeal BYPASS
+  // but differ in kind beyond it (Ghostly adds a miss chance and two skills,
+  // Ghostbane adds on-hit dice, and two of the four are weapon-scoped). This
+  // asserts the refusal so a later sweep cannot quietly "finish the job".
+  for (const n of ["Ghost Touch", "Ethereal", "Ghostbane"]) {
+    assert.ok(!COMPOSITE_COMPONENTS[n],
+      `${n} mints nothing: the shared-stat mint is REFUSED, see ghost-touch-family.md`);
+  }
+  // And Ghostly mints ONLY the two skills — not a miss chance, whose bonus type the
+  // wiki states nowhere, and not a bypass stat.
+  const g = COMPOSITE_COMPONENTS["Ghostly"].map((c) => c.name).sort();
+  assert.deepStrictEqual(g, ["Hide", "Move Silently"]);
+});
+
+test("#746: Incorporeal Bane is NOT in the family, because the wiki excludes it", () => {
+  // `Incorporeal#Bypassing the incorporeal miss chance` states the exclusion
+  // outright: Incorporeal Bane "in itself... does not allow a weapon to bypass
+  // incorporeal miss chance". A name-similarity sweep would have pulled these in.
+  for (const n of ["Greater Incorporeal Bane", "Lesser Incorporeal Bane"]) {
+    assert.ok(!COMPOSITE_COMPONENTS[n], `${n} is a damage rider, not a bypass source`);
+  }
+});
+
 test("U5: Crown of Summer writes all three components", () => {
   const it = { affixes: [{ name: "Crown of Summer", type: "Bool", value: 1 }] };
   normalizeItem(it);

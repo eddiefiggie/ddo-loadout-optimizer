@@ -216,6 +216,16 @@ var PROVENANCE_LABEL_FALLBACK = {
 var COMPOSITE_COMPONENTS = {
   "Blurry": [{ name: "Concealment", type: "Enhancement", value: 20, unit: "flat" }],
   "Lesser Displacement": [{ name: "Concealment", type: "Enhancement", value: 25, unit: "flat" }],
+  // #746 — the THIRD concealment tier, and the one the 2026-09-11 sweep flagged as
+  // an open wiki question ("`Dusk` is in the counting set and mints nothing"). The
+  // `Miss chance` page answers it in the same list that states the two above:
+  // Concealment — `Dusk` 10%, `Blurry` 20%, `Lesser Displacement` 25%. So a
+  // `Dusk` -> `Lesser Displacement` upgrade crosses from an uncredited effect to a
+  // credited one, which is the defect; it is one mechanic at three magnitudes.
+  // Enhancement for the same reason the two above are, under the same sentence on
+  // the Concealment page ("almost all of them use the same bonus type -
+  // enhancement") — not a fresh inference, the identical one already ruled.
+  "Dusk": [{ name: "Concealment", type: "Enhancement", value: 10, unit: "flat" }],
   "Crown of Summer": [
     { name: "Healing Amplification", type: "Enhancement", value: 15, unit: "flat" },
     { name: "Melee Power", type: "Enhancement", value: 10, unit: "flat" },
@@ -247,6 +257,33 @@ var COMPOSITE_COMPONENTS = {
     // names are `Melee Alacrity` (173 records) and `Ranged Alacrity` (154).
     { name: "Melee Alacrity", type: "Enhancement", value: 15, unit: "flat" },
     { name: "Ranged Alacrity", type: "Enhancement", value: 20, unit: "flat" },
+  ],
+  // #746 — `Ghostly` (112 carriers) and `Enhanced Ghostly` (a Viktranium accessory
+  // option) credited NOTHING, because the solver saw only a Bool. The wiki states
+  // two grants verbatim on the Ghostly page, identically for both tiers:
+  //
+  //   "The wielder also gains +5 [[enhancement bonus]] to [[Hide]] and
+  //    [[Move Silently]] skills (stacks with [[competence bonus]])."
+  //
+  // Value AND bonus type are both in that sentence, so neither is inferred. The
+  // parenthetical is a live cross-check rather than prose: `Hide` and
+  // `Move Silently` carry Competence on 62 and 59 records and NO Enhancement at
+  // all, so minting Enhancement opens a fresh bucket that stacks beside Competence
+  // — exactly what the wiki says happens, and it would have been wrong under any
+  // other type.
+  //
+  // WHAT IS DELIBERATELY NOT HERE: the incorporeal miss chance (10% for `Ghostly`,
+  // 15% for `Enhanced Ghostly`), and the incorporeal BYPASS all four family names
+  // grant. Both are real and both are wiki-stated; each needs a modelling decision
+  // this entry does not make. See docs/wiki-evidence/ghost-touch-family.md, and do
+  // not "complete" this entry by picking a bonus type the wiki does not state.
+  "Ghostly": [
+    { name: "Hide", type: "Enhancement", value: 5, unit: "flat" },
+    { name: "Move Silently", type: "Enhancement", value: 5, unit: "flat" },
+  ],
+  "Enhanced Ghostly": [
+    { name: "Hide", type: "Enhancement", value: 5, unit: "flat" },
+    { name: "Move Silently", type: "Enhancement", value: 5, unit: "flat" },
   ],
 };
 
