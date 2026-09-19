@@ -370,7 +370,11 @@
    *  entries, one per ML, and an ML outside 1..36 has no row rather than a
    *  nearest one. */
   function sourcedValueAt(row, ml) {
-    if (!row || !row.sourced || !Array.isArray(row.values_by_ml)) return null;
+    // #810 — keyed on `magnitude_sourced`, not on `sourced`. The two facts come
+    // from different harvests: the wiki publishes a magnitude for far more
+    // effects than it publishes a bonus type for, and requiring both before
+    // using either made the player type 339 numbers the wiki states.
+    if (!row || !row.magnitude_sourced || !Array.isArray(row.values_by_ml)) return null;
     var n = Number(ml);
     if (!isFinite(n) || Math.floor(n) !== n || n < 1 || n > row.values_by_ml.length) return null;
     var v = Number(row.values_by_ml[n - 1]);
@@ -836,31 +840,41 @@
         continue;
       }
 
-      // #795 — the sourced branch. When the wiki states this effect's bonus type
-      // AND its magnitude at this ML, the form fills both and LOCKS them, and the
-      // value is not a player assertion. Anything the entry carries for them is
-      // ignored rather than refused: it is stale UI state, not a request.
-      if (row.sourced) {
-        var sv = sourcedValueAt(row, ml);
-        if (sv == null) {
+      // #795/#810 — the two halves are filled INDEPENDENTLY. Whatever the wiki
+      // publishes is taken from it and locked; whatever it does not is asked of
+      // the player and disclosed as theirs. Anything the entry carries for a
+      // filled half is ignored rather than refused: it is stale UI state, not a
+      // request, because the form stops offering that control.
+      var bt, val;
+
+      if (row.magnitude_sourced) {
+        val = sourcedValueAt(row, ml);
+        if (val == null) {
           errors.push("“" + effect + "” has no published magnitude at minimum level " + e.ml + ".");
           continue;
         }
-        affixes.push({ menu: menu, effect: effect, stat: stat, bonus_type: row.bonus_type,
-                       value: sv, unit: row.unit || "flat", sourced: true });
-        continue;
+      } else {
+        val = _num(a.value);
+        if (!isFinite(val) || val <= 0) { errors.push("“" + effect + "” needs a value above zero."); continue; }
+        if (val > VALUE_MAX) { errors.push("“" + effect + "” is above the " + VALUE_MAX + " ceiling."); continue; }
       }
 
-      var bt = String(a.bonus_type == null ? "" : a.bonus_type).trim();
-      var val = _num(a.value);
-      if (types.length && types.indexOf(bt) < 0) {
-        errors.push("“" + effect + "” needs a bonus type from the list — that is what decides whether "
-          + "it stacks with your other gear or is overwritten by it.");
-        continue;
+      if (row.type_sourced) {
+        bt = row.bonus_type;
+      } else {
+        bt = String(a.bonus_type == null ? "" : a.bonus_type).trim();
+        if (types.length && types.indexOf(bt) < 0) {
+          errors.push("“" + effect + "” needs a bonus type from the list — that is what decides whether "
+            + "it stacks with your other gear or is overwritten by it.");
+          continue;
+        }
       }
-      if (!isFinite(val) || val <= 0) { errors.push("“" + effect + "” needs a value above zero."); continue; }
-      if (val > VALUE_MAX) { errors.push("“" + effect + "” is above the " + VALUE_MAX + " ceiling."); continue; }
-      affixes.push({ menu: menu, effect: effect, stat: stat, bonus_type: bt, value: val, sourced: false });
+
+      affixes.push({ menu: menu, effect: effect, stat: stat, bonus_type: bt, value: val,
+                     unit: row.unit || "flat",
+                     magnitude_sourced: !!row.magnitude_sourced,
+                     type_sourced: !!row.type_sourced,
+                     sourced: !!(row.magnitude_sourced && row.type_sourced) });
     }
 
     return {

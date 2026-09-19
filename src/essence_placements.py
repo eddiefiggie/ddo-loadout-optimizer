@@ -389,6 +389,7 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
 
     groups, counts = {}, {}
     total = rankable_n = sourced_n = unrankable = 0
+    magnitude_n = type_n = 0
     for group, menus in placements.items():
         out = {}
         for menu in MENUS:
@@ -429,6 +430,19 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
                 # uses to describe the slot itself.
                 insightful = effect.startswith(essence_pool.INSIGHTFUL_PREFIX)
                 rec = {"effect": effect, "stat": stat, "rankable": rankable,
+                       # #810 — the two facts are INDEPENDENT and come from
+                       # different harvests. `table 3b` publishes a magnitude for
+                       # 120 of the 157 effects; a bonus type is `stated` for 22.
+                       # Requiring both before using EITHER left 339 placements
+                       # asking the player to type a number the wiki publishes.
+                       #
+                       # `essence_pool` couples them for a real reason — the solver
+                       # needs a bucket, so an untyped effect must not be offered
+                       # at all — and that reasoning was carried into the builder,
+                       # where it does not hold: the builder asks the player for
+                       # the type and discloses the answer as theirs.
+                       "magnitude_sourced": False,
+                       "type_sourced": False,
                        "sourced": False,
                        "min_ml": INSIGHT_MIN_ML if insightful else 1}
                 bt = bonus_types.get(effect)
@@ -443,22 +457,34 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
                     unit_ok = len(units) == 1
                     if unit_ok:
                         unit = next(iter(units))
-                if (rankable and unit_ok and bt and bt.get("provenance") == "stated"
-                        and curve and len(curve) == 36
-                        and effect not in essence_pool.EXCLUDED_EFFECTS):
-                    bonus_type = bt["value"]["bonus_type"]
+                usable = rankable and effect not in essence_pool.EXCLUDED_EFFECTS
+                # The MAGNITUDE half. `unit_ok` still gates it: a stat the catalog
+                # spells both flat and percent has no single unit, so a number
+                # would land in a bucket it cannot be compared in.
+                if usable and unit_ok and curve and len(curve) == 36:
                     rec.update({
-                        "sourced": True,
-                        "bonus_type": bonus_type,
+                        "magnitude_sourced": True,
                         "unit": unit,
                         "values_by_ml": list(curve),
                         "curve_row": entry["row"],
-                        # The wiki states the insight rule for the EFFECT; the Extra
-                        # slot rule is separate and gates the menu. Kept apart here
-                        # for the same reason `essence_pool` keeps them apart.
-                        "min_ml": (INSIGHT_MIN_ML
-                                   if (bonus_type == "Insight" or insightful) else 1),
                     })
+                    magnitude_n += 1
+                # The BONUS TYPE half, independently.
+                if usable and bt and bt.get("provenance") == "stated":
+                    bonus_type = bt["value"]["bonus_type"]
+                    rec["type_sourced"] = True
+                    rec["bonus_type"] = bonus_type
+                    # The wiki states the insight rule for the EFFECT; the Extra
+                    # slot rule is separate and gates the menu. Kept apart here
+                    # for the same reason `essence_pool` keeps them apart.
+                    if bonus_type == "Insight":
+                        rec["min_ml"] = INSIGHT_MIN_ML
+                    type_n += 1
+                # `sourced` is kept as the CONJUNCTION — it is what a fully-locked
+                # row is — but it is now derived from the two halves rather than
+                # gating them.
+                if rec["magnitude_sourced"] and rec["type_sourced"]:
+                    rec["sourced"] = True
                     sourced_n += 1
                 # Only offerable rows are PUBLISHED. The table exists to drive a
                 # picker, and a row that can never be picked is not reference
@@ -498,6 +524,8 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
             "rankable": rankable_n,
             "unrankable_withheld": unrankable,
             "sourced": sourced_n,
+            "magnitude_sourced": magnitude_n,
+            "type_sourced": type_n,
             "by_group": counts,
             "slots_without_a_group": sorted(
                 s for s, g in SLOT_GROUPS.items() if not g),

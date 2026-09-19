@@ -3593,11 +3593,14 @@ if (typeof window !== "undefined" && window.App) {
           <p class="wz-adv-note">Choose the kind of item and you get the menus it really has \u2014 Prefix,
             Suffix, and Extra at minimum level 10 \u2014 each offering only the enchantments the crafting
             table says can go in it.</p>
-          <p class="wz-adv-note"><strong>Marked \u2713: the wiki publishes it, so it is filled in for you.</strong>
-            That includes the Enhancement bonus a Minimum Level shard applies to a weapon, shield or armor on its
-            own. <strong>Everything else is yours.</strong> The rest of this tool traces to the DDO Wiki, and that
-            is what makes the answer provable \u2014 so a value you supply is only as right as what you typed,
-            and a build that uses one says so on the result and in every export.</p>
+          <p class="wz-adv-note"><strong>Your minimum level sets the numbers.</strong> Marked \u2713 means the
+            crafting table publishes that enchantment at your level, so its value is filled in and locked \u2014
+            raise the level and it rises. Where the wiki also states the bonus type, that is filled too; where it
+            does not, you choose it. The Enhancement bonus a Minimum Level shard applies to a weapon, shield or
+            armor comes along on its own.</p>
+          <p class="wz-adv-note"><strong>Anything you supply is yours.</strong> The rest of this tool traces to the
+            DDO Wiki, and that is what makes the answer provable \u2014 so a value or bonus type you pick is only
+            as right as what you chose, and a build that uses one says so on the result and in every export.</p>
           <div id="wz-custom-list" class="wz-pin-list"></div>
           <div id="wz-custom-form"></div>`)}
         ${poolFold("pin", "Pin specific items", poolStatus("pin"), `
@@ -4299,20 +4302,25 @@ ${(() => {
           ? M.combinedFor(group, chosen.combined, ctx) : null;
         const row = (sel && !recipe) ? M.placementFor(group, menu, sel, ctx) : null;
         let tail = "";
-        if (row && row.sourced) {
-          // Sourced: the wiki states the bonus type AND the magnitude at this ML,
-          // so both are filled and LOCKED, and the value is not a player claim.
-          const v = M.sourcedValueAt(row, d.ml);
-          tail = `<span class="wz-custom-sourced">${wzEsc(row.bonus_type)}`
-            + ` +${wzEsc(v == null ? "?" : v)}`
-            + ` <span class="wz-help">from the crafting table at ML ${wzEsc(d.ml || "?")}</span></span>`;
-        } else if (row && isPresenceOnly(vocab.canonical ? vocab.canonical(row.stat) : row.stat, vocab)) {
+        if (row && isPresenceOnly(vocab.canonical ? vocab.canonical(row.stat) : row.stat, vocab)) {
           tail = `<span class="wz-custom-flag">on/off — no bonus type or value</span>`;
         } else if (row) {
-          tail = `<select data-custom-bt="${wzEsc(menu)}"><option value="">Bonus type…</option>`
-            + `${btypes.map((t) => opt(t, chosen && chosen.bonus_type)).join("")}</select>`
-            + `<input type="number" min="1" step="1" data-nodirty data-custom-val="${wzEsc(menu)}"`
-            + ` value="${wzEsc((chosen && chosen.value) || "")}" placeholder="Value">`;
+          // #810 — the two halves are rendered INDEPENDENTLY. The wiki publishes a
+          // magnitude for far more enchantments than it publishes a bonus type
+          // for, and the old shape asked for BOTH unless it had both. Each is
+          // now either a locked reading or a control, never a control over a
+          // number the crafting table already states.
+          const v = M.sourcedValueAt(row, d.ml);
+          const typePart = row.type_sourced
+            ? `<span class="wz-custom-sourced">${wzEsc(row.bonus_type)}</span>`
+            : `<select data-custom-bt="${wzEsc(menu)}"><option value="">Bonus type…</option>`
+              + `${btypes.map((t) => opt(t, chosen && chosen.bonus_type)).join("")}</select>`;
+          const valPart = row.magnitude_sourced
+            ? `<span class="wz-custom-sourced">+${wzEsc(v == null ? "?" : v)}`
+              + ` <span class="wz-help">from the crafting table at ML ${wzEsc(d.ml || "?")}</span></span>`
+            : `<input type="number" min="1" step="1" data-nodirty data-custom-val="${wzEsc(menu)}"`
+              + ` value="${wzEsc((chosen && chosen.value) || "")}" placeholder="Value">`;
+          tail = typePart + valPart;
         }
         // A combined shard asks for a bonus type and a value PER EFFECT, on its
         // own sub-rows. The pair is one choice — there is no control to remove
@@ -4337,7 +4345,7 @@ ${(() => {
           + `<select data-custom-effect="${wzEsc(menu)}">`
           + `<option value="">— none —</option>`
           + rows.map((r) => `<option value="${wzEsc(r.effect)}"${r.effect === sel ? " selected" : ""}>`
-              + `${wzEsc(r.effect)}${r.sourced ? " ✓" : ""}</option>`).join("")
+              + `${wzEsc(r.effect)}${r.magnitude_sourced ? " ✓" : ""}</option>`).join("")
           + (combos.length
               ? `<optgroup label="Combined — one shard, two effects">`
                 + combos.map((r) => {
@@ -4406,9 +4414,10 @@ ${(() => {
             <span class="wz-check-body"><span class="wz-label">${wzEsc(c)}</span></span></label>`).join("")}</div>
         <p class="wz-label">Essence Crafting${group ? ` \u2014 ${wzEsc(group)}` : ""}</p>
         <p class="wz-help">One enchantment per menu, and each menu offers only what the crafting table
-          says can go in it for this kind of item. A \u2713 means the wiki publishes that
-          enchantment\u2019s bonus type and magnitude, so they are filled in for you; anything else
-          asks you for them and is marked as your own.</p>
+          says can go in it for this kind of item. A \u2713 means the table sets that
+          enchantment\u2019s value at your minimum level, so it is filled in and locked. The bonus type is
+          filled in too where the wiki states it, and asked of you where it does not — anything you
+          supply is marked as your own.</p>
         ${noBench}${menuRows}${extraNote}${autoBlock}${missingBlock}
         ${d.errors.length ? `<ul class="wz-custom-errors" role="alert">${d.errors.map((e) => `<li>${wzEsc(e)}</li>`).join("")}</ul>` : ""}
         <div class="wz-addrow">
