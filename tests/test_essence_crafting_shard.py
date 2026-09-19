@@ -295,52 +295,73 @@ def test_every_sourced_placement_passed_both_checks():
         f"{offenders[:5]}")
 
 
-def test_the_combined_pool_takes_no_magnitude_from_the_curve_join():
-    """#800 — why `essence_combined` is on the curve-join allowlist.
+def test_every_combined_magnitude_passed_the_checks_that_licence_it():
+    """#812 — `essence_combined` now DOES take magnitudes from the curve join, and
+    this is the assertion that licences its place on the allowlist.
 
-    It imports `essence_curve_join` for ONE thing: `_norm`, the repo's existing
-    rule for folding case and punctuation when matching a wiki name to a catalog
-    one. It is what turns the wiki's own `holy Blast` typo into `Holy Blast` and
-    its `Armor Piercing` into `Armor-Piercing`, and reusing it is the point —
-    a second normalisation would be a second thing to keep in step.
+    The previous version of this test asserted the opposite — that the module took
+    no number at all — and it was right until the wiki said otherwise:
 
-    It takes NO magnitude. The guard above exists because a caller that reads a
-    curve without checking the bonus type and the catalog stat could emit a number
-    with neither; this module emits no number at all, because a combined prefix's
-    magnitudes are not sourced and the player supplies them.
+        "Scaling effects increase their values when placed in increasingly higher
+         minimum level (ML) shard items. Combined Shards also use this scaling for
+         their individual effects."
+            - `Essence Crafting enchantments`, Bonus by level, Notes
 
-    Asserted over the built output rather than claimed in a comment, so the day
-    somebody adds a value here the allowlist entry stops being free.
+    Updated deliberately rather than deleted, because the allowlist buys nothing
+    on its own. What it stands for is that a caller reading a curve has applied
+    the checks that make a magnitude safe. Those are:
+
+    - the stat is one the catalog uses (else a private bucket that stacks with
+      everything real);
+    - the curve is a full 36 rows;
+    - the name was resolved by the EXISTING join, never a widened one.
+
+    The bonus type is NOT required, for the reason #810 established: the builder
+    asks the player for it and discloses the answer as theirs. Requiring it would
+    withhold a magnitude the wiki publishes over an unrelated missing fact.
     """
     import json as _json
+    from src import essence_curve_join as _join
+
     with open(os.path.join(ROOT, "web", "data", "items.json"), encoding="utf-8") as fh:
         built = _json.load(fh)
     combined = (built.get("essence_placements") or {}).get("combined") or {}
     recipes = combined.get("recipes") or []
-    assert recipes, ("no combined recipe at all — this guard would pass vacuously, "
-                     "and the curve-join allowlist entry would be unearned")
+    assert recipes, "no combined recipe — this guard would pass vacuously"
 
-    MAGNITUDE_KEYS = {"values_by_ml", "curve_row", "value", "values", "min_value"}
-    offenders = []
+    stats = {a.get("name") for v in built.get("items", [])
+             for a in (v.get("affixes") or []) if a.get("name")}
+    mapping = _join.resolve_all()["mapping"]
+
+    seen, offenders = 0, []
     for r in recipes:
-        bad = MAGNITUDE_KEYS & set(r)
-        if bad:
-            offenders.append((r.get("name"), sorted(bad)))
         for e in r.get("effects") or []:
-            bad = MAGNITUDE_KEYS & set(e)
-            if bad:
-                offenders.append((f"{r.get('name')}/{e.get('effect')}", sorted(bad)))
+            where = f"{r.get('name')}/{e.get('effect')}"
+            if not e.get("magnitude_sourced"):
+                # Must carry no number either, or the flag is decoration.
+                if e.get("values_by_ml") or e.get("curve_row"):
+                    offenders.append((where, "unsourced but carries a curve"))
+                continue
+            seen += 1
+            if e.get("stat") not in stats:
+                offenders.append((where, "stat is not one the catalog uses"))
+            if len(e.get("values_by_ml") or []) != 36:
+                offenders.append((where, "curve is not 36 rows"))
+            entry = mapping.get(e["effect"])
+            if not entry or entry["row"] != e.get("curve_row"):
+                offenders.append((where, "row does not match the existing join"))
+    assert seen, ("no combined effect carries a magnitude — the allowlist entry "
+                  "would be unearned and the wiki's scaling note unapplied")
     assert not offenders, (
-        f"{len(offenders)} combined record(s) carry a magnitude: {offenders[:5]}. "
-        "This module is allowed to import the curve join only because it takes no "
-        "number from it; a magnitude here needs the bonus-type and catalog-stat "
-        "checks the pool builder applies.")
+        f"{len(offenders)} combined magnitude(s) without the checks that licence "
+        f"them: {offenders[:5]}")
 
-    # And the thing it DOES use is still doing work, or the import is dead weight
-    # and the allowlist entry should go rather than be justified.
-    from src import essence_curve_join as _join
-    assert _join._norm("holy Blast") == _join._norm("Holy Blast")
-    assert _join._norm("Armor Piercing") == _join._norm("Armor-Piercing")
+    # The join is REUSED, never widened: the recipe table names effects `table 1b`
+    # does not carry, and those must keep asking the player.
+    unsourced = [e["effect"] for r in recipes for e in r["effects"]
+                 if not e.get("magnitude_sourced")]
+    assert unsourced, ("every combined effect resolved, which would mean the join "
+                       "was widened to reach the recipe table's own vocabulary")
 
 
 def test_the_slot_join_is_checked_from_both_sides():
@@ -393,3 +414,27 @@ def test_quiver_is_the_only_slot_with_no_group_and_it_holds_real_items():
     quivers = [v for v in built.get("items", []) if v.get("slot") == "Quiver"]
     assert quivers, ("no quiver in the catalog, so the empty mapping proves nothing — "
                      "the refusal would be about a slot the player cannot fill anyway")
+
+
+def test_the_candidate_rows_are_documentation_and_never_resolve_anything():
+    """#812 — `CANDIDATE_ROWS` names the row a future harvester would confirm for
+    each unmapped effect. It must never be consumed.
+
+    The whole point of the quarantine is that these joins are NOT established. A
+    candidate that leaked into the mapping would be exactly the head-noun guess
+    this module refuses — `Spell Resistance` ends in `Resistance` and has its own
+    `Spell Resistance (SR)` row.
+
+    So: every name listed is still quarantined, and none of them appears in the
+    mapping.
+    """
+    from src import essence_curve_join as _join
+    r = _join.resolve_all()
+    assert _join.CANDIDATE_ROWS, "the candidate list is not empty"
+    for name in _join.CANDIDATE_ROWS:
+        assert name in r["quarantine"], (
+            f"{name!r} has a candidate row AND is resolved — either the join was "
+            "widened on a guess, or the candidate should have been removed when "
+            "the real evidence landed")
+        assert name not in r["mapping"], f"{name!r} leaked into the mapping"
+

@@ -561,3 +561,55 @@ indistinguishable from a slot nobody has gear for.
 crafting blanks with zero affixes. They are Dino-crafting bases, which is why the
 custom-item slot list correctly has neither, and why `Rune Arms` is reached
 through `Off Hand`.
+
+## Curve-join audit — four sources, none states the join (2026-09-19, #812)
+
+`essence_curve_join` resolves 120 of 157 effect names and quarantines 37: **21
+correctly** (`table 2b` lists them non-scaling) and **16** as `unmapped` or
+`ambiguous`. Its `rows_unused` list is suggestive — `Amplification`,
+`Penetration`, `Ins. Penetration`, `Ins. Sheltering`, `Lore (all)`,
+`Lore (one type)`, `Resistance`, `Resistance (save)` — so this was audited to see
+whether the wiki states their membership.
+
+**It does not.** Recorded so the next sweep does not repeat the search:
+
+| source | what it carries | states the join? |
+|---|---|---|
+| `Essence Crafting/table 3b` | 75 curve rows × ML 1–36, one footnote about automatic bonuses | no |
+| `Essence Crafting/table 2c` | `Group / Name / Bound / Unbound / Item slot`, 348 rows | no |
+| `Essence Crafting enchantments` | the same 3b table, plus a Notes block | no |
+| `Augments by level` | does not carry these effect names at all | no |
+
+Table 2c's `Group` column is a **third** vocabulary — `Defense`, `Spellcasting`,
+`Spell critical`, `Offense` — that coincides with a row label only for `Ability`
+and `Skill`, which is what `CATEGORY_ROWS` already encodes. `Healing
+Amplification` is group **`Defense`**, not group `Amplification`.
+
+So the obvious guesses stay guesses. A head-noun rule is the exact error this
+module prevents: `Spell Resistance` ends in `Resistance` and has its own
+`Spell Resistance (SR)` row, and the module's own opening example is `Insightful
+Accuracy` reading **23** against `Accuracy` where `Ins. Accuracy` gives **11** —
+a wrong number that looked right.
+
+`CANDIDATE_ROWS` now records what each unmapped effect would be confirmed
+*against*, as documentation only. A test asserts every name in it is still
+quarantined and absent from the mapping, so the list can never quietly become the
+join.
+
+### The same read found something that IS sourced
+
+> "Scaling effects increase their values when placed in increasingly higher
+> minimum level (ML) shard items. **Combined Shards also use this scaling for
+> their individual effects.**"
+> — `Essence Crafting enchantments`, Bonus by level, Notes
+
+#800 shipped combined prefixes asking the player for every magnitude, and a guard
+asserted `essence_combined` took no number from the curve join. That guard
+encoded something true at the time; this sentence makes it wrong, so it was
+**updated with the quote rather than deleted**.
+
+**51 of 156** combined-effect instances now take their magnitude from the curve —
+only those the **existing** mapping already resolves. The other 105 name effects
+`table 1b` does not carry (`Entropic`, `Anarchic`, `Acid Absorption`,
+`Deception`) and keep asking the player, because resolving a new vocabulary
+through a join validated against a different one is the same refusal as above.

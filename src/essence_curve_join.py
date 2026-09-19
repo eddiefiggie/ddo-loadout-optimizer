@@ -82,6 +82,33 @@ CATEGORY_ROWS = {
 UNCRAFTABLE_ROWS = ("Enhance bonus*", "Weapon dice mult*", "Spellcasting implement*")
 
 
+#: #812 — the row a future harvester would be confirming, per unmapped effect.
+#:
+#: DOCUMENTATION ONLY. Nothing reads this to resolve anything, and a test asserts
+#: that: the whole point of the quarantine is that these are NOT established, and
+#: a candidate that leaked into the mapping would be the head-noun guess this
+#: module exists to refuse. `Spell Resistance` ends in `Resistance` and has its
+#: own `Spell Resistance (SR)` row; `Insightful Accuracy` against `Accuracy`
+#: reads 23 where `Ins. Accuracy` gives 11.
+#:
+#: Recorded because a 2026-09-19 audit checked table 3b, table 2c, the
+#: `Essence Crafting enchantments` page and `Augments by level`, and NONE states
+#: the membership of these rows. Writing down what was looked for stops the next
+#: sweep repeating the search — see `docs/wiki-evidence/essence-crafting.md`.
+CANDIDATE_ROWS = {
+    "Healing Amplification": "Amplification",
+    "Negative Amplification": "Amplification",
+    "Repair Amplification": "Amplification",
+    "Spell Penetration": "Penetration",
+    "Insightful Spell Penetration": "Ins. Penetration",
+    "Insightful Magical Sheltering": "Ins. Sheltering",
+    "Insightful Physical Sheltering": "Ins. Sheltering",
+    "Spell Lore": "Lore (all) or Lore (one type) - genuinely two-way",
+    "Resistance": "Resistance or Resistance (save) - genuinely two-way",
+    "Insightful Resistance": "Ins. Resistance, but only once `Resistance` is settled",
+}
+
+
 class JoinError(Exception):
     """The shards are shaped in a way the join cannot trust."""
 

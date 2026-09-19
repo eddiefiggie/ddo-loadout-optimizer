@@ -785,19 +785,33 @@
             parts.push({ effect: pe.effect, stat: pstat, presence: true });
             continue;
           }
+          // #812 — a combined shard's halves scale with ML too: "Combined Shards
+          // also use this scaling for their individual effects." Filled where the
+          // existing join resolves the name; asked for where it does not, because
+          // the recipe table names effects `table 1b` does not carry.
+          var pval;
+          if (pe.magnitude_sourced) {
+            pval = sourcedValueAt(pe, ml);
+            if (pval == null) {
+              errors.push("“" + pe.effect + "” has no published magnitude at minimum level " + e.ml + ".");
+              bad = true; break;
+            }
+          } else {
+            pval = _num(supplied.value);
+            if (!isFinite(pval) || pval <= 0) {
+              errors.push("“" + pe.effect + "” needs a value above zero."); bad = true; break;
+            }
+            if (pval > VALUE_MAX) {
+              errors.push("“" + pe.effect + "” is above the " + VALUE_MAX + " ceiling."); bad = true; break;
+            }
+          }
           var pbt = String(supplied.bonus_type == null ? "" : supplied.bonus_type).trim();
-          var pval = _num(supplied.value);
           if (types.length && types.indexOf(pbt) < 0) {
             errors.push("“" + pe.effect + "” needs a bonus type from the list.");
             bad = true; break;
           }
-          if (!isFinite(pval) || pval <= 0) {
-            errors.push("“" + pe.effect + "” needs a value above zero."); bad = true; break;
-          }
-          if (pval > VALUE_MAX) {
-            errors.push("“" + pe.effect + "” is above the " + VALUE_MAX + " ceiling."); bad = true; break;
-          }
-          parts.push({ effect: pe.effect, stat: pstat, bonus_type: pbt, value: pval });
+          parts.push({ effect: pe.effect, stat: pstat, bonus_type: pbt, value: pval,
+                       magnitude_sourced: !!pe.magnitude_sourced });
         }
         if (bad) continue;
         affixes.push({ menu: menu, combined: recipe.name, parts: parts, sourced: false });
