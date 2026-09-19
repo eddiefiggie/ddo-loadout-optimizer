@@ -341,3 +341,55 @@ def test_the_combined_pool_takes_no_magnitude_from_the_curve_join():
     from src import essence_curve_join as _join
     assert _join._norm("holy Blast") == _join._norm("Holy Blast")
     assert _join._norm("Armor Piercing") == _join._norm("Armor-Piercing")
+
+
+def test_the_slot_join_is_checked_from_both_sides():
+    """#806 — `SLOT_GROUPS` relates the APP's slot vocabulary to the WIKI's group
+    names. That is not a wiki fact and never can be: the wiki does not know
+    gear-planner's slot names. So it is not sourced; it is CHECKED, from two
+    directions the wiki cannot reach.
+
+    Run here as well as in the build so a refactor that drops the build-time call
+    still fails, rather than leaving the join unverified while everything is green.
+    """
+    import json as _json
+    from src import essence_placements as _ep
+    from src.essence_combined import GROUP_OF_SLOT
+
+    with open(os.path.join(ROOT, "web", "data", "items.json"), encoding="utf-8") as fh:
+        built = _json.load(fh)
+    items = built.get("items") or []
+    assert items, "no catalog — this test would pass vacuously"
+
+    # Side one: the anatomical gear-planner type each slot holds.
+    assert _ep.assert_slot_groups_match_the_catalog(items) == 12
+
+    # Side two: a second join, written independently against a different wiki
+    # table, reaching the same groups but one.
+    groups = {g for gs in GROUP_OF_SLOT.values() for g in gs}
+    assert _ep.assert_the_two_slot_joins_agree(groups) == 16
+
+    # The one difference, stated rather than tolerated: no combined-prefix recipe
+    # lists a rune arm slot.
+    ours = {g for gs in _ep.SLOT_GROUPS.values() for g in gs}
+    assert sorted(ours - groups) == ["Rune Arms"]
+
+
+def test_quiver_is_the_only_slot_with_no_group_and_it_holds_real_items():
+    """#806 — `Quiver` maps to nothing because `table 1b` has no quiver group, and
+    that emptiness is a statement rather than an omission.
+
+    Worth asserting that quivers EXIST in the catalog, or the empty mapping would
+    be indistinguishable from a slot nobody has any gear for — and the refusal the
+    bench shows a quiver owner would be describing a slot that does not matter.
+    """
+    import json as _json
+    from src import essence_placements as _ep
+
+    with open(os.path.join(ROOT, "web", "data", "items.json"), encoding="utf-8") as fh:
+        built = _json.load(fh)
+    empties = sorted(s for s, g in _ep.SLOT_GROUPS.items() if not g)
+    assert empties == ["Quiver"], f"expected only Quiver to map to nothing; got {empties}"
+    quivers = [v for v in built.get("items", []) if v.get("slot") == "Quiver"]
+    assert quivers, ("no quiver in the catalog, so the empty mapping proves nothing — "
+                     "the refusal would be about a slot the player cannot fill anyway")
