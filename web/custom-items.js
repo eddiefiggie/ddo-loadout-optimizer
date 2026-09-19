@@ -368,6 +368,41 @@
     return isFinite(v) ? v : null;
   }
 
+  /** #800 — the combined prefixes offerable in one group's Prefix menu.
+   *
+   *  A combined prefix is ONE shard granting TWO effects into the single prefix
+   *  slot. It is offered beside the ordinary prefixes and, if chosen, takes the
+   *  slot instead of one.
+   *
+   *  Gated on the item's ML 20 floor, which is a THIRD ML gate: the Extra-slot
+   *  rule gates a menu, the Insight rule gates an effect, and this gates the
+   *  OPTION. A combined prefix is simply not craftable below 20. */
+  function combinedOptions(group, ml, ctx) {
+    var table = _placements(ctx);
+    var c = table && table.combined;
+    if (!c) return [];
+    // `ml == null` means "do not filter by level" - `combinedFor` looks a recipe
+    // up by name and has no level to apply. Written as an explicit null check
+    // rather than leaning on Number(): `Number(null)` is 0, which read as an
+    // ML-0 item and silently returned NOTHING for every lookup.
+    if (ml != null && String(ml).trim() !== "") {
+      var n = Number(ml);
+      if (isFinite(n) && n < (c.min_ml || 20)) return [];
+    }
+    return (c.recipes || []).filter(function (r) {
+      return r.groups.indexOf(group) >= 0;
+    });
+  }
+
+  /** One combined recipe by name, for a group, or null. */
+  function combinedFor(group, name, ctx) {
+    var opts = combinedOptions(group, null, ctx);
+    for (var i = 0; i < opts.length; i++) {
+      if (opts[i].name === name) return opts[i];
+    }
+    return null;
+  }
+
   /** #799 — the bonuses Essence Crafting applies with the Minimum Level shard.
    *
    *  Deliberately NOT part of `entry.affixes`. That list is menu-keyed and capped
@@ -698,6 +733,64 @@
         }
         continue;
       }
+      // #800 — the combined branch. `combined` is a SEPARATE field from `effect`,
+      // not an overload of it: a recipe name and an effect name live in different
+      // vocabularies, and although none collide today one recipe named after an
+      // effect would make an overloaded field ambiguous forever.
+      //
+      // The pair is validated and emitted as ONE row carrying `parts`. Emitting
+      // two rows would put two enchantments in one menu — which the duplicate
+      // check above would then refuse on the next round-trip — and would make the
+      // halves independently removable, the exact fan-out `container_registry`
+      // refuses. They travel together or not at all.
+      var combinedName = String(a.combined == null ? "" : a.combined).trim();
+      if (combinedName) {
+        if (menu !== MENUS[0]) {
+          errors.push("A combined shard is a PREFIX; it cannot go in the " + menu + " menu.");
+          continue;
+        }
+        var recipe = group && combinedFor(group, combinedName, c);
+        if (!recipe) {
+          errors.push("“" + combinedName + "” is not a combined prefix this item type can take.");
+          continue;
+        }
+        var floor = ((_placements(c) || {}).combined || {}).min_ml || 20;
+        if (isFinite(ml) && ml < floor) {
+          errors.push("Combined shards need minimum level " + floor + ".");
+          continue;
+        }
+        var parts = [], bad = false;
+        for (var pi = 0; pi < recipe.effects.length; pi++) {
+          var pe = recipe.effects[pi];
+          var pstat = canonical(pe.stat);
+          var supplied = (Array.isArray(a.parts) && a.parts[pi]) || {};
+          if (!vocab.known || !vocab.known.has(pstat)) {
+            errors.push("“" + pe.effect + "” resolves to “" + pstat + "”, which this build cannot rank.");
+            bad = true; break;
+          }
+          if (_isPresenceOnly(pstat, vocab, c)) {
+            parts.push({ effect: pe.effect, stat: pstat, presence: true });
+            continue;
+          }
+          var pbt = String(supplied.bonus_type == null ? "" : supplied.bonus_type).trim();
+          var pval = _num(supplied.value);
+          if (types.length && types.indexOf(pbt) < 0) {
+            errors.push("“" + pe.effect + "” needs a bonus type from the list.");
+            bad = true; break;
+          }
+          if (!isFinite(pval) || pval <= 0) {
+            errors.push("“" + pe.effect + "” needs a value above zero."); bad = true; break;
+          }
+          if (pval > VALUE_MAX) {
+            errors.push("“" + pe.effect + "” is above the " + VALUE_MAX + " ceiling."); bad = true; break;
+          }
+          parts.push({ effect: pe.effect, stat: pstat, bonus_type: pbt, value: pval });
+        }
+        if (bad) continue;
+        affixes.push({ menu: menu, combined: recipe.name, parts: parts, sourced: false });
+        continue;
+      }
+
       if (!effect) { errors.push("Choose an enchantment for the " + menu + " menu."); continue; }
 
       var row = placementFor(group, menu, effect, c);
@@ -824,14 +917,22 @@
       // shard applies on its own. The second list is derived from the item's
       // group and ML, never stored on the entry, so it cannot drift out of date
       // when the player edits the level.
-      affixes: (Array.isArray(e.affixes) ? e.affixes : []).map(function (a) {
-        return a && a.presence
-          ? { name: a.stat, type: "Bool", value: "1", eligible: true }
-          : { name: a.stat, type: a.bonus_type, value: String(a.value), eligible: true };
-      }).concat(automaticAffixes(e, ctx).map(function (a) {
+      // #800 — a combined row expands to its two effects HERE, at the point the
+      // record is minted, so the entry keeps one row per menu and the item
+      // carries what it actually grants.
+      affixes: (Array.isArray(e.affixes) ? e.affixes : []).reduce(function (out, a) {
+        var list = (a && Array.isArray(a.parts)) ? a.parts : [a];
+        list.forEach(function (x) {
+          out.push(x && x.presence
+            ? { name: x.stat, type: "Bool", value: "1", eligible: true }
+            : { name: x.stat, type: x.bonus_type, value: String(x.value), eligible: true });
+        });
+        return out;
+      }, []).concat(automaticAffixes(e, ctx).map(function (a) {
         return { name: a.stat, type: a.bonus_type, value: String(a.value), eligible: true };
       })),
-      eligible_affix_count: (Array.isArray(e.affixes) ? e.affixes.length : 0)
+      eligible_affix_count: (Array.isArray(e.affixes) ? e.affixes : []).reduce(
+          function (n, a) { return n + ((a && Array.isArray(a.parts)) ? a.parts.length : 1); }, 0)
         + automaticAffixes(e, ctx).length,
       scaling: [],
       roll_groups: [],
@@ -939,6 +1040,7 @@
     WEAPON_GROUP_UNSTATED: WEAPON_GROUP_UNSTATED.slice(),
     essenceGroupFor: essenceGroupFor, menusFor: menusFor, effectsFor: effectsFor,
     automaticAffixes: automaticAffixes, unmodelledAutomatic: unmodelledAutomatic,
+    combinedOptions: combinedOptions, combinedFor: combinedFor,
     placementFor: placementFor, sourcedValueAt: sourcedValueAt,
     migrateLegacyEntry: migrateLegacyEntry,
     validateEntry: validateEntry, toVariant: toVariant, customPool: customPool,

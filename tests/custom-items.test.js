@@ -823,4 +823,131 @@ test("#799: neither unmodelled bonus is secretly rankable", () => {
   }
 });
 
+
+
+// ---------------------------------------------------------------------------
+// #800 — combined prefixes: one shard, two effects.
+
+/** A ring with a combined prefix. `Fortifying` is Constitution + Fortification,
+ *  both rankable, so it is servable; neither is sourced, so the player supplies
+ *  both bonus types and both values. */
+function comboRing(over) {
+  return Object.assign({
+    uid: 4, name: "My combined ring", slot: "Ring", ml: 30, augments: [],
+    affixes: [{ menu: "Prefix", combined: "Fortifying",
+                parts: [{ bonus_type: "Enhancement", value: 9 },
+                        { bonus_type: "Quality", value: 4 }] }],
+  }, over || {});
+}
+
+test("#800: a combined prefix is ONE row that mints TWO affixes", () => {
+  const v = C.validateEntry(comboRing(), ctx);
+  assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
+  // One row, because the entry is menu-keyed and an item carries one shard per
+  // slot. Two rows here would put two enchantments in one menu and the duplicate
+  // check would refuse the entry on its next round-trip.
+  assert.strictEqual(v.entry.affixes.length, 1);
+  assert.strictEqual(v.entry.affixes[0].combined, "Fortifying");
+  assert.strictEqual(v.entry.affixes[0].parts.length, 2);
+  const rec = C.toVariant(v.entry, ctx);
+  const chosen = rec.affixes.filter((a) => !/^Enhancement Bonus/.test(a.name));
+  assert.deepStrictEqual(chosen.map((a) => [a.name, a.type, a.value]), [
+    ["Constitution", "Enhancement", "9"],
+    ["Fortification", "Quality", "4"],
+  ]);
+});
+
+test("#800: the stored entry re-validates unchanged", () => {
+  // The round trip is the assertion that matters for the one-row shape: an entry
+  // that validates once and is refused on reload would strand a saved item.
+  const once = C.validateEntry(comboRing(), ctx);
+  const twice = C.validateEntry(once.entry, ctx);
+  assert.deepStrictEqual(twice.errors, [], twice.errors.join(" | "));
+  assert.deepStrictEqual(twice.entry.affixes, once.entry.affixes);
+});
+
+test("#800: the pair is atomic — half a shard is never offered", () => {
+  // The whole reason a recipe can be withheld. `container_registry` refuses a
+  // pool where one option becomes two independently-selectable records; the same
+  // rule applies here, so a recipe whose second effect cannot be ranked is
+  // withheld WHOLE rather than served as its first.
+  const cov = raw.metadata.essence_placement_coverage.combined;
+  assert.ok(cov.withheld.length > 0, "some recipes are withheld, or this proves nothing");
+  const servedNames = new Set(placements.combined.recipes.map((r) => r.name));
+  for (const w of cov.withheld) {
+    assert.ok(!servedNames.has(w.name), `${w.name} is withheld and served`);
+    assert.ok(/withheld whole/.test(w.atomic), `${w.name} must say it is withheld whole`);
+    assert.ok((w.reason || "").length > 10, `${w.name} must name the unrankable effect`);
+  }
+  // And every SERVED recipe has both halves resolved, or the atomicity claim is
+  // decoration.
+  for (const r of placements.combined.recipes) {
+    assert.strictEqual(r.effects.length, 2, `${r.name} must carry exactly two effects`);
+    for (const e of r.effects) {
+      assert.ok(e.stat && vocab.known.has(e.stat),
+        `${r.name}: ${e.effect} resolved to an unrankable stat`);
+    }
+  }
+});
+
+test("#800: a combined shard needs ML 20, a third gate from a third source", () => {
+  // Three ML rules now, each gating a different thing and each separately
+  // sourced: the Extra SLOT needs 10, an Insight EFFECT needs 10, and a combined
+  // OPTION needs 20. They are kept apart so one moving cannot drag the others.
+  assert.strictEqual(placements.combined.min_ml, 20);
+  assert.ok(C.combinedOptions("Rings", 20, ctx).length > 0, "offered at 20");
+  assert.deepStrictEqual(C.combinedOptions("Rings", 19, ctx), [], "and not at 19");
+  const v = C.validateEntry(comboRing({ ml: 19 }), ctx);
+  assert.ok(!v.ok);
+  assert.ok(v.errors.some((e) => /minimum level 20/.test(e)), v.errors.join(" | "));
+});
+
+test("#800: a combined shard is a PREFIX and cannot go elsewhere", () => {
+  for (const menu of ["Suffix", "Extra"]) {
+    const v = C.validateEntry(comboRing({
+      affixes: [{ menu, combined: "Fortifying", parts: [{}, {}] }] }), ctx);
+    assert.ok(!v.ok, `${menu} must be refused`);
+    assert.ok(v.errors.some((e) => /is a PREFIX/.test(e)), v.errors.join(" | "));
+  }
+});
+
+test("#800: a recipe this item type cannot take is refused", () => {
+  // `Armor Destroying` is Weapon-only. Offering it on a ring would be the same
+  // defect as offering a prefix effect the group cannot host.
+  const v = C.validateEntry(comboRing({
+    affixes: [{ menu: "Prefix", combined: "Armor Destroying", parts: [{}, {}] }] }), ctx);
+  assert.ok(!v.ok);
+  assert.ok(v.errors.some((e) => /not a combined prefix this item type can take/.test(e)),
+    v.errors.join(" | "));
+});
+
+test("#800: every recipe slot name maps onto a real placement group", () => {
+  // A completeness claim needs a guard, in both directions: an unmapped slot
+  // serves that recipe to nobody, and an invented group is a picker with no
+  // table behind it.
+  const groups = new Set(Object.keys(placements.groups));
+  for (const r of placements.combined.recipes) {
+    assert.ok(r.groups.length, `${r.name} reaches no group`);
+    for (const g of r.groups) {
+      assert.ok(groups.has(g), `${r.name} names group ${g}, which the table lacks`);
+    }
+  }
+  // `Weapon` in the recipe table is undifferentiated, so a weapon recipe must
+  // reach BOTH weapon groups - unlike table 1b, which names them separately.
+  const wep = placements.combined.recipes.find((r) => r.name === "Armor Destroying");
+  assert.deepStrictEqual(wep.groups.sort(), ["Melee weapons", "Ranged weapons"]);
+});
+
+test("#800: the harvest and what it serves, re-ratified deliberately", () => {
+  const cov = raw.metadata.essence_placement_coverage.combined;
+  // 107 recipes, and the split is an independent check on the harvest: the page
+  // says "Update 81 introduced 100 more combined shards", and the table carries
+  // exactly 100 U81 rows against 7 from U55.
+  assert.strictEqual(cov.harvested, 107);
+  assert.strictEqual(cov.served + cov.withheld.length, cov.harvested,
+    "every recipe is either served or withheld - none silently vanishes");
+  assert.strictEqual(cov.served, 78);
+  assert.strictEqual(cov.withheld.length, 29);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);

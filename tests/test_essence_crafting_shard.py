@@ -122,6 +122,7 @@ ROSTER_READER = "scripts/merge_harvest.py"
 JOIN_MODULE = os.path.join("src", "essence_curve_join.py")
 POOL_MODULE = os.path.join("src", "essence_pool.py")
 PLACEMENTS_MODULE = os.path.join("src", "essence_placements.py")
+COMBINED_MODULE = os.path.join("src", "essence_combined.py")
 SHARD_READERS = sorted([ROSTER_READER, JOIN_MODULE, POOL_MODULE])
 # Tests may name the shard freely: asserting ON the data is the opposite of
 # feeding it to the solver, and a test cannot ship a value into a loadout. The
@@ -204,7 +205,8 @@ def test_the_curve_join_is_reached_only_through_the_pool_builder():
     importers = []
     for path in _tree_files():
         rel = os.path.relpath(path, ROOT)
-        if rel.startswith(TEST_DIR) or rel in (JOIN_MODULE, POOL_MODULE, PLACEMENTS_MODULE):
+        if rel.startswith(TEST_DIR) or rel in (JOIN_MODULE, POOL_MODULE,
+                                              PLACEMENTS_MODULE, COMBINED_MODULE):
             continue
         with open(path, encoding="utf-8", errors="ignore") as fh:
             if "essence_curve_join" in fh.read():
@@ -291,3 +293,51 @@ def test_every_sourced_placement_passed_both_checks():
     assert not offenders, (
         f"{len(offenders)} sourced placement(s) took a magnitude without both checks: "
         f"{offenders[:5]}")
+
+
+def test_the_combined_pool_takes_no_magnitude_from_the_curve_join():
+    """#800 — why `essence_combined` is on the curve-join allowlist.
+
+    It imports `essence_curve_join` for ONE thing: `_norm`, the repo's existing
+    rule for folding case and punctuation when matching a wiki name to a catalog
+    one. It is what turns the wiki's own `holy Blast` typo into `Holy Blast` and
+    its `Armor Piercing` into `Armor-Piercing`, and reusing it is the point —
+    a second normalisation would be a second thing to keep in step.
+
+    It takes NO magnitude. The guard above exists because a caller that reads a
+    curve without checking the bonus type and the catalog stat could emit a number
+    with neither; this module emits no number at all, because a combined prefix's
+    magnitudes are not sourced and the player supplies them.
+
+    Asserted over the built output rather than claimed in a comment, so the day
+    somebody adds a value here the allowlist entry stops being free.
+    """
+    import json as _json
+    with open(os.path.join(ROOT, "web", "data", "items.json"), encoding="utf-8") as fh:
+        built = _json.load(fh)
+    combined = (built.get("essence_placements") or {}).get("combined") or {}
+    recipes = combined.get("recipes") or []
+    assert recipes, ("no combined recipe at all — this guard would pass vacuously, "
+                     "and the curve-join allowlist entry would be unearned")
+
+    MAGNITUDE_KEYS = {"values_by_ml", "curve_row", "value", "values", "min_value"}
+    offenders = []
+    for r in recipes:
+        bad = MAGNITUDE_KEYS & set(r)
+        if bad:
+            offenders.append((r.get("name"), sorted(bad)))
+        for e in r.get("effects") or []:
+            bad = MAGNITUDE_KEYS & set(e)
+            if bad:
+                offenders.append((f"{r.get('name')}/{e.get('effect')}", sorted(bad)))
+    assert not offenders, (
+        f"{len(offenders)} combined record(s) carry a magnitude: {offenders[:5]}. "
+        "This module is allowed to import the curve join only because it takes no "
+        "number from it; a magnitude here needs the bonus-type and catalog-stat "
+        "checks the pool builder applies.")
+
+    # And the thing it DOES use is still doing work, or the import is dead weight
+    # and the allowlist entry should go rather than be justified.
+    from src import essence_curve_join as _join
+    assert _join._norm("holy Blast") == _join._norm("Holy Blast")
+    assert _join._norm("Armor Piercing") == _join._norm("Armor-Piercing")
