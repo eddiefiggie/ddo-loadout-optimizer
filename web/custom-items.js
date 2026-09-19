@@ -94,10 +94,29 @@
   /** Affixes per custom item. A real DDO item tops out well below this; the cap is
    *  here so one hand-edited backup entry cannot make the dominance filter's
    *  per-variant work unbounded. */
-  /** #795 — an Essence Crafted item carries at most one enchantment per menu, so
-   *  the ceiling is the menu count, not a sanity cap. `AFFIX_MAX` is kept as the
-   *  same number so a hand-edited backup still cannot make the dominance filter's
-   *  per-variant work unbounded, but placement is what actually binds. */
+  /** An Essence Crafted item carries at most one enchantment per menu, so the
+   *  ceiling is the menu count, not a sanity cap. `AFFIX_MAX` is kept as a real
+   *  cap too, so a hand-edited backup still cannot make the dominance filter's
+   *  per-variant work unbounded, but placement is what actually binds.
+   *
+   *  #795 shipped this rule UNSOURCED, from prose in a plan doc, and said in the
+   *  comment here that it was wiki-stated. #797 harvested it. Three slots, one
+   *  effect each:
+   *
+   *    "Each craftable item has a prefix and a suffix enchantment slot."
+   *    "A Mark of House Cannith can be used to add a third extra enchantment
+   *     slot."                                      - `Essence Crafting`
+   *
+   *  and the strongest form the wiki offers, the game refusing the action:
+   *
+   *    "(An error will pop up if you already have a Suffix, Prefix, or Insightful
+   *     bonus and are trying to install a second one.)"
+   *                                                 - `Essence Crafting steps`
+   *
+   *  KNOWN GAP, disclosed rather than hidden by the phrasing: a **combined
+   *  prefix** is one shard carrying TWO effects, so one-per-SLOT holds while
+   *  one-per-EFFECT does not. The bench cannot express one. See
+   *  `docs/wiki-evidence/essence-crafting.md` and #800. */
   var MENUS = ["Prefix", "Suffix", "Extra"];
   var AFFIX_MAX = 3;
 

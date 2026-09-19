@@ -314,3 +314,92 @@ If those additions are a real floor rather than a holdover, the Legendary Gem's 
 would be ML 5 (Green) — below every cap at which crafting down is interesting, so it
 changes no result today. Recorded so that a future host with a Purple or Orange slot
 is not assumed to reach ML 1.
+
+## The slot structure itself — harvested 2026-09-18 (#797)
+
+#795 shipped a rule it did not source. The player-authored item bench enforces
+**one enchantment per menu**, which replaced #773's `AFFIX_MAX = 12` and is what
+makes the form render one row per menu instead of a grow-your-own list. It was
+asserted in the source comment, the commit and the PR body as though wiki-stated.
+It was not: it traced to prose in `docs/plans/2026-07-25-006-…-crafting-content-roadmap-plan.md`.
+
+It is now sourced, from two pages, and the second quote is the strongest form the
+wiki offers — the game refusing the action:
+
+> "Each craftable item has a prefix and a suffix enchantment slot."
+> "A Mark of House Cannith can be used to add a third extra enchantment slot."
+> — `Essence Crafting`, Enchantments
+
+> "All items can have one to three additional properties: A prefix effect
+> (Clever, Vorpal, Holy, etc.) A suffix effect (Everbright, Springing, Pure Good,
+> etc.) If the item is ML 10 or greater, it has a "Mark of House Cannith Slot",
+> where another effect can be applied (Insightful Strength, Insightful Accuracy,
+> etc.)"
+> — `Essence Crafting steps`
+
+> "(An error will pop up if you already have a Suffix, Prefix, or Insightful
+> bonus and are trying to install a second one.)"
+> — `Essence Crafting steps`, Choosing enchantments
+
+Three slots, one effect each, and the third gated at ML 10. That is the model
+`web/custom-items.js` already implements; it now cites this.
+
+### The "Mark of House Cannith Slot" is the EXTRA MENU, not an augment slot
+
+#798 was filed on the opposite reading and is wrong; it is closed as not-planned with this evidence. The steps quote above places
+"another effect" in it and names `Insightful Strength` and `Insightful Accuracy`
+as examples — it is the third ENCHANTMENT slot, which the app already models as
+the `Extra` menu behind `EXTRA_SLOT_MIN_ML`.
+
+Two consequences worth keeping:
+
+- **It corroborates the `Insightful`-prefix ML-10 gate** that #795 introduced by
+  reading the placements table's naming convention. The wiki's own examples of
+  what goes in this slot are both `Insightful X`.
+- **Augment slots survive disjunction**, so the bench offering the seven colours
+  freely is correct rather than an unmodelled gap:
+
+  > "Any prefix, suffix, enhancement bonus, and race restriction will be stripped
+  > away, but these properties are unaffected: Material type Augment Slots (and
+  > augments therein) Guild augment slots (and augments therein) previous
+  > eldritch rituals permanent damage"
+  > — `Essence Crafting steps`, Deconstruction
+
+  Essence Crafting neither adds nor removes an augment slot. The player records
+  what their blank already had, which is exactly what the form asks for.
+
+### Three automatic bonuses, none modelled
+
+Found in the same read. All are stated, none is guessed, and none is in the app:
+
+> "Unlike original Cannith Crafting, you don't need to craft an Enhancement Bonus
+> shard for Weapons, Shields, or Armors (including Robes, Outfit, and Docents). A
+> scaled Enhancement Bonus is applied automatically when you apply a Minimum
+> Level shard."
+> "A Weapon dice multiplier is automatically applied to a weapon."
+> "A Spellcasting Implement bonus is added when a spell-related shard is applied
+> to a weapon or shield. This bonus is equal to the item's minimum level."
+> — `Essence Crafting`, Notes
+
+So a player describing an essence-crafted weapon on the bench today under-reports
+it: the item carries an Enhancement bonus and a dice multiplier the form never
+asked about. Filed rather than fixed here — **#799**.
+
+### Combined prefixes put TWO effects in one prefix slot
+
+> "Combined prefixes are special higher level shards which have two combined
+> effects. […] Update 81 introduced 100 more combined shards with a minimum level
+> of 20."
+> — `Essence Crafting`, Combined prefixes
+
+This does not contradict one-per-*slot* — a combined prefix is one shard — but it
+does mean "one enchantment per menu" is the wrong phrasing for the general case.
+The bench cannot express a combined prefix today. Also filed — **#800**.
+
+### What this read did NOT settle
+
+The 16 placement groups are named by `table 1b` and the wiki still never says
+which DDO weapon types are "Melee weapons" and which are "Ranged weapons". The
+`SLOT_GROUPS` join in `src/essence_placements.py`, and the refusal of thrown
+weapons and Handwraps, remain exactly as #795 left them: a construction, flagged
+as one in the source.
