@@ -325,6 +325,29 @@ def slot_qualified_types(records, aliases=None):
     aliases = aliases or {}
     # (bare, slot) -> {qualified raw name -> {types}}
     seen = {}
+    # (bare, slot) where the BARE spelling occurs natively on that same slot.
+    #
+    # These are the ones that must NOT resolve. A qualifier is only a slot
+    # qualifier for a name when the slot uses it instead of the bare form; when the
+    # slot carries both, the two are DISTINCT STATS and the parenthesis is part of
+    # the name. `False Life` and `False Life (%)` are flat and percentage HP, and
+    # Cloak, Necklace, Offhand, Ring and Trinket all carry both — renaming a wiki
+    # row's flat `False Life` to the percentage one would be exactly the silent
+    # mis-typing this whole function exists to stop, committed in the other
+    # direction. Same for `Radiance` / `(enchantment)` on Weapon and
+    # `Transmuted Platinum` / `(Epic)`.
+    #
+    # It also takes out `('Enhancement Bonus', 'Offhand')`: those two bare records
+    # ARE the Offhand ones, so that slot genuinely uses the bare spelling and has no
+    # business being rewritten to `(Armor)`. Weapon and Armor, the two slots the
+    # Cannith rows actually land on, carry no bare form and are unaffected.
+    native_bare = set()
+    for rec in records:
+        slot = rec.get("slot")
+        for a in rec.get("affixes") or []:
+            nm = a.get("name")
+            if nm and not _QUALIFIED.match(nm):
+                native_bare.add((aliases.get(nm, nm), slot))
     for rec in records:
         slot = rec.get("slot")
         if not slot:
@@ -352,6 +375,8 @@ def slot_qualified_types(records, aliases=None):
             seen.setdefault((bare, slot), {}).setdefault(nm, set()).add(ty)
     out = {}
     for key, spellings in seen.items():
+        if key in native_bare:
+            continue
         if len(spellings) != 1:
             continue                      # two qualified spellings on one slot
         name, types = next(iter(spellings.items()))

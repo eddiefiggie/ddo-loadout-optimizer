@@ -156,6 +156,16 @@ def test_the_overlay_refuses_a_slot_label_outside_the_frozen_registry():
 
 
 
+def _planner():
+    """The pinned gear-planner snapshot, read the same way by every test here."""
+    recs = B.load_planner_records() if hasattr(B, "load_planner_records") else None
+    if recs is None:  # loader name differs; read the raw seed directly
+        with open(os.path.join(ROOT, "data", "seed", "compendium", "raw",
+                               "gearplanner_items.json"), encoding="utf-8") as fh:
+            recs = json.load(fh)
+    return recs
+
+
 def test_every_final_is_rederived_from_its_own_raw():
     """The guard that makes a hand-edited `final` unshippable.
 
@@ -166,11 +176,7 @@ def test_every_final_is_rederived_from_its_own_raw():
     ds = _dataset()
     known = set(ds["metadata"]["affix_registry"])
     aliases = ds["metadata"]["affix_aliases"]
-    planner = B.load_planner_records() if hasattr(B, "load_planner_records") else None
-    if planner is None:  # loader name differs; read the raw seed directly
-        with open(os.path.join(ROOT, "data", "seed", "compendium", "raw",
-                               "gearplanner_items.json"), encoding="utf-8") as fh:
-            planner = json.load(fh)
+    planner = _planner()
 
     import re
     def fam_of(n):
@@ -277,6 +283,42 @@ def test_every_final_is_rederived_from_its_own_raw():
     # affix name pinned by hand. `SLOT_QUALIFIED_NAMES` is retired by this line.
     _eq(CT.assert_no_bare_slot_qualified(shard["items"], slotq), 113,
         "no entry emits a bare name onto a slot that spells it qualified")
+
+def test_a_slot_that_uses_both_spellings_resolves_to_neither():
+    """#792 — the qualifier is only a SLOT qualifier when the slot uses it instead of
+    the bare form. When a slot carries both, they are distinct stats and the
+    parenthesis is part of the name, so the join must refuse rather than pick.
+
+    This is the same defect as the issue, committed in the other direction: `False
+    Life` and `False Life (%)` are flat and percentage HP, and five slots carry both.
+    A join that renamed the flat one to the percentage one would mis-type a stat just
+    as silently as the slot-blind lookup did.
+    """
+    planner = _planner()
+    aliases = _dataset()["metadata"]["affix_aliases"]
+    m = CT.slot_qualified_types(planner, aliases)
+    _true(m, "refuse to pass over an empty map")
+
+    native_bare = set()
+    for rec in planner:
+        for a in rec.get("affixes") or []:
+            nm = a.get("name")
+            if nm and not CT._QUALIFIED.match(nm):
+                native_bare.add((aliases.get(nm, nm), rec.get("slot")))
+    overlap = sorted(k for k in m if k in native_bare)
+    _eq(overlap, [], "a (name, slot) resolving although that slot uses the bare form")
+
+    # The exclusion must be doing work in both directions, or it is decoration.
+    # 8 of 31 pairs are excluded; the three the shard depends on are not.
+    _true(any((n, s) in native_bare for n, s in [("False Life", "Cloak"),
+                                                 ("Radiance", "Weapon"),
+                                                 ("Enhancement Bonus", "Offhand")]),
+          "the ambiguous pairs this exclusion exists for are gone from the catalog")
+    for key in [("Enhancement Bonus", "Weapon"), ("Enhancement Bonus", "Armor"),
+                ("Life Shield", "Weapon")]:
+        _true(m.get(key), f"{key} must still resolve — its slot carries no bare form")
+    _eq(len(m), 23, "the slot-qualified map's size, re-ratified deliberately")
+
 
 def test_the_guard_refuses_to_inspect_zero_records():
     """Prove a guard fails before trusting it: the coverage assertions above are

@@ -70,6 +70,33 @@ wins overall*; this asks *which spelling do items in THIS slot use*, and accepts
 answer only when that slot's records are unanimous on both spelling and type.
 `SLOT_QUALIFIED_NAMES` is retired by it rather than extended by hand.
 
+## The symmetric trap: when a slot uses BOTH spellings
+
+A qualifier is only a *slot* qualifier when the slot uses it **instead of** the bare
+form. When a slot carries both, they are distinct stats and the parenthesis is part
+of the name. Eight of the map's thirty-one candidate pairs were this case:
+
+| bare | qualified | slots carrying both |
+| --- | --- | --- |
+| `False Life` | `False Life (%)` | Cloak, Necklace, Offhand, Ring, Trinket |
+| `Radiance` | `Radiance (enchantment)` | Weapon |
+| `Transmuted Platinum` | `Transmuted Platinum (Epic)` | Weapon |
+| `Enhancement Bonus` | `Enhancement Bonus (Armor)` | Offhand |
+
+`False Life` is flat HP and `False Life (%)` is percentage HP. A join that rewrote
+the flat one to the percentage one would mis-type a stat **exactly as silently as the
+slot-blind lookup did**, just in the other direction — and it would have been written
+by the fix for that bug. `Enhancement Bonus` on Offhand is the same shape: those two
+bare records *are* the Offhand ones, so that slot genuinely uses the bare spelling.
+
+So the map excludes any `(name, slot)` whose slot carries the bare form natively. It
+drops from 31 pairs to 23, and the three the shard actually depends on — `Enhancement
+Bonus` on Weapon and Armor, `Life Shield` on Weapon — are untouched, because those
+slots carry no bare form at all.
+
+The exclusion is pinned by a test that checks it cuts in both directions: the
+ambiguous pairs are gone, and the depended-on three still resolve.
+
 ## Two things that made it checkable rather than inferred
 
 **The `Penalty` skip.** `Enhancement Bonus (Weapon)` carries two types on that slot —
