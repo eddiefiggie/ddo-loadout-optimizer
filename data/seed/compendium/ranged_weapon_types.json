@@ -1,0 +1,38 @@
+{
+ "_meta": {
+  "field": "ranged_weapon_types",
+  "note": "The DDO wiki's enumeration of RANGED weapons, harvested to source the Melee/Ranged split that `Essence Crafting/table 1b` names but never defines. Verbatim names from `Table: Basic Ranged Weapons`.",
+  "sources": {
+   "ranged": "https://ddowiki.com/page/Ranged_weapons",
+   "thrown": "https://ddowiki.com/page/Thrown_weapons",
+   "handwraps": "https://ddowiki.com/page/Handwrap"
+  },
+  "evidence": "docs/wiki-evidence/essence-crafting.md",
+  "harvested": "2026-09-19",
+  "melee_is_not_enumerated": "There is NO `Melee weapons` article - the page returns 'We don't currently have an article called \"Melee weapons\"' - and no category for it either. Melee therefore remains a COMPLEMENT and is labelled an inference wherever it is used. This shard deliberately does not list melee types: writing them out would dress a complement up as a harvest.",
+  "why_thrown_is_absent": "All five thrown types are absent from the ranged enumeration, and `Thrown weapons` lists `Ranged weapons` under See also - a sibling, never a parent. It defines them only as 'any weapon that may be physically thrown at a target over a distance'. So the wiki does not place them in either of table 1b's two groups, and they stay refused.",
+  "why_handwraps_is_absent": "`Handwrap` never calls them melee or ranged, and states 'handwraps are not programmed as weapons by design'."
+ },
+ "ranged": {
+  "wiki_names": [
+   "Composite Longbow", "Composite Shortbow", "Great Crossbow", "Heavy Crossbow",
+   "Light Crossbow", "Longbow", "Repeating Heavy Crossbow", "Repeating Light Crossbow",
+   "Shortbow"
+  ],
+  "name_to_type": {
+   "Composite Longbow": "Long Bows",
+   "Longbow": "Long Bows",
+   "Composite Shortbow": "Short Bows",
+   "Shortbow": "Short Bows",
+   "Great Crossbow": "Great Crossbows",
+   "Heavy Crossbow": "Heavy Crossbows",
+   "Light Crossbow": "Light Crossbows",
+   "Repeating Heavy Crossbow": "Repeating Heavy Crossbows",
+   "Repeating Light Crossbow": "Repeating Light Crossbows"
+  }
+ },
+ "unplaced": {
+  "thrown": ["Darts", "Shurikens", "Throwing Axes", "Throwing Daggers", "Throwing Hammers"],
+  "unarmed": ["Handwraps"]
+ }
+}

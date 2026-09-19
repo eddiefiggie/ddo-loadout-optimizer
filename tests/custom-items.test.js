@@ -656,13 +656,67 @@ test("#795: a quiver is refused, and the empty group list is the reason", () => 
   assert.ok(/cannot be Essence Crafted/i.test(r.refused), r.refused);
 });
 
-test("#795: the weapon types whose group the wiki does not state are refused by name", () => {
+test("#804: the RANGED half is sourced, and it agrees with what #795 constructed", () => {
+  // This agreement is what retires the construction. #795 mapped handedness onto
+  // the two groups and labelled it a guess; `Table: Basic Ranged Weapons`
+  // enumerates nine bows and crossbows, which fold onto exactly the seven types
+  // that guess called Ranged. It was right — and now a divergence goes red
+  // instead of passing quietly.
+  const split = placements.weapon_split;
+  assert.ok(split, "the split is published");
+  const T = require("../web/weapon-taxonomy.js");
+  const byHandedness = Object.keys(T.STYLE_OF_TYPE).filter((t) => {
+    const st = T.STYLE_OF_TYPE[t];
+    return st === T.RANGED || st === T.CROSSBOW;
+  }).sort();
+  assert.deepStrictEqual([...split.ranged_types].sort(), byHandedness,
+    "the sourced enumeration and the handedness construction must agree");
+  assert.strictEqual(split.ranged_types.length, 7);
+});
+
+test("#804: every weapon type is sourced-ranged, refused, or melee — exactly one", () => {
+  // The guard that keeps the melee COMPLEMENT honest. Melee has no article and no
+  // category, so it is defined as "everything else"; a complement is only safe
+  // while the other two sets are known and the three partition the population.
+  // Total AND disjoint, asserted over the taxonomy rather than over a list
+  // written here.
+  const T = require("../web/weapon-taxonomy.js");
+  const types = Object.keys(T.STYLE_OF_TYPE);
+  assert.ok(types.length > 30, "a real population");
+  const seen = { "Melee weapons": [], "Ranged weapons": [], refused: [] };
+  for (const t of types) {
+    const r = C.essenceGroupFor("Weapon", t, ctx);
+    const key = r.group || "refused";
+    assert.ok(key in seen, `${t} resolved to an unexpected group ${r.group}`);
+    seen[key].push(t);
+  }
+  // Total: nothing fell through.
+  assert.strictEqual(
+    seen["Melee weapons"].length + seen["Ranged weapons"].length + seen.refused.length,
+    types.length, "every type landed in exactly one bucket");
+  // Disjoint by construction above (one push per type), so the check that adds
+  // information is that the SOURCED sets are what they claim.
+  const split = placements.weapon_split;
+  assert.deepStrictEqual(seen["Ranged weapons"].sort(), [...split.ranged_types].sort());
+  assert.deepStrictEqual(seen.refused.sort(), [...split.unplaced_types].sort());
+  // And melee is the remainder, non-empty and NOT overlapping either source.
+  assert.ok(seen["Melee weapons"].length > 20);
+  for (const t of seen["Melee weapons"]) {
+    assert.ok(!split.ranged_types.includes(t), `${t} is melee and sourced-ranged`);
+    assert.ok(!split.unplaced_types.includes(t), `${t} is melee and refused`);
+  }
+  assert.strictEqual(split.melee_is_complement, true,
+    "the shard must keep saying melee is an inference, not a harvest");
+});
+
+test("#795/#804: the weapon types whose group the wiki does not state are refused by name", () => {
   // Never infer a value. `table 1b` names "Melee weapons" and "Ranged weapons"
   // and never says which DDO weapon types are in each; the taxonomy's axis is
   // handedness, which does not answer it. Thrown weapons are one-handed AND
   // ranged, so reading handedness would put them in the wrong group.
-  assert.ok(C.WEAPON_GROUP_UNSTATED.length, "there are refused weapon types");
-  for (const t of C.WEAPON_GROUP_UNSTATED) {
+  const unplaced = placements.weapon_split.unplaced_types;
+  assert.ok(unplaced.length, "there are refused weapon types");
+  for (const t of unplaced) {
     const r = C.essenceGroupFor("Weapon", t, ctx);
     assert.ok(!r.group, `${t} must not resolve to a group`);
     assert.ok(/does not say which one/i.test(r.refused), r.refused);

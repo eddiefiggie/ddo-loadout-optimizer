@@ -460,10 +460,48 @@ grant one effect where the game grants two, and is the fan-out shape
 `src/container_registry.py` exists to refuse. The withheld 29 are recorded with
 the unrankable effect named.
 
+### The Melee/Ranged split — harvested 2026-09-19 (#804)
+
+`table 1b` names `Melee weapons` and `Ranged weapons` and never defines either.
+#795 wrote the mapping from `WeaponTaxonomy.STYLE_OF_TYPE`, whose axis is
+HANDEDNESS, and labelled it a construction. The harvest splits three ways.
+
+**RANGED is enumerated, and the construction was right.** `Ranged weapons` carries
+`Table: Basic Ranged Weapons`, nine rows:
+
+> Composite Longbow · Composite Shortbow · Great Crossbow · Heavy Crossbow ·
+> Light Crossbow · Longbow · Repeating Heavy Crossbow · Repeating Light Crossbow ·
+> Shortbow
+
+Those nine fold onto exactly the **seven** taxonomy types the handedness
+construction already called Ranged. So it is retired **by verification rather than
+replacement**, and a test asserts the agreement so a future divergence goes red.
+
+**THROWN AND HANDWRAPS stay refused — but the evidence improves from silence to
+exclusion.** All five thrown types are ABSENT from that enumeration, and
+`Thrown weapons` lists `Ranged weapons` under *See also* — a sibling, never a
+parent. It defines them only as *"any weapon that may be physically thrown at a
+target over a distance."* `Handwrap` never calls them either way and states
+*"handwraps are not programmed as weapons by design."*
+
+**MELEE IS NOT ENUMERATED, and remains an inference.** There is no `Melee weapons`
+article — the page returns *"We don't currently have an article called 'Melee
+weapons'"* — and no category for it: the type categories hang off
+`Weapons by type`, and `Throwing weapons`' parent is plain `Weapons`. So melee is
+the COMPLEMENT: every type that is neither sourced-ranged nor unplaced.
+
+That is the one inference left in this model, and it is labelled as one in
+`src/essence_placements.build_weapon_split` and `web/custom-items.js`. What keeps
+it honest is a guard rather than a comment: `tests/custom-items.test.js` asserts
+the three sets are TOTAL and DISJOINT over every `STYLE_OF_TYPE` key, so the
+complement can never silently swallow a type the wiki actually placed.
+
+Result: **27 melee, 7 ranged, 6 refused, 40 total** — byte-identical to what #795
+produced. No behaviour changed; what changed is that two thirds of it is now read
+rather than guessed.
+
 ### What this read did NOT settle
 
-The 16 placement groups are named by `table 1b` and the wiki still never says
-which DDO weapon types are "Melee weapons" and which are "Ranged weapons". The
-`SLOT_GROUPS` join in `src/essence_placements.py`, and the refusal of thrown
-weapons and Handwraps, remain exactly as #795 left them: a construction, flagged
-as one in the source.
+The 16 placement groups themselves are named by `table 1b` and mapped onto the
+app's slot vocabulary by `SLOT_GROUPS`, which remains a written-out join (guarded
+in both directions, but not sourced — the wiki never states it either).
