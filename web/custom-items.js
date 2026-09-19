@@ -209,40 +209,39 @@
     "Tower shields": "Shields",
   };
 
-  /** Weapon types whose placement group the wiki does NOT state.
+  /** #804 — which of `table 1b`'s two weapon groups a type belongs to.
    *
-   *  `Essence Crafting/table 1b` names exactly two weapon groups, "Melee weapons"
-   *  and "Ranged weapons", and never says which DDO weapon types fall in each.
-   *  For most types the answer is not in doubt, but for these six it is, and the
-   *  obvious shortcut is wrong:
+   *  The table names `Melee weapons` and `Ranged weapons` and never says which
+   *  DDO weapon types are in each. #795 wrote the mapping by hand from
+   *  `WeaponTaxonomy.STYLE_OF_TYPE`, whose axis is HANDEDNESS, and labelled it a
+   *  construction. It is now sourced on one side and a labelled inference on the
+   *  other, and the split is read from the published table rather than restated
+   *  here:
    *
-   *  `WeaponTaxonomy.STYLE_OF_TYPE` marks all five thrown types `one-hand`,
-   *  because ITS axis is handedness — how many hands the weapon occupies and
-   *  whether an off-hand is free. Reading it for melee-vs-ranged would be asking
-   *  a source a question it does not answer, which is the same mistake as
-   *  pluralising `Melee` into `Melees` (see `essence_pool.HOST_FAMILIES`). Thrown
-   *  weapons are one-handed AND ranged. `Handwraps` is `unarmed`, which likewise
-   *  states nothing about the crafting group.
+   *  RANGED is ENUMERATED. `Ranged weapons` carries `Table: Basic Ranged Weapons`
+   *  — nine rows, bows and crossbows. Those nine map onto exactly the seven types
+   *  the handedness construction already called Ranged, which is what retires it:
+   *  it was right, and `tests/custom-items.test.js` now asserts that agreement so
+   *  a future divergence goes red instead of passing quietly.
    *
-   *  So they are refused with the reason shown to the player, per
-   *  `exclude-until-verified`: a visible gap beats a confident wrong group, and a
-   *  wrong group offers effects the item cannot actually be crafted with. Closing
-   *  this needs a harvest that states the membership. */
-  var WEAPON_GROUP_UNSTATED = [
-    "Darts", "Shurikens", "Throwing Axes", "Throwing Daggers", "Throwing Hammers",
-    "Handwraps",
-  ];
-
-  /** Combat style -> placement group, for the types the wiki's two groups clearly
-   *  cover. Handedness maps onto melee here only because every remaining
-   *  `one-hand`/`thf` type is a melee weapon once the thrown ones are removed
-   *  above — the removal is what makes this read legitimate. */
-  var WEAPON_GROUP_OF_STYLE = {
-    "one-hand": "Melee weapons",
-    "thf": "Melee weapons",
-    "ranged": "Ranged weapons",
-    "crossbow": "Ranged weapons",
-  };
+   *  UNPLACED is a refusal with evidence rather than silence. The five thrown
+   *  types are ABSENT from that enumeration, and `Thrown weapons` lists
+   *  `Ranged weapons` under See also — a sibling, never a parent. `Handwrap`
+   *  never calls them either way and says handwraps "are not programmed as
+   *  weapons by design". So the wiki places neither, and neither is offered.
+   *
+   *  MELEE IS THE COMPLEMENT, and that is the one inference left in this model.
+   *  There is no `Melee weapons` article and no category for it. Everything the
+   *  taxonomy knows that is not sourced-ranged and not unplaced is treated as
+   *  melee. Disclosed here rather than hidden, in the form the evidence doc uses
+   *  for its ML-floor reasoning. A guard asserts the three sets are total and
+   *  disjoint over `STYLE_OF_TYPE`, so the complement can never silently swallow
+   *  a type the wiki actually placed.
+   */
+  function _weaponSplit(ctx) {
+    var table = _placements(ctx);
+    return (table && table.weapon_split) || null;
+  }
 
   /** The placement table as published by the build.
    *
@@ -289,16 +288,26 @@
       return g ? { group: g }
                : { refused: "“" + t + "” is not an off-hand type this build knows." };
     }
-    if (WEAPON_GROUP_UNSTATED.indexOf(t) >= 0) {
-      return { refused: "The crafting table lists “Melee weapons” and “Ranged weapons” and does "
-        + "not say which one " + t.toLowerCase() + " belong to, so this build will not guess. "
-        + "Pick another weapon type, or add the effects as a declared credit instead." };
-    }
+    // The taxonomy still decides whether this is a weapon type at all; the SPLIT
+    // is what moved off it. Checked first so an unknown name is refused as
+    // unknown rather than swept into the melee complement.
     var tax = _taxonomy();
-    var style = tax && typeof tax.styleOfType === "function" ? tax.styleOfType(t) : null;
-    var grp = style ? WEAPON_GROUP_OF_STYLE[style] : null;
-    if (!grp) return { refused: "“" + t + "” is not a weapon type this build knows." };
-    return { group: grp };
+    var known = tax && tax.STYLE_OF_TYPE
+      && Object.prototype.hasOwnProperty.call(tax.STYLE_OF_TYPE, t);
+    if (!known) return { refused: "“" + t + "” is not a weapon type this build knows." };
+
+    var split = _weaponSplit(ctx);
+    if (!split) return { refused: "The weapon split has not loaded yet." };
+    if ((split.unplaced_types || []).indexOf(t) >= 0) {
+      return { refused: "The crafting table lists “Melee weapons” and “Ranged weapons” and does "
+        + "not say which one " + t.toLowerCase() + " belong to — the wiki’s list of ranged "
+        + "weapons leaves them out without putting them anywhere else — so this build will "
+        + "not guess. Pick another weapon type, or add the effects as a declared credit instead." };
+    }
+    if ((split.ranged_types || []).indexOf(t) >= 0) return { group: "Ranged weapons" };
+    // The complement. See `_weaponSplit` for why this is an inference and what
+    // keeps it honest.
+    return { group: "Melee weapons" };
   }
 
   /** The menus an item of this group and ML may carry.
@@ -1037,7 +1046,7 @@
     customId: customId, isCustomId: isCustomId, isCustomVariant: isCustomVariant,
     isPresenceEffect: function (stat, vocab, ctx) { return _isPresenceOnly(stat, vocab, ctx); },
     MENUS: MENUS.slice(),
-    WEAPON_GROUP_UNSTATED: WEAPON_GROUP_UNSTATED.slice(),
+    weaponSplit: function (ctx) { return _weaponSplit(ctx); },
     essenceGroupFor: essenceGroupFor, menusFor: menusFor, effectsFor: effectsFor,
     automaticAffixes: automaticAffixes, unmodelledAutomatic: unmodelledAutomatic,
     combinedOptions: combinedOptions, combinedFor: combinedFor,

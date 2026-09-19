@@ -117,6 +117,62 @@ ENHANCE_GROUPS = {
 
 ENHANCE_BONUS_TYPE = "Enhancement"
 
+#: #804 — the Melee/Ranged split `table 1b` names and never defines.
+WEAPON_SPLIT_SHARD = os.path.join(
+    ROOT, "data", "seed", "compendium", "ranged_weapon_types.json")
+
+
+def build_weapon_split() -> dict:
+    """The sourced half of the split, plus the types the wiki leaves unplaced.
+
+    `table 1b` names `Melee weapons` and `Ranged weapons` and never says which DDO
+    weapon types are in each. #795 wrote the mapping by hand from
+    `WeaponTaxonomy.STYLE_OF_TYPE`, whose axis is HANDEDNESS, and labelled it a
+    construction. This sources the half that can be sourced.
+
+    RANGED is enumerated: `Ranged weapons` carries `Table: Basic Ranged Weapons`,
+    nine rows, bows and crossbows.
+
+    MELEE IS NOT, and is deliberately absent from the shard. There is no `Melee
+    weapons` article and no category for it, so melee remains the COMPLEMENT —
+    every type that is neither sourced-ranged nor unplaced. That is an inference
+    and is labelled one; writing the melee types out here would dress it up as a
+    harvest. `tests/custom-items.test.js` asserts the three sets are total and
+    disjoint over the taxonomy, which is what keeps the complement honest.
+
+    UNPLACED is a refusal with positive evidence now, not silence: the five thrown
+    types are absent from the ranged enumeration and `Thrown weapons` lists
+    `Ranged weapons` under See also, a sibling rather than a parent; `Handwrap`
+    never calls them either and says they "are not programmed as weapons by
+    design".
+    """
+    with open(WEAPON_SPLIT_SHARD, encoding="utf-8") as fh:
+        shard = json.load(fh)
+    names = shard["ranged"]["wiki_names"]
+    mapping = shard["ranged"]["name_to_type"]
+    unplaced = sorted(t for group in shard["unplaced"].values() for t in group)
+
+    missing = [n for n in names if n not in mapping]
+    if missing:
+        raise PlacementError(
+            f"ranged weapon name(s) with no taxonomy type: {missing}. An "
+            "unmapped name is a weapon the split cannot place, which would "
+            "silently fall into the melee complement")
+    types = sorted(set(mapping.values()))
+    if not types:
+        raise PlacementError("no ranged types — this would put every weapon in melee")
+    overlap = sorted(set(types) & set(unplaced))
+    if overlap:
+        raise PlacementError(
+            f"type(s) both sourced-ranged and unplaced: {overlap}. The two sets "
+            "must be disjoint or a weapon is refused and served at once")
+    return {
+        "ranged_types": types,
+        "unplaced_types": unplaced,
+        "melee_is_complement": True,
+        "wiki_urls": shard["_meta"]["sources"],
+    }
+
 #: Stated by the wiki, real in game, and NOT modelled. Carried so the bench can
 #: disclose them rather than look complete while granting nothing.
 UNMODELLED_AUTOMATIC = (
@@ -322,6 +378,7 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
     return {
         "groups": groups,
         "automatic": build_automatic_bonuses(crafting),
+        "weapon_split": build_weapon_split(),
         "combined": {k: v for k, v in combined.items() if k != "coverage"},
         "slot_groups": {k: list(v) for k, v in SLOT_GROUPS.items()},
         "extra_slot_min_ml": EXTRA_SLOT_MIN_ML,
