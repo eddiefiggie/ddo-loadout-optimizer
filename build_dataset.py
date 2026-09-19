@@ -35,6 +35,7 @@ from src import seal as seal_mod
 from src import legendary_green_steel as lgs_mod
 from src import slavers as slavers_mod
 from src import essence_pool as essence_mod
+from src import essence_placements as essence_placements_mod
 from src import roll_groups as roll_groups_mod
 from src import membership as membership_mod
 from src import augment_sets as augment_sets_mod
@@ -1944,6 +1945,11 @@ def build() -> dict:
             _catalog_units.setdefault(_st, set()).add(_a.get("unit") or "flat")
     essence = essence_mod.build_essence_pool(catalog_stats=_catalog_stats,
                                              catalog_units=_catalog_units)
+    # #795 — the same shard, read for the BUILDER rather than the solver. The two
+    # differ on who supplies the bonus type and the value, so they offer different
+    # amounts of the table on purpose; see `src/essence_placements.py`.
+    essence_placements = essence_placements_mod.build_placement_catalog(
+        catalog_stats=_catalog_stats, catalog_units=_catalog_units)
 
     # Only `verified` hosts keep live menus. `Trinket [Crafted]` declares the same
     # three and is quarantined with a placeholder ML 1 — crafting real numbers onto
@@ -2140,6 +2146,7 @@ def build() -> dict:
             # membership hosts, and the set names its pools name that no def resolves.
             "slavers_coverage": slv["coverage"],
             "essence_crafting_coverage": essence["coverage"],
+            "essence_placement_coverage": essence_placements["coverage"],
             "roll_group_coverage": _rolls["coverage"],
             "membership_coverage": membership_mod.coverage(membership_defs),
             "augment_set_coverage": membership_mod.coverage(augment_set_defs),
@@ -2398,6 +2405,8 @@ def build() -> dict:
         "legendary_green_steel": lgs["records"],
         "slavers": slv["records"],
         "essence_crafting": essence["records"],
+        "essence_placements": {k: v for k, v in essence_placements.items()
+                               if k != "coverage"},
         "membership_set_defs": membership_defs,
         # U2 — the 21 Augment-Set defs (3-piece Set Bonuses), same shape as
         # membership_set_defs. A later solver unit reads these together with each

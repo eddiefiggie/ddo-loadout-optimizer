@@ -44,12 +44,15 @@ const DAGGER = {
   uid: 1, name: "My Cannith dagger", slot: "Weapon", type: "Daggers", ml: 36,
   augments: ["Red"],
   affixes: [
-    // "Assassinate" and "Insightful Assassinate" as the game prints them are one
-    // stat in two buckets here, which is exactly why the report's "just look for
-    // Quality Assassinate" is the right description of what should happen next.
-    { stat: "Assassinate", bonus_type: "Enhancement", value: 8 },
-    { stat: "Assassinate", bonus_type: "Insight", value: 4 },
-    { stat: "Armor-Piercing", bonus_type: "Enhancement", value: 25 },
+    // #795 — built on the bench now. The three effects the reporter described land
+    // in the three menus a Melee weapon actually has, and "Insightful Assassinate"
+    // is the game's OWN name for the Extra one rather than something the player
+    // has to decompose into Assassinate + Insight by hand. Underneath it is still
+    // one stat in two buckets, which is why the report's "just look for Quality
+    // Assassinate" is the right description of what should happen next.
+    { menu: "Prefix", effect: "Armor-Piercing", bonus_type: "Enhancement", value: 25 },
+    { menu: "Suffix", effect: "Assassinate", bonus_type: "Enhancement", value: 8 },
+    { menu: "Extra", effect: "Insightful Assassinate", bonus_type: "Insight", value: 4 },
   ],
 };
 
@@ -68,12 +71,15 @@ function baseState(over) {
 (async () => {
   const Highs = require(path.join(ROOT, "web", "vendor", "highs.js"));
   const highs = await Highs({ locateFile: (f) => path.join(ROOT, "web", "vendor", f) });
-  const dataset = normalizeDataset(JSON.parse(
-    fs.readFileSync(path.join(ROOT, "web/data/items.json"), "utf8")));
+  const rawDataset = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "web/data/items.json"), "utf8"));
+  const dataset = normalizeDataset(rawDataset);
+  // #795 — the placement table travels on ctx, exactly as the browser passes it.
+  const placements = rawDataset.essence_placements;
   const vocab = buildPickerVocabulary(dataset);
   const catalogNames = new Set(dataset.items.map((v) => v.source_item || v.variant_id));
 
-  const minted = C.customPool([DAGGER], { vocab, catalogNames });
+  const minted = C.customPool([DAGGER], { vocab, catalogNames, placements });
   const pool = dataset.items.concat(minted.variants);
 
   async function solve(state, items) {
@@ -203,19 +209,29 @@ function baseState(over) {
   // Utility tier, and does the tier's receipt say whose it is? Both are measured
   // here rather than reasoned about, because both were the open design questions
   // and the answer decided how much code #774 needed (almost none).
-  const FLAG = "Ghost Touch";
+  // #795 — `Ghost Touch` is a WEAPON placement (Melee/Ranged Prefix) and cannot be
+  // crafted onto a ring, so the fixture uses a flag a ring can actually host. The
+  // claim under test is unchanged and the three properties it needs still hold:
+  // `Blindness Immunity` is presence-only, it is on the Utility counting roster,
+  // and the catalog carries it as `Bool` — all asserted below rather than assumed.
+  //
+  // The typed half moves to `Dexterity` because it has to be in a DIFFERENT menu
+  // from the flag, and it is SOURCED: the wiki publishes its bonus type and its
+  // magnitude at ML 30, so the form fills both and the player supplies neither.
+  // That makes this the end-to-end case for the sourced branch as well.
+  const FLAG = "Blindness Immunity";
   const ghostRing = {
     uid: 2, name: "My ghostly ring", slot: "Ring", ml: 30, augments: [],
     affixes: [
-      { stat: "Constitution", bonus_type: "Quality", value: 3 },
-      { stat: FLAG, presence: true },
+      { menu: "Prefix", effect: FLAG },
+      { menu: "Suffix", effect: "Dexterity" },
     ],
   };
-  const flagMinted = C.customPool([ghostRing], { vocab, catalogNames });
+  const flagMinted = C.customPool([ghostRing], { vocab, catalogNames, placements });
   const flagPool = dataset.items.concat(flagMinted.variants);
 
   const withFlag = await solve(baseState({
-    ml: 30, priorities: ["Constitution", "Utility effects"],
+    ml: 30, priorities: ["Dexterity", "Utility effects"],
     style: "one-hand", weaponTypes: [], offHandWeapons: [], twoWeaponFighting: false,
     slotConstraints: { Ring: { type: "pin", variant_id: "My ghostly ring (yours)" } },
   }), flagPool);

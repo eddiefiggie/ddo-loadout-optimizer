@@ -1561,7 +1561,8 @@ function nextCustomUid(list) {
 function customVariantsFor(list, vocab, catalogNames) {
   const M = _customItemsModule();
   if (!M) return { variants: [], rejected: [] };
-  return M.customPool(list, { vocab, catalogNames, canDeclare: canDeclareCredit, isPresenceOnly });
+  return M.customPool(list, { vocab, catalogNames, canDeclare: canDeclareCredit, isPresenceOnly,
+    placements: (typeof dataset !== "undefined" && dataset) ? dataset.essence_placements : null });
 }
 
 /** True for a variant this player typed in rather than the catalog supplying. */
@@ -2496,29 +2497,15 @@ function datalistStats(vocab) {
   return out;
 }
 
-/** #773/#774 — the stat options a custom item's effect row may offer.
+/** #795 — `customStatOptions` lived here and is GONE, with the free-text effect
+ *  field it fed. The bench's pickers are built from the placement table, so the
+ *  rule it enforced — never offer a name the form will then refuse — is now
+ *  structural rather than a filter someone has to remember to apply:
+ *  `CustomItems.effectsFor` returns only rankable placements that can carry a
+ *  typed magnitude or an on/off flag, and a <select> cannot offer anything else.
  *
- *  A SEPARATE list from `datalistStats`, and narrower on purpose. Two kinds of
- *  name must not appear here:
- *
- *   - the Utility sentinel, which is a container rather than an affix and cannot
- *     be engraved on an item at all;
- *   - an untyped-only stat, which `validateEntry` refuses: it carries a real
- *     magnitude but no bonus type anywhere, so there is no bucket for a value on
- *     it to join and no flag to set instead.
- *
- *  Offering a name the form then rejects is the worst version of a picker: the
- *  player follows the autocomplete and is told no. Filtering here makes the
- *  refusal a backstop for a typed name rather than the first thing they hit.
- *
- *  #774 WIDENED this to presence-only effects (`Ghost Touch`, `True Seeing`),
- *  which are now expressible as on/off rows. They were excluded while the form
- *  could only ask for a bonus type and a number. Pure. */
-function customStatOptions(vocab) {
-  const out = (vocab && Array.isArray(vocab.suggestions)) ? vocab.suggestions.slice() : [];
-  return out.filter((s) => s !== _utilitySentinel
-    && (canDeclareCredit(s, vocab) || isPresenceOnly(s, vocab)));
-}
+ *  Recorded rather than deleted silently, because the function was the subject of
+ *  two tests that now assert the same property over `effectsFor`. */
 
 /** U11 (R15) — decide what adding `name` to `priorities` should produce. Pure: the
  *  caller owns the DOM and the rest of `state`, so this half is unit-testable while
@@ -3092,7 +3079,7 @@ function yieldToPaint() {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor, groupsOf, spanOf, movePriorityGroup, snapDropToGroup, dropIndexForRun, linksAfterDelete, linksAfterBundle, pruneLinks, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, AUGMENT_PIN_NOTE, augmentPinnable, addAugmentPin, removeAugmentPin, augmentPinStale, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
-    restoreCustomItems, nextCustomUid, customVariantsFor, isPlayerAuthored, customStatOptions,
+    restoreCustomItems, nextCustomUid, customVariantsFor, isPlayerAuthored,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
     UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint };
@@ -4115,8 +4102,11 @@ ${(() => {
     let customDraft = null;
 
     function blankDraft() {
+      // #795 — no seed row. The bench is rendered from the item's menus, which do
+      // not exist until a slot is chosen, so a blank affix would be a row belonging
+      // to no menu.
       return { uid: null, name: "", slot: "", type: "", ml: "", augments: [],
-        affixes: [{ stat: "", bonus_type: "", value: "", presence: false }], errors: [] };
+        affixes: [], errors: [] };
     }
 
     function renderCustomList() {
@@ -4171,16 +4161,33 @@ ${(() => {
         const uid = Number(b.dataset.customEdit);
         const e = (state.customItems || []).find((x) => x.uid === uid);
         if (!e) return;
+        // #795 — an item saved before the refactor is free-form: its effects carry
+        // no menu and were never checked against what this item type can host.
+        // Migrate on open and SAY what changed, because two of the three outcomes
+        // alter a build the player already saved.
+        const M2 = _customItemsModule();
+        const mig = M2 ? M2.migrateLegacyEntry(e, { vocab, isPresenceOnly,
+          placements: (typeof dataset !== "undefined" && dataset) ? dataset.essence_placements : null,
+        }) : { entry: e };
+        const src = mig.entry || e;
         customDraft = {
           uid: e.uid, name: e.name, slot: e.slot, type: e.type,
           ml: e.ml == null ? "" : String(e.ml),
           augments: (e.augments || []).slice(),
-          affixes: (e.affixes || []).map((a) => ({
-            stat: a.stat, bonus_type: a.bonus_type,
-            value: a.value == null ? "" : String(a.value), presence: !!a.presence })),
+          affixes: (src.affixes || []).map((a) => ({
+            menu: a.menu, effect: a.effect, stat: a.stat, bonus_type: a.bonus_type,
+            value: a.value == null ? "" : String(a.value),
+            presence: !!a.presence, sourced: !!a.sourced })),
           errors: [],
         };
-        if (!customDraft.affixes.length) customDraft.affixes.push({ stat: "", bonus_type: "", value: "", presence: false });
+        const notes = [];
+        (mig.revalued || []).forEach((r) => notes.push(
+          "“" + r.stat + "” now uses the crafting table\u2019s own value at this level ("
+          + r.from + " \u2192 " + r.to + "), because the wiki publishes it."));
+        (mig.dropped || []).forEach((st) => notes.push(
+          "“" + st + "” was removed: it cannot be Essence Crafted onto this item."));
+        if (mig.refused) notes.push(mig.refused);
+        customDraft.errors = notes;
         renderCustomForm();
       });
       box.querySelectorAll("[data-custom-rm]").forEach((b) => b.onclick = () => {
@@ -4224,40 +4231,63 @@ ${(() => {
       // have given the player an input with no suggestions at all while the help
       // text told them to "pick the effect name from the list". Same reason
       // `wz-stats2` exists rather than being shared.
-      const statOpts = customStatOptions(vocab);
-      // #774 — the row's SHAPE follows the effect. A presence-only stat is a
-      // flag: it has no bonus type and no magnitude, so asking for either would
-      // be asking a question with no right answer. The row collapses to the name
-      // plus a note saying what it is.
-      //
-      // The kind is decided by the same predicate `validateEntry` uses, so the
-      // form can never offer a control the validator will then refuse. It is
-      // re-read on `change` (blur or Enter) rather than on every keystroke: a
-      // re-render per character would move the caret out of the field being typed
-      // into, which is worse than a row that settles a moment late.
-      const _statKind = (rawStat) => {
-        const t = String(rawStat || "").trim();
-        if (!t) return "";
-        const cn = (vocab && typeof vocab.canonical === "function") ? vocab.canonical(t) : t;
-        return isPresenceOnly(cn, vocab) ? "flag" : "typed";
-      };
-      const affixRows = d.affixes.map((a, ix) => {
-        const isFlag = _statKind(a.stat) === "flag";
-        const tail = isFlag
-          ? `<span class="wz-custom-flag">on/off \u2014 no bonus type or value</span>`
-          : `<select data-custom-bt="${ix}"><option value="">Bonus type\u2026</option>`
-            + `${btypes.map((t) => opt(t, a.bonus_type)).join("")}</select>`
-            + `<input type="number" min="1" step="1" data-nodirty data-custom-val="${ix}"`
-            + ` value="${wzEsc(a.value)}" placeholder="Value">`;
-        return `<div class="wz-custom-affix${isFlag ? " wz-custom-affix-flag" : ""}">`
-          + `<input type="text" list="wz-custom-stats" data-nodirty data-custom-stat="${ix}"`
-          + ` value="${wzEsc(a.stat)}" placeholder="Effect, e.g. Assassinate" autocomplete="off">`
-          + tail
-          + `<button type="button" class="wz-pin-x" data-custom-affix-rm="${ix}"`
-          + ` aria-label="Remove this effect">\u00d7</button></div>`;
+      // #795 — the form IS the crafting bench. The item's slot and type decide
+      // which placement group it is, the group and its ML decide which menus it
+      // has, and each menu offers exactly the enchantments the wiki says can go
+      // in it. Nothing here re-derives that: `essence_placements` is published by
+      // the build and `custom-items.js` owns the join.
+      const ctx = { vocab, isPresenceOnly,
+        placements: (typeof dataset !== "undefined" && dataset) ? dataset.essence_placements : null };
+      const groupInfo = M.essenceGroupFor(d.slot, d.type, ctx);
+      const group = groupInfo.group || null;
+      const availMenus = group ? M.menusFor(group, d.ml, ctx) : [];
+      const extraMin = 10;
+
+      // One row per MENU the item actually has, not a grow-your-own list. An
+      // Essence Crafted item carries one enchantment per menu, so a list with an
+      // "+ Another effect" button would be offering a shape the game does not
+      // have — and would let a player build two Prefixes and be refused on save.
+      const affixFor = (menu) => (d.affixes || []).find((a) => a && a.menu === menu) || null;
+      const menuRows = availMenus.map((menu) => {
+        const chosen = affixFor(menu);
+        const rows = M.effectsFor(group, menu, d.ml, ctx);
+        const sel = chosen ? chosen.effect : "";
+        const row = sel ? M.placementFor(group, menu, sel, ctx) : null;
+        let tail = "";
+        if (row && row.sourced) {
+          // Sourced: the wiki states the bonus type AND the magnitude at this ML,
+          // so both are filled and LOCKED, and the value is not a player claim.
+          const v = M.sourcedValueAt(row, d.ml);
+          tail = `<span class="wz-custom-sourced">${wzEsc(row.bonus_type)}`
+            + ` +${wzEsc(v == null ? "?" : v)}`
+            + ` <span class="wz-help">from the crafting table at ML ${wzEsc(d.ml || "?")}</span></span>`;
+        } else if (row && isPresenceOnly(vocab.canonical ? vocab.canonical(row.stat) : row.stat, vocab)) {
+          tail = `<span class="wz-custom-flag">on/off — no bonus type or value</span>`;
+        } else if (row) {
+          tail = `<select data-custom-bt="${wzEsc(menu)}"><option value="">Bonus type…</option>`
+            + `${btypes.map((t) => opt(t, chosen && chosen.bonus_type)).join("")}</select>`
+            + `<input type="number" min="1" step="1" data-nodirty data-custom-val="${wzEsc(menu)}"`
+            + ` value="${wzEsc((chosen && chosen.value) || "")}" placeholder="Value">`;
+        }
+        return `<div class="wz-custom-affix">`
+          + `<span class="wz-label wz-custom-menu">${wzEsc(menu)}</span>`
+          + `<select data-custom-effect="${wzEsc(menu)}">`
+          + `<option value="">— none —</option>`
+          + rows.map((r) => `<option value="${wzEsc(r.effect)}"${r.effect === sel ? " selected" : ""}>`
+              + `${wzEsc(r.effect)}${r.sourced ? " ✓" : ""}</option>`).join("")
+          + `</select>${tail}</div>`;
       }).join("");
+
+      // The three reasons an item has no bench at all, each said plainly. A blank
+      // panel would read as the tool being broken rather than as the game not
+      // allowing it.
+      const noBench = group
+        ? (availMenus.length ? "" : `<p class="wz-help">This item has no enchantment menus yet.</p>`)
+        : `<p class="wz-help">${wzEsc(groupInfo.refused || "Choose a slot first.")}</p>`;
+      const extraNote = (group && d.ml && Number(d.ml) < extraMin
+        && availMenus.indexOf("Extra") < 0)
+        ? `<p class="wz-help">The Extra menu unlocks at minimum level ${extraMin}.</p>` : "";
       box.innerHTML = `<div class="wz-custom-form">
-        <datalist id="wz-custom-stats">${statOpts.map((x) => `<option value="${wzEsc(x)}">`).join("")}</datalist>
         <div class="wz-custom-grid">
           <label class="wz-field"><span class="wz-label">Name</span>
             <input type="text" data-nodirty id="wz-custom-name" value="${wzEsc(d.name)}"
@@ -4274,12 +4304,12 @@ ${(() => {
         <div class="wz-seg wz-custom-colors">${colors.map((c) =>
           `<label class="wz-check wz-check-inline"><input type="checkbox" data-custom-color="${wzEsc(c)}"${d.augments.indexOf(c) >= 0 ? " checked" : ""}>
             <span class="wz-check-body"><span class="wz-label">${wzEsc(c)}</span></span></label>`).join("")}</div>
-        <p class="wz-label">What it grants</p>
-        <p class="wz-help">Pick the effect name from the list and say which bonus type it is — that is what
-          decides whether it stacks with your other gear or is overwritten by it. An in-game
-          “Insightful Assassinate” is <em>Assassinate</em> with the <em>Insight</em> bonus type.</p>
-        ${affixRows}
-        <div class="wz-addrow"><button type="button" class="btn ghost sm" data-custom-affix-add>+ Another effect</button></div>
+        <p class="wz-label">Essence Crafting${group ? ` \u2014 ${wzEsc(group)}` : ""}</p>
+        <p class="wz-help">One enchantment per menu, and each menu offers only what the crafting table
+          says can go in it for this kind of item. A \u2713 means the wiki publishes that
+          enchantment\u2019s bonus type and magnitude, so they are filled in for you; anything else
+          asks you for them and is marked as your own.</p>
+        ${noBench}${menuRows}${extraNote}
         ${d.errors.length ? `<ul class="wz-custom-errors" role="alert">${d.errors.map((e) => `<li>${wzEsc(e)}</li>`).join("")}</ul>` : ""}
         <div class="wz-addrow">
           <button type="button" class="btn primary sm" data-custom-save>${d.uid == null ? "Add this item" : "Save changes"}</button>
@@ -4297,10 +4327,25 @@ ${(() => {
       const nm = document.getElementById("wz-custom-name");
       if (nm) nm.oninput = (e) => { customDraft.name = e.target.value; };
       const ml = document.getElementById("wz-custom-ml");
-      if (ml) ml.oninput = (e) => { customDraft.ml = e.target.value; };
+      // #795 — ML is no longer cosmetic here: it gates the Extra menu and every
+      // Insight enchantment, and it is the row the sourced magnitudes are read
+      // from. `onchange` re-renders so the bench matches the level; `oninput`
+      // keeps the draft current without moving the caret mid-number.
+      if (ml) {
+        ml.oninput = (e) => { customDraft.ml = e.target.value; };
+        // Writes the value AGAIN before re-rendering, rather than trusting
+        // `oninput` to have run. A `change` can arrive without a preceding
+        // `input` — a number spinner, an autofill, a programmatic set — and the
+        // re-render would then rebuild the bench from the PREVIOUS level: the
+        // Extra menu stays on an item just dropped below ML 10, and the sourced
+        // magnitudes stay on the old curve row. Caught by driving the real form
+        // in a browser, where dropping 20 -> 9 left Extra on screen.
+        ml.onchange = (e) => { customDraft.ml = e.target.value; renderCustomForm(); };
+      }
       const slot = document.getElementById("wz-custom-slot");
       if (slot) slot.onchange = (e) => {
         customDraft.slot = e.target.value;
+        customDraft.affixes = [];   // #795 — a new slot is a new placement group
         // A type belonging to the previous slot is cleared rather than carried:
         // "Daggers" on a Ring would fail validation with a message about a field
         // the player cannot see.
@@ -4308,49 +4353,41 @@ ${(() => {
         renderCustomForm();
       };
       const ty = document.getElementById("wz-custom-type");
-      if (ty) ty.onchange = (e) => { customDraft.type = e.target.value; };
+      // The type decides Melee vs Ranged and Shield vs Orb vs Rune Arm, so it
+      // changes the whole menu. Effects chosen under the previous type are
+      // dropped rather than carried into a group that may not host them.
+      if (ty) ty.onchange = (e) => {
+        customDraft.type = e.target.value;
+        customDraft.affixes = [];
+        renderCustomForm();
+      };
       box.querySelectorAll("[data-custom-color]").forEach((cb) => cb.onchange = (e) => {
         const c = e.target.getAttribute("data-custom-color");
         customDraft.augments = e.target.checked
           ? customDraft.augments.concat([c]).filter((x, i, a) => a.indexOf(x) === i)
           : customDraft.augments.filter((x) => x !== c);
       });
-      box.querySelectorAll("[data-custom-stat]").forEach((el) => {
-        // `oninput` keeps the draft current per keystroke; `onchange` (blur or
-        // Enter) is what re-renders, so a row that turns out to name an on/off
-        // effect drops its bonus-type and value controls without the caret
-        // jumping out of the field mid-word.
-        el.oninput = (e) => {
-          customDraft.affixes[Number(e.target.dataset.customStat)].stat = e.target.value;
-        };
-        el.onchange = (e) => {
-          const ix = Number(e.target.dataset.customStat);
-          const stat = String(e.target.value || "").trim();
-          customDraft.affixes[ix].stat = stat;
-          // The marker the validator reads. Set here rather than inferred at save
-          // time so the stored entry says which kind it is, and a later
-          // vocabulary change cannot silently reinterpret it.
-          customDraft.affixes[ix].presence = !!(stat
-            && isPresenceOnly(vocab.canonical ? vocab.canonical(stat) : stat, vocab));
-          renderCustomForm();
-        };
+      // #795 — one handler per MENU. Choosing an effect re-renders, because the
+      // row's shape follows the placement: a sourced one shows a locked value, an
+      // on/off one shows neither control, and a typed one asks for both.
+      box.querySelectorAll("[data-custom-effect]").forEach((el) => el.onchange = (e) => {
+        const menu = e.target.getAttribute("data-custom-effect");
+        const effect = String(e.target.value || "").trim();
+        const rest = (customDraft.affixes || []).filter((a) => a && a.menu !== menu);
+        customDraft.affixes = effect
+          ? rest.concat([{ menu: menu, effect: effect, bonus_type: "", value: "" }])
+          : rest;
+        renderCustomForm();
       });
       box.querySelectorAll("[data-custom-bt]").forEach((el) => el.onchange = (e) => {
-        customDraft.affixes[Number(e.target.dataset.customBt)].bonus_type = e.target.value;
+        const menu = e.target.getAttribute("data-custom-bt");
+        const a = (customDraft.affixes || []).find((x) => x && x.menu === menu);
+        if (a) a.bonus_type = e.target.value;
       });
       box.querySelectorAll("[data-custom-val]").forEach((el) => el.oninput = (e) => {
-        customDraft.affixes[Number(e.target.dataset.customVal)].value = e.target.value;
-      });
-      box.querySelectorAll("[data-custom-affix-rm]").forEach((b) => b.onclick = () => {
-        const ix = Number(b.dataset.customAffixRm);
-        customDraft.affixes = customDraft.affixes.filter((_, i) => i !== ix);
-        if (!customDraft.affixes.length) customDraft.affixes.push({ stat: "", bonus_type: "", value: "" });
-        renderCustomForm();
-      });
-      box.querySelectorAll("[data-custom-affix-add]").forEach((b) => b.onclick = () => {
-        if (customDraft.affixes.length >= _customItemsModule().AFFIX_MAX) return;
-        customDraft.affixes.push({ stat: "", bonus_type: "", value: "", presence: false });
-        renderCustomForm();
+        const menu = e.target.getAttribute("data-custom-val");
+        const a = (customDraft.affixes || []).find((x) => x && x.menu === menu);
+        if (a) a.value = e.target.value;
       });
       box.querySelectorAll("[data-custom-cancel]").forEach((b) => b.onclick = () => {
         customDraft = null; renderCustomForm();
@@ -4373,7 +4410,8 @@ ${(() => {
           .filter((x) => x.uid !== d.uid).map((x) => x.name));
         const v = M.validateEntry(candidate, {
           vocab, catalogNames: catalogNameSet(), otherNames,
-          canDeclare: canDeclareCredit, isPresenceOnly });
+          canDeclare: canDeclareCredit, isPresenceOnly,
+          placements: (typeof dataset !== "undefined" && dataset) ? dataset.essence_placements : null });
         if (!v.ok) { d.errors = v.errors; renderCustomForm(); return; }
         if (d.uid == null) {
           if ((state.customItems || []).length >= M.CUSTOM_LIMIT) {
