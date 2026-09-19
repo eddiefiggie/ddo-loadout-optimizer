@@ -500,8 +500,64 @@ Result: **27 melee, 7 ranged, 6 refused, 40 total** — byte-identical to what #
 produced. No behaviour changed; what changed is that two thirds of it is now read
 rather than guessed.
 
-### What this read did NOT settle
+### The SLOT_GROUPS join — checked, not sourced (#806)
 
-The 16 placement groups themselves are named by `table 1b` and mapped onto the
-app's slot vocabulary by `SLOT_GROUPS`, which remains a written-out join (guarded
-in both directions, but not sourced — the wiki never states it either).
+`SLOT_GROUPS` maps the app's 14 slot names onto `table 1b`'s 16 groups. **This one
+cannot be sourced, and chasing a source would be the wrong goal.** Unlike
+melee-vs-ranged, which is a claim about the game, this relates *the app's*
+vocabulary to *the wiki's* — and the wiki does not know gear-planner's slot names.
+
+So it is checked instead, from two directions the wiki cannot reach.
+
+**Side one — a third, anatomical vocabulary.** Every one-to-one worn slot holds
+exactly ONE gear-planner type, and the type names the body part:
+
+| app slot | catalog type | wiki group |
+|---|---|---|
+| Helmet | `Head items` | Headgear |
+| Goggles | `Eye items` | Goggles |
+| Necklace | `Neck items` | Necklaces |
+| Cloak | `Back items` | Cloaks |
+| Belt | `Waist items` | Belts |
+| Ring | `Finger items` | Rings |
+| Gloves | `Hand items` | Gloves |
+| Boots | `Feet items` | Boots |
+| Bracers | `Wrist items` | Bracers |
+| Trinket | `Trinket items` | Trinkets |
+| Quiver | `Quiver items` | *(none — see below)* |
+
+`Helmet` holding only `Head items` is what licenses reading it as `Headgear`. A
+slot that ever held two kinds would have stopped being one group, so the guard
+breaks loudly instead of widening quietly. `Off Hand` holds exactly
+`Bucklers, Small/Large/Tower shields, Orbs, Rune Arms` — the three groups it
+claims, nothing left over. `Weapon` is #804's.
+
+**Side two — the wiki names 11 of the 16 verbatim.** The `Items` navbox groups
+them as `Helms · Gloves · Cloaks · Belts · Boots` (CLOTHING) and
+`Bracers · Goggles · Necklaces · Rings · Trinkets` (JEWELRY), plus `Orbs` and
+`Rune Arms`. The remaining five are naming correspondences, recorded as such:
+
+| `table 1b` | the wiki elsewhere |
+|---|---|
+| `Headgear` | the navbox's **HEAD SLOT**, whose contents are `Helms` |
+| `Armors` | the **ARMOR** category |
+| `Shields` | Bucklers / Small / Large / Tower |
+| `Melee weapons`, `Ranged weapons` | settled by #804 |
+
+**Side three — a second join, written independently.**
+`essence_combined.GROUP_OF_SLOT` maps a DIFFERENT wiki table's singular slot names
+onto the same groups. The two reach 15 and 16 respectively, and the single
+difference is **`Rune Arms`**: no combined-prefix recipe lists a rune arm slot.
+That asymmetry is now asserted WITH its reason, so it reads as a fact about the
+recipe table rather than a hole.
+
+**`Quiver` maps to nothing**, because `table 1b` has no quiver group. A test
+asserts quivers exist in the catalog, or the empty mapping would be
+indistinguishable from a slot nobody has gear for.
+
+### Two catalog slots that are not equipment slots
+
+`Rune Arm` and `Main Hand` each hold exactly one item — both `Dinosaur Bone`
+crafting blanks with zero affixes. They are Dino-crafting bases, which is why the
+custom-item slot list correctly has neither, and why `Rune Arms` is reached
+through `Off Hand`.

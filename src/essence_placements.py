@@ -53,6 +53,35 @@ MENUS = essence_pool.MENUS
 #: `Quiver` maps to NOTHING. It is not essence-craftable, and the empty list is the
 #: sourced statement of that rather than an omission; `assert_slot_map_covers_the_table`
 #: fails if a group is invented for it.
+#: The gear-planner type each one-to-one worn slot holds. A THIRD vocabulary,
+#: anatomical, and the reason `SLOT_GROUPS` can be checked at all: the wiki does
+#: not know these names, so their agreement with the group names is independent
+#: rather than circular.
+#:
+#: Asserted by `assert_slot_groups_match_the_catalog`, which is what makes the
+#: 1:1 half of the join a verified claim instead of a written one.
+ONE_TO_ONE_CATALOG_TYPE = {
+    "Helmet": "Head items",
+    "Goggles": "Eye items",
+    "Necklace": "Neck items",
+    "Cloak": "Back items",
+    "Belt": "Waist items",
+    "Ring": "Finger items",
+    "Gloves": "Hand items",
+    "Boots": "Feet items",
+    "Bracers": "Wrist items",
+    "Trinket": "Trinket items",
+    "Quiver": "Quiver items",
+}
+
+#: The catalog types `Off Hand` holds, which must be exactly the union of the
+#: three groups that slot claims. Written out so a new off-hand kind breaks the
+#: guard rather than silently joining `Shields`.
+OFF_HAND_CATALOG_TYPES = {
+    "Bucklers", "Small shields", "Large shields", "Tower shields",
+    "Orbs", "Rune Arms",
+}
+
 SLOT_GROUPS = {
     "Armor": ["Armors"],
     "Helmet": ["Headgear"],
@@ -232,6 +261,86 @@ def build_automatic_bonuses(crafting) -> dict:
 
 class PlacementError(RuntimeError):
     pass
+
+
+def assert_slot_groups_match_the_catalog(records) -> int:
+    """#806 — the join, checked from the side the wiki cannot reach.
+
+    `SLOT_GROUPS` relates the APP's slot vocabulary to the WIKI's group names.
+    The wiki cannot state that correspondence, because it does not know
+    gear-planner's names — so this is not sourceable, and pretending otherwise
+    would be worse than leaving it written out. What it IS is checkable, from a
+    third vocabulary the wiki also does not know: the anatomical gear-planner
+    type each slot holds.
+
+    Two shapes are asserted, and each is what makes its half of the join legible:
+
+    - **One type per one-to-one slot.** `Helmet` holding only `Head items` is
+      what licenses reading it as the wiki's `Headgear`. A slot that ever holds
+      two kinds has stopped being one group, and the 1:1 claim should break
+      loudly rather than widen quietly.
+    - **`Off Hand` holds exactly the union of its three groups.** Shields, Orbs
+      and Rune Arms, nothing else. A new off-hand kind would otherwise be swept
+      into whichever group the reader assumed.
+
+    `Weapon` is deliberately not checked here: #804 owns that split and asserts
+    it over the taxonomy.
+
+    Refuses to pass over an empty catalog.
+    """
+    if not records:
+        raise PlacementError("no records — this guard would pass vacuously")
+    seen = {}
+    for rec in records:
+        slot = rec.get("slot")
+        if slot not in SLOT_GROUPS:
+            continue
+        t = rec.get("type")
+        if t:
+            seen.setdefault(slot, set()).add(t)
+
+    problems = []
+    for slot, expected in ONE_TO_ONE_CATALOG_TYPE.items():
+        got = seen.get(slot) or set()
+        if got != {expected}:
+            problems.append(
+                f"{slot}: expected exactly {{{expected!r}}}, catalog holds {sorted(got)}")
+    off = seen.get("Off Hand") or set()
+    if off != OFF_HAND_CATALOG_TYPES:
+        problems.append(
+            f"Off Hand: expected {sorted(OFF_HAND_CATALOG_TYPES)}, catalog holds {sorted(off)}")
+    if problems:
+        raise PlacementError(
+            "SLOT_GROUPS no longer matches the catalog it claims to describe: "
+            + "; ".join(problems))
+    return len(ONE_TO_ONE_CATALOG_TYPE) + 1
+
+
+def assert_the_two_slot_joins_agree(combined_groups) -> int:
+    """#806 — `essence_combined.GROUP_OF_SLOT` maps a DIFFERENT wiki table's
+    singular slot names onto the same 16 groups. Agreement between two
+    independently-written joins is corroboration; disagreement is a bug in one of
+    them, and until now the difference was silent.
+
+    There is exactly one, and it is real rather than an error: **no combined
+    prefix recipe lists a rune arm slot**, so `Rune Arms` is reached by
+    `SLOT_GROUPS` and not by `GROUP_OF_SLOT`. Named here so the asymmetry reads
+    as a fact about the recipe table instead of a hole in the join.
+    """
+    ours = {g for gs in SLOT_GROUPS.values() for g in gs}
+    theirs = set(combined_groups)
+    extra = sorted(theirs - ours)
+    if extra:
+        raise PlacementError(
+            f"the combined-prefix join reaches group(s) the slot join does not: "
+            f"{extra}. One of the two is wrong.")
+    missing = sorted(ours - theirs)
+    if missing != ["Rune Arms"]:
+        raise PlacementError(
+            f"expected `Rune Arms` to be the ONLY group no combined recipe "
+            f"reaches; got {missing}. Either a recipe now covers rune arms, or "
+            "another group has quietly lost its recipes.")
+    return len(ours)
 
 
 def assert_slot_map_covers_the_table(placements) -> int:

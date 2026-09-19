@@ -35,6 +35,7 @@ from src import seal as seal_mod
 from src import legendary_green_steel as lgs_mod
 from src import slavers as slavers_mod
 from src import essence_pool as essence_mod
+from src import essence_combined as essence_combined_mod
 from src import essence_placements as essence_placements_mod
 from src import roll_groups as roll_groups_mod
 from src import membership as membership_mod
@@ -1950,6 +1951,13 @@ def build() -> dict:
     # amounts of the table on purpose; see `src/essence_placements.py`.
     essence_placements = essence_placements_mod.build_placement_catalog(
         catalog_stats=_catalog_stats, catalog_units=_catalog_units)
+    # #806 — the slot join, checked from the two sides the wiki cannot reach: the
+    # anatomical gear-planner type each slot holds, and a second join written
+    # independently against a different wiki table. Run here rather than inside
+    # the builder because both need the finished variant list.
+    essence_placements_mod.assert_slot_groups_match_the_catalog(variants)
+    essence_placements_mod.assert_the_two_slot_joins_agree(
+        {g for gs in essence_combined_mod.GROUP_OF_SLOT.values() for g in gs})
 
     # Only `verified` hosts keep live menus. `Trinket [Crafted]` declares the same
     # three and is quarantined with a placeholder ML 1 — crafting real numbers onto
