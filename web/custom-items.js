@@ -874,7 +874,7 @@
           }
           var pbt = String(supplied.bonus_type == null ? "" : supplied.bonus_type).trim();
           if (types.length && types.indexOf(pbt) < 0) {
-            errors.push("“" + pe.effect + "” needs a bonus type from the list.");
+            errors.push("“" + pe.effect + "” needs the bonus type your item shows \u2014 the crafting table does not publish this one.");
             bad = true; break;
           }
           parts.push({ effect: pe.effect, stat: pstat, bonus_type: pbt, value: pval,
@@ -945,8 +945,9 @@
       } else {
         bt = String(a.bonus_type == null ? "" : a.bonus_type).trim();
         if (types.length && types.indexOf(bt) < 0) {
-          errors.push("“" + effect + "” needs a bonus type from the list — that is what decides whether "
-            + "it stacks with your other gear or is overwritten by it.");
+          errors.push("“" + effect + "” needs the bonus type your item shows. The crafting "
+            + "table does not publish it for this enchantment, and it is what decides whether the "
+            + "effect stacks with your other gear or is overwritten by it.");
           continue;
         }
       }

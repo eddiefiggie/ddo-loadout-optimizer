@@ -6257,6 +6257,24 @@ test("#773/#774/#795: the effect picker offers only names the form will accept",
   }
 });
 
+test("#817: the bonus-type control reads as reporting, not choosing", () => {
+  // The mechanic FIXES an enchantment's bonus type; the tool asks only because
+  // the wiki publishes it for 22 of 157 effects. Presented as a bare "Bonus
+  // type…" dropdown over ~25 options, a data gap read as a design choice — and
+  // the asymmetry made it worse: the Mark of House Cannith menu is 95% filled in
+  // (it holds the Insightful effects #815 typed) while Prefix and Suffix are 24%
+  // and 17%, so the other two looked broken rather than unsourced.
+  const form = fnBody(WIZARD_SRC, "function renderCustomForm(", 4);
+  assert.ok(!/">Bonus type/.test(form),
+    "the placeholder must not present a data gap as a free choice");
+  assert.ok(/Type on your item/.test(form), "…it asks what the item shows");
+  // And the help must say WHY, or the control is just differently worded.
+  assert.ok(/read it off your item/i.test(form), "the help tells the player where to look");
+  assert.ok(/not yours to choose/i.test(form), "…and that the mechanic fixes it");
+  // Still discloses that a supplied value is theirs — #808's obligation survives.
+  assert.ok(/marked as your own/i.test(form), "a supplied type is still disclosed as theirs");
+});
+
 test("#808: the panel names the mechanic, and its disclosure covers both halves", () => {
   // The fold was titled "Items you own that this tool does not" until #808 - a
   // description of the MOTIVATION, from #773, when the form took free-form
