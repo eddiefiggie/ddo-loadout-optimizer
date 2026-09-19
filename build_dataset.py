@@ -35,6 +35,7 @@ from src import seal as seal_mod
 from src import legendary_green_steel as lgs_mod
 from src import slavers as slavers_mod
 from src import essence_pool as essence_mod
+from src import roll_groups as roll_groups_mod
 from src import membership as membership_mod
 from src import augment_sets as augment_sets_mod
 from src import compendium as compendium_mod
@@ -1880,6 +1881,36 @@ def build() -> dict:
         else:
             _slv_pending[v["source_item"]] = len(v["slavers_slots"])
             v["slavers_slots"] = None
+    # #765 — randomly-rolled effect groups, attached from the catalog's PER-ITEM
+    # pools. The solver has modelled roll groups from the start and every consumer
+    # reads them; nothing fed the field, because its old source was the free-text
+    # parser the gear-planner overhaul retired. Sourced structurally here instead,
+    # which is also what AGENTS.md requires — gear-planner is read structurally and
+    # its free text is never re-parsed.
+    _rolls = roll_groups_mod.build()
+    _roll_by_host = _rolls["by_host"]
+    _roll_hosts_live = 0
+    _roll_groups_live = 0
+    for v in variants:
+        groups = _roll_by_host.get(v.get("source_item"))
+        if not groups:
+            continue
+        # Never clobber a group the variant already carries: the legacy parser path
+        # still exists for any record that reaches it, and two sources writing the
+        # same field is how one silently wins.
+        if v.get("roll_groups"):
+            continue
+        v["roll_groups"] = [dict(g) for g in groups]
+        _roll_hosts_live += 1
+        _roll_groups_live += len(groups)
+    _rolls["coverage"]["hosts_live"] = _roll_hosts_live
+    _rolls["coverage"]["groups_live"] = _roll_groups_live
+    if not _roll_hosts_live:
+        raise SystemExit(
+            "roll groups: the catalog produced groups but NO variant took one. The "
+            "host join is by `source_item`; a rename upstream would look exactly "
+            "like this, and the pool would be silently inert.")
+
     slv["coverage"]["hosts_active"] = len(_slv_active)
     slv["coverage"]["slots_active"] = sum(_slv_active.values())
     slv["coverage"]["hosts_pending"] = sorted(_slv_pending)
@@ -1985,6 +2016,7 @@ def build() -> dict:
         "dino_inserts": dino_cov["insert_source_options"],
         "nearly_complete": nc["source_options"],
         "nearly_complete_per_item": nc["per_item_source_options"],
+        "roll_groups_per_item": _rolls["source_options"],
         "seal": sl["source_options"],
         "legendary_green_steel": lgs["source_options"],
         "slavers": slv["source_options"],
@@ -2108,6 +2140,7 @@ def build() -> dict:
             # membership hosts, and the set names its pools name that no def resolves.
             "slavers_coverage": slv["coverage"],
             "essence_crafting_coverage": essence["coverage"],
+            "roll_group_coverage": _rolls["coverage"],
             "membership_coverage": membership_mod.coverage(membership_defs),
             "augment_set_coverage": membership_mod.coverage(augment_set_defs),
             "augment_coverage": augment_coverage,
@@ -2355,6 +2388,11 @@ def build() -> dict:
         # conflated). SOLVER-WIRED since #371: a host carrying `nc_per_item_slots`
         # crafts one option from ITS OWN entry here, per declared pool.
         "nearly_complete_per_item": nc.get("per_item", {}),
+        # #765 — the flat per-host option census. The grouped form lives on each
+        # variant as `roll_groups` (the solver needs the group boundary); this is
+        # what the coverage and container gates read, and it lets the roll pool be
+        # emptied independently of `items` the way every other pool can be.
+        "roll_groups_per_item": _rolls["per_item"],
         "viktranium": vik["records"],
         "seal": sl["records"],
         "legendary_green_steel": lgs["records"],

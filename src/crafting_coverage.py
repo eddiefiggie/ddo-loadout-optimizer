@@ -132,17 +132,33 @@ UNSERVED_ALLOWLIST = frozenset({
     # declarers upstream's pool does not cover are disclosed BY NAME in
     # `PER_ITEM_UNCOVERED_HOSTS` instead — a slot-level allowlist cannot tell a
     # covered host from an uncovered one, which is the whole lesson of #195.
-    # Random / "one of the following" wordings: the item rolls one effect from a
-    # list the catalog states as prose. Not a craftable choice slot.
-    "One of the following",
-    "One of the following ability bonuses",
-    "One of the following bonuses",
-    "One of the following combinations",
-    "One of the following effects",
-    "One of the following Spell Power bonuses",
-    "One of the following tactics bonuses",
+    # #765 — the random-roll wordings are SERVED now, by `src/roll_groups.py`, and
+    # have left this list. The note that stood here said the catalog "states the
+    # options as prose" and the pools were empty. Both were wrong: they are PER-ITEM
+    # pools keyed by host — the second shape `crafting_catalog` documents — and every
+    # option is fully typed. What was missing was a reader, not a harvest.
+    #
+    # TWO remain, for reasons that are not "no pool":
+    #
+    # `One of the following sets, at random` carries SET grants, not stat affixes
+    # (`Mysterious Ring` rolls one of four Desert sets). That is the chosen-
+    # membership primitive, not a stat roll, and serving it here would mean reading
+    # a set name as a stat. It wants `set_membership_slot`, which is a different
+    # change on a different pool.
     "One of the following sets, at random",
-    "Random effect",
+    # `One of the following combinations` is the label doing what its name says:
+    # ALL FIVE of `Belashyrra's Cleansed Scepter`'s options grant two or three
+    # affixes together (`Evocation Focus +2` WITH `Kinetic Lore +15`). A roll grants
+    # its whole combination, and `src/roll_groups.py` refuses to split one rather
+    # than offer half of it, so the group emits nothing and the label stays declared
+    # but inert. Closing this needs a multi-affix roll option in the solver — whose
+    # roll loop is one-stat-per-option today — not a pool.
+    "One of the following combinations",
+    # `Random set 1` / `Random set 2` are absent from the catalog ENTIRELY — no
+    # pool, per-item or menu — so there is nothing to read. These are the Gem of
+    # Many Facets wildcard rolls.
+    "Random set 1",
+    "Random set 2",
     "Random set 1",
     "Random set 2",
 })
@@ -247,6 +263,23 @@ def _legendary_green_steel(dataset):
                        if r.get("tier_key")}
 
 
+def _roll_groups(dataset):
+    """#765 — randomly-rolled option groups, keyed by the label each option rolled
+    from (`"One of the following"`, `"Random effect"`, …).
+
+    Reads the top-level `roll_groups_per_item` census rather than walking `items`.
+    Walking items would work and is what this did first, but it made the pool
+    impossible to empty independently of the augment reader, which walks `items`
+    too — and the vacuity guard's whole point is that emptying ONE pool names THAT
+    pool. A pool the gate cannot empty on its own is a pool whose vacuity case is
+    untestable.
+    """
+    by_host = dataset.get("roll_groups_per_item") or {}
+    options = sum(len(v or []) for v in by_host.values())
+    labels = {o.get("raw") for v in by_host.values() for o in (v or []) if o.get("raw")}
+    return options, labels
+
+
 def _essence_crafting(dataset):
     """Keyed by (family, menu) -> `"Essence Crafting: <family> - <menu>"` (#193/#599,
     generalized in #764).
@@ -280,6 +313,7 @@ POOL_READERS = {
     "legendary_green_steel": _legendary_green_steel,
     "slavers": _slavers,
     "essence_crafting": _essence_crafting,
+    "roll_groups": _roll_groups,
 }
 
 

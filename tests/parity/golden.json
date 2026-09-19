@@ -1,6 +1,6 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-09-14",
+ "generated": "2026-09-18",
  "dataset": "web/data/items.json (9194 items)",
  "fixture_count": 24,
  "solves": {
@@ -98,7 +98,7 @@
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Windriders"
+     "variant": "Legendary Flightfoot Greaves"
     },
     {
      "slot": "Bracers",
@@ -134,7 +134,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Adversion"
+     "variant": "Legendary Duskbone Ring"
     },
     {
      "slot": "Ring",
