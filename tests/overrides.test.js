@@ -374,7 +374,19 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // 45,300 not 45,052 since #746: +248, the same two composites as above and the
   // same arithmetic (Dusk 24 + Ghostly 112x2). Total moves and eligible does not,
   // because a composite component is never override-eligible.
-  assert.strictEqual(total, 45300, "post-normalize pool size");
+  // #784 — 45,316 not 45,300: +16, the Elemental Resistances admitted onto the
+  // Cannith weapons. TWENTY are derived from the seed and four are skipped as
+  // already native — gear-planner populates the four level-4 Elemental variants
+  // with the same resistance — so the overlay adds 16. That skip is the
+  // anti-double-count guard working, and it is what surfaced the `Enhancement
+  // Bonus` spelling defect (#792) before it could ship.
+  // #792 — 45,311, i.e. +11 net on the 45,300 before this change: +16 Elemental
+  // Resistances admitted onto the weapons, MINUS 5 bare `Enhancement Bonus`
+  // withdrawn from the Mournlode Docents. Those five shipped on main carrying a
+  // name no other armour uses (gear-planner spells armour's `Enhancement Bonus
+  // (Armor)`, 1,234 records, against two bare ones on Offhand), so they are
+  // quarantined with the reason rather than left reading right and being wrong.
+  assert.strictEqual(total, 45311, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -451,7 +463,15 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // affix carries `via`, so its 18 carriers lose an overridable row each.
   // Expansion changes both counts in opposite directions; a rename changes only
   // this one.
-  assert.strictEqual(eligible, 20496, "engraved, eligible affixes");
+  // #784 — 20,512 not 20,496: +16, the SAME sixteen as the pool size above, and
+  // both counts moving together is the point. A composite expansion (#746) moves
+  // the pool and NOT eligibility, because a derived component is not engraved; an
+  // overlay admitting real engraved affixes moves both. These sixteen are typed,
+  // engraved Elemental Resistances on the Cannith weapons, so they are overridable
+  // exactly as a natively-parsed one is.
+  // #792 — 20,507: the same +16 / -5 as the pool size. Both counts move together
+  // because both the admitted resistances and the withdrawn bare name are engraved.
+  assert.strictEqual(eligible, 20507, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -492,7 +512,16 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // weapon 6,082 not 6,100 since #714: -18, and ALL of it on weapons — every
   // Dragon's Edge carrier is a weapon, which is the independent cross-check on
   // the -18 above. item and augment unchanged.
-  assert.deepStrictEqual(byCat, { item: 13401, weapon: 6082, augment: 1013 });
+  // #784 — weapon 6,098 not 6,082: +16, and it CONFIRMS A PREDICTION this test
+  // already carried. The #313 note above says of the deferred weapon half: "if they
+  // ever land, `weapon` is where they will show up." They landed, and every one of
+  // the 16 is in `weapon` with `item` and `augment` unmoved — the independent
+  // cross-check on the +16 in the two counts above.
+  // #792 — item 13,396 not 13,401: -5, the bare `Enhancement Bonus` withdrawn from
+  // the five Mournlode Docents, which are ARMOR. weapon keeps its +16. The split is
+  // the cross-check: the admission lands entirely on weapons and the withdrawal
+  // entirely on items, exactly as the two populations predict.
+  assert.deepStrictEqual(byCat, { item: 13396, weapon: 6098, augment: 1013 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {
