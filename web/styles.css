@@ -2331,3 +2331,22 @@ input.wz-ml { width: 120px; }
    controls are replaced by a note that says what the row is rather than leaving
    a gap the player would read as something failing to render. */
 .wz-custom-affix-flag .wz-custom-flag { flex: 1 1 10rem; color: var(--muted); font-size: var(--fs-xs); }
+
+/* #795 — the Essence Crafting bench. Each row is one MENU, so the menu name is a
+   fixed-width lead-in and the picker takes the remaining space. `wz-custom-flag`
+   above still styles the on/off note inside these rows. */
+.wz-custom-menu { flex: 0 0 4.5rem; color: var(--muted); font-size: var(--fs-xs); }
+.wz-custom-affix select[data-custom-effect] { flex: 2 1 12rem; }
+/* A sourced enchantment's value is read from the crafting table and locked, so it
+   is text rather than a control — a disabled input still reads as a question. */
+.wz-custom-sourced { flex: 1 1 10rem; font-size: var(--fs-xs); }
+.wz-custom-sourced .wz-help { display: block; }
+
+/* #799 — the bonuses the Minimum Level shard applies on its own. Read-only, and
+   visually distinct from the menus so it does not read as a fourth thing to
+   choose. */
+.wz-custom-auto { opacity: .85; }
+.wz-custom-autoname { flex: 2 1 12rem; font-size: var(--fs-sm); }
+/* The disclosure for what the game grants and this tool cannot rank. Muted, not
+   alarming — it is a known conservative bound, not an error. */
+.wz-custom-gap { border-left: 2px solid var(--line); padding-left: var(--sp-2); }

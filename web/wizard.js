@@ -4287,6 +4287,34 @@ ${(() => {
       const extraNote = (group && d.ml && Number(d.ml) < extraMin
         && availMenus.indexOf("Extra") < 0)
         ? `<p class="wz-help">The Extra menu unlocks at minimum level ${extraMin}.</p>` : "";
+
+      // #799 — what the Minimum Level shard applies on its own. Shown read-only
+      // and ALWAYS, not folded into the menus: it occupies no menu, the player
+      // does not choose it, and before this the form looked complete while the
+      // item quietly under-reported its Enhancement Bonus on every crafted
+      // weapon, shield and armour.
+      const autoRows = M.automaticAffixes(d, ctx);
+      const autoBlock = autoRows.length
+        ? `<p class="wz-label">Applied automatically</p>
+           <p class="wz-help">The Minimum Level shard grants these — you do not craft them and
+             they take no menu. They come from the crafting table, so they count for you.</p>
+           ${autoRows.map((a) => `<div class="wz-custom-affix wz-custom-auto">`
+             + `<span class="wz-label wz-custom-menu">Shard</span>`
+             + `<span class="wz-custom-autoname">${wzEsc(a.stat)}</span>`
+             + `<span class="wz-custom-sourced">${wzEsc(a.bonus_type)} +${wzEsc(a.value)}`
+             + ` <span class="wz-help">at ML ${wzEsc(d.ml || "?")}</span></span></div>`).join("")}`
+        : "";
+
+      // The honest other half: two more bonuses the game applies that this tool
+      // cannot rank. Disclosed rather than silently missing, per the same rule
+      // that governs every other gap here.
+      const missing = M.unmodelledAutomatic(d, ctx);
+      const missingBlock = missing.length
+        ? `<p class="wz-help wz-custom-gap">Not counted: the game also gives this item
+             ${missing.map((r) => wzEsc(r.label)).join(" and ")}.
+             This tool cannot rank ${missing.length > 1 ? "those" : "that"}, so your result
+             will be slightly conservative.</p>`
+        : "";
       box.innerHTML = `<div class="wz-custom-form">
         <div class="wz-custom-grid">
           <label class="wz-field"><span class="wz-label">Name</span>
@@ -4309,7 +4337,7 @@ ${(() => {
           says can go in it for this kind of item. A \u2713 means the wiki publishes that
           enchantment\u2019s bonus type and magnitude, so they are filled in for you; anything else
           asks you for them and is marked as your own.</p>
-        ${noBench}${menuRows}${extraNote}
+        ${noBench}${menuRows}${extraNote}${autoBlock}${missingBlock}
         ${d.errors.length ? `<ul class="wz-custom-errors" role="alert">${d.errors.map((e) => `<li>${wzEsc(e)}</li>`).join("")}</ul>` : ""}
         <div class="wz-addrow">
           <button type="button" class="btn primary sm" data-custom-save>${d.uid == null ? "Add this item" : "Save changes"}</button>

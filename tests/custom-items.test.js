@@ -735,4 +735,92 @@ test("#795: the reporter's own item is expressible, using the game's own names",
   assert.notStrictEqual(assassinate[0].type, assassinate[1].type, "two buckets, one stat");
 });
 
+
+// ---------------------------------------------------------------------------
+// #799 — what the Minimum Level shard applies on its own.
+
+test("#799: a crafted weapon carries the Enhancement Bonus nobody crafts", () => {
+  // The defect this closes: the bench asked for enchantments and granted only
+  // those, so every crafted weapon, shield and armour under-reported by its
+  // automatic Enhancement Bonus — a stat this tool already ranks, on an item it
+  // already lets you describe.
+  const rec = C.toVariant(C.validateEntry(dagger(), ctx).entry, ctx);
+  const eb = rec.affixes.filter((a) => /^Enhancement Bonus/.test(a.name));
+  assert.strictEqual(eb.length, 1, "exactly one, and not one per menu");
+  assert.strictEqual(eb[0].name, "Enhancement Bonus (Weapon)",
+    "the WEAPON spelling - #792's whole point, and a ring's would be (Armor)");
+  assert.strictEqual(eb[0].type, "Enhancement");
+  const curve = placements.automatic.enhancement_bonus.values_by_ml;
+  assert.strictEqual(eb[0].value, String(Number(curve[35])), "the ML 36 row");
+  // It is counted, or it would be decoration on the record.
+  assert.strictEqual(rec.eligible_affix_count, 4, "3 chosen + 1 automatic");
+});
+
+test("#799: the automatic bonus follows the level, and is not stored on the entry", () => {
+  const curve = placements.automatic.enhancement_bonus.values_by_ml;
+  const at = (ml) => {
+    const v = C.validateEntry(dagger({ ml }), ctx);
+    const rec = C.toVariant(v.entry, ctx);
+    // The ENTRY records only what the player chose - the cap and the menu model
+    // depend on that, and a stored copy would go stale the moment they edit ML.
+    assert.ok(!v.entry.affixes.some((a) => /^Enhancement Bonus/.test(a.stat || "")),
+      "the automatic bonus must not be written into the player's choices");
+    return rec.affixes.find((a) => /^Enhancement Bonus/.test(a.name)).value;
+  };
+  assert.strictEqual(at(36), String(Number(curve[35])));
+  assert.strictEqual(at(20), String(Number(curve[19])));
+  assert.notStrictEqual(at(20), at(36), "the curve is not flat, so this can fail");
+});
+
+test("#799: only the three kinds the wiki names get one", () => {
+  // "you don't need to craft an Enhancement Bonus shard for Weapons, Shields, or
+  //  Armors (including Robes, Outfit, and Docents)."
+  //
+  // Orbs and Rune Arms are off-hand items the sentence does not name, so they get
+  // nothing rather than a guess. Asserted in BOTH directions, or a rule that
+  // granted nothing to anyone would pass the first half.
+  const got = (slot, type, ml) => C.automaticAffixes({ slot, type, ml: ml || 30 }, ctx);
+  assert.strictEqual(got("Weapon", "Daggers")[0].stat, "Enhancement Bonus (Weapon)");
+  assert.strictEqual(got("Weapon", "Long Bows")[0].stat, "Enhancement Bonus (Weapon)");
+  assert.strictEqual(got("Armor", "")[0].stat, "Enhancement Bonus (Armor)");
+  // A shield takes the ARMOUR spelling: slot `Off Hand` carries `(Armor)` 304
+  // times in the catalog against 2 bare, measured rather than assumed.
+  assert.strictEqual(got("Off Hand", "Tower shields")[0].stat, "Enhancement Bonus (Armor)");
+  for (const [slot, type] of [["Off Hand", "Orbs"], ["Off Hand", "Rune Arms"],
+                              ["Ring", ""], ["Trinket", ""], ["Cloak", ""]]) {
+    assert.deepStrictEqual(got(slot, type), [],
+      `${type || slot} is not a weapon, shield or armour and must get nothing`);
+  }
+});
+
+test("#799: the two unmodelled bonuses are disclosed, to the right items only", () => {
+  // Stated by the wiki, real in game, not rankable here. Disclosed rather than
+  // silently missing - but only to items that would actually get them, because
+  // telling a ring owner about a weapon dice multiplier is how a real disclosure
+  // gets ignored.
+  const labels = (slot, type) => C.unmodelledAutomatic({ slot, type, ml: 30 }, ctx)
+    .map((r) => r.row).sort();
+  assert.deepStrictEqual(labels("Weapon", "Daggers"),
+    ["Spellcasting implement*", "Weapon dice mult*"]);
+  assert.deepStrictEqual(labels("Off Hand", "Tower shields"), ["Spellcasting implement*"],
+    "a shield gets no weapon dice");
+  assert.deepStrictEqual(labels("Ring", ""), [], "a ring gets neither");
+  // Each one says WHY it is not modelled, or the disclosure cannot be retired by
+  // reading.
+  for (const r of placements.automatic.unmodelled) {
+    assert.ok((r.quote || "").length > 20, `${r.row} must carry its wiki sentence`);
+    assert.ok((r.why_not || "").length > 20, `${r.row} must say why it is not modelled`);
+  }
+});
+
+test("#799: neither unmodelled bonus is secretly rankable", () => {
+  // The reason they are disclosed rather than modelled. If either name ever
+  // enters the registry this turns red and the choice gets made again, instead
+  // of the disclosure quietly describing something that is now expressible.
+  const reg = new Set(raw.metadata.affix_registry);
+  for (const name of ["Weapon Dice", "Spellcasting Implement", "Implement"]) {
+    assert.ok(!reg.has(name), `${name} is rankable now - revisit #799`);
+  }
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);

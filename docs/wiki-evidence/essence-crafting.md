@@ -381,9 +381,37 @@ Found in the same read. All are stated, none is guessed, and none is in the app:
 > to a weapon or shield. This bonus is equal to the item's minimum level."
 > — `Essence Crafting`, Notes
 
-So a player describing an essence-crafted weapon on the bench today under-reports
-it: the item carries an Enhancement bonus and a dice multiplier the form never
-asked about. Filed rather than fixed here — **#799**.
+So a player describing an essence-crafted weapon on the bench under-reported it:
+the item carried an Enhancement bonus and a dice multiplier the form never asked
+about. **Resolved by #799**, and the resolution is split, because only one of the
+three is expressible:
+
+| bonus | outcome | why |
+|---|---|---|
+| scaled Enhancement Bonus | **modelled** | `Enhancement Bonus (Weapon)` / `(Armor)` are stats the catalog already ranks — 3,259 and 1,239 instances |
+| weapon dice multiplier | **disclosed** | `affix_parser` classes weapon dice as non-magnitude; there is no bucket a multiplier could join |
+| Spellcasting Implement bonus | **disclosed** | the catalog carries only a `Bool` *"item becomes a Spellcasting Implement"*, never a magnitude |
+
+**The data was already here.** All three curves are in `values_by_ml`, harvested
+by #599, and `essence_curve_join.UNCRAFTABLE_ROWS` already excluded them from the
+craftable pool — correctly, since nobody crafts them. They were excluded from one
+pool and never added to another, which is why nothing read them for a year. The
+footnote that justified the exclusion is the same one that justifies applying
+them automatically:
+
+> "These bonuses do not require a separate shard or take up a slot
+> (suffix/prefix/extra), nor is one possible to craft."
+> — `Essence Crafting`, table 3b footnote
+
+**Scope is the wiki's own sentence**, which names three kinds: *"Weapons, Shields,
+or Armors (including Robes, Outfit, and Docents)"*. Orbs and Rune Arms are off-hand
+items it does not name, so they get nothing rather than a guess — the same refusal
+`SLOT_GROUPS` makes for thrown weapons.
+
+The spelling per group is measured, and it is why #792 mattered: slot `Weapon`
+carries `(Weapon)` 3,259 times, slot `Armor` carries `(Armor)` 935, and slot
+`Off Hand` — where Shields live — carries `(Armor)` 304 times against 2 bare. **A
+shield takes the armour spelling.**
 
 ### Combined prefixes put TWO effects in one prefix slot
 
