@@ -508,7 +508,11 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
     # #800 — combined prefixes, keyed by the same group names. Built here so the
     # bench reads ONE published table rather than joining two in the browser.
     combined = essence_combined.build_combined_pool(
-        catalog_stats=catalog_stats, placements=placements)
+        catalog_stats=catalog_stats, placements=placements,
+        # #812 — "Combined Shards also use this scaling for their individual
+        # effects." Passed in rather than re-opened there: the shard's readers
+        # are a named set and a guard enforces it.
+        curves=crafting["values_by_ml"]["effects"])
 
     return {
         "groups": groups,

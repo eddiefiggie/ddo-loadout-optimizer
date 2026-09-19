@@ -4328,13 +4328,19 @@ ${(() => {
         const partRows = recipe ? recipe.effects.map((pe, pi) => {
           const supplied = ((chosen && chosen.parts) || [])[pi] || {};
           const flag = isPresenceOnly(vocab.canonical ? vocab.canonical(pe.stat) : pe.stat, vocab);
+          // #812 — a combined half scales with ML too, where the existing join
+          // resolves the name; asked for where it does not.
+          const pv = M.sourcedValueAt(pe, d.ml);
           const ctrls = flag
             ? `<span class="wz-custom-flag">on/off — no bonus type or value</span>`
             : `<select data-custom-part="${wzEsc(menu)}:${pi}"><option value="">Bonus type…</option>`
               + `${btypes.map((t) => opt(t, supplied.bonus_type)).join("")}</select>`
-              + `<input type="number" min="1" step="1" data-nodirty`
-              + ` data-custom-partval="${wzEsc(menu)}:${pi}"`
-              + ` value="${wzEsc(supplied.value == null ? "" : supplied.value)}" placeholder="Value">`;
+              + (pe.magnitude_sourced
+                  ? `<span class="wz-custom-sourced">+${wzEsc(pv == null ? "?" : pv)}`
+                    + ` <span class="wz-help">from the crafting table</span></span>`
+                  : `<input type="number" min="1" step="1" data-nodirty`
+                    + ` data-custom-partval="${wzEsc(menu)}:${pi}"`
+                    + ` value="${wzEsc(supplied.value == null ? "" : supplied.value)}" placeholder="Value">`);
           return `<div class="wz-custom-affix wz-custom-part">`
             + `<span class="wz-label wz-custom-menu"></span>`
             + `<span class="wz-custom-autoname">${wzEsc(pe.effect)}</span>${ctrls}</div>`;

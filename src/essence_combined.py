@@ -26,9 +26,29 @@ Ranged, so a recipe listing `Weapon` serves both groups. This is the one place
 the Melee/Ranged distinction that `essence_placements` refuses to guess does not
 arise: the source is not silent here, it is deliberately general.
 
-Bonus types and magnitudes are NOT sourced for these effects, exactly as they are
-not for most of `table 1b`. The bench asks the player and discloses the answer as
-theirs, which is the same contract #795 already has.
+Bonus types are NOT sourced for these effects, exactly as they are not for most of
+`table 1b`. The bench asks the player and discloses the answer as theirs, which is
+the same contract #795 already has.
+
+MAGNITUDES ARE, where the name resolves (#812):
+
+    "Scaling effects increase their values when placed in increasingly higher
+     minimum level (ML) shard items. Combined Shards ALSO USE THIS SCALING FOR
+     THEIR INDIVIDUAL EFFECTS."
+        - `Essence Crafting enchantments`, Bonus by level, Notes
+
+This module originally emitted no magnitude at all, and a guard asserted it took
+none from the curve join. That guard encoded something true at the time; the
+sentence above makes it wrong, so it was updated deliberately rather than
+deleted.
+
+The join is reused, NEVER widened. A combined recipe names effects in the recipe
+table's own vocabulary, which is not `table 1b`'s roster: `Entropic`, `Anarchic`,
+`Acid Absorption` and `Deception` appear here and not there. Only names the
+EXISTING mapping already resolves get a magnitude - 51 of 156 instances - and the
+rest keep asking the player. Resolving a new vocabulary through a join validated
+against a different one is exactly the error `essence_curve_join` exists to
+refuse, and its opening example is what that error looks like.
 """
 from __future__ import annotations
 
@@ -88,6 +108,23 @@ class CombinedError(RuntimeError):
     pass
 
 
+def _with_curve(effect, stat, mapping, curves):
+    """One half of a combined shard, with its ML curve when the EXISTING join
+    already resolves the name.
+
+    A missing curve is not a gap to fill by other means: the recipe table names
+    effects `table 1b` does not carry, and those keep asking the player.
+    """
+    rec = {"effect": effect, "stat": stat, "magnitude_sourced": False}
+    entry = mapping.get(effect)
+    curve = curves.get(entry["row"]) if entry else None
+    if curve and len(curve) == 36:
+        rec.update({"magnitude_sourced": True,
+                    "values_by_ml": list(curve),
+                    "curve_row": entry["row"]})
+    return rec
+
+
 def load(path: str = SHARD) -> dict:
     with open(path, encoding="utf-8") as fh:
         return json.load(fh)
@@ -122,7 +159,7 @@ def assert_slot_join_is_total(recipes, placements) -> int:
     return len(seen)
 
 
-def build_combined_pool(catalog_stats=None, placements=None) -> dict:
+def build_combined_pool(catalog_stats=None, placements=None, curves=None) -> dict:
     """Recipes joined to catalog stats and keyed by placement group.
 
     `catalog_stats` is REQUIRED in the real build, for the reason it is required
@@ -137,6 +174,13 @@ def build_combined_pool(catalog_stats=None, placements=None) -> dict:
     """
     data = load()
     recipes = data["recipes"]
+    resolved = curve_join.resolve_all()
+    mapping = resolved["mapping"]
+    # `curves` comes from the CALLER, which already has the crafting shard open.
+    # Opening it here would make this a second reader of a file whose readers are
+    # a named, tested set (`test_only_the_named_files_read_the_shard`) — a guard
+    # that caught exactly this on the first attempt.
+    curves = curves or {}
     placements = placements or {}
     assert_slot_join_is_total(recipes, placements)
 
@@ -176,8 +220,8 @@ def build_combined_pool(catalog_stats=None, placements=None) -> dict:
             "min_ml": MIN_ML,
             "groups": groups,
             "effects": [
-                {"effect": r["effect_1"], "stat": s1},
-                {"effect": r["effect_2"], "stat": s2},
+                _with_curve(r["effect_1"], s1, mapping, curves),
+                _with_curve(r["effect_2"], s2, mapping, curves),
             ],
             "update": r.get("update"),
         })

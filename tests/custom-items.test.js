@@ -921,9 +921,14 @@ test("#800: a combined prefix is ONE row that mints TWO affixes", () => {
   assert.strictEqual(v.entry.affixes[0].parts.length, 2);
   const rec = C.toVariant(v.entry, ctx);
   const chosen = rec.affixes.filter((a) => !/^Enhancement Bonus/.test(a.name));
+  // #812 — the VALUES now come from the ML curve, not the entry: "Combined Shards
+  // also use this scaling for their individual effects." The bonus types are
+  // still the player's, because the wiki states neither.
+  const recipe = C.combinedFor("Rings", "Fortifying", ctx);
+  const at30 = (i) => String(Number(recipe.effects[i].values_by_ml[29]));
   assert.deepStrictEqual(chosen.map((a) => [a.name, a.type, a.value]), [
-    ["Constitution", "Enhancement", "9"],
-    ["Fortification", "Quality", "4"],
+    ["Constitution", "Enhancement", at30(0)],
+    ["Fortification", "Quality", at30(1)],
   ]);
 });
 
@@ -1106,6 +1111,50 @@ test("#810: all three menus are offered at ML 10 and above, on every item type",
       `${group} must offer all three at exactly ML 10`);
     assert.deepStrictEqual(C.menusFor(group, 9, ctx), ["Prefix", "Suffix"],
       `${group} must withhold Extra below ML 10`);
+  }
+});
+
+
+
+// ---------------------------------------------------------------------------
+// #812 — combined shards scale with ML, through the EXISTING join only.
+
+test("#812: a combined half takes its magnitude from the curve, and ignores the player's", () => {
+  //   "Scaling effects increase their values when placed in increasingly higher
+  //    minimum level (ML) shard items. Combined Shards also use this scaling for
+  //    their individual effects."   — `Essence Crafting enchantments`, Notes
+  const recipe = C.combinedFor("Rings", "Fortifying", ctx);
+  assert.ok(recipe.effects.every((e) => e.magnitude_sourced),
+    "both halves of Fortifying resolve through the existing join");
+  const v = C.validateEntry(comboRing({ ml: 30, affixes: [
+    { menu: "Prefix", combined: "Fortifying",
+      parts: [{ bonus_type: "Enhancement", value: 999 },
+              { bonus_type: "Quality", value: 999 }] }] }), ctx);
+  assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
+  const parts = v.entry.affixes[0].parts;
+  assert.strictEqual(parts[0].value, Number(recipe.effects[0].values_by_ml[29]));
+  assert.strictEqual(parts[1].value, Number(recipe.effects[1].values_by_ml[29]));
+  assert.strictEqual(parts[0].bonus_type, "Enhancement", "the type is still the player's");
+});
+
+test("#812: the join is reused, never widened to the recipe table's vocabulary", () => {
+  // The recipe table names effects `table 1b` does not carry — `Entropic`,
+  // `Anarchic`, `Acid Absorption`, `Deception`. Those must keep asking the
+  // player: resolving a new vocabulary through a join validated against a
+  // different one is the error `essence_curve_join` exists to refuse, and its
+  // own opening example is what that error looks like.
+  const all = placements.combined.recipes.flatMap((r) => r.effects);
+  const sourced = all.filter((e) => e.magnitude_sourced);
+  const asked = all.filter((e) => !e.magnitude_sourced);
+  assert.ok(sourced.length > 20, `a real sourced population: ${sourced.length}`);
+  assert.ok(asked.length > 20, `and a real asked-for one: ${asked.length}`);
+  // Re-ratified deliberately: 51 of 156.
+  assert.strictEqual(sourced.length, 51);
+  assert.strictEqual(all.length, 156);
+  // An unsourced half must carry NO curve, or the flag is decoration.
+  for (const e of asked) {
+    assert.ok(!e.values_by_ml && !e.curve_row,
+      `${e.effect} is unsourced but carries a curve`);
   }
 });
 
