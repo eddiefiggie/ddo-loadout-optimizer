@@ -50,12 +50,18 @@ from src import crafting_coverage as cc  # noqa: E402
 # Trinket-only. Two remain and are disclosed by name in UNSERVED_ALLOWLIST:
 # `Rune Arm - Suffix` and `Melee - Extra` have a pool now, and every effect in
 # them is untyped, so the pool's offering for those two menus is empty.
-BASELINE_UNSERVED_LABELS = 13   # #766 took Slaver's ten labels off the list
+# #765 — 6 with the random-roll labels served by `src/roll_groups.py`. Their pools
+# were never empty: they are PER-ITEM pools keyed by host, and what was missing was
+# a reader. Four roll labels remain, each for a stated reason rather than "no pool"
+# — two absent from the catalog entirely, one carrying set grants rather than stat
+# affixes, and one whose every option is multi-affix.
+BASELINE_UNSERVED_LABELS = 6   # #766 took Slaver's ten labels off the list
 # #764 — 199 not 282: -83. The seven Essence labels that became served carried
 # 83 item-slots between them (Rune Arm Prefix 39 + Extra 39, Ring Prefix/Suffix/
 # Extra 1 each, Melee Prefix/Suffix 1 each). The 39 Rune Arm SUFFIX slots and the
 # 1 Melee EXTRA slot stay counted, because those two menus offer nothing.
-BASELINE_UNSERVED_ITEM_SLOTS = 199   # 336 - 24 typed Slaver's slots - 30 Set Bonus slots - 83 (#764)
+# #765 — 55 not 199: -144, the item-slots the newly-served roll labels carried.
+BASELINE_UNSERVED_ITEM_SLOTS = 55   # 336 - 24 typed Slaver's slots - 30 Set Bonus slots - 83 (#764)
 
 # #371 — the per-item split as measured on the built dataset.
 BASELINE_PER_ITEM_DECLARERS = 65
@@ -155,6 +161,14 @@ def full_dataset(per_item=True, **overrides):
         "essence_crafting": [{"menu": "Prefix"}],
         # #766 — keyed by `pool_key`, which IS the host label.
         "slavers": [{"pool_key": "Slaver's Prefix Slot", "slot": "Prefix", "tier": "heroic"}],
+        # #765 — the per-host roll census, keyed by the `raw` label each option
+        # rolled from. Published as its own top-level key rather than read off
+        # `items`, precisely so this fixture can empty it without also emptying the
+        # augment pool — the vacuity guard needs one pool at a time.
+        "roll_groups_per_item": {
+            "Drow Dagger of the Weapon Master": [
+                {"stat": "Shatter", "bonus_type": "Enhancement", "value": 10,
+                 "unit": "flat", "raw": "One of the following"}]},
         "nearly_complete_per_item": {PER_ITEM_HOST: [dict(PER_ITEM_OPTION)]},
     }
     data.update(overrides)
@@ -296,6 +310,7 @@ def test_each_pool_raises_distinguishably_when_it_walks_zero_records():
         "essence_crafting": {"essence_crafting": []},
         "slavers": {"slavers": []},
         "nearly_complete_per_item": {"nearly_complete_per_item": {}},
+        "roll_groups": {"roll_groups_per_item": {}},
     }
     assert set(empty) == set(cc.POOL_READERS), "a pool was added without a vacuity case"
 
@@ -383,9 +398,20 @@ def test_the_stamped_count_is_the_validated_universe_not_the_walked_one():
 
     assert cov["labels_validated"] == cov["declared_labels"]
     assert cov["labels_validated"] == cov["served_labels"] + cov["unserved_labels"]
-    # The walked populations are strictly larger; conflating them would inflate
-    # the claim about what was validated.
-    assert cov["labels_validated"] < cov["unserved_item_slots"]
+    # `labels_validated` counts LABELS. Conflating it with a slot or record
+    # population would inflate the claim about what was validated, so it is pinned
+    # against both.
+    #
+    # #765 — this used to read `labels_validated < unserved_item_slots`, which was
+    # only ever INCIDENTALLY true: it held while the unserved slots outnumbered the
+    # labels, and serving the random-roll pools took that population from 199 to 55
+    # — below the 68 labels. The comparison was measuring the size of the gap rather
+    # than the property, and it would have gone red on an improvement. Pinned to the
+    # identity instead, which cannot drift as pools are served.
+    assert cov["labels_validated"] == cov["declared_labels"]
+    assert cov["labels_validated"] != cov["unserved_item_slots"], (
+        "label count and slot count coincided — the assertion below is the one that "
+        "still separates them, but a coincidence here would hide a conflation")
     assert cov["labels_validated"] < sum(cov["pools"].values())
 
 

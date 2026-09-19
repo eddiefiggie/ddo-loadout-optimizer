@@ -35,6 +35,7 @@ from src import container_registry as cr  # noqa: E402
 from src import crafting_catalog, dino, nearly_complete, seal  # noqa: E402
 from src import legendary_green_steel, slavers, viktranium  # noqa: E402
 from src import essence_pool  # noqa: E402
+from src import roll_groups  # noqa: E402
 from src.spell_focus import PROVENANCE_KEY  # noqa: E402
 
 
@@ -384,7 +385,15 @@ def test_registry_declares_every_single_pick_container_with_a_verdict():
         # #766 — Slaver's crafting: ATOMIC, the Suffix `Resistance` umbrella expanded
         # one level in, reachable through the six Chains / Five Rings / Shackles hosts.
         "slavers":                  (cr.ATOMIC, ("spell_focus",), cr.VERIFIED_SAFE, True),
-        "roll_groups":              (cr.FLAT,   (),               cr.VERIFIED_SAFE, False),
+        # #765 — REACHABLE now. The field's only source used to be the free-text
+        # affix parser the gear-planner overhaul retired, so the pool was empty and
+        # its verification vacuous; it is sourced from the catalog's per-item pools.
+        "roll_groups":              (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
+        # #765 — the per-host census the builder produces. Audited ALONGSIDE the
+        # derived container above, not instead of it: this judges what the builder
+        # made, that judges what landed on items, and the two disagreeing is how a
+        # broken attach step shows itself.
+        "roll_groups_per_item":     (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
     }
     actual = {name: (shape, exps, verdict, reachable)
               for name, shape, exps, verdict, reachable in cr.describe()}
@@ -437,6 +446,9 @@ def _shipped_source_options():
         "seal": seal.build_seal(catalog)["source_options"],
         "legendary_green_steel": legendary_green_steel.build_legendary_green_steel(catalog)["source_options"],
         "slavers": slavers.build_slavers(catalog)["source_options"],
+        # #765 — recomputed from the catalog like every sibling here, so the count
+        # is an independent path rather than what the build wrote down.
+        "roll_groups_per_item": roll_groups.build(catalog)["source_options"],
         # #193 — Essence Crafting's source is the seed shards, not the crafting
         # catalog, so it is recomputed from the pool builder instead. Still an
         # independent path from the shipped dataset: the builder re-reads
@@ -473,7 +485,10 @@ def test_gate_passes_on_the_built_dataset():
 
     stats = cr.check(data, _shipped_source_options())
 
-    assert stats["checked"] == 9   # #687 folded green_steel + thunder_forged into one; #766 added slavers
+    # #765 — 10. `roll_groups_per_item` is the per-host census of randomly-rolled
+    # options; the derived `roll_groups` container beside it audits what landed on
+    # items. Both are checked, deliberately: same options, two paths.
+    assert stats["checked"] == 10  # #687 folded green_steel + thunder_forged into one; #766 added slavers
     assert stats["compared"] > 700, stats
     assert stats["records"]["viktranium"] > 0
     assert stats["records"]["dino_inserts"] > 0
@@ -551,7 +566,12 @@ def test_build_metadata_discloses_the_gate_coverage():
     assert cov["checked"] == cr.EXPECTED_CONTAINER_COUNT
     assert cov["compared"] > 700, cov
     # roll_groups is the declared-unreachable one; its zero must not read as coverage.
-    assert cov["records"]["roll_groups"] == 0
+    # #765 — non-zero now: the roll pool is sourced from the catalog's per-item
+    # pools, where it was empty while its only feed was the retired free-text parser.
+    assert cov["records"]["roll_groups"] == 1226
+    assert cov["records"]["roll_groups_per_item"] == 1226, (
+        "the builder's census and what landed on items must agree — they are the "
+        "same options audited twice, and a disagreement IS the broken attach step")
     assert cov["compared"] == sum(cov["records"].values())
     # #194 — the split is GONE, not merely disclosed. This assertion used to read
     # `>` and was the honest disclosure of a known defect; now every source option

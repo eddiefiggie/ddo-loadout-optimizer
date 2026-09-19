@@ -153,6 +153,18 @@ REGISTRY = {
         "single-affix. Shipped un-registered and un-gated until this change — the "
         "hand-typed call-site list could not see it, and neither could the pinned "
         "container count, which counted registry entries rather than real pools."),
+    "roll_groups_per_item": _c(
+        FLAT, (), VERIFIED_SAFE, True,
+        "#765 — the per-host census of randomly-rolled options, keyed by host name: "
+        "one record per option, each carrying its own (stat, bonus_type, value) and "
+        "the `raw` label it rolled from. 137 hosts, 1,226 options -> 1,226 records, "
+        "every option single-affix BY CONSTRUCTION — `src/roll_groups.py` refuses a "
+        "multi-affix option rather than splitting it, so FLAT's exact-cardinality "
+        "contract is enforced at the source instead of being hoped for. "
+        "DELIBERATELY AUDITED TWICE, with the derived `roll_groups` container: this "
+        "one judges what the builder produced, that one judges what actually landed "
+        "on items. They are the same options, so the two disagreeing is how a broken "
+        "attach step announces itself rather than shipping quietly."),
     "seal": _c(
         FLAT, (), VERIFIED_SAFE, True,
         "Flat one-record-per-affix (seal_type-keyed), no expansion pass, 48 source "
@@ -232,15 +244,25 @@ REGISTRY = {
         "`essence_slots`.",
         host_marker="essence_slots"),
     "roll_groups": _c(
-        FLAT, (), VERIFIED_SAFE, False,
-        "Item-level 'rolls one of' groups, derived by the gate from every variant. "
-        "Flat per option and no expansion pass reaches it: both expand_variants "
-        "passes walk `affixes` and `parsed_set_bonuses` only. The group's own option "
-        "list IS the record list, so its source-option count is derived rather than "
-        "reported by a builder, and the cardinality assertion is structural. Declared "
-        "UNREACHABLE — the affix parser can build these but no current item text "
-        "produces one, so the pool is empty and verifying it would be vacuous. If it "
-        "ever fills, this gate fails until someone re-audits it against a real record.",
+        FLAT, (), VERIFIED_SAFE, True,
+        "Item-level 'rolls one of' groups. Flat per option and no expansion pass "
+        "reaches it: both expand_variants passes walk `affixes` and "
+        "`parsed_set_bonuses` only. The group's own option list IS the record list, "
+        "so its source-option count is derived rather than reported by a builder, and "
+        "the cardinality assertion is structural. "
+        "#765 — REACHABLE since the groups were sourced from the catalog's per-item "
+        "pools; it was declared unreachable while the field's only source was the "
+        "free-text affix parser the gear-planner overhaul retired, which left the "
+        "pool empty and its verification vacuous. This gate is what demanded the "
+        "re-audit, and the audit FOUND THE DEFECT IT EXISTS FOR: 11 source options "
+        "carry two or three affixes each, and the first builder split them into "
+        "separately-selectable options. That would have let a solve take `Negative "
+        "Energy Absorption +12` off a Shield of Morning roll without the `Deathblock` "
+        "the same roll grants, and counted one roll as several competing choices — "
+        "the Viktranium fan-out exactly. `src/roll_groups.py` now REFUSES a "
+        "multi-affix option rather than splitting it, and reports the count as "
+        "`options_refused_compound`, so FLAT's one-record-per-affix contract holds "
+        "because every emitted option carries exactly one affix.",
         derived=True),
 }
 
@@ -275,7 +297,11 @@ NON_CONTAINERS = {
 # unnoticed. Discovery catches an undeclared container that reaches the gate; this
 # catches the other direction — a declaration deleted, or a container added to the
 # registry without anyone revisiting the count.
-EXPECTED_CONTAINER_COUNT = 9
+# #765 — 10 with `roll_groups_per_item`, the per-host census of randomly-rolled
+# options. Audited before this number moved, and the audit found the fan-out defect
+# it exists for: the first builder split multi-affix options into separately
+# selectable ones, which would have offered half a roll. It refuses them instead.
+EXPECTED_CONTAINER_COUNT = 10
 
 
 def describe() -> list:
