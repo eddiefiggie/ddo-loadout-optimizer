@@ -380,13 +380,22 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // with the same resistance — so the overlay adds 16. That skip is the
   // anti-double-count guard working, and it is what surfaced the `Enhancement
   // Bonus` spelling defect (#792) before it could ship.
-  // #792 — 45,311, i.e. +11 net on the 45,300 before this change: +16 Elemental
-  // Resistances admitted onto the weapons, MINUS 5 bare `Enhancement Bonus`
-  // withdrawn from the Mournlode Docents. Those five shipped on main carrying a
-  // name no other armour uses (gear-planner spells armour's `Enhancement Bonus
-  // (Armor)`, 1,234 records, against two bare ones on Offhand), so they are
-  // quarantined with the reason rather than left reading right and being wrong.
-  assert.strictEqual(total, 45311, "post-normalize pool size");
+  // #792 — 45,380 not 45,311: +69, and every one of them is an `Enhancement Bonus`
+  // the old slot-BLIND join could not name. Re-ratified by attribution, not
+  // accepted because it was green elsewhere:
+  //
+  //   +64  the weapons. All 80 admit `Enhancement Bonus (Weapon)`; 16 are skipped
+  //        as already native (the level-4 rows), so the overlay adds 64.
+  //   + 5  the Mournlode Docents, RESTORED. #784 withdrew their bare `Enhancement
+  //        Bonus` because it named a stat no other armour uses; keyed on the host
+  //        slot the same wiki line now resolves to `Enhancement Bonus (Armor)`,
+  //        the spelling 1,234 armour records actually carry. The withdrawal was
+  //        the right call on a slot-blind join and is obsolete under a slot-keyed
+  //        one — so the quarantine entries are removed, not left as scar tissue.
+  //
+  //   64 + 5 = 69. The previous line's "+16 Elemental Resistances" is unchanged and
+  //   already counted in the 45,311 this builds on.
+  assert.strictEqual(total, 45380, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -469,9 +478,12 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // overlay admitting real engraved affixes moves both. These sixteen are typed,
   // engraved Elemental Resistances on the Cannith weapons, so they are overridable
   // exactly as a natively-parsed one is.
-  // #792 — 20,507: the same +16 / -5 as the pool size. Both counts move together
-  // because both the admitted resistances and the withdrawn bare name are engraved.
-  assert.strictEqual(eligible, 20507, "engraved, eligible affixes");
+  // #792 — 20,576 not 20,507: +69, the SAME sixty-nine as the pool size above, and
+  // the two moving together by the identical amount is the check, not a
+  // coincidence to re-pin. An `Enhancement Bonus` restored by a slot-keyed join is
+  // an engraved affix with a real bonus type, so it lands in both populations;
+  // had only the pool moved, the join would be minting something underived.
+  assert.strictEqual(eligible, 20576, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -517,11 +529,22 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // ever land, `weapon` is where they will show up." They landed, and every one of
   // the 16 is in `weapon` with `item` and `augment` unmoved — the independent
   // cross-check on the +16 in the two counts above.
-  // #792 — item 13,396 not 13,401: -5, the bare `Enhancement Bonus` withdrawn from
-  // the five Mournlode Docents, which are ARMOR. weapon keeps its +16. The split is
-  // the cross-check: the admission lands entirely on weapons and the withdrawal
-  // entirely on items, exactly as the two populations predict.
-  assert.deepStrictEqual(byCat, { item: 13396, weapon: 6098, augment: 1013 });
+  // #792 — item 13,401 not 13,396 (+5) and weapon 6,162 not 6,098 (+64). This is
+  // the sharpest cross-check in the file on the slot-keyed join, because the two
+  // numbers are predicted SEPARATELY and by different populations:
+  //
+  //   +5  on `item`  — the five Mournlode Docents, which are ARMOR hosts. Restored
+  //                    as `Enhancement Bonus (Armor)`, the spelling their own slot
+  //                    uses. (#784 had withdrawn them; a slot-blind join could not
+  //                    tell which of the two spellings an Armor host wanted.)
+  //   +64 on `weapon` — the 80 weapons less the 16 already carrying it natively.
+  //
+  //   5 + 64 = the 69 in both counts above, and NOTHING lands in `augment`, which
+  //   has no Cannith tier entries at all. Had the join simply pattern-matched the
+  //   3,325-to-2 majority onto every host, the armour five would have come back
+  //   spelled `(Weapon)` and this line would still read 13,401 — the split is what
+  //   distinguishes reading the slot from guessing the winner.
+  assert.deepStrictEqual(byCat, { item: 13401, weapon: 6162, augment: 1013 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {

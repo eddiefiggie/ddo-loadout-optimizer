@@ -30,40 +30,40 @@
      "name": "Weaken Construct",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Weaken Construct",
      "unit": "bool",
+     "wiki_name": "Weaken Construct",
      "type_source": "Blasting Chime family sibling"
     },
     {
      "name": "Anthem",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Anthem",
      "unit": "bool",
+     "wiki_name": "Anthem",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Sonic Lore",
      "type": "Equipment",
      "value": 14,
-     "wiki_name": "Sonic Lore",
      "unit": "percent",
+     "wiki_name": "Sonic Lore",
      "type_source": "Blasting Chime family sibling"
     },
     {
      "name": "Sonic Spell Power",
      "type": "Equipment",
      "value": 94,
-     "wiki_name": "Resonance",
      "unit": "flat",
+     "wiki_name": "Resonance",
      "type_source": "Blasting Chime family sibling"
     },
     {
      "name": "Sonic Guard",
      "type": "Bool",
      "value": 4,
-     "wiki_name": "Sonic Guard",
      "unit": "flat",
+     "wiki_name": "Sonic Guard",
      "type_source": "catalog-wide uniform type"
     }
    ],
@@ -87,32 +87,32 @@
      "name": "Weaken Construct",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Weaken Construct",
      "unit": "bool",
+     "wiki_name": "Weaken Construct",
      "type_source": "Blasting Chime family sibling"
     },
     {
      "name": "Anthem",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Anthem",
      "unit": "bool",
+     "wiki_name": "Anthem",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Sonic Spell Power",
      "type": "Equipment",
      "value": 108,
-     "wiki_name": "Resonance",
      "unit": "flat",
+     "wiki_name": "Resonance",
      "type_source": "Blasting Chime family sibling"
     },
     {
      "name": "Sonic Lore",
      "type": "Equipment",
      "value": 16,
-     "wiki_name": "Sonic Lore",
      "unit": "percent",
+     "wiki_name": "Sonic Lore",
      "type_source": "Blasting Chime family sibling"
     }
    ],
@@ -140,32 +140,32 @@
      "name": "Weaken Construct",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Weaken Construct",
      "unit": "bool",
+     "wiki_name": "Weaken Construct",
      "type_source": "Blasting Chime family sibling"
     },
     {
      "name": "Sonic Guard",
      "type": "Bool",
      "value": 3,
-     "wiki_name": "Sonic Guard",
      "unit": "flat",
+     "wiki_name": "Sonic Guard",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Sonic Lore",
      "type": "Equipment",
      "value": 12,
-     "wiki_name": "Sonic Lore",
      "unit": "percent",
+     "wiki_name": "Sonic Lore",
      "type_source": "Blasting Chime family sibling"
     },
     {
      "name": "Sonic Spell Power",
      "type": "Equipment",
      "value": 79,
-     "wiki_name": "Resonance",
      "unit": "flat",
+     "wiki_name": "Resonance",
      "type_source": "Blasting Chime family sibling"
     }
    ],
@@ -184,24 +184,24 @@
      "name": "Blurry",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Blurry",
      "unit": "bool",
+     "wiki_name": "Blurry",
      "type_source": "Bracers of Wind family sibling"
     },
     {
      "name": "Electric Spell Power",
      "type": "Equipment",
      "value": 94,
-     "wiki_name": "Magnetism",
      "unit": "flat",
+     "wiki_name": "Magnetism",
      "type_source": "Bracers of Wind family sibling"
     },
     {
      "name": "Lightning Lore",
      "type": "Equipment",
      "value": 14,
-     "wiki_name": "Lightning Lore",
      "unit": "percent",
+     "wiki_name": "Lightning Lore",
      "type_source": "Bracers of Wind family sibling"
     }
    ],
@@ -225,32 +225,32 @@
      "name": "Blurry",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Blurry",
      "unit": "bool",
+     "wiki_name": "Blurry",
      "type_source": "Bracers of Wind family sibling"
     },
     {
      "name": "Air Guard",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Air Guard",
      "unit": "bool",
+     "wiki_name": "Air Guard",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Electric Spell Power",
      "type": "Equipment",
      "value": 108,
-     "wiki_name": "Magnetism",
      "unit": "flat",
+     "wiki_name": "Magnetism",
      "type_source": "Bracers of Wind family sibling"
     },
     {
      "name": "Lightning Lore",
      "type": "Equipment",
      "value": 16,
-     "wiki_name": "Lightning Lore",
      "unit": "percent",
+     "wiki_name": "Lightning Lore",
      "type_source": "Bracers of Wind family sibling"
     }
    ],
@@ -274,24 +274,24 @@
      "name": "Blurry",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Blurry",
      "unit": "bool",
+     "wiki_name": "Blurry",
      "type_source": "Bracers of Wind family sibling"
     },
     {
      "name": "Electric Spell Power",
      "type": "Equipment",
      "value": 79,
-     "wiki_name": "Magnetism",
      "unit": "flat",
+     "wiki_name": "Magnetism",
      "type_source": "Bracers of Wind family sibling"
     },
     {
      "name": "Lightning Lore",
      "type": "Equipment",
      "value": 12,
-     "wiki_name": "Lightning Lore",
      "unit": "percent",
+     "wiki_name": "Lightning Lore",
      "type_source": "Bracers of Wind family sibling"
     }
    ],
@@ -305,9 +305,18 @@
    "ml": 12,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Dragon Bane 3 / Tidal Burst / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Dragon Bane 3 → Dragon Bane 4 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -318,9 +327,18 @@
    "ml": 16,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -331,9 +349,18 @@
    "ml": 4,
    "slot": "Weapon",
    "raw": "+1 Enhancement Bonus / Dragon Bane 2 / Tidal",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": []
   },
@@ -342,9 +369,18 @@
    "ml": 8,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Dragon Bane 2 / Tidal / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Dragon Bane 2 → Dragon Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -355,9 +391,18 @@
    "ml": 12,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Dragon Bane 3 / Tidal Burst / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Dragon Bane 3 → Dragon Bane 4 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -368,9 +413,18 @@
    "ml": 16,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -381,9 +435,18 @@
    "ml": 4,
    "slot": "Weapon",
    "raw": "+1 Enhancement Bonus / Dragon Bane 2 / Tidal",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": []
   },
@@ -392,9 +455,18 @@
    "ml": 8,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Dragon Bane 2 / Tidal / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Dragon Bane 2 → Dragon Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -405,9 +477,18 @@
    "ml": 12,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Dragon Bane 3 / Tidal Burst / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Dragon Bane 3 → Dragon Bane 4 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -418,9 +499,18 @@
    "ml": 16,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -431,9 +521,18 @@
    "ml": 4,
    "slot": "Weapon",
    "raw": "+1 Enhancement Bonus / Dragon Bane 2 / Tidal",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": []
   },
@@ -442,9 +541,18 @@
    "ml": 8,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Dragon Bane 2 / Tidal / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Dragon Bane 2 → Dragon Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -455,9 +563,18 @@
    "ml": 12,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Dragon Bane 3 / Tidal Burst / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Dragon Bane 3 → Dragon Bane 4 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -468,9 +585,18 @@
    "ml": 16,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -481,9 +607,18 @@
    "ml": 4,
    "slot": "Weapon",
    "raw": "+1 Enhancement Bonus / Dragon Bane 2 / Tidal",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": []
   },
@@ -492,9 +627,18 @@
    "ml": 8,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Dragon Bane 2 / Tidal / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Dragon Bane 2 → Dragon Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -505,9 +649,18 @@
    "ml": 12,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Dragon Bane 3 / Tidal Burst / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Dragon Bane 3 → Dragon Bane 4 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -518,9 +671,18 @@
    "ml": 16,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -531,9 +693,18 @@
    "ml": 4,
    "slot": "Weapon",
    "raw": "+1 Enhancement Bonus / Dragon Bane 2 / Tidal",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": []
   },
@@ -542,9 +713,18 @@
    "ml": 8,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Dragon Bane 2 / Tidal / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Dragon Bane 2 → Dragon Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -555,9 +735,18 @@
    "ml": 12,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Dragon Bane 3 / Tidal Burst / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Dragon Bane 3 → Dragon Bane 4 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -568,9 +757,18 @@
    "ml": 16,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -581,9 +779,18 @@
    "ml": 4,
    "slot": "Weapon",
    "raw": "+1 Enhancement Bonus / Dragon Bane 2 / Tidal",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": []
   },
@@ -592,9 +799,18 @@
    "ml": 8,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Dragon Bane 2 / Tidal / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Dragon Bane 2 → Dragon Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -610,16 +826,16 @@
      "name": "Fire Spell Power",
      "type": "Equipment",
      "value": 94,
-     "wiki_name": "Combustion",
      "unit": "flat",
+     "wiki_name": "Combustion",
      "type_source": "Cloak of Flames family sibling"
     },
     {
      "name": "Fire Lore",
      "type": "Equipment",
      "value": 14,
-     "wiki_name": "Fire Lore",
      "unit": "percent",
+     "wiki_name": "Fire Lore",
      "type_source": "Cloak of Flames family sibling"
     }
    ],
@@ -647,24 +863,24 @@
      "name": "Fire Shield (Hot)",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Fire Shield (Hot)",
      "unit": "bool",
+     "wiki_name": "Fire Shield (Hot)",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Fire Spell Power",
      "type": "Equipment",
      "value": 108,
-     "wiki_name": "Combustion",
      "unit": "flat",
+     "wiki_name": "Combustion",
      "type_source": "Cloak of Flames family sibling"
     },
     {
      "name": "Fire Lore",
      "type": "Equipment",
      "value": 16,
-     "wiki_name": "Fire Lore",
      "unit": "percent",
+     "wiki_name": "Fire Lore",
      "type_source": "Cloak of Flames family sibling"
     }
    ],
@@ -692,16 +908,16 @@
      "name": "Fire Spell Power",
      "type": "Equipment",
      "value": 79,
-     "wiki_name": "Combustion",
      "unit": "flat",
+     "wiki_name": "Combustion",
      "type_source": "Cloak of Flames family sibling"
     },
     {
      "name": "Fire Lore",
      "type": "Equipment",
      "value": 12,
-     "wiki_name": "Fire Lore",
      "unit": "percent",
+     "wiki_name": "Fire Lore",
      "type_source": "Cloak of Flames family sibling"
     }
    ],
@@ -724,11 +940,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Cold Resistance",
      "type": "Enhancement",
      "value": 24,
-     "wiki_name": "Cold Resistance",
      "unit": "flat",
+     "wiki_name": "Cold Resistance",
      "type_source": "Elemental Greataxe of Fire family sibling"
     }
    ],
@@ -746,11 +970,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Cold Resistance",
      "type": "Enhancement",
      "value": 30,
-     "wiki_name": "Cold Resistance",
      "unit": "flat",
+     "wiki_name": "Cold Resistance",
      "type_source": "Elemental Greataxe of Fire family sibling"
     }
    ],
@@ -768,11 +1000,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Cold Resistance",
      "type": "Enhancement",
      "value": 11,
-     "wiki_name": "Cold Resistance",
      "unit": "flat",
+     "wiki_name": "Cold Resistance",
      "type_source": "Elemental Greataxe of Fire family sibling"
     }
    ],
@@ -788,11 +1028,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Cold Resistance",
      "type": "Enhancement",
      "value": 18,
-     "wiki_name": "Cold Resistance",
      "unit": "flat",
+     "wiki_name": "Cold Resistance",
      "type_source": "Elemental Greataxe of Fire family sibling"
     }
    ],
@@ -810,11 +1058,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Fire Resistance",
      "type": "Enhancement",
      "value": 24,
-     "wiki_name": "Fire Resistance",
      "unit": "flat",
+     "wiki_name": "Fire Resistance",
      "type_source": "Elemental Khopesh of Water family sibling"
     }
    ],
@@ -832,11 +1088,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Fire Resistance",
      "type": "Enhancement",
      "value": 30,
-     "wiki_name": "Fire Resistance",
      "unit": "flat",
+     "wiki_name": "Fire Resistance",
      "type_source": "Elemental Khopesh of Water family sibling"
     }
    ],
@@ -854,11 +1118,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Fire Resistance",
      "type": "Enhancement",
      "value": 11,
-     "wiki_name": "Fire Resistance",
      "unit": "flat",
+     "wiki_name": "Fire Resistance",
      "type_source": "Elemental Khopesh of Water family sibling"
     }
    ],
@@ -874,11 +1146,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Fire Resistance",
      "type": "Enhancement",
      "value": 18,
-     "wiki_name": "Fire Resistance",
      "unit": "flat",
+     "wiki_name": "Fire Resistance",
      "type_source": "Elemental Khopesh of Water family sibling"
     }
    ],
@@ -896,11 +1176,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Acid Resistance",
      "type": "Enhancement",
      "value": 24,
-     "wiki_name": "Acid Resistance",
      "unit": "flat",
+     "wiki_name": "Acid Resistance",
      "type_source": "Elemental Longbow of Earth family sibling"
     }
    ],
@@ -918,11 +1206,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Acid Resistance",
      "type": "Enhancement",
      "value": 30,
-     "wiki_name": "Acid Resistance",
      "unit": "flat",
+     "wiki_name": "Acid Resistance",
      "type_source": "Elemental Longbow of Earth family sibling"
     }
    ],
@@ -940,11 +1236,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Acid Resistance",
      "type": "Enhancement",
      "value": 11,
-     "wiki_name": "Acid Resistance",
      "unit": "flat",
+     "wiki_name": "Acid Resistance",
      "type_source": "Elemental Longbow of Earth family sibling"
     }
    ],
@@ -960,11 +1264,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Acid Resistance",
      "type": "Enhancement",
      "value": 18,
-     "wiki_name": "Acid Resistance",
      "unit": "flat",
+     "wiki_name": "Acid Resistance",
      "type_source": "Elemental Longbow of Earth family sibling"
     }
    ],
@@ -982,11 +1294,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Electric Resistance",
      "type": "Enhancement",
      "value": 24,
-     "wiki_name": "Electric Resistance",
      "unit": "flat",
+     "wiki_name": "Electric Resistance",
      "type_source": "Elemental Rapier of Air family sibling"
     }
    ],
@@ -1004,11 +1324,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Electric Resistance",
      "type": "Enhancement",
      "value": 30,
-     "wiki_name": "Electric Resistance",
      "unit": "flat",
+     "wiki_name": "Electric Resistance",
      "type_source": "Elemental Rapier of Air family sibling"
     }
    ],
@@ -1026,11 +1354,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Electric Resistance",
      "type": "Enhancement",
      "value": 11,
-     "wiki_name": "Electric Resistance",
      "unit": "flat",
+     "wiki_name": "Electric Resistance",
      "type_source": "Elemental Rapier of Air family sibling"
     }
    ],
@@ -1046,11 +1382,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Electric Resistance",
      "type": "Enhancement",
      "value": 18,
-     "wiki_name": "Electric Resistance",
      "unit": "flat",
+     "wiki_name": "Electric Resistance",
      "type_source": "Elemental Rapier of Air family sibling"
     }
    ],
@@ -1069,32 +1413,32 @@
      "name": "Weaken Construct",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Weaken Construct",
      "unit": "bool",
+     "wiki_name": "Weaken Construct",
      "type_source": "Blasting Chime family sibling"
     },
     {
      "name": "Anthem",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Anthem",
      "unit": "bool",
+     "wiki_name": "Anthem",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Sonic Lore",
      "type": "Equipment",
      "value": 18,
-     "wiki_name": "Sonic Lore",
      "unit": "percent",
+     "wiki_name": "Sonic Lore",
      "type_source": "Blasting Chime family sibling"
     },
     {
      "name": "Sonic Spell Power",
      "type": "Equipment",
      "value": 122,
-     "wiki_name": "Resonance",
      "unit": "flat",
+     "wiki_name": "Resonance",
      "type_source": "Blasting Chime family sibling"
     }
    ],
@@ -1123,32 +1467,32 @@
      "name": "Blurry",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Blurry",
      "unit": "bool",
+     "wiki_name": "Blurry",
      "type_source": "Bracers of Wind family sibling"
     },
     {
      "name": "Air Guard",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Air Guard",
      "unit": "bool",
+     "wiki_name": "Air Guard",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Electric Spell Power",
      "type": "Equipment",
      "value": 122,
-     "wiki_name": "Magnetism",
      "unit": "flat",
+     "wiki_name": "Magnetism",
      "type_source": "Bracers of Wind family sibling"
     },
     {
      "name": "Lightning Lore",
      "type": "Equipment",
      "value": 18,
-     "wiki_name": "Lightning Lore",
      "unit": "percent",
+     "wiki_name": "Lightning Lore",
      "type_source": "Bracers of Wind family sibling"
     }
    ],
@@ -1168,9 +1512,18 @@
    "ml": null,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Corrosive Salt / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Dragon Bane 4 → Dragon Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Lifedrinker / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Colorless Augment Slot",
@@ -1182,9 +1535,18 @@
    "ml": null,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Corrosive Salt / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Dragon Bane 4 → Dragon Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Lifedrinker / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Colorless Augment Slot",
@@ -1196,9 +1558,18 @@
    "ml": null,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Corrosive Salt / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Dragon Bane 4 → Dragon Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Lifedrinker / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Colorless Augment Slot",
@@ -1210,9 +1581,18 @@
    "ml": null,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Corrosive Salt / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Dragon Bane 4 → Dragon Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Lifedrinker / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Colorless Augment Slot",
@@ -1224,9 +1604,18 @@
    "ml": null,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Corrosive Salt / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Dragon Bane 4 → Dragon Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Lifedrinker / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Colorless Augment Slot",
@@ -1238,9 +1627,18 @@
    "ml": null,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Dragon Bane 4 / Tidal Burst / Crushing Wave / Corrosive Salt / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Dragon Bane 4 → Dragon Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Lifedrinker / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Colorless Augment Slot",
@@ -1257,24 +1655,24 @@
      "name": "Fire Shield (Hot)",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Fire Shield (Hot)",
      "unit": "bool",
+     "wiki_name": "Fire Shield (Hot)",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Fire Spell Power",
      "type": "Equipment",
      "value": 122,
-     "wiki_name": "Combustion",
      "unit": "flat",
+     "wiki_name": "Combustion",
      "type_source": "Cloak of Flames family sibling"
     },
     {
      "name": "Fire Lore",
      "type": "Equipment",
      "value": 18,
-     "wiki_name": "Fire Lore",
      "unit": "percent",
+     "wiki_name": "Fire Lore",
      "type_source": "Cloak of Flames family sibling"
     }
    ],
@@ -1302,11 +1700,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Cold Resistance",
      "type": "Enhancement",
      "value": 36,
-     "wiki_name": "Cold Resistance",
      "unit": "flat",
+     "wiki_name": "Cold Resistance",
      "type_source": "Elemental Greataxe of Fire family sibling"
     }
    ],
@@ -1325,11 +1731,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Fire Resistance",
      "type": "Enhancement",
      "value": 36,
-     "wiki_name": "Fire Resistance",
      "unit": "flat",
+     "wiki_name": "Fire Resistance",
      "type_source": "Elemental Khopesh of Water family sibling"
     }
    ],
@@ -1348,11 +1762,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Acid Resistance",
      "type": "Enhancement",
      "value": 36,
-     "wiki_name": "Acid Resistance",
      "unit": "flat",
+     "wiki_name": "Acid Resistance",
      "type_source": "Elemental Longbow of Earth family sibling"
     }
    ],
@@ -1371,11 +1793,19 @@
    "admit_reason": "#784 — the weapons admit their tier enchantments whose bonus type is SOURCED, and not the bane/proc lines. The cut is by TYPE, not by whether a line carries a number: `Dragon Bane 3` has a magnitude and resolves to `Bool`, because it is bane damage vs a creature type — the family #331 closed as permanently unvalued, and this optimizer does not score it. What is admitted is the four Elemental Resistances — one spelling each, slot-independent — typed from a gear-planner sibling or the catalog-wide uniform type, never from the wiki row. `Enhancement Bonus` is ALSO refused, for a different reason: gear-planner spells it per slot (`(Weapon)` on 3,325 records, `(Armor)` on 1,234) while the wiki row says only '+2 Enhancement Bonus', so the sibling lookup misses and the slot-blind uniform fallback answers with a two-record Offhand spelling. Emitting that on 80 weapons would name a stat 3,325 weapons do not use. The refused lines stay in `raw` verbatim, so admitting them later needs no re-harvest.",
    "final": [
     {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    },
+    {
      "name": "Electric Resistance",
      "type": "Enhancement",
      "value": 36,
-     "wiki_name": "Electric Resistance",
      "unit": "flat",
+     "wiki_name": "Electric Resistance",
      "type_source": "Elemental Rapier of Air family sibling"
     }
    ],
@@ -1395,24 +1825,32 @@
      "name": "Weaken Undead",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Weaken Undead",
      "unit": "bool",
+     "wiki_name": "Weaken Undead",
      "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Enhancement Bonus (Armor)",
+     "type": "Enhancement",
+     "value": 6,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Armor slot-qualified spelling"
     },
     {
      "name": "Undead Guard",
      "type": "Bool",
      "value": 5,
-     "wiki_name": "Undead Guard",
      "unit": "flat",
+     "wiki_name": "Undead Guard",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Negative Energy Absorption",
      "type": "Enhancement",
      "value": 30,
-     "wiki_name": "Negative Energy Absorption",
      "unit": "percent",
+     "wiki_name": "Negative Energy Absorption",
      "type_source": "catalog-wide uniform type"
     }
    ],
@@ -1432,10 +1870,6 @@
     {
      "raw": "Resistance +9",
      "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-    },
-    {
-     "raw": "+6 Enhancement Bonus",
-     "reason": "slot-qualified upstream: gear-planner spells this `Enhancement Bonus (Armor)` on 1,234 records and `(Weapon)` on 3,325, against exactly two bare `Enhancement Bonus`, both on Offhand. The wiki row states only the bare form, so the family-sibling lookup misses and the slot-blind `uniform_types` fallback answers with the two-record spelling. Admitting it would put a name on this host that no other item in its slot uses. See `cannith_tiers.SLOT_QUALIFIED_NAMES` and #792."
     }
    ]
   },
@@ -1444,9 +1878,18 @@
    "ml": null,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Radiant Blast / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Undead Bane 4 → Undead Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Blinding Flash / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Colorless Augment Slot",
@@ -1458,9 +1901,18 @@
    "ml": null,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Radiant Blast / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Undead Bane 4 → Undead Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Blinding Flash / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Colorless Augment Slot",
@@ -1472,9 +1924,18 @@
    "ml": null,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Radiant Blast / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Undead Bane 4 → Undead Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Blinding Flash / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Colorless Augment Slot",
@@ -1486,9 +1947,18 @@
    "ml": null,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Radiant Blast / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Undead Bane 4 → Undead Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Blinding Flash / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Colorless Augment Slot",
@@ -1500,9 +1970,18 @@
    "ml": null,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Radiant Blast / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Undead Bane 4 → Undead Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Blinding Flash / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Colorless Augment Slot",
@@ -1514,9 +1993,18 @@
    "ml": null,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +5 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Radiant Blast / Upgradeable - Tier 2 / +5 Enhancement Bonus → +6 Enhancement Bonus / Undead Bane 4 → Undead Bane 5 / Adds Colorless Augment Slot / Upgradeable - Tier 3 / Adds Blinding Flash / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Colorless Augment Slot",
@@ -1533,32 +2021,32 @@
      "name": "Greater Auto-Repair",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Greater Auto-Repair",
      "unit": "bool",
+     "wiki_name": "Greater Auto-Repair",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Wizardry",
      "type": "Enhancement",
      "value": 220,
-     "wiki_name": "Wizardry",
      "unit": "flat",
+     "wiki_name": "Wizardry",
      "type_source": "Ring of Master Artifice family sibling"
     },
     {
      "name": "Reconstruction",
      "type": "Equipment",
      "value": 122,
-     "wiki_name": "Reconstruction",
      "unit": "flat",
+     "wiki_name": "Reconstruction",
      "type_source": "Ring of Master Artifice family sibling"
     },
     {
      "name": "Repair Lore",
      "type": "Equipment",
      "value": 18,
-     "wiki_name": "Repair Lore",
      "unit": "percent",
+     "wiki_name": "Repair Lore",
      "type_source": "Ring of Master Artifice family sibling"
     }
    ],
@@ -1587,32 +2075,32 @@
      "name": "Manslayer",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Manslayer",
      "unit": "bool",
+     "wiki_name": "Manslayer",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Ghostly",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Ghostly",
      "unit": "bool",
+     "wiki_name": "Ghostly",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Seeker",
      "type": "Enhancement",
      "value": 11,
-     "wiki_name": "Seeker",
      "unit": "flat",
+     "wiki_name": "Seeker",
      "type_source": "Ring of the Stalker family sibling"
     },
     {
      "name": "Deception",
      "type": "Enhancement",
      "value": 8,
-     "wiki_name": "Deception",
      "unit": "flat",
+     "wiki_name": "Deception",
      "type_source": "Ring of the Stalker family sibling"
     }
    ],
@@ -1637,40 +2125,40 @@
      "name": "Stone Prison Guard",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Stone Prison Guard",
      "unit": "bool",
+     "wiki_name": "Stone Prison Guard",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Earthgrab Guard",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Earthgrab Guard",
      "unit": "bool",
+     "wiki_name": "Earthgrab Guard",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Immunity to Slippery Surfaces",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Immunity to Slippery Surfaces",
      "unit": "bool",
+     "wiki_name": "Immunity to Slippery Surfaces",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Acid Spell Power",
      "type": "Equipment",
      "value": 122,
-     "wiki_name": "Corrosion",
      "unit": "flat",
+     "wiki_name": "Corrosion",
      "type_source": "Rock Boots family sibling"
     },
     {
      "name": "Acid Lore",
      "type": "Equipment",
      "value": 18,
-     "wiki_name": "Acid Lore",
      "unit": "percent",
+     "wiki_name": "Acid Lore",
      "type_source": "Rock Boots family sibling"
     }
    ],
@@ -1695,24 +2183,24 @@
      "name": "Staggering Blow",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Staggering Blow",
      "unit": "bool",
+     "wiki_name": "Staggering Blow",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Disable Device",
      "type": "Competence",
      "value": 18,
-     "wiki_name": "Disable Device",
      "unit": "flat",
+     "wiki_name": "Disable Device",
      "type_source": "Spare Hand family sibling"
     },
     {
      "name": "Open Lock",
      "type": "Competence",
      "value": 18,
-     "wiki_name": "Open Lock",
      "unit": "flat",
+     "wiki_name": "Open Lock",
      "type_source": "Spare Hand family sibling"
     }
    ],
@@ -1746,11 +2234,19 @@
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Protection +5 / Resistance +5 / Undead Guard +3 / Protection from Evil / Upgradeable - Tier 2 / +3 Enhancement Bonus -> +4 Enhancement Bonus / Protection +5 -> Protection +6 / Resistance +5 -> Resistance +6 / Upgradeable - Tier 3 / Undead Guard +3 -> Undead Guard +4 / Adds Green Augment Slot",
    "final": [
     {
+     "name": "Enhancement Bonus (Armor)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Armor slot-qualified spelling"
+    },
+    {
      "name": "Undead Guard",
      "type": "Bool",
      "value": 4,
-     "wiki_name": "Undead Guard",
      "unit": "flat",
+     "wiki_name": "Undead Guard",
      "type_source": "catalog-wide uniform type"
     }
    ],
@@ -1769,10 +2265,6 @@
     {
      "raw": "Resistance +6",
      "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-    },
-    {
-     "raw": "+4 Enhancement Bonus",
-     "reason": "slot-qualified upstream: gear-planner spells this `Enhancement Bonus (Armor)` on 1,234 records and `(Weapon)` on 3,325, against exactly two bare `Enhancement Bonus`, both on Offhand. The wiki row states only the bare form, so the family-sibling lookup misses and the slot-blind `uniform_types` fallback answers with the two-record spelling. Admitting it would put a name on this host that no other item in its slot uses. See `cannith_tiers.SLOT_QUALIFIED_NAMES` and #792."
     }
    ]
   },
@@ -1786,17 +2278,25 @@
      "name": "Undead Guard",
      "type": "Bool",
      "value": 4,
-     "wiki_name": "Undead Guard",
      "unit": "flat",
+     "wiki_name": "Undead Guard",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Weaken Undead",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Weaken Undead",
      "unit": "bool",
+     "wiki_name": "Weaken Undead",
      "type_source": "catalog-wide uniform type"
+    },
+    {
+     "name": "Enhancement Bonus (Armor)",
+     "type": "Enhancement",
+     "value": 5,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Armor slot-qualified spelling"
     }
    ],
    "slots": [
@@ -1814,10 +2314,6 @@
     {
      "raw": "Resistance +7",
      "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-    },
-    {
-     "raw": "+5 Enhancement Bonus",
-     "reason": "slot-qualified upstream: gear-planner spells this `Enhancement Bonus (Armor)` on 1,234 records and `(Weapon)` on 3,325, against exactly two bare `Enhancement Bonus`, both on Offhand. The wiki row states only the bare form, so the family-sibling lookup misses and the slot-blind `uniform_types` fallback answers with the two-record spelling. Admitting it would put a name on this host that no other item in its slot uses. See `cannith_tiers.SLOT_QUALIFIED_NAMES` and #792."
     }
    ]
   },
@@ -1828,11 +2324,19 @@
    "raw": "+1 Enhancement Bonus / Protection +3 / Resistance +3 / Undead Guard +2",
    "final": [
     {
+     "name": "Enhancement Bonus (Armor)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Armor slot-qualified spelling"
+    },
+    {
      "name": "Undead Guard",
      "type": "Bool",
      "value": 2,
-     "wiki_name": "Undead Guard",
      "unit": "flat",
+     "wiki_name": "Undead Guard",
      "type_source": "catalog-wide uniform type"
     }
    ],
@@ -1845,10 +2349,6 @@
     {
      "raw": "Resistance +3",
      "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-    },
-    {
-     "raw": "+1 Enhancement Bonus",
-     "reason": "slot-qualified upstream: gear-planner spells this `Enhancement Bonus (Armor)` on 1,234 records and `(Weapon)` on 3,325, against exactly two bare `Enhancement Bonus`, both on Offhand. The wiki row states only the bare form, so the family-sibling lookup misses and the slot-blind `uniform_types` fallback answers with the two-record spelling. Admitting it would put a name on this host that no other item in its slot uses. See `cannith_tiers.SLOT_QUALIFIED_NAMES` and #792."
     }
    ]
   },
@@ -1859,11 +2359,19 @@
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Protection +4 / Resistance +4 / Undead Guard +2 / Upgradeable - Tier 2 / +2 Enhancement Bonus -> +3 Enhancement Bonus / Undead Guard +2 -> Undead Guard +3 / Upgradeable - Tier 3 / Protection +4 -> Protection +5 / Resistance +4 -> Resistance +5 / Adds Green Augment Slot",
    "final": [
     {
+     "name": "Enhancement Bonus (Armor)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Armor slot-qualified spelling"
+    },
+    {
      "name": "Undead Guard",
      "type": "Bool",
      "value": 3,
-     "wiki_name": "Undead Guard",
      "unit": "flat",
+     "wiki_name": "Undead Guard",
      "type_source": "catalog-wide uniform type"
     }
    ],
@@ -1878,10 +2386,6 @@
     {
      "raw": "Resistance +5",
      "reason": "bonus type unsourced: no sibling in the 'Mournlode Docent' family carries 'Resistance', and the catalog assigns it more than one type"
-    },
-    {
-     "raw": "+3 Enhancement Bonus",
-     "reason": "slot-qualified upstream: gear-planner spells this `Enhancement Bonus (Armor)` on 1,234 records and `(Weapon)` on 3,325, against exactly two bare `Enhancement Bonus`, both on Offhand. The wiki row states only the bare form, so the family-sibling lookup misses and the slot-blind `uniform_types` fallback answers with the two-record spelling. Admitting it would put a name on this host that no other item in its slot uses. See `cannith_tiers.SLOT_QUALIFIED_NAMES` and #792."
     }
    ]
   },
@@ -1890,9 +2394,18 @@
    "ml": 12,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Righteous / Undead Bane 3 / Brilliance / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Undead Bane 3 → Undead Bane 4 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -1903,9 +2416,18 @@
    "ml": 16,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -1916,9 +2438,18 @@
    "ml": 4,
    "slot": "Weapon",
    "raw": "+1 Enhancement Bonus / Righteous / Undead Bane 2",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": []
   },
@@ -1927,9 +2458,18 @@
    "ml": 8,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Righteous / Undead Bane 2 / Incandescence / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Undead Bane 2 → Undead Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -1940,9 +2480,18 @@
    "ml": 12,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Righteous / Undead Bane 3 / Brilliance / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Undead Bane 3 → Undead Bane 4 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -1953,9 +2502,18 @@
    "ml": 16,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -1966,9 +2524,18 @@
    "ml": 4,
    "slot": "Weapon",
    "raw": "+1 Enhancement Bonus / Righteous / Undead Bane 2",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": []
   },
@@ -1977,9 +2544,18 @@
    "ml": 8,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Righteous / Undead Bane 2 / Incandescence / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Undead Bane 2 → Undead Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -1990,9 +2566,18 @@
    "ml": 12,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Righteous / Undead Bane 3 / Brilliance / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Undead Bane 3 → Undead Bane 4 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -2003,9 +2588,18 @@
    "ml": 16,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -2016,9 +2610,18 @@
    "ml": 4,
    "slot": "Weapon",
    "raw": "+1 Enhancement Bonus / Righteous / Undead Bane 2",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": []
   },
@@ -2027,9 +2630,18 @@
    "ml": 8,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Righteous / Undead Bane 2 / Incandescence / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Undead Bane 2 → Undead Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -2040,9 +2652,18 @@
    "ml": 12,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Righteous / Undead Bane 3 / Brilliance / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Undead Bane 3 → Undead Bane 4 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -2053,9 +2674,18 @@
    "ml": 16,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -2066,9 +2696,18 @@
    "ml": 4,
    "slot": "Weapon",
    "raw": "+1 Enhancement Bonus / Righteous / Undead Bane 2",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": []
   },
@@ -2077,9 +2716,18 @@
    "ml": 8,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Righteous / Undead Bane 2 / Incandescence / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Undead Bane 2 → Undead Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -2090,9 +2738,18 @@
    "ml": 12,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Righteous / Undead Bane 3 / Brilliance / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Undead Bane 3 → Undead Bane 4 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -2103,9 +2760,18 @@
    "ml": 16,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -2116,9 +2782,18 @@
    "ml": 4,
    "slot": "Weapon",
    "raw": "+1 Enhancement Bonus / Righteous / Undead Bane 2",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": []
   },
@@ -2127,9 +2802,18 @@
    "ml": 8,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Righteous / Undead Bane 2 / Incandescence / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Undead Bane 2 → Undead Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -2140,9 +2824,18 @@
    "ml": 12,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +3 Enhancement Bonus / Righteous / Undead Bane 3 / Brilliance / Upgradeable - Tier 2 / +3 Enhancement Bonus → +4 Enhancement Bonus / Upgradeable - Tier 3 / Undead Bane 3 → Undead Bane 4 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 3,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -2153,9 +2846,18 @@
    "ml": 16,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +4 Enhancement Bonus / Righteous / Undead Bane 4 / Brilliance / Upgradeable - Tier 2 / +4 Enhancement Bonus → +5 Enhancement Bonus / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 4,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -2166,9 +2868,18 @@
    "ml": 4,
    "slot": "Weapon",
    "raw": "+1 Enhancement Bonus / Righteous / Undead Bane 2",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 1,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": []
   },
@@ -2177,9 +2888,18 @@
    "ml": 8,
    "slot": "Weapon",
    "raw": "Upgradeable - Tier 1 / +2 Enhancement Bonus / Righteous / Undead Bane 2 / Incandescence / Upgradeable - Tier 2 / +2 Enhancement Bonus → +3 Enhancement Bonus / Undead Bane 2 → Undead Bane 3 / Upgradeable - Tier 3 / Adds Purple Augment Slot",
-   "admit": "slots_only",
-   "admit_reason": "#784 — nothing admissible. Every typed line on this variant is either a bane/proc `Bool` (#331, permanently unvalued) or `Enhancement Bonus`, whose gear-planner spelling is slot-qualified while the wiki row gives only the bare form — see `SLOT_QUALIFIED_NAMES` in src/cannith_tiers.py. So this entry admits its augment slot and nothing else, exactly as it did before #784.",
-   "final": [],
+   "admit": "typed_only",
+   "admit_reason": "#792 — admits the slot-qualified `Enhancement Bonus (Weapon)` and not the bane/proc lines. The cut is by TYPE: a bane line carries a magnitude and still resolves to `Bool`, the family #331 closed as permanently unvalued. This entry was `slots_only` until the join was keyed on the host slot; the enchantment was always in its `raw` and was refused because a slot-blind lookup answered with the two-record Offhand spelling.",
+   "final": [
+    {
+     "name": "Enhancement Bonus (Weapon)",
+     "type": "Enhancement",
+     "value": 2,
+     "unit": "flat",
+     "wiki_name": "Enhancement Bonus",
+     "type_source": "Weapon slot-qualified spelling"
+    }
+   ],
    "quarantined": [],
    "slots": [
     "Purple Augment Slot"
@@ -2195,32 +2915,32 @@
      "name": "Improved Auto-Repair",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Improved Auto-Repair",
      "unit": "bool",
+     "wiki_name": "Improved Auto-Repair",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Wizardry",
      "type": "Enhancement",
      "value": 154,
-     "wiki_name": "Wizardry",
      "unit": "flat",
+     "wiki_name": "Wizardry",
      "type_source": "Ring of Master Artifice family sibling"
     },
     {
      "name": "Reconstruction",
      "type": "Equipment",
      "value": 94,
-     "wiki_name": "Reconstruction",
      "unit": "flat",
+     "wiki_name": "Reconstruction",
      "type_source": "Ring of Master Artifice family sibling"
     },
     {
      "name": "Repair Lore",
      "type": "Equipment",
      "value": 14,
-     "wiki_name": "Repair Lore",
      "unit": "percent",
+     "wiki_name": "Repair Lore",
      "type_source": "Ring of Master Artifice family sibling"
     }
    ],
@@ -2244,32 +2964,32 @@
      "name": "Improved Auto-Repair",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Improved Auto-Repair",
      "unit": "bool",
+     "wiki_name": "Improved Auto-Repair",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Wizardry",
      "type": "Enhancement",
      "value": 187,
-     "wiki_name": "Wizardry",
      "unit": "flat",
+     "wiki_name": "Wizardry",
      "type_source": "Ring of Master Artifice family sibling"
     },
     {
      "name": "Reconstruction",
      "type": "Equipment",
      "value": 108,
-     "wiki_name": "Reconstruction",
      "unit": "flat",
+     "wiki_name": "Reconstruction",
      "type_source": "Ring of Master Artifice family sibling"
     },
     {
      "name": "Repair Lore",
      "type": "Equipment",
      "value": 16,
-     "wiki_name": "Repair Lore",
      "unit": "percent",
+     "wiki_name": "Repair Lore",
      "type_source": "Ring of Master Artifice family sibling"
     }
    ],
@@ -2293,32 +3013,32 @@
      "name": "Auto-Repair",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Auto-Repair",
      "unit": "bool",
+     "wiki_name": "Auto-Repair",
      "type_source": "Ring of Master Artifice family sibling"
     },
     {
      "name": "Wizardry",
      "type": "Enhancement",
      "value": 118,
-     "wiki_name": "Wizardry",
      "unit": "flat",
+     "wiki_name": "Wizardry",
      "type_source": "Ring of Master Artifice family sibling"
     },
     {
      "name": "Reconstruction",
      "type": "Equipment",
      "value": 79,
-     "wiki_name": "Reconstruction",
      "unit": "flat",
+     "wiki_name": "Reconstruction",
      "type_source": "Ring of Master Artifice family sibling"
     },
     {
      "name": "Repair Lore",
      "type": "Equipment",
      "value": 12,
-     "wiki_name": "Repair Lore",
      "unit": "percent",
+     "wiki_name": "Repair Lore",
      "type_source": "Ring of Master Artifice family sibling"
     }
    ],
@@ -2342,16 +3062,16 @@
      "name": "Manslayer",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Manslayer",
      "unit": "bool",
+     "wiki_name": "Manslayer",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Seeker",
      "type": "Enhancement",
      "value": 8,
-     "wiki_name": "Seeker",
      "unit": "flat",
+     "wiki_name": "Seeker",
      "type_source": "Ring of the Stalker family sibling"
     }
    ],
@@ -2375,24 +3095,24 @@
      "name": "Manslayer",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Manslayer",
      "unit": "bool",
+     "wiki_name": "Manslayer",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Ethereal",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Ethereal",
      "unit": "bool",
+     "wiki_name": "Ethereal",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Seeker",
      "type": "Enhancement",
      "value": 9,
-     "wiki_name": "Seeker",
      "unit": "flat",
+     "wiki_name": "Seeker",
      "type_source": "Ring of the Stalker family sibling"
     }
    ],
@@ -2416,8 +3136,8 @@
      "name": "Seeker",
      "type": "Enhancement",
      "value": 6,
-     "wiki_name": "Seeker",
      "unit": "flat",
+     "wiki_name": "Seeker",
      "type_source": "Ring of the Stalker family sibling"
     }
    ],
@@ -2441,32 +3161,32 @@
      "name": "Stone Prison Guard",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Stone Prison Guard",
      "unit": "bool",
+     "wiki_name": "Stone Prison Guard",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Immunity to Slippery Surfaces",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Immunity to Slippery Surfaces",
      "unit": "bool",
+     "wiki_name": "Immunity to Slippery Surfaces",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Acid Spell Power",
      "type": "Equipment",
      "value": 94,
-     "wiki_name": "Corrosion",
      "unit": "flat",
+     "wiki_name": "Corrosion",
      "type_source": "Rock Boots family sibling"
     },
     {
      "name": "Acid Lore",
      "type": "Equipment",
      "value": 14,
-     "wiki_name": "Acid Lore",
      "unit": "percent",
+     "wiki_name": "Acid Lore",
      "type_source": "Rock Boots family sibling"
     }
    ],
@@ -2490,40 +3210,40 @@
      "name": "Stone Prison Guard",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Stone Prison Guard",
      "unit": "bool",
+     "wiki_name": "Stone Prison Guard",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Earthgrab Guard",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Earthgrab Guard",
      "unit": "bool",
+     "wiki_name": "Earthgrab Guard",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Immunity to Slippery Surfaces",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Immunity to Slippery Surfaces",
      "unit": "bool",
+     "wiki_name": "Immunity to Slippery Surfaces",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Acid Spell Power",
      "type": "Equipment",
      "value": 108,
-     "wiki_name": "Corrosion",
      "unit": "flat",
+     "wiki_name": "Corrosion",
      "type_source": "Rock Boots family sibling"
     },
     {
      "name": "Acid Lore",
      "type": "Equipment",
      "value": 16,
-     "wiki_name": "Acid Lore",
      "unit": "percent",
+     "wiki_name": "Acid Lore",
      "type_source": "Rock Boots family sibling"
     }
    ],
@@ -2542,24 +3262,24 @@
      "name": "Lesser Stone Prison Guard",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Lesser Stone Prison Guard",
      "unit": "bool",
+     "wiki_name": "Lesser Stone Prison Guard",
      "type_source": "Rock Boots family sibling"
     },
     {
      "name": "Acid Spell Power",
      "type": "Equipment",
      "value": 79,
-     "wiki_name": "Corrosion",
      "unit": "flat",
+     "wiki_name": "Corrosion",
      "type_source": "Rock Boots family sibling"
     },
     {
      "name": "Acid Lore",
      "type": "Equipment",
      "value": 12,
-     "wiki_name": "Acid Lore",
      "unit": "percent",
+     "wiki_name": "Acid Lore",
      "type_source": "Rock Boots family sibling"
     }
    ],
@@ -2578,24 +3298,24 @@
      "name": "Staggering Blow",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Staggering Blow",
      "unit": "bool",
+     "wiki_name": "Staggering Blow",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Disable Device",
      "type": "Competence",
      "value": 16,
-     "wiki_name": "Disable Device",
      "unit": "flat",
+     "wiki_name": "Disable Device",
      "type_source": "Spare Hand family sibling"
     },
     {
      "name": "Open Lock",
      "type": "Competence",
      "value": 16,
-     "wiki_name": "Open Lock",
      "unit": "flat",
+     "wiki_name": "Open Lock",
      "type_source": "Spare Hand family sibling"
     }
    ],
@@ -2623,24 +3343,24 @@
      "name": "Staggering Blow",
      "type": "Bool",
      "value": 1,
-     "wiki_name": "Staggering Blow",
      "unit": "bool",
+     "wiki_name": "Staggering Blow",
      "type_source": "catalog-wide uniform type"
     },
     {
      "name": "Disable Device",
      "type": "Competence",
      "value": 17,
-     "wiki_name": "Disable Device",
      "unit": "flat",
+     "wiki_name": "Disable Device",
      "type_source": "Spare Hand family sibling"
     },
     {
      "name": "Open Lock",
      "type": "Competence",
      "value": 17,
-     "wiki_name": "Open Lock",
      "unit": "flat",
+     "wiki_name": "Open Lock",
      "type_source": "Spare Hand family sibling"
     }
    ],
@@ -2668,16 +3388,16 @@
      "name": "Disable Device",
      "type": "Competence",
      "value": 13,
-     "wiki_name": "Disable Device",
      "unit": "flat",
+     "wiki_name": "Disable Device",
      "type_source": "Spare Hand family sibling"
     },
     {
      "name": "Open Lock",
      "type": "Competence",
      "value": 13,
-     "wiki_name": "Open Lock",
      "unit": "flat",
+     "wiki_name": "Open Lock",
      "type_source": "Spare Hand family sibling"
     }
    ],

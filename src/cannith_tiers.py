@@ -102,21 +102,13 @@ LEADING = re.compile(r"^\+(?P<v>\d+)\s+(?P<name>.+)$")
 
 AUGMENT_SLOT = re.compile(r"^(Colorless|Green|Purple|Blue|Red|Yellow|Orange)\s+Augment Slot$")
 
-#: #784 — affix names gear-planner spells PER SLOT, where the wiki row states only
-#: the bare form. The seed refuses these, and `tests/test_cannith_tiers.py` reads
-#: this same set, so the shard's rule and the test's expectation cannot drift.
-#:
-#: Measured 2026-09-19 against the pinned snapshot: `Enhancement Bonus (Weapon)`
-#: on 3,325 weapon records and `Enhancement Bonus (Armor)` on 1,234, against
-#: exactly TWO bare `Enhancement Bonus` — both on Offhand. A weapon's wiki row
-#: says only "+2 Enhancement Bonus", so `sibling_types` misses and
-#: `uniform_types`, which does not consider slot, answers with the two-record
-#: spelling. Emitting that on a weapon names a stat 3,325 weapons do not use.
-#:
-#: A 3,325-to-2 majority is a pattern, not a statement, and this repo does not
-#: rename on a pattern. Admitting these needs the mapping sourced, or the join
-#: keyed on the host's own slot.
-SLOT_QUALIFIED_NAMES = frozenset({"Enhancement Bonus"})
+#: #792 — RETIRED. This set named the one slot-qualified affix somebody found by
+#: hand and refused it outright, costing 85 admissions, because a 3,325-to-2
+#: majority is a pattern and this repo does not rename on a pattern. `join_type`
+#: keys the join on the host's own slot instead, which is a reading rather than a
+#: pattern and generalizes to affixes nobody has noticed yet. Kept as an empty set
+#: only so a stale import fails loudly rather than silently refusing nothing.
+SLOT_QUALIFIED_NAMES = frozenset()
 
 
 def _quarantine(line, reason):
@@ -266,6 +258,134 @@ def sibling_types(records, family_of, aliases=None):
     return seen
 
 
+_QUALIFIED = re.compile(r"^(?P<base>.+?) \((?P<qual>[^()]+)\)$")
+
+#: The catalog's marker for a debuff. Every affix carrying it is negative.
+PENALTY_TYPE = "Penalty"
+
+
+def assert_penalty_is_negative(records) -> int:
+    """#792 — `slot_qualified_types` skips `Penalty` records when deciding whether a
+    slot's spelling is unanimous, on the grounds that a debuff is not a competing
+    answer for a row stating a bonus. That is only true while every Penalty affix IS
+    a debuff.
+
+    Measured 2026-09-19: 39 of 39 negative. Asserted rather than dated, because the
+    day a positive Penalty arrives is the day the skip above starts hiding a real
+    disagreement — and it would hide it silently, by resolving to the other type.
+
+    Returns the count inspected; refuses to pass over zero.
+    """
+    seen = 0
+    offenders = []
+    for rec in records or []:
+        for a in rec.get("affixes") or []:
+            if a.get("type") != PENALTY_TYPE:
+                continue
+            seen += 1
+            if not str(a.get("value", "")).strip().startswith("-"):
+                offenders.append((rec.get("name"), a.get("name"), a.get("value")))
+    if not seen:
+        raise ValueError(
+            "no Penalty-typed affix in the catalog at all — the sign premise behind "
+            "slot_qualified_types cannot be checked, so it must not be trusted")
+    if offenders:
+        raise SystemExit(
+            "Penalty-typed affixes that are NOT negative: " + repr(offenders[:5])
+            + " — `slot_qualified_types` skips Penalty records as debuffs; a positive "
+            "one means that skip is now hiding a real type disagreement")
+    return seen
+
+
+def slot_qualified_types(records, aliases=None):
+    """`(bare name, host slot) -> (raw QUALIFIED name, type)`.
+
+    #792 — the type source between the family sibling and the catalog-wide uniform
+    type, and the one that fixes a defect the other two cannot see.
+
+    Upstream spells some affixes with a slot qualifier while a wiki row states only
+    the bare form. `Enhancement Bonus` is the case that shipped wrong: gear-planner
+    carries `(Weapon)` on 3,325 records and `(Armor)` on 1,234, against exactly TWO
+    bare ones, both Offhand. The family lookup misses (the siblings carry the
+    qualified name), so resolution fell through to `uniform_types` — which does not
+    consider slot — and answered with the two-record spelling. Five Mournlode
+    Docents shipped it on live ARMOR from #762 until #784 withdrew them.
+
+    THE RULE IS STRUCTURAL, not a slot-to-qualifier table. For a bare name on a host
+    in slot `S`, look at the qualified spellings of that name which upstream actually
+    carries ON SLOT `S`. Exactly one, with one type there, resolves. Zero or several
+    resolves nothing, and the caller falls through as before.
+
+    Deriving it from the records rather than declaring it is what makes it cover
+    `(Armor)` on an Offhand host — a shield's enhancement bonus is spelled `(Armor)`
+    upstream, which a hand-written `slot -> "(" + slot + ")"` rule would miss and a
+    census-of-the-day would freeze. Nothing here is chosen between competing
+    answers; ambiguity refuses.
+    """
+    aliases = aliases or {}
+    # (bare, slot) -> {qualified raw name -> {types}}
+    seen = {}
+    # (bare, slot) where the BARE spelling occurs natively on that same slot.
+    #
+    # These are the ones that must NOT resolve. A qualifier is only a slot
+    # qualifier for a name when the slot uses it instead of the bare form; when the
+    # slot carries both, the two are DISTINCT STATS and the parenthesis is part of
+    # the name. `False Life` and `False Life (%)` are flat and percentage HP, and
+    # Cloak, Necklace, Offhand, Ring and Trinket all carry both — renaming a wiki
+    # row's flat `False Life` to the percentage one would be exactly the silent
+    # mis-typing this whole function exists to stop, committed in the other
+    # direction. Same for `Radiance` / `(enchantment)` on Weapon and
+    # `Transmuted Platinum` / `(Epic)`.
+    #
+    # It also takes out `('Enhancement Bonus', 'Offhand')`: those two bare records
+    # ARE the Offhand ones, so that slot genuinely uses the bare spelling and has no
+    # business being rewritten to `(Armor)`. Weapon and Armor, the two slots the
+    # Cannith rows actually land on, carry no bare form and are unaffected.
+    native_bare = set()
+    for rec in records:
+        slot = rec.get("slot")
+        for a in rec.get("affixes") or []:
+            nm = a.get("name")
+            if nm and not _QUALIFIED.match(nm):
+                native_bare.add((aliases.get(nm, nm), slot))
+    for rec in records:
+        slot = rec.get("slot")
+        if not slot:
+            continue
+        for a in rec.get("affixes") or []:
+            nm, ty = a.get("name"), a.get("type")
+            if not nm or not ty:
+                continue
+            # A DEBUFF is not a competing answer for a row stating a bonus.
+            # `Enhancement Bonus (Weapon)` carries `Enhancement` on 3,322 records
+            # and `Penalty` on 3 — the cursed `-1` weapons — and counting those as
+            # disagreement would refuse the whole slot over three curses.
+            #
+            # Safe because it is CHECKED, not assumed: every Penalty-typed affix in
+            # the catalog is negative, 39 of 39, and `assert_penalty_is_negative`
+            # fails the build the moment that stops being true. Without that guard
+            # this line would be exactly the kind of convenient assumption the
+            # provenance model exists to refuse.
+            if ty == PENALTY_TYPE:
+                continue
+            m = _QUALIFIED.match(nm)
+            if not m:
+                continue
+            bare = aliases.get(m.group("base"), m.group("base"))
+            seen.setdefault((bare, slot), {}).setdefault(nm, set()).add(ty)
+    out = {}
+    for key, spellings in seen.items():
+        if key in native_bare:
+            continue
+        if len(spellings) != 1:
+            continue                      # two qualified spellings on one slot
+        name, types = next(iter(spellings.items()))
+        if len(types) != 1:
+            continue                      # the spelling itself is not unanimous here
+        out[key] = (name, next(iter(types)))
+    return out
+
+
 def uniform_types(records, aliases=None):
     """canonical affix name -> (raw name, type), but ONLY where the catalog is unanimous.
 
@@ -304,3 +424,77 @@ def uniform_types(records, aliases=None):
     for k in conflict:
         seen.pop(k, None)
     return seen
+
+
+def join_type(name, slot, fam, slotq, sib, uni):
+    """#792 — THE join. One rule, one place, most-specific first.
+
+    A wiki row states a display name and a magnitude; it never states a bonus type,
+    so the type is joined from gear-planner. Three keys can answer, and before this
+    they were tried in two of the three orders that matter:
+
+    1. `slotq` — (bare name, HOST SLOT). gear-planner spells some affixes per slot:
+       `Enhancement Bonus (Weapon)` on 3,325 weapons, `(Armor)` on 1,234, against
+       exactly two bare `Enhancement Bonus`, both Offhand. The wiki row for a weapon
+       says only "+2 Enhancement Bonus", so this key is the only one that can tell
+       which spelling the host actually uses.
+    2. `sib` — (name, item family). The item's own other tiers.
+    3. `uni` — (name). Catalog-wide, and SLOT-BLIND, which is the defect: asked for
+       a weapon's `Enhancement Bonus` it answered with the two-record Offhand
+       spelling and named a stat 3,325 weapons do not use.
+
+    Ordering 1 before 3 is what retires `SLOT_QUALIFIED_NAMES`. That set named the
+    one affix found by hand and refused it outright — 85 admissions on 80 weapons
+    and 5 docents — because a 3,325-to-2 majority is a pattern and this repo does not
+    rename on a pattern. A slot-keyed join is not a pattern: it reads the spelling
+    from the host's own slot, and it generalizes to the next such affix (`Life
+    Shield (Weapon)` is already in the map) without anyone noticing it by hand.
+
+    Returns `(raw name, bonus type, type_source)` or None. The source travels with
+    the answer because the shard stores it per affix and
+    `test_every_admitted_affix_records_where_its_bonus_type_came_from` re-derives it
+    — a type whose provenance is only asserted, never recomputed, is a type nobody
+    is checking.
+    """
+    if slot:
+        hit = slotq.get((name, slot))
+        if hit:
+            return (hit[0], hit[1], f"{slot} slot-qualified spelling")
+    hit = sib.get((name, fam))
+    if hit:
+        return (hit[0], hit[1], f"{fam} family sibling")
+    hit = uni.get(name)
+    if hit:
+        return (hit[0], hit[1], "catalog-wide uniform type")
+    return None
+
+
+def assert_no_bare_slot_qualified(items, slotq):
+    """#792 — the property, asserted; not the one name, pinned.
+
+    No entry may emit a BARE affix name onto a host whose slot has a qualified
+    spelling for it. That is the defect `SLOT_QUALIFIED_NAMES` was standing in for,
+    and stating it this way means the next slot-qualified affix upstream is caught by
+    the build instead of by a player reading a loadout that scores nothing.
+
+    Refuses to pass over an empty map or an empty shard — a guard that inspects zero
+    records is green for the wrong reason.
+    """
+    if not slotq:
+        raise ValueError("empty slot-qualified map — this guard would pass vacuously")
+    if not items:
+        raise ValueError("empty shard — this guard would pass vacuously")
+    bad = []
+    for nm, entry in items.items():
+        slot = entry.get("slot")
+        if not slot:
+            continue
+        for a in entry.get("final") or []:
+            qualified = slotq.get((a.get("name"), slot))
+            if qualified:
+                bad.append((nm, slot, a.get("name"), qualified[0]))
+    if bad:
+        raise SystemExit(
+            "entries emitting a bare name onto a slot that spells it qualified: "
+            + repr(bad[:5]) + " — join with `join_type`, which keys on the host slot")
+    return len(items)
