@@ -91,8 +91,14 @@ const W = require("../web/wizard.js");
 
 test("the index covers every stamped option row and nothing else", () => {
   const idx = W.craftOptionIndex(DS);
-  assert.strictEqual(idx.length, 996, "index size is the stamped population");
-  assert.strictEqual(new Set(idx.map((r) => r.id)).size, 996, "ids stay unique through the index");
+  // #764 — 1007 not 996: +11, the Essence options the three newly-served host
+  // families add (Rune Arm 2, Ring 7, Melee 2). The second assertion is the one
+  // that matters and is why the same change had to widen the craft-identity
+  // discriminator to (family, menu): `Insightful Constitution` is a Trinket Prefix
+  // AND a Ring Prefix, so under the old `menu`-only key the two collapsed and
+  // blocking one would have silently blocked the other.
+  assert.strictEqual(idx.length, 1007, "index size is the stamped population");
+  assert.strictEqual(new Set(idx.map((r) => r.id)).size, 1007, "ids stay unique through the index");
   for (const r of idx) {
     assert.ok(r.id.startsWith("craft:"), r.id);
     assert.ok(r.name, `row with no display name: ${r.id}`);

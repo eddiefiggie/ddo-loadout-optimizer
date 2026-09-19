@@ -49,7 +49,7 @@ def test_every_option_carries_a_sourced_bonus_type():
                            "essence_bonus_type.json")) as fh:
         harvested = json.load(fh)["harvested"]
     stats, units = _catalog()
-    for rec in essence_pool.build_trinket_pool(stats, units)["records"]:
+    for rec in essence_pool.build_essence_pool(stats, units)["records"]:
         entry = harvested.get(rec["effect"])
         assert entry and entry["provenance"] == "stated", \
             f"{rec['effect']} is offered without a stated bonus type"
@@ -62,7 +62,7 @@ def test_insightful_effects_contribute_to_the_base_stat_not_a_stat_of_their_own(
     the name as a stat would give it a private bucket that stacks with every
     Constitution item in the game."""
     stats, units = _catalog()
-    for rec in essence_pool.build_trinket_pool(stats, units)["records"]:
+    for rec in essence_pool.build_essence_pool(stats, units)["records"]:
         if rec["effect"].startswith("Insightful "):
             assert rec["stat"] == rec["effect"][len("Insightful "):], \
                 f"{rec['effect']} contributes to {rec['stat']!r}"
@@ -74,7 +74,7 @@ def test_every_option_names_a_stat_the_catalog_already_uses():
     would stack with everything — the double-count arriving through the front
     door."""
     stats, units = _catalog()
-    for rec in essence_pool.build_trinket_pool(stats, units)["records"]:
+    for rec in essence_pool.build_essence_pool(stats, units)["records"]:
         assert rec["stat"] in stats, f"{rec['effect']} -> {rec['stat']!r}, unknown to the catalog"
 
 
@@ -82,7 +82,7 @@ def test_an_unknown_stat_is_dropped_rather_than_offered():
     """Prove the catalog gate bites. With an empty catalog nothing may pass, and
     the builder must refuse rather than emit an unbucketable pool."""
     try:
-        essence_pool.build_trinket_pool(catalog_stats=set(), catalog_units={})
+        essence_pool.build_essence_pool(catalog_stats=set(), catalog_units={})
     except essence_pool.PoolError:
         return
     raise AssertionError("an empty catalog produced options instead of refusing")
@@ -93,7 +93,7 @@ def test_insight_options_carry_the_wiki_minimum_level_and_others_do_not():
     higher only." The heroic Gem is ML 5, so this is the difference between
     offering it nine Insight options and offering it none."""
     stats, units = _catalog()
-    for rec in essence_pool.build_trinket_pool(stats, units)["records"]:
+    for rec in essence_pool.build_essence_pool(stats, units)["records"]:
         expected = essence_pool.INSIGHT_MIN_ML if rec["bonus_type"] == "Insight" else 1
         assert rec["min_ml"] == expected, f"{rec['effect']}: min_ml {rec['min_ml']}"
 
@@ -102,7 +102,7 @@ def test_every_curve_covers_all_thirty_six_minimum_levels():
     """The solver reads `values_by_ml[ml - 1]`. A short curve would index
     undefined and silently credit nothing, or credit the wrong level."""
     stats, units = _catalog()
-    for rec in essence_pool.build_trinket_pool(stats, units)["records"]:
+    for rec in essence_pool.build_essence_pool(stats, units)["records"]:
         assert len(rec["values_by_ml"]) == 36, f"{rec['effect']}: {len(rec['values_by_ml'])} values"
 
 
@@ -115,7 +115,7 @@ def test_natural_armor_is_excluded_and_says_why():
     reason = essence_pool.EXCLUDED_EFFECTS["Natural Armor"]
     assert "Armor Class" in reason and "unsourced" in reason
     stats, units = _catalog()
-    pool = essence_pool.build_trinket_pool(stats, units)
+    pool = essence_pool.build_essence_pool(stats, units)
     assert not [r for r in pool["records"] if r["effect"] == "Natural Armor"]
 
 
@@ -123,9 +123,21 @@ def test_the_coverage_report_says_how_much_of_the_menu_is_missing():
     """The disclosure's source. Offering 25 of 170 without saying so would read as
     the whole menu."""
     stats, units = _catalog()
-    cov = essence_pool.build_trinket_pool(stats, units)["coverage"]
-    assert cov["offered_all"] == 25, cov["offered_all"]
-    assert cov["total_all"] == 170, cov["total_all"]
+    cov = essence_pool.build_essence_pool(stats, units)["coverage"]
+    # #764 — 36 not 25: +11, the options the three newly-served families add
+    # (Rune Arm 2, Ring 7, Melee 2). The total moves from 170 to 318 for the same
+    # reason. The ratio stays poor and that is the honest finding, not a pipeline
+    # gap: the wiki types 22 of 157 craftable effects, so the ceiling is the source.
+    assert cov["offered_all"] == 36, cov["offered_all"]
+    assert cov["total_all"] == 318, cov["total_all"]
+    # Per family too, because one aggregate hid which family was empty: Rune Arm's
+    # Suffix menu and Melee's Extra menu offer NOTHING, and both stay disclosed on
+    # UNSERVED_ALLOWLIST for that reason rather than the old "no pool" one.
+    fam = cov["by_family"]
+    assert {k: v["offered_all"] for k, v in fam.items()} == {
+        "Trinket": 25, "Rune Arm": 2, "Ring": 7, "Melee": 2}, fam
+    assert fam["Rune Arm"]["offered"]["Suffix"] == 0
+    assert fam["Melee"]["offered"]["Extra"] == 0
     assert cov["offered_all"] < cov["total_all"] / 2, \
         "coverage grew past half the menu — re-read the disclosure wording before trusting it"
     assert cov["skipped"]["no-bonus-type"], "the biggest gap must be named, not summarised away"
@@ -136,20 +148,37 @@ def test_only_verified_hosts_get_live_menus():
     carries a placeholder ML 1. Crafting real numbers onto a record we do not
     trust is how an unverified item becomes a recommendation."""
     labels = ["Essence Crafting: Trinket - Prefix"]
-    assert essence_pool.essence_slots(labels, "verified") == [{"menu": "Prefix"}]
+    # #764 — the slot carries its FAMILY now. Without it the solver's join is `menu`
+    # alone, which was unique only while one family shipped; with four in one pool a
+    # Rune Arm would craft a Trinket-only effect.
+    assert essence_pool.essence_slots(labels, "verified") == [
+        {"menu": "Prefix", "family": "Trinket"}]
     assert essence_pool.essence_slots(labels, "quarantined") == []
     assert essence_pool.essence_slots(labels, "indexed") == []
 
 
-def test_the_built_dataset_gives_the_gem_its_three_menus_and_nothing_else_any():
-    """End of the pipeline. Three verified Gem tiers, three menus each, and no
-    other item in the catalog carrying a live Essence slot."""
+def test_the_built_dataset_gives_every_essence_host_its_menus():
+    """End of the pipeline.
+
+    #764 — this asserted "the three Gems and nothing else", which was the right
+    guard while the pool was Trinket-only and became wrong the moment it was not.
+    The population is now every verified host that declares a menu: 3 Gem tiers
+    plus 39 Rune Arm, 1 Ring and 1 Melee blank. What still matters — and is what
+    the old name was really protecting — is that a host's slots name its OWN
+    family and all three menus, so nothing can craft across families."""
     hosts = {it["source_item"]: it for it in _dataset()["items"] if it.get("essence_slots")}
-    assert set(hosts) == {"Gem of Many Facets [Crafted]",
-                          "Epic Gem of Many Facets [Crafted]",
-                          "Legendary Gem of Many Facets [Crafted]"}, sorted(hosts)
+    assert len(hosts) == 44, sorted(hosts)
+    for gem in ("Gem of Many Facets [Crafted]", "Epic Gem of Many Facets [Crafted]",
+                "Legendary Gem of Many Facets [Crafted]"):
+        assert gem in hosts, gem
+    by_family = {}
     for name, it in hosts.items():
+        fams = {s["family"] for s in it["essence_slots"]}
+        assert len(fams) == 1, f"{name} declares menus in more than one family: {fams}"
+        fam = fams.pop()
+        by_family[fam] = by_family.get(fam, 0) + 1
         assert [s["menu"] for s in it["essence_slots"]] == ["Prefix", "Suffix", "Extra"], name
+    assert by_family == {"Trinket": 3, "Rune Arm": 39, "Ring": 1, "Melee": 1}, by_family
 
 
 def test_the_heroic_gem_can_reach_no_insight_option():
@@ -179,7 +208,7 @@ def test_every_ml_curve_is_monotonic_and_peaks_at_the_top():
     crediting a value below the best one.
     """
     stats, units = _catalog()
-    records = essence_pool.build_trinket_pool(stats, units)["records"]
+    records = essence_pool.build_essence_pool(stats, units)["records"]
     assert len(records) > 20, "the pool is too small for this to be measuring anything"
     for rec in records:
         vals = [float(str(v).strip().rstrip("%")) for v in rec["values_by_ml"]]
@@ -199,7 +228,7 @@ def test_the_two_ml_ten_gates_are_kept_apart():
     non-Insight Extra effect arrive later and skip the slot rule silently."""
     assert essence_pool.INSIGHT_MIN_ML == essence_pool.EXTRA_SLOT_MIN_ML == 10
     stats, units = _catalog()
-    extra = [r for r in essence_pool.build_trinket_pool(stats, units)["records"]
+    extra = [r for r in essence_pool.build_essence_pool(stats, units)["records"]
              if r["menu"] == "Extra"]
     assert extra, "no Extra options at all — the coincidence below is untested"
     non_insight = [r["effect"] for r in extra if r["bonus_type"] != "Insight"]

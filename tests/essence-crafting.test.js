@@ -37,12 +37,25 @@ function slot(name, variants, card = 1) { return { slot: name, cardinality: card
 function gem(id, ml) {
   return item(id, "Trinket", [], {
     ml, minimum_level: ml,
-    essence_slots: [{ menu: "Prefix" }, { menu: "Suffix" }, { menu: "Extra" }],
+    essence_slots: [{ menu: "Prefix", family: "Trinket" },
+                    { menu: "Suffix", family: "Trinket" },
+                    { menu: "Extra", family: "Trinket" }],
+  });
+}
+// #764 — a Rune Arm blank: same three menu NAMES, different family. Its existence
+// is the whole reason the join had to stop keying on `menu` alone.
+function runeArm(id, ml) {
+  return item(id, "Rune Arm", [], {
+    ml, minimum_level: ml,
+    essence_slots: [{ menu: "Prefix", family: "Rune Arm" },
+                    { menu: "Suffix", family: "Rune Arm" },
+                    { menu: "Extra", family: "Rune Arm" }],
   });
 }
 // One pool option. `curve[ml-1]` is the magnitude at a host of that ML.
-function opt(menu, effect, stat, bonus_type, curve, min_ml) {
-  return { menu, effect, name: "Essence Crafting: " + effect, stat, bonus_type,
+function opt(menu, effect, stat, bonus_type, curve, min_ml, family) {
+  return { menu, family: family || "Trinket",
+           effect, name: "Essence Crafting: " + effect, stat, bonus_type,
            unit: "flat", values_by_ml: curve, min_ml: min_ml || 1,
            curve_row: "test", wiki_url: "" };
 }
@@ -319,6 +332,28 @@ async function solve(model) {
     const row = view.loadout.find((r) => r.item === "Gem");
     assert.strictEqual(row.ml, 30);
     assert.ok(!("craftedNote" in row), "nothing was crafted down, so nothing is explained");
+  });
+
+  // #764 — the correctness property of serving four families from one flat pool.
+  await test("a host cannot craft another family's option", async () => {
+    // Same menu name, different family. Before #764 the solver joined on `menu`
+    // alone, so this Trinket-only effect was craftable into a Rune Arm — a stat
+    // the item cannot actually have, in a finished loadout, with no way to tell.
+    const trinketOnly = opt("Prefix", "Trinket Thing", "Constitution", "Enhancement", flat(9), 1, "Trinket");
+    const runeArmOnly = opt("Prefix", "Rune Arm Thing", "Charisma", "Enhancement", flat(9), 1, "Rune Arm");
+    const model = {
+      targets: ["Constitution", "Charisma"], mlCap: 20,
+      worn: [slot("Rune Arm", [runeArm("RA", 20)])],
+      essenceCrafting: [trinketOnly, runeArmOnly],
+    };
+    const { result } = await solve(model);
+    assert.strictEqual(result.status, "optimal");
+    const placed = (result.essPlaced || []);
+    assert.ok(placed.length, "the Rune Arm crafted something, so the pool is live");
+    assert.ok(placed.every((m) => m.family === "Rune Arm"),
+      `a Rune Arm crafted another family's option: ${JSON.stringify(placed)}`);
+    assert.ok(!placed.some((m) => m.effect === "Trinket Thing"),
+      "the Trinket-only effect reached a Rune Arm");
   });
 
   console.log(`\n  ${passed} passed, ${failed} failed`);

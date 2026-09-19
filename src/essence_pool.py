@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 
 from src import essence_curve_join as curve_join
 
@@ -38,9 +39,25 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CRAFTING_SHARD = os.path.join(ROOT, "data", "seed", "compendium", "essence_crafting.json")
 BONUS_TYPE_SHARD = os.path.join(ROOT, "data", "seed", "compendium", "essence_bonus_type.json")
 
-HOST_SLOT_TYPE = "Trinket"
-TRINKET_MENUS = ("Prefix", "Suffix", "Extra")
-_LABEL_PREFIX = "Essence Crafting: Trinket - "
+# #764 — the host families whose menus this pool serves, mapped to their group in
+# the placements table. EXPLICIT, because the join is not pluralisation: the label
+# says `Melee` and the table says `Melee weapons`. A `+ "s"` rule passed for
+# Trinket and would have silently served Melee nothing.
+#
+# These four are the families some host actually declares in its `crafting[]`. The
+# placements table carries 16 groups; the other 12 describe slots no catalog item
+# offers an Essence menu on, so serving them would mint options with no host.
+HOST_FAMILIES = {
+    "Trinket": "Trinkets",
+    "Rune Arm": "Rune Arms",
+    "Ring": "Rings",
+    "Melee": "Melee weapons",
+}
+
+HOST_SLOT_TYPE = "Trinket"          # kept: the family whose menus shipped first
+MENUS = ("Prefix", "Suffix", "Extra")
+TRINKET_MENUS = MENUS               # back-compat alias for existing callers
+_LABEL_RE = re.compile(r"^Essence Crafting: (?P<family>.+?) - (?P<menu>Prefix|Suffix|Extra)$")
 
 INSIGHTFUL_PREFIX = "Insightful "
 
@@ -140,17 +157,34 @@ def essence_slots(crafting, verification=None) -> list:
         return []
     out, seen = [], set()
     for c in crafting or []:
-        if not isinstance(c, str) or not c.startswith(_LABEL_PREFIX):
+        if not isinstance(c, str):
             continue
-        menu = c[len(_LABEL_PREFIX):].strip()
-        if menu in TRINKET_MENUS and menu not in seen:
-            seen.add(menu)
-            out.append({"menu": menu})
-    return sorted(out, key=lambda s: TRINKET_MENUS.index(s["menu"]))
+        m = _LABEL_RE.match(c)
+        if not m:
+            continue
+        family, menu = m.group("family"), m.group("menu")
+        # #764 — the FAMILY rides on the slot, and the option carries the same
+        # pair. Without it the solver's join is `menu` alone, and every Essence
+        # option is craftable into every Essence host: a Rune Arm would take a
+        # Trinket-only effect. The label already states the family; this is where
+        # it stops being thrown away.
+        if family not in HOST_FAMILIES:
+            continue
+        key = (family, menu)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({"menu": menu, "family": family})
+    return sorted(out, key=lambda s: (s["family"], MENUS.index(s["menu"])))
 
 
-def build_trinket_pool(catalog_stats=None, catalog_units=None) -> dict:
-    """Every craftable Trinket option the three harvests fully support.
+def build_essence_pool(catalog_stats=None, catalog_units=None) -> dict:
+    """Every craftable Essence option the three harvests fully support, across every
+    host family some catalog item declares a menu on.
+
+    #764 — was Trinket-only, and the rename is the point: `build_trinket_pool` was
+    an accurate name for a pool that could only ever serve one family, and a
+    misleading one the moment it served four.
 
     `catalog_stats` is the set of affix stat names the built dataset actually
     uses. It is REQUIRED in the real build: an option naming a stat nothing else
@@ -167,9 +201,10 @@ def build_trinket_pool(catalog_stats=None, catalog_units=None) -> dict:
     crafting = _load(CRAFTING_SHARD)
     bonus_types = _load(BONUS_TYPE_SHARD)["harvested"]
     placements = crafting["placements"]
-    if HOST_SLOT_TYPE + "s" not in placements:
-        raise PoolError(f"no {HOST_SLOT_TYPE} placements: the crafting shard changed shape")
-    menus = placements[HOST_SLOT_TYPE + "s"]
+    missing = [g for g in HOST_FAMILIES.values() if g not in placements]
+    if missing:
+        raise PoolError(
+            f"no placements for {missing}: the crafting shard changed shape")
 
     resolved = curve_join.resolve_all()
     mapping = resolved["mapping"]
@@ -180,58 +215,78 @@ def build_trinket_pool(catalog_stats=None, catalog_units=None) -> dict:
     def skip(effect, menu, reason):
         skipped.setdefault(reason, set()).add(effect)
 
-    for menu in TRINKET_MENUS:
-        for effect in menus.get(menu, []):
-            if effect in EXCLUDED_EFFECTS:
-                skip(effect, menu, "excluded")
-                continue
-            bt = bonus_types.get(effect)
-            if not bt or bt.get("provenance") != "stated":
-                skip(effect, menu, "no-bonus-type")
-                continue
-            entry = mapping.get(effect)
-            if entry is None:
-                skip(effect, menu, "no-curve-row")
-                continue
-            stat = _stat_name(effect)
-            if catalog_stats is not None and stat not in catalog_stats:
-                skip(effect, menu, "stat-not-in-catalog")
-                continue
-            curve = curves.get(entry["row"])
-            if not curve or len(curve) != 36:
-                skip(effect, menu, "malformed-curve")
-                continue
-            unit = "flat"
-            if catalog_units is not None:
-                units = catalog_units.get(stat) or set()
-                if len(units) != 1:
-                    skip(effect, menu, "ambiguous-unit" if units else "no-catalog-unit")
+    for family, group in HOST_FAMILIES.items():
+        menus = placements[group]
+        for menu in MENUS:
+            for effect in menus.get(menu, []):
+                if effect in EXCLUDED_EFFECTS:
+                    skip(effect, menu, "excluded")
                     continue
-                unit = next(iter(units))
-            bonus_type = bt["value"]["bonus_type"]
-            records.append({
-                "menu": menu,
-                "effect": effect,
-                "name": f"Essence Crafting: {effect}",
-                "stat": stat,
-                "bonus_type": bonus_type,
-                "unit": unit,
-                "values_by_ml": list(curve),
-                # Carried per option rather than derived in the solver: the wiki
-                # states the rule for insight bonuses specifically, so the option
-                # that needs the gate is the one that should name it.
-                "min_ml": INSIGHT_MIN_ML if bonus_type == "Insight" else 1,
-                "curve_row": entry["row"],
-                "wiki_url": "https://ddowiki.com/page/Essence_Crafting",
-            })
+                bt = bonus_types.get(effect)
+                if not bt or bt.get("provenance") != "stated":
+                    skip(effect, menu, "no-bonus-type")
+                    continue
+                entry = mapping.get(effect)
+                if entry is None:
+                    skip(effect, menu, "no-curve-row")
+                    continue
+                stat = _stat_name(effect)
+                if catalog_stats is not None and stat not in catalog_stats:
+                    skip(effect, menu, "stat-not-in-catalog")
+                    continue
+                curve = curves.get(entry["row"])
+                if not curve or len(curve) != 36:
+                    skip(effect, menu, "malformed-curve")
+                    continue
+                unit = "flat"
+                if catalog_units is not None:
+                    units = catalog_units.get(stat) or set()
+                    if len(units) != 1:
+                        skip(effect, menu, "ambiguous-unit" if units else "no-catalog-unit")
+                        continue
+                    unit = next(iter(units))
+                bonus_type = bt["value"]["bonus_type"]
+                records.append({
+                    "family": family,
+                    "menu": menu,
+                    "effect": effect,
+                    "name": f"Essence Crafting: {effect}",
+                    # The label the host declares, so a reader can join an option back
+                    # to the slot it fills without reconstructing the family name.
+                    "slot_label": f"Essence Crafting: {family} - {menu}",
+                    "stat": stat,
+                    "bonus_type": bonus_type,
+                    "unit": unit,
+                    "values_by_ml": list(curve),
+                    # Carried per option rather than derived in the solver: the wiki
+                    # states the rule for insight bonuses specifically, so the option
+                    # that needs the gate is the one that should name it.
+                    "min_ml": INSIGHT_MIN_ML if bonus_type == "Insight" else 1,
+                    "curve_row": entry["row"],
+                    "wiki_url": "https://ddowiki.com/page/Essence_Crafting",
+                })
 
     if not records:
         raise PoolError(
             "refusing to emit an empty Essence Crafting pool: the shards produced no "
             "option at all, which means a join broke rather than that the game changed")
 
-    offered = {m: sum(1 for r in records if r["menu"] == m) for m in TRINKET_MENUS}
-    total = {m: len(menus.get(m, [])) for m in TRINKET_MENUS}
+    offered = {m: sum(1 for r in records if r["menu"] == m) for m in MENUS}
+    total = {m: sum(len(placements[g].get(m, [])) for g in HOST_FAMILIES.values())
+             for m in MENUS}
+    # #764 — per family as well as per menu. The aggregate alone hid the thing worth
+    # seeing: the Trinket menus carry 170 of the 318 placements, so a single
+    # `offered_all` moves barely at all when three more families are served and
+    # says nothing about which of them is actually empty.
+    by_family = {}
+    for family, group in HOST_FAMILIES.items():
+        fam_recs = [r for r in records if r["family"] == family]
+        by_family[family] = {
+            "offered": {m: sum(1 for r in fam_recs if r["menu"] == m) for m in MENUS},
+            "total": {m: len(placements[group].get(m, [])) for m in MENUS},
+            "offered_all": len(fam_recs),
+            "total_all": sum(len(placements[group].get(m, [])) for m in MENUS),
+        }
     return {
         "records": records,
         "coverage": {
@@ -239,12 +294,18 @@ def build_trinket_pool(catalog_stats=None, catalog_units=None) -> dict:
             "total": total,
             "offered_all": sum(offered.values()),
             "total_all": sum(total.values()),
+            "by_family": by_family,
             "skipped": {k: sorted(v) for k, v in skipped.items()},
             "excluded_reasons": EXCLUDED_EFFECTS,
             "insight_min_ml": INSIGHT_MIN_ML,
-            "note": ("Trinket menus only, and only effects whose PLACEMENT, BONUS TYPE and "
-                     "ML CURVE are all sourced. The rest are disclosed to the player rather "
-                     "than offered, because an unsourced crafted effect is indistinguishable "
-                     "from a real one once it is inside a finished loadout."),
+            "note": ("The four host families some catalog item declares a menu on "
+                     "(Trinket, Rune Arm, Ring, Melee), and only effects whose "
+                     "PLACEMENT, BONUS TYPE and ML CURVE are all sourced. The rest are "
+                     "disclosed to the player rather than offered, because an unsourced "
+                     "crafted effect is indistinguishable from a real one once it is "
+                     "inside a finished loadout. #764 measured why the offered count "
+                     "stays small: the wiki states a bonus type for 22 of the 157 "
+                     "craftable effects and the other 135 records each say what was "
+                     "read — the ceiling is the source, not the pipeline."),
         },
     }

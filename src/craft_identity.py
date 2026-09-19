@@ -82,7 +82,13 @@ POOL_KEY = {
     "legendary_green_steel": lambda r: str(r.get("tier")),
     # #766 — the slot and the tier locate a Slaver's option in its pool.
     "slavers": lambda r: f"{r.get('slot')}|{r.get('tier')}",
-    "essence_crafting": lambda r: str(r.get("menu")),
+    # #764 — (family, menu), not menu alone. The pool served Trinkets only until
+    # then, so `menu` located a row uniquely by accident; with four families in one
+    # flat pool the same effect appears in several (`Insightful Constitution` is a
+    # Trinket Prefix AND a Ring Prefix) and the bare menu collapses them. Blocking
+    # one would silently block the other, which is what this discriminator exists
+    # to prevent — the build refused 1007 rows over 997 keys rather than ship it.
+    "essence_crafting": lambda r: f"{r.get('family')}|{r.get('menu')}",
 }
 
 #: Pools whose rows are a flat list under a top-level dataset key.

@@ -1245,6 +1245,14 @@ function buildProgram(model) {
     for (const slot of menus) {
       const slotVars = [];
       for (const opt of model.essenceCrafting || []) {
+        // #764 — the FAMILY must match, not just the menu name. All four families
+        // spell their menus `Prefix`/`Suffix`/`Extra`, so keying on the menu alone
+        // let a Rune Arm craft a Trinket-only effect: a stat the item cannot have,
+        // sitting in a finished loadout with nothing to mark it wrong. This is the
+        // THIRD join on the same pair — `essenceOfferKeys` and reachability's
+        // `chan` are the others — and the only one the solver actually places
+        // through, which is why the test that caught it drives a real solve.
+        if (opt.family !== slot.family) continue;
         if (opt.menu !== slot.menu) continue;
         if (!targetSet.has(opt.stat)) continue;
         if (hostMl < (opt.min_ml || 1)) continue;
@@ -1253,7 +1261,7 @@ function buildProgram(model) {
         const n = "ess" + essc++;
         extraVars.push(n);
         essMeta.set(n, {
-          item: xv.variant.variant_id, menu: opt.menu, effect: opt.effect,
+          item: xv.variant.variant_id, family: opt.family, menu: opt.menu, effect: opt.effect,
           name: opt.name, stat: opt.stat, bonus_type: opt.bonus_type,
           value, unit: opt.unit || "flat", wiki_url: opt.wiki_url,
         });

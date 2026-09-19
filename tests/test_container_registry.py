@@ -442,7 +442,7 @@ def _shipped_source_options():
         # independent path from the shipped dataset: the builder re-reads
         # `essence_crafting.json` / `essence_bonus_type.json` and re-runs the curve
         # join rather than trusting anything the build wrote down.
-        "essence_crafting": len(essence_pool.build_trinket_pool(
+        "essence_crafting": len(essence_pool.build_essence_pool(
             *_catalog_stats_and_units())["records"]),
     }
 
@@ -561,7 +561,10 @@ def test_build_metadata_discloses_the_gate_coverage():
     # `essence_slots`. #194/#687 — the one Legendary Green Steel pool is reached
     # by its 48 blanks (8 accessories, 40 weapons).
     # #766 — the six Slaver's hosts carry `slavers_slots`.
-    assert cov["hosts"] == {"essence_crafting": 3, "legendary_green_steel": 48, "slavers": 6}
+    # #764 — 44 not 3. The Essence pool served Trinkets only; it now serves every
+    # family some host declares a menu on, so the 39 Rune Arm, 1 Ring and 1 Melee
+    # blanks joined the 3 Gems. +41, which is exactly the host count that moved.
+    assert cov["hosts"] == {"essence_crafting": 44, "legendary_green_steel": 48, "slavers": 6}
     # And every declared expansion pass left evidence it ran.
     assert cov["expanded_affixes"]["viktranium"] > 0
     assert cov["expanded_affixes"]["dino_inserts"] > 0

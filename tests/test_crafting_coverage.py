@@ -45,8 +45,17 @@ from src import crafting_coverage as cc  # noqa: E402
 # they are named individually, and asserted by the per-item scenarios at the foot
 # of this file, because a slot-level count cannot tell a covered host from an
 # uncovered one.
-BASELINE_UNSERVED_LABELS = 20   # #766 took Slaver's ten labels off the list
-BASELINE_UNSERVED_ITEM_SLOTS = 282   # 336 - 24 typed Slaver's slots - 30 Set Bonus slots
+# #764 took SEVEN of the nine Essence Crafting Melee/Ring/Rune Arm labels off the
+# list — their placements were always in the seed and only the pipeline was
+# Trinket-only. Two remain and are disclosed by name in UNSERVED_ALLOWLIST:
+# `Rune Arm - Suffix` and `Melee - Extra` have a pool now, and every effect in
+# them is untyped, so the pool's offering for those two menus is empty.
+BASELINE_UNSERVED_LABELS = 13   # #766 took Slaver's ten labels off the list
+# #764 — 199 not 282: -83. The seven Essence labels that became served carried
+# 83 item-slots between them (Rune Arm Prefix 39 + Extra 39, Ring Prefix/Suffix/
+# Extra 1 each, Melee Prefix/Suffix 1 each). The 39 Rune Arm SUFFIX slots and the
+# 1 Melee EXTRA slot stay counted, because those two menus offer nothing.
+BASELINE_UNSERVED_ITEM_SLOTS = 199   # 336 - 24 typed Slaver's slots - 30 Set Bonus slots - 83 (#764)
 
 # #371 — the per-item split as measured on the built dataset.
 BASELINE_PER_ITEM_DECLARERS = 65

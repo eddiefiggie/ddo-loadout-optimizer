@@ -103,14 +103,25 @@ UNSERVED_ALLOWLIST = frozenset({
     # the old term — but crafting slots have no alias mechanism (check_crafting_integrity
     # is exact-match set membership), so that needs new machinery and is filed, not
     # invented here.
+    # #764 — seven of the nine Melee / Ring / Rune Arm labels are SERVED now and
+    # have left this list. They were here under "No pool", which was true of the
+    # pipeline and false of the seed: the Essence Crafting placements shard has
+    # carried all 16 groups since 2026-08-27, and all 41 hosts are `verified`. What was
+    # Trinket-only was `src/essence_pool.py`, and the solver's join, which matched on
+    # `menu` alone because one family had never made the family part load-bearing.
+    #
+    # These TWO remain, and the reason is different from the old one — which is why
+    # they are written out rather than left under the previous blanket note. A pool
+    # now exists for both; every effect IN them is untyped. `Rune Arm - Suffix` has
+    # 5 placements and `Melee - Extra` has 10, and not one carries a wiki-stated
+    # bonus type, so the pool is real and its offering for these two menus is empty.
+    #
+    # That is not a gap a code change can close. #764's 2026-09-18 pass searched
+    # every one of the 157 craftable effects: 22 are typed and the other 135 each
+    # record what was read, in the Essence bonus-type shard. These
+    # two menus disappear from this list when the wiki states a type for one of
+    # their effects, and not before.
     "Essence Crafting: Melee - Extra",
-    "Essence Crafting: Melee - Prefix",
-    "Essence Crafting: Melee - Suffix",
-    "Essence Crafting: Ring - Extra",
-    "Essence Crafting: Ring - Prefix",
-    "Essence Crafting: Ring - Suffix",
-    "Essence Crafting: Rune Arm - Extra",
-    "Essence Crafting: Rune Arm - Prefix",
     "Essence Crafting: Rune Arm - Suffix",
     # #766 — Slaver's crafting is SERVED now: the four typed slots by the `slavers`
     # pool, the Set Bonus slot by `membership_set_defs`. The entry that stood here
@@ -237,18 +248,22 @@ def _legendary_green_steel(dataset):
 
 
 def _essence_crafting(dataset):
-    """Keyed by `menu` -> `"Essence Crafting: Trinket - <menu>"` (#193/#599).
+    """Keyed by (family, menu) -> `"Essence Crafting: <family> - <menu>"` (#193/#599,
+    generalized in #764).
 
     Serving a label here means the solver can craft SOMETHING into that menu, not
-    that it can craft everything: 25 of 170 Trinket placements are offered, and
-    the rest are disclosed to the player through
-    `metadata.essence_crafting_coverage`. The other nine `Essence Crafting: *`
-    labels (Melee, Ring, Rune Arm) stay on UNSERVED_ALLOWLIST because no pool
-    fills them at all.
+    that it can craft everything: 36 of 318 placements across the four families are
+    offered, and the rest are disclosed through `metadata.essence_crafting_coverage`
+    — per family since #764, because one aggregate hid which family was empty.
+
+    The label is rebuilt from the record's own `family` rather than hardcoded. It
+    said `Trinket` literally until #764, which was correct while one family shipped
+    and would have silently reported Rune Arm options as Trinket coverage the moment
+    a second one did.
     """
     recs = dataset.get("essence_crafting") or []
-    return len(recs), {f"Essence Crafting: Trinket - {r['menu']}" for r in recs
-                       if r.get("menu")}
+    return len(recs), {f"Essence Crafting: {r['family']} - {r['menu']}" for r in recs
+                       if r.get("menu") and r.get("family")}
 
 
 # Ordered so the report reads pool by pool. The keys are POOL names, and the

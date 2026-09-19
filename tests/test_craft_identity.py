@@ -58,7 +58,12 @@ def test_no_two_options_share_a_key():
                 "Widen the discriminator in src/craft_identity.py POOL_KEY.")
         seen[k] = (pool, host, rec.get("name"))
     # 812 before #766; the eight Slaver's pools add 184 options.
-    assert len(seen) == 996, f"option population is {len(seen)}, expected 996"
+    # #764 — 1007 not 996: +11, the Essence options the three newly-served families
+    # add (Rune Arm 2, Ring 7, Melee 2). The same change made this test's subject
+    # matter real: the pool's discriminator was `menu` alone, which was unique only
+    # while one family shipped, and the build refused 1007 rows over 997 keys until
+    # it became (family, menu).
+    assert len(seen) == 1007, f"option population is {len(seen)}, expected 1007"
 
 
 def test_the_quarterstaff_flag_is_load_bearing():
@@ -85,7 +90,9 @@ def test_the_quarterstaff_flag_is_load_bearing():
 
 def test_the_build_publishes_its_own_coverage():
     cov = _dataset()["metadata"]["craft_identity_coverage"]
-    assert cov["stamped"] == cov["distinct"] == 996
+    # #764 — 1007, per the population note above. stamped == distinct is the
+    # property that matters and is what the widened discriminator restores.
+    assert cov["stamped"] == cov["distinct"] == 1007
     assert cov["by_pool"]["slavers"] == 184   # #766
     assert cov["by_pool"][ci.PER_ITEM_POOL] == 147, (
         "the per-item Nearly Complete pools are in scope — a handle that cannot "
