@@ -278,10 +278,23 @@ def test_every_sourced_placement_passed_both_checks():
                 seen += 1
                 bt = bonus_types.get(row["effect"])
                 where = f"{group}/{menu}/{row['effect']}"
-                if not bt or bt.get("provenance") != "stated":
-                    offenders.append((where, "bonus type not stated"))
-                elif bt["value"]["bonus_type"] != row.get("bonus_type"):
-                    offenders.append((where, "bonus type disagrees with the harvest"))
+                # #815 — a sourced type now has TWO legitimate origins, and both
+                # are checked. Either the harvest states it, or the effect is
+                # spelled `Insightful X` and takes Insight by the rule read off
+                # the harvest: all 9 stated `Insightful X` effects are Insight,
+                # and `assert_insightful_is_always_insight` fails the build if a
+                # counter-example ever lands. Anything else is a type from
+                # nowhere.
+                insightful = row["effect"].startswith(_pool.INSIGHTFUL_PREFIX)
+                stated = bool(bt and bt.get("provenance") == "stated")
+                if stated:
+                    if bt["value"]["bonus_type"] != row.get("bonus_type"):
+                        offenders.append((where, "bonus type disagrees with the harvest"))
+                elif insightful:
+                    if row.get("bonus_type") != "Insight":
+                        offenders.append((where, "Insightful but not typed Insight"))
+                else:
+                    offenders.append((where, "bonus type neither stated nor Insightful"))
                 if row.get("stat") not in stats:
                     offenders.append((where, "stat is not one the catalog uses"))
                 if not row.get("rankable"):

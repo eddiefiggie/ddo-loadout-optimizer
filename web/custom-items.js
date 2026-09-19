@@ -118,6 +118,26 @@
    *  one-per-EFFECT does not. The bench cannot express one. See
    *  `docs/wiki-evidence/essence-crafting.md` and #800. */
   var MENUS = ["Prefix", "Suffix", "Extra"];
+
+  /** #815 — what to CALL each menu to a player.
+   *
+   *  `Extra` is `table 1b`'s own column name, and it is the right data key. It is
+   *  the wrong word to show: the wiki calls that third slot the **Mark of House
+   *  Cannith Slot**, and a player looking for it on the bench could not find it.
+   *
+   *      "If the item is ML 10 or greater, it has a 'Mark of House Cannith Slot',
+   *       where another effect can be applied (Insightful Strength, Insightful
+   *       Accuracy, etc.)"                          - `Essence Crafting steps`
+   *
+   *  Display only. Nothing keys on these, and `MENUS` is unchanged, so the data
+   *  and the label cannot drift into two vocabularies. */
+  var MENU_LABELS = {
+    "Prefix": "Prefix",
+    "Suffix": "Suffix",
+    "Extra": "Mark of House Cannith",
+  };
+
+  function menuLabel(menu) { return MENU_LABELS[menu] || menu; }
   var AFFIX_MAX = 3;
 
   // Worn slots + the two hands. `Weapon` is the catalog's own slot label for a
@@ -470,6 +490,50 @@
     });
   }
 
+  /** #815 — the tool's own label for a crafted item, derived from what is on it.
+   *
+   *  The bench stopped asking for a name: you do not name a crafted item, the
+   *  game does. But the name cannot simply be dropped — #773 made it the
+   *  `variant_id`, and that issue's own negative result records why an opaque id
+   *  was wrong: this app treats `variant_id` as BOTH identity and display text,
+   *  so an opaque one rendered the player's dagger as `custom:1` on the paperdoll
+   *  and in all six exports.
+   *
+   *  So it is derived. THIS IS THE TOOL'S LABEL, NOT THE GAME'S. The wiki states
+   *  no naming convention for crafted items — `Essence Crafting steps` was read
+   *  for one — so this deliberately does not mimic one. It names the slot and
+   *  what is on it, which is what a player needs to tell two of their own rings
+   *  apart in a result list.
+   *
+   *  `taken` dedupes within one character's items, because two entries sharing a
+   *  name would share an id and a pin on one would equip the other.
+   */
+  function deriveName(entry, ctx, taken) {
+    var e = entry || {};
+    var slot = String(e.slot || "").trim() || "item";
+    // In MENU order, not the order they were added: an item is known by its
+    // prefix first. Picking whichever row the player happened to fill in first
+    // named a ring after its Mark slot.
+    var lead = "";
+    var rows = Array.isArray(e.affixes) ? e.affixes : [];
+    for (var mi = 0; mi < MENUS.length && !lead; mi++) {
+      for (const a of rows) {
+        if (!a || a.menu !== MENUS[mi]) continue;
+        // A combined shard HAS a printed name; a single one is known by its effect.
+        var label = a.combined || a.effect || a.stat;
+        if (label) { lead = String(label); break; }
+      }
+    }
+    var base = (lead ? lead + " " + slot : "Essence Crafted " + slot).trim();
+    if (!taken || !taken.size) return base;
+    if (!taken.has(base)) return base;
+    for (var n = 2; n < 100; n++) {
+      var candidate = base + " " + n;
+      if (!taken.has(candidate)) return candidate;
+    }
+    return base;
+  }
+
   function isCustomId(id) {
     return typeof id === "string" && id.length > CUSTOM_SUFFIX.length
       && id.slice(-CUSTOM_SUFFIX.length) === CUSTOM_SUFFIX;
@@ -657,9 +721,12 @@
     var canonical = (typeof vocab.canonical === "function") ? vocab.canonical : function (s) { return s; };
     var errors = [];
 
+    // #815 — a missing name is DERIVED, not refused. The bench no longer asks for
+    // one; an entry saved before that still carries whatever the player typed, and
+    // keeping it is what stops this rename stranding their pins.
     var name = String(e.name == null ? "" : e.name).trim();
-    if (!name) errors.push("Give the item a name — it is how the build, the pin list and every export refer to it.");
-    else if (name.length > NAME_MAX) errors.push("The name is longer than " + NAME_MAX + " characters.");
+    if (!name) name = deriveName(e, c, c.otherNames);
+    if (name.length > NAME_MAX) errors.push("The name is longer than " + NAME_MAX + " characters.");
     else if (name.indexOf("(yours)") >= 0) {
       errors.push("Leave “(yours)” out of the name — it is added for you, so your item is marked "
         + "as your own everywhere it appears.");
@@ -1073,7 +1140,7 @@
     bonusTypes: bonusTypes,
     customId: customId, isCustomId: isCustomId, isCustomVariant: isCustomVariant,
     isPresenceEffect: function (stat, vocab, ctx) { return _isPresenceOnly(stat, vocab, ctx); },
-    MENUS: MENUS.slice(),
+    MENUS: MENUS.slice(), menuLabel: menuLabel, deriveName: deriveName,
     weaponSplit: function (ctx) { return _weaponSplit(ctx); },
     essenceGroupFor: essenceGroupFor, menusFor: menusFor, effectsFor: effectsFor,
     automaticAffixes: automaticAffixes, unmodelledAutomatic: unmodelledAutomatic,
