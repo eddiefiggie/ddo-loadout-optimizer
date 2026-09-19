@@ -368,6 +368,60 @@
     return isFinite(v) ? v : null;
   }
 
+  /** #799 — the bonuses Essence Crafting applies with the Minimum Level shard.
+   *
+   *  Deliberately NOT part of `entry.affixes`. That list is menu-keyed and capped
+   *  at the menu count, and a test derives the cap FROM the menu list (#797); an
+   *  automatic bonus is not an enchantment, occupies no menu, and would break both
+   *  the cap and the meaning of the list. The player did not choose it, so it does
+   *  not belong in the record of what they chose.
+   *
+   *  It is minted in `toVariant` instead, where the question is what the ITEM
+   *  carries rather than what the player picked.
+   *
+   *  Returns `[]` for any group the wiki does not name — jewellery, clothing, and
+   *  deliberately Orbs and Rune Arms.
+   */
+  function automaticAffixes(entry, ctx) {
+    var e = entry || {};
+    var table = _placements(ctx);
+    var auto = table && table.automatic;
+    var eb = auto && auto.enhancement_bonus;
+    if (!eb) return [];
+    var info = essenceGroupFor(e.slot, e.type, ctx);
+    var stat = info.group && eb.groups[info.group];
+    if (!stat) return [];
+    var ml = Number(e.ml);
+    if (!isFinite(ml) || Math.floor(ml) !== ml || ml < 1 || ml > eb.values_by_ml.length) return [];
+    var v = Number(eb.values_by_ml[ml - 1]);
+    if (!isFinite(v) || v <= 0) return [];
+    return [{
+      stat: stat, bonus_type: eb.bonus_type, value: v,
+      automatic: true, sourced: true,
+    }];
+  }
+
+  /** #799 — what this bench knows the game grants and cannot model, for the
+   *  player to be told. Disclosure, not decoration: the form otherwise looks
+   *  complete while granting nothing.
+   *
+   *  Filtered to the item at hand — telling a ring owner about a weapon dice
+   *  multiplier is noise, and noise is how a real disclosure gets ignored. */
+  function unmodelledAutomatic(entry, ctx) {
+    var e = entry || {};
+    var table = _placements(ctx);
+    var rows = (table && table.automatic && table.automatic.unmodelled) || [];
+    var info = essenceGroupFor(e.slot, e.type, ctx);
+    var group = info.group;
+    if (!group) return [];
+    var isWeapon = group === "Melee weapons" || group === "Ranged weapons";
+    var isShield = group === "Shields";
+    return rows.filter(function (r) {
+      if (r.row === "Weapon dice mult*") return isWeapon;
+      return isWeapon || isShield;      // the implement bonus
+    });
+  }
+
   function isCustomId(id) {
     return typeof id === "string" && id.length > CUSTOM_SUFFIX.length
       && id.slice(-CUSTOM_SUFFIX.length) === CUSTOM_SUFFIX;
@@ -725,7 +779,7 @@
    *  `parsed_set_bonuses` reads as "not yet parsed" rather than "belongs to no
    *  set" — and a record assembled by spreading a catalog item would inherit
    *  whatever that item happened to carry. */
-  function toVariant(entry) {
+  function toVariant(entry, ctx) {
     var e = entry || {};
     var id = customId(e);
     var colors = Array.isArray(e.augments) ? e.augments.slice() : [];
@@ -766,12 +820,19 @@
       // exactly how the catalog carries `Ghost Touch` and its peers. Nothing
       // downstream needs to know it came from a player: the bucket machinery,
       // the Utility tier's indicator and its receipt all read the same shape.
+      // #799 — the player's chosen enchantments, PLUS what the Minimum Level
+      // shard applies on its own. The second list is derived from the item's
+      // group and ML, never stored on the entry, so it cannot drift out of date
+      // when the player edits the level.
       affixes: (Array.isArray(e.affixes) ? e.affixes : []).map(function (a) {
         return a && a.presence
           ? { name: a.stat, type: "Bool", value: "1", eligible: true }
           : { name: a.stat, type: a.bonus_type, value: String(a.value), eligible: true };
-      }),
-      eligible_affix_count: (Array.isArray(e.affixes) ? e.affixes.length : 0),
+      }).concat(automaticAffixes(e, ctx).map(function (a) {
+        return { name: a.stat, type: a.bonus_type, value: String(a.value), eligible: true };
+      })),
+      eligible_affix_count: (Array.isArray(e.affixes) ? e.affixes.length : 0)
+        + automaticAffixes(e, ctx).length,
       scaling: [],
       roll_groups: [],
       flagged: [],
@@ -831,7 +892,7 @@
         migrated.push({ entry: raw, dropped: mig.dropped, revalued: mig.revalued });
       }
       taken.add(v.entry.name);
-      var rec = toVariant(v.entry);
+      var rec = toVariant(v.entry, ctx);
       // The same normalizer the fetched catalog goes through, for the same
       // reason: it parses affix values into numbers, attaches units, and expands
       // the composite affixes the bucket model depends on. A record that skipped
@@ -877,6 +938,7 @@
     MENUS: MENUS.slice(),
     WEAPON_GROUP_UNSTATED: WEAPON_GROUP_UNSTATED.slice(),
     essenceGroupFor: essenceGroupFor, menusFor: menusFor, effectsFor: effectsFor,
+    automaticAffixes: automaticAffixes, unmodelledAutomatic: unmodelledAutomatic,
     placementFor: placementFor, sourcedValueAt: sourcedValueAt,
     migrateLegacyEntry: migrateLegacyEntry,
     validateEntry: validateEntry, toVariant: toVariant, customPool: customPool,

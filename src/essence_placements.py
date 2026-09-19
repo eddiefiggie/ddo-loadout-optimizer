@@ -72,6 +72,106 @@ SLOT_GROUPS = {
 INSIGHT_MIN_ML = essence_pool.INSIGHT_MIN_ML
 EXTRA_SLOT_MIN_ML = essence_pool.EXTRA_SLOT_MIN_ML
 
+#: #799 — the bonuses Essence Crafting applies AUTOMATICALLY with the Minimum
+#: Level shard. They are not enchantments and occupy no menu:
+#:
+#:   "These bonuses do not require a separate shard or take up a slot
+#:    (suffix/prefix/extra), nor is one possible to craft."
+#:        - `Essence Crafting`, table 3b footnote
+#:
+#: `essence_curve_join.UNCRAFTABLE_ROWS` already excludes their curves from the
+#: CRAFTABLE pool, correctly — nobody crafts them. That is why #599 harvested the
+#: rows and nothing ever read them: excluded from one pool and never added to
+#: another. This is the other half.
+#:
+#: Only the Enhancement Bonus is modelled. The other two rows are real, sourced
+#: and carried here so the player can be TOLD about them, because neither is
+#: expressible: `Weapon Dice` and a Spellcasting Implement MAGNITUDE are not in
+#: the affix registry, so nothing could rank either, and minting a stat the
+#: catalog does not use would give it a private bucket that stacks with every
+#: real item.
+ENHANCE_ROW = "Enhance bonus*"
+
+#: Which placement group takes an automatic Enhancement Bonus, and the spelling
+#: that group's own slot uses. From the wiki, which names exactly three kinds:
+#:
+#:   "you don't need to craft an Enhancement Bonus shard for Weapons, Shields, or
+#:    Armors (including Robes, Outfit, and Docents). A scaled Enhancement Bonus is
+#:    applied automatically when you apply a Minimum Level shard."
+#:
+#: Orbs and Rune Arms are deliberately ABSENT. They are off-hand items and the
+#: sentence does not name them, so they get nothing rather than a guess — the
+#: same refusal `SLOT_GROUPS` makes for thrown weapons.
+#:
+#: The spellings are measured, not assumed, and they are why #792 mattered: slot
+#: `Weapon` carries `(Weapon)` 3,259 times, slot `Armor` carries `(Armor)` 935,
+#: and slot `Off Hand` — which is where Shields live — carries `(Armor)` 304
+#: times against 2 bare. A shield takes the ARMOUR spelling.
+ENHANCE_GROUPS = {
+    "Melee weapons": "Enhancement Bonus (Weapon)",
+    "Ranged weapons": "Enhancement Bonus (Weapon)",
+    "Shields": "Enhancement Bonus (Armor)",
+    "Armors": "Enhancement Bonus (Armor)",
+}
+
+ENHANCE_BONUS_TYPE = "Enhancement"
+
+#: Stated by the wiki, real in game, and NOT modelled. Carried so the bench can
+#: disclose them rather than look complete while granting nothing.
+UNMODELLED_AUTOMATIC = (
+    {
+        "row": "Weapon dice mult*",
+        "label": "a weapon dice multiplier",
+        "applies_to": "weapons",
+        "quote": "A Weapon dice multiplier is automatically applied to a weapon.",
+        "why_not": "weapon dice are not a rankable stat in this catalog - "
+                   "`affix_parser` classes them as non-magnitude, so there is no "
+                   "bucket a multiplier could join",
+    },
+    {
+        "row": "Spellcasting implement*",
+        "label": "a Spellcasting Implement bonus equal to the item's minimum level",
+        "applies_to": "weapons and shields carrying a spell-related enchantment",
+        "quote": "A Spellcasting Implement bonus is added when a spell-related "
+                 "shard is applied to a weapon or shield. This bonus is equal to "
+                 "the item's minimum level.",
+        "why_not": "the catalog carries only a Bool `item becomes a Spellcasting "
+                   "Implement`, never a magnitude, so there is no stat to rank",
+    },
+)
+
+
+def build_automatic_bonuses(crafting) -> dict:
+    """#799 — the automatic half, read from the same table 3b the pool uses.
+
+    Refuses rather than emits a partial answer: a curve that is missing or the
+    wrong length would otherwise silently grant nothing on every crafted weapon,
+    which is indistinguishable from the bug this closes.
+    """
+    curves = crafting["values_by_ml"]["effects"]
+    curve = curves.get(ENHANCE_ROW)
+    if not curve or len(curve) != 36:
+        raise PlacementError(
+            f"{ENHANCE_ROW!r} is missing or not 36 rows - the automatic "
+            "Enhancement Bonus cannot be derived, and emitting it empty would "
+            "grant nothing while the bench claimed otherwise")
+    missing = [r["row"] for r in UNMODELLED_AUTOMATIC if r["row"] not in curves]
+    if missing:
+        raise PlacementError(
+            f"disclosed-but-unmodelled rows absent from table 3b: {missing}. "
+            "The disclosure names them to the player; if the harvest no longer "
+            "carries them the disclosure is describing something that is gone")
+    return {
+        "enhancement_bonus": {
+            "groups": dict(ENHANCE_GROUPS),
+            "bonus_type": ENHANCE_BONUS_TYPE,
+            "values_by_ml": list(curve),
+            "curve_row": ENHANCE_ROW,
+        },
+        "unmodelled": [dict(r) for r in UNMODELLED_AUTOMATIC],
+        "wiki_url": "https://ddowiki.com/page/Essence_Crafting",
+    }
+
 
 class PlacementError(RuntimeError):
     pass
@@ -215,6 +315,7 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
 
     return {
         "groups": groups,
+        "automatic": build_automatic_bonuses(crafting),
         "slot_groups": {k: list(v) for k, v in SLOT_GROUPS.items()},
         "extra_slot_min_ml": EXTRA_SLOT_MIN_ML,
         "insight_min_ml": INSIGHT_MIN_ML,
