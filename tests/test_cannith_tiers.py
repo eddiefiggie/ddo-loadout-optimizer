@@ -180,7 +180,7 @@ def test_every_final_is_rederived_from_its_own_raw():
     uni = CT.uniform_types(planner, aliases)
 
     _true(shard["items"], "refuse to pass over an empty shard")
-    checked = slots_seen = slots_only_seen = 0
+    checked = slots_seen = slots_only_seen = typed_only_seen = 0
     for name, entry in shard["items"].items():
         fam = fam_of(name)
         expected = []
@@ -193,6 +193,13 @@ def test_every_final_is_rederived_from_its_own_raw():
                 continue
             rn, ty = hit
             expected.append((rn, ty, p["value"], p["unit"]))
+        # #792 — the slot-qualified refusal is a property of the SHARD, not of an
+        # `admit` marker: gear-planner spells these per slot while the wiki row
+        # states only the bare form, so no entry here may emit one. Applied to the
+        # expectation before the marker branches, because the five WORN Mournlode
+        # Docents shipped the bare `Enhancement Bonus` on main until this change and
+        # carry no marker at all.
+        expected = [e for e in expected if e[0] not in CT.SLOT_QUALIFIED_NAMES]
         got = [(a["name"], a["type"], a["value"], a["unit"]) for a in entry["final"]]
         # #591 half B — an entry may declare `admit: "slots_only"`, which admits the
         # tier-granted augment slot and deliberately NOT the enchantments the same
@@ -212,6 +219,28 @@ def test_every_final_is_rederived_from_its_own_raw():
             _true((entry.get("admit_reason") or "").strip(),
                   f"{name}: slots_only with no stated reason cannot be retired by review")
             slots_only_seen += 1
+        elif entry.get("admit") == "typed_only":
+            # #784 — the weapons admit the enchantments whose bonus type is sourced
+            # and NOT the bane/proc lines. The cut is by TYPE: `Dragon Bane 3`
+            # carries a magnitude and still resolves to `Bool`, because it is bane
+            # damage — the family #331 closed as permanently unvalued.
+            #
+            # Re-derived exactly like an unmarked entry, then filtered by the SAME
+            # rule the seed claims to apply. So the marker cannot hide a hand-edited
+            # `final`: every admitted affix still has to fall out of its own `raw`.
+            # The seed's rule, read from the module that declares it rather than
+            # restated here — a second copy is a second thing to drift.
+            typed = [e for e in expected if e[1] != "Bool"]
+            _eq(got, typed, f"{name}: stored `final` disagrees with the typed half of its `raw`")
+            # The marker must be doing work in BOTH directions, or it is decoration:
+            # something admitted, and something deliberately left out.
+            _true(typed, f"{name}: declares typed_only but its `raw` yields no typed affix")
+            _true(len(expected) > len(typed),
+                  f"{name}: declares typed_only but nothing was excluded — the marker "
+                  "claims a cut it is not making")
+            _true((entry.get("admit_reason") or "").strip(),
+                  f"{name}: typed_only with no stated reason cannot be retired by review")
+            typed_only_seen += 1
         else:
             _eq(got, expected, f"{name}: stored `final` disagrees with its own `raw`")
         # #591 — `slots` is derived too, by the same standard: nothing here trusts
@@ -231,7 +260,19 @@ def test_every_final_is_rederived_from_its_own_raw():
     # not upgradeable at all and correctly derive NO slot — they are kept in the
     # shard rather than dropped so their raw proves the absence.
     _eq(slots_seen, 120, "the 120 wiki-stated slots are all derived, none left on the floor")
-    _eq(slots_only_seen, 80, "every weapon entry is slots_only, and no worn entry is")
+    # #784 — the 80 weapon entries moved from slots_only to typed_only when their
+    # typed enchantments were admitted. No entry is slots_only today; the branch is
+    # kept because it is the correct state for a harvest whose types are not sourced,
+    # and `test_the_admit_markers_are_the_declared_vocabulary` pins the closed set.
+    # #784 — the marker is PER ENTRY and says what that entry does. 20 weapon
+    # variants (the four Elemental families at five levels each) admit an Elemental
+    # Resistance; the other 60 have nothing admissible — every typed line on them is
+    # a bane/proc `Bool` or the slot-qualified `Enhancement Bonus` — so they stay
+    # `slots_only`, which is the honest state rather than a marker claiming a cut it
+    # cannot make. 60 + 20 = the 80 weapons; the 33 worn entries carry no marker.
+    _eq(slots_only_seen, 60, "the weapon entries with nothing admissible")
+    _eq(typed_only_seen, 20, "the weapon entries that admit an Elemental Resistance")
+    _true(CT.SLOT_QUALIFIED_NAMES, "the slot-qualified refusal set is not empty")
 
 def test_the_guard_refuses_to_inspect_zero_records():
     """Prove a guard fails before trusting it: the coverage assertions above are
@@ -292,10 +333,17 @@ def test_every_votau_only_worn_variant_is_covered():
 
 def test_the_build_stamps_what_the_overlay_actually_did():
     cov = _dataset()["metadata"]["cannith_tier_coverage"]
-    _eq(cov["items_filled"], 33)
+    # #784 — 49 not 33: +16, the Elemental Resistances admitted onto the weapons.
+    # 20 are derived but 4 are SKIPPED as already native — gear-planner populates the
+    # four level-4 Elemental variants with the same resistance — so the overlay adds
+    # 16. That skip is the anti-double-count guard doing its job, and it is the tell
+    # that caught the `Enhancement Bonus` spelling defect before it shipped.
+    _eq(cov["items_filled"], 49)
     _eq(cov["missing_from_roster"], [],
                      "an overlay entry naming an item the roster lacks is a stale key")
     _gt(cov["affixes_added"], 0)
+    _eq(cov["affixes_skipped_already_present"], 4,
+        "the four level-4 Elemental variants already carry their resistance natively")
     # #591 — the slot half. Was (32, 40) for the worn shard alone: 32 of the 33
     # entries state a slot (Mournlode Docent (level 4) has no tier block at all).
     # Half B adds the 80 weapon variants: 64 of them state a slot, contributing 80
@@ -342,7 +390,11 @@ def test_591b_the_weapons_carry_their_tier_granted_slot_and_nothing_else():
     what it deliberately did NOT do."""
     ds = _dataset()
     shard = _shard()
-    weapons = {n: e for n, e in shard["items"].items() if e.get("admit") == "slots_only"}
+    # #784 — the weapons are identified by CARRYING a marker, not by carrying one
+    # PARTICULAR marker: 20 admit an Elemental Resistance (`typed_only`) and 60 have
+    # nothing admissible (`slots_only`). Keying on `slots_only` alone silently
+    # dropped 20 of them the moment those were admitted.
+    weapons = {n: e for n, e in shard["items"].items() if e.get("admit")}
     _eq(len(weapons), 80, "the 80 weapon variants are in the shard")
 
     by_id = {v["variant_id"]: v for v in ds["items"]}
@@ -374,10 +426,20 @@ def test_591b_the_weapons_carry_their_tier_granted_slot_and_nothing_else():
     # have admitted the weapons' enchantments. `Enhancement Bonus` is on all 80 raw
     # blocks and is the one a later pass is most likely to let slip in.
     for n in weapons:
-        _eq(shard["items"][n]["final"], [], f"{n}: slots_only stores no affixes")
-        names = {a.get("name") for a in by_id[n].get("affixes") or []}
+        entry = shard["items"][n]
+        if entry.get("admit") == "slots_only":
+            _eq(entry["final"], [], f"{n}: slots_only stores no affixes")
+        # #784 — the scope boundary, still asserted and now narrower. The BARE
+        # `Enhancement Bonus` must never reach a weapon: gear-planner spells the
+        # weapon form `Enhancement Bonus (Weapon)`, and emitting the bare one would
+        # name a stat 3,325 weapons do not use. The 16 level-4 variants carry the
+        # slot-qualified name NATIVELY, so this checks the bare spelling only.
+        names = [a.get("name") for a in by_id[n].get("affixes") or []]
         _notin("Enhancement Bonus", names,
-               f"{n}: half B admitted an enchantment it declared out of scope")
+               f"{n}: the bare Enhancement Bonus reached a weapon")
+        # And no bane/proc line was admitted (#331).
+        for a in entry["final"]:
+            _true(a["type"] != "Bool", f"{n}: admitted a Bool-typed line ({a['name']})")
 
 
 def test_the_reported_item_carries_the_values_the_report_named():

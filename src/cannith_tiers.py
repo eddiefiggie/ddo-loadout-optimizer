@@ -102,6 +102,23 @@ LEADING = re.compile(r"^\+(?P<v>\d+)\s+(?P<name>.+)$")
 
 AUGMENT_SLOT = re.compile(r"^(Colorless|Green|Purple|Blue|Red|Yellow|Orange)\s+Augment Slot$")
 
+#: #784 — affix names gear-planner spells PER SLOT, where the wiki row states only
+#: the bare form. The seed refuses these, and `tests/test_cannith_tiers.py` reads
+#: this same set, so the shard's rule and the test's expectation cannot drift.
+#:
+#: Measured 2026-09-19 against the pinned snapshot: `Enhancement Bonus (Weapon)`
+#: on 3,325 weapon records and `Enhancement Bonus (Armor)` on 1,234, against
+#: exactly TWO bare `Enhancement Bonus` — both on Offhand. A weapon's wiki row
+#: says only "+2 Enhancement Bonus", so `sibling_types` misses and
+#: `uniform_types`, which does not consider slot, answers with the two-record
+#: spelling. Emitting that on a weapon names a stat 3,325 weapons do not use.
+#:
+#: A 3,325-to-2 majority is a pattern, not a statement, and this repo does not
+#: rename on a pattern. Admitting these needs the mapping sourced, or the join
+#: keyed on the host's own slot.
+SLOT_QUALIFIED_NAMES = frozenset({"Enhancement Bonus"})
+
+
 def _quarantine(line, reason):
     return {"raw": line, "reason": reason}
 
