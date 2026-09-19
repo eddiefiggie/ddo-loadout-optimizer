@@ -565,6 +565,29 @@ test("#774: an item whose ONLY effect is a flag is legal", () => {
 // ---------------------------------------------------------------------------
 // #795 — the Essence Crafting bench.
 
+test("#797: the affix cap IS the menu count, and the rule behind it is sourced", () => {
+  // #795 shipped one-enchantment-per-menu from a plan doc and called it
+  // wiki-stated. #797 harvested it:
+  //
+  //   "Each craftable item has a prefix and a suffix enchantment slot."
+  //   "A Mark of House Cannith can be used to add a third extra enchantment slot."
+  //   "(An error will pop up if you already have a Suffix, Prefix, or Insightful
+  //    bonus and are trying to install a second one.)"
+  //
+  // The cap must therefore be DERIVED from the menu list rather than written down
+  // beside it. Two independent numbers drift: a fourth menu would otherwise be
+  // silently uncraftable, and a lowered cap would refuse a legal item while the
+  // form still rendered a row for it.
+  assert.strictEqual(C.AFFIX_MAX, C.MENUS.length,
+    "the cap is the menu count, not a separate sanity number");
+  assert.deepStrictEqual(C.MENUS, ["Prefix", "Suffix", "Extra"]);
+  // And the placement table agrees on the same three, so the model and the data
+  // cannot disagree about how many slots an item has.
+  for (const menus of Object.values(placements.groups)) {
+    assert.deepStrictEqual(Object.keys(menus).sort(), [...C.MENUS].sort());
+  }
+});
+
 test("#795: a sourced enchantment fills its own type and value, and ignores the player's", () => {
   // The whole point of the sourced branch: when the wiki publishes the bonus type
   // AND the magnitude at this ML, the player is not asked and cannot be wrong.

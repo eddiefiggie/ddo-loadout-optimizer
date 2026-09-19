@@ -154,6 +154,13 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
                 # REFUSES, which is the safe direction under exclude-until-verified:
                 # the cost of being wrong is an enchantment offered one level late,
                 # against a player crafting something the game would not let them.
+                #
+                # #797 corroborated the reading from the other end. The wiki
+                # describes the ML-10 slot as the place "where another effect can
+                # be applied (Insightful Strength, Insightful Accuracy, etc.)"
+                # (`Essence Crafting steps`) - both of its own examples carry this
+                # prefix. So the convention this line reads is the one the wiki
+                # uses to describe the slot itself.
                 insightful = effect.startswith(essence_pool.INSIGHTFUL_PREFIX)
                 rec = {"effect": effect, "stat": stat, "rankable": rankable,
                        "sourced": False,
