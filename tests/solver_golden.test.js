@@ -10,24 +10,27 @@
 //   node tests/parity/capture_golden.js
 //
 // Ratifications:
-//   #765 (2026-09-18) — ONE fixture moved, `mid-caster`, two slots, and it is the
-//   first ratification here where the OUTGOING loadout was provably WORSE rather
-//   than merely different. Recorded as such, and the cause is NOT closed: see #789.
+//   #765 (2026-09-18) — ONE fixture moved, `mid-caster`, two slots. A TIE, and the
+//   note that shipped with #790 said the opposite; it is corrected here and the
+//   correction is the part worth reading.
 //     * Boots `Legendary Windriders` -> `Legendary Flightfoot Greaves`
 //     * Ring  `Legendary Adversion`  -> `Legendary Duskbone Ring`
-//     Intelligence 35, Universal Spell Power 94 and Wisdom 29 are UNCHANGED. The
-//     new loadout carries every counted utility effect the old one had PLUS
-//     `Ghostly` (4 -> 5), and `UTILITY_CONTAINER_DEFAULT_ORDER` ranks `Ghostly`
-//     FIRST, so it strictly dominates under lexicographic priority.
-//     What #765 changed is the variable SET, not the candidates: it adds roll-group
-//     binaries for options matching a target. NO item in this loadout carries a roll
-//     group — `Legendary Duskbone Ring` has carried `Ghostly` all along and was
-//     always eligible. So the perturbation did not make the better loadout
-//     reachable; it made the solver find one it had previously missed, which means
-//     the ratified golden was not the optimum. #789 carries that question (solver
-//     termination vs utility-tier tie-breaking); it is deliberately NOT absorbed
-//     into this note, because a ratification that records a better answer while
-//     leaving the reason unexamined is how a guard stops noticing.
+//     Every tier is identical across the two: Intelligence 35, Universal Spell
+//     Power 94, Wisdom 29, and the Utility container secures the SAME 11 effects
+//     in the same order — `Ghostly` included — with the same five outbid. Measured
+//     from the solver's own `utilityCount` and `utilityOrdered` on both trees, not
+//     reconstructed.
+//     #765 adds roll-group binaries for options matching a target. That shifts the
+//     variable set, so HiGHS returns a different vertex among equally-optimal
+//     solutions. Nothing about the answer changed.
+//     THE ERROR, recorded because it nearly shipped as a defect report: the first
+//     reading of this diff counted utility effects by scanning the chosen items'
+//     WORN AFFIXES, got 4 vs 5, and concluded the outgoing loadout was dominated.
+//     That count ignores the augment, crafting-pick and set-tier channels — which
+//     is precisely how `Ghostly` arrives here. The solver had the right number in
+//     `utilityCount` the whole time. A hand-rolled recount of something the result
+//     already reports is a second implementation of the rule, and it was wrong.
+//     #789 was filed on that miscount and closed once the receipts were read.
 //     The other 23 fixtures are byte-identical.
 //
 //   #717/#718 (2026-09-05) — FOUR fixtures moved, every one of them a fixture that
