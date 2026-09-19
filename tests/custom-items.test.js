@@ -76,6 +76,21 @@ function dagger(over) {
   }, over || {});
 }
 
+/** #810 — an item whose enchantment the wiki does NOT value, so the player still
+ *  supplies the number. `Healing Amplification` has no resolvable ML curve
+ *  (`essence_curve_join` quarantines it as unmapped), which is exactly what makes
+ *  it the right fixture for the value rules: since #810 a magnitude the wiki
+ *  publishes is filled and locked, so those rules are unreachable through an
+ *  enchantment like `Assassinate`. Found by listing placements rather than
+ *  assumed — 35 of 523 still take a player value. */
+function playerValued(over) {
+  return Object.assign({
+    uid: 5, name: "My gloves", slot: "Gloves", ml: 30, augments: [],
+    affixes: [{ menu: "Suffix", effect: "Healing Amplification",
+                bonus_type: "Quality", value: 20 }],
+  }, over || {});
+}
+
 /** A ring whose Prefix enchantment the wiki fully publishes: bonus type AND the
  *  magnitude at every ML. The form fills both and locks them, and the value is
  *  NOT a player assertion. */
@@ -105,10 +120,11 @@ test("#773: the reported item validates, and the cleaned entry is what gets stor
 test("#773: a typed string ML and typed string values are accepted and coerced", () => {
   // The form's inputs are strings. Refusing them would make the panel unusable
   // while the unit tests stayed green, which is the failure this case exists for.
-  const v = C.validateEntry(dagger({ ml: "36",
-    affixes: [{ menu: "Suffix", effect: "Assassinate", bonus_type: "Quality", value: "3" }] }), ctx);
+  const v = C.validateEntry(playerValued({ ml: "30",
+    affixes: [{ menu: "Suffix", effect: "Healing Amplification",
+                bonus_type: "Quality", value: "3" }] }), ctx);
   assert.ok(v.ok, v.errors.join(" | "));
-  assert.strictEqual(v.entry.ml, 36);
+  assert.strictEqual(v.entry.ml, 30);
   assert.strictEqual(v.entry.affixes[0].value, 3);
 });
 
@@ -160,11 +176,11 @@ const REFUSALS = [
   ["a bonus type outside the list",
    dagger({ affixes: [{ menu: "Suffix", effect: "Assassinate", bonus_type: "Shiny", value: 3 }] }), /bonus type/i],
   ["a zero value",
-   dagger({ affixes: [{ menu: "Suffix", effect: "Assassinate", bonus_type: "Quality", value: 0 }] }), /above zero/i],
+   playerValued({ affixes: [{ menu: "Suffix", effect: "Healing Amplification", bonus_type: "Quality", value: 0 }] }), /above zero/i],
   ["a negative value",
-   dagger({ affixes: [{ menu: "Suffix", effect: "Assassinate", bonus_type: "Quality", value: -4 }] }), /above zero/i],
+   playerValued({ affixes: [{ menu: "Suffix", effect: "Healing Amplification", bonus_type: "Quality", value: -4 }] }), /above zero/i],
   ["a value over the ceiling",
-   dagger({ affixes: [{ menu: "Suffix", effect: "Assassinate", bonus_type: "Quality", value: 100000 }] }), /ceiling/i],
+   playerValued({ affixes: [{ menu: "Suffix", effect: "Healing Amplification", bonus_type: "Quality", value: 100000 }] }), /ceiling/i],
   // #795 — the placement rules themselves.
   ["an enchantment in the wrong menu",
    dagger({ affixes: [{ menu: "Prefix", effect: "Assassinate", bonus_type: "Quality", value: 3 }] }),
@@ -1002,6 +1018,95 @@ test("#800: the harvest and what it serves, re-ratified deliberately", () => {
     "every recipe is either served or withheld - none silently vanishes");
   assert.strictEqual(cov.served, 78);
   assert.strictEqual(cov.withheld.length, 29);
+});
+
+
+
+// ---------------------------------------------------------------------------
+// #810 — the ML curve defines the magnitude, independently of the bonus type.
+
+test("#810: a magnitude the wiki publishes is filled, even when the type is not", () => {
+  // The defect: `sourced` required BOTH facts, so 339 placements asked the player
+  // to type a number the crafting table states, because a DIFFERENT fact about
+  // the same effect was missing. `essence_pool` couples them for a real reason —
+  // the solver needs a bucket — and that reasoning does not hold in a builder
+  // that asks the player for the type.
+  const row = C.placementFor("Melee weapons", "Suffix", "Assassinate", ctx);
+  assert.strictEqual(row.magnitude_sourced, true, "the wiki values Assassinate");
+  assert.strictEqual(row.type_sourced, false, "…and does not type it");
+  assert.strictEqual(row.sourced, false, "so it is not FULLY sourced");
+
+  const v = C.validateEntry(dagger({ ml: 36, affixes: [
+    { menu: "Suffix", effect: "Assassinate", bonus_type: "Quality", value: 999 }] }), ctx);
+  assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
+  const a = v.entry.affixes[0];
+  assert.strictEqual(a.value, Number(row.values_by_ml[35]), "the ML 36 row, not the 999");
+  assert.strictEqual(a.bonus_type, "Quality", "the player's type is still theirs");
+  assert.strictEqual(a.magnitude_sourced, true);
+  assert.strictEqual(a.type_sourced, false);
+});
+
+test("#810: the magnitude follows the item's level", () => {
+  const row = C.placementFor("Melee weapons", "Suffix", "Assassinate", ctx);
+  const at = (ml) => C.validateEntry(dagger({ ml, affixes: [
+    { menu: "Suffix", effect: "Assassinate", bonus_type: "Quality", value: 1 }] }),
+    ctx).entry.affixes[0].value;
+  assert.strictEqual(at(36), Number(row.values_by_ml[35]));
+  assert.strictEqual(at(20), Number(row.values_by_ml[19]));
+  assert.notStrictEqual(at(20), at(36), "the curve is not flat, so this can fail");
+});
+
+test("#810: every placement with a 36-row curve carries its magnitude", () => {
+  // The guard against silent regression. If a future change re-couples the two
+  // facts, this goes red with the count rather than quietly asking players for
+  // published numbers again.
+  const g = placements.groups;
+  const missing = [];
+  for (const group of Object.keys(g)) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      for (const r of g[group][menu] || []) {
+        if (r.magnitude_sourced) {
+          assert.ok(Array.isArray(r.values_by_ml) && r.values_by_ml.length === 36,
+            `${group}/${menu}/${r.effect} claims a magnitude with no 36-row curve`);
+        } else if (r.values_by_ml) {
+          missing.push(`${group}/${menu}/${r.effect}`);
+        }
+      }
+    }
+  }
+  assert.deepStrictEqual(missing, [],
+    "a placement carries a curve but is not marked magnitude_sourced");
+  const cov = raw.metadata.essence_placement_coverage;
+  // Re-ratified deliberately: 426 of 523, up from the 87 that had BOTH facts.
+  assert.strictEqual(cov.magnitude_sourced, 426);
+  assert.strictEqual(cov.type_sourced, 93);
+  assert.strictEqual(cov.sourced, 87, "the conjunction is unchanged");
+  assert.ok(cov.sourced <= Math.min(cov.magnitude_sourced, cov.type_sourced),
+    "the conjunction can never exceed either half");
+});
+
+test("#810: a value is still asked for when the wiki does not publish one", () => {
+  // The branch must stay reachable, or the value rules above are dead code. 35 of
+  // 523 placements have no resolvable curve and are not on/off flags.
+  const v = C.validateEntry(playerValued(), ctx);
+  assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
+  const a = v.entry.affixes[0];
+  assert.strictEqual(a.magnitude_sourced, false);
+  assert.strictEqual(a.value, 20, "the player's number is kept");
+});
+
+test("#810: all three menus are offered at ML 10 and above, on every item type", () => {
+  // The owner's other claim, checked rather than assumed. An Essence Crafted item
+  // has three slots; below ML 10 the Extra one is withheld, which is sourced:
+  // "Extra enchantment slots are not available on items under minimum level 10."
+  for (const group of Object.keys(placements.groups)) {
+    assert.deepStrictEqual(C.menusFor(group, 36, ctx), ["Prefix", "Suffix", "Extra"],
+      `${group} must offer all three menus at ML 36`);
+    assert.deepStrictEqual(C.menusFor(group, 10, ctx), ["Prefix", "Suffix", "Extra"],
+      `${group} must offer all three at exactly ML 10`);
+    assert.deepStrictEqual(C.menusFor(group, 9, ctx), ["Prefix", "Suffix"],
+      `${group} must withhold Extra below ML 10`);
+  }
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

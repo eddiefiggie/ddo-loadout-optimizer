@@ -6276,8 +6276,13 @@ test("#808: the panel names the mechanic, and its disclosure covers both halves"
   // Enhancement Bonus - it under-claimed the tool and contradicted the ✓ legend.
   assert.ok(!/These numbers are yours, not wiki-sourced/.test(pool),
     "the flat 'none of this is sourced' claim is wrong since #795/#799");
-  assert.ok(/wiki publishes it/i.test(pool), "it must say which half the wiki fills");
-  assert.ok(/Everything else is yours/i.test(pool), "…and which half is the player's");
+  // #810 split the provenance three ways — magnitude, bonus type, neither — so
+  // the copy has to say that the LEVEL drives the numbers, not just that "the
+  // wiki fills some things in".
+  assert.ok(/minimum level sets the numbers/i.test(pool),
+    "it must say the level drives the magnitudes");
+  assert.ok(/crafting table publishes/i.test(pool), "…and which half the wiki fills");
+  assert.ok(/Anything you supply is yours/i.test(pool), "…and which half is the player's");
   // The provable-answer framing is the REASON the split matters, so it stays.
   assert.ok(/provable/i.test(pool), "the provenance rationale is kept");
 });
