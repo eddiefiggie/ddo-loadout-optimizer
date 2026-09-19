@@ -3521,8 +3521,12 @@ if (typeof window !== "undefined" && window.App) {
           return c ? `${c} excluded` : "nothing excluded";
         }
         case "custom": {
+          // #808 — "of your own" stuttered against the fold's new title ("Essence
+          // Crafted gear you own · none of your own"). The neighbouring statuses
+          // are all verb-shaped — "nothing excluded", "nothing corrected" — so
+          // this one matches them now.
           const c = n(state.customItems);
-          return c ? `${c} of your own` : "none of your own";
+          return c ? `${c} described` : "none described";
         }
         case "overrides": {
           const c = n(state.overrideApplied);
@@ -3581,14 +3585,19 @@ if (typeof window !== "undefined" && window.App) {
               <small>Use only augments your export lists, plus the ones anyone can buy or trade for.
                 Off by default — augments otherwise come from the full catalog.</small></span></label>
         </div>
-        ${poolFold("custom", "Items you own that this tool does not", poolStatus("custom"), `
-          <p class="wz-adv-note">Crafted something the catalog has never heard of \u2014 a Cannith-crafted ring,
-            an Essence-crafted weapon \u2014 and want it considered? Describe it here and it joins the search as a
-            real item: it can be pinned into a slot, it fills its slot like anything else, and the solver spends
-            the rest of the build on what it does <em>not</em> already cover.</p>
-          <p class="wz-adv-note"><strong>These numbers are yours, not wiki-sourced.</strong> Everything else in this
-            tool traces to the DDO Wiki, and that is what makes the answer provable. An item you type in is only as
-            right as what you typed \u2014 so a build that uses one says so on the result and in every export.</p>
+        ${poolFold("custom", "Essence Crafted gear you own", poolStatus("custom"), `
+          <p class="wz-adv-note">Essence Crafting \u2014 <strong>Cannith Crafting</strong> before Update 79
+            renamed it. Crafted a ring, a weapon, an orb? Describe it here and it joins the search as a real
+            item: it can be pinned into a slot, it fills that slot like anything else, and the solver spends the
+            rest of the build on what it does <em>not</em> already cover.</p>
+          <p class="wz-adv-note">Choose the kind of item and you get the menus it really has \u2014 Prefix,
+            Suffix, and Extra at minimum level 10 \u2014 each offering only the enchantments the crafting
+            table says can go in it.</p>
+          <p class="wz-adv-note"><strong>Marked \u2713: the wiki publishes it, so it is filled in for you.</strong>
+            That includes the Enhancement bonus a Minimum Level shard applies to a weapon, shield or armor on its
+            own. <strong>Everything else is yours.</strong> The rest of this tool traces to the DDO Wiki, and that
+            is what makes the answer provable \u2014 so a value you supply is only as right as what you typed,
+            and a build that uses one says so on the result and in every export.</p>
           <div id="wz-custom-list" class="wz-pin-list"></div>
           <div id="wz-custom-form"></div>`)}
         ${poolFold("pin", "Pin specific items", poolStatus("pin"), `
@@ -4115,8 +4124,8 @@ ${(() => {
       if (!box) return;
       const list = state.customItems || [];
       if (!list.length) {
-        box.innerHTML = `<p class="wz-pin-empty">You have not described any items of your own.</p>`
-          + `<div class="wz-addrow"><button type="button" class="btn ghost sm" data-custom-new>Describe an item…</button></div>`;
+        box.innerHTML = `<p class="wz-pin-empty">You have not described any crafted gear yet.</p>`
+          + `<div class="wz-addrow"><button type="button" class="btn ghost sm" data-custom-new>Describe a crafted item…</button></div>`;
         wireCustomList(box);
         return;
       }
@@ -4162,7 +4171,7 @@ ${(() => {
       }).join("");
       const capped = M && list.length >= M.CUSTOM_LIMIT;
       box.innerHTML = rows + `<div class="wz-addrow">
-        <button type="button" class="btn ghost sm" data-custom-new${capped ? " disabled" : ""}>Describe another item…</button>
+        <button type="button" class="btn ghost sm" data-custom-new${capped ? " disabled" : ""}>Describe another crafted item…</button>
         ${capped ? `<span class="wz-help">${wzEsc(M.CUSTOM_LIMIT)} is the limit for one build.</span>` : ""}</div>`;
       wireCustomList(box);
     }
@@ -4530,7 +4539,7 @@ ${(() => {
         if (!v.ok) { d.errors = v.errors; renderCustomForm(); return; }
         if (d.uid == null) {
           if ((state.customItems || []).length >= M.CUSTOM_LIMIT) {
-            d.errors = [`You can describe at most ${M.CUSTOM_LIMIT} items of your own on one build.`];
+            d.errors = [`You can describe at most ${M.CUSTOM_LIMIT} crafted items on one build.`];
             renderCustomForm(); return;
           }
           state.customItems = (state.customItems || []).concat([v.entry]);

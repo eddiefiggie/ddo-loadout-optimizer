@@ -6257,6 +6257,31 @@ test("#773/#774/#795: the effect picker offers only names the form will accept",
   }
 });
 
+test("#808: the panel names the mechanic, and its disclosure covers both halves", () => {
+  // The fold was titled "Items you own that this tool does not" until #808 - a
+  // description of the MOTIVATION, from #773, when the form took free-form
+  // effects. Since #795 it is an Essence Crafting bench, and a player looking for
+  // Cannith or Essence crafting had no reason to open it.
+  const pool = srcBetween(WIZARD_SRC, 'poolFold("custom"', 'poolFold("pin"', "custom pool fold");
+  assert.ok(/Essence Craft/i.test(pool), "the fold must name the mechanic");
+  // Findability in the other direction: Essence Crafting IS Cannith Crafting
+  // (U79, sourced in #797), and the only player report on file says "CC rings".
+  // The old copy named the two as if they were different systems.
+  assert.ok(/Cannith/i.test(pool), "…and carry the name players still search for");
+  assert.ok(!/Items you own that this tool does not/.test(pool), "the old title is gone");
+
+  // The disclosure must describe BOTH halves. It used to say flatly "These
+  // numbers are yours, not wiki-sourced", which stopped being true when #795
+  // began filling sourced placements and #799 began applying the automatic
+  // Enhancement Bonus - it under-claimed the tool and contradicted the ✓ legend.
+  assert.ok(!/These numbers are yours, not wiki-sourced/.test(pool),
+    "the flat 'none of this is sourced' claim is wrong since #795/#799");
+  assert.ok(/wiki publishes it/i.test(pool), "it must say which half the wiki fills");
+  assert.ok(/Everything else is yours/i.test(pool), "…and which half is the player's");
+  // The provable-answer framing is the REASON the split matters, so it stays.
+  assert.ok(/provable/i.test(pool), "the provenance rationale is kept");
+});
+
 test("#795: the bench renders a select per menu, not a free-text effect field", () => {
   // #773 rendered a free-text input over its own datalist, and the guard here was
   // that the datalist had to be rendered on the same step — `wz-stats` lives in
