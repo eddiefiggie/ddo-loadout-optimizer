@@ -4313,7 +4313,7 @@ ${(() => {
           const v = M.sourcedValueAt(row, d.ml);
           const typePart = row.type_sourced
             ? `<span class="wz-custom-sourced">${wzEsc(row.bonus_type)}</span>`
-            : `<select data-custom-bt="${wzEsc(menu)}"><option value="">Bonus type…</option>`
+            : `<select data-custom-bt="${wzEsc(menu)}"><option value="">Type on your item…</option>`
               + `${btypes.map((t) => opt(t, chosen && chosen.bonus_type)).join("")}</select>`;
           const valPart = row.magnitude_sourced
             ? `<span class="wz-custom-sourced">+${wzEsc(v == null ? "?" : v)}`
@@ -4333,7 +4333,7 @@ ${(() => {
           const pv = M.sourcedValueAt(pe, d.ml);
           const ctrls = flag
             ? `<span class="wz-custom-flag">on/off — no bonus type or value</span>`
-            : `<select data-custom-part="${wzEsc(menu)}:${pi}"><option value="">Bonus type…</option>`
+            : `<select data-custom-part="${wzEsc(menu)}:${pi}"><option value="">Type on your item…</option>`
               + `${btypes.map((t) => opt(t, supplied.bonus_type)).join("")}</select>`
               + (pe.magnitude_sourced
                   ? `<span class="wz-custom-sourced">+${wzEsc(pv == null ? "?" : pv)}`
@@ -4418,9 +4418,11 @@ ${(() => {
         <p class="wz-label">Essence Crafting${group ? ` \u2014 ${wzEsc(group)}` : ""}</p>
         <p class="wz-help">One enchantment per menu, and each menu offers only what the crafting table
           says can go in it for this kind of item. A \u2713 means the table sets that
-          enchantment\u2019s value at your minimum level, so it is filled in and locked. The bonus type is
-          filled in too where the wiki states it, and asked of you where it does not — anything you
-          supply is marked as your own.</p>
+          enchantment\u2019s value at your minimum level, so it is filled in and locked.</p>
+        <p class="wz-help"><strong>Where a bonus type is asked for, read it off your item.</strong> The
+          crafting mechanic fixes it — it is not yours to choose — but the wiki only publishes it
+          for some enchantments, so this tool cannot fill it in for the rest. Your item\u2019s tooltip
+          names it. Anything you supply is marked as your own.</p>
         ${noBench}${menuRows}${extraNote}${autoBlock}${missingBlock}
         ${d.errors.length ? `<ul class="wz-custom-errors" role="alert">${d.errors.map((e) => `<li>${wzEsc(e)}</li>`).join("")}</ul>` : ""}
         <div class="wz-addrow">

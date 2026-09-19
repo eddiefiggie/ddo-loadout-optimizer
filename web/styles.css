@@ -2335,8 +2335,14 @@ input.wz-ml { width: 120px; }
 /* #795 — the Essence Crafting bench. Each row is one MENU, so the menu name is a
    fixed-width lead-in and the picker takes the remaining space. `wz-custom-flag`
    above still styles the on/off note inside these rows. */
-.wz-custom-menu { flex: 0 0 4.5rem; color: var(--muted); font-size: var(--fs-xs); }
-.wz-custom-affix select[data-custom-effect] { flex: 2 1 12rem; }
+/* #815/#817 — wide enough for "Mark of House Cannith" on one or two lines rather
+   than three, and for the bonus-type control to show "Type on your item…" without
+   truncating it to "Type on your ite". Both strings grew when the labels stopped
+   using table 1b's internal vocabulary; the old 4.5rem was sized for "Extra". */
+.wz-custom-menu { flex: 0 0 8rem; color: var(--muted); font-size: var(--fs-xs); }
+.wz-custom-affix select[data-custom-effect] { flex: 2 1 11rem; }
+.wz-custom-affix select[data-custom-bt],
+.wz-custom-affix select[data-custom-part] { flex: 1 1 10rem; min-width: 9.5rem; }
 /* A sourced enchantment's value is read from the crafting table and locked, so it
    is text rather than a control — a disabled input still reads as a question. */
 .wz-custom-sourced { flex: 1 1 10rem; font-size: var(--fs-xs); }
