@@ -178,6 +178,10 @@ def test_every_final_is_rederived_from_its_own_raw():
 
     sib = CT.sibling_types(planner, fam_of, aliases)
     uni = CT.uniform_types(planner, aliases)
+    slotq = CT.slot_qualified_types(planner, aliases)
+    # #792 — the premise behind the Penalty skip inside `slot_qualified_types`,
+    # checked here rather than dated in a comment.
+    _true(CT.assert_penalty_is_negative(planner), "Penalty affixes were inspected")
 
     _true(shard["items"], "refuse to pass over an empty shard")
     checked = slots_seen = slots_only_seen = typed_only_seen = 0
@@ -188,19 +192,16 @@ def test_every_final_is_rederived_from_its_own_raw():
             kind, p = CT.parse_line(line)
             if kind != "affix" or p["name"] in BUNDLED or p["name"] not in known:
                 continue
-            hit = sib.get((p["name"], fam)) or uni.get(p["name"])
+            # #792 — THE join, read from the module rather than restated. Keyed on
+            # the host's own SLOT first: gear-planner spells some affixes per slot
+            # and the wiki row states only the bare form.
+            hit = CT.join_type(p["name"], entry.get("slot"), fam, slotq, sib, uni)
             if not hit:
                 continue
-            rn, ty = hit
-            expected.append((rn, ty, p["value"], p["unit"]))
-        # #792 — the slot-qualified refusal is a property of the SHARD, not of an
-        # `admit` marker: gear-planner spells these per slot while the wiki row
-        # states only the bare form, so no entry here may emit one. Applied to the
-        # expectation before the marker branches, because the five WORN Mournlode
-        # Docents shipped the bare `Enhancement Bonus` on main until this change and
-        # carry no marker at all.
-        expected = [e for e in expected if e[0] not in CT.SLOT_QUALIFIED_NAMES]
-        got = [(a["name"], a["type"], a["value"], a["unit"]) for a in entry["final"]]
+            rn, ty, src = hit
+            expected.append((rn, ty, p["value"], p["unit"], src))
+        got = [(a["name"], a["type"], a["value"], a["unit"], a.get("type_source"))
+               for a in entry["final"]]
         # #591 half B — an entry may declare `admit: "slots_only"`, which admits the
         # tier-granted augment slot and deliberately NOT the enchantments the same
         # `raw` would yield. The issue puts them out of scope twice and asks for a
@@ -270,9 +271,12 @@ def test_every_final_is_rederived_from_its_own_raw():
     # a bane/proc `Bool` or the slot-qualified `Enhancement Bonus` — so they stay
     # `slots_only`, which is the honest state rather than a marker claiming a cut it
     # cannot make. 60 + 20 = the 80 weapons; the 33 worn entries carry no marker.
-    _eq(slots_only_seen, 60, "the weapon entries with nothing admissible")
-    _eq(typed_only_seen, 20, "the weapon entries that admit an Elemental Resistance")
-    _true(CT.SLOT_QUALIFIED_NAMES, "the slot-qualified refusal set is not empty")
+    _eq(slots_only_seen, 0, "no entry has nothing admissible any more")
+    _eq(typed_only_seen, 80, "every weapon entry admits at least its Enhancement Bonus")
+    # #792 — the property, asserted over the shard that shipped, rather than the one
+    # affix name pinned by hand. `SLOT_QUALIFIED_NAMES` is retired by this line.
+    _eq(CT.assert_no_bare_slot_qualified(shard["items"], slotq), 113,
+        "no entry emits a bare name onto a slot that spells it qualified")
 
 def test_the_guard_refuses_to_inspect_zero_records():
     """Prove a guard fails before trusting it: the coverage assertions above are
@@ -333,17 +337,27 @@ def test_every_votau_only_worn_variant_is_covered():
 
 def test_the_build_stamps_what_the_overlay_actually_did():
     cov = _dataset()["metadata"]["cannith_tier_coverage"]
-    # #784 — 49 not 33: +16, the Elemental Resistances admitted onto the weapons.
-    # 20 are derived but 4 are SKIPPED as already native — gear-planner populates the
-    # four level-4 Elemental variants with the same resistance — so the overlay adds
-    # 16. That skip is the anti-double-count guard doing its job, and it is the tell
-    # that caught the `Enhancement Bonus` spelling defect before it shipped.
-    _eq(cov["items_filled"], 49)
+    # #792 — 97 not 49: +48. Every one of the 80 weapons now admits at least its
+    # `Enhancement Bonus (Weapon)`, which a slot-blind join had been answering with
+    # the two-record Offhand spelling; 80 - 16 = 64 newly-filled weapons, 33 + 64 = 97.
+    # The 16 that fill nothing are the level-4 rows, and they are the corroboration
+    # rather than the leftover: see the skip count below.
+    _eq(cov["items_filled"], 97)
     _eq(cov["missing_from_roster"], [],
                      "an overlay entry naming an item the roster lacks is a stale key")
     _gt(cov["affixes_added"], 0)
-    _eq(cov["affixes_skipped_already_present"], 4,
-        "the four level-4 Elemental variants already carry their resistance natively")
+    # #792 — 20 not 4, and the +16 is the strongest evidence in this file that the
+    # slot-keyed spelling is RIGHT. The anti-double-count guard skips an affix the
+    # record already carries natively; it now skips `Enhancement Bonus (Weapon)` on
+    # all 16 level-4 weapons. That means gear-planner independently spells it exactly
+    # as `join_type` derived it, on these very items — the join was not pattern-matched
+    # onto a majority, it agrees with the catalog where the catalog speaks.
+    #
+    # Re-ratified deliberately (a golden diff after a data change is not automatically
+    # a regression): 4 Elemental Resistances + 16 Enhancement Bonuses = 20.
+    _eq(cov["affixes_skipped_already_present"], 20,
+        "the 16 level-4 weapons already carry the same Enhancement Bonus spelling "
+        "natively, and the 4 level-4 Elemental variants their resistance")
     # #591 — the slot half. Was (32, 40) for the worn shard alone: 32 of the 33
     # entries state a slot (Mournlode Docent (level 4) has no tier block at all).
     # Half B adds the 80 weapon variants: 64 of them state a slot, contributing 80
