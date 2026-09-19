@@ -6357,6 +6357,26 @@ test("#774/#795: a menu row drops the bonus type and value when it cannot ask fo
   }
 });
 
+test("#800: the edit path carries a combined row's pair, and the list prints it", () => {
+  // Two bugs found by opening the form in a browser, both invisible to a green
+  // suite, and both the same shape: code that rebuilds an affix FIELD BY FIELD
+  // and therefore drops whatever fields it was not written for.
+  //
+  //  - the edit path rebuilt the draft without `combined`/`parts`, so reopening a
+  //    saved combined item showed an empty Prefix and lost the pair;
+  //  - the list summary read `stat`/`bonus_type`/`value` off the row, which a
+  //    combined row does not carry, and printed three empty strings - an item
+  //    with no effects, which is exactly what the player had just been refused.
+  const edit = srcBetween(WIZARD_SRC, "[data-custom-edit]", "[data-custom-rm]", "edit path");
+  assert.ok(/a\.combined/.test(edit), "the edit path must recognise a combined row");
+  assert.ok(/parts:/.test(edit), "…and copy its parts");
+  const list = fnBody(WIZARD_SRC, "function renderCustomList(", 4);
+  assert.ok(/Array\.isArray\(a\.parts\)/.test(list),
+    "the summary must flatten a combined row's parts");
+  assert.ok(/a\.presence/.test(list),
+    "…and print a flag by name, since it has no type or value to print");
+});
+
 test("#795: choosing an enchantment re-renders, and the level does too", () => {
   // The row can only take its shape once the enchantment is known — sourced rows
   // show a locked value, flags show neither control, typed rows ask for both — so

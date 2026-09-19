@@ -4130,8 +4130,22 @@ ${(() => {
       const M = _customItemsModule();
       const rows = list.map((e) => {
         const why = bad.get(e.uid);
+        // #800 — a combined row carries its two effects in `parts`, not on itself.
+        // Flattened here so the summary shows what the item grants; before this it
+        // rendered as three empty strings and the row read as an item with no
+        // effects at all, which is exactly what the player had just refused to
+        // create.
+        //
+        // #774's flags and #799's automatic bonus are handled the same way: a flag
+        // prints its name alone because it has no type or value to print, and the
+        // automatic Enhancement Bonus is NOT listed, because the entry records what
+        // the player chose and the shard's grant is not one of their choices.
+        const describe = (a) => (a && a.presence)
+          ? wzEsc(a.stat)
+          : `${wzEsc(a.bonus_type)} ${wzEsc(a.stat)} ${wzEsc(a.value)}`;
         const affixes = (e.affixes || [])
-          .map((a) => `${wzEsc(a.bonus_type)} ${wzEsc(a.stat)} ${wzEsc(a.value)}`).join(" · ");
+          .flatMap((a) => (a && Array.isArray(a.parts)) ? a.parts : [a])
+          .map(describe).join(" · ");
         const where = e.type ? `${wzEsc(e.slot)} · ${wzEsc(e.type)}` : wzEsc(e.slot);
         // A rejected entry is shown, kept and explained — never dropped. Same rule
         // as a stale block id or a set pin naming a renamed set.
@@ -4174,7 +4188,18 @@ ${(() => {
           uid: e.uid, name: e.name, slot: e.slot, type: e.type,
           ml: e.ml == null ? "" : String(e.ml),
           augments: (e.augments || []).slice(),
-          affixes: (src.affixes || []).map((a) => ({
+          // #800 — a combined row carries `combined` and `parts` instead of a
+          // single effect. Rebuilding the draft field-by-field silently dropped
+          // both, so opening a saved combined item showed an empty Prefix and
+          // lost the pair. Copied explicitly, values stringified the same way the
+          // single-effect branch does so the inputs round-trip.
+          affixes: (src.affixes || []).map((a) => (a && a.combined ? {
+            menu: a.menu, combined: a.combined,
+            parts: (a.parts || []).map((x) => ({
+              effect: x.effect, stat: x.stat, bonus_type: x.bonus_type,
+              value: x.value == null ? "" : String(x.value),
+              presence: !!x.presence })),
+          } : {
             menu: a.menu, effect: a.effect, stat: a.stat, bonus_type: a.bonus_type,
             value: a.value == null ? "" : String(a.value),
             presence: !!a.presence, sourced: !!a.sourced })),
@@ -4248,11 +4273,22 @@ ${(() => {
       // "+ Another effect" button would be offering a shape the game does not
       // have — and would let a player build two Prefixes and be refused on save.
       const affixFor = (menu) => (d.affixes || []).find((a) => a && a.menu === menu) || null;
+      // #800 — the Prefix menu also offers COMBINED shards: one shard granting two
+      // effects into the same slot. They sit in their own optgroup, keyed
+      // `combined:<name>`, because a recipe name and an effect name are different
+      // vocabularies and an overloaded value would be ambiguous the day a recipe
+      // is named after an effect.
+      const combinedOpts = (m) => (m === M.MENUS[0] && group)
+        ? M.combinedOptions(group, d.ml, ctx) : [];
+
       const menuRows = availMenus.map((menu) => {
         const chosen = affixFor(menu);
         const rows = M.effectsFor(group, menu, d.ml, ctx);
-        const sel = chosen ? chosen.effect : "";
-        const row = sel ? M.placementFor(group, menu, sel, ctx) : null;
+        const combos = combinedOpts(menu);
+        const sel = chosen ? (chosen.combined ? `combined:${chosen.combined}` : chosen.effect) : "";
+        const recipe = (chosen && chosen.combined)
+          ? M.combinedFor(group, chosen.combined, ctx) : null;
+        const row = (sel && !recipe) ? M.placementFor(group, menu, sel, ctx) : null;
         let tail = "";
         if (row && row.sourced) {
           // Sourced: the wiki states the bonus type AND the magnitude at this ML,
@@ -4269,13 +4305,40 @@ ${(() => {
             + `<input type="number" min="1" step="1" data-nodirty data-custom-val="${wzEsc(menu)}"`
             + ` value="${wzEsc((chosen && chosen.value) || "")}" placeholder="Value">`;
         }
+        // A combined shard asks for a bonus type and a value PER EFFECT, on its
+        // own sub-rows. The pair is one choice — there is no control to remove
+        // half of it, because the game has no such thing.
+        const partRows = recipe ? recipe.effects.map((pe, pi) => {
+          const supplied = ((chosen && chosen.parts) || [])[pi] || {};
+          const flag = isPresenceOnly(vocab.canonical ? vocab.canonical(pe.stat) : pe.stat, vocab);
+          const ctrls = flag
+            ? `<span class="wz-custom-flag">on/off — no bonus type or value</span>`
+            : `<select data-custom-part="${wzEsc(menu)}:${pi}"><option value="">Bonus type…</option>`
+              + `${btypes.map((t) => opt(t, supplied.bonus_type)).join("")}</select>`
+              + `<input type="number" min="1" step="1" data-nodirty`
+              + ` data-custom-partval="${wzEsc(menu)}:${pi}"`
+              + ` value="${wzEsc(supplied.value == null ? "" : supplied.value)}" placeholder="Value">`;
+          return `<div class="wz-custom-affix wz-custom-part">`
+            + `<span class="wz-label wz-custom-menu"></span>`
+            + `<span class="wz-custom-autoname">${wzEsc(pe.effect)}</span>${ctrls}</div>`;
+        }).join("") : "";
+
         return `<div class="wz-custom-affix">`
           + `<span class="wz-label wz-custom-menu">${wzEsc(menu)}</span>`
           + `<select data-custom-effect="${wzEsc(menu)}">`
           + `<option value="">— none —</option>`
           + rows.map((r) => `<option value="${wzEsc(r.effect)}"${r.effect === sel ? " selected" : ""}>`
               + `${wzEsc(r.effect)}${r.sourced ? " ✓" : ""}</option>`).join("")
-          + `</select>${tail}</div>`;
+          + (combos.length
+              ? `<optgroup label="Combined — one shard, two effects">`
+                + combos.map((r) => {
+                    const v = `combined:${r.name}`;
+                    return `<option value="${wzEsc(v)}"${v === sel ? " selected" : ""}>`
+                      + `${wzEsc(r.name)} (${wzEsc(r.effects.map((e) => e.effect).join(" + "))})</option>`;
+                  }).join("")
+                + `</optgroup>`
+              : "")
+          + `</select>${tail}</div>${partRows}`;
       }).join("");
 
       // The three reasons an item has no bench at all, each said plainly. A blank
@@ -4400,12 +4463,36 @@ ${(() => {
       // on/off one shows neither control, and a typed one asks for both.
       box.querySelectorAll("[data-custom-effect]").forEach((el) => el.onchange = (e) => {
         const menu = e.target.getAttribute("data-custom-effect");
-        const effect = String(e.target.value || "").trim();
+        const raw = String(e.target.value || "").trim();
         const rest = (customDraft.affixes || []).filter((a) => a && a.menu !== menu);
-        customDraft.affixes = effect
-          ? rest.concat([{ menu: menu, effect: effect, bonus_type: "", value: "" }])
-          : rest;
+        let next = rest;
+        if (raw.indexOf("combined:") === 0) {
+          // #800 — the pair is seeded EMPTY but present, so both sub-rows render
+          // immediately and the player can see what the shard grants before
+          // supplying anything.
+          next = rest.concat([{ menu: menu, combined: raw.slice("combined:".length),
+                                parts: [{}, {}] }]);
+        } else if (raw) {
+          next = rest.concat([{ menu: menu, effect: raw, bonus_type: "", value: "" }]);
+        }
+        customDraft.affixes = next;
         renderCustomForm();
+      });
+      const _partSlot = (attr) => (e) => {
+        const [menu, ix] = String(e.target.getAttribute(attr) || "").split(":");
+        const a = (customDraft.affixes || []).find((x) => x && x.menu === menu && x.combined);
+        if (!a) return null;
+        a.parts = Array.isArray(a.parts) ? a.parts : [];
+        a.parts[Number(ix)] = a.parts[Number(ix)] || {};
+        return a.parts[Number(ix)];
+      };
+      box.querySelectorAll("[data-custom-part]").forEach((el) => el.onchange = (e) => {
+        const slot = _partSlot("data-custom-part")(e);
+        if (slot) slot.bonus_type = e.target.value;
+      });
+      box.querySelectorAll("[data-custom-partval]").forEach((el) => el.oninput = (e) => {
+        const slot = _partSlot("data-custom-partval")(e);
+        if (slot) slot.value = e.target.value;
       });
       box.querySelectorAll("[data-custom-bt]").forEach((el) => el.onchange = (e) => {
         const menu = e.target.getAttribute("data-custom-bt");

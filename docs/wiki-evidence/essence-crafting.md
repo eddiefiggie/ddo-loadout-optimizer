@@ -422,7 +422,43 @@ shield takes the armour spelling.**
 
 This does not contradict one-per-*slot* — a combined prefix is one shard — but it
 does mean "one enchantment per menu" is the wrong phrasing for the general case.
-The bench cannot express a combined prefix today. Also filed — **#800**.
+**Resolved by #800.**
+
+### The recipe table, harvested 2026-09-19 (#800)
+
+`Expand Dual Shard Recipe List` parses: **107 rows**, eight columns —
+`Name | Effect 1 | Effect 2 | Mystical cost | Slot | Update | Bound Level | Unbound Level`.
+Verbatim in `data/seed/compendium/essence_combined_prefixes.json`, including the
+page's own typos (`Blaphemous`, and `Rebellious`'s lowercase `holy Blast`), which
+the join folds through the repo's existing `_norm` rather than the shard
+correcting its own source.
+
+The split is an independent check on the harvest: the page says *"Update 81
+introduced 100 more combined shards"*, and the table carries **exactly 100** U81
+rows against 7 from U55.
+
+Answering the four questions #800 opened with:
+
+| question | answer |
+|---|---|
+| Is there a harvestable list? | Yes — the collapsed table parses cleanly. |
+| Do both effects share the prefix slot's placement rules? | **No.** The recipes carry their OWN `Slot` column. `table 1b` is keyed by one effect and says nothing about combined shards. |
+| Do the pair bucket as two independent affixes? | Yes — two ordinary affixes, minted from one entry row. They are never independently *selectable*, which is the part that mattered. |
+| ML 20 floor? | Confirmed, and it is a THIRD ML gate: the Extra rule gates a menu, the Insight rule gates an effect, this gates the option. |
+
+**A third slot vocabulary.** The `Slot` column uses singular names (`Weapon`,
+`Ring`, `Shield`) matching neither `table 1b`'s plural groups nor the app's slot
+list. `essence_combined.GROUP_OF_SLOT` is that join, written out and guarded in
+both directions. Its `Weapon` is *undifferentiated* — and that is a statement
+rather than a silence, unlike `table 1b`, which names Melee and Ranged separately
+and never says which DDO weapon types are in each. So a weapon recipe serves both
+groups.
+
+**78 of 107 are served; 29 are withheld whole.** A recipe is served only when BOTH
+effects resolve to a rankable catalog stat. Serving the half that resolves would
+grant one effect where the game grants two, and is the fan-out shape
+`src/container_registry.py` exists to refuse. The withheld 29 are recorded with
+the unrankable effect named.
 
 ### What this read did NOT settle
 

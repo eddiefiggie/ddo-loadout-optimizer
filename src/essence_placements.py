@@ -31,6 +31,7 @@ from __future__ import annotations
 import json
 import os
 
+from src import essence_combined
 from src import essence_curve_join as curve_join
 from src import essence_pool
 from src import spell_focus
@@ -313,9 +314,15 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
             "placement at all, which means the harvest broke rather than that the "
             "game changed")
 
+    # #800 — combined prefixes, keyed by the same group names. Built here so the
+    # bench reads ONE published table rather than joining two in the browser.
+    combined = essence_combined.build_combined_pool(
+        catalog_stats=catalog_stats, placements=placements)
+
     return {
         "groups": groups,
         "automatic": build_automatic_bonuses(crafting),
+        "combined": {k: v for k, v in combined.items() if k != "coverage"},
         "slot_groups": {k: list(v) for k, v in SLOT_GROUPS.items()},
         "extra_slot_min_ml": EXTRA_SLOT_MIN_ML,
         "insight_min_ml": INSIGHT_MIN_ML,
@@ -328,5 +335,6 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
             "by_group": counts,
             "slots_without_a_group": sorted(
                 s for s, g in SLOT_GROUPS.items() if not g),
+            "combined": combined["coverage"],
         },
     }

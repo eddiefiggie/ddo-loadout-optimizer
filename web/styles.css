@@ -2350,3 +2350,9 @@ input.wz-ml { width: 120px; }
 /* The disclosure for what the game grants and this tool cannot rank. Muted, not
    alarming — it is a known conservative bound, not an error. */
 .wz-custom-gap { border-left: 2px solid var(--line); padding-left: var(--sp-2); }
+
+/* #800 — a combined shard's two effects, as sub-rows under its picker. Indented
+   so they read as parts of one choice rather than two more menus; there is no
+   control to remove half, because the game has no such thing. */
+.wz-custom-part { margin-left: var(--sp-3); }
+.wz-custom-part .wz-custom-menu { flex: 0 0 3rem; }
