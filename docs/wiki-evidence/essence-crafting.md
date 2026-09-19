@@ -613,3 +613,63 @@ only those the **existing** mapping already resolves. The other 105 name effects
 `table 1b` does not carry (`Entropic`, `Anarchic`, `Acid Absorption`,
 `Deception`) and keep asking the player, because resolving a new vocabulary
 through a join validated against a different one is the same refusal as above.
+
+## Owner sweep, 2026-09-19 (#815)
+
+Four points raised against the bench. Three were defects; one was already right
+and badly labelled.
+
+### `Insightful X` is an Insight bonus — 9 of 9 stated
+
+The bench let the player choose a bonus type, which the mechanic fixes. #193 read
+all 157 effect pages and found 22 with a stated type. Those 22 split:
+
+| | count |
+|---|---|
+| `Insightful X` → **Insight** | **9 of 9** |
+| non-Insightful → Enhancement | 10 |
+| non-Insightful → Competence | 2 (`Haggle`, `Healing Amplification`) |
+| non-Insightful → Natural | 1 (`Natural Armor`) |
+
+Every stated `Insightful X` is Insight, without exception, and it is the wiki's
+own convention — it describes the ML-10 slot as the place *"where another effect
+can be applied (**Insightful Strength, Insightful Accuracy**, etc.)"*, and
+`essence_pool._stat_name` has stripped that prefix since #193.
+
+So the rule READS the harvest. It is not a default: the non-Insightful 13 carry
+three different types between them, so that half keeps asking the player.
+`assert_insightful_is_always_insight` fails the build on a stated
+counter-example, so the reading cannot rot into an assumption.
+
+**233 of 523 placements now carry a sourced type, up from 93.**
+
+### The third slot was there, under table 1b's name
+
+> "All items can have one to three additional properties: A prefix effect … A
+> suffix effect … If the item is ML 10 or greater, it has a **"Mark of House
+> Cannith Slot"**, where another effect can be applied"
+> — `Essence Crafting steps`
+
+The bench called it `Extra`, which is `table 1b`'s column heading and the correct
+DATA key — and the wrong word to show a player, who could not find the Cannith
+slot. `MENU_LABELS` renames it for display only; `MENUS` is unchanged.
+
+### The name field asked for something the mechanic has no room for
+
+You do not name a crafted item. The field existed because #773 made the name the
+`variant_id`, and that issue's negative result records why an opaque id was
+wrong — this app treats `variant_id` as both identity and display text.
+
+So the name is DERIVED, in menu order, from what is on the item: `Constitution
+Ring`, `Fortifying Ring`. **This is the tool's label, not the game's.** The wiki
+states no naming convention for crafted items — `Essence Crafting steps` was read
+for one — so the derivation deliberately does not mimic one. An entry that
+already carries a name keeps it, which is what stops the change renaming saved
+items and stranding their pins.
+
+### What the sweep re-confirmed as sourced
+
+slot→group (#806), Melee/Ranged (#804), three menus one effect each (#797), the
+ML-10 gates, effects per menu (`table 1b`), magnitude by ML (#810), the automatic
+Enhancement bonus (#799), combined prefixes and their scaling (#800, #812), and
+augment slots surviving disjunction (#798).

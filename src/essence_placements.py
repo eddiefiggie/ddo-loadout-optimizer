@@ -100,6 +100,44 @@ SLOT_GROUPS = {
 }
 
 INSIGHT_MIN_ML = essence_pool.INSIGHT_MIN_ML
+
+#: #815 — the bonus type every stated `Insightful X` effect carries.
+INSIGHT_BONUS_TYPE = "Insight"
+
+
+def assert_insightful_is_always_insight(harvested) -> int:
+    """The evidence behind the `Insightful X` -> `Insight` rule, asserted rather
+    than dated.
+
+    Of the 157 effect pages read for #193, 22 state a bonus type. Every one of the
+    9 spelled `Insightful X` states `Insight`. The rule reads that; it does not
+    average it, and it does not extend to the other 13, which carry three
+    different types between them.
+
+    A stated `Insightful X` that is NOT Insight would mean the convention is not a
+    convention, and the rule would be minting a wrong bucket on 140 placements.
+    So it fails the build instead. Refuses to pass over zero.
+    """
+    seen, offenders = 0, []
+    for name, rec in (harvested or {}).items():
+        if not name.startswith(essence_pool.INSIGHTFUL_PREFIX):
+            continue
+        if (rec or {}).get("provenance") != "stated":
+            continue
+        seen += 1
+        got = (rec.get("value") or {}).get("bonus_type")
+        if got != INSIGHT_BONUS_TYPE:
+            offenders.append((name, got))
+    if not seen:
+        raise PlacementError(
+            "no stated `Insightful X` bonus type at all — the rule that every one "
+            "is Insight has no evidence behind it and must not be applied")
+    if offenders:
+        raise PlacementError(
+            f"stated `Insightful X` effect(s) that are NOT Insight: {offenders}. "
+            "The naming convention the rule reads is not a convention, and the "
+            "rule is minting a wrong bucket.")
+    return seen
 EXTRA_SLOT_MIN_ML = essence_pool.EXTRA_SLOT_MIN_ML
 
 #: #799 — the bonuses Essence Crafting applies AUTOMATICALLY with the Minimum
@@ -383,6 +421,7 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
     bonus_types = essence_pool._load(essence_pool.BONUS_TYPE_SHARD)["harvested"]
     placements = crafting["placements"]
     assert_slot_map_covers_the_table(placements)
+    assert_insightful_is_always_insight(bonus_types)
 
     curves = crafting["values_by_ml"]["effects"]
     mapping = curve_join.resolve_all()["mapping"]
@@ -470,8 +509,28 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
                     })
                     magnitude_n += 1
                 # The BONUS TYPE half, independently.
+                #
+                # #815 — an `Insightful X` effect is an INSIGHT bonus. That is a
+                # reading of the harvest, not a default: of the 22 effects whose
+                # type the wiki states, every one of the 9 spelled `Insightful X`
+                # is `Insight` — 9 of 9, no exception. The non-Insightful 13 do
+                # NOT share a type (Enhancement 10, Competence 2, Natural 1), so
+                # there is no rule there and those keep asking the player.
+                #
+                # The prefix is the wiki's own convention, not ours: it describes
+                # the ML-10 slot as the place "where another effect can be applied
+                # (Insightful Strength, Insightful Accuracy, etc.)", and
+                # `essence_pool._stat_name` has stripped exactly this prefix since
+                # #193. `assert_insightful_is_always_insight` fails the build the
+                # day a stated counter-example arrives, so the rule cannot rot
+                # into a default.
+                resolved_type = None
                 if usable and bt and bt.get("provenance") == "stated":
-                    bonus_type = bt["value"]["bonus_type"]
+                    resolved_type = bt["value"]["bonus_type"]
+                elif usable and insightful:
+                    resolved_type = INSIGHT_BONUS_TYPE
+                if resolved_type:
+                    bonus_type = resolved_type
                     rec["type_sourced"] = True
                     rec["bonus_type"] = bonus_type
                     # The wiki states the insight rule for the EFFECT; the Extra

@@ -161,7 +161,7 @@ function slotForGroup(group) {
 }
 
 const REFUSALS = [
-  ["a missing name", dagger({ name: "  " }), /name/i],
+
   ["a name the catalog already uses", dagger({ name: A_REAL_CATALOG_NAME }), /already the name/i],
   ["an unknown slot", dagger({ slot: "Pocket" }), /slot/i],
   ["a weapon with no type", dagger({ type: "" }), /kind of weapon/i],
@@ -1084,8 +1084,12 @@ test("#810: every placement with a 36-row curve carries its magnitude", () => {
   const cov = raw.metadata.essence_placement_coverage;
   // Re-ratified deliberately: 426 of 523, up from the 87 that had BOTH facts.
   assert.strictEqual(cov.magnitude_sourced, 426);
-  assert.strictEqual(cov.type_sourced, 93);
-  assert.strictEqual(cov.sourced, 87, "the conjunction is unchanged");
+  // #815 — 233 not 93: +140, every `Insightful X` placement. The rule reads the
+  // harvest rather than defaulting: of the 22 effects whose type the wiki states,
+  // all 9 spelled `Insightful X` are `Insight`, and the other 13 carry three
+  // different types between them, so only the Insightful half gains one.
+  assert.strictEqual(cov.type_sourced, 233);
+  assert.strictEqual(cov.sourced, 211, "the conjunction follows both halves");
   assert.ok(cov.sourced <= Math.min(cov.magnitude_sourced, cov.type_sourced),
     "the conjunction can never exceed either half");
 });
@@ -1156,6 +1160,75 @@ test("#812: the join is reused, never widened to the recipe table's vocabulary",
     assert.ok(!e.values_by_ml && !e.curve_row,
       `${e.effect} is unsourced but carries a curve`);
   }
+});
+
+
+
+// ---------------------------------------------------------------------------
+// #815 — the owner sweep: no name field, the Mark slot named, Insightful typed.
+
+test("#815: a missing name is DERIVED, not refused", () => {
+  // The bench stopped asking for one: you do not name a crafted item. It cannot
+  // simply be dropped either — #773 made the name the `variant_id`, and that
+  // issue's negative result records why an opaque id was wrong.
+  const v = C.validateEntry({ uid: 1, slot: "Ring", ml: 30, augments: [],
+    affixes: [{ menu: "Prefix", effect: "Constitution" }] }, ctx);
+  assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
+  assert.strictEqual(v.entry.name, "Constitution Ring");
+  // A combined shard has a printed name; a single one is known by its effect.
+  const w = C.validateEntry(comboRing({ name: "" }), ctx);
+  assert.strictEqual(w.entry.name, "Fortifying Ring");
+  // An explicit name is KEPT — that is what stops this renaming saved items and
+  // stranding their pins.
+  const x = C.validateEntry({ uid: 1, name: "My old ring", slot: "Ring", ml: 30,
+    augments: [], affixes: [{ menu: "Prefix", effect: "Constitution" }] }, ctx);
+  assert.strictEqual(x.entry.name, "My old ring");
+});
+
+test("#815: derived names do not collide within one character", () => {
+  // Two entries sharing a name share an id, and a pin on one would equip the
+  // other — the reason `CUSTOM_SUFFIX` exists at all.
+  const taken = new Set(["Constitution Ring"]);
+  const e = { slot: "Ring", affixes: [{ menu: "Prefix", effect: "Constitution" }] };
+  assert.strictEqual(C.deriveName(e, ctx, taken), "Constitution Ring 2");
+  taken.add("Constitution Ring 2");
+  assert.strictEqual(C.deriveName(e, ctx, taken), "Constitution Ring 3");
+});
+
+test("#815: the third menu is called the Mark of House Cannith to a player", () => {
+  //   "If the item is ML 10 or greater, it has a 'Mark of House Cannith Slot',
+  //    where another effect can be applied"      — `Essence Crafting steps`
+  //
+  // `Extra` is table 1b's own column name and stays the DATA key; it was the
+  // wrong word to show, which is why the owner could not find the third slot.
+  assert.deepStrictEqual(C.MENUS, ["Prefix", "Suffix", "Extra"], "the data key is unchanged");
+  assert.strictEqual(C.menuLabel("Extra"), "Mark of House Cannith");
+  assert.strictEqual(C.menuLabel("Prefix"), "Prefix");
+  assert.strictEqual(C.menuLabel("Suffix"), "Suffix");
+});
+
+test("#815: every Insightful placement is typed Insight, and nothing else defaults", () => {
+  // 9 of the 9 stated `Insightful X` effects are Insight; the other 13 stated
+  // effects carry Enhancement, Competence and Natural between them. So the rule
+  // is a reading of the harvest, and the non-Insightful half must still ask.
+  const g = placements.groups;
+  let insight = 0, askedNonInsightful = 0;
+  for (const group of Object.keys(g)) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      for (const r of g[group][menu] || []) {
+        if (r.effect.startsWith("Insightful ")) {
+          assert.strictEqual(r.type_sourced, true, `${r.effect} must be typed`);
+          assert.strictEqual(r.bonus_type, "Insight", `${r.effect} must be Insight`);
+          insight++;
+        } else if (!r.type_sourced) {
+          askedNonInsightful++;
+        }
+      }
+    }
+  }
+  assert.ok(insight > 100, `a real Insightful population: ${insight}`);
+  assert.ok(askedNonInsightful > 100,
+    "the non-Insightful half still asks — no Enhancement-by-default");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

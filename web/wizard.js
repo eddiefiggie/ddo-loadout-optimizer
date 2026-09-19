@@ -3591,7 +3591,7 @@ if (typeof window !== "undefined" && window.App) {
             item: it can be pinned into a slot, it fills that slot like anything else, and the solver spends the
             rest of the build on what it does <em>not</em> already cover.</p>
           <p class="wz-adv-note">Choose the kind of item and you get the menus it really has \u2014 Prefix,
-            Suffix, and Extra at minimum level 10 \u2014 each offering only the enchantments the crafting
+            Suffix, and the Mark of House Cannith at minimum level 10 \u2014 each offering only the enchantments the crafting
             table says can go in it.</p>
           <p class="wz-adv-note"><strong>Your minimum level sets the numbers.</strong> Marked \u2713 means the
             crafting table publishes that enchantment at your level, so its value is filled in and locked \u2014
@@ -4347,7 +4347,7 @@ ${(() => {
         }).join("") : "";
 
         return `<div class="wz-custom-affix">`
-          + `<span class="wz-label wz-custom-menu">${wzEsc(menu)}</span>`
+          + `<span class="wz-label wz-custom-menu">${wzEsc(M.menuLabel(menu))}</span>`
           + `<select data-custom-effect="${wzEsc(menu)}">`
           + `<option value="">— none —</option>`
           + rows.map((r) => `<option value="${wzEsc(r.effect)}"${r.effect === sel ? " selected" : ""}>`
@@ -4372,7 +4372,7 @@ ${(() => {
         : `<p class="wz-help">${wzEsc(groupInfo.refused || "Choose a slot first.")}</p>`;
       const extraNote = (group && d.ml && Number(d.ml) < extraMin
         && availMenus.indexOf("Extra") < 0)
-        ? `<p class="wz-help">The Extra menu unlocks at minimum level ${extraMin}.</p>` : "";
+        ? `<p class="wz-help">The third slot — the Mark of House Cannith — unlocks at minimum level ${extraMin}.</p>` : "";
 
       // #799 — what the Minimum Level shard applies on its own. Shown read-only
       // and ALWAYS, not folded into the menus: it occupies no menu, the player
@@ -4403,9 +4403,6 @@ ${(() => {
         : "";
       box.innerHTML = `<div class="wz-custom-form">
         <div class="wz-custom-grid">
-          <label class="wz-field"><span class="wz-label">Name</span>
-            <input type="text" data-nodirty id="wz-custom-name" value="${wzEsc(d.name)}"
-                   maxlength="${wzEsc(M.NAME_MAX)}" placeholder="e.g. My Cannith dagger" autocomplete="off"></label>
           <label class="wz-field"><span class="wz-label">Slot</span>
             <select id="wz-custom-slot"><option value="">Choose…</option>${slots.map((x) => opt(x, d.slot)).join("")}</select></label>
           ${types ? `<label class="wz-field"><span class="wz-label">Type</span>
@@ -4439,8 +4436,6 @@ ${(() => {
       // each keystroke — that would move focus and lose the caret — except where a
       // choice changes what the form offers (the slot decides whether there is a
       // Type control at all).
-      const nm = document.getElementById("wz-custom-name");
-      if (nm) nm.oninput = (e) => { customDraft.name = e.target.value; };
       const ml = document.getElementById("wz-custom-ml");
       // #795 — ML is no longer cosmetic here: it gates the Extra menu and every
       // Insight enchantment, and it is the row the sourced magnitudes are read
