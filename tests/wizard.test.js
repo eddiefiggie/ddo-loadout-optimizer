@@ -2,7 +2,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { armorTypesFor, canSolve, DRUID_ARMOR, bundleStaleNames, staleBundleText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor, groupsOf, spanOf, movePriorityGroup, snapDropToGroup, dropIndexForRun, linksAfterDelete, linksAfterBundle, pruneLinks, customStatOptions, datalistStats } = require("../web/wizard.js");
+const { armorTypesFor, canSolve, DRUID_ARMOR, bundleStaleNames, staleBundleText, railModel, saveControl, resolveBannerShowing, resolveBannerPrimary, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, missingRequired, missingRequiredMessage, weaponGroupSummary, WIZARD_STEPS, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, storedItemsModel, storedItemsHTML, applySavedBundle, applyBundleConfirmText, deleteBundleConfirmText, BUNDLE_GROUPS, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, dualPinMutexConflict, resolvePriorityAdd, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, blockPinOverlap, blockStale, blockLoadMessage, noDropNote, rungFromInputs, healUtilityContainer, UTILITY_CONTAINER_CAP, containerList, containerAddable, containerEdit, containerSummary, containerAddHint, renameRefusalText, farmingTakeover, farmingTakeoverText, saveOkText, saveErrorText, pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor, groupsOf, spanOf, movePriorityGroup, snapDropToGroup, dropIndexForRun, linksAfterDelete, linksAfterBundle, pruneLinks, datalistStats } = require("../web/wizard.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
@@ -6225,42 +6225,60 @@ test("#747: an active cap is named in the collapsed summary, beside Required", (
   assert.ok(/adv\.required/.test(sum), "Required is still the floor's word");
 });
 
-test("#773/#774: the effect picker offers only names the form will accept", () => {
-  // The invariant is unchanged and the population is not: offering a name and
-  // then refusing it is the worst version of a picker, but since #774 a name is
-  // acceptable in EITHER form — a typed magnitude or an on/off flag. Only the
-  // untyped-only third kind is still refused.
+test("#773/#774/#795: the effect picker offers only names the form will accept", () => {
+  // The invariant is unchanged and the mechanism is not. #773 filtered a free-text
+  // datalist; since #795 the picker is a SELECT built from the placement table, so
+  // "offer" now means "appears in some menu of some item type". Offering a name and
+  // then refusing it is still the worst version of a picker, and a name is still
+  // acceptable in either form — a typed magnitude or an on/off flag. Only the
+  // untyped-only third kind is refused.
   const v = pickerVocabulary(realData);
-  const opts = customStatOptions(v);
-  assert.ok(opts.length > 100, "a real list, not an empty one");
-  const wrong = opts.filter((s) => !canDeclareCredit(s, v) && !isPresenceOnly(s, v));
+  const CI = require("../web/custom-items.js");
+  const placements = realData.essence_placements;
+  const ctx = { vocab: v, placements };
+  const offered = new Set();
+  for (const group of Object.keys(placements.groups)) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      for (const row of CI.effectsFor(group, menu, 36, ctx)) offered.add(row.stat);
+    }
+  }
+  assert.ok(offered.size > 50, `a real list, not an empty one: ${offered.size}`);
+  const wrong = [...offered].filter((s) => !canDeclareCredit(s, v) && !isPresenceOnly(s, v));
   assert.deepStrictEqual(wrong, [],
     `these are offered but would be refused: ${wrong.slice(0, 8).join(", ")}`);
-  // It is strictly narrower than the priority picker's list, which legitimately
-  // offers presence effects — a Bool can be RANKED even though it cannot be given
-  // a number.
+  // Strictly narrower than the priority picker's list: the bench can only offer
+  // what the game lets you craft, which is a subset of what you can rank.
   const all = datalistStats(v);
-  assert.ok(opts.length < all.length, "the custom list is the narrower of the two");
-  for (const s of opts) assert.ok(all.includes(s), `${s} is not even a picker name`);
-  // The Utility sentinel is a container, not an affix, and can never be engraved.
-  assert.ok(!opts.some((s) => /Utility effects/i.test(s)), "the sentinel is not an effect");
+  assert.ok(offered.size < all.length, "the bench's list is the narrower of the two");
+  assert.ok(![...offered].some((s) => /Utility effects/i.test(s)), "the sentinel is not an effect");
   // And the stats the reported items actually carry are all there.
-  for (const s of ["Assassinate", "Armor-Piercing", "Constitution", "Melee Power", "Doublestrike"]) {
-    assert.ok(opts.includes(s), `${s} must be offerable on a described item`);
+  for (const s of ["Assassinate", "Armor-Piercing", "Constitution", "Doublestrike"]) {
+    assert.ok(offered.has(s), `${s} must be offerable on a described item`);
   }
 });
 
-test("#773: the custom-item form renders its OWN datalist, on the step it lives on", () => {
-  // `wz-stats` lives in stepPriorities() and `wz-stats2` in stepResults(), and a
-  // step renders only its own body — so pointing at either from the Gear pool
-  // step gives an input with no suggestions while the help text says to pick from
-  // the list. That is silent: the field still accepts typing.
+test("#795: the bench renders a select per menu, not a free-text effect field", () => {
+  // #773 rendered a free-text input over its own datalist, and the guard here was
+  // that the datalist had to be rendered on the same step — `wz-stats` lives in
+  // stepPriorities() and a step renders only its own body, so pointing at it gave
+  // an input with no suggestions while the help text said to pick from the list.
+  //
+  // #795 removes the failure mode rather than guarding it: a <select> built from
+  // the placement table cannot offer a name that is not in it, and cannot be typed
+  // into at all. So the assertion moves to the property that replaced it.
   const form = fnBody(WIZARD_SRC, "function renderCustomForm(", 4);
-  assert.ok(/list="wz-custom-stats"/.test(form), "the effect input names its own list");
-  assert.ok(/<datalist id="wz-custom-stats">/.test(form), "…and that list is rendered here");
-  assert.ok(/customStatOptions\(vocab\)/.test(form), "…from the filtered options, not the raw picker list");
-  const pool = srcBetween(WIZARD_SRC, "function stepPool()", "// U3 — pre-solve item pinning helpers", "stepPool");
-  assert.ok(!/id="wz-stats"/.test(pool), "the Gear pool step does not own wz-stats — which is why this matters");
+  // The attribute AND the element. Checking only `list="…"` left the orphaned
+  // `<datalist id="wz-custom-stats">` in place, still interpolating the deleted
+  // `statOpts`, and the form threw the moment a player opened it — green tests,
+  // dead panel. Found by opening it in a browser, which is why that step is not
+  // optional for a UI change.
+  assert.ok(!/wz-custom-stats/.test(form), "no free-text effect datalist remains, element or attribute");
+  assert.ok(!/data-custom-stat=/.test(form), "…and no stat input to type a name into");
+  assert.ok(!/statOpts/.test(form), "…and nothing still references the deleted options list");
+  assert.ok(/data-custom-effect=/.test(form), "each menu renders a picker");
+  assert.ok(/M\.effectsFor\(/.test(form), "…whose options come from the placement table");
+  assert.ok(/M\.menusFor\(/.test(form), "…and whose menus come from the item's own group");
+  assert.ok(/M\.essenceGroupFor\(/.test(form), "…which is decided by slot and type");
 });
 
 test("#773: loading another build clears a half-typed item, like every other per-character reset", () => {
@@ -6278,49 +6296,87 @@ test("#773: loading another build clears a half-typed item, like every other per
 // shape for them, and the load boundary keeps the marker that says which kind a
 // stored effect is.
 
-test("#774: the effect picker now offers on/off effects, and still refuses untyped-only", () => {
-  // #773 filtered the list to stats that can take a bonus type and a number,
-  // which excluded every flag. Widening it is the visible half of #774: a player
-  // cannot type `Ghost Touch` if the list never suggests it.
+test("#774/#795: the bench offers on/off effects, and still refuses untyped-only", () => {
+  // #773 filtered to stats that take a bonus type and a number, which excluded
+  // every flag; widening that was the visible half of #774. Under #795 the test
+  // is over the PLACEMENT table, because an on/off effect no item type can host
+  // is not something this form can offer or refuse — it is simply not craftable.
   const v = pickerVocabulary(realData);
-  const opts = new Set(customStatOptions(v));
-  const presence = [...(v.presence || [])].filter((s) => !canDeclareCredit(s, v));
-  assert.ok(presence.length > 5, "a real presence population");
-  const missing = presence.filter((s) => !opts.has(s));
+  const CI = require("../web/custom-items.js");
+  const placements = realData.essence_placements;
+  const ctx = { vocab: v, placements };
+  const offered = new Set();
+  for (const group of Object.keys(placements.groups)) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      for (const row of CI.effectsFor(group, menu, 36, ctx)) offered.add(row.stat);
+    }
+  }
+  // Every presence-only stat that IS a placement must be offered. The qualifier is
+  // the whole difference from the pre-#795 version of this test.
+  const craftablePresence = new Set();
+  for (const menus of Object.values(placements.groups)) {
+    for (const rows of Object.values(menus)) {
+      for (const row of rows) {
+        if (row.rankable && isPresenceOnly(row.stat, v) && !canDeclareCredit(row.stat, v)) {
+          craftablePresence.add(row.stat);
+        }
+      }
+    }
+  }
+  assert.ok(craftablePresence.size > 5, "a real craftable-presence population");
+  const missing = [...craftablePresence].filter((s) => !offered.has(s));
   assert.deepStrictEqual(missing, [],
-    `these on/off effects are expressible but not offered: ${missing.slice(0, 8).join(", ")}`);
-  // The untyped-only third kind is still refused by validateEntry, so it must
-  // still stay out of the list — offering it would be the exact defect #773's
-  // filter was added to fix.
-  const untypedOffered = [...(v.untypedOnly || [])].filter((s) => opts.has(s));
+    `these on/off effects are craftable but not offered: ${missing.slice(0, 8).join(", ")}`);
+  // The untyped-only third kind is still refused by validateEntry, so it must stay
+  // out — offering it would be the exact defect #773's filter was added to fix.
+  const untypedOffered = [...(v.untypedOnly || [])].filter((s) => offered.has(s));
   assert.deepStrictEqual(untypedOffered, [],
     `untyped-only stats are offered but would be refused: ${untypedOffered.join(", ")}`);
-  assert.ok(!opts.has("Utility effects"), "the sentinel is still not an effect");
+  assert.ok(!offered.has("Utility effects"), "the sentinel is still not an effect");
 });
 
-test("#774: the affix row drops the bonus type and value for an on/off effect", () => {
+test("#774/#795: a menu row drops the bonus type and value when it cannot ask for them", () => {
   // Asking for a bonus type on a flag is asking a question with no right answer.
+  // #795 adds a second case with the same shape: a SOURCED enchantment already
+  // has both from the wiki, so asking would invite the player to overwrite a
+  // published number with a guess.
   const form = fnBody(WIZARD_SRC, "function renderCustomForm(", 4);
   assert.ok(/isPresenceOnly\(/.test(form), "the row's shape is decided by the shared predicate");
   assert.ok(/wz-custom-flag/.test(form), "…and a flag row says what it is");
-  // The two controls must be inside the NON-flag branch, not rendered and hidden:
-  // a disabled select still submits its value and still reads as a question.
-  const rows = srcBetween(form, "const affixRows", "}).join(\"\");", "affixRows");
-  const flagArm = rows.slice(rows.indexOf("isFlag"), rows.indexOf(": `<select"));
-  assert.ok(!/data-custom-bt/.test(flagArm) && !/data-custom-val/.test(flagArm),
-    "a flag row must not render the bonus-type or value controls at all");
+  assert.ok(/wz-custom-sourced/.test(form), "…and a sourced row says where its value came from");
+  // The two controls must be inside the typed branch only, not rendered and
+  // hidden: a disabled select still submits its value and still reads as a
+  // question. Both non-typed arms are checked, since either regressing would put
+  // a question back on a row that has no answer to give.
+  const rows = srcBetween(form, "const menuRows", "}).join(\"\");", "menuRows");
+  const sourcedArm = rows.slice(rows.indexOf("row.sourced"), rows.indexOf("isPresenceOnly"));
+  const flagArm = rows.slice(rows.indexOf("isPresenceOnly"), rows.indexOf("} else if (row) {"));
+  for (const [label, arm] of [["sourced", sourcedArm], ["flag", flagArm]]) {
+    assert.ok(!/data-custom-bt/.test(arm) && !/data-custom-val/.test(arm),
+      `a ${label} row must not render the bonus-type or value controls at all`);
+  }
 });
 
-test("#774: the stat field re-renders on commit, not on every keystroke", () => {
-  // The row can only change shape once the stat is known, and re-rendering per
-  // character would move the caret out of the field being typed into.
+test("#795: choosing an enchantment re-renders, and the level does too", () => {
+  // The row can only take its shape once the enchantment is known — sourced rows
+  // show a locked value, flags show neither control, typed rows ask for both — so
+  // the picker must re-render on change. #773's version of this guarded a
+  // free-text field where re-rendering per KEYSTROKE would have moved the caret;
+  // a <select> has no caret, so the rule is simply "re-render on change".
   const fn = fnBody(WIZARD_SRC, "function wireCustomForm(", 4);
-  const region = srcBetween(fn, "[data-custom-stat]", "[data-custom-bt]", "stat handlers");
-  assert.ok(/el\.oninput = /.test(region), "the draft stays current per keystroke");
-  assert.ok(/el\.onchange = /.test(region), "…and the re-render happens on commit");
-  const onchange = region.slice(region.indexOf("el.onchange"));
-  assert.ok(/renderCustomForm\(\)/.test(onchange), "the commit handler re-renders");
-  assert.ok(/presence/.test(onchange), "…and records which kind of effect it is");
+  const region = srcBetween(fn, "[data-custom-effect]", "[data-custom-bt]", "effect handlers");
+  assert.ok(/el\.onchange = /.test(region), "the picker commits on change");
+  assert.ok(/renderCustomForm\(\)/.test(region), "…and re-renders, so the row can change shape");
+  // ML is no longer cosmetic: it gates the Extra menu, gates every Insight
+  // enchantment, and is the row the sourced magnitudes are read from. A form that
+  // did not re-render on it would show a bench for the wrong level.
+  // It must WRITE the value before re-rendering, not lean on `oninput` having
+  // run: a `change` can arrive without a preceding `input`, and the bench would
+  // then be rebuilt from the previous level.
+  const mlArm = srcBetween(fn, "ml.onchange", "const slot =", "ml onchange");
+  assert.ok(/customDraft\.ml = e\.target\.value/.test(mlArm),
+    "the level handler writes the value it re-renders from");
+  assert.ok(/renderCustomForm\(\)/.test(mlArm), "…and then re-renders the bench");
 });
 
 test("#774: the load boundary coerces the on/off marker to a real boolean", () => {

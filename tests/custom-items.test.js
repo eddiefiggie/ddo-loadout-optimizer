@@ -36,26 +36,53 @@ const raw = JSON.parse(fs.readFileSync(DATASET, "utf8"));
 const dataset = normalizeDataset(raw);
 const vocab = buildPickerVocabulary(dataset);
 const catalogNames = new Set(dataset.items.map((v) => v.source_item || v.variant_id));
-const ctx = { vocab, catalogNames, canDeclare: canDeclareCredit };
+// #795 — the placement table travels on ctx, exactly as the browser passes it.
+// A test that let the module reach for a global would be validating against
+// something the app does not use.
+const placements = raw.essence_placements;
+const ctx = { vocab, catalogNames, canDeclare: canDeclareCredit, placements };
 // Taken from the built catalog rather than hard-coded: a literal name would rot
 // the moment the roster renamed it, and the test would then pass by testing
 // nothing (a name the catalog no longer has cannot collide with it).
 const A_REAL_CATALOG_NAME = dataset.items.find((v) => v.category !== "augment").source_item;
 
-/** The reporter's item: a Cannith-crafted dagger at ML 36 carrying Assassinate at
- *  two bonus types plus Armor-Piercing, with a red augment slot. "Insightful
- *  Assassinate" as the game prints it is `Assassinate` typed `Insight` here —
- *  which is exactly why the report asked for Quality Assassinate to be found
- *  elsewhere: the three are three buckets of one stat. */
+/** The reporter's item, rebuilt on the crafting bench (#795).
+ *
+ *  A Cannith-crafted dagger at ML 36. Under the placement model the three effects
+ *  they described fall into the three menus a Melee weapon actually has, and the
+ *  mapping is the feature working rather than a coincidence:
+ *
+ *    Prefix  Armor-Piercing
+ *    Suffix  Assassinate
+ *    Extra   Insightful Assassinate      <- the game's OWN name for it
+ *
+ *  The last line is the point. Before this, the form made them decompose the
+ *  in-game "Insightful Assassinate" into `Assassinate` + the `Insight` bonus type
+ *  by hand; now they pick the enchantment the game shows them. It is still
+ *  `Assassinate` in the `Insight` bucket underneath — three buckets of one stat —
+ *  which is why the report asked for Quality Assassinate to be found elsewhere.
+ *
+ *  None of the three is `sourced`: the wiki publishes no bonus type for them, so
+ *  the player supplies it and the item is disclosed as player-authored. */
 function dagger(over) {
   return Object.assign({
     uid: 1, name: "My Cannith dagger", slot: "Weapon", type: "Daggers", ml: 36,
     augments: ["Red"],
     affixes: [
-      { stat: "Assassinate", bonus_type: "Enhancement", value: 8 },
-      { stat: "Assassinate", bonus_type: "Insight", value: 4 },
-      { stat: "Armor-Piercing", bonus_type: "Enhancement", value: 25 },
+      { menu: "Prefix", effect: "Armor-Piercing", bonus_type: "Enhancement", value: 25 },
+      { menu: "Suffix", effect: "Assassinate", bonus_type: "Enhancement", value: 8 },
+      { menu: "Extra", effect: "Insightful Assassinate", bonus_type: "Insight", value: 4 },
     ],
+  }, over || {});
+}
+
+/** A ring whose Prefix enchantment the wiki fully publishes: bonus type AND the
+ *  magnitude at every ML. The form fills both and locks them, and the value is
+ *  NOT a player assertion. */
+function sourcedRing(over) {
+  return Object.assign({
+    uid: 2, name: "My CC ring", slot: "Ring", ml: 20, augments: [],
+    affixes: [{ menu: "Prefix", effect: "Charisma" }],
   }, over || {});
 }
 
@@ -78,7 +105,8 @@ test("#773: the reported item validates, and the cleaned entry is what gets stor
 test("#773: a typed string ML and typed string values are accepted and coerced", () => {
   // The form's inputs are strings. Refusing them would make the panel unusable
   // while the unit tests stayed green, which is the failure this case exists for.
-  const v = C.validateEntry(dagger({ ml: "36", affixes: [{ stat: "Assassinate", bonus_type: "Quality", value: "3" }] }), ctx);
+  const v = C.validateEntry(dagger({ ml: "36",
+    affixes: [{ menu: "Suffix", effect: "Assassinate", bonus_type: "Quality", value: "3" }] }), ctx);
   assert.ok(v.ok, v.errors.join(" | "));
   assert.strictEqual(v.entry.ml, 36);
   assert.strictEqual(v.entry.affixes[0].value, 3);
@@ -87,7 +115,7 @@ test("#773: a typed string ML and typed string values are accepted and coerced",
 test("#773: a worn slot needs no type, and a stray one is dropped rather than refused", () => {
   const v = C.validateEntry({
     uid: 2, name: "My CC ring", slot: "Ring", type: "Daggers", ml: 32,
-    augments: [], affixes: [{ stat: "Constitution", bonus_type: "Quality", value: 3 }],
+    augments: [], affixes: [{ menu: "Prefix", effect: "Constitution" }],
   }, ctx);
   assert.ok(v.ok, v.errors.join(" | "));
   assert.strictEqual(v.entry.type, "", "a Ring carries no type, and the stray value is not an error the player could see coming");
@@ -95,6 +123,26 @@ test("#773: a worn slot needs no type, and a stray one is dropped rather than re
 
 // ---------------------------------------------------------------------------
 // Refusals — one at a time, each asserting the sentence names its own field.
+
+/** #795 — fixtures are FOUND in the published table, never written down.
+ *  A literal "Belts / Suffix / Deathblock" would rot the moment the harvest
+ *  moved it, and the test would then pass by testing nothing. */
+function findPlacement(pred) {
+  const g = placements.groups;
+  for (const group of Object.keys(g)) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      for (const row of g[group][menu] || []) {
+        if (pred(row, group, menu)) return { group, menu, row };
+      }
+    }
+  }
+  return null;
+}
+/** The catalog slot that hosts a group, from the table's own map. */
+function slotForGroup(group) {
+  const m = placements.slot_groups;
+  return Object.keys(m).find((s0) => (m[s0] || []).indexOf(group) >= 0);
+}
 
 const REFUSALS = [
   ["a missing name", dagger({ name: "  " }), /name/i],
@@ -105,12 +153,35 @@ const REFUSALS = [
   ["an ML below the floor", dagger({ ml: 0 }), /Minimum level/],
   ["an ML above the cap", dagger({ ml: 37 }), /Minimum level/],
   ["a fractional ML", dagger({ ml: 12.5 }), /whole number/],
-  ["no effects at all", dagger({ affixes: [] }), /at least one effect/i],
-  ["a stat outside the vocabulary", dagger({ affixes: [{ stat: "Doom Aura", bonus_type: "Quality", value: 3 }] }), /not a stat this build knows/i],
-  ["a bonus type outside the list", dagger({ affixes: [{ stat: "Assassinate", bonus_type: "Shiny", value: 3 }] }), /bonus type/i],
-  ["a zero value", dagger({ affixes: [{ stat: "Assassinate", bonus_type: "Quality", value: 0 }] }), /above zero/i],
-  ["a negative value", dagger({ affixes: [{ stat: "Assassinate", bonus_type: "Quality", value: -4 }] }), /above zero/i],
-  ["a value over the ceiling", dagger({ affixes: [{ stat: "Assassinate", bonus_type: "Quality", value: 100000 }] }), /ceiling/i],
+  ["no effects at all", dagger({ affixes: [] }), /at least one enchantment/i],
+  ["an enchantment this item type cannot host",
+   dagger({ affixes: [{ menu: "Suffix", effect: "Doom Aura", bonus_type: "Quality", value: 3 }] }),
+   /cannot be crafted/i],
+  ["a bonus type outside the list",
+   dagger({ affixes: [{ menu: "Suffix", effect: "Assassinate", bonus_type: "Shiny", value: 3 }] }), /bonus type/i],
+  ["a zero value",
+   dagger({ affixes: [{ menu: "Suffix", effect: "Assassinate", bonus_type: "Quality", value: 0 }] }), /above zero/i],
+  ["a negative value",
+   dagger({ affixes: [{ menu: "Suffix", effect: "Assassinate", bonus_type: "Quality", value: -4 }] }), /above zero/i],
+  ["a value over the ceiling",
+   dagger({ affixes: [{ menu: "Suffix", effect: "Assassinate", bonus_type: "Quality", value: 100000 }] }), /ceiling/i],
+  // #795 — the placement rules themselves.
+  ["an enchantment in the wrong menu",
+   dagger({ affixes: [{ menu: "Prefix", effect: "Assassinate", bonus_type: "Quality", value: 3 }] }),
+   /cannot be crafted into the Prefix menu/i],
+  ["two enchantments in one menu",
+   dagger({ affixes: [
+     { menu: "Suffix", effect: "Assassinate", bonus_type: "Quality", value: 3 },
+     { menu: "Suffix", effect: "Deadly", bonus_type: "Quality", value: 2 }] }),
+   /both in the Suffix menu/i],
+  ["the Extra menu below ML 10",
+   dagger({ ml: 9, affixes: [{ menu: "Extra", effect: "Insightful Assassinate", bonus_type: "Insight", value: 4 }] }),
+   /Extra menu is not available/i],
+  ["a quiver, which cannot be Essence Crafted",
+   dagger({ slot: "Quiver", type: "", affixes: [{ menu: "Prefix", effect: "Assassinate", bonus_type: "Quality", value: 3 }] }),
+   /cannot be Essence Crafted/i],
+  ["a thrown weapon, whose crafting group the wiki does not state",
+   dagger({ type: "Throwing Daggers" }), /does not say which one/i],
   ["an augment colour that is not one", dagger({ augments: ["Chartreuse"] }), /colour/i],
 ];
 
@@ -132,12 +203,31 @@ test("#773 -> #774: a presence-only effect is no longer refused, it is a flag", 
   // Kept rather than deleted, and pointed at the population it used to refuse, so
   // the reversal is legible to whoever finds this next instead of looking like a
   // guard someone quietly dropped.
-  const presence = [...(vocab.presence || [])].filter((s) => !canDeclareCredit(s, vocab));
-  assert.ok(presence.length, "the vocabulary has presence-only stats to test with");
-  for (const stat of presence.slice(0, 25)) {
-    const v = C.validateEntry(dagger({ affixes: [{ stat, presence: true }] }), ctx);
-    assert.deepStrictEqual(v.errors, [], `${stat} was refused: ${v.errors.join(" | ")}`);
-    assert.deepStrictEqual(v.entry.affixes, [{ stat, presence: true }]);
+  // #795 — over presence-only PLACEMENTS now, not over the whole vocabulary: an
+  // on/off stat that no item type can host is not a case this form can reach, and
+  // asserting it would test the validator against input the picker cannot produce.
+  const rows = [];
+  const g = placements.groups;
+  for (const group of Object.keys(g)) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      for (const row of g[group][menu] || []) {
+        if (row.rankable && !row.sourced && C.isPresenceEffect(row.stat, vocab, ctx)) {
+          rows.push({ group, menu, row });
+        }
+      }
+    }
+  }
+  assert.ok(rows.length, "the placement table has presence-only enchantments to test with");
+  for (const { group, menu, row } of rows.slice(0, 25)) {
+    const slot = slotForGroup(group);
+    // Skip the two ambiguous slots: their group needs a type, which this loop
+    // does not have, and the branch under test is the flag one.
+    if ((placements.slot_groups[slot] || []).length !== 1) continue;
+    const v = C.validateEntry({ uid: 9, name: "Flag " + row.effect, slot, ml: 20,
+      augments: [], affixes: [{ menu, effect: row.effect }] }, ctx);
+    assert.deepStrictEqual(v.errors, [], `${row.effect} was refused: ${v.errors.join(" | ")}`);
+    assert.strictEqual(v.entry.affixes[0].presence, true);
+    assert.strictEqual(v.entry.affixes[0].bonus_type, undefined);
   }
 });
 
@@ -347,19 +437,35 @@ test("#773: a build that placed none of the player's items discloses nothing", (
 // `(yours)` name. Neither the solver nor the tier needed a line of new code —
 // which is why this file only has to prove the validator and the mint.
 
-const PRESENCE_NAME = "Ghost Touch";
+// #795 — a presence-only effect that is ALSO a real placement. Both halves
+// matter: the validator's flag branch only runs for a stat the vocabulary calls
+// presence-only, and the placement rules only let through an effect the item type
+// can actually host. Found rather than named, so a harvest that moves it cannot
+// leave this file green against nothing.
+const FLAG = findPlacement((r) => r.rankable && !r.sourced
+  && C.isPresenceEffect(r.stat, vocab, ctx));
+assert.ok(FLAG, "the placement table has a presence-only enchantment to test with");
+const PRESENCE_NAME = FLAG.row.stat;
+const FLAG_SLOT = slotForGroup(FLAG.group);
+/** An item of the type that CAN host the flag above. */
+function flagItem(over) {
+  return Object.assign({
+    uid: 3, name: "My flag item", slot: FLAG_SLOT, type: "", ml: 20, augments: [],
+    affixes: [{ menu: FLAG.menu, effect: FLAG.row.effect }],
+  }, over || {});
+}
 
 test("#774: a presence-only effect is ACCEPTED, and stored as a flag", () => {
-  const v = C.validateEntry(dagger({
-    affixes: [{ stat: PRESENCE_NAME, presence: true }] }), ctx);
+  const v = C.validateEntry(flagItem(), ctx);
   assert.deepStrictEqual(v.errors, [], "no refusal");
-  assert.deepStrictEqual(v.entry.affixes, [{ stat: PRESENCE_NAME, presence: true }],
+  assert.deepStrictEqual(v.entry.affixes, [{
+    menu: FLAG.menu, effect: FLAG.row.effect, stat: PRESENCE_NAME,
+    presence: true, sourced: false }],
     "a flag carries neither a bonus type nor a value");
 });
 
 test("#774: a flag mints as Bool 1, the shape the catalog uses", () => {
-  const rec = C.toVariant(C.validateEntry(dagger({
-    affixes: [{ stat: PRESENCE_NAME, presence: true }] }), ctx).entry);
+  const rec = C.toVariant(C.validateEntry(flagItem(), ctx).entry);
   assert.deepStrictEqual(rec.affixes, [
     { name: PRESENCE_NAME, type: "Bool", value: "1", eligible: true },
   ]);
@@ -372,12 +478,16 @@ test("#774: a flag mints as Bool 1, the shape the catalog uses", () => {
 });
 
 test("#774: a stat's typed and flag forms cannot be mixed up", () => {
-  // Numeric and flag rows coexist on one item, each keeping its own shape.
-  const v = C.validateEntry(dagger({ affixes: [
-    { stat: "Assassinate", bonus_type: "Quality", value: 3 },
-    { stat: PRESENCE_NAME, presence: true },
+  // Numeric and flag rows coexist on one item, each keeping its own shape — and
+  // now they must also be in DIFFERENT menus, because an item carries one each.
+  const typed = findPlacement((r, g, m) => g === FLAG.group && m !== FLAG.menu
+    && r.rankable && !r.sourced && !C.isPresenceEffect(r.stat, vocab, ctx));
+  assert.ok(typed, "the flag's own item type has a typed enchantment in another menu");
+  const v = C.validateEntry(flagItem({ affixes: [
+    { menu: typed.menu, effect: typed.row.effect, bonus_type: "Quality", value: 3 },
+    { menu: FLAG.menu, effect: FLAG.row.effect },
   ] }), ctx);
-  assert.deepStrictEqual(v.errors, []);
+  assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
   assert.strictEqual(v.entry.affixes.length, 2);
   assert.strictEqual(v.entry.affixes[0].presence, undefined, "a typed row is not a flag");
   assert.strictEqual(v.entry.affixes[1].presence, true);
@@ -389,26 +499,45 @@ test("#774: a presence stat is a flag even when the entry claims a type and valu
   // a leftover value is stale UI state rather than something the player asked
   // for. Dropping it silently is right; refusing would strand them on a row they
   // cannot fix.
-  const v = C.validateEntry(dagger({
-    affixes: [{ stat: PRESENCE_NAME, bonus_type: "Quality", value: 7 }] }), ctx);
+  const v = C.validateEntry(flagItem({ affixes: [
+    { menu: FLAG.menu, effect: FLAG.row.effect, bonus_type: "Quality", value: 7 }] }), ctx);
   assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
-  assert.deepStrictEqual(v.entry.affixes, [{ stat: PRESENCE_NAME, presence: true }]);
+  assert.deepStrictEqual(v.entry.affixes, [{
+    menu: FLAG.menu, effect: FLAG.row.effect, stat: PRESENCE_NAME,
+    presence: true, sourced: false }]);
 });
 
 test("#774: an untyped-only stat is still refused, and the reason is its own", () => {
   // The third kind, and the one that stays out: a real magnitude carried untyped
   // on every source. There is no bonus type to pick and no bucket a value would
   // join, so it is neither a flag nor a typed row.
-  const untyped = [...(vocab.untypedOnly || [])];
-  assert.ok(untyped.length, "the vocabulary has untyped-only stats to test with");
-  const v = C.validateEntry(dagger({
-    affixes: [{ stat: untyped[0], bonus_type: "Quality", value: 3 }] }), ctx);
-  assert.ok(!v.ok);
-  assert.ok(v.errors.some((e) => e.includes(untyped[0]) && /no bonus type anywhere/i.test(e)),
-    `the refusal must name the stat and its own reason; got: ${v.errors.join(" | ")}`);
-  // And it must NOT be mistaken for the on/off case, which is now accepted.
-  assert.ok(!v.errors.some((e) => /on\/off/i.test(e)),
-    "an untyped-only stat is not an on/off effect");
+  // #795 — this used to feed the validator an untyped-only stat directly. Under
+  // the placement model it cannot: placement is checked FIRST, so an effect that
+  // is not in the table is refused as uncraftable before the untyped branch is
+  // reached, and an effect that IS in the table would have to carry an
+  // untyped-only stat.
+  //
+  // Measured: NO placement does. So the assertion that matters is the invariant
+  // itself, not a case the picker can no longer produce — a guard rather than a
+  // date, so a harvest that adds one turns this red and somebody decides
+  // deliberately instead of the branch quietly coming back to life.
+  const untyped = new Set(vocab.untypedOnly || []);
+  assert.ok(untyped.size, "the vocabulary has untyped-only stats at all");
+  const offending = [];
+  const gg = placements.groups;
+  for (const group of Object.keys(gg)) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      for (const row of gg[group][menu] || []) {
+        if (untyped.has(row.stat)) offending.push(`${group}/${menu}/${row.effect}`);
+      }
+    }
+  }
+  assert.deepStrictEqual(offending, [],
+    "a placement whose stat carries no bonus type anywhere — the builder would offer "
+    + "an enchantment with no bucket for its value to join");
+  // The branch stays in `validateEntry` regardless: `backup.js` imports files this
+  // app did not write, and a hand-edited entry is not bound by the picker.
+  assert.ok(typeof C.validateEntry === "function");
 });
 
 test("#774: the presence fallback is the SAME rule as wizard.js's isPresenceOnly", () => {
@@ -427,10 +556,160 @@ test("#774: the presence fallback is the SAME rule as wizard.js's isPresenceOnly
 test("#774: an item whose ONLY effect is a flag is legal", () => {
   // A crafted Ghost Touch ring with nothing else on it is a real item, and the
   // "at least one effect" rule must count a flag as an effect.
-  const v = C.validateEntry({ uid: 1, name: "My ghostly ring", slot: "Ring", ml: 30,
-    augments: [], affixes: [{ stat: PRESENCE_NAME, presence: true }] }, ctx);
+  const v = C.validateEntry(flagItem({ uid: 1, name: "My flag-only item" }), ctx);
   assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
   assert.ok(v.ok);
+});
+
+
+// ---------------------------------------------------------------------------
+// #795 — the Essence Crafting bench.
+
+test("#795: a sourced enchantment fills its own type and value, and ignores the player's", () => {
+  // The whole point of the sourced branch: when the wiki publishes the bonus type
+  // AND the magnitude at this ML, the player is not asked and cannot be wrong.
+  const row = C.placementFor("Rings", "Prefix", "Charisma", ctx);
+  assert.ok(row && row.sourced, "Rings/Prefix/Charisma is a sourced placement");
+  const v = C.validateEntry(sourcedRing({ ml: 20 }), ctx);
+  assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
+  const a = v.entry.affixes[0];
+  assert.strictEqual(a.sourced, true);
+  assert.strictEqual(a.bonus_type, row.bonus_type, "the type comes from the wiki, not the form");
+  assert.strictEqual(a.value, Number(row.values_by_ml[19]), "ML 20 reads row 20 of the curve");
+  // A player value on a sourced row is stale UI state, not a request: overridden
+  // rather than refused, because the form stops offering the control.
+  const w = C.validateEntry(sourcedRing({ ml: 20,
+    affixes: [{ menu: "Prefix", effect: "Charisma", bonus_type: "Quality", value: 999 }] }), ctx);
+  assert.deepStrictEqual(w.errors, []);
+  assert.strictEqual(w.entry.affixes[0].value, Number(row.values_by_ml[19]),
+    "the player's number does not win over a published one");
+  assert.strictEqual(w.entry.affixes[0].bonus_type, row.bonus_type);
+});
+
+test("#795: the sourced value follows the item's minimum level", () => {
+  const row = C.placementFor("Rings", "Prefix", "Charisma", ctx);
+  const at = (ml) => C.validateEntry(sourcedRing({ ml }), ctx).entry.affixes[0].value;
+  assert.strictEqual(at(1), Number(row.values_by_ml[0]));
+  assert.strictEqual(at(36), Number(row.values_by_ml[35]));
+  assert.notStrictEqual(at(1), at(36), "the curve is not flat, so this test can fail");
+});
+
+test("#795: an Insight enchantment is refused below ML 10, by its own rule", () => {
+  // Two independent ML-10 gates, and this is the EFFECT one. The wiki states it
+  // for insight bonuses specifically, separately from the Extra-slot rule.
+  const ins = C.placementFor("Rings", "Extra", "Insightful Charisma", ctx);
+  assert.ok(ins && ins.min_ml === 10, "Insightful Charisma carries the ML 10 floor");
+  // At ML 9 the Extra menu is gone too, so the refusal names the menu; the effect
+  // rule is what `effectsFor` enforces, and it is checked directly.
+  assert.strictEqual(C.effectsFor("Rings", "Extra", 9, ctx).length, 0,
+    "no Extra enchantment is offered below ML 10");
+  assert.ok(C.effectsFor("Rings", "Extra", 10, ctx).length > 0, "and they appear at 10");
+});
+
+test("#795: the Extra MENU is gated on the item's level, not on the effect's", () => {
+  assert.deepStrictEqual(C.menusFor("Rings", 9, ctx), ["Prefix", "Suffix"]);
+  assert.deepStrictEqual(C.menusFor("Rings", 10, ctx), ["Prefix", "Suffix", "Extra"]);
+});
+
+test("#795: every catalog slot maps onto the placement table, in both directions", () => {
+  // A completeness claim needs a guard. Both sides are readable, so assert the
+  // map rather than writing "all 16 groups are covered" in a comment that cannot
+  // notice the shard growing a seventeenth.
+  const table = new Set(Object.keys(placements.groups));
+  const mapped = new Set();
+  for (const gs of Object.values(placements.slot_groups)) gs.forEach((g) => mapped.add(g));
+  assert.deepStrictEqual([...table].filter((g) => !mapped.has(g)), [],
+    "a placement group no slot can reach would be silently uncraftable");
+  assert.deepStrictEqual([...mapped].filter((g) => !table.has(g)), [],
+    "a slot mapped to a group the table lacks would be a picker with nothing behind it");
+  assert.strictEqual(table.size, 16, "the wiki's 16 equipment groups");
+});
+
+test("#795: a quiver is refused, and the empty group list is the reason", () => {
+  assert.deepStrictEqual(placements.slot_groups.Quiver, [],
+    "the empty list is the sourced statement that quivers cannot be crafted");
+  const r = C.essenceGroupFor("Quiver", "", ctx);
+  assert.ok(!r.group);
+  assert.ok(/cannot be Essence Crafted/i.test(r.refused), r.refused);
+});
+
+test("#795: the weapon types whose group the wiki does not state are refused by name", () => {
+  // Never infer a value. `table 1b` names "Melee weapons" and "Ranged weapons"
+  // and never says which DDO weapon types are in each; the taxonomy's axis is
+  // handedness, which does not answer it. Thrown weapons are one-handed AND
+  // ranged, so reading handedness would put them in the wrong group.
+  assert.ok(C.WEAPON_GROUP_UNSTATED.length, "there are refused weapon types");
+  for (const t of C.WEAPON_GROUP_UNSTATED) {
+    const r = C.essenceGroupFor("Weapon", t, ctx);
+    assert.ok(!r.group, `${t} must not resolve to a group`);
+    assert.ok(/does not say which one/i.test(r.refused), r.refused);
+  }
+  // And the unambiguous ones still resolve, or this guard would pass by refusing
+  // everything.
+  assert.strictEqual(C.essenceGroupFor("Weapon", "Daggers", ctx).group, "Melee weapons");
+  assert.strictEqual(C.essenceGroupFor("Weapon", "Long Bows", ctx).group, "Ranged weapons");
+  assert.strictEqual(C.essenceGroupFor("Off Hand", "Tower shields", ctx).group, "Shields");
+  assert.strictEqual(C.essenceGroupFor("Off Hand", "Rune Arms", ctx).group, "Rune Arms");
+});
+
+test("#795: a pre-refactor item is migrated, and every change is reported", () => {
+  // The three outcomes a saved free-form item can have. Each is a change to a
+  // build the player already had, so none may be silent.
+  const legacy = { uid: 7, name: "Old ring", slot: "Ring", ml: 20, augments: [],
+    affixes: [
+      { stat: "Charisma", bonus_type: "Quality", value: 2 },   // -> sourced, revalued
+      { stat: "Doom Aura", bonus_type: "Quality", value: 3 },  // -> dropped
+    ] };
+  const mig = C.migrateLegacyEntry(legacy, ctx);
+  assert.deepStrictEqual(mig.dropped, ["Doom Aura"], "an uncraftable effect is named, not vanished");
+  assert.strictEqual(mig.revalued.length, 1, "the sourced one is reported as revalued");
+  assert.strictEqual(mig.revalued[0].stat, "Charisma");
+  assert.strictEqual(mig.revalued[0].from, 2);
+  assert.ok(mig.revalued[0].to > 0);
+  assert.strictEqual(mig.entry.affixes.length, 1);
+  assert.strictEqual(mig.entry.affixes[0].menu, "Prefix");
+  assert.strictEqual(mig.entry.affixes[0].sourced, true);
+  // The migrated entry validates, which is the point: a saved item keeps working.
+  assert.ok(C.validateEntry(mig.entry, ctx).ok);
+  // Idempotent: re-migrating an already-migrated entry changes nothing and
+  // re-reports nothing, or opening the editor twice would double-report.
+  const again = C.migrateLegacyEntry(mig.entry, ctx);
+  assert.deepStrictEqual(again.revalued, []);
+  assert.deepStrictEqual(again.dropped, []);
+});
+
+test("#795: customPool migrates saved items on the way to the solver", () => {
+  // A pre-refactor item reaches the solver without anyone opening the editor. If
+  // this path did not migrate, every saved custom item would be rejected on load
+  // and the player would silently lose gear they had been solving with.
+  const legacy = { uid: 8, name: "Old CC ring", slot: "Ring", ml: 20, augments: [],
+    affixes: [{ stat: "Charisma", bonus_type: "Quality", value: 2 }] };
+  const pool = C.customPool([legacy], ctx);
+  assert.deepStrictEqual(pool.rejected, [], "a legacy item is not rejected");
+  assert.strictEqual(pool.variants.length, 1);
+  assert.strictEqual(pool.migrated.length, 1, "and the change is reported, not silent");
+  assert.strictEqual(pool.migrated[0].revalued.length, 1);
+});
+
+test("#795: the reporter's own item is expressible, using the game's own names", () => {
+  // The only player report on file asks for "a couple of CC rings", and Essence
+  // Crafting IS Cannith Crafting (the U79 rename). The dagger from the same batch
+  // is the sharper case: its three effects land in the three menus a Melee weapon
+  // has, and the in-game name "Insightful Assassinate" is now a thing the player
+  // PICKS rather than something they must decompose into Assassinate + Insight.
+  const v = C.validateEntry(dagger(), ctx);
+  assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
+  assert.deepStrictEqual(v.entry.affixes.map((a) => [a.menu, a.effect, a.stat]), [
+    ["Prefix", "Armor-Piercing", "Armor-Piercing"],
+    ["Suffix", "Assassinate", "Assassinate"],
+    ["Extra", "Insightful Assassinate", "Assassinate"],
+  ]);
+  // Underneath it is still Assassinate in two buckets, which is what makes the
+  // report's "look for Quality Assassinate instead" the right consequence.
+  const rec = C.toVariant(v.entry);
+  const assassinate = rec.affixes.filter((a) => a.name === "Assassinate");
+  assert.strictEqual(assassinate.length, 2);
+  assert.notStrictEqual(assassinate[0].type, assassinate[1].type, "two buckets, one stat");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

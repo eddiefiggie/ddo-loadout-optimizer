@@ -94,7 +94,12 @@
   /** Affixes per custom item. A real DDO item tops out well below this; the cap is
    *  here so one hand-edited backup entry cannot make the dominance filter's
    *  per-variant work unbounded. */
-  var AFFIX_MAX = 12;
+  /** #795 — an Essence Crafted item carries at most one enchantment per menu, so
+   *  the ceiling is the menu count, not a sanity cap. `AFFIX_MAX` is kept as the
+   *  same number so a hand-edited backup still cannot make the dominance filter's
+   *  per-variant work unbounded, but placement is what actually binds. */
+  var MENUS = ["Prefix", "Suffix", "Extra"];
+  var AFFIX_MAX = 3;
 
   // Worn slots + the two hands. `Weapon` is the catalog's own slot label for a
   // wielded weapon (model.js builds Main Hand / Off Hand pick vars from it
@@ -159,6 +164,189 @@
       return (tax.OFF_HAND_TYPES || []).slice().sort();
     }
     return null;
+  }
+
+  // ------------------------------------------------------------------
+  // #795 — Essence Crafting placement rules.
+  //
+  // Essence Crafting IS Cannith Crafting (the U79 rename; see the shard's
+  // `_meta.note`), which is why this serves the only player report on file: "a
+  // couple of CC rings".
+  //
+  // The dataset publishes the placement table (`essence_placements`), so nothing
+  // here re-derives which effects an item type can host. What this file owns is
+  // the join from the slot/type a player picks to the table's own group name,
+  // and the two ML-10 gates.
+  // ------------------------------------------------------------------
+
+  /** Off-hand dataset type -> placement group. Explicit, never derived: the four
+   *  shield types collapse to one group and the other two do not. */
+  var OFF_HAND_GROUP = {
+    "Orbs": "Orbs",
+    "Rune Arms": "Rune Arms",
+    "Bucklers": "Shields",
+    "Small shields": "Shields",
+    "Large shields": "Shields",
+    "Tower shields": "Shields",
+  };
+
+  /** Weapon types whose placement group the wiki does NOT state.
+   *
+   *  `Essence Crafting/table 1b` names exactly two weapon groups, "Melee weapons"
+   *  and "Ranged weapons", and never says which DDO weapon types fall in each.
+   *  For most types the answer is not in doubt, but for these six it is, and the
+   *  obvious shortcut is wrong:
+   *
+   *  `WeaponTaxonomy.STYLE_OF_TYPE` marks all five thrown types `one-hand`,
+   *  because ITS axis is handedness — how many hands the weapon occupies and
+   *  whether an off-hand is free. Reading it for melee-vs-ranged would be asking
+   *  a source a question it does not answer, which is the same mistake as
+   *  pluralising `Melee` into `Melees` (see `essence_pool.HOST_FAMILIES`). Thrown
+   *  weapons are one-handed AND ranged. `Handwraps` is `unarmed`, which likewise
+   *  states nothing about the crafting group.
+   *
+   *  So they are refused with the reason shown to the player, per
+   *  `exclude-until-verified`: a visible gap beats a confident wrong group, and a
+   *  wrong group offers effects the item cannot actually be crafted with. Closing
+   *  this needs a harvest that states the membership. */
+  var WEAPON_GROUP_UNSTATED = [
+    "Darts", "Shurikens", "Throwing Axes", "Throwing Daggers", "Throwing Hammers",
+    "Handwraps",
+  ];
+
+  /** Combat style -> placement group, for the types the wiki's two groups clearly
+   *  cover. Handedness maps onto melee here only because every remaining
+   *  `one-hand`/`thf` type is a melee weapon once the thrown ones are removed
+   *  above — the removal is what makes this read legitimate. */
+  var WEAPON_GROUP_OF_STYLE = {
+    "one-hand": "Melee weapons",
+    "thf": "Melee weapons",
+    "ranged": "Ranged weapons",
+    "crossbow": "Ranged weapons",
+  };
+
+  /** The placement table as published by the build.
+   *
+   *  Passed in on `ctx`, never reached for through a global. This module is
+   *  dual-exported and pure, and a table fetched from the window would make the
+   *  Node tests and the browser read different data — which is exactly the shape
+   *  of bug the placement rules exist to prevent. `window.__essencePlacements` is
+   *  the browser's one concession, set by the loader beside the dataset, so a
+   *  caller that forgets `ctx.placements` still gets the real table rather than
+   *  silently validating against an empty one. */
+  function _placements(ctx) {
+    var c = ctx || {};
+    if (c.placements) return c.placements;
+    if (typeof window !== "undefined" && window.__essencePlacements) {
+      return window.__essencePlacements;
+    }
+    return null;
+  }
+
+  /** Which placement group an item of this slot/type is, or why it is none.
+   *
+   *  Returns `{ group }` or `{ refused: "<player-readable reason>" }`. Never
+   *  guesses: every refusal names what is missing. */
+  function essenceGroupFor(slot, type, ctx) {
+    var table = _placements(ctx);
+    var map = (table && table.slot_groups) || {};
+    var groups = map[slot];
+    if (!groups) return { refused: "“" + slot + "” is not a slot this build knows." };
+    if (!groups.length) {
+      // Quiver. The empty list is the sourced statement, not an omission.
+      return { refused: "A " + slot.toLowerCase() + " cannot be Essence Crafted — the crafting "
+        + "table has no enchantment list for it." };
+    }
+    if (groups.length === 1) return { group: groups[0] };
+
+    // Ambiguous slot: the type decides.
+    var t = String(type == null ? "" : type).trim();
+    if (!t) {
+      return { refused: "Choose what kind of item it is — the enchantments you can craft "
+        + "differ between " + groups.join(", ") + "." };
+    }
+    if (slot === "Off Hand") {
+      var g = OFF_HAND_GROUP[t];
+      return g ? { group: g }
+               : { refused: "“" + t + "” is not an off-hand type this build knows." };
+    }
+    if (WEAPON_GROUP_UNSTATED.indexOf(t) >= 0) {
+      return { refused: "The crafting table lists “Melee weapons” and “Ranged weapons” and does "
+        + "not say which one " + t.toLowerCase() + " belong to, so this build will not guess. "
+        + "Pick another weapon type, or add the effects as a declared credit instead." };
+    }
+    var tax = _taxonomy();
+    var style = tax && typeof tax.styleOfType === "function" ? tax.styleOfType(t) : null;
+    var grp = style ? WEAPON_GROUP_OF_STYLE[style] : null;
+    if (!grp) return { refused: "“" + t + "” is not a weapon type this build knows." };
+    return { group: grp };
+  }
+
+  /** The menus an item of this group and ML may carry.
+   *
+   *  Extra is gated on the item's ML, not on the effect's: "Extra enchantment
+   *  slots are not available on items under minimum level 10" (Essence Crafting,
+   *  Components). Kept separate from the Insight rule below, which gates EFFECTS
+   *  in any menu — the two coincide today only by accident. */
+  function menusFor(group, ml, ctx) {
+    var table = _placements(ctx);
+    var groups = (table && table.groups) || {};
+    if (!groups[group]) return [];
+    var min = (table && table.extra_slot_min_ml) || 10;
+    var n = Number(ml);
+    return MENUS.filter(function (m) {
+      if (!(groups[group][m] || []).length) return false;
+      return m !== "Extra" || (isFinite(n) && n >= min);
+    });
+  }
+
+  /** The effects offerable in one menu of one group at this ML.
+   *
+   *  Three filters, each with a reason the player can be told:
+   *   - `rankable`: the effect's stat is not one the catalog uses, so nothing
+   *     could ever rank it (the data layer decided this; see essence_placements).
+   *   - the vocabulary gate the form already applies to any stat — a stat that
+   *     can carry neither a typed magnitude nor an on/off flag is refused on
+   *     entry, so offering it would be a picker that leads to a refusal.
+   *   - `min_ml`: an Insight-typed effect needs ML 10, stated by the wiki for
+   *     insight bonuses specifically. */
+  function effectsFor(group, menu, ml, ctx) {
+    var table = _placements(ctx);
+    var groups = (table && table.groups) || {};
+    var rows = (groups[group] && groups[group][menu]) || [];
+    var c = ctx || {};
+    var vocab = c.vocab;
+    var n = Number(ml);
+    return rows.filter(function (r) {
+      if (!r.rankable) return false;
+      if (isFinite(n) && n < (r.min_ml || 1)) return false;
+      if (!vocab) return true;
+      return _canDeclare(r.stat, vocab, c) || _isPresenceOnly(r.stat, vocab, c);
+    });
+  }
+
+  /** One placement row by effect name, or null. */
+  function placementFor(group, menu, effect, ctx) {
+    var table = _placements(ctx);
+    var groups = (table && table.groups) || {};
+    var rows = (groups[group] && groups[group][menu]) || [];
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].effect === effect) return rows[i];
+    }
+    return null;
+  }
+
+  /** The magnitude a SOURCED placement has at this ML, or null.
+   *
+   *  Read from the wiki's own curve, never interpolated: `values_by_ml` is 36
+   *  entries, one per ML, and an ML outside 1..36 has no row rather than a
+   *  nearest one. */
+  function sourcedValueAt(row, ml) {
+    if (!row || !row.sourced || !Array.isArray(row.values_by_ml)) return null;
+    var n = Number(ml);
+    if (!isFinite(n) || Math.floor(n) !== n || n < 1 || n > row.values_by_ml.length) return null;
+    var v = Number(row.values_by_ml[n - 1]);
+    return isFinite(v) ? v : null;
   }
 
   function isCustomId(id) {
@@ -259,6 +447,88 @@
    *  results card, the browse link and all six exports identify an item by name,
    *  and two different items reading identically there is the honesty failure this
    *  whole feature is built to avoid. */
+  /** #795 — carry a pre-refactor custom item into the placement model.
+   *
+   *  Saved entries from #773/#774 are free-form: `{stat, bonus_type, value}` with
+   *  no menu and no effect, and nothing checked whether the stat could be crafted
+   *  onto that item at all. Most will map; some cannot.
+   *
+   *  Three outcomes, and the UI must show all three, because each is a change to
+   *  a build the player already saved:
+   *
+   *   - `placed`   — the stat is a real placement for this item's group, so it
+   *                  keeps its value and gains the menu it must have belonged to.
+   *   - `revalued` — it maps onto a SOURCED placement, so the wiki's own
+   *                  magnitude at this ML replaces the number they typed. This is
+   *                  the one that must never be silent: their build's total moves.
+   *   - `dropped`  — no menu of this item's group can host it. Reported by name
+   *                  rather than removed quietly; a vanished effect reads as the
+   *                  tool losing their data.
+   *
+   *  A legacy affix already carrying a `menu` is left alone — re-migrating one
+   *  would re-apply the sourced value and re-report a change that already
+   *  happened. */
+  function migrateLegacyEntry(entry, ctx) {
+    var e = entry || {};
+    var c = ctx || {};
+    var out = { placed: [], revalued: [], dropped: [], entry: e };
+    var list = Array.isArray(e.affixes) ? e.affixes : [];
+    if (!list.length || list.every(function (a) { return a && a.menu; })) return out;
+
+    var info = essenceGroupFor(e.slot, e.type, c);
+    if (!info.group) {
+      out.dropped = list.map(function (a) { return String((a && a.stat) || ""); }).filter(Boolean);
+      out.entry = _assign({}, e, { affixes: [] });
+      out.refused = info.refused;
+      return out;
+    }
+    var ml = _num(e.ml);
+    var menus = menusFor(info.group, ml, c);
+    var used = Object.create(null);
+    var next = [];
+    for (const raw of list) {
+      var a = raw || {};
+      if (a.menu) { next.push(a); used[a.menu] = true; continue; }
+      var stat = String(a.stat == null ? "" : a.stat).trim();
+      if (!stat) continue;
+      var hit = null;
+      for (var i = 0; i < menus.length && !hit; i++) {
+        if (used[menus[i]]) continue;
+        var rows = effectsFor(info.group, menus[i], ml, c);
+        for (var j = 0; j < rows.length; j++) {
+          if (rows[j].stat === stat) { hit = { menu: menus[i], row: rows[j] }; break; }
+        }
+      }
+      if (!hit) { out.dropped.push(stat); continue; }
+      used[hit.menu] = true;
+      if (hit.row.sourced) {
+        var sv = sourcedValueAt(hit.row, ml);
+        if (sv == null) { out.dropped.push(stat); continue; }
+        if (Number(a.value) !== sv) {
+          out.revalued.push({ stat: stat, from: _num(a.value), to: sv, menu: hit.menu });
+        }
+        next.push({ menu: hit.menu, effect: hit.row.effect, stat: stat,
+                    bonus_type: hit.row.bonus_type, value: sv,
+                    unit: hit.row.unit || "flat", sourced: true });
+      } else {
+        next.push(_assign({}, a, { menu: hit.menu, effect: hit.row.effect,
+                                   stat: stat, sourced: false }));
+      }
+      out.placed.push({ stat: stat, menu: hit.menu, effect: hit.row.effect });
+    }
+    out.entry = _assign({}, e, { affixes: next });
+    return out;
+  }
+
+  /** Object.assign, but this file targets the same baseline the rest of web/ does. */
+  function _assign(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var src = arguments[i] || {};
+      for (var k in src) if (Object.prototype.hasOwnProperty.call(src, k)) target[k] = src[k];
+    }
+    return target;
+  }
+
   function validateEntry(entry, ctx) {
     var e = entry || {};
     var c = ctx || {};
@@ -313,55 +583,109 @@
     var types = bonusTypes();
     var affixes = [];
     var rawAffixes = Array.isArray(e.affixes) ? e.affixes : [];
+
+    // #795 — placement comes first. Every enchantment below is judged against the
+    // group this item IS, so an effect that cannot be crafted onto this item type
+    // is refused here rather than accepted and silently scored.
+    var groupInfo = essenceGroupFor(slot, type, c);
+    var group = groupInfo.group || null;
+    if (groupInfo.refused && SLOTS.indexOf(slot) >= 0) errors.push(groupInfo.refused);
+
+    var availableMenus = group ? menusFor(group, ml, c) : [];
+    var seenMenus = Object.create(null);
+
     if (!rawAffixes.length) {
-      errors.push("Add at least one effect — an item with no effects can never be worth a slot.");
+      errors.push("Add at least one enchantment — an item with no effects can never be worth a slot.");
     } else if (rawAffixes.length > AFFIX_MAX) {
-      errors.push("An item may carry at most " + AFFIX_MAX + " effects.");
+      errors.push("An Essence Crafted item carries at most one enchantment per menu — "
+        + MENUS.join(", ") + ".");
     }
+
     for (const raw of rawAffixes.slice(0, AFFIX_MAX)) {
       var a = raw || {};
-      var stat = canonical(String(a.stat == null ? "" : a.stat).trim());
+      var menu = String(a.menu == null ? "" : a.menu).trim();
+      var effect = String(a.effect == null ? "" : a.effect).trim();
+
+      if (MENUS.indexOf(menu) < 0) {
+        errors.push("Every enchantment needs a menu — " + MENUS.join(", ") + ".");
+        continue;
+      }
+      if (seenMenus[menu]) {
+        errors.push("Two enchantments are both in the " + menu + " menu. An item carries one each.");
+        continue;
+      }
+      seenMenus[menu] = true;
+      if (!group) continue;      // the slot/type error above already says why
+      if (availableMenus.indexOf(menu) < 0) {
+        if (menu === "Extra") {
+          errors.push("The Extra menu is not available below minimum level "
+            + ((_placements(c) || {}).extra_slot_min_ml || 10) + ".");
+        } else {
+          errors.push("A " + group.toLowerCase().replace(/s$/, "") + " has no " + menu + " menu.");
+        }
+        continue;
+      }
+      if (!effect) { errors.push("Choose an enchantment for the " + menu + " menu."); continue; }
+
+      var row = placementFor(group, menu, effect, c);
+      if (!row) {
+        errors.push("“" + effect + "” cannot be crafted into the " + menu + " menu of a "
+          + group.toLowerCase().replace(/s$/, "") + ".");
+        continue;
+      }
+      if (!row.rankable) {
+        errors.push("“" + effect + "” is not a stat this build can rank, so nothing could score it.");
+        continue;
+      }
+      if (isFinite(ml) && ml < (row.min_ml || 1)) {
+        errors.push("“" + effect + "” needs minimum level " + row.min_ml
+          + " — insight bonuses cannot be crafted below that.");
+        continue;
+      }
+
+      var stat = canonical(row.stat);
+      if (!vocab.known || !vocab.known.has(stat)) {
+        errors.push("“" + effect + "” resolves to “" + stat + "”, which is not a stat this build knows.");
+        continue;
+      }
+
+      // #774's on/off branch, unchanged in meaning: a presence-only stat is a FLAG
+      // with no typed bucket, so it takes neither a bonus type nor a number.
+      if (_isPresenceOnly(stat, vocab, c)) {
+        affixes.push({ menu: menu, effect: effect, stat: stat, presence: true, sourced: !!row.sourced });
+        continue;
+      }
+      if (!_canDeclare(stat, vocab, c)) {
+        errors.push("“" + effect + "” carries no bonus type anywhere in the game data, so there is "
+          + "no stacking bucket for a value on it to join.");
+        continue;
+      }
+
+      // #795 — the sourced branch. When the wiki states this effect's bonus type
+      // AND its magnitude at this ML, the form fills both and LOCKS them, and the
+      // value is not a player assertion. Anything the entry carries for them is
+      // ignored rather than refused: it is stale UI state, not a request.
+      if (row.sourced) {
+        var sv = sourcedValueAt(row, ml);
+        if (sv == null) {
+          errors.push("“" + effect + "” has no published magnitude at minimum level " + e.ml + ".");
+          continue;
+        }
+        affixes.push({ menu: menu, effect: effect, stat: stat, bonus_type: row.bonus_type,
+                       value: sv, unit: row.unit || "flat", sourced: true });
+        continue;
+      }
+
       var bt = String(a.bonus_type == null ? "" : a.bonus_type).trim();
       var val = _num(a.value);
-      if (!stat) { errors.push("Every effect needs a stat."); continue; }
-      if (!vocab.known || !vocab.known.has(stat)) {
-        errors.push("“" + stat + "” is not a stat this build knows, so nothing could ever rank it. "
-          + "Pick the name from the list.");
-        continue;
-      }
-      // #774 — the on/off branch. A presence-only effect (Ghost Touch, True
-      // Seeing, Freedom of Movement) is a FLAG: it has no typed bucket, so it
-      // takes no bonus type and no number, and `toVariant` mints it as a `Bool`
-      // exactly as the catalog carries it. It then counts for the Utility tier
-      // through the ordinary bucket machinery, with no special case anywhere —
-      // and because a custom item's name carries the `(yours)` suffix, the
-      // tier's own receipt already credits it as the player's. Both facts were
-      // measured through the real solver before this branch was written; see
-      // tests/custom-items-solve.test.js.
-      //
-      // The player's typed bonus type and value are DROPPED rather than refused:
-      // the form stops offering them once it knows the stat is on/off, so a
-      // leftover value is stale UI state rather than something they asked for.
-      if (_isPresenceOnly(stat, vocab, c)) {
-        affixes.push({ stat: stat, presence: true });
-        continue;
-      }
-      // Neither a flag nor a typed magnitude: a real number carried untyped on
-      // every source (`Enhanced Ki`). There is no bonus type to pick and no
-      // bucket the gear would join, so it is refused by name rather than guessed.
-      if (!_canDeclare(stat, vocab, c)) {
-        errors.push("“" + stat + "” carries no bonus type anywhere in the game data, so there is no "
-          + "stacking bucket for a value on it to join. Custom items cannot supply it.");
-        continue;
-      }
       if (types.length && types.indexOf(bt) < 0) {
-        errors.push("“" + stat + "” needs a bonus type from the list — that is what decides whether it "
-          + "stacks with your other gear or is overwritten by it.");
+        errors.push("“" + effect + "” needs a bonus type from the list — that is what decides whether "
+          + "it stacks with your other gear or is overwritten by it.");
         continue;
       }
-      if (!isFinite(val) || val <= 0) { errors.push("“" + stat + "” needs a value above zero."); continue; }
-      if (val > VALUE_MAX) { errors.push("“" + stat + "” is above the " + VALUE_MAX + " ceiling."); continue; }
-      affixes.push({ stat: stat, bonus_type: bt, value: val });
+      if (!isFinite(val) || val <= 0) { errors.push("“" + effect + "” needs a value above zero."); continue; }
+      if (val > VALUE_MAX) { errors.push("“" + effect + "” is above the " + VALUE_MAX + " ceiling."); continue; }
+      affixes.push({ menu: menu, effect: effect, stat: stat, bonus_type: bt, value: val, sourced: false });
     }
 
     return {
@@ -466,14 +790,27 @@
   function customPool(list, ctx) {
     var out = [];
     var rejected = [];
+    var migrated = [];
     var D = _dataset();
     var taken = new Set();
     for (const raw of (Array.isArray(list) ? list : []).slice(0, CUSTOM_LIMIT)) {
       // `otherNames` accumulates as we go, so the FIRST entry with a name keeps
       // it and a later duplicate is the one reported. Deterministic, and it
       // matches what the panel shows: the duplicate is the row just added.
-      var v = validateEntry(raw, Object.assign({}, ctx || {}, { otherNames: taken }));
+      // #795 — a saved item from before the placement model reaches the solver
+      // here without anyone opening the editor. Migrate it on the way through, or
+      // every pre-refactor custom item would be rejected on load and the player's
+      // build would silently lose gear it had been solving with for days.
+      //
+      // The migration is applied to a COPY: `state.customItems` keeps the saved
+      // shape until the player opens and saves the item, so nothing is rewritten
+      // under them by the act of solving.
+      var mig = migrateLegacyEntry(raw, ctx || {});
+      var v = validateEntry(mig.entry || raw, Object.assign({}, ctx || {}, { otherNames: taken }));
       if (!v.ok) { rejected.push({ entry: raw, errors: v.errors }); continue; }
+      if ((mig.dropped || []).length || (mig.revalued || []).length) {
+        migrated.push({ entry: raw, dropped: mig.dropped, revalued: mig.revalued });
+      }
       taken.add(v.entry.name);
       var rec = toVariant(v.entry);
       // The same normalizer the fetched catalog goes through, for the same
@@ -484,7 +821,7 @@
       if (D && D.normalizeItem) D.normalizeItem(rec);
       out.push(rec);
     }
-    return { variants: out, rejected: rejected };
+    return { variants: out, rejected: rejected, migrated: migrated };
   }
 
   /** The unconditional disclosure sentence, or null when the build uses none.
@@ -518,6 +855,11 @@
     bonusTypes: bonusTypes,
     customId: customId, isCustomId: isCustomId, isCustomVariant: isCustomVariant,
     isPresenceEffect: function (stat, vocab, ctx) { return _isPresenceOnly(stat, vocab, ctx); },
+    MENUS: MENUS.slice(),
+    WEAPON_GROUP_UNSTATED: WEAPON_GROUP_UNSTATED.slice(),
+    essenceGroupFor: essenceGroupFor, menusFor: menusFor, effectsFor: effectsFor,
+    placementFor: placementFor, sourcedValueAt: sourcedValueAt,
+    migrateLegacyEntry: migrateLegacyEntry,
     validateEntry: validateEntry, toVariant: toVariant, customPool: customPool,
     playerAuthoredNotice: playerAuthoredNotice,
   };

@@ -121,6 +121,7 @@ def test_the_shard_declares_what_is_wired_and_what_is_not():
 ROSTER_READER = "scripts/merge_harvest.py"
 JOIN_MODULE = os.path.join("src", "essence_curve_join.py")
 POOL_MODULE = os.path.join("src", "essence_pool.py")
+PLACEMENTS_MODULE = os.path.join("src", "essence_placements.py")
 SHARD_READERS = sorted([ROSTER_READER, JOIN_MODULE, POOL_MODULE])
 # Tests may name the shard freely: asserting ON the data is the opposite of
 # feeding it to the solver, and a test cannot ship a value into a loadout. The
@@ -190,13 +191,20 @@ def test_the_browser_never_sees_the_raw_shard_or_the_join():
 
 def test_the_curve_join_is_reached_only_through_the_pool_builder():
     """`essence_curve_join` resolves effect names to ML curve rows and quarantines
-    37 it cannot. `essence_pool` is the one module allowed to call it, because it
-    is the one that also checks the bonus type and the catalog stat before letting
-    an option out. A second caller could take a magnitude without those checks."""
+    37 it cannot. A caller is allowed only if it ALSO checks the bonus type and the
+    catalog stat before letting a magnitude out; one that does not could take a
+    number with neither.
+
+    #795 admitted a second caller, `essence_placements`, which serves the
+    player-authored item builder. Admission is not a free pass: the allowlist buys
+    nothing on its own, so `test_every_sourced_placement_passed_both_checks` below
+    asserts the property the allowlist is standing in for, over the real built
+    output. Widening this list without that assertion would be weakening the guard
+    to make new code pass, which is the one thing it exists to prevent."""
     importers = []
     for path in _tree_files():
         rel = os.path.relpath(path, ROOT)
-        if rel.startswith(TEST_DIR) or rel in (JOIN_MODULE, POOL_MODULE):
+        if rel.startswith(TEST_DIR) or rel in (JOIN_MODULE, POOL_MODULE, PLACEMENTS_MODULE):
             continue
         with open(path, encoding="utf-8", errors="ignore") as fh:
             if "essence_curve_join" in fh.read():
@@ -229,3 +237,57 @@ def test_only_the_two_empty_essence_menus_remain_unserved():
         assert f"Essence Crafting: Trinket - {part}" not in ec, (
             f"Trinket {part} is served by the essence_crafting pool now; leaving it "
             "allowlisted makes the gate vouch for a gap that closed (#193).")
+
+
+def test_every_sourced_placement_passed_both_checks():
+    """#795 — the property behind `essence_placements`' place on the curve-join
+    allowlist, asserted over the real built table rather than assumed.
+
+    A `sourced` row carries a magnitude read from the curve join. It may only do so
+    if BOTH of the pool builder's checks were applied first: the bonus type is
+    `stated` in the harvest, and the stat is one the catalog actually uses. A row
+    that skipped either would be a number with no bucket, offered to a player as
+    though the wiki published it.
+
+    Refuses to pass over zero sourced rows.
+    """
+    import json as _json
+    from src import essence_placements as _ep
+    from src import essence_pool as _pool
+
+    bonus_types = _pool._load(_pool.BONUS_TYPE_SHARD)["harvested"]
+    with open(os.path.join(ROOT, "web", "data", "items.json"), encoding="utf-8") as fh:
+        built = _json.load(fh)
+    table = built.get("essence_placements") or {}
+    # The written dataset does not carry the in-memory `stat` field the build uses
+    # for `catalog_stats` — only `name`. So the check here is against the affix
+    # NAMES the catalog actually ships, which is an independent population rather
+    # than the builder's own flag, and is what makes this more than a restatement
+    # of `rankable`.
+    stats = {a.get("name") for v in built.get("items", [])
+             for a in (v.get("affixes") or []) if a.get("name")}
+
+    seen, offenders = 0, []
+    for group, menus in (table.get("groups") or {}).items():
+        for menu, rows in menus.items():
+            for row in rows:
+                if not row.get("sourced"):
+                    continue
+                seen += 1
+                bt = bonus_types.get(row["effect"])
+                where = f"{group}/{menu}/{row['effect']}"
+                if not bt or bt.get("provenance") != "stated":
+                    offenders.append((where, "bonus type not stated"))
+                elif bt["value"]["bonus_type"] != row.get("bonus_type"):
+                    offenders.append((where, "bonus type disagrees with the harvest"))
+                if row.get("stat") not in stats:
+                    offenders.append((where, "stat is not one the catalog uses"))
+                if not row.get("rankable"):
+                    offenders.append((where, "sourced but not rankable"))
+                if len(row.get("values_by_ml") or []) != 36:
+                    offenders.append((where, "curve is not 36 rows"))
+    assert seen, ("no sourced placement at all — this guard would pass vacuously, and "
+                  "the curve-join allowlist would be unearned")
+    assert not offenders, (
+        f"{len(offenders)} sourced placement(s) took a magnitude without both checks: "
+        f"{offenders[:5]}")

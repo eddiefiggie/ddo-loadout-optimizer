@@ -286,6 +286,18 @@ NON_CONTAINERS = {
         "cardinality does not apply. Its item-LEVEL choice slots are separate "
         "containers: roll_groups (derived here), plus the augment/seal/Lamordia "
         "markers whose pools are registered above."),
+    "essence_placements": (
+        NOT_A_POOL,
+        "#795 — the Essence Crafting placement TABLE the player-authored item builder "
+        "reads: which effects each of the 16 item groups can host in each menu. Its "
+        "menus really are single-pick, and it is still not a container, because the "
+        "pick is not the solver's. A player chooses at AUTHORING time and the result "
+        "is minted into an `items` variant, which is where the solver meets it and "
+        "where the GRANTS_ALL reasoning above then applies. Nothing in the expansion "
+        "walks this key, so there is no option -> record cardinality to audit; "
+        "auditing it as a pool would assert a Sigma <= 1 over rows the solve never "
+        "sees. The single-pick rule it does carry — one effect per menu — is enforced "
+        "in `web/custom-items.js` at entry and tested there."),
     "dino_sets": (
         GRANTS_ALL,
         "Dino set-bonus definitions. A set grants all its affixes at once on reaching "
