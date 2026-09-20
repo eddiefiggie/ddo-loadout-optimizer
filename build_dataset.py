@@ -1958,17 +1958,6 @@ def build() -> dict:
     essence_placements_mod.assert_slot_groups_match_the_catalog(variants)
     essence_placements_mod.assert_the_two_slot_joins_agree(
         {g for gs in essence_combined_mod.GROUP_OF_SLOT.values() for g in gs})
-    # #832 — the four effects the bench must not ask a bonus type for, re-derived
-    # rather than trusted. Needs the finished variants for the same reason the
-    # two joins above do: "no carrier types this" is a claim about the catalog,
-    # and the catalog only exists here.
-    _no_bonus_type = (
-        essence_placements_mod.assert_no_bonus_type_still_holds(
-            [r for menus in essence_placements["groups"].values()
-             for rows in menus.values() if isinstance(rows, list)
-             for r in rows],
-            ((a.get("name"), a.get("type"))
-             for v in variants for a in (v.get("affixes") or []))))
 
     # Only `verified` hosts keep live menus. `Trinket [Crafted]` declares the same
     # three and is quarantined with a placeholder ML 1 — crafting real numbers onto
@@ -2474,7 +2463,27 @@ def build() -> dict:
     # universe, not the walked one) so nobody hand-recounts a different predicate.
     # #832 — stamped beside the other gates rather than inside the placement
     # table, which publishes a filtered subset that drops `coverage`.
-    out["metadata"]["essence_no_bonus_type"] = _no_bonus_type
+    # #835 — the no-bonus-type roster, re-derived over the SAME population
+    # `web/dataset.js` uses to decide `untypedOnly`: the item roster AND every
+    # crafting pool. Run here rather than beside the placement build because that
+    # is the first point all the pools exist.
+    #
+    # The first version of this call walked `variants` only and read `a["name"]`
+    # / `a["type"]`, which pipeline affixes spell `stat` / `bonus_type` — so it
+    # collected nothing and could not fail. It vouched for `Tendon Slice` being
+    # untyped while Slaver's crafting carried it at Enhancement, twice.
+    # #835 — a unit that claims a number over a value that is not one.
+    out["metadata"]["essence_unit_magnitude"] = (
+        essence_placements_mod.assert_unit_matches_the_magnitude(
+            [r for menus in out["essence_placements"]["groups"].values()
+             for rows in menus.values() if isinstance(rows, list)
+             for r in rows]))
+    out["metadata"]["essence_no_bonus_type"] = (
+        essence_placements_mod.assert_no_bonus_type_still_holds(
+            [r for menus in out["essence_placements"]["groups"].values()
+             for rows in menus.values() if isinstance(rows, list)
+             for r in rows],
+            _every_carrier_affix(out)))
     out["metadata"]["crafting_slot_coverage"] = crafting_coverage_mod.check(out)
 
     # #823 — the Nearly Complete tier boundary. The solver reads a host's tier as
@@ -2636,6 +2645,33 @@ def write(dataset: dict, path: str = OUT_PATH) -> None:
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(serialized, fh, indent=2, ensure_ascii=False)
         fh.write("\n")
+
+
+def _every_carrier_affix(out):
+    """`(stat, bonus_type)` for everything in the built dataset that can carry an
+    affix — the item roster and every crafting pool (#835).
+
+    Mirrors `web/dataset.js::_craftingAffixTriples` deliberately: that function
+    decides `untypedOnly`, and a guard that asks "does anything type this effect"
+    over a SMALLER population than the app uses will answer yes when the app says
+    no. That is exactly how `Tendon Slice` was ruled untyped while `Slaver's
+    Extra Slot` carried `Tendon Slice +4 (Enhancement)`.
+    """
+    for it in out.get("items") or []:
+        for a in it.get("affixes") or []:
+            yield (a.get("name"), a.get("type"))
+    for key in ("seal", "viktranium", "dino_inserts", "nearly_complete",
+                "legendary_green_steel", "slavers", "essence_crafting"):
+        for o in out.get(key) or []:
+            if not isinstance(o, dict):
+                continue
+            for a in o.get("affixes") or []:
+                yield (a.get("stat"), a.get("bonus_type"))
+            if o.get("stat"):
+                yield (o.get("stat"), o.get("bonus_type"))
+    for arr in (out.get("nearly_complete_per_item") or {}).values():
+        for o in arr or []:
+            yield (o.get("stat"), o.get("bonus_type"))
 
 
 def main() -> None:

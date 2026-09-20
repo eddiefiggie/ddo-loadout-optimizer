@@ -4342,7 +4342,26 @@ ${(() => {
           ? M.combinedFor(group, chosen.combined, ctx) : null;
         const row = (sel && !recipe) ? M.placementFor(group, menu, sel, ctx) : null;
         let tail = "";
-        if (row && isPresenceOnly(vocab.canonical ? vocab.canonical(row.stat) : row.stat, vocab)) {
+        // #835 — a DICE magnitude is checked BEFORE the on/off test. These stats
+        // are carried as a flag by real items (169 of them carry `Vampirism`
+        // that way), so the vocabulary calls them presence-only and the branch
+        // below used to claim "no bonus type or value". The bonus-type half is
+        // right; the VALUE half is not — `table 3b` publishes a full 36-entry
+        // curve, and telling the player the table says nothing about magnitude
+        // when it says `6d6` is a confident wrong absence.
+        //
+        // It is also disclosed as unrankable, because it is: a dice value stays
+        // a string through `normalizeAffix`, and the solver gates contributions
+        // on `value > 0`. The craft is inert, and the player is told so where
+        // they choose it rather than discovering it from a result that never
+        // moved.
+        if (row && row.unit === "dice") {
+          const dv = M.sourcedRawValueAt ? M.sourcedRawValueAt(row, d.ml) : null;
+          tail = `<span class="wz-custom-sourced wz-custom-notype">${wzEsc(dv == null ? "dice" : dv)}`
+            + ` <span class="wz-help">on-hit proc — the crafting table's own value at ML `
+            + `${wzEsc(d.ml || "?")}. It has no bonus type, and the optimizer cannot `
+            + `rank dice, so it will not count toward your priorities.</span></span>`;
+        } else if (row && isPresenceOnly(vocab.canonical ? vocab.canonical(row.stat) : row.stat, vocab)) {
           tail = `<span class="wz-custom-flag">on/off — no bonus type or value</span>`;
         } else if (row) {
           // #810 — the two halves are rendered INDEPENDENTLY. The wiki publishes a
