@@ -1,20 +1,27 @@
 """#795 — the FULL Essence Crafting placement table, for the player-authored item
 builder.
 
-`essence_pool` and this module read the same shard and answer different questions,
-and the difference is who supplies the number.
+`essence_pool` and this module answer different questions from ONE catalog, and
+the difference is who supplies the number.
 
 `essence_pool` serves the SOLVER's catalog. An option it offers becomes a
 contribution in a finished loadout, so it may only be offered when placement,
-bonus type AND magnitude are all sourced. 36 of 708 placements clear that bar,
-and the other 672 are correctly withheld — a crafted effect with a guessed type
-either double-counts against real gear or wrongly collapses with it.
+bonus type AND magnitude are all sourced, and the rest are correctly withheld —
+a crafted effect with a guessed type either double-counts against real gear or
+wrongly collapses with it. Since #843 it reads the `groups` this module emits,
+so the two paths are the same rows with two different bars.
 
 This module serves the BUILDER, where the player is the one asserting the item
 exists and what is on it. The bonus type and value come from them and are
 disclosed as player-authored, exactly as they are today. So the bar that binds
-`essence_pool` does not bind here, and withholding 672 placements would refuse to
-let a player describe gear they are holding — which is the whole feature.
+`essence_pool` does not bind here, and withholding the unsourced placements would
+refuse to let a player describe gear they are holding — which is the whole
+feature.
+
+This module is also the one that still opens the WIKI shards (`essence_crafting.json`,
+`essence_bonus_type.json`): the wiki harvest runs for the disagreement ledger,
+the dice magnitudes and the `wiki_groups` the placement overrides are checked
+against. `tests/test_essence_crafting_shard.py` names it as the shard's reader.
 
 What this module must NOT do is let the two drift into each other. Every record
 carries `sourced`, and for a sourced one the wiki's own bonus type and ML curve
@@ -40,6 +47,14 @@ from src import spell_focus
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 MENUS = essence_pool.MENUS
+
+CRAFTING_SHARD = os.path.join(ROOT, "data", "seed", "compendium", "essence_crafting.json")
+BONUS_TYPE_SHARD = os.path.join(ROOT, "data", "seed", "compendium", "essence_bonus_type.json")
+
+
+def _load(path):
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
 
 #: The catalog slot a player picks -> the placement group(s) that slot can host.
 #:
@@ -318,6 +333,20 @@ def assert_insightful_is_always_insight(harvested) -> int:
             "rule is minting a wrong bucket.")
     return seen
 EXTRA_SLOT_MIN_ML = essence_pool.EXTRA_SLOT_MIN_ML
+
+#: Wiki-side effects excluded from `wiki_groups` by name even though all three wiki
+#: shards cover them. Moved here from `essence_pool` in #843, where the solver's
+#: pool no longer reads the wiki rows: on the yourddo side the same effect is kept
+#: out by the stat join (`essence_stat_join.json` quarantines `Natural Armor`), so
+#: the exclusion has one owner per source and no list can vouch for the other.
+WIKI_EXCLUDED_EFFECTS = {
+    "Natural Armor": (
+        "The catalog has no `Natural Armor` stat — it models natural armour as "
+        "stat `Armor Class` in the `Natural` bucket (149 named affixes). Mapping "
+        "onto that is an unsourced stat rename, and it would sit on top of the "
+        "bonus type's own weakest evidence shape (`page-subject`, used once). Two "
+        "stacked judgement calls on one value is how a wrong number gets shipped."),
+}
 
 #: #799 — the bonuses Essence Crafting applies AUTOMATICALLY with the Minimum
 #: Level shard. They are not enchantments and occupy no menu:
@@ -645,8 +674,8 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None,
     Unlike `essence_pool.build_essence_pool`, a missing bonus type or curve is NOT a
     skip. It sets `sourced: false`, and the builder asks the player.
     """
-    crafting = essence_pool._load(essence_pool.CRAFTING_SHARD)
-    bonus_types = essence_pool._load(essence_pool.BONUS_TYPE_SHARD)["harvested"]
+    crafting = _load(CRAFTING_SHARD)
+    bonus_types = _load(BONUS_TYPE_SHARD)["harvested"]
     placements = crafting["placements"]
     assert_slot_map_covers_the_table(placements)
     assert_insightful_is_always_insight(bonus_types)
@@ -735,7 +764,7 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None,
                 # instead of each discovering it.
                 if curve and all(_DICE.match(str(v)) for v in curve if v not in (None, "")):
                     unit, unit_ok = "dice", True
-                usable = rankable and effect not in essence_pool.EXCLUDED_EFFECTS
+                usable = rankable and effect not in WIKI_EXCLUDED_EFFECTS
                 # The MAGNITUDE half. `unit_ok` still gates it: a stat the catalog
                 # spells both flat and percent has no single unit, so a number
                 # would land in a bucket it cannot be compared in.

@@ -949,16 +949,26 @@
     const lines = [];
     const n = (r.placed || []).length;
     if (n) {
-      const what = r.placed.map((p) => `${p.menu}: ${p.effect} +${p.value}`).join(", ");
+      // #843 — a presence option is on or off; "+1" would read as a number.
+      const what = r.placed.map((p) => `${p.menu}: ${p.effect}${p.presence ? "" : ` +${p.value}`}`).join(", ");
       lines.push(`Essence Crafting placed ${n} ${n === 1 ? "effect" : "effects"} (${what}). `
         + "Crafting these destroys them if the item is later upgraded or its sets rerolled.");
     }
     if (r.offered != null && r.total != null) {
-      lines.push(`The solver chose from ${r.offered} of the ${r.total} effects these menus offer in game. `
-        + "The rest are not modelled: an effect is only offered once its placement, its bonus type and "
-        + "its level curve are all sourced from the wiki, and most are missing the bonus type — "
-        + "without which a crafted effect would either double-count against your gear or wrongly "
-        + "replace it.");
+      // #843 — the pool reads the same catalog as the item bench, and the
+      // largest withheld class is now a SHAPE the solver cannot take rather than
+      // a missing source. Say which, with the number, so a player who wanted
+      // Sheltering on a Gem learns why it was never a candidate.
+      const compound = (r.compoundDeferred != null && r.compoundDeferred > 0)
+        ? ` ${r.compoundDeferred} of the rest are shards that grant two effects at once` +
+          ` (Sheltering, Combat Mastery), which this tool cannot yet place` +
+          `${r.compoundIssue ? ` (#${r.compoundIssue})` : ""}.`
+        : "";
+      lines.push(`The solver chose from ${r.offered} of the ${r.total} effects these menus offer in game.`
+        + compound
+        + " The remainder are not modelled: an effect is offered only once its placement, its bonus "
+        + "type and its level curve are all sourced and its name is one this tool ranks — without "
+        + "the type, a crafted effect would either double-count against your gear or wrongly replace it.");
     }
     // #611 — the build is assuming a crafting step the player has not done, on an
     // item whose printed ML is ABOVE their cap. Said before the Insight line

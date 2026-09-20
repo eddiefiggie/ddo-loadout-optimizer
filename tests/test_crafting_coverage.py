@@ -55,13 +55,18 @@ from src import crafting_coverage as cc  # noqa: E402
 # a reader. Four roll labels remain, each for a stated reason rather than "no pool"
 # — two absent from the catalog entirely, one carrying set grants rather than stat
 # affixes, and one whose every option is multi-affix.
-BASELINE_UNSERVED_LABELS = 6   # #766 took Slaver's ten labels off the list
+# #843 — 4 not 6: `Rune Arm - Suffix` and `Melee - Extra` are served. The pool
+# reads the yourddo catalog now, which types effects in both menus (9 and 7
+# offered), so the "every effect in them is untyped" reason above is history.
+BASELINE_UNSERVED_LABELS = 4   # #766 took Slaver's ten labels off the list; #843 the last two Essence
 # #764 — 199 not 282: -83. The seven Essence labels that became served carried
 # 83 item-slots between them (Rune Arm Prefix 39 + Extra 39, Ring Prefix/Suffix/
 # Extra 1 each, Melee Prefix/Suffix 1 each). The 39 Rune Arm SUFFIX slots and the
 # 1 Melee EXTRA slot stay counted, because those two menus offer nothing.
 # #765 — 55 not 199: -144, the item-slots the newly-served roll labels carried.
-BASELINE_UNSERVED_ITEM_SLOTS = 55   # 336 - 24 typed Slaver's slots - 30 Set Bonus slots - 83 (#764)
+# #843 — 15 not 55: -40, the 39 Rune Arm SUFFIX slots and the 1 Melee EXTRA slot
+# that stayed counted while those two menus offered nothing.
+BASELINE_UNSERVED_ITEM_SLOTS = 15   # 336 - 24 typed Slaver's slots - 30 Set Bonus slots - 83 (#764) - 40 (#843)
 
 # #371 — the per-item split as measured on the built dataset.
 BASELINE_PER_ITEM_DECLARERS = 65

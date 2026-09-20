@@ -358,3 +358,57 @@ async function solve(model) {
 
   process.on("exit", () => { console.log(`\n  ${passed} passed, ${failed} failed`); });
 })();
+
+// --- #843 — the pool and the app's vocabulary agree on what is on/off -------------
+//
+// The pool decides presence at BUILD time from the catalog's carriers; the bench
+// decides it at RENDER time from `buildPickerVocabulary`. #838 found three
+// pipeline reproductions of the vocabulary's flag set disagreeing with it (204,
+// 198, 33 against 196), so agreement is asserted here, record by record, on the
+// built dataset, rather than assumed from the definitions looking alike.
+(async () => {
+  const fs = require("fs");
+  const path = require("path");
+  const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
+  const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+  const vocab = buildPickerVocabulary(normalizeDataset(JSON.parse(JSON.stringify(raw))));
+  const isPresenceOnly = (stat) => vocab.presence.has(stat) && !vocab.magnitude.has(stat);
+
+  await test("#843: every presence option names a stat the app ranks on/off, and no numeric one does", async () => {
+    const pool = raw.essence_crafting || [];
+    assert.ok(pool.length > 300, `pool has ${pool.length} rows — the switch did not land`);
+    const presence = pool.filter((o) => o.presence);
+    const numeric = pool.filter((o) => !o.presence);
+    assert.ok(presence.length >= 60 && numeric.length >= 250, `${presence.length} presence / ${numeric.length} numeric`);
+    const wrongPresence = presence.filter((o) => !isPresenceOnly(vocab.canonical(o.stat)));
+    const wrongNumeric = numeric.filter((o) => isPresenceOnly(vocab.canonical(o.stat)));
+    assert.deepStrictEqual(wrongPresence.map((o) => o.stat), [],
+      "the pool minted these on/off but the app values them");
+    assert.deepStrictEqual(wrongNumeric.map((o) => o.stat), [],
+      "the pool minted these as numbers but the app ranks them on/off");
+    for (const o of presence) {
+      assert.strictEqual(o.bonus_type, "Bool", o.effect);
+      assert.ok(o.values_by_ml.every((v) => v === "1"), o.effect);
+    }
+  });
+
+  await test("#843: an on/off option is placed on/off — value 1 in the Bool bucket, reported as present", async () => {
+    const host = gem("Legendary Gem", 30);
+    const pool = [{ menu: "Prefix", family: "Trinket", effect: "Holy", name: "Essence Crafting: Holy",
+                    stat: "Holy", bonus_type: "Bool", unit: "flat", values_by_ml: flat(1), min_ml: 1,
+                    presence: true, wiki_url: "" }];
+    const { prog, result } = await solve(modelWith(host, pool, ["Holy"]));
+    assert.strictEqual(result.status, "optimal");
+    assert.strictEqual(result.perTarget.Holy, 1, "present once, not a number");
+    const placed = result.essenceReport.placed;
+    assert.strictEqual(placed.length, 1);
+    assert.strictEqual(placed[0].presence, true);
+    const lines = require("../web/projection.js").essenceNoticeLines
+      ? require("../web/projection.js").essenceNoticeLines(result) : null;
+    if (lines) {
+      const line = lines.find((l) => /placed 1 effect/.test(l));
+      assert.ok(line && line.includes("Prefix: Holy") && !line.includes("Holy +1"), line);
+    }
+    void prog;
+  });
+})();

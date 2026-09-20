@@ -449,29 +449,36 @@ def _shipped_source_options():
         # #765 — recomputed from the catalog like every sibling here, so the count
         # is an independent path rather than what the build wrote down.
         "roll_groups_per_item": roll_groups.build(catalog)["source_options"],
-        # #193 — Essence Crafting's source is the seed shards, not the crafting
-        # catalog, so it is recomputed from the pool builder instead. Still an
-        # independent path from the shipped dataset: the builder re-reads
-        # `essence_crafting.json` / `essence_bonus_type.json` and re-runs the curve
-        # join rather than trusting anything the build wrote down.
-        "essence_crafting": len(essence_pool.build_essence_pool(
-            *_catalog_stats_and_units())["records"]),
+        # #193 — Essence Crafting's source is not the crafting catalog, so it is
+        # recomputed from the pool builder instead. Still an independent path
+        # from the shipped dataset: the placement catalog is rebuilt from the
+        # yourddo seed (#843) and the pool re-derived from it, rather than
+        # trusting anything the build wrote down.
+        "essence_crafting": len(_rebuilt_essence_pool()["records"]),
     }
 
 
-def _catalog_stats_and_units():
-    """The affix vocabulary the pool builder gates against, off the shipped items."""
+def _rebuilt_essence_pool():
+    """The pool re-derived from the seed, gated against the shipped items' vocabulary."""
+    from src import essence_placements
     with open(DATASET, "r", encoding="utf-8") as fh:
         data = json.load(fh)
-    stats, units = set(), {}
+    stats, units, types, by_stat = set(), {}, set(), {}
     for it in data["items"]:
         for a in it.get("affixes") or []:
             n = a.get("name")
             if not n:
                 continue
             stats.add(n)
-            units.setdefault(n, set()).add("flat")
-    return stats, units
+            units.setdefault(n, set()).add(a.get("unit") or "flat")
+            t = (a.get("type") or "").strip() or None
+            by_stat.setdefault(n, set()).add(t)
+            if t and t not in ("Bool", "boolean"):
+                types.add(t)
+    presence = {s for s, ts in by_stat.items() if ts <= {"Bool", "boolean"}}
+    groups = essence_placements.build_placement_catalog(
+        catalog_stats=stats, catalog_units=units, catalog_types=types)["groups"]
+    return essence_pool.build_essence_pool(groups, catalog_stats=stats, catalog_presence=presence)
 
 
 def test_gate_passes_on_the_built_dataset():

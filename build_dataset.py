@@ -1930,12 +1930,13 @@ def build() -> dict:
         raise SystemExit("Slaver's crafting: no variant received a Set Bonus membership slot; "
                          "the `(Legendary )Slaver's Set Bonus` labels would read as served by nothing.")
 
-    # Essence Crafting — the Gem of Many Facets' three Trinket menus (#193/#599).
-    # An option is offered only when its PLACEMENT, BONUS TYPE and ML CURVE are all
-    # sourced; `catalog_stats` is passed so an option naming a stat nothing else
-    # uses cannot slip through and get a private bucket that stacks with every real
-    # item. That is the double-count the bonus-type harvest exists to prevent, and
-    # it would arrive through the front door.
+    # Essence Crafting — the Gem of Many Facets' three menus and the other three
+    # host families (#193/#599/#764). An option is offered only when its
+    # PLACEMENT, BONUS TYPE and ML CURVE are all sourced; `catalog_stats` is
+    # passed so an option naming a stat nothing else uses cannot slip through and
+    # get a private bucket that stacks with every real item. That is the
+    # double-count the bonus-type harvest exists to prevent, and it would arrive
+    # through the front door.
     _catalog_stats, _catalog_units = set(), {}
     for _v in variants:
         for _a in _v.get("affixes") or []:
@@ -1950,14 +1951,42 @@ def build() -> dict:
                       for _v in variants for _a in (_v.get("affixes") or [])
                       if (_a.get("bonus_type") or "").strip()
                       and _a.get("bonus_type") not in ("Bool", "boolean")}
-    essence = essence_mod.build_essence_pool(catalog_stats=_catalog_stats,
-                                             catalog_units=_catalog_units)
-    # #795 — the same shard, read for the BUILDER rather than the solver. The two
-    # differ on who supplies the bonus type and the value, so they offer different
-    # amounts of the table on purpose; see `src/essence_placements.py`.
+    # #843 — the stats the catalog carries ONLY as on/off flags: every native
+    # carrier typed `Bool`. The Essence pool mints a row naming one as presence,
+    # the way the bench does (#838), so the solver never ranks `Holy` as a number.
+    _presence_types = {}
+    for _v in variants:
+        for _a in _v.get("affixes") or []:
+            _st = _a.get("stat")
+            if _st:
+                _presence_types.setdefault(_st, set()).add(
+                    (_a.get("bonus_type") or "").strip() or None)
+    _catalog_presence = {s for s, ts in _presence_types.items() if ts <= {"Bool", "boolean"}}
+    # #795 — the full placement catalog, for the BUILDER: a missing type or
+    # value is not a skip there, the player supplies it. Built FIRST because the
+    # solver's pool is read out of it (#843) rather than from the wiki shards,
+    # which is what keeps the two paths the same rows.
     essence_placements = essence_placements_mod.build_placement_catalog(
         catalog_stats=_catalog_stats, catalog_units=_catalog_units,
         catalog_types=_catalog_types)
+    essence = essence_mod.build_essence_pool(
+        essence_placements["groups"], catalog_stats=_catalog_stats,
+        catalog_presence=_catalog_presence,
+        source=essence_placements["source"], source_commit=essence_placements["source_commit"])
+    # #843 — the pool's own two invariants, checked at the call site: every
+    # numeric option buckets into a type some native affix already uses, and
+    # every presence option names a stat the catalog ranks on/off. The first is
+    # what stops a crafted affix stacking with everything; the second is what
+    # stops the solver ranking a flag six times over.
+    _bad_type = [(r["effect"], r["bonus_type"]) for r in essence["records"]
+                 if not r["presence"] and r["bonus_type"] not in _catalog_types]
+    _bad_presence = [r["effect"] for r in essence["records"]
+                     if r["presence"] and r["stat"] not in _catalog_presence]
+    if _bad_type or _bad_presence:
+        raise SystemExit(
+            "Essence Crafting: the pool minted an option the catalog cannot bucket — "
+            f"types with no native bucket: {sorted(_bad_type)[:5]}; presence options on a "
+            f"valued stat: {sorted(_bad_presence)[:5]}")
     # #806 — the slot join, checked from the two sides the wiki cannot reach: the
     # anatomical gear-planner type each slot holds, and a second join written
     # independently against a different wiki table. Run here rather than inside

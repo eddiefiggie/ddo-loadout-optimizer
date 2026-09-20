@@ -88,41 +88,22 @@ DINO_SET_BONUS_LABEL = "Isle of Dread: Set Bonus Slot: Empty"
 # Every entry is an inert slot with a known reason; adding one is a deliberate
 # act, and removing a label from the data must remove it from here too.
 UNSERVED_ALLOWLIST = frozenset({
-    # Essence Crafting — the crafted-blank prefix/suffix/extra menus. No pool.
+    # Essence Crafting — NO entry, deliberately, and the absence has a history.
     #
-    # #374 — renamed 1:1 from `Cannith: *` in the 2026-08-18 refresh, and this one
-    # ADOPTS upstream rather than defending our spelling. KTD1 says match what the
-    # player sees, and the wiki's Essence Crafting page states outright: "Update 79
-    # renamed it from Cannith Crafting to Essence Crafting". So `Essence Crafting`
-    # is the current in-game name and ours was the stale one — the mirror of the
-    # affix-vocabulary case, where the wiki backed us instead.
+    # #374 — renamed 1:1 from `Cannith: *` in the 2026-08-18 refresh; the wiki's
+    # Essence Crafting page states outright that "Update 79 renamed it from
+    # Cannith Crafting to Essence Crafting", so `Essence Crafting` is the current
+    # in-game name and ours was the stale one. #193 took the three Trinket labels
+    # off this list when the `essence_crafting` pool started serving them; #764
+    # took seven of the nine Melee / Ring / Rune Arm labels. `Rune Arm - Suffix`
+    # and `Melee - Extra` stayed, because every effect in them was untyped on the
+    # wiki and the pool's offering for those two menus was empty — a source gap,
+    # not a pipeline gap.
     #
-    # These labels ARE player-visible: web/exporters.js renders each item's crafting
-    # labels into every share export. The wiki also notes the system is "still better
-    # known as" Cannith Crafting, so an old-name alias would help a player searching
-    # the old term — but crafting slots have no alias mechanism (check_crafting_integrity
-    # is exact-match set membership), so that needs new machinery and is filed, not
-    # invented here.
-    # #764 — seven of the nine Melee / Ring / Rune Arm labels are SERVED now and
-    # have left this list. They were here under "No pool", which was true of the
-    # pipeline and false of the seed: the Essence Crafting placements shard has
-    # carried all 16 groups since 2026-08-27, and all 41 hosts are `verified`. What was
-    # Trinket-only was `src/essence_pool.py`, and the solver's join, which matched on
-    # `menu` alone because one family had never made the family part load-bearing.
-    #
-    # These TWO remain, and the reason is different from the old one — which is why
-    # they are written out rather than left under the previous blanket note. A pool
-    # now exists for both; every effect IN them is untyped. `Rune Arm - Suffix` has
-    # 5 placements and `Melee - Extra` has 10, and not one carries a wiki-stated
-    # bonus type, so the pool is real and its offering for these two menus is empty.
-    #
-    # That is not a gap a code change can close. #764's 2026-09-18 pass searched
-    # every one of the 157 craftable effects: 22 are typed and the other 135 each
-    # record what was read, in the Essence bonus-type shard. These
-    # two menus disappear from this list when the wiki states a type for one of
-    # their effects, and not before.
-    "Essence Crafting: Melee - Extra",
-    "Essence Crafting: Rune Arm - Suffix",
+    # #843 closed that gap from the other side: the pool reads the yourddo catalog
+    # now, which types `Rune Arm - Suffix` (9 offered) and `Melee - Extra` (7). All
+    # twelve Essence labels are served, and an Essence label reappearing here
+    # would mean a family's menu went empty — a finding, never an allowlisting.
     # #766 — Slaver's crafting is SERVED now: the four typed slots by the `slavers`
     # pool, the Set Bonus slot by `membership_set_defs`. The entry that stood here
     # said "No pool", which was true of the pipeline and false of the catalog.
@@ -285,9 +266,9 @@ def _essence_crafting(dataset):
     generalized in #764).
 
     Serving a label here means the solver can craft SOMETHING into that menu, not
-    that it can craft everything: 36 of 318 placements across the four families are
-    offered, and the rest are disclosed through `metadata.essence_crafting_coverage`
-    — per family since #764, because one aggregate hid which family was empty.
+    that it can craft everything: the rest of each menu is disclosed through
+    `metadata.essence_crafting_coverage` — per family since #764, because one
+    aggregate hid which family was empty, and per reason since #843.
 
     The label is rebuilt from the record's own `family` rather than hardcoded. It
     said `Trinket` literally until #764, which was correct while one family shipped
