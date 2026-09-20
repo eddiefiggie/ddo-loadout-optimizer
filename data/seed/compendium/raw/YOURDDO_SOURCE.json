@@ -1,0 +1,20 @@
+{
+  "_README": "Provenance of the Essence Crafting recipe table. Pinned point-in-time snapshot of veteran-software/yourddo, adopted 2026-09-20 as the SOURCE OF TRUTH for Essence Crafting placements, enchantments and bonus types — by owner decision, replacing the ddowiki `table 1b`/`table 3b` harvest which carried ~40% of the table (#837).",
+  "source": "veteran-software/yourddo",
+  "source_url": "https://github.com/veteran-software/yourddo",
+  "license": "MIT",
+  "upstream_commit": "25c90c65b671eb3d8333e689526230142c35b527",
+  "upstream_commit_date": "2026-08-01",
+  "imported": "2026-09-20",
+  "file": "yourddo_essence_recipes.json",
+  "upstream_path": "src/data/essenceCrafting.v2.json",
+  "_vendoring": "Fetched PINNED TO THE SHA above, never from HEAD: curl -sSfL -o data/seed/compendium/raw/yourddo_essence_recipes.json https://raw.githubusercontent.com/veteran-software/yourddo/25c90c65b671eb3d8333e689526230142c35b527/src/data/essenceCrafting.v2.json",
+  "recipe_count": 368,
+  "_second_hand": "Their own commit for this file adds a 'Dungeon Helper' attribution link to the Essence Crafting page, so this table may itself be derived rather than first-party. Recorded because provenance that stops one hop short is provenance that looks firmer than it is. Not a reason to distrust it — 82 of 87 magnitudes it shares with our independent ddowiki harvest agree exactly — but the chain is two links, not one.",
+  "_known_upstream_defects": [
+    "`Ranged Alacrity` grants the enchantment `Melee Attack Speed`, untyped, while `Melee Alacrity` grants the same enchantment typed Enhancement.",
+    "Slot vocabulary carries 25 names for ~14 real slots, mixing an anatomical set (Neck, Head, Eyes, Wrists, Waist, Feet, Hands, Rings) with an item set (Necklace, Headgear, Goggles, Bracers, Belt, Boots, Gloves, Ring). `Fingers` and `Hand` each appear once and are singular slips of `Rings` and `Hands`.",
+    "Dice magnitudes are stored as the die COUNT only: `Bashing` reads 6 where the wiki publishes 6d6. Our ddowiki values are richer for the three dice effects."
+  ],
+  "_disagreements_with_our_wiki_harvest": "Measured at ML30 across every effect both sources carry: 82 agree exactly, 5 differ. Three are the dice-count loss above. Two are `Diversion`/`Insightful Diversion`, which they store NEGATIVE (-21, -10) as threat reduction where our harvest read the magnitude unsigned."
+}

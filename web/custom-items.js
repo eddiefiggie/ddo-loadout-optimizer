@@ -748,13 +748,34 @@
       if (a.menu) { next.push(a); used[a.menu] = true; continue; }
       var stat = String(a.stat == null ? "" : a.stat).trim();
       if (!stat) continue;
-      var hit = null;
-      for (var i = 0; i < menus.length && !hit; i++) {
+      // #837 — match by PREFERENCE, not by first-found. The table went from 523
+      // placements to 1465, so a stat now appears in many recipes: `Charisma` is
+      // granted by the plain `Charisma` recipe AND by `Arcanist's`, `Aiming` and
+      // a dozen other compounds. Taking whichever sorted first migrated a saved
+      // "Charisma +2" ring onto a compound shard the player never chose.
+      //
+      // Three tiers, best first:
+      //   1. the recipe NAMED for the stat — an exact identity, not a guess;
+      //   2. any single-enchantment recipe granting it;
+      //   3. a compound, which grants more than the player had.
+      // Tier 3 is still taken rather than dropping the affix: the saved item is
+      // the player's and keeping it working beats being precious, and the
+      // migration REPORTS every change either way.
+      var hit = null, best = 99;
+      for (var i = 0; i < menus.length; i++) {
         if (used[menus[i]]) continue;
         var rows = effectsFor(info.group, menus[i], ml, c);
         for (var j = 0; j < rows.length; j++) {
-          if (rows[j].stat === stat) { hit = { menu: menus[i], row: rows[j] }; break; }
+          var row = rows[j];
+          var grants = Array.isArray(row.parts)
+            ? row.parts.some(function (pp) { return pp.stat === stat; })
+            : row.stat === stat;
+          if (!grants) continue;
+          var tier = (row.effect === stat) ? 0 : (Array.isArray(row.parts) ? 2 : 1);
+          if (tier < best) { best = tier; hit = { menu: menus[i], row: row }; }
+          if (!best) break;
         }
+        if (!best) break;
       }
       if (!hit) { out.dropped.push(stat); continue; }
       used[hit.menu] = true;
@@ -972,6 +993,48 @@
       if (isFinite(ml) && ml < (row.min_ml || 1)) {
         errors.push("“" + effect + "” needs minimum level " + row.min_ml
           + " — insight bonuses cannot be crafted below that.");
+        continue;
+      }
+
+      // #837 — a recipe in the source of truth occupies ONE slot and may grant
+      // SEVERAL enchantments. That is the same shape the retired combined
+      // prefixes had, so it mints the same `parts` row — one menu entry, several
+      // effects, atomic. The difference is that these parts carry their own
+      // bonus type and magnitude, so the player supplies neither.
+      //
+      // A QUARANTINED part is one whose stat has no name in this catalog's
+      // vocabulary (`essence_stat_join.json`). It is dropped from the minted
+      // record rather than refused: the rest of the craft is real, and refusing
+      // the whole recipe over a stat we cannot bucket would withhold 399
+      // placements for something the player did not choose and cannot fix.
+      if (Array.isArray(row.parts) && row.parts.length) {
+        var cparts = [], cbad = false;
+        for (var ci = 0; ci < row.parts.length; ci++) {
+          var cp = row.parts[ci];
+          if (cp.quarantined) continue;
+          var cstat = canonical(cp.stat);
+          if (!vocab.known || !vocab.known.has(cstat)) continue;
+          if (_isPresenceOnly(cstat, vocab, c)) {
+            cparts.push({ effect: cp.stat, stat: cstat, presence: true });
+            continue;
+          }
+          var cval = cp.magnitude_sourced ? sourcedValueAt(cp, ml) : null;
+          if (cval == null && cp.magnitude_sourced) {
+            errors.push("“" + effect + "” has no published magnitude at minimum level "
+              + e.ml + "."); cbad = true; break;
+          }
+          cparts.push({ effect: cp.stat, stat: cstat,
+                        bonus_type: cp.bonus_type || "", value: cval,
+                        magnitude_sourced: !!cp.magnitude_sourced,
+                        sourced: !!cp.sourced });
+        }
+        if (cbad) continue;
+        if (!cparts.length) {
+          errors.push("“" + effect + "” grants nothing this build can rank.");
+          continue;
+        }
+        affixes.push({ menu: menu, effect: effect, parts: cparts,
+                       sourced: cparts.every(function (x) { return x.sourced || x.presence; }) });
         continue;
       }
 

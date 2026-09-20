@@ -4338,9 +4338,17 @@ ${(() => {
         const rows = M.effectsFor(group, menu, d.ml, ctx);
         const combos = combinedOpts(menu);
         const sel = chosen ? (chosen.combined ? `combined:${chosen.combined}` : chosen.effect) : "";
+        // #837 — a recipe in the source of truth occupies ONE slot and may grant
+        // SEVERAL enchantments (`Fortifying` grants Constitution AND
+        // Fortification). That is the same one-slot-many-effects shape the
+        // combined prefixes had, so it renders through the SAME sub-rows rather
+        // than a second mechanism — the alternative is two ways to say one thing.
+        const picked = sel ? M.placementFor(group, menu, sel, ctx) : null;
         const recipe = (chosen && chosen.combined)
-          ? M.combinedFor(group, chosen.combined, ctx) : null;
-        const row = (sel && !recipe) ? M.placementFor(group, menu, sel, ctx) : null;
+          ? M.combinedFor(group, chosen.combined, ctx)
+          : (picked && picked.parts
+              ? { name: picked.effect, effects: picked.parts } : null);
+        const row = recipe ? null : picked;
         let tail = "";
         // #835 — a DICE magnitude is checked BEFORE the on/off test. These stats
         // are carried as a flag by real items (169 of them carry `Vampirism`
@@ -4400,10 +4408,22 @@ ${(() => {
           // #812 — a combined half scales with ML too, where the existing join
           // resolves the name; asked for where it does not.
           const pv = M.sourcedValueAt(pe, d.ml);
+          // #837 — the source of truth types the enchantment, so a part is
+          // usually a LOCKED reading now rather than a question. A quarantined
+          // part is one whose stat has no name in this catalog's vocabulary: it
+          // is disclosed as not modelled, never asked about, because no answer
+          // the control could take would put it in a bucket that exists.
+          const ptype = pe.quarantined
+            ? `<span class="wz-custom-sourced wz-custom-notype">not modelled here`
+              + ` <span class="wz-help">the crafting table grants this, but it is not`
+              + ` a stat this build can rank</span></span>`
+            : pe.type_sourced
+            ? `<span class="wz-custom-sourced">${wzEsc(pe.bonus_type)}</span>`
+            : `<select data-custom-part="${wzEsc(menu)}:${pi}"><option value="">Type on your item…</option>`
+              + `${btypes.map((t) => opt(t, supplied.bonus_type)).join("")}</select>`;
           const ctrls = flag
             ? `<span class="wz-custom-flag">on/off — no bonus type or value</span>`
-            : `<select data-custom-part="${wzEsc(menu)}:${pi}"><option value="">Type on your item…</option>`
-              + `${btypes.map((t) => opt(t, supplied.bonus_type)).join("")}</select>`
+            : ptype
               + (pe.magnitude_sourced
                   ? `<span class="wz-custom-sourced">+${wzEsc(pv == null ? "?" : pv)}`
                     + ` <span class="wz-help">from the crafting table</span></span>`
@@ -4412,7 +4432,7 @@ ${(() => {
                     + ` value="${wzEsc(supplied.value == null ? "" : supplied.value)}" placeholder="Value">`);
           return `<div class="wz-custom-affix wz-custom-part">`
             + `<span class="wz-label wz-custom-menu"></span>`
-            + `<span class="wz-custom-autoname">${wzEsc(pe.effect)}</span>${ctrls}</div>`;
+            + `<span class="wz-custom-autoname">${wzEsc(pe.effect || pe.stat)}</span>${ctrls}</div>`;
         }).join("") : "";
 
         return `<div class="wz-custom-affix">`
