@@ -510,21 +510,10 @@
    */
   function deriveName(entry, ctx, taken) {
     var e = entry || {};
-    var slot = String(e.slot || "").trim() || "item";
-    // In MENU order, not the order they were added: an item is known by its
-    // prefix first. Picking whichever row the player happened to fill in first
-    // named a ring after its Mark slot.
-    var lead = "";
-    var rows = Array.isArray(e.affixes) ? e.affixes : [];
-    for (var mi = 0; mi < MENUS.length && !lead; mi++) {
-      for (const a of rows) {
-        if (!a || a.menu !== MENUS[mi]) continue;
-        // A combined shard HAS a printed name; a single one is known by its effect.
-        var label = a.combined || a.effect || a.stat;
-        if (label) { lead = String(label); break; }
-      }
-    }
-    var base = (lead ? lead + " " + slot : "Essence Crafted " + slot).trim();
+    // #828 — the item is named for what it IS. The lead-effect name this
+    // replaced ("Constitution Ring") changed whenever a higher menu was filled,
+    // and it put one of three effects in the title while hiding the other two.
+    var base = essenceCraftedName(e);
     if (!taken || !taken.size) return base;
     if (!taken.has(base)) return base;
     for (var n = 2; n < 100; n++) {
@@ -532,6 +521,72 @@
       if (!taken.has(candidate)) return candidate;
     }
     return base;
+  }
+
+  /** #828 — an entry's rows as NATIVE affix records, the shape the solved
+   *  loadout renders.
+   *
+   *  ONE function, because the bench summary and the solver's copy of the item
+   *  must describe it identically. They did not: the pool minted native records
+   *  while the summary assembled its own `bonus_type stat value` string, so the
+   *  same craft read "Enhancement Charisma 6" on the bench and "Charisma +6" in
+   *  the loadout. Two renderings of one item is the defect; a second copy of the
+   *  mapping is how it happened.
+   *
+   *  Two extra keys ride along for the summary and are stripped by `customPool`:
+   *
+   *  - `origin` — "chosen" for a slot the player filled, "automatic" for the
+   *    Enhancement Bonus the shard grants on its own (#799). Both are on the
+   *    item, so both are shown; only the first was the player's decision.
+   *  - `sourced` — whether the magnitude came from the wiki curve (#812) or the
+   *    player declared it. A summary that reads like the loadout must not make a
+   *    declared number look sourced.
+   *
+   *  A combined prefix (#800) expands to its two effects here, at the one point
+   *  the records are minted, so neither caller has to know that `parts` exists. */
+  function nativeAffixes(entry, ctx) {
+    var e = entry || {};
+    var out = [];
+    (Array.isArray(e.affixes) ? e.affixes : []).forEach(function (a) {
+      var list = (a && Array.isArray(a.parts)) ? a.parts : [a];
+      list.forEach(function (x) {
+        if (!x) return;
+        // A row with no stat is not an affix. Migration blanks a row it cannot
+        // resolve (`{stat:"", value:null}`), and one of those rendered in the
+        // summary as " +null" — a stat with no name and a magnitude of nothing.
+        // Withheld rather than shown, and withheld from the SOLVER's copy too:
+        // an affix named "" would take a bucket of its own and stack with
+        // everything, which is the fan-out `container_registry` exists to refuse.
+        if (!String(x.stat == null ? "" : x.stat).trim()) return;
+        out.push(x.presence
+          ? { name: x.stat, type: "Bool", value: "1", origin: "chosen", sourced: !!x.sourced }
+          : { name: x.stat, type: x.bonus_type, value: String(x.value),
+              origin: "chosen", sourced: !!x.sourced });
+      });
+    });
+    automaticAffixes(e, ctx).forEach(function (a) {
+      out.push({ name: a.stat, type: a.bonus_type, value: String(a.value),
+                 origin: "automatic", sourced: true });
+    });
+    return out;
+  }
+
+  /** #828 — what a finished Essence Crafted item is called.
+   *
+   *  `Essence Crafted <type>`, where the type is the item kind the player chose —
+   *  its `type` when the slot needed one to resolve its enchantment group
+   *  (weapons, off-hands), and the slot itself otherwise.
+   *
+   *  This REPLACES naming the item after its lead effect. "Constitution Ring"
+   *  read as a name the player had given the thing; it was assembled from
+   *  whichever effect sat in the first menu, so adding a prefix renamed the item.
+   *  The effects belong in the summary underneath, where they are all visible,
+   *  not compressed into the title one at a time. */
+  function essenceCraftedName(entry) {
+    var e = entry || {};
+    var kind = String(e.type == null ? "" : e.type).trim()
+            || String(e.slot == null ? "" : e.slot).trim();
+    return kind ? "Essence Crafted " + kind : "Essence Crafted item";
   }
 
   function isCustomId(id) {
@@ -1025,17 +1080,12 @@
       // #800 — a combined row expands to its two effects HERE, at the point the
       // record is minted, so the entry keeps one row per menu and the item
       // carries what it actually grants.
-      affixes: (Array.isArray(e.affixes) ? e.affixes : []).reduce(function (out, a) {
-        var list = (a && Array.isArray(a.parts)) ? a.parts : [a];
-        list.forEach(function (x) {
-          out.push(x && x.presence
-            ? { name: x.stat, type: "Bool", value: "1", eligible: true }
-            : { name: x.stat, type: x.bonus_type, value: String(x.value), eligible: true });
-        });
-        return out;
-      }, []).concat(automaticAffixes(e, ctx).map(function (a) {
-        return { name: a.stat, type: a.bonus_type, value: String(a.value), eligible: true };
-      })),
+      affixes: nativeAffixes(e, ctx).map(function (a) {
+        // The pool carries the native shape and nothing else. `origin` and
+        // `sourced` exist for the bench summary; passing them into the solver's
+        // records would add keys nothing there reads.
+        return { name: a.name, type: a.type, value: a.value, eligible: true };
+      }),
       eligible_affix_count: (Array.isArray(e.affixes) ? e.affixes : []).reduce(
           function (n, a) { return n + ((a && Array.isArray(a.parts)) ? a.parts.length : 1); }, 0)
         + automaticAffixes(e, ctx).length,
@@ -1142,6 +1192,7 @@
     customId: customId, isCustomId: isCustomId, isCustomVariant: isCustomVariant,
     isPresenceEffect: function (stat, vocab, ctx) { return _isPresenceOnly(stat, vocab, ctx); },
     MENUS: MENUS.slice(), menuLabel: menuLabel, deriveName: deriveName,
+    nativeAffixes: nativeAffixes, essenceCraftedName: essenceCraftedName,
     weaponSplit: function (ctx) { return _weaponSplit(ctx); },
     essenceGroupFor: essenceGroupFor, menusFor: menusFor, effectsFor: effectsFor,
     automaticAffixes: automaticAffixes, unmodelledAutomatic: unmodelledAutomatic,

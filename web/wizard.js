@@ -593,6 +593,17 @@ var _slotReachabilitySummary = (function () {
     : (typeof require !== "undefined" ? require("./projection.js") : null);
   return (P && P.slotReachabilitySummary) || (() => "");
 })();
+/** #828 — the loadout's own affix formatter, for the crafted-item bench.
+ *
+ *  The bench used to build its own `bonus_type stat value` string, so one craft
+ *  read "Enhancement Charisma 6" there and "Charisma +6" in the solved loadout.
+ *  Same fallback shape as its siblings above: a plain answer, never a throw, if
+ *  projection is absent. */
+var _affixLabel = (function () {
+  const P = (typeof Projection !== "undefined") ? Projection
+    : (typeof require !== "undefined" ? require("./projection.js") : null);
+  return (P && P.affixLabel) || ((a) => (a && (a.name || a.stat)) || "");
+})();
 /** #346 (U3, KTD3) — which rung a saved character loads at.
  *
  *  Extracted and exported because this is the highest-consequence line in the
@@ -4160,12 +4171,33 @@ ${(() => {
         // prints its name alone because it has no type or value to print, and the
         // automatic Enhancement Bonus is NOT listed, because the entry records what
         // the player chose and the shard's grant is not one of their choices.
-        const describe = (a) => (a && a.presence)
-          ? wzEsc(a.stat)
-          : `${wzEsc(a.bonus_type)} ${wzEsc(a.stat)} ${wzEsc(a.value)}`;
-        const affixes = (e.affixes || [])
-          .flatMap((a) => (a && Array.isArray(a.parts)) ? a.parts : [a])
-          .map(describe).join(" · ");
+        // #828 — the stats come from `nativeAffixes`, the SAME records the solver
+        // is handed, rendered with the SAME formatter the loadout uses. Neither
+        // is a convenience: describing one item two ways is the defect, and a
+        // second copy of either the mapping or the formatter is how it happened.
+        //
+        // The automatic Enhancement Bonus (#799) is now LISTED rather than
+        // withheld. The bench summary used to show only what the player chose,
+        // which was right for a form and wrong for an item summary: the loadout
+        // shows it, the item grants it, and the player comparing the two saw a
+        // stat in one place and not the other. It is marked as automatic instead.
+        const stats = (M && M.nativeAffixes ? M.nativeAffixes(e, customItemCtx()) : [])
+          .map((a) => {
+            // A presence flag (#774) has no magnitude, so it takes NEITHER mark:
+            // calling it "declared" claims the player chose a number for a
+            // thing that has none. The browser caught this — `Eternal Faith`
+            // read as a value the player had typed.
+            const flagOnly = a.type === "Bool";
+            const cls = "wz-ci-stat"
+              + (a.origin === "automatic" ? " wz-ci-auto" : "")
+              + (flagOnly ? "" : (a.sourced ? " wz-ci-sourced" : " wz-ci-declared"));
+            const why = a.origin === "automatic"
+              ? "Granted by the shard itself — not one of your three slots"
+              : flagOnly ? "On the item — this effect has no magnitude"
+              : (a.sourced ? "Magnitude from the DDO Wiki's level curve"
+                           : "Magnitude as you declared it");
+            return `<li class="${cls}" title="${wzEsc(why)}">${wzEsc(_affixLabel(a, { mark: false }))}</li>`;
+          }).join("");
         const where = e.type ? `${wzEsc(e.slot)} · ${wzEsc(e.type)}` : wzEsc(e.slot);
         // A rejected entry is shown, kept and explained — never dropped. Same rule
         // as a stale block id or a set pin naming a renamed set.
@@ -4174,8 +4206,9 @@ ${(() => {
           : "";
         return `<div class="wz-pin-row wz-custom-row${why ? " wz-custom-bad" : ""}">
           <span class="wz-pin-name">${wzEsc(e.name || "(unnamed)")}</span>
-          <span class="wz-pack-count">ML ${wzEsc(e.ml == null ? "?" : e.ml)} · ${where}</span>
-          <span class="wz-custom-affixes">${affixes || "no effects"}</span>
+          <span class="wz-pack-count"><b class="wz-ci-ml">ML ${wzEsc(e.ml == null ? "?" : e.ml)}</b> · ${where}</span>
+          ${stats ? `<ul class="wz-custom-affixes wz-ci-stats">${stats}</ul>`
+                  : `<span class="wz-custom-affixes">no effects</span>`}
           <button type="button" class="btn ghost sm" data-custom-edit="${wzEsc(e.uid)}">Edit</button>
           <button type="button" class="wz-pin-x" data-custom-rm="${wzEsc(e.uid)}" aria-label="Remove ${wzEsc(e.name)}">×</button>
           ${flag}</div>`;
@@ -4281,8 +4314,7 @@ ${(() => {
       // has, and each menu offers exactly the enchantments the wiki says can go
       // in it. Nothing here re-derives that: `essence_placements` is published by
       // the build and `custom-items.js` owns the join.
-      const ctx = { vocab, isPresenceOnly,
-        placements: (typeof dataset !== "undefined" && dataset) ? dataset.essence_placements : null };
+      const ctx = customItemCtx();
       const groupInfo = M.essenceGroupFor(d.slot, d.type, ctx);
       const group = groupInfo.group || null;
       const availMenus = group ? M.menusFor(group, d.ml, ctx) : [];
@@ -6050,6 +6082,15 @@ ${(() => {
 
     /** The entries that could not be minted, with the reasons — rendered in the
      *  panel and reported on load, never silently skipped. */
+    /** #828 — the bench's context, in ONE place. The form built this inline and
+     *  the list had none, which is why the list could not call into
+     *  `custom-items.js` for anything that needed the placement table — and why
+     *  it grew its own description of an item instead. */
+    function customItemCtx() {
+      return { vocab, isPresenceOnly,
+        placements: (typeof dataset !== "undefined" && dataset) ? dataset.essence_placements : null };
+    }
+
     function customRejections() {
       return customVariantsFor(state.customItems, vocab, catalogNameSet()).rejected;
     }

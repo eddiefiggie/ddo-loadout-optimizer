@@ -6418,11 +6418,32 @@ test("#800: the edit path carries a combined row's pair, and the list prints it"
   const edit = srcBetween(WIZARD_SRC, "[data-custom-edit]", "[data-custom-rm]", "edit path");
   assert.ok(/a\.combined/.test(edit), "the edit path must recognise a combined row");
   assert.ok(/parts:/.test(edit), "…and copy its parts");
+  // #828 MOVED, NOT DROPPED: the flattening these two lines pinned now lives in
+  // `custom-items.js::nativeAffixes`, so that the bench summary and the solver's
+  // copy of the item are minted by ONE function. The property is unchanged and
+  // is asserted behaviourally there — "a combined prefix contributes both
+  // effects, still one slot" and "a presence flag carries no magnitude". What is
+  // pinned HERE is the thing that made the original bug possible: the summary
+  // must not read affix fields off the row itself, because a combined row does
+  // not carry them.
   const list = fnBody(WIZARD_SRC, "function renderCustomList(", 4);
-  assert.ok(/Array\.isArray\(a\.parts\)/.test(list),
-    "the summary must flatten a combined row's parts");
-  assert.ok(/a\.presence/.test(list),
-    "…and print a flag by name, since it has no type or value to print");
+  assert.ok(/nativeAffixes\(/.test(list),
+    "the summary must mint its affixes through the shared function, not its own copy");
+  assert.ok(!/a\.bonus_type/.test(list),
+    "…and must not read `bonus_type` off the row — that is what printed three "
+    + "empty strings for a combined item");
+  // The behaviour itself, through the module, so this test fails if the move
+  // lost it rather than only if the wording changed.
+  const CI828 = require("../web/custom-items.js");
+  const combined = CI828.nativeAffixes({ affixes: [{ menu: "Prefix", combined: "X", parts: [
+    { stat: "Seeker", bonus_type: "", value: 13 },
+    { stat: "Deception", bonus_type: "", value: 12 }] }] }, {});
+  assert.deepStrictEqual(combined.map((a) => a.name), ["Seeker", "Deception"],
+    "a combined row still expands to its pair");
+  const flag = CI828.nativeAffixes({ affixes: [{ menu: "Prefix", stat: "Eternal Faith",
+    presence: true }] }, {});
+  assert.deepStrictEqual(flag.map((a) => [a.name, a.type]), [["Eternal Faith", "Bool"]],
+    "a flag is still minted by name with no magnitude");
 });
 
 test("#795: choosing an enchantment re-renders, and the level does too", () => {

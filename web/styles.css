@@ -2305,6 +2305,28 @@ input.wz-ml { width: 120px; }
    could-not-be-used flag, and the entry form. */
 .wz-custom-row { flex-wrap: wrap; }
 .wz-custom-affixes { flex: 1 1 100%; color: var(--muted); font-size: var(--fs-xs); }
+/* #828 — a finished Essence Crafted item reads like a loadout entry: the ML is
+   the item's headline fact, and each granted stat is its own chip rather than a
+   run-on string joined by separators. Wraps at any width; the bench has broken
+   layout three times from labels growing, so nothing here is a fixed column. */
+.wz-ci-ml { color: var(--text); font-weight: 600; white-space: nowrap; }
+/* `.wz-pack-count` is a fixed 2.5rem right-aligned column, sized for a bare
+   count like "12". A crafted item's meta is "ML 30 · Ring", which cannot fit and
+   broke onto three lines ("ML" / "30 ·" / "Ring"). It reads as a line beside the
+   name here, not as a numeric column — the ML stays whole, the rest may wrap. */
+.wz-custom-row .wz-pin-name { flex: 0 1 auto; min-width: 0; }
+.wz-custom-row .wz-pack-count { flex: 1 1 auto; text-align: left; }
+.wz-ci-stats { display: flex; flex-wrap: wrap; gap: .25rem .4rem;
+  list-style: none; margin: .25rem 0 0; padding: 0; }
+.wz-ci-stat { border: 1px solid var(--border); border-radius: 999px;
+  padding: .05rem .45rem; font-size: var(--fs-xs); white-space: nowrap; }
+/* Sourced from the wiki curve vs declared by the player — the distinction the
+   form makes, kept in the summary so a tidier layout cannot imply provenance
+   the value does not have. */
+.wz-ci-sourced { color: var(--text); }
+.wz-ci-declared { color: var(--muted); border-style: dashed; }
+/* Granted by the shard, not chosen in a menu. */
+.wz-ci-auto { opacity: .85; font-style: italic; }
 .wz-custom-bad { border-color: var(--quarantined); }
 .wz-pin-flag { flex: 1 1 100%; color: var(--quarantined); font-size: var(--fs-xs); margin: 0; }
 .wz-custom-form { margin-top: var(--sp-3); padding: var(--sp-3); background: var(--panel-2);
