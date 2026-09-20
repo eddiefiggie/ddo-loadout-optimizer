@@ -6222,7 +6222,12 @@ ${(() => {
       }
       return poolItems();
     }
-    function overlay(on, title, sub) {
+    // #846 — `opts.stop === false` hides the Stop control for the run. The
+    // on-demand solves in the results panel (upgrades search, set-pin price,
+    // outbid price, concession probe) are synchronous with no abandon seam —
+    // #582's latch is read only by the main solve — so a Stop that cannot stop
+    // would be worse than none. Re-armed (shown) on every ordinary solve below.
+    function overlay(on, title, sub, opts) {
       let el = document.getElementById("wz-solve-overlay");
       if (!el && on) {
         el = document.createElement("div"); el.id = "wz-solve-overlay"; el.className = "wz-overlay";
@@ -6241,11 +6246,17 @@ ${(() => {
           // Re-arm for this run: the button is only meaningful while a solve is
           // actually in flight, and a previous run may have left it pressed.
           const stop = el.querySelector("#wz-ov-stop");
-          if (stop) { stop.disabled = false; stop.textContent = "Stop"; stop.hidden = false; }
+          if (stop) { stop.disabled = false; stop.textContent = "Stop"; stop.hidden = !!(opts && opts.stop === false); }
           el.classList.add("on");
         } else el.classList.remove("on");
       }
     }
+
+    // #846 — the results panel's busy hook: every on-demand solve it hosts shows
+    // THIS overlay, the one the main solve shows, rather than a card-local ring
+    // or a relabelled button. Stop is withheld because those solves cannot be
+    // stopped (see `overlay`).
+    function busyFor(on, title, sub) { overlay(on, title, sub, { stop: false }); }
 
     let solving = false;
     // #582 — the abandon latch. Set by the overlay's Stop control, read by the
@@ -6548,7 +6559,7 @@ ${(() => {
         render();
         const box = document.getElementById("wz-results");
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam, characterName: state.characterName });
+        if (box) renderResults(box, { model, result, query, dataset, highs: h, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onBusy: busyFor, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam, characterName: state.characterName });
       } catch (err) {
         state.step = "results"; render();
         const box = document.getElementById("wz-results");
@@ -6928,7 +6939,7 @@ ${(() => {
         // report-absent utility card is reachable without touching the solved record.
         const renderQuery = restoredRenderQuery(query, !!i.utility_tier_aware);
         // eslint-disable-next-line no-undef
-        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam, characterName: state.characterName });
+        if (box) renderResults(box, { model, result: snap, query: renderQuery, dataset, highs: null, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onBusy: busyFor, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam, characterName: state.characterName });
         // #88 U8 (R30/AE9) — either cause shows the banner, and the text says which.
         refreshStaleBanner();
       } else {
@@ -8296,7 +8307,7 @@ ${(() => {
           if (state.lastRun) {
             state.lastRun.query.slotConstraints = { ...state.slotConstraints };
             // eslint-disable-next-line no-undef
-            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam, characterName: state.characterName });
+            renderResults(box, { model: state.lastRun.model, result: state.lastRun.result, query: state.lastRun.query, dataset, highs, onAfterRender: afterResultsRender, onRequire: requireOutbidStat, onBusy: busyFor, onJump: jumpFromNotice, notesSeen, onNotesOpen: () => { notesSeen = true; }, upgradeBar, onUpgradeBar: rememberUpgradeBar, versions: versionsSeam, characterName: state.characterName });
           }
           if (cbar) cbar.classList.remove("wz-hidden");
           refreshResultsEmphasis();

@@ -2462,7 +2462,16 @@ function outbidNotice(query, result, model, canPrice, canRequire) {
     + (ask ? `<span class="outbid-ask">${ask}</span>` : "") + `</p>`;
 }
 
-function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onJump, notesSeen, onNotesOpen, upgradeBar, onUpgradeBar, versions, characterName }) {
+function renderResults(container, { model, result, query, dataset, highs, onAfterRender, onRequire, onBusy, onJump, notesSeen, onNotesOpen, upgradeBar, onUpgradeBar, versions, characterName }) {
+  // #846 — the host's "process in action" UI, for every solve this panel runs
+  // on demand. The main solve shows a full overlay while it works; until #846
+  // the four on-demand solves below showed a card-local ring (upgrades) or just
+  // a relabelled button (set pins, outbid, concession). One hook, the host's
+  // overlay, on every one — and OFF on every terminal path, thrown included,
+  // because an overlay left up on a failed probe is a hang the player cannot
+  // dismiss. Absent on a restored character, which carries no solver to probe
+  // with; every caller tolerates that.
+  const busy = (on, title, sub) => { if (typeof onBusy === "function") onBusy(on, title, sub); };
   if (result.status !== "optimal") {
     // Keep the Adjust & re-solve control available on a non-optimal result — this
     // is exactly when the user needs to loosen priorities/constraints in place.
@@ -2662,7 +2671,9 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       if (btn.disabled) return;
       btn.disabled = true;
       btn.textContent = "Pricing…";
-      // Defer so the label paints before the probe's solve, which is synchronous
+      busy(true, "Pricing the set pins…", "re-solving without the pins · exact MILP");
+      q("#rp-live").textContent = "Pricing the set pins…";
+      // Defer so the overlay paints before the probe's solve, which is synchronous
       // inside however many `await`s it is written with.
       setTimeout(() => {
         Promise.resolve()
@@ -2675,7 +2686,8 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
             // not exist, the other means we did not look.
             console.error("set pin price failed", err);
             replaceControl(btn, "Could not price the set pins — the probe did not run.");
-          });
+          })
+          .finally(() => busy(false));
       }, 0);
     });
   }
@@ -2709,7 +2721,9 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
       const stat = btn.dataset.stat;
       btn.disabled = true;
       btn.textContent = `Pricing ${stat}…`;
-      // Defer so the label paints before the synchronous probe runs.
+      busy(true, `Pricing ${stat}…`, "re-solving with each priority relaxed · exact MILP");
+      q("#rp-live").textContent = `Pricing ${stat}…`;
+      // Defer so the overlay paints before the synchronous probe runs.
       setTimeout(() => {
         let attr = null;
         try {
@@ -2721,6 +2735,8 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
           // jointly-bound target, which is the one thing this must not blur.
           attr = null;
           console.error("outbid pricing failed", e);
+        } finally {
+          busy(false);
         }
         const out = document.createElement("span");
         out.className = "outbid-priced";
@@ -2810,14 +2826,19 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     const out = upgOut();
     if (!out || altState.computing) return;
     altState.computing = true;
-    out.innerHTML = `<div class="alt-computing"><div class="wz-ring"></div><p class="muted">Searching for upgrades…</p></div>`;
+    // #846 — one indicator, not two: the host's overlay when there is one, the
+    // card-local ring only when there is not (a results panel rendered without a
+    // host hook still has to show that it is working).
+    const hosted = typeof onBusy === "function";
+    out.innerHTML = `<div class="alt-computing">${hosted ? "" : `<div class="wz-ring"></div>`}<p class="muted">Searching for upgrades…</p></div>`;
     q("#rp-live").textContent = "Searching for upgrades…";
-    // Defer so the spinner paints before the synchronous re-solves run.
+    busy(true, "Searching for upgrades…", "re-solving several times · exact MILP");
+    // Defer so the overlay paints before the synchronous re-solves run.
     setTimeout(() => {
       // If a re-render (e.g. a per-slot constraint change) replaced this card
       // while we waited, abandon: don't run the stale solve or write cards/aria
       // into the fresh closure's live region.
-      if (upgOut() !== out) { altState.computing = false; return; }
+      if (upgOut() !== out) { altState.computing = false; busy(false); return; }
       try {
         const raw = generateAlternatives(optimum, model, highs);
         const analyzed = raw.map((c) => analyzeAlternative(optimum, c, query));
@@ -2842,6 +2863,8 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
         altState.list = null;   // let a retry recompute cleanly
         upgMessage("Could not search for upgrades. Press Find upgrades to try again.");
         q("#rp-live").textContent = "Could not search for upgrades.";
+      } finally {
+        busy(false);
       }
       altState.computing = false;
     }, 20);
@@ -2878,7 +2901,9 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
     const stat = btn.dataset.stat;
     btn.disabled = true;                                   // one probe per click
     btn.textContent = `Pricing ${stat}…`;
-    // Defer so the label paints before the probe's solves, which are synchronous
+    busy(true, `Pricing ${stat}…`, "re-solving with that priority conceded · exact MILP");
+    q("#rp-live").textContent = `Pricing ${stat}…`;
+    // Defer so the overlay paints before the probe's solves, which are synchronous
     // inside it however many `await`s it is written with.
     setTimeout(() => {
       Promise.resolve()
@@ -2892,7 +2917,8 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
           // not exist, the other means we did not look.
           console.error("concession probe failed", err);
           replaceControl(btn, esc(concessionFailedOutcome(stat).text));
-        });
+        })
+        .finally(() => busy(false));
     }, 0);
   });
 

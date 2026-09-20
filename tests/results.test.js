@@ -4768,3 +4768,55 @@ test("#240: a set with no recorded piece count falls back rather than printing j
   const html = R.renderAltCards([altFixture({ activatedSets: ["Alpha"], sol })]);
   assert.ok(!/undefined|null|NaN/.test(html), "no placeholder leaks into the row");
 });
+
+// --- #846 — every on-demand solve shows the host's "process in action" UI ------
+//
+// The main solve shows a full overlay while it works. The four solves this panel
+// runs on demand used to show a card-local ring (upgrades) or a relabelled
+// button (set pins, outbid, concession). Now each turns the host's `onBusy`
+// hook on before its deferred solve and off on EVERY terminal path — thrown
+// included, because an overlay left up on a failed probe is a hang the player
+// cannot dismiss. Source-inspected, the way this file pins the other handler
+// shapes, because the handlers close over a live DOM.
+{
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  const window_ = (anchor, len) => {
+    const i = src.indexOf(anchor);
+    assert.ok(i >= 0, `anchor not found: ${anchor}`);
+    return src.slice(i, i + len);
+  };
+  const HANDLERS = [
+    { name: "set-pin price", anchor: 'querySelectorAll(".setpin-probe")', off: ".finally(() => busy(false))" },
+    { name: "outbid price", anchor: 'querySelectorAll(".outbid-price")', off: "finally {\n          busy(false);" },
+    { name: "upgrades search", anchor: "function runUpgrades()", off: "finally {\n        busy(false);" },
+    { name: "concession probe", anchor: 'closest(".concession-probe")', off: ".finally(() => busy(false))" },
+  ];
+  test("#846: each on-demand solve turns the busy hook ON before its deferred solve", () => {
+    for (const h of HANDLERS) {
+      const w = window_(h.anchor, 2200);
+      const on = w.indexOf("busy(true, ");
+      const defer = w.indexOf("setTimeout(");
+      assert.ok(on >= 0, `${h.name}: never turns busy on`);
+      assert.ok(defer >= 0 && on < defer, `${h.name}: busy must be on BEFORE the deferred solve so the overlay paints first`);
+      assert.ok(/#rp-live"\)\.textContent = /.test(w.slice(0, defer)), `${h.name}: the live region must announce the start too`);
+    }
+  });
+  test("#846: each on-demand solve turns the busy hook OFF on every terminal path, thrown included", () => {
+    for (const h of HANDLERS) {
+      const w = window_(h.anchor, 2600);
+      assert.ok(w.includes(h.off), `${h.name}: busy is not switched off on a finally path — a failed probe would leave the overlay up`);
+    }
+    // The upgrades search has a third terminal path: the stale-card abandon.
+    const w = window_("function runUpgrades()", 1200);
+    assert.ok(/if \(upgOut\(\) !== out\) \{ altState\.computing = false; busy\(false\); return; \}/.test(w),
+      "the stale-card abandon must switch busy off too");
+  });
+  test("#846: without a host hook the panel still works, and the upgrades card keeps its own ring only then", () => {
+    assert.ok(/const busy = \(on, title, sub\) => \{ if \(typeof onBusy === "function"\) onBusy\(on, title, sub\); \};/.test(src),
+      "busy must be a no-op when the host passes no hook (restored characters)");
+    const w = window_("function runUpgrades()", 900);
+    assert.ok(/const hosted = typeof onBusy === "function";/.test(w));
+    assert.ok(/\$\{hosted \? "" : `<div class="wz-ring"><\/div>`\}/.test(w),
+      "one indicator, not two: the card-local ring only when no host overlay will show");
+  });
+}

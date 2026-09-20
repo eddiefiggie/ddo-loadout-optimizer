@@ -6479,3 +6479,20 @@ test("#774: the load boundary coerces the on/off marker to a real boolean", () =
   assert.strictEqual(e.affixes[0].presence, true);
   assert.strictEqual(e.affixes[1].presence, false, "absent means not a flag, as a real boolean");
 });
+
+// --- #846 — the results panel's on-demand solves use the solve overlay ----------
+{
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf8");
+  test("#846: the overlay can withhold Stop, and re-arms it on every ordinary solve", () => {
+    assert.ok(/function overlay\(on, title, sub, opts\)/.test(src), "overlay takes an options bag");
+    assert.ok(/stop\.hidden = !!\(opts && opts\.stop === false\);/.test(src),
+      "Stop is hidden exactly when the caller says the run cannot be stopped, shown otherwise");
+    assert.ok(/function busyFor\(on, title, sub\) \{ overlay\(on, title, sub, \{ stop: false \}\); \}/.test(src),
+      "the results panel's hook withholds Stop — the probes are synchronous with no abandon seam");
+  });
+  test("#846: every renderResults call site passes the busy hook", () => {
+    const calls = src.match(/renderResults\(box, \{[^\n]*\}\);/g) || [];
+    assert.ok(calls.length >= 3, `expected the three results renders, found ${calls.length}`);
+    for (const c of calls) assert.ok(/onBusy: busyFor/.test(c), `a results render without the busy hook: ${c.slice(0, 120)}`);
+  });
+}
