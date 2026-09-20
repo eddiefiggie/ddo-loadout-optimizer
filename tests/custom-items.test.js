@@ -1185,10 +1185,15 @@ test("#815: a missing name is DERIVED, not refused", () => {
   const v = C.validateEntry({ uid: 1, slot: "Ring", ml: 30, augments: [],
     affixes: [{ menu: "Prefix", effect: "Constitution" }] }, ctx);
   assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
-  assert.strictEqual(v.entry.name, "Constitution Ring");
-  // A combined shard has a printed name; a single one is known by its effect.
+  // #828 RE-RATIFIED: the derived name is the ITEM, not its lead effect. This
+  // asserted "Constitution Ring" until the summary began showing every effect
+  // underneath — a title naming one of three, and changing whenever a higher
+  // menu was filled, was the thing #828 replaced.
+  assert.strictEqual(v.entry.name, "Essence Crafted Ring");
+  // A combined shard named the item too ("Fortifying Ring"); it no longer does,
+  // for the same reason. Its two effects show in the summary like any others.
   const w = C.validateEntry(comboRing({ name: "" }), ctx);
-  assert.strictEqual(w.entry.name, "Fortifying Ring");
+  assert.strictEqual(w.entry.name, "Essence Crafted Ring");
   // An explicit name is KEPT — that is what stops this renaming saved items and
   // stranding their pins.
   const x = C.validateEntry({ uid: 1, name: "My old ring", slot: "Ring", ml: 30,
@@ -1199,11 +1204,14 @@ test("#815: a missing name is DERIVED, not refused", () => {
 test("#815: derived names do not collide within one character", () => {
   // Two entries sharing a name share an id, and a pin on one would equip the
   // other — the reason `CUSTOM_SUFFIX` exists at all.
-  const taken = new Set(["Constitution Ring"]);
+  // #828 RE-RATIFIED: same rule, new base name. Collision matters MORE now —
+  // two rings no longer differ by their lead effect, so "Essence Crafted Ring"
+  // is a name a player can reach twice in a way "Constitution Ring" was not.
+  const taken = new Set(["Essence Crafted Ring"]);
   const e = { slot: "Ring", affixes: [{ menu: "Prefix", effect: "Constitution" }] };
-  assert.strictEqual(C.deriveName(e, ctx, taken), "Constitution Ring 2");
-  taken.add("Constitution Ring 2");
-  assert.strictEqual(C.deriveName(e, ctx, taken), "Constitution Ring 3");
+  assert.strictEqual(C.deriveName(e, ctx, taken), "Essence Crafted Ring 2");
+  taken.add("Essence Crafted Ring 2");
+  assert.strictEqual(C.deriveName(e, ctx, taken), "Essence Crafted Ring 3");
 });
 
 test("#815: the third menu is called the Mark of House Cannith to a player", () => {
@@ -1315,6 +1323,123 @@ test("#817: what still asks is smaller, and is not a skill", () => {
   assert.strictEqual(n, 115);
   assert.strictEqual(asking.size, 22);
   assert.ok(!asking.has("Dodge"), "Dodge is sourced from the `Dodge bonus` page");
+});
+
+
+// --- #828 — a finished item reads like a loadout entry --------------------
+
+test("#828: the item is named Essence Crafted <type>", () => {
+  assert.strictEqual(C.essenceCraftedName({ slot: "Ring" }), "Essence Crafted Ring");
+  assert.strictEqual(C.essenceCraftedName({ slot: "Trinket" }), "Essence Crafted Trinket");
+  // Where the slot needed a type to resolve its enchantment group, the TYPE is
+  // the kind of item the player chose, so it is what the name says.
+  assert.strictEqual(C.essenceCraftedName({ slot: "Weapon", type: "Daggers" }),
+    "Essence Crafted Daggers");
+  assert.strictEqual(C.essenceCraftedName({ slot: "Off Hand", type: "Shields" }),
+    "Essence Crafted Shields");
+  // Never a bare "Essence Crafted " with nothing after it.
+  assert.strictEqual(C.essenceCraftedName({}), "Essence Crafted item");
+  assert.strictEqual(C.essenceCraftedName(null), "Essence Crafted item");
+});
+
+test("#828: the name does not change when another menu is filled", () => {
+  // The defect the rename fixes: the old name was the lead effect in MENU
+  // order, so crafting a prefix onto a ring that already had a suffix renamed
+  // the item — and a pin on the old name stranded.
+  const suffixOnly = { slot: "Ring", affixes: [{ menu: "Suffix", effect: "Constitution" }] };
+  const both = { slot: "Ring", affixes: [
+    { menu: "Prefix", effect: "Charisma" },
+    { menu: "Suffix", effect: "Constitution" }] };
+  assert.strictEqual(C.deriveName(suffixOnly, ctx), C.deriveName(both, ctx),
+    "adding a prefix must not rename the item");
+});
+
+test("#828: nativeAffixes mints the shape the loadout renders", () => {
+  const v = C.validateEntry({ uid: 1, slot: "Ring", ml: 30, augments: [],
+    affixes: [{ menu: "Prefix", effect: "Constitution" }] }, ctx);
+  const rows = C.nativeAffixes(v.entry, ctx);
+  assert.ok(rows.length, "an entry with an effect yields at least one affix");
+  for (const a of rows) {
+    assert.ok(a.name, "every record carries a native `name`");
+    assert.ok("value" in a, "every record carries a `value`");
+    assert.ok(a.origin === "chosen" || a.origin === "automatic",
+      `origin must say where the affix came from, got ${a.origin}`);
+    assert.strictEqual(typeof a.sourced, "boolean",
+      "sourced must be a boolean — a summary must not leave provenance undefined");
+  }
+});
+
+test("#828: the pool and the summary describe the item from ONE mapping", () => {
+  // Two renderings of one item is the defect this closes. The pool's affixes
+  // must be exactly nativeAffixes', minus the two display-only keys.
+  const v = C.validateEntry({ uid: 1, slot: "Ring", ml: 30, augments: [],
+    affixes: [{ menu: "Prefix", effect: "Constitution" }] }, ctx);
+  const pool = C.customPool([v.entry], ctx);
+  assert.deepStrictEqual(pool.rejected, [], "the fixture entry must be accepted");
+  assert.strictEqual(pool.variants.length, 1);
+  const mine = C.nativeAffixes(v.entry, ctx);
+  // Compared by MEANING, not representation: the solver's records go on through
+  // the dataset normalizer, which parses the magnitude to a number and attaches
+  // the unit. That is the normalizer's job and not a second description of the
+  // item — what must not differ is which affixes there are and what they say.
+  assert.deepStrictEqual(
+    pool.variants[0].affixes.map((a) => [a.name, a.type, Number(a.value)]),
+    mine.map((a) => [a.name, a.type, Number(a.value)]),
+    "the solver's copy and the summary's copy must agree affix for affix");
+  for (const a of pool.variants[0].affixes) {
+    assert.ok(!("origin" in a) && !("sourced" in a),
+      "display-only keys must not reach the solver's records");
+  }
+});
+
+test("#828: a combined prefix contributes both effects, still one slot", () => {
+  const v = C.validateEntry(comboRing({ name: "" }), ctx);
+  const rows = C.nativeAffixes(v.entry, ctx);
+  const chosen = rows.filter((a) => a.origin === "chosen");
+  assert.ok(chosen.length >= 2,
+    "a combined shard grants two effects and the summary shows both");
+  const menus = (v.entry.affixes || []).length;
+  assert.strictEqual(menus, 1, "and it still occupies exactly one menu row");
+});
+
+test("#828: an automatic grant is listed, and marked as not a choice", () => {
+  // It used to be withheld from the summary, which was right for a form and
+  // wrong for an item summary: the loadout shows it, so the bench must too.
+  const v = C.validateEntry({ uid: 1, slot: "Weapon", type: "Daggers", ml: 30,
+    augments: [], affixes: [{ menu: "Prefix", effect: "Constitution" }] }, ctx);
+  const auto = C.automaticAffixes(v.entry, ctx);
+  if (!auto.length) return;  // only item kinds the shard grants a bonus to
+  const rows = C.nativeAffixes(v.entry, ctx);
+  assert.strictEqual(rows.filter((a) => a.origin === "automatic").length, auto.length,
+    "every automatic grant appears in the summary");
+});
+
+test("#828: a blanked row is withheld, from the summary AND the solver", () => {
+  // Migration blanks a row it cannot resolve. One of those rendered as " +null"
+  // — found in the browser, not by the suite. An affix named "" would also take
+  // a stacking bucket of its own in the solver.
+  const e = { uid: 1, name: "Essence Crafted Ring", slot: "Ring", ml: 30, augments: [],
+    affixes: [{ stat: "", bonus_type: "", value: null, presence: false },
+              { menu: "Suffix", effect: "Dexterity", stat: "Dexterity",
+                bonus_type: "Enhancement", value: 13, unit: "flat", sourced: true }] };
+  const rows = C.nativeAffixes(e, ctx);
+  assert.deepStrictEqual(rows.filter((a) => a.origin === "chosen").map((a) => a.name),
+    ["Dexterity"], "the blanked row must not become a nameless affix");
+  for (const a of C.customPool([e], ctx).variants[0].affixes) {
+    assert.ok(String(a.name || "").trim(), "a nameless affix must not reach the solver");
+  }
+});
+
+test("#828: a presence flag carries no magnitude and claims no provenance", () => {
+  // `Eternal Faith` read as "Magnitude as you declared it" in the browser. It
+  // has no magnitude at all, so neither sourced nor declared is true of it.
+  const e = { uid: 1, slot: "Ring", ml: 30, augments: [],
+    affixes: [{ menu: "Prefix", effect: "Eternal Faith", stat: "Eternal Faith",
+                presence: true, sourced: false }] };
+  const rows = C.nativeAffixes(e, ctx);
+  assert.strictEqual(rows.length, 1);
+  assert.strictEqual(rows[0].type, "Bool", "a flag is minted as a presence affix");
+  assert.strictEqual(rows[0].name, "Eternal Faith");
 });
 
 process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
