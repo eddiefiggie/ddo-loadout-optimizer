@@ -542,6 +542,14 @@ var _utilitySentinel = (typeof UTILITY_SENTINEL !== "undefined")
 // sentinel above uses: model.js loads first in the browser, so the `var`s are
 // globals here; under node the require resolves them. The rank table stays in
 // model.js so the ladder's ordering is stated exactly once.
+// #825 — the rung's "won't pick" clause is GENERATED from model.js's roster of
+// the pools the rung empties, never written out here. The hand-maintained
+// sentence fell a week behind that block twice; the second time it was written
+// by the commit whose whole purpose was to make this rung say what it does.
+var _nicheCraftingClause = (typeof nicheCraftingClause !== "undefined")
+  ? nicheCraftingClause
+  // eslint-disable-next-line global-require
+  : require("./model.js").nicheCraftingClause;
 var _normalizeRung = (typeof normalizeRung !== "undefined")
   ? normalizeRung
   // eslint-disable-next-line global-require
@@ -3350,7 +3358,7 @@ if (typeof window !== "undefined" && window.App) {
               // 1,080 variants, 11.7% of the catalog, including Cannith gear and
               // the Altars, as a side effect of one report about 84 items.
               ["no-niche-crafting", "Don't choose crafting options for me",
-                "The solver won't pick Viktranium experiments, Sealed-in-X seals, Nearly Completed, Dinosaur Bone crafting, or set-bonus crafting. Augments still count. Items that already exist because someone crafted them are ordinary gear and still appear."],
+                `${_nicheCraftingClause()} Augments still count. Items that already exist because someone crafted them are ordinary gear and still appear.`],
               ["no-solar-lunar", "Don't choose crafting options or Solar/Lunar gems",
                 "Also exclude Solar and Lunar Gems. Ordinary colour augments — rubies, sapphires, topazes, diamonds — still count."],
               ["printed-only", "No crafting or augments at all",

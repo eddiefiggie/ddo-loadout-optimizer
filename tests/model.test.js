@@ -1906,7 +1906,6 @@ test("#235: an untyped affix and an explicit Untyped one keep separate buckets, 
 });
 
 
-console.log(`\n${passed} passed, ${failed} failed`);
 
 // ---------------------------------------------------------------------------
 // #346 (U1) — the crafting/augment ladder that replaced #245's boolean. A
@@ -2911,3 +2910,76 @@ test("#766: buildModel keeps target-advancing Slaver's options by ANY affix, sif
   assert.deepStrictEqual(build({ ...q, craftingRung: "no-niche-crafting" }).slavers, [], "the niche-crafting rung empties the pool");
   assert.ok(M.poolStatNames({ worn: [], slavers: [res] }).has("Will Save"), "the pool's stats reach the picker vocabulary");
 });
+
+// --- #825 — the rung's sentence cannot fall behind the block it describes ----
+
+/** The identifiers the niche-crafting block actually assigns, read out of
+ *  model.js's source. Parsing the block rather than re-listing it is the whole
+ *  point: a re-listed copy is what drifted twice. */
+function nicheClearedKeys() {
+  const src = fs.readFileSync(path.join(__dirname, "..", "web", "model.js"), "utf-8");
+  const open = src.indexOf("if (rungExcludesNicheCrafting(craftingRung(query))) {");
+  assert.ok(open > -1, "the niche-crafting block moved — this guard reads it by shape");
+  const close = src.indexOf("\n  }\n", open);
+  assert.ok(close > open, "could not find the end of the niche-crafting block");
+  const body = src.slice(open, close);
+  const keys = [...body.matchAll(/(\w+)\s*=\s*(?:\[\]|\{\})/g)].map((m) => m[1]);
+  assert.ok(keys.length, "parsed zero assignments — the guard would pass vacuously");
+  return new Set(keys);
+}
+
+test("#825: the roster is exactly what the rung empties", () => {
+  const cleared = nicheClearedKeys();
+  const roster = new Set(M.NICHE_CRAFTING_POOLS.map((p) => p.key));
+  const unlisted = [...cleared].filter((k) => !roster.has(k)).sort();
+  const stale = [...roster].filter((k) => !cleared.has(k)).sort();
+  assert.deepStrictEqual(unlisted, [],
+    "pool(s) the rung empties with no entry in NICHE_CRAFTING_POOLS — the player's "
+    + "sentence would not name them, which is exactly how Essence Crafting vanished");
+  assert.deepStrictEqual(stale, [],
+    "NICHE_CRAFTING_POOLS entries the block no longer clears — the sentence would "
+    + "claim the rung removes something it leaves in");
+  assert.strictEqual(cleared.size, 10, "ten pools, as of #825");
+});
+
+test("#825: every pool has a player-facing label, and none is a variable name", () => {
+  assert.ok(M.NICHE_CRAFTING_POOLS.length, "an empty roster would pass every check below");
+  for (const p of M.NICHE_CRAFTING_POOLS) {
+    assert.ok(p.label && p.label.trim(), `${p.key} has no label`);
+    assert.notStrictEqual(p.label, p.key, `${p.key}'s label is its variable name`);
+  }
+});
+
+test("#825: the clause names every distinct label, Essence Crafting included", () => {
+  const clause = M.nicheCraftingClause();
+  for (const p of M.NICHE_CRAFTING_POOLS) {
+    assert.ok(clause.includes(p.label), `the rung's sentence never names ${p.label}`);
+  }
+  // The four the hand-written sentence omitted, named explicitly so a future
+  // edit that drops one fails by name rather than by set arithmetic.
+  for (const missed of ["Essence Crafting", "Legendary Green Steel",
+                        "Slaver's crafting", "Nearly Finished and Almost There upgrades"]) {
+    assert.ok(clause.includes(missed), `${missed} is unnamed again`);
+  }
+});
+
+test("#825: the clause de-duplicates a shared label and reads as a sentence", () => {
+  const two = [{ key: "a", label: "set-bonus crafting" }, { key: "b", label: "set-bonus crafting" }];
+  assert.strictEqual(M.nicheCraftingClause(two), "The solver won't pick set-bonus crafting.");
+  assert.strictEqual(M.nicheCraftingClause([{ key: "a", label: "Alpha" }, { key: "b", label: "Beta" }]),
+    "The solver won't pick Alpha, or Beta.");
+  assert.strictEqual(M.nicheCraftingClause([]), "", "an empty roster makes no claim at all");
+  assert.strictEqual((M.nicheCraftingClause().match(/set-bonus crafting/g) || []).length, 1,
+    "the shared label appears once, not twice");
+});
+
+test("#825: the wizard renders the generated clause, not a copy of it", () => {
+  const wiz = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  assert.ok(wiz.includes("_nicheCraftingClause()"),
+    "wizard.js must render the generated clause");
+  assert.ok(!/The solver won't pick Viktranium/.test(wiz),
+    "wizard.js still carries a hand-written copy of the sentence");
+});
+
+
+console.log(`\n${passed} passed, ${failed} failed`);
