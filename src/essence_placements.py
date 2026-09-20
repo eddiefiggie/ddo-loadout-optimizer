@@ -120,6 +120,103 @@ INSIGHT_BONUS_TYPE = "Insight"
 #: Membership is `table 2c`'s `Skill` group, the same sourced list the curve join
 #: already uses for the `Skill` curve row.
 SKILL_BONUS_TYPE = "Competence"
+
+#: #832 — effects that carry NO bonus type at all, so the bench must not ask for
+#: one. Distinct from "unsourced", which means the wiki has not told us what the
+#: type IS; these have none to tell.
+#:
+#: Two causes, and they are checked differently:
+#:
+#: - `untyped` — every carrier in the catalog spells the affix `Untyped` and not
+#:   one spells it with a type. This is the same signal `web/dataset.js` already
+#:   derives as `untypedOnly` to refuse the declared-credit control, for the
+#:   reason #235 records: "the credit control asks the player to pick a BONUS
+#:   TYPE, and this stat has none. Every choice is wrong." The Essence bench asked
+#:   anyway.
+#: - `dice` — the crafting table publishes the magnitude as DICE (`6d6`, `3d2`),
+#:   which is an on-hit proc rather than a bonus. A proc has no bonus type in the
+#:   way a `+N` does, and nothing in the catalog carries these at all.
+#:
+#: NOT a hand-maintained list of names: `assert_no_bonus_type_still_holds` below
+#: re-derives both causes from the built data on every build, so an effect that
+#: gains a typed carrier upstream fails rather than staying silently untyped.
+NO_BONUS_TYPE = {
+    "Tendon Slice": "untyped",
+    "Bashing": "dice",
+    "Shield Spikes": "dice",
+    "Vampirism": "dice",
+}
+
+#: How a dice magnitude is spelled in `table 3b` — `6d6`, `3d2`.
+_DICE = __import__("re").compile(r"^\s*\d+\s*d\s*\d+\s*$", __import__("re").I)
+
+
+def assert_no_bonus_type_still_holds(records, item_affixes) -> dict:
+    """`NO_BONUS_TYPE` is re-derived, not trusted (#832).
+
+    `records` are the published placement rows; `item_affixes` is an iterable of
+    `(name, bonus_type)` over the catalog's real items.
+
+    Both directions fail, because both are how this rots:
+
+    * an effect listed here that the catalog now carries WITH a bonus type is no
+      longer untyped, and the bench would be hiding a control it should show;
+    * an effect listed as `dice` whose published magnitudes stopped being dice
+      has become an ordinary `+N` bonus and needs a type like any other.
+
+    Refuses to pass over empty input: a guard that inspects no records reports
+    success for a build that produced nothing.
+    """
+    if not records:
+        raise SystemExit(
+            "no-bonus-type gate: no placement records \u2014 this guard would pass "
+            "vacuously")
+    typed_carriers = {}
+    saw_any = False
+    for name, bonus_type in item_affixes:
+        saw_any = True
+        if bonus_type and bonus_type not in ("Untyped", "Bool", "boolean"):
+            typed_carriers.setdefault(name, 0)
+            typed_carriers[name] += 1
+    if not saw_any:
+        raise SystemExit(
+            "no-bonus-type gate: walked zero item affixes \u2014 the untyped half "
+            "of this guard would pass vacuously")
+
+    by_effect = {}
+    for rec in records:
+        by_effect.setdefault(rec["effect"], rec)
+
+    problems = []
+    for effect, cause in sorted(NO_BONUS_TYPE.items()):
+        rec = by_effect.get(effect)
+        if rec is None:
+            problems.append(
+                f"{effect!r} is listed as having no bonus type but no placement "
+                "row publishes it \u2014 the entry vouches for nothing")
+            continue
+        if cause == "untyped":
+            n = typed_carriers.get(rec.get("stat") or effect, 0)
+            if n:
+                problems.append(
+                    f"{effect!r} is listed `untyped` but the catalog now carries "
+                    f"it with a bonus type on {n} affix(es). It is an ordinary "
+                    "typed effect again, and the bench is hiding a control.")
+        elif cause == "dice":
+            vals = [v for v in (rec.get("values_by_ml") or []) if v not in (None, "")]
+            if vals and not all(_DICE.match(str(v)) for v in vals):
+                problems.append(
+                    f"{effect!r} is listed `dice` but its published magnitudes are "
+                    f"no longer all dice (e.g. {vals[:3]}). A `+N` effect needs a "
+                    "bonus type like any other.")
+        else:
+            problems.append(f"{effect!r} has an unknown cause {cause!r}")
+
+    if problems:
+        raise SystemExit("no-bonus-type gate failed:\n  " + "\n  ".join(problems))
+    return {"effects": len(NO_BONUS_TYPE),
+            "placements": sum(1 for r in records if r["effect"] in NO_BONUS_TYPE)}
+
 SKILL_GROUP = "Skill"
 GROUPS_SHARD = os.path.join(ROOT, "data", "seed", "compendium",
                             "essence_recipe_groups.json")
@@ -593,7 +690,14 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
                 # day a stated counter-example arrives, so the rule cannot rot
                 # into a default.
                 resolved_type = None
-                if usable and bt and bt.get("provenance") == "stated":
+                # #832 — settled as NONE, which is not the same as unsourced. The
+                # bench must not offer a bonus-type control for these; `Untyped`
+                # keys a bucket the gear cannot join and every other choice names
+                # a bucket nothing in the game supplies (#235).
+                if usable and effect in NO_BONUS_TYPE:
+                    rec["no_bonus_type"] = True
+                    rec["no_bonus_type_cause"] = NO_BONUS_TYPE[effect]
+                elif usable and bt and bt.get("provenance") == "stated":
                     resolved_type = bt["value"]["bonus_type"]
                 elif usable and insightful:
                     resolved_type = INSIGHT_BONUS_TYPE

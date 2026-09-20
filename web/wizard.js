@@ -4351,7 +4351,17 @@ ${(() => {
           // now either a locked reading or a control, never a control over a
           // number the crafting table already states.
           const v = M.sourcedValueAt(row, d.ml);
-          const typePart = row.type_sourced
+          // #832 — three states, not two. An effect with NO bonus type gets no
+          // control: `Untyped` keys a bucket the gear cannot join and every other
+          // choice names a bucket nothing in the game supplies, so every answer
+          // the control could take is wrong. That is the rule #235 already
+          // applies to the declared-credit control; this bench asked anyway.
+          const typePart = row.no_bonus_type
+            ? `<span class="wz-custom-sourced wz-custom-notype">no bonus type`
+              + ` <span class="wz-help">${wzEsc(row.no_bonus_type_cause === "dice"
+                  ? "an on-hit proc, not a bonus"
+                  : "this effect is untyped on every item that carries it")}</span></span>`
+            : row.type_sourced
             ? `<span class="wz-custom-sourced">${wzEsc(row.bonus_type)}</span>`
             : `<select data-custom-bt="${wzEsc(menu)}"><option value="">Type on your item…</option>`
               + `${btypes.map((t) => opt(t, chosen && chosen.bonus_type)).join("")}</select>`;
