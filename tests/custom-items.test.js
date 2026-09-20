@@ -40,6 +40,11 @@ const catalogNames = new Set(dataset.items.map((v) => v.source_item || v.variant
 // A test that let the module reach for a global would be validating against
 // something the app does not use.
 const placements = raw.essence_placements;
+// #817 — the skill membership the rule uses, read from table 2c's own Group
+// column rather than restated here.
+const SKILL_NAMES = new Set(JSON.parse(fs.readFileSync(
+  path.join(__dirname, "..", "data", "seed", "compendium",
+            "essence_recipe_groups.json"), "utf8")).scaling_groups.Skill);
 const ctx = { vocab, catalogNames, canDeclare: canDeclareCredit, placements };
 // Taken from the built catalog rather than hard-coded: a literal name would rot
 // the moment the roster renamed it, and the test would then pass by testing
@@ -1088,8 +1093,12 @@ test("#810: every placement with a 36-row curve carries its magnitude", () => {
   // harvest rather than defaulting: of the 22 effects whose type the wiki states,
   // all 9 spelled `Insightful X` are `Insight`, and the other 13 carry three
   // different types between them, so only the Insightful half gains one.
-  assert.strictEqual(cov.type_sourced, 233);
-  assert.strictEqual(cov.sourced, 211, "the conjunction follows both halves");
+  // #817 — 334 not 233: +101, every non-Insightful SKILL. `Competence bonus`
+  // names Essence Crafting as a source of competence to skills, and the one
+  // skill #193 typed (`Haggle`) agrees. Enhancement, Quality and Exceptional do
+  // not mention Essence Crafting at all, so nothing competes for the claim.
+  assert.strictEqual(cov.type_sourced, 334);
+  assert.strictEqual(cov.sourced, 312, "the conjunction follows both halves");
   assert.ok(cov.sourced <= Math.min(cov.magnitude_sourced, cov.type_sourced),
     "the conjunction can never exceed either half");
 });
@@ -1229,6 +1238,80 @@ test("#815: every Insightful placement is typed Insight, and nothing else defaul
   assert.ok(insight > 100, `a real Insightful population: ${insight}`);
   assert.ok(askedNonInsightful > 100,
     "the non-Insightful half still asks — no Enhancement-by-default");
+});
+
+
+
+// ---------------------------------------------------------------------------
+// #817 — Essence Crafting gives a SKILL a Competence bonus.
+
+test("#817: every non-Insightful skill is typed Competence", () => {
+  //   "Sources of competence bonus to skills: Named or randomly generated items,
+  //    Essence Crafting, Colorless Augments"        — `Competence bonus`
+  //
+  // Sourced from the OTHER DIRECTION: #193 read all 157 effect pages; the
+  // bonus-type pages were never read, and one of them states this. `Haggle`, the
+  // one skill #193 did type, agrees — and Enhancement, Quality and Exceptional
+  // do not mention Essence Crafting at all, so nothing competes for the claim.
+  const g = placements.groups;
+  let skills = 0;
+  for (const group of Object.keys(g)) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      for (const r of g[group][menu] || []) {
+        if (r.effect.startsWith("Insightful ")) continue;
+        if (!SKILL_NAMES.has(r.effect)) continue;
+        assert.strictEqual(r.type_sourced, true, `${r.effect} must be typed`);
+        assert.strictEqual(r.bonus_type, "Competence",
+          `${r.effect} is a skill and must be Competence`);
+        skills++;
+      }
+    }
+  }
+  assert.ok(skills > 80, `a real skill population: ${skills}`);
+});
+
+test("#817: an Insightful skill stays Insight — the rules are ordered", () => {
+  // `Insightful Balance` is a skill AND an Insightful effect. #815's rule wins,
+  // and it must: the insight variant is not a competing answer for the base, it
+  // is a different enchantment. `Insightful Haggle` is stated Insight, which is
+  // the same ordering read off the harvest.
+  const g = placements.groups;
+  const insightfulSkills = [];
+  for (const group of Object.keys(g)) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      for (const r of g[group][menu] || []) {
+        if (!r.effect.startsWith("Insightful ")) continue;
+        const base = r.effect.slice("Insightful ".length);
+        if (!SKILL_NAMES.has(base)) continue;
+        assert.strictEqual(r.bonus_type, "Insight",
+          `${r.effect} is an Insightful skill and must stay Insight`);
+        insightfulSkills.push(r.effect);
+      }
+    }
+  }
+  assert.ok(insightfulSkills.length > 10,
+    `the ordering must actually be exercised: ${insightfulSkills.length}`);
+});
+
+test("#817: what still asks is smaller, and is not a skill", () => {
+  // The gap after the rule: 121 placements across 23 effects, none of them a
+  // skill. Re-ratified deliberately — this number should only ever fall.
+  const g = placements.groups;
+  const asking = new Set();
+  let n = 0;
+  for (const group of Object.keys(g)) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      for (const r of g[group][menu] || []) {
+        if (r.type_sourced) continue;
+        if (C.isPresenceEffect(r.stat, vocab, ctx)) continue;
+        assert.ok(!SKILL_NAMES.has(r.effect),
+          `${r.effect} is a skill and should have been typed`);
+        asking.add(r.effect); n++;
+      }
+    }
+  }
+  assert.strictEqual(n, 121);
+  assert.strictEqual(asking.size, 23);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
