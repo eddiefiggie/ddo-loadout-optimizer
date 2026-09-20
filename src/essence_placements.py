@@ -843,7 +843,7 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None,
     # same shard in two slots.
     _src = essence_source.build_catalog(
         catalog_stats=catalog_stats, catalog_units=catalog_units,
-        catalog_types=catalog_types,
+        catalog_types=catalog_types, wiki_groups=groups,
         wiki_curves={r["effect"]: r["values_by_ml"]
                      for menus in groups.values()
                      for rows in menus.values()

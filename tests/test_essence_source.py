@@ -183,3 +183,130 @@ def test_837_an_ambiguous_catalog_unit_withholds_the_magnitude():
     assert expected >= 1
     assert out["coverage"]["unit_ambiguous_withheld"] == expected, (
         out["coverage"]["unit_ambiguous_withheld"], expected)
+
+
+# --- #840 — the wiki wins where the two sources disagree ------------------------
+
+def _wiki_groups():
+    with open(DATASET, encoding="utf-8") as fh:
+        return json.load(fh)["essence_placements"]["wiki_groups"]
+
+
+def _menus(groups, effect):
+    out = {}
+    for group, menus in groups.items():
+        for menu, rows in menus.items():
+            if isinstance(rows, list) and any(r.get("effect") == effect for r in rows):
+                out.setdefault(group, set()).add(menu)
+    return out
+
+
+def test_840_no_menu_disagreement_survives_between_the_sources():
+    """Across every (effect, group) both sources place, the menus agree. Before
+    the overrides there were exactly 6 disagreements in 480 — five Spell
+    Resistance, one Strength on Belts — each settled by a wiki row read on
+    2026-09-20. Refuses to pass over a small comparison."""
+    pl, _, _, _ = _built()
+    wg = _wiki_groups()
+    shared = ({r["effect"] for m in wg.values() for rows in m.values() if isinstance(rows, list) for r in rows}
+              & {r["effect"] for m in pl["groups"].values() for rows in m.values() for r in rows})
+    compared, bad = 0, []
+    for e in shared:
+        w, y = _menus(wg, e), _menus(pl["groups"], e)
+        for group in w:
+            if group not in y:
+                continue
+            compared += 1
+            if w[group] != y[group]:
+                bad.append((e, group, sorted(w[group]), sorted(y[group])))
+    assert compared > 400, f"only {compared} pairs compared — a source failed to load"
+    assert bad == [], bad
+
+
+def test_840_the_six_overrides_are_exactly_the_measured_disagreements():
+    ov = essence_source.WIKI_PLACEMENT_OVERRIDES
+    assert len(ov) == 6, sorted(ov)
+    assert {k[0] for k in ov} == {"Spell Resistance", "Strength"}
+    assert all(v == "Prefix" for k, v in ov.items() if k[0] == "Spell Resistance")
+    assert ov[("Strength", "Belts")] == "Suffix"
+
+
+def test_840_the_override_guard_holds_on_the_real_build():
+    out = essence_source.assert_wiki_overrides_are_live(essence_source.load(), _wiki_groups())
+    assert out == {"overrides": 6}
+
+
+def test_840_the_override_guard_fails_when_an_entry_goes_stale():
+    # `dict(saved, **{tuple: v})` raises TypeError — keyword names must be
+    # strings — BEFORE the guard runs, and `except EssenceSourceError` lets that
+    # through as a plain failure that reads like "the guard did not fire". The
+    # first version of these three tests did exactly that. Tuple keys go in via
+    # dict literal spread.
+    wg = _wiki_groups()
+    saved = essence_source.WIKI_PLACEMENT_OVERRIDES
+    essence_source.WIKI_PLACEMENT_OVERRIDES = {**saved, ("Spell Resistance", "Rune Arms"): "Prefix"}
+    try:
+        essence_source.assert_wiki_overrides_are_live(essence_source.load(), wg)
+    except essence_source.EssenceSourceError as e:
+        assert "stale" in str(e)
+    else:
+        raise AssertionError("an override for a pair yourddo does not place must fail")
+    finally:
+        essence_source.WIKI_PLACEMENT_OVERRIDES = saved
+
+
+def test_840_the_override_guard_fails_when_it_contradicts_the_harvest():
+    wg = _wiki_groups()
+    saved = essence_source.WIKI_PLACEMENT_OVERRIDES
+    essence_source.WIKI_PLACEMENT_OVERRIDES = {**saved, ("Spell Resistance", "Belts"): "Extra"}
+    try:
+        essence_source.assert_wiki_overrides_are_live(essence_source.load(), wg)
+    except essence_source.EssenceSourceError as e:
+        assert "contradicts the source it cites" in str(e)
+    else:
+        raise AssertionError("an override the harvest does not back must fail")
+    finally:
+        essence_source.WIKI_PLACEMENT_OVERRIDES = saved
+
+
+def test_840_the_override_guard_fails_on_a_no_op():
+    """`Spell Resistance` on Rings is where both sources already say Prefix."""
+    wg = _wiki_groups()
+    saved = essence_source.WIKI_PLACEMENT_OVERRIDES
+    essence_source.WIKI_PLACEMENT_OVERRIDES = {**saved, ("Spell Resistance", "Rings"): "Prefix"}
+    try:
+        essence_source.assert_wiki_overrides_are_live(essence_source.load(), wg)
+    except essence_source.EssenceSourceError as e:
+        assert "already agrees" in str(e)
+    else:
+        raise AssertionError("a no-op override must fail so it gets retired")
+    finally:
+        essence_source.WIKI_PLACEMENT_OVERRIDES = saved
+
+
+def test_840_the_override_guard_refuses_to_inspect_nothing():
+    for recipes, wg in (([], _wiki_groups()), (essence_source.load(), {})):
+        try:
+            essence_source.assert_wiki_overrides_are_live(recipes, wg)
+        except essence_source.EssenceSourceError as e:
+            assert "vacuously" in str(e) or "no wiki groups" in str(e)
+        else:
+            raise AssertionError("empty input must not read as success")
+
+
+def test_840_deception_is_reachable_through_the_dual_shard_recipes():
+    """The wiki's live table 1b has no standalone `Deception` row (it did at
+    harvest time — the row is gone), but its dual-shard table names Deception
+    as the second effect of five recipes, and yourddo's versions of those five
+    call it `Sneak Attack Attack`. Joined on that evidence."""
+    pl, types, _, stats = _built()
+    assert "Deception" in stats
+    join = essence_source.stat_join()
+    assert join["joined"]["Sneak Attack Attack"] == {"stat": "Deception", "rule": "wiki-dual-shard-table"}
+    assert "Sneak Attack Attack" not in join["unmatched"]
+    recipes = {r["effect"] for _, r in [(None, r) for m in pl["groups"].values() for rows in m.values() for r in rows]
+               if any(p.get("stat") == "Deception" for p in (r.get("parts") or [r]))}
+    assert recipes == {"Sabotaging", "Assassin's", "Outlander's", "Relentless", "Thieving"}, recipes
+    for _, p in _parts(pl["groups"]):
+        if p.get("stat") == "Deception":
+            assert p["type_sourced"] and p["bonus_type"] in types, p

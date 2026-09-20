@@ -322,8 +322,80 @@ def assert_every_minted_type_has_a_bucket(groups, catalog_types) -> dict:
     return {"joined_types": len(BONUS_TYPE_JOIN)}
 
 
+#: (effect, group) -> menu, where yourddo contradicts a row of the wiki's table 1b
+#: read on 2026-09-20 (`Essence Crafting enchantments`, the Group/Name/.../Item
+#: slot table, whose last three columns are Prefix / Suffix / Extra):
+#:
+#:   Spell Resistance   Prefix: Belts, Cloaks, Rings, Trinkets, Armors, Shields; no Suffix; no Extra
+#:   Strength           Prefix: Bracers, Gloves, Trinkets; Suffix: Belts, Boots, Trinkets
+#:
+#: yourddo puts Spell Resistance in Suffix on three of those and Extra on two, and
+#: Strength in Belts' Prefix. #837's rule is that the wiki wins unless the owner
+#: rules otherwise, so these SIX pairs take the wiki's menu. PAIR-level, never
+#: effect-level: a group the wiki is silent on keeps yourddo's placement, and the
+#: recipe's enchantments and curves stay yourddo's throughout.
+#:
+#: Measured, not assumed: across every (effect, group) both sources place, 474
+#: agree on menu and exactly these 6 do not. `assert_wiki_overrides_are_live`
+#: fails when an entry goes stale, contradicts the harvest it cites, or stops
+#: changing anything.
+WIKI_PLACEMENT_OVERRIDES = {
+    ("Spell Resistance", "Belts"): "Prefix",
+    ("Spell Resistance", "Cloaks"): "Prefix",
+    ("Spell Resistance", "Trinkets"): "Prefix",
+    ("Spell Resistance", "Armors"): "Prefix",
+    ("Spell Resistance", "Shields"): "Prefix",
+    ("Strength", "Belts"): "Suffix",
+}
+
+
+def assert_wiki_overrides_are_live(recipes, wiki_groups) -> dict:
+    """Every override still earns its place (#840).
+
+    Three ways one rots, each checked:
+
+    * the effect or group is no longer in yourddo's own placements — stale;
+    * the harvest table does not place that pair in the menu the override
+      names — the override contradicts the source it claims to follow;
+    * yourddo already agrees — the override is a no-op and should be retired
+      rather than sit there looking like a live disagreement.
+
+    Refuses to pass over an empty table on either side.
+    """
+    if not recipes:
+        raise EssenceSourceError("no recipes — this guard would pass vacuously")
+    if not wiki_groups:
+        raise EssenceSourceError("no wiki groups — every override would read as contradicting the harvest")
+    yd = {}
+    for r in recipes:
+        for key, menu in MENUS.items():
+            for slot in (r.get(key) or []):
+                for group in SLOT_GROUPS.get(slot, []):
+                    yd.setdefault((r.get("name"), group), set()).add(menu)
+    wk = {}
+    for group, menus in wiki_groups.items():
+        for menu, rows in menus.items():
+            if not isinstance(rows, list):
+                continue
+            for row in rows:
+                wk.setdefault((row.get("effect"), group), set()).add(menu)
+    problems = []
+    for pair, menu in WIKI_PLACEMENT_OVERRIDES.items():
+        if pair not in yd:
+            problems.append(f"{pair}: yourddo no longer places this effect on this group — stale")
+            continue
+        if wk.get(pair) != {menu}:
+            problems.append(f"{pair}: the harvest places it in {sorted(wk.get(pair, ()))}, not {menu!r} — "
+                            "the override contradicts the source it cites")
+        if yd[pair] == {menu}:
+            problems.append(f"{pair}: yourddo already agrees — retire the override")
+    if problems:
+        raise EssenceSourceError("wiki-override gate failed:\n  " + "\n  ".join(problems))
+    return {"overrides": len(WIKI_PLACEMENT_OVERRIDES)}
+
+
 def build_catalog(catalog_stats=None, wiki_curves=None, catalog_units=None,
-                  catalog_types=None) -> dict:
+                  catalog_types=None, wiki_groups=None) -> dict:
     """The placement catalog, keyed `[group][menu] -> [options]`.
 
     One option per (recipe, group, menu). A recipe occupies ONE slot whatever it
@@ -357,7 +429,8 @@ def build_catalog(catalog_stats=None, wiki_curves=None, catalog_units=None,
                             "umbrella_withheld": 0,
                             "umbrella_only_withheld": 0,
                             "unit_ambiguous_withheld": 0,
-                            "type_no_bucket_withheld": 0}
+                            "type_no_bucket_withheld": 0,
+                            "wiki_placement_overrides": 0}
     umbrella_effects = set()
     no_bucket_types = set()
     for r in recipes:
@@ -459,9 +532,26 @@ def build_catalog(catalog_stats=None, wiki_curves=None, catalog_units=None,
             umbrella_effects.add(name)
             continue
         rankable = (not parts) or any(p["stat"] in stats for p in parts)
+        # (group, menu) placements from yourddo, then the wiki's menu substituted
+        # for the pairs in WIKI_PLACEMENT_OVERRIDES. De-duplicated, because an
+        # override can fold two of yourddo's menus onto one of the wiki's.
+        pairs = []
         for key, menu in MENUS.items():
             for slot in (r.get(key) or []):
                 for group in SLOT_GROUPS[slot]:
+                    pairs.append((group, menu))
+        if wiki_groups is not None:
+            fixed = []
+            for group, menu in pairs:
+                ov = WIKI_PLACEMENT_OVERRIDES.get((name, group))
+                if ov is not None and ov != menu:
+                    coverage["wiki_placement_overrides"] += 1
+                    menu = ov
+                if (group, menu) not in fixed:
+                    fixed.append((group, menu))
+            pairs = fixed
+        for group, menu in pairs:
+                if True:
                     rec = {"effect": name, "recipe": name, "menu": menu,
                            # The recipe cannot be crafted below the highest
                            # floor any of its enchantments carries.
@@ -496,6 +586,8 @@ def build_catalog(catalog_stats=None, wiki_curves=None, catalog_units=None,
             "changed")
     coverage["umbrella_effects"] = sorted(umbrella_effects)
     coverage["type_no_bucket"] = sorted(no_bucket_types)
+    if wiki_groups is not None:
+        assert_wiki_overrides_are_live(recipes, wiki_groups)
     if catalog_types is not None:
         assert_every_minted_type_has_a_bucket(groups, catalog_types)
     return {"groups": groups, "coverage": coverage,
