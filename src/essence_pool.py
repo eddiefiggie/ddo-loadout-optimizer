@@ -40,11 +40,12 @@ so the solver and the bench agree on what a shard does:
   rule the bench applies, applied at build time from the same population
   (`catalog_presence`), and `tests/essence-crafting.test.js` checks the two agree
   record by record with the app's own vocabulary.
-* **Compound.** A recipe granting several enchantments is one option carrying
-  `parts`, and this container is FLAT — one stat per record, by construction (see
-  `src/container_registry.py`). Serving them is a shape change and is #844; here
-  they are counted and withheld, never split into halves the solver could take
-  separately.
+* **Compound.** A recipe granting several enchantments (`Sheltering`: Physical
+  AND Magical Sheltering from one shard) is ONE option carrying every part in
+  its `affixes` list (#844), and the container is ATOMIC (see
+  `src/container_registry.py`): the solver takes the shard whole, credits each
+  part into its own bucket, and can never take half a craft. A part that fails
+  the gate withholds the whole shard, named `compound-<reason>`.
 
 `coverage()` says how much of each menu is offered and why the rest is not,
 because a short menu with no explanation reads as the whole menu.
@@ -135,14 +136,9 @@ MAX_SHARD_ML = 36
 # numbers on a record we do not trust.
 REQUIRED_VERIFICATION = "verified"
 
-# #843 — the issue that serves compound recipes. Named on the coverage record so
-# the disclosure points somewhere, and pinned by a test so it cannot be closed
-# while this module still withholds them.
-COMPOUND_ISSUE = 844
-
 WIKI_URL = "https://ddowiki.com/page/Essence_Crafting"
 
-# The curve a presence option carries: present at every ML. The same encoding a
+# The curve a presence affix carries: present at every ML. The same encoding a
 # native on/off affix has (`type: "Bool", value: "1"`) and the same one
 # `legendary_green_steel` uses for its flags, stretched to the 36 slots the solver
 # indexes by crafted ML.
@@ -197,45 +193,88 @@ def essence_slots(crafting, verification=None) -> list:
     return sorted(out, key=lambda s: (s["family"], MENUS.index(s["menu"])))
 
 
-def _classify(row, stats, presence):
-    """`(kind, reason)` for one catalog row: `("numeric", None)`,
-    `("presence", None)`, or `("skip", reason)`.
+def _classify_part(part, stats, presence, floor):
+    """`(kind, reason)` for ONE enchantment: `("numeric", None)`,
+    `("presence", None)` or `("skip", reason)`.
 
-    Order matters and each step is a fact about a different thing:
-    compound-ness is the row's shape; presence is the CATALOG's classification
-    of the stat, consulted before the row's own type or curve because those
-    describe the crafted number and the catalog ranks the stat on/off; the rest
-    is the three-way gate.
+    Presence is the CATALOG's classification of the stat, consulted before the
+    part's own type or curve because those describe the crafted number and the
+    catalog ranks the stat on/off; the rest is the three-way gate. `floor` is
+    the option's minimum level, below which a null in the curve is allowed.
     """
-    if row.get("parts"):
-        return "skip", "compound-recipe"
-    stat = row.get("stat")
+    stat = part.get("stat")
     if not stat:
         return "skip", "no-stat"
-    if row.get("quarantined"):
+    if part.get("quarantined"):
         return "skip", "stat-unmatched"
     if stat not in stats:
         return "skip", "stat-not-in-catalog"
+    if stat in presence:
+        return "presence", None
+    if not part.get("type_sourced"):
+        return "skip", "no-bonus-type"
+    if not part.get("magnitude_sourced"):
+        return "skip", "no-curve"
+    if part.get("unit") == "dice":
+        # #835 — a dice magnitude is its own unit. The solver ranks scalars, and
+        # the bench discloses these; here they are named rather than parsed.
+        return "skip", "dice-magnitude"
+    curve = part.get("values_by_ml")
+    if not curve or len(curve) != MAX_SHARD_ML:
+        return "skip", "malformed-curve"
+    # A curve may be EMPTY below the recipe's own floor — `Armor Destroying`
+    # exists from ML 20 and yourddo stores null for 1..19 — and the solver never
+    # reads those slots because `hostMl >= min_ml` gates the option first. A
+    # null AT or ABOVE the floor is a hole the solver would read as 0 and
+    # silently credit nothing for: withheld and named.
+    if any(v in (None, "") for v in curve[floor - 1:]):
+        return "skip", "curve-hole"
+    return "numeric", None
+
+
+def _affix_of(part, kind):
+    if kind == "presence":
+        return {"stat": part["stat"], "bonus_type": "Bool", "unit": "flat",
+                "values_by_ml": list(PRESENCE_CURVE), "presence": True,
+                "magnitude_source": None}
+    return {"stat": part["stat"], "bonus_type": part["bonus_type"],
+            "unit": part.get("unit") or "flat",
+            "values_by_ml": list(part["values_by_ml"]), "presence": False,
+            "magnitude_source": part.get("magnitude_from") or "yourddo"}
+
+
+def _classify(row, stats, presence, min_ml):
+    """`(kind, reason, affixes)` for one catalog row.
+
+    A row is one craftable OPTION: a flag, a single enchantment, or a compound
+    recipe carrying `parts`. Whatever its shape it becomes one record carrying
+    an `affixes` list (#844) — never several, which would let the solver take
+    half a craft. A compound recipe is offered only when EVERY part clears the
+    gate; one failing part withholds the whole shard, named.
+    """
     if row.get("flag"):
+        stat = row.get("stat")
+        if not stat:
+            return "skip", "no-stat", []
+        if stat not in stats:
+            return "skip", "stat-not-in-catalog", []
         # An on/off recipe whose stat the catalog carries WITH magnitudes
         # (`Efficient Metamagic - Empower` is Enhancement-typed on every native
         # carrier). Minting a `Bool` 1 beside those would put a presence and a
         # number in two buckets that add. Never infer a value: withheld.
-        return ("presence", None) if stat in presence else ("skip", "flag-in-a-magnitude-stat")
-    if stat in presence:
-        return "presence", None
-    if not row.get("type_sourced"):
-        return "skip", "no-bonus-type"
-    if not row.get("magnitude_sourced"):
-        return "skip", "no-curve"
-    if row.get("unit") == "dice":
-        # #835 — a dice magnitude is its own unit. The solver ranks scalars, and
-        # the bench discloses these; here they are named rather than parsed.
-        return "skip", "dice-magnitude"
-    curve = row.get("values_by_ml")
-    if not curve or len(curve) != MAX_SHARD_ML:
-        return "skip", "malformed-curve"
-    return "numeric", None
+        if stat not in presence:
+            return "skip", "flag-in-a-magnitude-stat", []
+        return "presence", None, [_affix_of(row, "presence")]
+    parts = row.get("parts") or [row]
+    affixes = []
+    for part in parts:
+        kind, reason = _classify_part(part, stats, presence, min_ml)
+        if kind == "skip":
+            return "skip", (f"compound-{reason}" if row.get("parts") else reason), []
+        affixes.append(_affix_of(part, kind))
+    if row.get("parts"):
+        return "compound", None, affixes
+    return ("presence" if affixes[0]["presence"] else "numeric"), None, affixes
 
 
 def build_essence_pool(placements, catalog_stats=None, catalog_presence=None,
@@ -255,9 +294,13 @@ def build_essence_pool(placements, catalog_stats=None, catalog_presence=None,
     the double-count the whole bonus-type harvest exists to prevent.
 
     `catalog_presence` is the subset of those stats the catalog carries ONLY as
-    on/off flags — every native carrier typed `Bool`. Rows naming one are minted
-    as presence options whatever their own type or curve says (see the module
-    docstring). Absent, no row is presence and the flags are withheld.
+    on/off flags — every native carrier typed `Bool`. Parts naming one are minted
+    as presence affixes whatever their own type or curve says (see the module
+    docstring). Absent, no part is presence and the flags are withheld.
+
+    Every record is ATOMIC (#844): `affixes` carries what the shard grants, one
+    entry per enchantment, each with its own type, unit and 36-slot curve. There
+    is no record-level stat, because a compound shard has none.
     """
     stats = set(catalog_stats or ())
     presence = set(catalog_presence or ())
@@ -268,42 +311,25 @@ def build_essence_pool(placements, catalog_stats=None, catalog_presence=None,
         raise PoolError(
             f"no placements for {missing}: the placement catalog changed shape")
 
-    records, skipped, compound = [], {}, []
+    records, skipped = [], {}
     for family, group in HOST_FAMILIES.items():
         menus = placements[group]
         for menu in MENUS:
             for row in menus.get(menu, []) or []:
-                kind, reason = _classify(row, stats, presence)
                 effect = row.get("effect") or row.get("recipe") or row.get("stat")
-                if kind == "skip":
-                    if reason == "compound-recipe":
-                        compound.append({"family": family, "menu": menu, "effect": effect,
-                                         "parts": [p.get("stat") for p in row["parts"]],
-                                         "sourced": all(p.get("sourced") and not p.get("quarantined")
-                                                        for p in row["parts"])})
-                    skipped.setdefault(reason, set()).add(effect)
-                    continue
                 min_ml = int(row.get("min_ml") or 1)
                 if menu == "Extra":
                     min_ml = max(min_ml, EXTRA_SLOT_MIN_ML)
-                if kind == "presence":
-                    bonus_type, unit, curve = "Bool", "flat", list(PRESENCE_CURVE)
-                else:
-                    bonus_type, unit, curve = row["bonus_type"], row.get("unit") or "flat", list(row["values_by_ml"])
-                    if bonus_type == "Insight" and min_ml < INSIGHT_MIN_ML:
+                kind, reason, affixes = _classify(row, stats, presence, min_ml)
+                if kind == "skip":
+                    skipped.setdefault(reason, set()).add(effect)
+                    continue
+                for a in affixes:
+                    if a["bonus_type"] == "Insight" and min_ml < INSIGHT_MIN_ML:
                         raise PoolError(
-                            f"{effect} ({family} {menu}) is Insight-typed with min_ml "
+                            f"{effect} ({family} {menu}) grants an Insight bonus with min_ml "
                             f"{min_ml}: the catalog stopped applying the wiki's ML-10 "
                             "floor and this module does not re-apply it")
-                    # A curve may be EMPTY below the recipe's own floor — `Armor
-                    # Destroying` exists from ML 20 and yourddo stores null for
-                    # 1..19 — and the solver never reads those slots because
-                    # `hostMl >= min_ml` gates the option first. A null AT or
-                    # ABOVE the floor is a hole the solver would read as 0 and
-                    # silently credit nothing for: withheld and named.
-                    if any(v in (None, "") for v in curve[min_ml - 1:]):
-                        skipped.setdefault("curve-hole", set()).add(effect)
-                        continue
                 records.append({
                     "family": family,
                     "menu": menu,
@@ -312,20 +338,14 @@ def build_essence_pool(placements, catalog_stats=None, catalog_presence=None,
                     # The label the host declares, so a reader can join an option back
                     # to the slot it fills without reconstructing the family name.
                     "slot_label": f"Essence Crafting: {family} - {menu}",
-                    "stat": row["stat"],
-                    "bonus_type": bonus_type,
-                    "unit": unit,
-                    "values_by_ml": curve,
                     # Carried per option rather than derived in the solver: the
                     # Insight floor rides on the row from the catalog, the Extra slot
                     # gate is applied above, and the solver enforces `hostMl >= min_ml`
                     # for both without knowing which rule it is honouring.
                     "min_ml": min_ml,
-                    "presence": kind == "presence",
-                    # Where the NUMBER came from. Dice rows keep the wiki's richer
-                    # magnitude (`magnitude_from`); a presence option has none.
-                    "magnitude_source": (None if kind == "presence"
-                                         else row.get("magnitude_from") or "yourddo"),
+                    "compound": kind == "compound",
+                    "presence": all(a["presence"] for a in affixes),
+                    "affixes": affixes,
                     "wiki_url": WIKI_URL,
                 })
 
@@ -351,7 +371,7 @@ def build_essence_pool(placements, catalog_stats=None, catalog_presence=None,
             "offered_all": len(fam_recs),
             "total_all": sum(len(placements[group].get(m, []) or []) for m in MENUS),
             "presence": sum(1 for r in fam_recs if r["presence"]),
-            "compound_deferred": sum(1 for c in compound if c["family"] == family and c["sourced"]),
+            "compound": sum(1 for r in fam_recs if r["compound"]),
         }
     return {
         "records": records,
@@ -363,25 +383,26 @@ def build_essence_pool(placements, catalog_stats=None, catalog_presence=None,
             "offered_all": len(records),
             "total_all": sum(total.values()),
             "presence": sum(1 for r in records if r["presence"]),
+            # #844 — compound shards offered, one record each, and the partially
+            # sourced ones withheld whole (reasons prefixed `compound-`).
+            "compound": sum(1 for r in records if r["compound"]),
+            "compound_withheld": sum(len(v) for k, v in skipped.items() if k.startswith("compound-")),
             "by_family": by_family,
             "skipped": {k: sorted(v) for k, v in skipped.items()},
-            # Fully sourced compound recipes the solver cannot take yet (#844).
-            # The partially sourced ones are withheld on that ground and not
-            # counted here, so this number is exactly what #844 unlocks.
-            "compound_deferred": sum(1 for c in compound if c["sourced"]),
-            "compound_deferred_issue": COMPOUND_ISSUE,
-            "compound": compound,
             "insight_min_ml": INSIGHT_MIN_ML,
             "extra_slot_min_ml": EXTRA_SLOT_MIN_ML,
             "note": ("The four host families some catalog item declares a menu on "
                      "(Trinket, Rune Arm, Ring, Melee), read from the same "
                      "veteran-software/yourddo catalog the item bench uses (#843). "
-                     "A row is offered when its placement, bonus type and ML curve "
-                     "are all sourced and its stat is one the catalog ranks; a stat "
-                     "the catalog carries only as an on/off flag is offered as "
-                     "presence, the way the bench mints it. Withheld and named: "
-                     "compound recipes (one shard, several enchantments — #844), "
-                     "names the stat join could not match, rows missing a type or a "
-                     "curve, dice magnitudes, and flags on stats the catalog values."),
+                     "A shard is offered when its placement, every enchantment's "
+                     "bonus type and ML curve are all sourced and every stat is one "
+                     "the catalog ranks; a stat the catalog carries only as an on/off "
+                     "flag is offered as presence, the way the bench mints it. A "
+                     "compound shard (Sheltering: Physical AND Magical Sheltering) is "
+                     "one option granting every part at once (#844). Withheld and "
+                     "named: names the stat join could not match, enchantments "
+                     "missing a type or a curve, dice magnitudes, flags on stats the "
+                     "catalog values, and compound shards with any part in those "
+                     "states."),
         },
     }

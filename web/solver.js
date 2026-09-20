@@ -498,7 +498,7 @@ function buildProgram(model) {
   const sealMeta = new Map(); // seal placement var -> {item, seal_type, category, stat, bonus_type, value, unit, wiki_url}
   const lgsMeta = new Map();  // Legendary Green Steel pick var -> {item, tier, item_class, name, affixes, stat, bonus_type, value, unit, wiki_url} (#194/#687)
   const slaversMeta = new Map();  // #766 — Slaver's crafting pick var -> {item, slot, tier, name, affixes, stat, bonus_type, value, unit}
-  const essMeta = new Map();  // Essence Crafting pick var -> {item, menu, effect, stat, bonus_type, value, unit, wiki_url}
+  const essMeta = new Map();  // Essence Crafting pick var -> {item, family, menu, effect, name, affixes, stat, bonus_type, value, unit, presence, wiki_url} (#844: `affixes` is the whole shard; the flat fields are its leading ON-TARGET affix)
   const memberMeta = new Map(); // membership pick var -> {host, set, station} (chosen set-membership: Cannith / Dino Set-Bonus)
 
   // U3 — augment assignment (aggregate compatible-color capacity). Correctness
@@ -1263,26 +1263,41 @@ function buildProgram(model) {
         // through, which is why the test that caught it drives a real solve.
         if (opt.family !== slot.family) continue;
         if (opt.menu !== slot.menu) continue;
-        if (!targetSet.has(opt.stat)) continue;
         if (hostMl < (opt.min_ml || 1)) continue;
-        const value = Number(opt.values_by_ml[hostMl - 1]);
-        if (!Number.isFinite(value) || value <= 0) continue;
-        const n = "ess" + essc++;
-        extraVars.push(n);
-        essMeta.set(n, {
-          item: xv.variant.variant_id, family: opt.family, menu: opt.menu, effect: opt.effect,
-          name: opt.name, stat: opt.stat, bonus_type: opt.bonus_type,
-          value, unit: opt.unit || "flat", wiki_url: opt.wiki_url,
-          // #843 — an on/off option (`Holy`, `Undead Bane`): value 1 in the
+        // #844 — ATOMIC: the shard grants every affix in its list from ONE pick
+        // variable. Each affix's magnitude is read from its OWN curve at the
+        // host's crafted ML; the on-target ones each get a z in their own
+        // (stat, bonus type) bucket, gated on the same variable, so a compound
+        // shard credits both halves and can never be taken by halves. The
+        // Legendary Green Steel loop above is the same shape.
+        const affixes = _craftAffixes(opt).map((a) => ({
+          stat: a.stat, bonus_type: a.bonus_type, unit: a.unit || "flat",
+          value: Number((a.values_by_ml || [])[hostMl - 1]),
+          // #843 — an on/off affix (`Holy`, `Undead Bane`): value 1 in the
           // `Bool` bucket, like the native affix it stands beside. Carried so
           // the report says "present" rather than "+1".
-          presence: !!opt.presence,
+          presence: !!a.presence,
+        }));
+        const onTarget = affixes.filter((a) => targetSet.has(a.stat) && Number.isFinite(a.value) && a.value > 0);
+        if (!onTarget.length) continue;
+        const n = "ess" + essc++;
+        extraVars.push(n);
+        const lead = onTarget[0];
+        essMeta.set(n, {
+          item: xv.variant.variant_id, family: opt.family, menu: opt.menu, effect: opt.effect,
+          name: opt.name, affixes, wiki_url: opt.wiki_url,
+          // Legacy flat fields, kept for renderers not yet reading `affixes`: the
+          // option's leading ON-TARGET affix.
+          stat: lead.stat, bonus_type: lead.bonus_type, value: lead.value, unit: lead.unit,
+          presence: lead.presence,
         });
         slotVars.push(n);
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
-        const k = `${opt.stat}||${_equivType(opt.bonus_type)}`;
-        if (!zByBucket.has(k)) zByBucket.set(k, []);
-        zByBucket.get(k).push(zOf([n], value, opt, xv.variant.variant_id));
+        for (const a of onTarget) {
+          const k = `${a.stat}||${_equivType(a.bonus_type)}`;
+          if (!zByBucket.has(k)) zByBucket.set(k, []);
+          zByBucket.get(k).push(zOf([n], a.value, a, xv.variant.variant_id));
+        }
       }
       if (slotVars.length) extraConstraints.push(`${slotVars.join(" + ")} <= 1`); // one craft per menu
     }
@@ -3790,11 +3805,12 @@ function essenceReportFor(model, placed) {
     craftedDown,
     placed: (placed || []).map((p) => ({ item: p.item, menu: p.menu, effect: p.effect,
                                          stat: p.stat, bonus_type: p.bonus_type, value: p.value,
-                                         presence: !!p.presence })),
-    // #843 — fully sourced compound recipes the pool withholds (#844), so the
-    // notice can say what class of shard is missing instead of "most".
-    compoundDeferred: cov ? (cov.compound_deferred || 0) : null,
-    compoundIssue: cov ? (cov.compound_deferred_issue || null) : null,
+                                         presence: !!p.presence,
+                                         // #844 — the whole shard, so a compound
+                                         // placement reports every part it granted.
+                                         affixes: (p.affixes || []).map((a) => ({
+                                           stat: a.stat, bonus_type: a.bonus_type, value: a.value,
+                                           presence: !!a.presence })) })),
     offered: cov ? cov.offered_all : null,
     total: cov ? cov.total_all : null,
     insightMinMl: cov ? cov.insight_min_ml : null,

@@ -950,22 +950,21 @@
     const n = (r.placed || []).length;
     if (n) {
       // #843 — a presence option is on or off; "+1" would read as a number.
-      const what = r.placed.map((p) => `${p.menu}: ${p.effect}${p.presence ? "" : ` +${p.value}`}`).join(", ");
+      // #844 — a compound shard names every part it granted: the recipe is the
+      // thing the player crafts, the parts are what it did.
+      const one = (a) => (a.presence ? a.stat : `${a.stat} +${a.value}`);
+      const what = r.placed.map((p) => {
+        const parts = (p.affixes && p.affixes.length > 1) ? p.affixes : null;
+        return `${p.menu}: ${p.effect}` + (parts ? ` (${parts.map(one).join(", ")})` : (p.presence ? "" : ` +${p.value}`));
+      }).join(", ");
       lines.push(`Essence Crafting placed ${n} ${n === 1 ? "effect" : "effects"} (${what}). `
         + "Crafting these destroys them if the item is later upgraded or its sets rerolled.");
     }
     if (r.offered != null && r.total != null) {
-      // #843 — the pool reads the same catalog as the item bench, and the
-      // largest withheld class is now a SHAPE the solver cannot take rather than
-      // a missing source. Say which, with the number, so a player who wanted
-      // Sheltering on a Gem learns why it was never a candidate.
-      const compound = (r.compoundDeferred != null && r.compoundDeferred > 0)
-        ? ` ${r.compoundDeferred} of the rest are shards that grant two effects at once` +
-          ` (Sheltering, Combat Mastery), which this tool cannot yet place` +
-          `${r.compoundIssue ? ` (#${r.compoundIssue})` : ""}.`
-        : "";
+      // #843 — the pool reads the same catalog as the item bench; #844 — a
+      // shard granting two effects at once is offered whole, so the remainder
+      // is only what the source leaves unsourced.
       lines.push(`The solver chose from ${r.offered} of the ${r.total} effects these menus offer in game.`
-        + compound
         + " The remainder are not modelled: an effect is offered only once its placement, its bonus "
         + "type and its level curve are all sourced and its name is one this tool ranks — without "
         + "the type, a crafted effect would either double-count against your gear or wrongly replace it.");
@@ -2377,8 +2376,11 @@
       // build that printed only "Constitution +6 Insight" would leave a recipient
       // deriving which of the two to craft. Same "name, then affixes" idiom the
       // dino and Nearly Complete rows use.
+      // #844 — `craftAffixes` rather than `craftValue`: a compound shard lists
+      // every part it granted (`Sheltering, Physical Sheltering +11 Enhancement,
+      // Magical Sheltering +11 Enhancement`); a single reads exactly as before.
       case "essence": return `Essence Crafting ${o.menu}: `
-        + (o.effect && o.effect !== o.stat ? `${o.effect}, ` : "") + craftValue(o);
+        + (o.effect && o.effect !== o.stat ? `${o.effect}, ` : "") + craftAffixes(o);
       case "joker": return `Wildcard set: ${o.set}`;
       case "augmentset": {
         // A solver-placed Set Augment (host is solver-DECIDED, read from

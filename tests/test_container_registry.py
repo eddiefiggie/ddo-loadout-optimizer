@@ -378,10 +378,12 @@ def test_registry_declares_every_single_pick_container_with_a_verdict():
         # safe since the builders stopped splitting multi-affix options, REACHABLE
         # through the 48 Legendary Green Steel blanks (8 accessories / 40 weapons).
         "legendary_green_steel":    (cr.ATOMIC, ("spell_focus",), cr.VERIFIED_SAFE, True),
-        # #193 — FLAT and verified-safe, which is what separates it from the one
-        # above: a crafted Essence effect grants exactly ONE stat by construction,
-        # so there is no multi-affix option for a flat shape to split.
-        "essence_crafting":         (cr.FLAT,   (),               cr.VERIFIED_SAFE, True),
+        # #844 — ATOMIC now. It was FLAT while a crafted Essence effect granted
+        # exactly one stat (the wiki's one-effect-per-cell table); the yourddo
+        # catalog carries compound shards (`Sheltering`), and one shard is one
+        # record carrying every part. No expansion pass: the parts arrive as the
+        # enchantments the shard grants.
+        "essence_crafting":         (cr.ATOMIC, (),               cr.VERIFIED_SAFE, True),
         # #766 — Slaver's crafting: ATOMIC, the Suffix `Resistance` umbrella expanded
         # one level in, reachable through the six Chains / Five Rings / Shackles hosts.
         "slavers":                  (cr.ATOMIC, ("spell_focus",), cr.VERIFIED_SAFE, True),
