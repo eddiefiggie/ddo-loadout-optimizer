@@ -1,0 +1,287 @@
+{
+ "_README": "#837 \u2014 the join from upstream's ENCHANTMENT names to this catalog's stat vocabulary. Upstream names the mechanic (`Hit Points`); our catalog names the affix (`False Life`). Every `joined` target is asserted to exist in the built catalog. `unmatched` is quarantined, never guessed: a wrong stat name is a wrong stacking bucket, which is invisible once a loadout is solved.",
+ "_rejected_rule": "A general `recipe-name` FALLBACK for compound recipes was tested and discarded: it maps `Spellcasting Implement` onto `Corrosion`, folding a non-stat into that recipe's spell power and double-counting it. The rule is safe only where the recipe grants exactly one enchantment, which is how the joined entries were derived.",
+ "_rules": {
+  "insightful-prefix": "The pipeline has stripped an `Insightful` prefix since #193.",
+  "lore-affix-name": "Spell critical chance comes from Lore items.",
+  "recipe-name": "The recipe whose ONLY enchantment this is, is itself named with our affix name. Corroborated per entry.",
+  "spell-focus-suffix": "`X Spell Focus` is spelled `X Focus` as an item affix.",
+  "spell-power-affix-name": "DDO names per-element spell power by affix (`Corrosion` for Acid), which is also upstream's recipe name."
+ },
+ "joined": {
+  "Abjuration Spell Focus": {
+   "rule": "spell-focus-suffix",
+   "stat": "Abjuration Focus"
+  },
+  "Acid Spell Critical Chance": {
+   "rule": "lore-affix-name",
+   "stat": "Acid Lore"
+  },
+  "Acid Spell Power": {
+   "rule": "spell-power-affix-name",
+   "stat": "Corrosion"
+  },
+  "Assassinate DC": {
+   "rule": "recipe-name",
+   "stat": "Assassinate"
+  },
+  "Attack": {
+   "rule": "recipe-name",
+   "stat": "Accuracy"
+  },
+  "Cold Spell Power": {
+   "rule": "spell-power-affix-name",
+   "stat": "Glaciation"
+  },
+  "Conjuration Spell Focus": {
+   "rule": "spell-focus-suffix",
+   "stat": "Conjuration Focus"
+  },
+  "Critical Confirmation": {
+   "rule": "recipe-name",
+   "stat": "Seeker"
+  },
+  "Damage": {
+   "rule": "recipe-name",
+   "stat": "Deadly"
+  },
+  "Electric Spell Power": {
+   "rule": "spell-power-affix-name",
+   "stat": "Magnetism"
+  },
+  "Enchantment Spell Focus": {
+   "rule": "spell-focus-suffix",
+   "stat": "Enchantment Focus"
+  },
+  "Evocation Spell Focus": {
+   "rule": "spell-focus-suffix",
+   "stat": "Evocation Focus"
+  },
+  "Fire Spell Critical Chance": {
+   "rule": "lore-affix-name",
+   "stat": "Fire Lore"
+  },
+  "Fire Spell Power": {
+   "rule": "spell-power-affix-name",
+   "stat": "Combustion"
+  },
+  "Force Spell Power": {
+   "rule": "spell-power-affix-name",
+   "stat": "Impulse"
+  },
+  "Fortification Bypass": {
+   "rule": "recipe-name",
+   "stat": "Armor-Piercing"
+  },
+  "Hit Points": {
+   "rule": "recipe-name",
+   "stat": "False Life"
+  },
+  "Illusion Spell Focus": {
+   "rule": "spell-focus-suffix",
+   "stat": "Illusion Focus"
+  },
+  "Insightful Abjuration Focus": {
+   "rule": "insightful-prefix",
+   "stat": "Abjuration Focus"
+  },
+  "Insightful Light Resistance": {
+   "rule": "insightful-prefix",
+   "stat": "Light Resistance"
+  },
+  "Insightful Listen": {
+   "rule": "insightful-prefix",
+   "stat": "Listen"
+  },
+  "Insightful Sonic Resistance": {
+   "rule": "insightful-prefix",
+   "stat": "Sonic Resistance"
+  },
+  "Insightful Tendon Slice": {
+   "rule": "insightful-prefix",
+   "stat": "Tendon Slice"
+  },
+  "Light Spell Power": {
+   "rule": "spell-power-affix-name",
+   "stat": "Radiance"
+  },
+  "Necromancy Spell Focus": {
+   "rule": "spell-focus-suffix",
+   "stat": "Necromancy Focus"
+  },
+  "Negative Healing Amplification": {
+   "rule": "recipe-name",
+   "stat": "Negative Amplification"
+  },
+  "Negative Spell Power": {
+   "rule": "spell-power-affix-name",
+   "stat": "Nullification"
+  },
+  "Offhand Shield Bash Chance": {
+   "rule": "recipe-name",
+   "stat": "Shield Bashing"
+  },
+  "Positive Healing Amplification": {
+   "rule": "recipe-name",
+   "stat": "Healing Amplification"
+  },
+  "Positive Spell Power": {
+   "rule": "spell-power-affix-name",
+   "stat": "Devotion"
+  },
+  "Repair Spell Critical Chance": {
+   "rule": "lore-affix-name",
+   "stat": "Repair Lore"
+  },
+  "Repair Spell Power": {
+   "rule": "spell-power-affix-name",
+   "stat": "Reconstruction"
+  },
+  "Sonic Spell Critical Chance": {
+   "rule": "lore-affix-name",
+   "stat": "Sonic Lore"
+  },
+  "Sonic Spell Power": {
+   "rule": "spell-power-affix-name",
+   "stat": "Resonance"
+  },
+  "Spell Points": {
+   "rule": "recipe-name",
+   "stat": "Wizardry"
+  },
+  "Stunning DC": {
+   "rule": "recipe-name",
+   "stat": "Stunning"
+  },
+  "Sunder DC": {
+   "rule": "recipe-name",
+   "stat": "Shatter"
+  },
+  "Transmutation Spell Focus": {
+   "rule": "spell-focus-suffix",
+   "stat": "Transmutation Focus"
+  },
+  "Trip DC": {
+   "rule": "recipe-name",
+   "stat": "Vertigo"
+  }
+ },
+ "unmatched": {
+  "Befouling": {
+   "instances": 1,
+   "reason": "Absent \u2014 a Charisma-damaging on-hit effect we do not model."
+  },
+  "Cold Spell Critical Chance": {
+   "instances": 2,
+   "reason": "Would join to `Cold Lore`, but our catalog carries no such stat (only Acid, Fire, Repair and Sonic Lore)."
+  },
+  "Concealment": {
+   "instances": 1,
+   "reason": "Absent from our catalog vocabulary."
+  },
+  "Deflection AC": {
+   "instances": 6,
+   "reason": "We carry no Deflection AC stat; `Missile Deflection` is a different thing."
+  },
+  "Dwarf Bane": {
+   "instances": 1,
+   "reason": "Our catalog carries `Lesser Dwarf Bane` (and for Incorporeal, Greater too) but not the plain form."
+  },
+  "Electric Spell Critical Chance": {
+   "instances": 2,
+   "reason": "Would join to `Electric Lore`, but our catalog carries no such stat (only Acid, Fire, Repair and Sonic Lore)."
+  },
+  "Force Spell Critical Chance": {
+   "instances": 2,
+   "reason": "Would join to `Force Lore`, but our catalog carries no such stat (only Acid, Fire, Repair and Sonic Lore)."
+  },
+  "Fortitude Save vs Disease": {
+   "instances": 3,
+   "reason": "Narrower than our `Fortitude Save` \u2014 same reason."
+  },
+  "Fortitude Save vs Poison": {
+   "instances": 5,
+   "reason": "Narrower than our `Fortitude Save`; joining it there would credit a general save from a conditional one."
+  },
+  "Gnoll Bane": {
+   "instances": 1,
+   "reason": "Our catalog carries `Lesser Gnoll Bane` (and for Incorporeal, Greater too) but not the plain form."
+  },
+  "Goblinoid Bane": {
+   "instances": 1,
+   "reason": "Our catalog carries `Lesser Goblinoid Bane` (and for Incorporeal, Greater too) but not the plain form."
+  },
+  "Halfling Bane": {
+   "instances": 1,
+   "reason": "Our catalog carries `Lesser Halfling Bane` (and for Incorporeal, Greater too) but not the plain form."
+  },
+  "Illusion Resistance": {
+   "instances": 2,
+   "reason": "Absent; we carry other `X Resistance` stats but not this one."
+  },
+  "Incorporeal Bane": {
+   "instances": 1,
+   "reason": "Our catalog carries `Lesser Incorporeal Bane` (and for Incorporeal, Greater too) but not the plain form."
+  },
+  "Insight AC": {
+   "instances": 2,
+   "reason": "We carry no Insight-typed AC stat of this name."
+  },
+  "Insightful Illusion Resistance": {
+   "instances": 1,
+   "reason": "Its base, `Illusion Resistance`, is itself absent."
+  },
+  "Light Spell Critical Chance": {
+   "instances": 2,
+   "reason": "Would join to `Light Lore`, but our catalog carries no such stat (only Acid, Fire, Repair and Sonic Lore)."
+  },
+  "Melee Attack Speed": {
+   "instances": 8,
+   "reason": "AMBIGUOUS. Granted by both `Melee Alacrity` and `Ranged Alacrity`; upstream's `Ranged Alacrity` grants the MELEE enchantment, which is a known defect on their side. Resolvable per recipe only where the recipe grants this alone."
+  },
+  "Melee Threat": {
+   "instances": 6,
+   "reason": "AMBIGUOUS. Granted by `Diversion` (which REDUCES threat, stored negative) and `Incite` (which increases it). One name, opposite signs."
+  },
+  "Natural Armor": {
+   "instances": 1,
+   "reason": "Absent from our catalog vocabulary."
+  },
+  "Negative Absorption": {
+   "instances": 2,
+   "reason": "We carry `Negative Energy Absorption`. Plausibly the same, NOT joined \u2014 a wrong absorption bucket is invisible once solved."
+  },
+  "Negative Spell Critical Chance": {
+   "instances": 2,
+   "reason": "Would join to `Negative Lore`, but our catalog carries no such stat (only Acid, Fire, Repair and Sonic Lore)."
+  },
+  "Positive Spell Critical Chance": {
+   "instances": 2,
+   "reason": "Would join to `Positive Lore`, but our catalog carries no such stat (only Acid, Fire, Repair and Sonic Lore)."
+  },
+  "Potency": {
+   "instances": 3,
+   "reason": "Absent from our catalog vocabulary (we carry the per-element spell powers, not Potency)."
+  },
+  "Sneak Attack Attack": {
+   "instances": 5,
+   "reason": "We carry `Sneak Attack Bonus`/`Damage`/`Dice`; which of the three this is, is not stated."
+  },
+  "Spellcasting Implement": {
+   "instances": 20,
+   "reason": "We carry this only as prose on an item ('Item becomes a Spellcasting Implement'), not as a rankable stat. Mapping it to the recipe name would fold it into that recipe's spell power and double-count."
+  },
+  "Stupefying": {
+   "instances": 1,
+   "reason": "Absent \u2014 an Intelligence-damaging on-hit effect we do not model."
+  },
+  "Will Save vs Enchantment": {
+   "instances": 3,
+   "reason": "Narrower than our `Will Save` \u2014 same reason."
+  },
+  "Will Save vs Magic": {
+   "instances": 4,
+   "reason": "Narrower than our `Will Save` \u2014 same reason."
+  }
+ }
+}

@@ -270,7 +270,14 @@ def test_every_sourced_placement_passed_both_checks():
              for a in (v.get("affixes") or []) if a.get("name")}
 
     seen, offenders = 0, []
-    for group, menus in (table.get("groups") or {}).items():
+    # #837 — `groups` is now built from `veteran-software/yourddo`, adopted as the
+    # source of truth. This guard is about the ddowiki HARVEST: that every
+    # magnitude it sources has a type from a stated value or one of two rules
+    # that trace to the wiki. The harvest still runs and still feeds the
+    # automatic bonuses, the weapon split and the three dice curves, so the guard
+    # follows it to `wiki_groups` rather than being retired. Retiring it would
+    # leave the harvest unvalidated on the day someone re-reads it.
+    for group, menus in (table.get("wiki_groups") or table.get("groups") or {}).items():
         for menu, rows in menus.items():
             for row in rows:
                 if not row.get("sourced"):
@@ -350,7 +357,26 @@ def test_every_combined_magnitude_passed_the_checks_that_licence_it():
 
     with open(os.path.join(ROOT, "web", "data", "items.json"), encoding="utf-8") as fh:
         built = _json.load(fh)
-    combined = (built.get("essence_placements") or {}).get("combined") or {}
+    # #837 — the combined-prefix POOL is retired: 75 of its 78 recipes are
+    # ordinary compound recipes in the source of truth now, and publishing both
+    # would offer each of those twice. So this no longer walks a published pool.
+    #
+    # It is not deleted, because what it licences has not gone away. The
+    # allowlist entry it stands for says a caller reading a curve applied the
+    # checks that make a magnitude safe, and `essence_combined` still exists and
+    # still reads curves if anyone calls it again. The guard therefore runs
+    # against the module's OWN output, built here, rather than against the
+    # dataset — which is a weaker claim about the product and exactly the same
+    # claim about the module.
+    from src import essence_combined as _ec
+    from src import essence_pool as _epool
+    _crafting = _epool._load(_epool.CRAFTING_SHARD)
+    _placements = (built.get("essence_placements") or {}).get("groups") or {}
+    combined = _ec.build_combined_pool(
+        catalog_stats={a.get("name") for v in built.get("items", [])
+                       for a in (v.get("affixes") or []) if a.get("name")},
+        placements=_placements,
+        curves=_crafting["values_by_ml"]["effects"])
     recipes = combined.get("recipes") or []
     assert recipes, "no combined recipe — this guard would pass vacuously"
 

@@ -88,11 +88,15 @@ function dagger(over) {
  *  publishes is filled and locked, so those rules are unreachable through an
  *  enchantment like `Assassinate`. Found by listing placements rather than
  *  assumed — 35 of 523 still take a player value. */
+// #837 — an item whose enchantment the source of truth does NOT value, so the
+// player still supplies the number. `Healing Amplification` used to be one and
+// is now fully sourced; `Insightful Dodge Bonus` on a Trinket's Mark of House
+// Cannith slot is the case that remains.
 function playerValued(over) {
   return Object.assign({
-    uid: 5, name: "My gloves", slot: "Gloves", ml: 30, augments: [],
-    affixes: [{ menu: "Suffix", effect: "Healing Amplification",
-                bonus_type: "Quality", value: 20 }],
+    uid: 5, name: "My trinket", slot: "Trinket", ml: 30, augments: [],
+    affixes: [{ menu: "Extra", effect: "Insightful Dodge Bonus",
+                bonus_type: "Insight", value: 20 }],
   }, over || {});
 }
 
@@ -125,9 +129,12 @@ test("#773: the reported item validates, and the cleaned entry is what gets stor
 test("#773: a typed string ML and typed string values are accepted and coerced", () => {
   // The form's inputs are strings. Refusing them would make the panel unusable
   // while the unit tests stayed green, which is the failure this case exists for.
+  // #837 — the effect must be one the player still supplies a value for, or the
+  // coercion being tested never runs: a sourced magnitude ignores whatever the
+  // entry carries. `Healing Amplification` is sourced now.
   const v = C.validateEntry(playerValued({ ml: "30",
-    affixes: [{ menu: "Suffix", effect: "Healing Amplification",
-                bonus_type: "Quality", value: "3" }] }), ctx);
+    affixes: [{ menu: "Extra", effect: "Insightful Dodge Bonus",
+                bonus_type: "Insight", value: "3" }] }), ctx);
   assert.ok(v.ok, v.errors.join(" | "));
   assert.strictEqual(v.entry.ml, 30);
   assert.strictEqual(v.entry.affixes[0].value, 3);
@@ -178,14 +185,16 @@ const REFUSALS = [
   ["an enchantment this item type cannot host",
    dagger({ affixes: [{ menu: "Suffix", effect: "Doom Aura", bonus_type: "Quality", value: 3 }] }),
    /cannot be crafted/i],
+  // #837 — `Assassinate` is typed by the source now, so its type is no longer
+  // the player's to get wrong. `Tendon Slice` is the case that remains.
   ["a bonus type outside the list",
-   dagger({ affixes: [{ menu: "Suffix", effect: "Assassinate", bonus_type: "Shiny", value: 3 }] }), /bonus type/i],
+   dagger({ affixes: [{ menu: "Suffix", effect: "Tendon Slice", bonus_type: "Shiny", value: 3 }] }), /bonus type/i],
   ["a zero value",
-   playerValued({ affixes: [{ menu: "Suffix", effect: "Healing Amplification", bonus_type: "Quality", value: 0 }] }), /above zero/i],
+   playerValued({ affixes: [{ menu: "Extra", effect: "Insightful Dodge Bonus", bonus_type: "Insight", value: 0 }] }), /above zero/i],
   ["a negative value",
-   playerValued({ affixes: [{ menu: "Suffix", effect: "Healing Amplification", bonus_type: "Quality", value: -4 }] }), /above zero/i],
+   playerValued({ affixes: [{ menu: "Extra", effect: "Insightful Dodge Bonus", bonus_type: "Insight", value: -4 }] }), /above zero/i],
   ["a value over the ceiling",
-   playerValued({ affixes: [{ menu: "Suffix", effect: "Healing Amplification", bonus_type: "Quality", value: 100000 }] }), /ceiling/i],
+   playerValued({ affixes: [{ menu: "Extra", effect: "Insightful Dodge Bonus", bonus_type: "Insight", value: 100000 }] }), /ceiling/i],
   // #795 — the placement rules themselves.
   ["an enchantment in the wrong menu",
    dagger({ affixes: [{ menu: "Prefix", effect: "Assassinate", bonus_type: "Quality", value: 3 }] }),
@@ -906,12 +915,14 @@ test("#799: neither unmodelled bonus is secretly rankable", () => {
 /** A ring with a combined prefix. `Fortifying` is Constitution + Fortification,
  *  both rankable, so it is servable; neither is sourced, so the player supplies
  *  both bonus types and both values. */
+// #837 — `Fortifying` is no longer reached through a separate combined pool. It
+// is an ordinary COMPOUND recipe in the source of truth: one Prefix slot, two
+// enchantments, both typed and both valued by the table. The player supplies
+// neither, which is why the fixture carries no `parts` at all now.
 function comboRing(over) {
   return Object.assign({
     uid: 4, name: "My combined ring", slot: "Ring", ml: 30, augments: [],
-    affixes: [{ menu: "Prefix", combined: "Fortifying",
-                parts: [{ bonus_type: "Enhancement", value: 9 },
-                        { bonus_type: "Quality", value: 4 }] }],
+    affixes: [{ menu: "Prefix", effect: "Fortifying" }],
   }, over || {});
 }
 
@@ -922,18 +933,18 @@ test("#800: a combined prefix is ONE row that mints TWO affixes", () => {
   // slot. Two rows here would put two enchantments in one menu and the duplicate
   // check would refuse the entry on its next round-trip.
   assert.strictEqual(v.entry.affixes.length, 1);
-  assert.strictEqual(v.entry.affixes[0].combined, "Fortifying");
+  assert.strictEqual(v.entry.affixes[0].effect, "Fortifying");
   assert.strictEqual(v.entry.affixes[0].parts.length, 2);
   const rec = C.toVariant(v.entry, ctx);
   const chosen = rec.affixes.filter((a) => !/^Enhancement Bonus/.test(a.name));
-  // #812 — the VALUES now come from the ML curve, not the entry: "Combined Shards
-  // also use this scaling for their individual effects." The bonus types are
-  // still the player's, because the wiki states neither.
-  const recipe = C.combinedFor("Rings", "Fortifying", ctx);
-  const at30 = (i) => String(Number(recipe.effects[i].values_by_ml[29]));
+  // #837 — both halves are now SOURCED: the table gives each its own bonus type
+  // and its own ML curve. The old combined pool could give neither, which is why
+  // this assertion used to carry a player-supplied `Quality`.
+  const row = C.placementFor("Rings", "Prefix", "Fortifying", ctx);
+  const at30 = (i) => String(Number(row.parts[i].values_by_ml[29]));
   assert.deepStrictEqual(chosen.map((a) => [a.name, a.type, a.value]), [
     ["Constitution", "Enhancement", at30(0)],
-    ["Fortification", "Quality", at30(1)],
+    ["Fortification", "Enhancement", at30(1)],
   ]);
 });
 
@@ -950,33 +961,45 @@ test("#800: the pair is atomic — half a shard is never offered", () => {
   // The whole reason a recipe can be withheld. `container_registry` refuses a
   // pool where one option becomes two independently-selectable records; the same
   // rule applies here, so a recipe whose second effect cannot be ranked is
-  // withheld WHOLE rather than served as its first.
-  const cov = raw.metadata.essence_placement_coverage.combined;
-  assert.ok(cov.withheld.length > 0, "some recipes are withheld, or this proves nothing");
-  const servedNames = new Set(placements.combined.recipes.map((r) => r.name));
-  for (const w of cov.withheld) {
-    assert.ok(!servedNames.has(w.name), `${w.name} is withheld and served`);
-    assert.ok(/withheld whole/.test(w.atomic), `${w.name} must say it is withheld whole`);
-    assert.ok((w.reason || "").length > 10, `${w.name} must name the unrankable effect`);
-  }
-  // And every SERVED recipe has both halves resolved, or the atomicity claim is
-  // decoration.
-  for (const r of placements.combined.recipes) {
-    assert.strictEqual(r.effects.length, 2, `${r.name} must carry exactly two effects`);
-    for (const e of r.effects) {
-      assert.ok(e.stat && vocab.known.has(e.stat),
-        `${r.name}: ${e.effect} resolved to an unrankable stat`);
+  // #837 — the atomicity claim survives the source change; what proves it moved.
+  // A compound recipe is ONE menu row granting several enchantments, so the
+  // assertion is that no row can deliver half of one: every part a record
+  // publishes either resolves to a stat this build ranks or is QUARANTINED, and
+  // a quarantined part is disclosed rather than served as an anonymous bucket.
+  let compound = 0;
+  for (const group of Object.keys(placements.groups)) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      for (const r of placements.groups[group][menu] || []) {
+        if (!Array.isArray(r.parts)) continue;
+        compound++;
+        assert.ok(r.parts.length > 1,
+          `${r.effect} carries a parts list with one entry — it should have been flattened`);
+        for (const p of r.parts) {
+          assert.ok(p.stat, `${r.effect} has a part with no stat`);
+          assert.ok(p.quarantined || vocab.known.has(p.stat),
+            `${r.effect}: ${p.stat} is neither rankable nor quarantined, so it would `
+            + "reach the solver as a bucket of its own");
+        }
+      }
     }
   }
+  assert.ok(compound > 400, `only ${compound} compound placements — expected ~487`);
 });
 
 test("#800: a combined shard needs ML 20, a third gate from a third source", () => {
   // Three ML rules now, each gating a different thing and each separately
   // sourced: the Extra SLOT needs 10, an Insight EFFECT needs 10, and a combined
   // OPTION needs 20. They are kept apart so one moving cannot drag the others.
-  assert.strictEqual(placements.combined.min_ml, 20);
-  assert.ok(C.combinedOptions("Rings", 20, ctx).length > 0, "offered at 20");
-  assert.deepStrictEqual(C.combinedOptions("Rings", 19, ctx), [], "and not at 19");
+  // #837 — the gate is now the RECIPE's own `min_ml`, carried by the source of
+  // truth per recipe rather than as one number for a whole pool. Still three
+  // separate rules, still kept apart: the Extra SLOT needs 10, an Insight EFFECT
+  // needs 10, and this recipe needs 20.
+  const row = C.placementFor("Rings", "Prefix", "Fortifying", ctx);
+  assert.strictEqual(row.min_ml, 20);
+  assert.ok(C.effectsFor("Rings", "Prefix", 20, ctx).some((r) => r.effect === "Fortifying"),
+    "offered at 20");
+  assert.ok(!C.effectsFor("Rings", "Prefix", 19, ctx).some((r) => r.effect === "Fortifying"),
+    "and not at 19");
   const v = C.validateEntry(comboRing({ ml: 19 }), ctx);
   assert.ok(!v.ok);
   assert.ok(v.errors.some((e) => /minimum level 20/.test(e)), v.errors.join(" | "));
@@ -1001,35 +1024,51 @@ test("#800: a recipe this item type cannot take is refused", () => {
     v.errors.join(" | "));
 });
 
-test("#800: every recipe slot name maps onto a real placement group", () => {
-  // A completeness claim needs a guard, in both directions: an unmapped slot
-  // serves that recipe to nobody, and an invented group is a picker with no
-  // table behind it.
+test("#837: every recipe reaches a real placement group, in both directions", () => {
+  // The property this guards did not change when the source did: an unmapped
+  // slot serves its recipe to NOBODY, silently, and an invented group is a
+  // picker with no table behind it. What changed is where the slot names come
+  // from — upstream's 25-name vocabulary rather than the wiki's table 1b — so
+  // the Python side asserts the map is total (`assert_slot_vocabulary_is_total`)
+  // and this asserts the published result of it.
   const groups = new Set(Object.keys(placements.groups));
-  for (const r of placements.combined.recipes) {
-    assert.ok(r.groups.length, `${r.name} reaches no group`);
-    for (const g of r.groups) {
-      assert.ok(groups.has(g), `${r.name} names group ${g}, which the table lacks`);
+  assert.strictEqual(groups.size, 16, "16 placement groups");
+  let placed = 0;
+  for (const g of groups) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      const rows = placements.groups[g][menu];
+      assert.ok(Array.isArray(rows), `${g}/${menu} is missing entirely`);
+      placed += rows.length;
     }
   }
-  // `Weapon` in the recipe table is undifferentiated, so a weapon recipe must
-  // reach BOTH weapon groups - unlike table 1b, which names them separately.
-  const wep = placements.combined.recipes.find((r) => r.name === "Armor Destroying");
-  assert.deepStrictEqual(wep.groups.sort(), ["Melee weapons", "Ranged weapons"]);
+  assert.ok(placed > 1400, `only ${placed} placements — the table lost rows`);
+
+  // `Weapon` is undifferentiated upstream, so a weapon recipe must reach BOTH
+  // weapon groups — the one place the Melee/Ranged split is general rather than
+  // silent.
+  const inGroup = (g, name) => ["Prefix", "Suffix", "Extra"]
+    .some((m) => (placements.groups[g][m] || []).some((r) => r.effect === name));
+  assert.ok(inGroup("Melee weapons", "Armor Destroying"), "melee");
+  assert.ok(inGroup("Ranged weapons", "Armor Destroying"), "ranged");
 });
 
-test("#800: the harvest and what it serves, re-ratified deliberately", () => {
-  const cov = raw.metadata.essence_placement_coverage.combined;
-  // 107 recipes, and the split is an independent check on the harvest: the page
-  // says "Update 81 introduced 100 more combined shards", and the table carries
-  // exactly 100 U81 rows against 7 from U55.
-  assert.strictEqual(cov.harvested, 107);
-  assert.strictEqual(cov.served + cov.withheld.length, cov.harvested,
-    "every recipe is either served or withheld - none silently vanishes");
-  assert.strictEqual(cov.served, 78);
-  assert.strictEqual(cov.withheld.length, 29);
+test("#837: what the source carries and what the table serves, re-ratified", () => {
+  // Replaces the #800 combined-harvest ratification, which counted a pool that
+  // no longer exists. Same job: every recipe is accounted for, none silently
+  // vanishes, and the numbers are pinned so a shrink is a failure rather than a
+  // quiet regression to the 523 placements #837 was filed about.
+  const cov = raw.essence_placements.source_coverage;
+  assert.strictEqual(cov.recipes, 368);
+  assert.strictEqual(cov.placements, 1465);
+  assert.strictEqual(cov.flags + cov.single + cov.compound, cov.placements,
+    "every placement is a flag, a single or a compound — none is unclassified");
+  assert.ok(cov.compound > 400, `${cov.compound} compound placements`);
+  // The umbrella withholding is deliberate and counted, not silent.
+  assert.deepStrictEqual(cov.umbrella_effects, ["Impulse", "Potency", "Slaying"]);
+  // And the four recipes the retired combined pool uniquely carried are logged
+  // rather than lost.
+  assert.strictEqual(cov.retired_combined_only.length, 4, cov.retired_combined_only);
 });
-
 
 
 // ---------------------------------------------------------------------------
@@ -1041,13 +1080,25 @@ test("#810: a magnitude the wiki publishes is filled, even when the type is not"
   // the same effect was missing. `essence_pool` couples them for a real reason —
   // the solver needs a bucket — and that reasoning does not hold in a builder
   // that asks the player for the type.
-  const row = C.placementFor("Melee weapons", "Suffix", "Assassinate", ctx);
-  assert.strictEqual(row.magnitude_sourced, true, "the wiki values Assassinate");
+  // #837 — this used to use `Assassinate`, which GRADUATED: the source of truth
+  // types it Enhancement (its enchantment is `Assassinate DC`), which is exactly
+  // the improvement #837 bought.
+  //
+  // `Tendon Slice` is now the only effect left that still fits this case — the
+  // table values it, types nothing, and the vocabulary does not class it a flag.
+  // Most of the others that would have fitted are carried as Bool by real items,
+  // so they mint as on/off and never reach this branch at all.
+  const row = C.placementFor("Melee weapons", "Suffix", "Tendon Slice", ctx);
+  assert.strictEqual(row.magnitude_sourced, true, "the table values Tendon Slice");
   assert.strictEqual(row.type_sourced, false, "…and does not type it");
   assert.strictEqual(row.sourced, false, "so it is not FULLY sourced");
+  // And the graduation is asserted, not just described.
+  assert.strictEqual(
+    C.placementFor("Melee weapons", "Suffix", "Assassinate", ctx).type_sourced, true,
+    "Assassinate is typed by the source of truth now");
 
   const v = C.validateEntry(dagger({ ml: 36, affixes: [
-    { menu: "Suffix", effect: "Assassinate", bonus_type: "Quality", value: 999 }] }), ctx);
+    { menu: "Suffix", effect: "Tendon Slice", bonus_type: "Quality", value: 999 }] }), ctx);
   assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
   const a = v.entry.affixes[0];
   assert.strictEqual(a.value, Number(row.values_by_ml[35]), "the ML 36 row, not the 999");
@@ -1134,49 +1185,32 @@ test("#810: all three menus are offered at ML 10 and above, on every item type",
 // ---------------------------------------------------------------------------
 // #812 — combined shards scale with ML, through the EXISTING join only.
 
-test("#812: a combined half takes its magnitude from the curve, and ignores the player's", () => {
-  //   "Scaling effects increase their values when placed in increasingly higher
-  //    minimum level (ML) shard items. Combined Shards also use this scaling for
-  //    their individual effects."   — `Essence Crafting enchantments`, Notes
-  const recipe = C.combinedFor("Rings", "Fortifying", ctx);
-  assert.ok(recipe.effects.every((e) => e.magnitude_sourced),
-    "both halves of Fortifying resolve through the existing join");
+test("#837: a compound half takes its magnitude from the table, and ignores the player's", () => {
+  // Replaces the #812 pair, which asserted this about the retired combined pool.
+  // The property is stronger now: that pool could source a MAGNITUDE and never a
+  // type, so a combined shard's bonus types were always the player's. The source
+  // of truth carries both, so a compound half takes both from the table and the
+  // player supplies neither.
+  const row = C.placementFor("Rings", "Prefix", "Fortifying", ctx);
+  assert.ok(row.parts.every((p) => p.magnitude_sourced),
+    "both halves of Fortifying are valued by the table");
+  assert.ok(row.parts.every((p) => p.type_sourced),
+    "…and typed by it, which the retired pool could never do");
+
+  // Whatever a stale entry carries for a sourced half is IGNORED, not refused:
+  // it is leftover UI state, not a request, because the form stops offering the
+  // control once the table answers.
   const v = C.validateEntry(comboRing({ ml: 30, affixes: [
-    { menu: "Prefix", combined: "Fortifying",
-      parts: [{ bonus_type: "Enhancement", value: 999 },
+    { menu: "Prefix", effect: "Fortifying",
+      parts: [{ bonus_type: "Quality", value: 999 },
               { bonus_type: "Quality", value: 999 }] }] }), ctx);
   assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
   const parts = v.entry.affixes[0].parts;
-  assert.strictEqual(parts[0].value, Number(recipe.effects[0].values_by_ml[29]));
-  assert.strictEqual(parts[1].value, Number(recipe.effects[1].values_by_ml[29]));
-  assert.strictEqual(parts[0].bonus_type, "Enhancement", "the type is still the player's");
+  assert.strictEqual(parts[0].value, Number(row.parts[0].values_by_ml[29]));
+  assert.strictEqual(parts[1].value, Number(row.parts[1].values_by_ml[29]));
+  assert.strictEqual(parts[0].bonus_type, "Enhancement", "the table's type, not the 999s'");
+  assert.strictEqual(parts[1].bonus_type, "Enhancement");
 });
-
-test("#812: the join is reused, never widened to the recipe table's vocabulary", () => {
-  // The recipe table names effects `table 1b` does not carry — `Entropic`,
-  // `Anarchic`, `Acid Absorption`, `Deception`. Those must keep asking the
-  // player: resolving a new vocabulary through a join validated against a
-  // different one is the error `essence_curve_join` exists to refuse, and its
-  // own opening example is what that error looks like.
-  const all = placements.combined.recipes.flatMap((r) => r.effects);
-  const sourced = all.filter((e) => e.magnitude_sourced);
-  const asked = all.filter((e) => !e.magnitude_sourced);
-  assert.ok(sourced.length > 20, `a real sourced population: ${sourced.length}`);
-  assert.ok(asked.length > 20, `and a real asked-for one: ${asked.length}`);
-  // Re-ratified deliberately: 51 of 156.
-  assert.strictEqual(sourced.length, 51);
-  assert.strictEqual(all.length, 156);
-  // An unsourced half must carry NO curve, or the flag is decoration.
-  for (const e of asked) {
-    assert.ok(!e.values_by_ml && !e.curve_row,
-      `${e.effect} is unsourced but carries a curve`);
-  }
-});
-
-
-
-// ---------------------------------------------------------------------------
-// #815 — the owner sweep: no name field, the Mark slot named, Insightful typed.
 
 test("#815: a missing name is DERIVED, not refused", () => {
   // The bench stopped asking for one: you do not name a crafted item. It cannot
@@ -1235,11 +1269,22 @@ test("#815: every Insightful placement is typed Insight, and nothing else defaul
   for (const group of Object.keys(g)) {
     for (const menu of ["Prefix", "Suffix", "Extra"]) {
       for (const r of g[group][menu] || []) {
+        // #837 — a recipe may grant SEVERAL enchantments, so the type lives per
+        // PART now; a compound record has none at the top level, correctly. A
+        // QUARANTINED part is one whose stat this catalog has no name for: it
+        // has no bucket, so there is no type to assert about it.
+        const parts = (r.parts || [r]).filter((p) => !p.quarantined);
         if (r.effect.startsWith("Insightful ")) {
-          assert.strictEqual(r.type_sourced, true, `${r.effect} must be typed`);
-          assert.strictEqual(r.bonus_type, "Insight", `${r.effect} must be Insight`);
+          for (const p of parts) {
+            assert.strictEqual(p.type_sourced, true, `${r.effect} must be typed`);
+            assert.strictEqual(p.bonus_type, "Insight", `${r.effect} must be Insight`);
+          }
           insight++;
-        } else if (!r.type_sourced) {
+        } else if (!r.flag && r.unit !== "dice"
+                   && parts.some((p) => !p.type_sourced)) {
+          // A FLAG has no type to state and a DICE proc is not a bonus, so
+          // neither asks the player anything. Only a modelled part with no
+          // sourced type is a question.
           askedNonInsightful++;
         }
       }
@@ -1304,24 +1349,40 @@ test("#817: an Insightful skill stays Insight — the rules are ordered", () => 
 });
 
 test("#817: what still asks is smaller, and is not a skill", () => {
-  // The gap after the rule: 121 placements across 23 effects, none of them a
-  // skill. Re-ratified deliberately — this number should only ever fall.
+  // #837 RE-RATIFIED, and the raw count is no longer the meaningful number: the
+  // table went from 523 placements to 1465 when the source of truth changed, so
+  // an absolute count that "should only ever fall" would fail on a bigger and
+  // better table. What must hold is the SHARE and the KIND.
+  //
+  //   before: 115 of 523 asking (22.0%)
+  //   after:  163 of 1465        (11.1%)
+  //   audit:  165 of 1465        (11.3%) — `Honed` joined the asks when its
+  //           `Unique` bonus type, which this catalog has no bucket for, was
+  //           left unsourced rather than minted into a bucket of its own.
+  //
+  // A flag has no type to state, a dice proc is not a bonus, and a quarantined
+  // part has no bucket in this catalog — none of the three asks the player
+  // anything, so none is counted.
   const g = placements.groups;
   const asking = new Set();
-  let n = 0;
+  let n = 0, total = 0;
   for (const group of Object.keys(g)) {
     for (const menu of ["Prefix", "Suffix", "Extra"]) {
       for (const r of g[group][menu] || []) {
-        if (r.type_sourced) continue;
-        if (C.isPresenceEffect(r.stat, vocab, ctx)) continue;
+        total++;
+        if (r.flag || r.unit === "dice") continue;
+        const parts = (r.parts || [r]).filter((p) => !p.quarantined);
+        if (!parts.length || parts.every((p) => p.type_sourced)) continue;
         assert.ok(!SKILL_NAMES.has(r.effect),
           `${r.effect} is a skill and should have been typed`);
         asking.add(r.effect); n++;
       }
     }
   }
-  assert.strictEqual(n, 115);
-  assert.strictEqual(asking.size, 22);
+  assert.strictEqual(n, 165);
+  assert.strictEqual(asking.size, 75);
+  assert.ok(n / total < 0.12,
+    `${n} of ${total} placements still ask — worse than the 11.1% #837 landed at`);
   assert.ok(!asking.has("Dodge"), "Dodge is sourced from the `Dodge bonus` page");
 });
 

@@ -1944,13 +1944,20 @@ def build() -> dict:
                 continue
             _catalog_stats.add(_st)
             _catalog_units.setdefault(_st, set()).add(_a.get("unit") or "flat")
+    # #837 audit — every bonus type the catalog actually buckets by, so a crafted
+    # affix can never be minted into a bucket nothing native can join.
+    _catalog_types = {(_a.get("bonus_type") or "").strip()
+                      for _v in variants for _a in (_v.get("affixes") or [])
+                      if (_a.get("bonus_type") or "").strip()
+                      and _a.get("bonus_type") not in ("Bool", "boolean")}
     essence = essence_mod.build_essence_pool(catalog_stats=_catalog_stats,
                                              catalog_units=_catalog_units)
     # #795 — the same shard, read for the BUILDER rather than the solver. The two
     # differ on who supplies the bonus type and the value, so they offer different
     # amounts of the table on purpose; see `src/essence_placements.py`.
     essence_placements = essence_placements_mod.build_placement_catalog(
-        catalog_stats=_catalog_stats, catalog_units=_catalog_units)
+        catalog_stats=_catalog_stats, catalog_units=_catalog_units,
+        catalog_types=_catalog_types)
     # #806 — the slot join, checked from the two sides the wiki cannot reach: the
     # anatomical gear-planner type each slot holds, and a second join written
     # independently against a different wiki table. Run here rather than inside

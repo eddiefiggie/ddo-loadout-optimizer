@@ -32,6 +32,7 @@ import json
 import os
 
 from src import essence_combined
+from src import essence_source
 from src import essence_curve_join as curve_join
 from src import essence_pool
 from src import spell_focus
@@ -632,7 +633,8 @@ def assert_unit_matches_the_magnitude(records) -> dict:
             "checked": sum(1 for r in records if r.get("values_by_ml"))}
 
 
-def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
+def build_placement_catalog(catalog_stats=None, catalog_units=None,
+                            catalog_types=None) -> dict:
     """Every placement in the table, annotated for the builder.
 
     `catalog_stats` gates `rankable`: an effect whose stat the catalog does not use
@@ -813,20 +815,48 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
             "placement at all, which means the harvest broke rather than that the "
             "game changed")
 
-    # #800 — combined prefixes, keyed by the same group names. Built here so the
-    # bench reads ONE published table rather than joining two in the browser.
-    combined = essence_combined.build_combined_pool(
-        catalog_stats=catalog_stats, placements=placements,
-        # #812 — "Combined Shards also use this scaling for their individual
-        # effects." Passed in rather than re-opened there: the shard's readers
-        # are a named set and a guard enforces it.
-        curves=crafting["values_by_ml"]["effects"])
+    # #837 — the combined-prefix pool is RETIRED, not merely unpublished. 75 of
+    # its 78 recipes are ordinary compound recipes in the new source of truth, so
+    # building it would cost a second pass to produce options the main menus
+    # already carry — and publishing both would offer each of those 75 twice.
+    #
+    # `essence_combined.GROUP_OF_SLOT` is still read, by
+    # `assert_the_two_slot_joins_agree`: it is a slot join written independently
+    # against a different wiki table, and checking our groups against it is worth
+    # more now that the groups come from somewhere else entirely.
+    #
+    # The three it carried that the new source does not — `Blaphemous`,
+    # `Night Grasp's`, `Silver Flame's` — are logged rather than lost.
+    _combined_only = sorted(
+        {r["name"] for r in essence_combined.load()["recipes"]}
+        - {r["name"] for r in essence_source.load()})
 
+    # #837 — the GROUPS now come from `veteran-software/yourddo`, adopted as the
+    # source of truth for Essence Crafting. The ddowiki harvest above still runs
+    # and still feeds everything else on this record: the automatic Minimum
+    # Level bonuses (#799), the weapon split (#804), the slot-group join (#806)
+    # and the three dice curves the new source stores less precisely (#835).
+    #
+    # `combined` is RETIRED rather than kept alongside. 75 of its 78 recipes are
+    # in the new source already, as ordinary compound recipes — publishing both
+    # would offer each of those twice, once per path, and a player could take the
+    # same shard in two slots.
+    _src = essence_source.build_catalog(
+        catalog_stats=catalog_stats, catalog_units=catalog_units,
+        catalog_types=catalog_types,
+        wiki_curves={r["effect"]: r["values_by_ml"]
+                     for menus in groups.values()
+                     for rows in menus.values()
+                     for r in rows if r.get("values_by_ml")})
     return {
-        "groups": groups,
+        "groups": _src["groups"],
+        "wiki_groups": groups,
+        "source": _src["source"],
+        "source_commit": _src["source_commit"],
+        "source_coverage": dict(_src["coverage"],
+                                retired_combined_only=_combined_only),
         "automatic": build_automatic_bonuses(crafting),
         "weapon_split": build_weapon_split(),
-        "combined": {k: v for k, v in combined.items() if k != "coverage"},
         "slot_groups": {k: list(v) for k, v in SLOT_GROUPS.items()},
         "extra_slot_min_ml": EXTRA_SLOT_MIN_ML,
         "insight_min_ml": INSIGHT_MIN_ML,
@@ -841,6 +871,8 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
             "by_group": counts,
             "slots_without_a_group": sorted(
                 s for s, g in SLOT_GROUPS.items() if not g),
-            "combined": combined["coverage"],
+            # #837 — the combined-prefix pool is retired; its recipes are
+            # ordinary compound recipes in the source of truth now.
+            "combined_retired_only_here": _combined_only,
         },
     }
