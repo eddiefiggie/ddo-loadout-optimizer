@@ -1958,6 +1958,17 @@ def build() -> dict:
     essence_placements_mod.assert_slot_groups_match_the_catalog(variants)
     essence_placements_mod.assert_the_two_slot_joins_agree(
         {g for gs in essence_combined_mod.GROUP_OF_SLOT.values() for g in gs})
+    # #832 — the four effects the bench must not ask a bonus type for, re-derived
+    # rather than trusted. Needs the finished variants for the same reason the
+    # two joins above do: "no carrier types this" is a claim about the catalog,
+    # and the catalog only exists here.
+    _no_bonus_type = (
+        essence_placements_mod.assert_no_bonus_type_still_holds(
+            [r for menus in essence_placements["groups"].values()
+             for rows in menus.values() if isinstance(rows, list)
+             for r in rows],
+            ((a.get("name"), a.get("type"))
+             for v in variants for a in (v.get("affixes") or []))))
 
     # Only `verified` hosts keep live menus. `Trinket [Crafted]` declares the same
     # three and is quarantined with a placeholder ML 1 — crafting real numbers onto
@@ -2461,6 +2472,9 @@ def build() -> dict:
     # gaps. A NEW one fails the build, and so does an allowlist entry the data no
     # longer justifies. Stamped as metadata (`labels_validated` is the validated
     # universe, not the walked one) so nobody hand-recounts a different predicate.
+    # #832 — stamped beside the other gates rather than inside the placement
+    # table, which publishes a filtered subset that drops `coverage`.
+    out["metadata"]["essence_no_bonus_type"] = _no_bonus_type
     out["metadata"]["crafting_slot_coverage"] = crafting_coverage_mod.check(out)
 
     # #823 — the Nearly Complete tier boundary. The solver reads a host's tier as

@@ -2368,6 +2368,9 @@ input.wz-ml { width: 120px; }
 /* A sourced enchantment's value is read from the crafting table and locked, so it
    is text rather than a control — a disabled input still reads as a question. */
 .wz-custom-sourced { flex: 1 1 10rem; font-size: var(--fs-xs); }
+/* #832 — an effect with no bonus type at all. Muted rather than alarming: it is
+   a fact about the effect, not a gap in the data. */
+.wz-custom-notype { color: var(--muted); font-style: italic; }
 .wz-custom-sourced .wz-help { display: block; }
 
 /* #799 — the bonuses the Minimum Level shard applies on its own. Read-only, and
