@@ -1497,10 +1497,27 @@ function countColors(colors) {
   return m;
 }
 
+/** Nearly Complete's two recipe MLs: Heroic ML11, Legendary ML35. The pipeline
+ *  carries the same pair (`src/nearly_complete.py`) and a test pins the two
+ *  copies to the same number. `build_dataset.py` asserts the host roster really
+ *  does sit on these two values with nothing between them — see #823. */
+const NC_HEROIC_ML = 11;
+const NC_LEGENDARY_ML = 35;
+
 /** A Nearly-Complete host's tier: explicit nc_tier, else derived from ML
- *  (Legendary only at ML>=35). Matches the solver's derivation. */
+ *  (Legendary only at ML>=35).
+ *
+ *  THE single source of truth — the solver and browse layers derive tier from
+ *  this function, never a re-inlined threshold, for the reason `lamordiaTier`
+ *  below spells out: that channel's boundary turned out to be ML30 rather than
+ *  ML35, and while the threshold was copied around, fixing it in one place fixed
+ *  it in one place only.
+ *
+ *  `nc_tier` is null on every host in the current dataset, so the right-hand
+ *  branch is the only live path; the build guard fails if that stops being true,
+ *  rather than letting the dead branch wake up unnoticed. */
 function ncTier(v) {
-  return v.nc_tier || ((v.ml || 0) >= 35 ? "legendary" : "heroic");
+  return v.nc_tier || ((v.ml || 0) >= NC_LEGENDARY_ML ? "legendary" : "heroic");
 }
 
 /** A Viktranium ("Lamordia") host's tier, derived from host ML. Viktranium's two
@@ -2475,7 +2492,8 @@ if (typeof module !== "undefined" && module.exports) {
     slotReachabilityFor, slotReachabilityReport, filterEligiblePool,
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, pinnedAugmentIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
-    variantBuckets, variantSets, scaledValue, ncTier, lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
+    variantBuckets, variantSets, scaledValue, ncTier, NC_HEROIC_ML, NC_LEGENDARY_ML,
+    lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     dinoWeaponVariant, dinoSlotKeys,
     isForgedRace, raceMeets, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
     UTILITY_SENTINEL,

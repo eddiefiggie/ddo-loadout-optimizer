@@ -2463,6 +2463,19 @@ def build() -> dict:
     # universe, not the walked one) so nobody hand-recounts a different predicate.
     out["metadata"]["crafting_slot_coverage"] = crafting_coverage_mod.check(out)
 
+    # #823 — the Nearly Complete tier boundary. The solver reads a host's tier as
+    # `nc_tier || (ml >= 35 ? legendary : heroic)`, which is a CLAIM that the host
+    # roster is the documented two-point population (Heroic ML11 / Legendary
+    # ML35). The sibling Viktranium channel made the identical assumption and was
+    # wrong — its legendary hosts are ML34, so gating on ML>=35 mis-tiered every
+    # one heroic and made the whole legendary pool unreachable. Both sides are
+    # readable here, so this asserts rather than trusts: nothing stranded between
+    # the poles, the `Legendary` name marker agreeing with the ML-derived tier,
+    # and `nc_tier` still unpopulated so the dead branch cannot quietly wake up.
+    # Runs over the ASSEMBLED items because host activation happens in enrichment.
+    out["metadata"]["nearly_complete_tier_boundary"] = (
+        nc_mod.assert_tier_boundary_is_real(out["items"]))
+
     # #547 — the `[Crafted]` twin identity. One game item the catalog carries as
     # two records (as it drops, and after its Essence Crafting slots are used),
     # which let a block on one silently deliver the other. Derived and ASSERTED

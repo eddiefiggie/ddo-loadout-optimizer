@@ -36,13 +36,140 @@ _NATIVE_NC_KEY = {c: f"Nearly Complete: {c}" for c in CATEGORIES}
 # Per-item Nearly Complete pools — keyed by HOST NAME, not category. These are a
 # DISTINCT mechanism from the category menu path (review F5: never conflated).
 _NC_PER_ITEM_KEYS = ["Nearly Finished", "Almost There"]
-# Nearly Complete host tier boundary: Legendary is ML35 (matches the solver's
-# host-tier derivation in solver.js), Heroic ML11.
-_NC_LEGENDARY_ML = 35
+# Nearly Complete tier boundary. The wiki documents exactly TWO recipe tiers,
+# Heroic ML11 and Legendary ML35, and both the option pool and the host roster
+# sit on those two values with nothing between them. `NC_LEGENDARY_ML` is the
+# gate; `NC_HEROIC_ML` is the other pole, and the pair is what makes "nothing in
+# between" a checkable claim rather than an assumption.
+#
+# THE SINGLE SOURCE OF TRUTH on the Python side. `web/model.js` carries the JS
+# copy (`NC_LEGENDARY_ML` / `ncTier`) and `tests/test_nearly_complete.py` pins
+# the two to the same number, because a boundary that drifts between the
+# pipeline and the solver mis-tiers silently.
+#
+# Why this is guarded at all rather than left as a constant: the sibling
+# Viktranium channel assumed this same ML35 boundary, and its real legendary
+# hosts are ML34 — gating on ML>=35 mis-tiered every one of them heroic and made
+# the entire legendary pool unreachable (`web/model.js::lamordiaTier`). The
+# failure was silent, because a wrong magnitude is indistinguishable from a right
+# one in a finished loadout. Nearly Complete's boundary happens to be correct;
+# `assert_tier_boundary_is_real` is what keeps that a fact instead of a memory.
+NC_HEROIC_ML = 11
+NC_LEGENDARY_ML = 35
+
+#: The name prefix that marks a host's Legendary version. Used ONLY as a second,
+#: independent signal to check the ML-derived tier against — never to derive a
+#: tier, which would make the guard agree with itself by construction.
+_LEGENDARY_NAME_PREFIX = "Legendary "
 
 
 def _nc_tier_from_ml(ml):
-    return "legendary" if (ml or 0) >= _NC_LEGENDARY_ML else "heroic"
+    return "legendary" if (ml or 0) >= NC_LEGENDARY_ML else "heroic"
+
+
+def assert_option_mls_are_the_two_recipe_tiers(catalog: dict) -> int:
+    """Every Nearly Complete OPTION sits on one of the two recipe MLs.
+
+    `_nc_tier_from_ml` folds an option's ML to a tier with `>=`, so an option at
+    any ML above the boundary reads legendary and any below reads heroic. That is
+    only safe while the pool is the documented two-point population. An option
+    arriving at ML20 would be silently filed heroic and handed the heroic
+    magnitude, with nothing anywhere saying so.
+
+    Refuses to pass over an empty pool: a guard that inspects zero records
+    reports success for a build that produced nothing.
+    """
+    seen = {}
+    for category in sorted(CATEGORIES):
+        key = _NATIVE_NC_KEY[category]
+        if key not in catalog:
+            continue
+        for opt in crafting_catalog.menu_options(key, catalog):
+            seen.setdefault(opt.get("ml"), []).append(category)
+    if not seen:
+        raise SystemExit(
+            "Nearly Complete tier gate: no options walked — this guard would "
+            "pass vacuously on a pool that failed to load")
+    stray = {ml: sorted(set(cs)) for ml, cs in seen.items()
+             if ml not in (NC_HEROIC_ML, NC_LEGENDARY_ML)}
+    if stray:
+        raise SystemExit(
+            "Nearly Complete tier gate: option(s) at an ML that is neither "
+            f"recipe tier (Heroic {NC_HEROIC_ML} / Legendary {NC_LEGENDARY_ML}): "
+            f"{stray}. `_nc_tier_from_ml` would fold each to a tier by >= and "
+            "hand it that tier's magnitude with nothing disclosing the guess. "
+            "Source the new tier rather than letting the boundary absorb it.")
+    return sum(len(v) for v in seen.values())
+
+
+def assert_tier_boundary_is_real(items) -> dict:
+    """The HOST roster splits at the boundary, and two independent signals agree.
+
+    Three separate claims, each of which has a distinct failure:
+
+    * **the roster is the two-point population the boundary assumes** — a host
+      stranded between the poles is tiered by `>=` alone, which is exactly how
+      the Viktranium legendary pool became unreachable one channel over;
+    * **the ML-derived tier agrees with the host's own name** — `Legendary X` at
+      a heroic ML, or a heroic-named host at ML35, means one of the two signals
+      is wrong and the build should stop rather than pick one;
+    * **`nc_tier` is still unpopulated** — the solver reads
+      `nc_tier || <derive from ML>`, and the explicit field is null on every
+      host today, so the derivation is the ONLY live path. If upstream starts
+      populating it, that branch wakes up and somebody has to decide whether it
+      overrides the derivation or must agree with it. Failing here forces that
+      decision instead of letting a dead branch silently become load-bearing.
+
+    Refuses to pass over zero hosts.
+    """
+    hosts = [it for it in items if it.get("nearly_complete")]
+    if not hosts:
+        raise SystemExit(
+            "Nearly Complete tier gate: no hosts declare a category — this "
+            "guard would pass vacuously")
+
+    problems = []
+    stranded = sorted({it.get("ml") for it in hosts
+                       if it.get("ml") not in (NC_HEROIC_ML, NC_LEGENDARY_ML)})
+    if stranded:
+        named = sorted({it["variant_id"] for it in hosts
+                        if it.get("ml") in stranded})[:8]
+        problems.append(
+            f"host(s) at an ML that is neither recipe tier (Heroic "
+            f"{NC_HEROIC_ML} / Legendary {NC_LEGENDARY_ML}): {stranded}; "
+            f"e.g. {named}")
+
+    disagree = [(it.get("ml"), it["variant_id"]) for it in hosts
+                if it["variant_id"].startswith(_LEGENDARY_NAME_PREFIX)
+                != (_nc_tier_from_ml(it.get("ml")) == "legendary")]
+    if disagree:
+        problems.append(
+            "host(s) whose name and ML-derived tier disagree: "
+            f"{sorted(disagree)[:8]} — one of the two signals is wrong, and the "
+            "solver would ship whichever magnitude the ML happens to give")
+
+    explicit = sorted(it["variant_id"] for it in hosts
+                      if it.get("nc_tier") is not None)
+    if explicit:
+        problems.append(
+            f"{len(explicit)} host(s) now carry an explicit `nc_tier` "
+            f"(e.g. {explicit[:4]}). That field was null on every host when this "
+            "guard was written, so `nc_tier || <ML derivation>` in web/solver.js "
+            "and web/model.js has a dead left branch. Decide deliberately whether "
+            "it overrides the derivation or must agree with it, then teach this "
+            "guard the answer.")
+
+    if problems:
+        raise SystemExit("Nearly Complete tier gate failed:\n  "
+                         + "\n  ".join(problems))
+
+    return {
+        "hosts": len(hosts),
+        "heroic": sum(1 for it in hosts if it.get("ml") == NC_HEROIC_ML),
+        "legendary": sum(1 for it in hosts if it.get("ml") == NC_LEGENDARY_ML),
+        "boundary_ml": NC_LEGENDARY_ML,
+        "explicit_nc_tier": 0,
+    }
 
 
 def per_item_hosts(catalog: dict = None) -> dict:
@@ -142,6 +269,11 @@ def build_nearly_complete(catalog: dict = None) -> dict:
     Returns ``{records, per_item, quarantined, coverage}`` (superset of
     ``parse_nearly_complete``'s shape)."""
     catalog = crafting_catalog.load_catalog() if catalog is None else catalog
+    # The option pool sits on the two recipe MLs before anything folds one to a
+    # tier by `>=`. Checked HERE, where the pool is still in its source shape:
+    # `records` keeps only the folded `tier`, so an ML that never belonged is
+    # unrecoverable one line later.
+    assert_option_mls_are_the_two_recipe_tiers(catalog)
 
     # -- category menu path --------------------------------------------------
     # ATOMIC since #211: one record per craftable OPTION, carrying its own

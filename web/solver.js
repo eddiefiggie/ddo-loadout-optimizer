@@ -71,6 +71,10 @@ const _twinIdOf = (typeof twinIdOf !== "undefined")
   // eslint-disable-next-line global-require
   : require("./model.js").twinIdOf;
 
+const _ncTier = (typeof ncTier !== "undefined")
+  ? ncTier
+  // eslint-disable-next-line global-require
+  : require("./model.js").ncTier;
 const _lamordiaTier = (typeof lamordiaTier !== "undefined")
   ? lamordiaTier
   // eslint-disable-next-line global-require
@@ -884,8 +888,11 @@ function buildProgram(model) {
     const category = xv.variant.nearly_complete;
     if (!category) continue;
     // Tier from the host's ML, not a fixed default — never grant the larger
-    // (Legendary ML35) magnitude to a heroic item that omitted nc_tier.
-    const tier = xv.variant.nc_tier || ((xv.variant.ml || 0) >= 35 ? "legendary" : "heroic");
+    // (Legendary ML35) magnitude to a heroic item that omitted nc_tier. Derived
+    // through model.js's ncTier, never a re-inlined threshold: this line used to
+    // carry its own copy of the 35, which is how the sibling Viktranium boundary
+    // stayed wrong in one layer after being fixed in another (#823).
+    const tier = _ncTier(xv.variant);
     const slotVars = [];
     for (const opt of model.nearlyComplete || []) {
       if (opt.category !== category || opt.tier !== tier) continue;
@@ -1004,8 +1011,10 @@ function buildProgram(model) {
   // one option from the matching pool at the host's tier. Same gated select-one
   // primitive as Nearly Completed: a per-option binary n gated by the host item
   // (n - x_item <= 0), and Σ n <= 1 PER SLOT — so an item with two Lamordia slots
-  // gets two independent choices. Tier from the host's ML (ML>=35 Legendary),
-  // matching lamordiaTier.
+  // gets two independent choices. Tier from the host's ML via lamordiaTier,
+  // whose boundary is ML>=30 — NOT Nearly Complete's ML35. This comment said 35
+  // until #823; the code was always right, and a comment naming the wrong number
+  // beside a function that exists because of that exact number is how it comes back.
   //
   // An option is ATOMIC (mirrors the Dino insert UNIT): ONE record per craftable
   // option, carrying an `affixes` list. The universal spell-DC option grants all
