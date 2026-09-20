@@ -180,10 +180,10 @@ def test_the_evidence_document_and_the_shard_agree_on_the_count():
     """A count is a claim about a population. Both sides are readable, so assert
     it rather than dating it."""
     stated = sum(1 for r in _shard()["harvested"].values() if r["provenance"] == "stated")
-    assert stated == 22, stated
+    assert stated == 23, stated
     with open(EVIDENCE_PATH) as fh:
         text = fh.read()
-    assert "22 of 157" in text, "the evidence doc's coverage claim must match the shard"
+    assert "23 of 157" in text, "the evidence doc's coverage claim must match the shard"
 
 
 def test_a_carrier_tooltip_is_not_admissible_for_a_crafted_type():

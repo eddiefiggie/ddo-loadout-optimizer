@@ -128,14 +128,21 @@ def test_the_coverage_report_says_how_much_of_the_menu_is_missing():
     # (Rune Arm 2, Ring 7, Melee 2). The total moves from 170 to 318 for the same
     # reason. The ratio stays poor and that is the honest finding, not a pipeline
     # gap: the wiki types 22 of 157 craftable effects, so the ceiling is the source.
-    assert cov["offered_all"] == 36, cov["offered_all"]
+    # #817 — 38 not 36: +2, `Dodge` on the Trinket Prefix and Suffix menus. Its
+    # type became stated when the BONUS-TYPE pages were swept (`Dodge bonus`
+    # says Essence Crafting gives "Up to +14% enhancement bonus"), and this
+    # pool offers an effect once its type AND curve are both sourced. So the
+    # solver's own Essence menu grew, not just the player-authored bench.
+    assert cov["offered_all"] == 38, cov["offered_all"]
     assert cov["total_all"] == 318, cov["total_all"]
     # Per family too, because one aggregate hid which family was empty: Rune Arm's
     # Suffix menu and Melee's Extra menu offer NOTHING, and both stay disclosed on
     # UNSERVED_ALLOWLIST for that reason rather than the old "no pool" one.
     fam = cov["by_family"]
+    # #817 — Trinket 27 not 25: +2, `Dodge` on its Prefix and Suffix menus. The
+    # other three families are unchanged because `Dodge` is not placed on them.
     assert {k: v["offered_all"] for k, v in fam.items()} == {
-        "Trinket": 25, "Rune Arm": 2, "Ring": 7, "Melee": 2}, fam
+        "Trinket": 27, "Rune Arm": 2, "Ring": 7, "Melee": 2}, fam
     assert fam["Rune Arm"]["offered"]["Suffix"] == 0
     assert fam["Melee"]["offered"]["Extra"] == 0
     assert cov["offered_all"] < cov["total_all"] / 2, \
