@@ -765,3 +765,42 @@ Pages checked with no Essence Crafting mention at all: `Enhancement`, `Insight`,
 | typed | **340** |
 | on/off flags — need no type | 68 |
 | **still asking** | **115**, across 22 effects |
+
+## 2026-09-20 — #840: where the source of truth and the wiki disagree, read row by row
+
+`veteran-software/yourddo` is the source of truth for placements since #837, with the
+recorded rule that **the wiki wins where the two disagree unless the owner rules
+otherwise**. Measured across every (effect, group) both sources place — 480 pairs —
+474 agree on menu and 6 do not. Each of the 6 was settled by reading the wiki's own
+row on `Essence Crafting enchantments` (the Group / Name / … / Item slot table, whose
+last three columns are Prefix / Suffix / Extra; the column reading is corroborated by
+`Dodge Bonus`, which matches yourddo exactly, and `Insightful Spell Resistance`, which
+matches our harvest exactly):
+
+| effect | wiki row (2026-09-20) | yourddo | ruling |
+|---|---|---|---|
+| Spell Resistance | Prefix: Belts, Cloaks, Rings, Trinkets, Armors, Shields; no Suffix; no Extra | Belts/Cloaks/Trinkets Suffix, Armors/Shields Extra, Rings Prefix | wiki — five pair-level overrides |
+| Strength | Prefix: Bracers, Gloves, Trinkets; Suffix: Belts, Boots, Trinkets | Belts Prefix | wiki — one pair-level override |
+
+`WIKI_PLACEMENT_OVERRIDES` in `src/essence_source.py` carries exactly these six pairs,
+and `assert_wiki_overrides_are_live` fails when one goes stale, contradicts the harvest
+it cites, or stops changing anything. Pair-level on purpose: a group the wiki is silent
+on keeps yourddo's placement, and the recipe's enchantments and curves stay yourddo's.
+
+**`Deception` — a since-removed row, not a loss.** Our 2026-09 harvest carried a
+standalone `Deception` in Goggles / Prefix (`placements.Goggles.Prefix[4]`, between
+`Persuasion` and `Seeker`). On 2026-09-20 the live `Essence Crafting enchantments` page
+contains no `Deception` anywhere. yourddo's omission therefore agrees with the current
+wiki, and the standalone effect is NOT overlaid. It survives where the wiki still has
+it: the **Combined prefixes (dual shard)** table on `Essence Crafting` names `Deception`
+as the second effect of `Sabotaging` (with Seeker), `Assassin's` (Doublestrike),
+`Outlander's` (Doubleshot), `Relentless` (Deadly) and `Thieving` (Accuracy). yourddo's
+versions of those five recipes name that enchantment `Sneak Attack Attack`, with the
+same slots. Joined five-for-five (`essence_stat_join.json`, rule
+`wiki-dual-shard-table`); it reaches the bench through those five recipes, typed
+Enhancement from the source.
+
+Our harvest also placed `Spell Resistance` at Orbs / Prefix, which the live row does not
+list. Not touched — yourddo does not place it on Orbs either, so there is no pair to
+override — but recorded, because it is the second harvest entry the live page no longer
+backs.

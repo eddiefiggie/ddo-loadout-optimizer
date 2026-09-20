@@ -6,7 +6,8 @@
   "lore-affix-name": "Spell critical chance comes from Lore items.",
   "recipe-name": "The recipe whose ONLY enchantment this is, is itself named with our affix name. Corroborated per entry.",
   "spell-focus-suffix": "`X Spell Focus` is spelled `X Focus` as an item affix.",
-  "spell-power-affix-name": "DDO names per-element spell power by affix (`Corrosion` for Acid), which is also upstream's recipe name."
+  "spell-power-affix-name": "DDO names per-element spell power by affix (`Corrosion` for Acid), which is also upstream's recipe name.",
+  "wiki-dual-shard-table": "The wiki's Combined prefixes (dual shard) table names both effects of a recipe. Every yourddo recipe granting this enchantment pairs it with an effect already joined or native, and the wiki names that recipe's other effect `Deception`: Sabotaging (Seeker), Assassin's (Doublestrike), Outlander's (Doubleshot), Relentless (Deadly), Thieving (Accuracy) - five for five, slots matching. Read 2026-09-20 from https://ddowiki.com/page/Essence_Crafting, Combined prefixes."
  },
  "joined": {
   "Abjuration Spell Focus": {
@@ -137,6 +138,10 @@
    "rule": "spell-power-affix-name",
    "stat": "Reconstruction"
   },
+  "Sneak Attack Attack": {
+   "rule": "wiki-dual-shard-table",
+   "stat": "Deception"
+  },
   "Sonic Spell Critical Chance": {
    "rule": "lore-affix-name",
    "stat": "Sonic Lore"
@@ -262,10 +267,6 @@
   "Potency": {
    "instances": 3,
    "reason": "Absent from our catalog vocabulary (we carry the per-element spell powers, not Potency)."
-  },
-  "Sneak Attack Attack": {
-   "instances": 5,
-   "reason": "We carry `Sneak Attack Bonus`/`Damage`/`Dice`; which of the three this is, is not stated."
   },
   "Spellcasting Implement": {
    "instances": 20,
