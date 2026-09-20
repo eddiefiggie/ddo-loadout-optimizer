@@ -55,4 +55,4 @@ test("viktranium's slot_types is the in-game order: Melancholic, Dolorous, Miser
   assert.deepStrictEqual(get("viktranium").slot_types, ["Melancholic", "Dolorous", "Miserable", "Woeful"]);
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`); });

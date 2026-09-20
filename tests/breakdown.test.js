@@ -102,5 +102,5 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     assert.ok(r.computeScale.crafts >= 1, "counts craft placement options");
   });
 
-  console.log(`\n${passed} passed, ${failed} failed`);
+  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })();

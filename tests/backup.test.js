@@ -615,7 +615,7 @@ test("#190: an oversized envelope is refused before it is parsed", () => {
   assert.strictEqual(res.error, "oversized");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 
 test("#530: a v2 backup still imports, with no version history", () => {
   // The compatibility window is the promise this panel makes. A v2 file is not

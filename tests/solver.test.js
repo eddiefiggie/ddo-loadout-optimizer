@@ -7474,7 +7474,7 @@ async function withCrossAdd(map, fn) {
     assert.ok(consulted > 0, "the supplied predicate was never consulted at all");
   });
 
-  console.log(`\n${passed} passed, ${failed} failed`);
+  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })();
 
 // ---- skipped bonus types ------------------------------------------------------

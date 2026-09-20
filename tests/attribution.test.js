@@ -304,5 +304,5 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     } finally { CAM.setCrossAdd({}); }
   });
 
-  console.log(`\n${passed} passed, ${failed} failed`);
+  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })();

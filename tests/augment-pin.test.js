@@ -176,7 +176,7 @@ test("#742 gate 3: augBest admits a pinned augment that advances nothing", () =>
       "a block is a hard rule — it must win at the solver, not just in the dialog");
   });
 
-  console.log(`\n${passed} passed, ${failed} failed`);
+  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })();
 
 // ---- U1: state, the control, and what the control promises ------------------

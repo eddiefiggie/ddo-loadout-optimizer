@@ -1004,4 +1004,4 @@ test("#766: a saved result keeps its Slaver's placements", () => {
     "slaversPlaced is on the save allowlist — a restored build must not lose its crafts");
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`); });

@@ -784,4 +784,4 @@ test("#753: Browse and the Advanced panel share ONE wording source", () => {
   assert.ok(lines.some((l) => /augment,/.test(l)), "an augment route is named as an augment");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

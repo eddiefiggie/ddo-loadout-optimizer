@@ -774,5 +774,5 @@ const tradeModel = () => ({
       { utilitySentinel: SENT }).passes, "a free unranked gain is exactly what the default is for");
   });
 
-  console.log(`\n${passed} passed, ${failed} failed`);
+  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })();

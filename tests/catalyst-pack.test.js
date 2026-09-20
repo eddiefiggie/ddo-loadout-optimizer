@@ -102,4 +102,4 @@ test("introduced-with an expansion is not gated-behind it", () => {
   }
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

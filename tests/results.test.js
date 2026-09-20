@@ -2002,7 +2002,7 @@ test("#91 U5: utilityCard takes the build being rendered — an alternative's re
 // ---- on EVERY surface -------------------------------------------------------
 //
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 
 // #346 (U5, R12, AE7) — a rung can take a stat's last source out of the pool.
 // Twenty targetable stats are augment-only, so telling that player to widen

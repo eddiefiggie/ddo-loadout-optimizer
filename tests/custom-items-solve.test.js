@@ -269,5 +269,5 @@ function baseState(over) {
       "the credited carrier must be the player's item, named as theirs");
   });
 
-  console.log(`\n  ${passed} passed, ${failed} failed`);
+  process.on("exit", () => { console.log(`\n  ${passed} passed, ${failed} failed`); });
 })().catch((e) => { console.error("ERR", (e && e.stack) || e); process.exit(1); });

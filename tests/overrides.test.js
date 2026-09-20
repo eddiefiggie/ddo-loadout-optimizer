@@ -1190,7 +1190,7 @@ test("#88 U11: an empty list yields no rows, not a placeholder row", () => {
   assert.deepStrictEqual(O.managerRows(null), []);
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`); });
 
 // ---------------------------------------------------------------------------
 // #426 — the crafted creation surface. poolPickerEntries collapses a whole

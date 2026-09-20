@@ -233,5 +233,5 @@ test("MERGE: a failed write reports failure rather than a silent loss", () => {
   assert.strictEqual(r.full, true);
 });
 
-console.log(`\n${passed} passed, ${failed} failed\n`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed\n`); });
 if (failed) process.exit(1);

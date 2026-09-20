@@ -1317,4 +1317,4 @@ test("#817: what still asks is smaller, and is not a skill", () => {
   assert.ok(!asking.has("Dodge"), "Dodge is sourced from the `Dodge bonus` page");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

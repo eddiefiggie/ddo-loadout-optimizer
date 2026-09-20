@@ -158,4 +158,4 @@ test("the load message names a stale craft the same way it names an item", () =>
     "a live crafted block says nothing on load");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

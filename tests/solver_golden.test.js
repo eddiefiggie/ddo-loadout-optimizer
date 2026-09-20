@@ -560,7 +560,7 @@ function test(name, fn) {
     });
   }
 
-  console.log(`\n${passed} passed, ${failed} failed`);
+  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })().catch((e) => { console.error(e); process.exit(1); });
 
 // #110 (U10) — the blocklist A/B pair's integrity guard, mirroring the

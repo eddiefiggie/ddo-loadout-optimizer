@@ -356,5 +356,5 @@ async function solve(model) {
       "the Trinket-only effect reached a Rune Arm");
   });
 
-  console.log(`\n  ${passed} passed, ${failed} failed`);
+  process.on("exit", () => { console.log(`\n  ${passed} passed, ${failed} failed`); });
 })();

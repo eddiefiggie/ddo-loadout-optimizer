@@ -143,7 +143,7 @@ test("U5: owned filter retains a boolean-only-eligible variant", () => {
   assert.strictEqual(owned[0].affixes[0].bonus_type, "boolean");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 
 
 // --- #408: stacked-item plurals -------------------------------------------
