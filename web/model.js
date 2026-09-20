@@ -165,6 +165,52 @@ function craftingRung(primary, fallback) {
   return (a.excludeCraftingSystems || b.excludeCraftingSystems) ? "no-niche-crafting" : "everything";
 }
 
+/** #825 — every option pool the niche-crafting rung empties, in the order the
+ *  player-facing sentence lists them.
+ *
+ *  This exists because the rung's description and the block that implements it
+ *  drifted apart twice. The sentence named five systems while the block cleared
+ *  ten: `essenceCrafting` joined the block on 2026-08-29 (#602) and the sentence
+ *  was written a week LATER, on 2026-09-06, by the very commit whose purpose was
+ *  to make this rung say what it does (#739). A player who picked the rung lost
+ *  all 44 Essence Crafting hosts, Legendary Green Steel, Slaver's and the
+ *  per-item Nearly Finished pools with nothing admitting it.
+ *
+ *  So the sentence is now GENERATED from this roster rather than maintained
+ *  beside it, and `tests/model.test.js` pins the roster to the identifiers the
+ *  block actually assigns. A new pool added to that block with no entry here
+ *  fails; an entry here the block stopped clearing fails too.
+ *
+ *  `label` is the player's name for the system, not the variable's. Two pools
+ *  deliberately share one label — a player does not distinguish set-membership
+ *  crafting from set-bonus augments, and the sentence de-duplicates. */
+const NICHE_CRAFTING_POOLS = Object.freeze([
+  Object.freeze({ key: "viktranium",            label: "Viktranium experiments" }),
+  Object.freeze({ key: "seal",                  label: "Sealed-in-X seals" }),
+  Object.freeze({ key: "nearlyComplete",        label: "Nearly Completed" }),
+  Object.freeze({ key: "nearlyCompletePerItem", label: "Nearly Finished and Almost There upgrades" }),
+  Object.freeze({ key: "dinoInserts",           label: "Dinosaur Bone crafting" }),
+  Object.freeze({ key: "legendaryGreenSteel",   label: "Legendary Green Steel" }),
+  Object.freeze({ key: "essenceCrafting",       label: "Essence Crafting" }),
+  Object.freeze({ key: "slavers",               label: "Slaver's crafting" }),
+  Object.freeze({ key: "membershipSetDefs",     label: "set-bonus crafting" }),
+  Object.freeze({ key: "augmentSetDefs",        label: "set-bonus crafting" }),
+]);
+
+/** The rung's "won't pick" clause, built from NICHE_CRAFTING_POOLS.
+ *
+ *  Generated rather than written out, so a pool cannot be added to the rung
+ *  without appearing here. Labels are de-duplicated, keeping first position. */
+function nicheCraftingClause(pools = NICHE_CRAFTING_POOLS) {
+  const labels = [];
+  for (const p of pools) if (!labels.includes(p.label)) labels.push(p.label);
+  if (!labels.length) return "";
+  const last = labels[labels.length - 1];
+  return labels.length === 1
+    ? `The solver won't pick ${last}.`
+    : `The solver won't pick ${labels.slice(0, -1).join(", ")}, or ${last}.`;
+}
+
 /** The Solar/Lunar Gem family by catalog colour. Named once so the eligibility
  *  gate, the results attribution, and the notice's gem count cannot disagree
  *  about what "Solar/Lunar" means. */
@@ -1780,6 +1826,11 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // eligible() instead, because augments flow through the per-variant gate while
   // these option pools are model-level collections.
   if (rungExcludesNicheCrafting(craftingRung(query))) {
+    // NICHE_CRAFTING_POOLS is the roster of what this block empties, and the
+    // wizard writes the rung's sentence from it. Adding a pool here without
+    // adding it there fails the build (#825) — the sentence fell a week behind
+    // this block twice, and both times the fix was a hand-edit with nothing
+    // holding it.
     dinoInserts = []; nearlyComplete = []; viktranium = []; seal = [];
     legendaryGreenSteel = []; essenceCrafting = []; slavers = [];   // #766 — Slaver's crafting is niche crafting too
     nearlyCompletePerItem = {};   // #371 — Nearly Finished / Almost There
@@ -2493,6 +2544,7 @@ if (typeof module !== "undefined" && module.exports) {
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, pinnedAugmentIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, NC_HEROIC_ML, NC_LEGENDARY_ML,
+    NICHE_CRAFTING_POOLS, nicheCraftingClause,
     lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     dinoWeaponVariant, dinoSlotKeys,
     isForgedRace, raceMeets, isDocent, isBothHandsWeapon, variantKey, setStackEquiv, equivType,
