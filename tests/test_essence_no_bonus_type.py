@@ -172,3 +172,89 @@ def test_832_the_guard_refuses_to_inspect_nothing():
         assert "vacuously" in str(e)
     else:
         raise AssertionError("zero item affixes must not read as success")
+
+
+# --- #832 — and nothing published asks the player to pick one ----------------
+
+def _presence_only():
+    with open(DATASET, encoding="utf-8") as fh:
+        d = json.load(fh)
+    pres, mag = set(), set()
+    for it in d["items"]:
+        for a in (it.get("affixes") or []):
+            n = a.get("name")
+            if not n:
+                continue
+            if a.get("type") in ("Bool", "boolean"):
+                pres.add(n)
+            elif isinstance(a.get("value"), (int, float)):
+                mag.add(n)
+    return d["essence_placements"]["groups"], pres - mag
+
+
+def test_832_no_published_row_asks_for_a_bonus_type():
+    groups, po = _presence_only()
+    out = essence_placements.assert_no_row_asks_for_a_bonus_type(groups, po)
+    assert out["asking"] == 0, out
+    assert out["published"] == 413, out
+
+
+def test_832_the_withheld_effects_are_gone_from_every_menu():
+    """The 21 that asked. Named, so a revert fails as itself rather than as a
+    count that drifted."""
+    groups, po = _presence_only()
+    rows = [r for menus in groups.values()
+            for opts in menus.values() if isinstance(opts, list) for r in opts]
+    published = {r["effect"] for r in rows}
+    for effect in ("Accuracy", "Deadly", "Fortification", "Sheltering", "Wizardry",
+                   "False Life", "Stunning", "Vertigo", "Spell Penetration",
+                   "Negative Amplification", "Deception", "Underwater Action",
+                   "Melee Alacrity", "Ranged Alacrity"):
+        assert effect not in published, (
+            f"{effect!r} is published again with no sourced bonus type — the "
+            "bench would offer a picker for it")
+
+
+def test_832_the_flags_and_the_locked_rows_survived():
+    """Exclusion must not take the rows that answer the type question already:
+    68 on/off flags and 340 stated types stay."""
+    groups, po = _presence_only()
+    rows = [r for menus in groups.values()
+            for opts in menus.values() if isinstance(opts, list) for r in opts]
+    assert sum(1 for r in rows if r.get("stat") in po) == 68
+    assert sum(1 for r in rows if r.get("type_sourced")) == 340
+    assert sum(1 for r in rows if r.get("no_bonus_type")) == 11
+
+
+def test_832_no_menu_was_emptied_by_the_exclusion():
+    """A menu with nothing in it is a worse answer than a picker."""
+    groups, _ = _presence_only()
+    empty = [f"{g}/{m}" for g, menus in groups.items()
+             for m, opts in menus.items() if isinstance(opts, list) and not opts]
+    assert empty == [], empty
+
+
+def test_832_the_control_gate_fails_when_a_row_returns():
+    import copy
+    groups, po = _presence_only()
+    bad = copy.deepcopy(groups)
+    bad["Rings"]["Prefix"].append(
+        {"effect": "Deadly", "stat": "Deadly", "type_sourced": False, "rankable": True})
+    try:
+        essence_placements.assert_no_row_asks_for_a_bonus_type(bad, po)
+    except SystemExit as e:
+        assert "would ask the player to pick a bonus type" in str(e)
+        assert "Deadly" in str(e)
+    else:
+        raise AssertionError("a returning unsourced row must fail the build")
+
+
+def test_832_the_control_gate_refuses_to_inspect_nothing():
+    groups, po = _presence_only()
+    for args in (({}, po), (groups, set())):
+        try:
+            essence_placements.assert_no_row_asks_for_a_bonus_type(*args)
+        except SystemExit as e:
+            assert "vacuously" in str(e) or "presence-only set is empty" in str(e)
+        else:
+            raise AssertionError("empty input must not read as success")

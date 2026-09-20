@@ -569,7 +569,49 @@ def assert_slot_map_covers_the_table(placements) -> int:
     return len(table)
 
 
-def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
+def assert_no_row_asks_for_a_bonus_type(groups, presence_only) -> dict:
+    """No PUBLISHED placement leaves the player to pick a bonus type (#832).
+
+    Three shapes may publish, and each answers the type question already: a
+    stated type, no type at all, or an on/off flag. Anything else would render
+    the picker, and picking is not a thing Essence Crafting lets a player do —
+    the type is a property of the enchantment, and the chosen one drives
+    stacking, so a wrong answer is a wrong loadout that looks right.
+
+    Asserted rather than dated because THREE passes at this each left a residue
+    nobody was counting: #817 closed at 41 remaining, #819 and #820 took it to
+    21, and the owner found those 21 still asking. A count is the only thing that
+    notices a residue.
+
+    Refuses to pass over an empty table.
+    """
+    rows = [r for menus in (groups or {}).values()
+            for opts in menus.values() if isinstance(opts, list)
+            for r in opts]
+    if not rows:
+        raise SystemExit(
+            "bonus-type control gate: no published placements \u2014 this guard "
+            "would pass vacuously")
+    if not presence_only:
+        raise SystemExit(
+            "bonus-type control gate: the presence-only set is empty, so every "
+            "on/off flag would read as asking for a type")
+    asking = sorted({r["effect"] for r in rows
+                     if not r.get("type_sourced") and not r.get("no_bonus_type")
+                     and r.get("stat") not in presence_only})
+    if asking:
+        raise SystemExit(
+            "bonus-type control gate failed: published row(s) would ask the "
+            f"player to pick a bonus type: {asking}. Essence Crafting does not "
+            "let a player choose one \u2014 either source the type, rule that the "
+            "effect has none (`NO_BONUS_TYPE`), or withhold the row.")
+    return {"published": len(rows),
+            "flags": sum(1 for r in rows if r.get("stat") in presence_only),
+            "asking": 0}
+
+
+def build_placement_catalog(catalog_stats=None, catalog_units=None,
+                            presence_only=None) -> dict:
     """Every placement in the table, annotated for the builder.
 
     `catalog_stats` gates `rankable`: an effect whose stat the catalog does not use
@@ -593,6 +635,8 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
 
     groups, counts = {}, {}
     total = rankable_n = sourced_n = unrankable = 0
+    untyped_withheld = 0
+    withheld_effects = set()
     magnitude_n = type_n = 0
     for group, menus in placements.items():
         out = {}
@@ -727,10 +771,32 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
                 # data, it is a trap. The count of what was left out stays in
                 # `coverage`, so the disclosure remains honest about how much of
                 # the game this covers.
-                if rankable:
-                    rows.append(rec)
-                else:
+                # #832 — a row whose BONUS TYPE is unsourced is no longer
+                # published. The bench used to offer a picker for it, which is
+                # not a thing Essence Crafting lets a player do: the type is a
+                # property of the enchantment, fixed by the game. Where the wiki
+                # does not state it, this tool does not know it, and a control
+                # that turns our gap into the player's decision is worse than a
+                # missing option — the chosen type drives stacking, so a wrong
+                # one is a wrong loadout that looks right.
+                #
+                # Three shapes still publish, and none of them asks anything: a
+                # STATED type (a locked reading), NO bonus type at all
+                # (`NO_BONUS_TYPE`), and an on/off FLAG, which has no type to
+                # state. The flag test is why `presence_only` is threaded in — it
+                # is a fact about the CATALOG, not about this shard, and without
+                # it every flag would be withheld as "unsourced" too.
+                asks_for_a_type = (
+                    not rec.get("type_sourced")
+                    and not rec.get("no_bonus_type")
+                    and stat not in (presence_only or set()))
+                if not rankable:
                     unrankable += 1
+                elif asks_for_a_type:
+                    untyped_withheld += 1
+                    withheld_effects.add(effect)
+                else:
+                    rows.append(rec)
             out[menu] = rows
         groups[group] = out
         counts[group] = {m: len(out[m]) for m in MENUS}
@@ -763,6 +829,10 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
             "placements_total": total,
             "rankable": rankable_n,
             "unrankable_withheld": unrankable,
+            # #832 — withheld because the bonus type is unsourced and the
+            # bench must not ask the player for it.
+            "untyped_withheld": untyped_withheld,
+            "untyped_withheld_effects": sorted(withheld_effects),
             "sourced": sourced_n,
             "magnitude_sourced": magnitude_n,
             "type_sourced": type_n,

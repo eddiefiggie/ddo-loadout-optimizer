@@ -1937,6 +1937,12 @@ def build() -> dict:
     # item. That is the double-count the bonus-type harvest exists to prevent, and
     # it would arrive through the front door.
     _catalog_stats, _catalog_units = set(), {}
+    # #832 — the presence-only set, derived here the way web/dataset.js derives
+    # `untypedOnly`/`presence` in the browser: a stat carried as Bool somewhere
+    # and never with a numeric magnitude is an ON/OFF flag. The placement builder
+    # needs it to tell a flag (which asks the player nothing) from an effect whose
+    # bonus type is simply unsourced (which asks, and must no longer be offered).
+    _presence, _magnitude = set(), set()
     for _v in variants:
         for _a in _v.get("affixes") or []:
             _st = _a.get("stat")
@@ -1944,13 +1950,19 @@ def build() -> dict:
                 continue
             _catalog_stats.add(_st)
             _catalog_units.setdefault(_st, set()).add(_a.get("unit") or "flat")
+            if (_a.get("bonus_type") or "") in ("Bool", "boolean"):
+                _presence.add(_st)
+            elif isinstance(_a.get("value"), (int, float)):
+                _magnitude.add(_st)
+    _presence_only = _presence - _magnitude
     essence = essence_mod.build_essence_pool(catalog_stats=_catalog_stats,
                                              catalog_units=_catalog_units)
     # #795 — the same shard, read for the BUILDER rather than the solver. The two
     # differ on who supplies the bonus type and the value, so they offer different
     # amounts of the table on purpose; see `src/essence_placements.py`.
     essence_placements = essence_placements_mod.build_placement_catalog(
-        catalog_stats=_catalog_stats, catalog_units=_catalog_units)
+        catalog_stats=_catalog_stats, catalog_units=_catalog_units,
+        presence_only=_presence_only)
     # #806 — the slot join, checked from the two sides the wiki cannot reach: the
     # anatomical gear-planner type each slot holds, and a second join written
     # independently against a different wiki table. Run here rather than inside
@@ -1962,6 +1974,9 @@ def build() -> dict:
     # rather than trusted. Needs the finished variants for the same reason the
     # two joins above do: "no carrier types this" is a claim about the catalog,
     # and the catalog only exists here.
+    # #832 — and nothing published may ask the player to pick one.
+    _bt_controls = essence_placements_mod.assert_no_row_asks_for_a_bonus_type(
+        essence_placements["groups"], _presence_only)
     _no_bonus_type = (
         essence_placements_mod.assert_no_bonus_type_still_holds(
             [r for menus in essence_placements["groups"].values()
@@ -2475,6 +2490,7 @@ def build() -> dict:
     # #832 — stamped beside the other gates rather than inside the placement
     # table, which publishes a filtered subset that drops `coverage`.
     out["metadata"]["essence_no_bonus_type"] = _no_bonus_type
+    out["metadata"]["essence_bonus_type_controls"] = _bt_controls
     out["metadata"]["crafting_slot_coverage"] = crafting_coverage_mod.check(out)
 
     # #823 — the Nearly Complete tier boundary. The solver reads a host's tier as
