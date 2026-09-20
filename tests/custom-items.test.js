@@ -1356,6 +1356,9 @@ test("#817: what still asks is smaller, and is not a skill", () => {
   //
   //   before: 115 of 523 asking (22.0%)
   //   after:  163 of 1465        (11.1%)
+  //   audit:  165 of 1465        (11.3%) — `Honed` joined the asks when its
+  //           `Unique` bonus type, which this catalog has no bucket for, was
+  //           left unsourced rather than minted into a bucket of its own.
   //
   // A flag has no type to state, a dice proc is not a bonus, and a quarantined
   // part has no bucket in this catalog — none of the three asks the player
@@ -1376,8 +1379,8 @@ test("#817: what still asks is smaller, and is not a skill", () => {
       }
     }
   }
-  assert.strictEqual(n, 163);
-  assert.strictEqual(asking.size, 74);
+  assert.strictEqual(n, 165);
+  assert.strictEqual(asking.size, 75);
   assert.ok(n / total < 0.12,
     `${n} of ${total} placements still ask — worse than the 11.1% #837 landed at`);
   assert.ok(!asking.has("Dodge"), "Dodge is sourced from the `Dodge bonus` page");

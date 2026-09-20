@@ -280,7 +280,50 @@ def assert_stat_join_is_honest(join, catalog_stats, recipes) -> dict:
             "native": len(names & set(catalog_stats))}
 
 
-def build_catalog(catalog_stats=None, wiki_curves=None) -> dict:
+#: yourddo bonus-type spelling -> this catalog's. A wrong bonus type is a wrong
+#: STACKING BUCKET, invisible once solved, so this is explicit and guarded.
+BONUS_TYPE_JOIN = {
+    # 149 catalog affixes typed `Natural`, none typed `Natural Armor`; the wiki's
+    # own stated type for the effect is `Natural`.
+    "Natural Armor": "Natural",
+}
+
+
+def assert_every_minted_type_has_a_bucket(groups, catalog_types) -> dict:
+    """No published part carries a sourced bonus type the catalog has no bucket
+    for (#837 audit).
+
+    Such a type forms a bucket of its own, so the crafted affix stacks with every
+    native bonus of the same stat instead of competing with the typed ones. That
+    is a double-count that looks like a correct loadout. Refuses an empty table
+    and an empty type vocabulary.
+    """
+    if not groups:
+        raise EssenceSourceError("no groups — this guard would pass vacuously")
+    if not catalog_types:
+        raise EssenceSourceError("no catalog types — every minted type would read as strayed")
+    for src, dst in BONUS_TYPE_JOIN.items():
+        if dst not in catalog_types:
+            raise EssenceSourceError(
+                f"BONUS_TYPE_JOIN maps {src!r} to {dst!r}, which the catalog no "
+                "longer carries — the join would mint a bucket of its own")
+    stray = set()
+    for menus in groups.values():
+        for rows in menus.values():
+            for r in rows:
+                for p in (r.get("parts") or [r]):
+                    if p.get("type_sourced") and p.get("bonus_type") not in catalog_types:
+                        stray.add((r.get("effect"), p.get("bonus_type")))
+    if stray:
+        raise EssenceSourceError(
+            f"minted bonus type(s) with no catalog bucket: {sorted(stray)[:8]}. "
+            "Each would stack with every native bonus of its stat. Join the "
+            "spelling in BONUS_TYPE_JOIN or leave the type unsourced.")
+    return {"joined_types": len(BONUS_TYPE_JOIN)}
+
+
+def build_catalog(catalog_stats=None, wiki_curves=None, catalog_units=None,
+                  catalog_types=None) -> dict:
     """The placement catalog, keyed `[group][menu] -> [options]`.
 
     One option per (recipe, group, menu). A recipe occupies ONE slot whatever it
@@ -312,8 +355,11 @@ def build_catalog(catalog_stats=None, wiki_curves=None) -> dict:
                             "flags": 0, "single": 0, "compound": 0,
                             "unrankable": 0, "wiki_magnitude": 0,
                             "umbrella_withheld": 0,
-                            "umbrella_only_withheld": 0}
+                            "umbrella_only_withheld": 0,
+                            "unit_ambiguous_withheld": 0,
+                            "type_no_bucket_withheld": 0}
     umbrella_effects = set()
+    no_bucket_types = set()
     for r in recipes:
         name = r.get("name")
         ench = r.get("enchantments") or []
@@ -321,9 +367,40 @@ def build_catalog(catalog_stats=None, wiki_curves=None) -> dict:
         for e in ench:
             curve, unit, min_ml = curve_of(e)
             raw_stat = e.get("name")
+            # #837 audit — the UNIT comes from the catalog where the catalog
+            # carries the stat, and from the float heuristic only where it does
+            # not. The heuristic alone labelled 20 stats `pct` that this catalog
+            # stores as plain numbers under `flat` (`Fortification` 146,
+            # `Doublestrike` 17), so a crafted affix and a native one for the
+            # same stat wore different units over the same number. The old wiki
+            # builder read `catalog_units` for exactly this, and its rule is
+            # kept: a stat the catalog spells BOTH ways is left unvalued rather
+            # than resolved by vote, because a percentage and a flat number in
+            # one bucket compare directly.
+            _cu = (catalog_units or {}).get(mapping.get(raw_stat, raw_stat))
+            if _cu:
+                if len(_cu) == 1:
+                    unit = next(iter(_cu))
+                else:
+                    curve, unit = None, None
+                    coverage["unit_ambiguous_withheld"] += 1
             # #837 — upstream names the mechanic, this catalog names the affix.
             stat = mapping.get(raw_stat, raw_stat)
-            bonus = (e.get("bonus") or "").strip() or None
+            source_bonus = (e.get("bonus") or "").strip() or None
+            # #837 audit — a BONUS TYPE is a stacking bucket, and a bucket the
+            # catalog does not carry is worse than no type at all: it stacks with
+            # everything. yourddo spells the natural-armor bonus `Natural Armor`;
+            # the catalog carries 149 affixes typed `Natural` and none typed
+            # `Natural Armor`, and the wiki states `Natural`. Joined explicitly.
+            # Any other spelling with no catalog bucket is left UNSOURCED and
+            # disclosed rather than minted — `Unique` is the one such today —
+            # and `assert_every_minted_type_has_a_bucket` fails the build on the
+            # next one.
+            bonus = BONUS_TYPE_JOIN.get(source_bonus, source_bonus)
+            if bonus is not None and catalog_types is not None and bonus not in catalog_types:
+                coverage["type_no_bucket_withheld"] += 1
+                no_bucket_types.add(bonus)
+                bonus = None
             # An UMBRELLA stat is expanded away before anything ranks it, so a
             # placement naming one offers the player a stat no priority can
             # reach (`tests/test_spell_focus.py` walks the whole dataset for
@@ -354,6 +431,7 @@ def build_catalog(catalog_stats=None, wiki_curves=None) -> dict:
             if bonus == INSIGHT_BONUS_TYPE:
                 floor = max(floor, INSIGHT_MIN_ML)
             part = {"stat": stat, "source_stat": raw_stat,
+                    "source_bonus_type": source_bonus,
                     "quarantined": raw_stat in quarantined,
                     "bonus_type": bonus,
                     "type_sourced": bonus is not None,
@@ -417,6 +495,9 @@ def build_catalog(catalog_stats=None, wiki_curves=None) -> dict:
             "no placement, which means the join broke rather than that the game "
             "changed")
     coverage["umbrella_effects"] = sorted(umbrella_effects)
+    coverage["type_no_bucket"] = sorted(no_bucket_types)
+    if catalog_types is not None:
+        assert_every_minted_type_has_a_bucket(groups, catalog_types)
     return {"groups": groups, "coverage": coverage,
             "source": provenance()["source"],
             "source_commit": provenance()["upstream_commit"]}

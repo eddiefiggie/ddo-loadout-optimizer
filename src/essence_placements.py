@@ -633,7 +633,8 @@ def assert_unit_matches_the_magnitude(records) -> dict:
             "checked": sum(1 for r in records if r.get("values_by_ml"))}
 
 
-def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
+def build_placement_catalog(catalog_stats=None, catalog_units=None,
+                            catalog_types=None) -> dict:
     """Every placement in the table, annotated for the builder.
 
     `catalog_stats` gates `rankable`: an effect whose stat the catalog does not use
@@ -841,7 +842,8 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
     # would offer each of those twice, once per path, and a player could take the
     # same shard in two slots.
     _src = essence_source.build_catalog(
-        catalog_stats=catalog_stats,
+        catalog_stats=catalog_stats, catalog_units=catalog_units,
+        catalog_types=catalog_types,
         wiki_curves={r["effect"]: r["values_by_ml"]
                      for menus in groups.values()
                      for rows in menus.values()
