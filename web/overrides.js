@@ -278,10 +278,13 @@
    *      so preferring `stat` can never mis-read a worn affix.
    *    - All 48 `seal` rows carry BOTH, with `name` an empty string and `stat`
    *      the real effect. A `name`-wins rule returns "" for every seal.
-   *    - All 25 `essence_crafting` rows carry BOTH, and there `name` is a
-   *      DISPLAY LABEL, not a stat: `"Essence Crafting: Charisma"` beside
-   *      `"Charisma"`. A `name`-wins rule silently keys the whole channel on a
-   *      label that matches no affix anywhere.
+   *    - Every `essence_crafting` row carried BOTH (25 of them when this was
+   *      measured), and there `name` is a DISPLAY LABEL, not a stat: `"Essence
+   *      Crafting: Charisma"` beside `"Charisma"`. A `name`-wins rule silently
+   *      keys the whole channel on a label that matches no affix anywhere.
+   *      #844 made those rows ATOMIC — the stat lives on each entry of the
+   *      row's `affixes` list, which is what reaches this function now — but
+   *      the record-level `name` is still the display label, so the rule stands.
    *
    *  So the two pools that carry both fields would BOTH be read wrongly by the
    *  rule that is correct for bonus type. This was not theoretical: #743 shipped

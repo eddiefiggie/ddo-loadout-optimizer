@@ -863,3 +863,38 @@ exclusion, now owned by `essence_placements.WIKI_EXCLUDED_EFFECTS`.
 `src/essence_pool.py` no longer opens the wiki shards; `essence_placements.py`
 does, for the disagreement ledger, the dice magnitudes and `wiki_groups`, and
 `tests/test_essence_crafting_shard.py` names it as the reader.
+
+## 2026-09-20 — #844: compound shards are served whole
+
+#843 withheld the 52 fully sourced compound recipes because the pool's container
+was FLAT — one stat per record — and `Sheltering` grants Physical and Magical
+Sheltering from one shard. The container is ATOMIC now: every Essence record
+carries an `affixes` list (one entry per enchantment, each with its own bonus
+type, unit and 36-slot curve), and a compound shard is one option granting every
+part from one pick variable, credited into each part's own bucket, so the solver
+can never take half a craft. The Legendary Green Steel pool is the shape this
+mirrors.
+
+Measured on the built dataset, pinned in `tests/test_essence_pool.py`:
+
+| family | offered (#843) | offered (#844) | of which compound | compound withheld |
+|---|---|---|---|---|
+| Trinket | 167 | 187 | 20 | |
+| Ring | 48 | 82 | 34 | |
+| Rune Arm | 70 | 70 | 0 | |
+| Melee | 71 | 96 | 25 | |
+| **total** | **356** | **435** | **79** | **43** |
+
+79, not the 52 #843 counted: that count required every part to be *sourced*
+(type and curve), and the presence rule of #843 applies per part now — a Melee
+shard whose parts are `Holy` and `Anarchic` is a compound of two flags and needs
+no type or curve for either. The 43 withheld carry a part the stat join could not
+match (40) or a part with no bonus type (3); one failing part withholds the whole
+shard, named `compound-<reason>`, never a record carrying the half that passed.
+
+What did not change: the per-menu `Σ ≤ 1`, the Insight and Extra-slot floors
+(`min_ml` is the recipe's floor, the highest any part carries), the curve-hole
+rule (checked per part), and every single-enchantment row — they are the same
+grants, now inside an `affixes` list of one. The wiki pool's 38 rows are still all
+present. `essence_crafting_coverage.compound_deferred` and its issue pointer are
+gone: the deferral is served, not carried.

@@ -1978,10 +1978,11 @@ def build() -> dict:
     # every presence option names a stat the catalog ranks on/off. The first is
     # what stops a crafted affix stacking with everything; the second is what
     # stops the solver ranking a flag six times over.
-    _bad_type = [(r["effect"], r["bonus_type"]) for r in essence["records"]
-                 if not r["presence"] and r["bonus_type"] not in _catalog_types]
-    _bad_presence = [r["effect"] for r in essence["records"]
-                     if r["presence"] and r["stat"] not in _catalog_presence]
+    _bad_type = [(r["effect"], a["bonus_type"]) for r in essence["records"]
+                 for a in r["affixes"]
+                 if not a["presence"] and a["bonus_type"] not in _catalog_types]
+    _bad_presence = [r["effect"] for r in essence["records"] for a in r["affixes"]
+                     if a["presence"] and a["stat"] not in _catalog_presence]
     if _bad_type or _bad_presence:
         raise SystemExit(
             "Essence Crafting: the pool minted an option the catalog cannot bucket — "

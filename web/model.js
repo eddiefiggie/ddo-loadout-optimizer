@@ -2083,8 +2083,11 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // gone. That was not a hypothetical. Before this moved, every Gem was deleted by
   // the dominance filter at ML caps 30 and 34, so Essence Crafting reached the
   // solver on no endgame query at all.
-  const essencePool = (essenceCrafting || []).filter((o) => o && targetSet.has(o.stat)
-    && Array.isArray(o.values_by_ml) && o.values_by_ml.length === 36);
+  // #844 — ATOMIC: an option is worth carrying when ANY of its affixes is ranked
+  // and carries a full curve. A compound shard (`Sheltering`) stays in for a
+  // Physical Sheltering priority even though Magical Sheltering is unranked.
+  const essencePool = (essenceCrafting || []).filter((o) => o && _affixesOf(o).some((a) =>
+    targetSet.has(a.stat) && Array.isArray(a.values_by_ml) && a.values_by_ml.length === 36));
 
   const withArt = !!query.includeArtifact;
   const worn = [];

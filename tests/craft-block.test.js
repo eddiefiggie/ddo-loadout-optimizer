@@ -97,14 +97,16 @@ test("the index covers every stamped option row and nothing else", () => {
   // discriminator to (family, menu): `Insightful Constitution` is a Trinket Prefix
   // AND a Ring Prefix, so under the old `menu`-only key the two collapsed and
   // blocking one would have silently blocked the other.
+  // #844 — 1406 not 1327: +79, the compound Essence shards now served whole (one
+  // record each: Sheltering, Combat Mastery, …); nothing else moved.
   // #843 — 1327 not 1009: +318, the Essence pool read from the yourddo catalog
   // instead of the wiki shards (356 options over 38; every one of the 38 kept).
-  // #817 — 1327 not 1007: +2, the two `Dodge` Essence options (Trinket Prefix and
+  // #817 — 1009 not 1007: +2, the two `Dodge` Essence options (Trinket Prefix and
   // Suffix) that became offerable once the BONUS-TYPE page sweep supplied the type
   // the effect page never carried. The solver's own Essence menu grew, not just
   // the player-authored bench.
-  assert.strictEqual(idx.length, 1327, "index size is the stamped population");
-  assert.strictEqual(new Set(idx.map((r) => r.id)).size, 1327, "ids stay unique through the index");
+  assert.strictEqual(idx.length, 1406, "index size is the stamped population");
+  assert.strictEqual(new Set(idx.map((r) => r.id)).size, 1406, "ids stay unique through the index");
   for (const r of idx) {
     assert.ok(r.id.startsWith("craft:"), r.id);
     assert.ok(r.name, `row with no display name: ${r.id}`);

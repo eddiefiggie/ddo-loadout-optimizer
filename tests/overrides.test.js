@@ -1340,7 +1340,12 @@ test("#743: no item affix in the built dataset carries `stat`", () => {
 test("#743: every seal and essence row still resolves to a real stat name", () => {
   const ds = JSON.parse(fs.readFileSync(
     path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
-  for (const row of [...(ds.seal || []), ...(ds.essence_crafting || [])]) {
+  // #844 — essence rows are ATOMIC: the stat lives on each `affixes` entry, which
+  // is what reaches `readStat` through `_affixesOf`; the row itself carries only
+  // the display label.
+  const essenceAffixes = (ds.essence_crafting || []).flatMap((r) => r.affixes || []);
+  assert.ok(essenceAffixes.length > 400, "expected the atomic essence affixes");
+  for (const row of [...(ds.seal || []), ...essenceAffixes]) {
     const s = O.readStat(row);
     assert.ok(s && String(s).trim(), `row resolved to an empty stat: ${JSON.stringify(row).slice(0, 120)}`);
     assert.ok(!/^Essence Crafting:/.test(s), `resolved to a display label, not a stat: ${s}`);

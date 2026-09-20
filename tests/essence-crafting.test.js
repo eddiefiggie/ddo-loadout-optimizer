@@ -53,11 +53,19 @@ function runeArm(id, ml) {
   });
 }
 // One pool option. `curve[ml-1]` is the magnitude at a host of that ML.
+// #844 — ATOMIC: the shard's grants live in `affixes`, one entry each with its
+// own curve; a compound shard is one option with several. No record-level stat.
+function affix(stat, bonus_type, curve, presence) {
+  return { stat, bonus_type, unit: "flat", values_by_ml: curve, presence: !!presence };
+}
 function opt(menu, effect, stat, bonus_type, curve, min_ml, family) {
+  return atomic(menu, effect, [affix(stat, bonus_type, curve)], min_ml, family);
+}
+function atomic(menu, effect, affixes, min_ml, family) {
   return { menu, family: family || "Trinket",
-           effect, name: "Essence Crafting: " + effect, stat, bonus_type,
-           unit: "flat", values_by_ml: curve, min_ml: min_ml || 1,
-           curve_row: "test", wiki_url: "" };
+           effect, name: "Essence Crafting: " + effect, min_ml: min_ml || 1,
+           compound: affixes.length > 1, presence: affixes.every((a) => a.presence),
+           affixes, wiki_url: "" };
 }
 const flat = (v) => Array.from({ length: 36 }, () => String(v));
 // The real ability curves, abbreviated: Enhancement tops out at 15, Insight at 7.
@@ -377,26 +385,26 @@ async function solve(model) {
   await test("#843: every presence option names a stat the app ranks on/off, and no numeric one does", async () => {
     const pool = raw.essence_crafting || [];
     assert.ok(pool.length > 300, `pool has ${pool.length} rows — the switch did not land`);
-    const presence = pool.filter((o) => o.presence);
-    const numeric = pool.filter((o) => !o.presence);
+    // #844 — per AFFIX: a compound shard can mix a number and a flag.
+    const affixes = pool.flatMap((o) => (o.affixes || []).map((a) => ({ ...a, effect: o.effect })));
+    const presence = affixes.filter((a) => a.presence);
+    const numeric = affixes.filter((a) => !a.presence);
     assert.ok(presence.length >= 60 && numeric.length >= 250, `${presence.length} presence / ${numeric.length} numeric`);
-    const wrongPresence = presence.filter((o) => !isPresenceOnly(vocab.canonical(o.stat)));
-    const wrongNumeric = numeric.filter((o) => isPresenceOnly(vocab.canonical(o.stat)));
-    assert.deepStrictEqual(wrongPresence.map((o) => o.stat), [],
+    const wrongPresence = presence.filter((a) => !isPresenceOnly(vocab.canonical(a.stat)));
+    const wrongNumeric = numeric.filter((a) => isPresenceOnly(vocab.canonical(a.stat)));
+    assert.deepStrictEqual(wrongPresence.map((a) => a.stat), [],
       "the pool minted these on/off but the app values them");
-    assert.deepStrictEqual(wrongNumeric.map((o) => o.stat), [],
+    assert.deepStrictEqual(wrongNumeric.map((a) => a.stat), [],
       "the pool minted these as numbers but the app ranks them on/off");
-    for (const o of presence) {
-      assert.strictEqual(o.bonus_type, "Bool", o.effect);
-      assert.ok(o.values_by_ml.every((v) => v === "1"), o.effect);
+    for (const a of presence) {
+      assert.strictEqual(a.bonus_type, "Bool", a.effect);
+      assert.ok(a.values_by_ml.every((v) => v === "1"), a.effect);
     }
   });
 
   await test("#843: an on/off option is placed on/off — value 1 in the Bool bucket, reported as present", async () => {
     const host = gem("Legendary Gem", 30);
-    const pool = [{ menu: "Prefix", family: "Trinket", effect: "Holy", name: "Essence Crafting: Holy",
-                    stat: "Holy", bonus_type: "Bool", unit: "flat", values_by_ml: flat(1), min_ml: 1,
-                    presence: true, wiki_url: "" }];
+    const pool = [atomic("Prefix", "Holy", [affix("Holy", "Bool", flat(1), true)])];
     const { prog, result } = await solve(modelWith(host, pool, ["Holy"]));
     assert.strictEqual(result.status, "optimal");
     assert.strictEqual(result.perTarget.Holy, 1, "present once, not a number");
@@ -410,5 +418,73 @@ async function solve(model) {
       assert.ok(line && line.includes("Prefix: Holy") && !line.includes("Holy +1"), line);
     }
     void prog;
+  });
+})();
+
+// --- #844 — a compound shard is one option granting every part ----------------
+(async () => {
+  const SHELTER = ["4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21",
+                   "22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39"];
+  const sheltering = () => atomic("Suffix", "Sheltering", [
+    affix("Physical Sheltering", "Enhancement", SHELTER),
+    affix("Magical Sheltering", "Enhancement", SHELTER),
+  ]);
+
+  await test("#844: one pick variable credits BOTH halves of a compound shard, each in its own bucket", async () => {
+    const { prog, result } = await solve(
+      modelWith(gem("Gem", 30), [sheltering()], ["Physical Sheltering", "Magical Sheltering"]));
+    assert.strictEqual(result.status, "optimal");
+    assert.strictEqual([...prog.essMeta.keys()].length, 1, "one shard, one variable");
+    assert.strictEqual(result.perTarget["Physical Sheltering"], 33, "curve[29] for an ML 30 host");
+    assert.strictEqual(result.perTarget["Magical Sheltering"], 33);
+    const placed = result.essPlaced || [];
+    assert.strictEqual(placed.length, 1, "placed as ONE craft, not two");
+    assert.deepStrictEqual(placed[0].affixes.map((a) => [a.stat, a.value]).sort(),
+      [["Magical Sheltering", 33], ["Physical Sheltering", 33]]);
+    const lines = require("../web/projection.js").essenceNoticeLines(result);
+    const line = lines.find((l) => /placed 1 effect/.test(l));
+    assert.ok(line && /Suffix: Sheltering \(Physical Sheltering \+33, Magical Sheltering \+33\)/.test(line), line);
+  });
+
+  await test("#844: a compound shard is taken whole when only one half is ranked — never by halves", async () => {
+    const { prog, result } = await solve(
+      modelWith(gem("Gem", 30), [sheltering()], ["Physical Sheltering"]));
+    assert.strictEqual(result.status, "optimal");
+    assert.strictEqual(result.perTarget["Physical Sheltering"], 33);
+    const placed = result.essPlaced || [];
+    assert.strictEqual(placed.length, 1);
+    assert.strictEqual(placed[0].affixes.length, 2, "the report carries the unranked half too — the player crafts the whole shard");
+    // The unranked half is not a variable the MILP carries (no z), only a fact the report states.
+    const zForMrr = [...(prog.zByBucket || new Map()).keys()].filter((k) => /^Magical Sheltering\|\|/.test(k));
+    assert.deepStrictEqual(zForMrr, [], "an unranked affix gets no contribution");
+    void prog;
+  });
+
+  await test("#844: a compound shard competes with the same-bucket gear it would duplicate", async () => {
+    // A worn +30 Enhancement PRR ring beside the shard: max, not sum.
+    const ring = item("R", "Ring", [["Physical Sheltering", "Enhancement", 30]]);
+    const model = { targets: ["Physical Sheltering"], mlCap: 34,
+                    worn: [slot("Trinket", [gem("Gem", 30)]), slot("Ring", [ring], 1)],
+                    essenceCrafting: [sheltering()] };
+    const { result } = await solve(model);
+    assert.strictEqual(result.status, "optimal");
+    assert.strictEqual(result.perTarget["Physical Sheltering"], 33, "33 beats 30 and they do not add");
+  });
+
+  await test("#844: the built pool is ATOMIC — every record carries `affixes`, none a record-level stat, and Sheltering is one shard", async () => {
+    const fs = require("fs"), path = require("path");
+    const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+    const pool = raw.essence_crafting || [];
+    assert.ok(pool.every((o) => Array.isArray(o.affixes) && o.affixes.length >= 1), "every record carries affixes");
+    assert.ok(pool.every((o) => !("stat" in o) && !("values_by_ml" in o)), "no record-level stat or curve");
+    const compound = pool.filter((o) => o.affixes.length > 1);
+    assert.ok(compound.length >= 50, `only ${compound.length} compound shards`);
+    assert.ok(pool.every((o) => o.compound === (o.affixes.length > 1)), "`compound` says what the list says");
+    const sh = pool.filter((o) => o.effect === "Sheltering" && o.family === "Trinket");
+    assert.ok(sh.length >= 1, "Sheltering is offered on the Trinket");
+    for (const o of sh) {
+      assert.deepStrictEqual(o.affixes.map((a) => a.stat).sort(), ["Magical Sheltering", "Physical Sheltering"]);
+      assert.ok(o.affixes.every((a) => a.values_by_ml.length === 36 && a.bonus_type === "Enhancement"));
+    }
   });
 })();

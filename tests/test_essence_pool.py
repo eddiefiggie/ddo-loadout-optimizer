@@ -10,8 +10,13 @@ reads (`essence_placements["groups"]`), and these tests pin the consequences:
   the count is the predicate, re-counted independently, not a number;
   nothing the wiki pool offered was lost;
   a stat the catalog ranks on/off is offered on/off, never as a number;
-  compound recipes are withheld whole and counted (#844);
+  a compound shard is ONE atomic option granting every part (#844);
   the Extra slot's ML-10 gate is applied in its own right.
+
+Every record is ATOMIC (#844): `affixes` carries what the shard grants, one entry
+per enchantment with its own type, unit and curve. `_affixes()` below is the one
+way these tests read a record's grants, so no test can quietly assume a
+record-level stat again.
 """
 import json
 import os
@@ -46,6 +51,14 @@ WIKI_POOL_ROWS = [
 ]
 
 _DS = None
+
+
+def _affixes(rec):
+    return rec["affixes"]
+
+
+def _stats(rec):
+    return [a["stat"] for a in rec["affixes"]]
 
 
 def _dataset():
@@ -86,18 +99,32 @@ def _pool():
 
 def _expected(groups, stats, presence):
     """The pool's predicate, written a second time from the catalog rows, so the
-    count is a re-derivation and not the builder agreeing with itself."""
-    numeric, flags = [], []
+    count is a re-derivation and not the builder agreeing with itself.
+
+    Returns `(singles, flags, compound)` as (family, menu, effect) lists. A part
+    passes when its stat is in the catalog and either on/off there or fully
+    sourced with a scalar curve; a compound passes when EVERY part does."""
+    def part_ok(p):
+        st = p.get("stat")
+        if not st or p.get("quarantined") or st not in stats:
+            return False
+        if st in presence:
+            return True
+        return bool(p.get("sourced")) and p.get("unit") != "dice"
+    singles, flags, compound = [], [], []
     for family, group in essence_pool.HOST_FAMILIES.items():
         for menu in essence_pool.MENUS:
             for r in groups[group][menu]:
-                if r.get("parts") or r.get("quarantined") or r["stat"] not in stats:
-                    continue
-                if r["stat"] in presence:
-                    flags.append((family, menu, r["effect"]))
-                elif not r.get("flag") and r.get("sourced") and r.get("unit") != "dice":
-                    numeric.append((family, menu, r["effect"]))
-    return numeric, flags
+                key = (family, menu, r["effect"])
+                if r.get("flag"):
+                    if r["stat"] in stats and r["stat"] in presence:
+                        flags.append(key)
+                elif r.get("parts"):
+                    if all(part_ok(p) for p in r["parts"]):
+                        compound.append(key)
+                elif part_ok(r):
+                    (flags if r["stat"] in presence else singles).append(key)
+    return singles, flags, compound
 
 
 # --- the source ------------------------------------------------------------------
@@ -107,8 +134,9 @@ def test_the_shipped_pool_is_a_rederivation_of_the_shipped_catalog():
     the pool from the catalog the dataset carries must reproduce the pool the
     dataset carries, row for row."""
     ds = _dataset()
-    key = lambda r: (r["family"], r["menu"], r["effect"], r["stat"], r["bonus_type"],
-                     r["min_ml"], r["presence"], tuple(r["values_by_ml"]))
+    key = lambda r: (r["family"], r["menu"], r["effect"], r["min_ml"], r["presence"], r["compound"],
+                     tuple((a["stat"], a["bonus_type"], a["presence"], tuple(a["values_by_ml"]))
+                           for a in r["affixes"]))
     shipped = sorted(key(r) for r in ds["essence_crafting"])
     rebuilt = sorted(key(r) for r in _pool()["records"])
     assert shipped == rebuilt
@@ -119,24 +147,31 @@ def test_the_shipped_pool_is_a_rederivation_of_the_shipped_catalog():
 
 def test_the_count_is_the_predicate_recounted_not_a_number():
     stats, presence, _ = _catalog()
-    numeric, flags = _expected(_groups(), stats, presence)
+    singles, flags, compound = _expected(_groups(), stats, presence)
     pool = _pool()
     recs = pool["records"]
-    assert len(recs) == len(numeric) + len(flags)
-    assert sum(1 for r in recs if r["presence"]) == len(flags)
+    assert len(recs) == len(singles) + len(flags) + len(compound)
+    assert sum(1 for r in recs if r["compound"]) == len(compound)
     # And the numbers, so a drift is a finding to attribute rather than a
-    # silent re-count. 38 rows before #843; 356 after, 66 of them presence.
+    # silent re-count. 38 rows before #843; 356 after (66 presence); #844 serves
+    # the compound shards whole: 435, of which 79 compound. `presence` counts
+    # records whose EVERY affix is on/off — a compound of flags (the Melee
+    # `Aligned`-style shards) is one, a Sheltering is not.
     cov = pool["coverage"]
-    assert cov["offered_all"] == 356, cov["offered_all"]
-    assert cov["presence"] == 66, cov["presence"]
+    assert cov["offered_all"] == 435, cov["offered_all"]
+    assert cov["compound"] == 79, cov["compound"]
+    assert cov["presence"] == 90, cov["presence"]
     assert cov["total_all"] == 639, cov["total_all"]
     assert {k: v["offered_all"] for k, v in cov["by_family"].items()} == {
-        "Trinket": 167, "Rune Arm": 70, "Ring": 48, "Melee": 71}, cov["by_family"]
+        "Trinket": 187, "Rune Arm": 70, "Ring": 82, "Melee": 96}, cov["by_family"]
+    assert {k: v["compound"] for k, v in cov["by_family"].items()} == {
+        "Trinket": 20, "Rune Arm": 0, "Ring": 34, "Melee": 25}, cov["by_family"]
     assert len(recs) > 300, "the pool is too small for the rest of this file to be measuring anything"
 
 
 def test_nothing_the_wiki_pool_offered_was_lost():
-    have = {(r["family"], r["menu"], r["stat"]) for r in _pool()["records"] if not r["presence"]}
+    have = {(r["family"], r["menu"], a["stat"]) for r in _pool()["records"]
+            for a in _affixes(r) if not a["presence"] and not r["compound"]}
     lost = [row for row in WIKI_POOL_ROWS if row not in have]
     assert not lost, f"the switch to yourddo dropped rows the wiki pool offered: {lost}"
     assert len(WIKI_POOL_ROWS) == 38
@@ -150,15 +185,17 @@ def test_every_numeric_option_buckets_into_a_type_some_native_affix_uses():
     exactly that before the catalog joined it (#837 audit)."""
     _, _, types = _catalog()
     for rec in _pool()["records"]:
-        if rec["presence"]:
-            continue
-        assert rec["bonus_type"] in types, f"{rec['effect']}: {rec['bonus_type']!r} has no native bucket"
+        for a in _affixes(rec):
+            if a["presence"]:
+                continue
+            assert a["bonus_type"] in types, f"{rec['effect']}: {a['bonus_type']!r} has no native bucket"
 
 
 def test_every_option_names_a_stat_the_catalog_already_uses():
     stats, _, _ = _catalog()
     for rec in _pool()["records"]:
-        assert rec["stat"] in stats, f"{rec['effect']} -> {rec['stat']!r}, unknown to the catalog"
+        for st in _stats(rec):
+            assert st in stats, f"{rec['effect']} -> {st!r}, unknown to the catalog"
 
 
 def test_an_unknown_stat_is_dropped_rather_than_offered():
@@ -178,7 +215,7 @@ def test_natural_armor_is_absent_because_the_join_quarantines_it():
     pool = _pool()
     assert not hasattr(essence_pool, "EXCLUDED_EFFECTS")
     assert "Natural Armor" in pool["coverage"]["skipped"]["stat-unmatched"]
-    assert not [r for r in pool["records"] if r["stat"] == "Natural Armor"]
+    assert not [r for r in pool["records"] if "Natural Armor" in _stats(r)]
 
 
 def test_insightful_effects_contribute_to_the_base_stat_not_a_stat_of_their_own():
@@ -187,10 +224,11 @@ def test_insightful_effects_contribute_to_the_base_stat_not_a_stat_of_their_own(
     Constitution item in the game. The join does this now, not this module."""
     seen = 0
     for rec in _pool()["records"]:
-        if rec["effect"].startswith("Insightful "):
+        if rec["effect"].startswith("Insightful ") and not rec["compound"]:
             seen += 1
-            assert not rec["stat"].startswith("Insightful "), rec["effect"]
-            assert rec["bonus_type"] == "Insight", rec
+            a = _affixes(rec)[0]
+            assert not a["stat"].startswith("Insightful "), rec["effect"]
+            assert a["bonus_type"] == "Insight", rec
     assert seen > 20, seen
 
 
@@ -203,17 +241,19 @@ def test_a_stat_the_catalog_ranks_on_off_is_offered_on_off_never_as_a_number():
     numeric 6 in that bucket would rank presence six times over."""
     _, presence, _ = _catalog()
     pool = _pool()
-    flagged = [r for r in pool["records"] if r["presence"]]
-    assert flagged, "no presence options at all"
-    for r in flagged:
-        assert r["bonus_type"] == "Bool" and r["unit"] == "flat", r["effect"]
-        assert r["values_by_ml"] == ["1"] * 36, r["effect"]
-        assert r["stat"] in presence, f"{r['effect']} is presence-minted on a valued stat"
-        assert r["magnitude_source"] is None
+    flagged = [(r, a) for r in pool["records"] for a in _affixes(r) if a["presence"]]
+    assert flagged, "no presence affixes at all"
+    for r, a in flagged:
+        assert a["bonus_type"] == "Bool" and a["unit"] == "flat", r["effect"]
+        assert a["values_by_ml"] == ["1"] * 36, r["effect"]
+        assert a["stat"] in presence, f"{r['effect']} is presence-minted on a valued stat"
+        assert a["magnitude_source"] is None
     for r in pool["records"]:
-        if not r["presence"]:
-            assert r["stat"] not in presence, f"{r['effect']} is a number on an on/off stat"
-    stats = {r["stat"] for r in flagged}
+        for a in _affixes(r):
+            if not a["presence"]:
+                assert a["stat"] not in presence, f"{r['effect']} is a number on an on/off stat"
+        assert r["presence"] == all(a["presence"] for a in _affixes(r)), r["effect"]
+    stats = {a["stat"] for _, a in flagged}
     for name in ("Holy", "Anarchic", "Eternal Faith", "Undead Bane", "Blindness Immunity"):
         assert name in stats, name
 
@@ -230,25 +270,49 @@ def test_a_flag_on_a_valued_stat_is_withheld_not_guessed():
 
 # --- compound (#844) -----------------------------------------------------------------
 
-def test_compound_recipes_are_withheld_whole_and_counted():
-    """This container is FLAT. A recipe granting two enchantments is one shard;
-    splitting it would let the solver take half a craft. Withheld — every one,
-    including the fully sourced ones — and the fully sourced count is what #844
-    unlocks, so it is pinned to move, not to stay."""
+def test_a_compound_shard_is_one_atomic_option_granting_every_part():
+    """`Sheltering` grants Physical AND Magical Sheltering from one shard. It is
+    ONE record carrying both in `affixes`, never two records the solver could
+    take separately; and every record, single or not, is atomic — there is no
+    record-level stat for a reader to key on."""
     pool = _pool()
-    assert not [r for r in pool["records"] if r.get("parts")]
-    cov = pool["coverage"]
-    assert "Sheltering" in cov["skipped"]["compound-recipe"]
-    independent = 0
-    for family, group in essence_pool.HOST_FAMILIES.items():
-        for menu in essence_pool.MENUS:
-            for r in _groups()[group][menu]:
-                if r.get("parts") and all(p.get("sourced") and not p.get("quarantined") for p in r["parts"]):
-                    independent += 1
-    assert cov["compound_deferred"] == independent == 52, (cov["compound_deferred"], independent)
-    assert cov["compound_deferred_issue"] == essence_pool.COMPOUND_ISSUE == 844
-    assert {k: v["compound_deferred"] for k, v in cov["by_family"].items()} == {
-        "Trinket": 20, "Ring": 32, "Rune Arm": 0, "Melee": 0}
+    recs = pool["records"]
+    for r in recs:
+        assert "stat" not in r and "values_by_ml" not in r and "bonus_type" not in r, r["effect"]
+        assert r["affixes"], r["effect"]
+        assert r["compound"] == (len(r["affixes"]) > 1), r["effect"]
+        for a in r["affixes"]:
+            assert len(a["values_by_ml"]) == 36, (r["effect"], a["stat"])
+    sh = [r for r in recs if r["effect"] == "Sheltering" and r["family"] == "Trinket"]
+    assert sh, "Sheltering is offered on the Trinket"
+    for r in sh:
+        assert sorted(_stats(r)) == ["Magical Sheltering", "Physical Sheltering"]
+        assert all(a["bonus_type"] == "Enhancement" and not a["presence"] for a in r["affixes"])
+    assert not hasattr(essence_pool, "COMPOUND_ISSUE"), "the deferral is served, not carried"
+
+
+def test_a_compound_shard_with_one_failing_part_is_withheld_whole_and_named():
+    """One part the join could not match withholds the shard — never a record
+    carrying the half that passed. The reason names the part's failure with a
+    `compound-` prefix so the disclosure says what class of thing it was."""
+    pool = _pool()
+    skipped = pool["coverage"]["skipped"]
+    assert skipped.get("compound-stat-unmatched"), skipped.keys()
+    withheld = {k: v for k, v in skipped.items() if k.startswith("compound-")}
+    assert pool["coverage"]["compound_withheld"] == sum(len(v) for v in withheld.values()) == 43
+    for reason, effects in withheld.items():
+        for e in effects:
+            for r in pool["records"]:
+                assert not (r["effect"] == e and r["compound"] and len(r["affixes"]) < 2), (reason, e)
+    # Prove the whole-shard rule bites: corrupt ONE part of an offered compound.
+    stats, presence, _ = _catalog()
+    groups = json.loads(json.dumps(_groups()))
+    row = next(r for r in groups["Trinkets"]["Prefix"] if r["effect"] == "Sheltering")
+    row["parts"][1]["quarantined"] = True
+    again = essence_pool.build_essence_pool(groups, catalog_stats=stats, catalog_presence=presence)
+    assert "Sheltering" in again["coverage"]["skipped"]["compound-stat-unmatched"]
+    assert not [r for r in again["records"] if r["effect"] == "Sheltering" and r["family"] == "Trinket"
+                and r["menu"] == "Prefix"]
 
 
 # --- the two ML-10 rules ------------------------------------------------------------
@@ -258,7 +322,7 @@ def test_insight_options_carry_the_wiki_minimum_level():
     higher only." Applied by the catalog; ASSERTED here, and the assertion is
     proved live by handing the builder a row without the floor."""
     for rec in _pool()["records"]:
-        if rec["bonus_type"] == "Insight":
+        if any(a["bonus_type"] == "Insight" for a in _affixes(rec)):
             assert rec["min_ml"] >= essence_pool.INSIGHT_MIN_ML, (rec["effect"], rec["min_ml"])
     stats, presence, _ = _catalog()
     groups = json.loads(json.dumps(_groups()))
@@ -289,7 +353,7 @@ def test_the_extra_slot_gate_is_applied_in_its_own_right():
     assert extra
     for r in extra:
         assert r["min_ml"] >= essence_pool.EXTRA_SLOT_MIN_ML, (r["effect"], r["min_ml"])
-    non_insight = [r for r in extra if r["bonus_type"] != "Insight"]
+    non_insight = [r for r in extra if all(a["bonus_type"] != "Insight" for a in _affixes(r))]
     assert non_insight, "no non-Insight Extra option — the slot gate is untested"
     perform = next(r for r in non_insight if r["effect"] == "Perform")
     catalog_row = next(r for r in _groups()["Trinkets"]["Extra"] if r["effect"] == "Perform")
@@ -302,7 +366,8 @@ def test_every_curve_covers_all_thirty_six_minimum_levels():
     """The solver reads `values_by_ml[ml - 1]`. A short curve would index
     undefined and silently credit nothing, or credit the wrong level."""
     for rec in _pool()["records"]:
-        assert len(rec["values_by_ml"]) == 36, f"{rec['effect']}: {len(rec['values_by_ml'])} values"
+        for a in _affixes(rec):
+            assert len(a["values_by_ml"]) == 36, f"{rec['effect']}/{a['stat']}: {len(a['values_by_ml'])} values"
 
 
 # --- hosts ---------------------------------------------------------------------------
@@ -345,7 +410,7 @@ def test_the_heroic_gem_can_reach_no_insight_option_and_no_extra_menu():
     assert heroic["ml"] < essence_pool.INSIGHT_MIN_ML
     reachable = [o for o in ds["essence_crafting"] if heroic["ml"] >= o["min_ml"]]
     assert reachable, "the heroic Gem must still reach the non-Insight options"
-    assert not [o for o in reachable if o["bonus_type"] == "Insight"]
+    assert not [o for o in reachable for a in o["affixes"] if a["bonus_type"] == "Insight"]
     assert not [o for o in reachable if o["menu"] == "Extra"]
 
 
@@ -358,20 +423,22 @@ def test_every_ml_curve_is_monotonic_and_peaks_at_the_top():
     optimal and the solver has to search the ML instead. This fails then."""
     records = _pool()["records"]
     for rec in records:
-        # A curve is allowed to be empty BELOW the option's floor (`Armor
-        # Destroying` exists from ML 20; yourddo stores null for 1..19) because
-        # `min_ml` gates the option before the solver reads a slot. Never at or
-        # above it — the builder withholds those as `curve-hole`.
-        assert all(v not in (None, "") for v in rec["values_by_ml"][rec["min_ml"] - 1:]), rec["effect"]
-        vals = [float(str(v).strip().rstrip("%")) for v in rec["values_by_ml"][rec["min_ml"] - 1:]]
-        drops = [(i + 1, a, b) for i, (a, b) in enumerate(zip(vals, vals[1:])) if b < a]
-        assert not drops, (
-            f"{rec['effect']} ({rec['family']} {rec['menu']}) falls at ML {drops[0][0]}: "
-            f"{drops[0][1]} -> {drops[0][2]}. Crafting at the highest ML is no longer "
-            "always optimal, so the solver can no longer read the host's ml and take "
-            "the top — it has to choose an ML. See docs/wiki-evidence/essence-crafting.md.")
-        assert vals[-1] == max(vals), f"{rec['effect']}: peak is not at ML 36"
-    assert any(v is None for r in records for v in r["values_by_ml"]), (
+        for a in _affixes(rec):
+            # A curve is allowed to be empty BELOW the option's floor (`Armor
+            # Destroying` exists from ML 20; yourddo stores null for 1..19) because
+            # `min_ml` gates the option before the solver reads a slot. Never at or
+            # above it — the builder withholds those as `curve-hole`.
+            curve = a["values_by_ml"][rec["min_ml"] - 1:]
+            assert all(v not in (None, "") for v in curve), (rec["effect"], a["stat"])
+            vals = [float(str(v).strip().rstrip("%")) for v in curve]
+            drops = [(i + 1, x, y) for i, (x, y) in enumerate(zip(vals, vals[1:])) if y < x]
+            assert not drops, (
+                f"{rec['effect']}/{a['stat']} ({rec['family']} {rec['menu']}) falls at ML {drops[0][0]}: "
+                f"{drops[0][1]} -> {drops[0][2]}. Crafting at the highest ML is no longer "
+                "always optimal, so the solver can no longer read the host's ml and take "
+                "the top — it has to choose an ML. See docs/wiki-evidence/essence-crafting.md.")
+            assert vals[-1] == max(vals), f"{rec['effect']}/{a['stat']}: peak is not at ML 36"
+    assert any(v is None for r in records for a in _affixes(r) for v in a["values_by_ml"]), (
         "no option carries a null below its floor any more — the allowance above is untested")
 
 
@@ -384,6 +451,12 @@ def test_a_hole_in_a_curve_above_the_floor_is_withheld_not_read_as_zero():
     row["values_by_ml"][29] = None
     pool = essence_pool.build_essence_pool(groups, catalog_stats=stats, catalog_presence=presence)
     assert row["effect"] in pool["coverage"]["skipped"]["curve-hole"]
+    # And through a compound part, where it withholds the whole shard.
+    groups2 = json.loads(json.dumps(_groups()))
+    sh = next(r for r in groups2["Trinkets"]["Prefix"] if r["effect"] == "Sheltering")
+    sh["parts"][0]["values_by_ml"][29] = None
+    pool2 = essence_pool.build_essence_pool(groups2, catalog_stats=stats, catalog_presence=presence)
+    assert "Sheltering" in pool2["coverage"]["skipped"]["compound-curve-hole"]
     assert not [r for r in pool["records"] if r["effect"] == row["effect"] and r["family"] == "Trinket"
                 and r["menu"] == "Prefix"]
 
