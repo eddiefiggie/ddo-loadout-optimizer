@@ -161,3 +161,129 @@ def test_the_insight_cap_across_both_per_item_pools_is_six():
         {"stat": "Wisdom", "bonus_type": "Quality", "value": 3, "unit": "flat",
          "pool": "Nearly Finished"},
     ]
+
+
+# --- #823 — the tier boundary is a claim, so it is asserted ------------------
+
+def _host(ml, name, **kw):
+    rec = {"ml": ml, "variant_id": name, "nearly_complete": "Ability Score"}
+    rec.update(kw)
+    return rec
+
+
+def _real_roster():
+    """Two hosts on each pole, named the way the real roster names them."""
+    return [_host(11, "Band of the Imprisoned One"),
+            _host(11, "Astral Spore Pendant"),
+            _host(35, "Legendary Band of the Imprisoned One"),
+            _host(35, "Legendary Astral Spore Pendant")]
+
+
+def test_823_the_two_ml_constants_are_the_documented_recipe_tiers():
+    assert nearly_complete.NC_HEROIC_ML == 11
+    assert nearly_complete.NC_LEGENDARY_ML == 35
+
+
+def test_823_the_js_copy_of_the_boundary_matches_the_python_one():
+    """A boundary that drifts between the pipeline and the solver mis-tiers
+    silently, so the two copies are pinned to each other rather than each to a
+    literal. Read out of model.js's source: it is a browser script, and this
+    suite has no JS runtime."""
+    src = open(os.path.join(ROOT, "web", "model.js"), encoding="utf-8").read()
+    for name, expected in (("NC_HEROIC_ML", nearly_complete.NC_HEROIC_ML),
+                           ("NC_LEGENDARY_ML", nearly_complete.NC_LEGENDARY_ML)):
+        line = f"const {name} = {expected};"
+        assert line in src, f"web/model.js must carry `{line}` (python says {expected})"
+
+
+def test_823_the_solver_derives_nc_tier_rather_than_re_inlining_the_threshold():
+    """The defect this guards is not the number being wrong — it is the number
+    being COPIED. `lamordiaTier` states the rule one channel over; this asserts
+    the Nearly Complete path actually follows it."""
+    solver = open(os.path.join(ROOT, "web", "solver.js"), encoding="utf-8").read()
+    assert "const tier = _ncTier(xv.variant);" in solver
+    assert '(xv.variant.ml || 0) >= 35' not in solver, (
+        "solver.js re-inlined the Nearly Complete boundary again")
+
+
+def test_823_a_clean_roster_passes_and_reports_both_poles():
+    out = nearly_complete.assert_tier_boundary_is_real(_real_roster())
+    assert out == {"hosts": 4, "heroic": 2, "legendary": 2,
+                   "boundary_ml": 35, "explicit_nc_tier": 0}
+
+
+def test_823_a_host_stranded_between_the_poles_fails():
+    """The Viktranium failure shape: a legendary host below the boundary, tiered
+    heroic by `>=` alone and handed the heroic magnitude in silence."""
+    roster = _real_roster() + [_host(34, "Legendary Lamordian Bowler")]
+    try:
+        nearly_complete.assert_tier_boundary_is_real(roster)
+    except SystemExit as e:
+        assert "neither recipe tier" in str(e) and "34" in str(e)
+        assert "Legendary Lamordian Bowler" in str(e)
+    else:
+        raise AssertionError("a stranded host must fail the build")
+
+
+def test_823_a_name_that_contradicts_the_derived_tier_fails():
+    """Two independent signals; when they disagree the build stops rather than
+    picking the one that happens to be cheaper to read."""
+    roster = _real_roster() + [_host(11, "Legendary Chamber Boots")]
+    try:
+        nearly_complete.assert_tier_boundary_is_real(roster)
+    except SystemExit as e:
+        assert "name and ML-derived tier disagree" in str(e)
+    else:
+        raise AssertionError("a name/ML disagreement must fail the build")
+
+
+def test_823_an_explicit_nc_tier_wakes_the_dead_branch_and_fails():
+    """`nc_tier || <derive>` has a left branch that is null on all 140 hosts. If
+    upstream populates it, somebody must decide whether it overrides or must
+    agree — this refuses to let that decision happen by default."""
+    roster = _real_roster() + [_host(35, "Legendary Balorskin Gauntlets",
+                                     nc_tier="heroic")]
+    try:
+        nearly_complete.assert_tier_boundary_is_real(roster)
+    except SystemExit as e:
+        assert "explicit `nc_tier`" in str(e)
+        assert "Legendary Balorskin Gauntlets" in str(e)
+    else:
+        raise AssertionError("an explicit nc_tier must fail the build")
+
+
+def test_823_the_host_guard_refuses_to_inspect_zero_hosts():
+    for empty in ([], [{"ml": 35, "variant_id": "Legendary Thing"}]):
+        try:
+            nearly_complete.assert_tier_boundary_is_real(empty)
+        except SystemExit as e:
+            assert "pass vacuously" in str(e)
+        else:
+            raise AssertionError("zero hosts must not read as success")
+
+
+def test_823_the_option_guard_refuses_to_inspect_zero_options():
+    try:
+        nearly_complete.assert_option_mls_are_the_two_recipe_tiers({})
+    except SystemExit as e:
+        assert "pass vacuously" in str(e)
+    else:
+        raise AssertionError("an empty pool must not read as success")
+
+
+def test_823_an_option_off_the_two_recipe_mls_fails():
+    cat = {nearly_complete._NATIVE_NC_KEY["Ability Score"]: {
+        "*": [{"ml": 11, "affixes": []}, {"ml": 20, "affixes": []}]}}
+    try:
+        nearly_complete.assert_option_mls_are_the_two_recipe_tiers(cat)
+    except SystemExit as e:
+        assert "neither recipe tier" in str(e) and "20" in str(e)
+    else:
+        raise AssertionError("an off-tier option must fail the build")
+
+
+def test_823_the_real_option_pool_sits_on_the_two_recipe_mls():
+    from src import crafting_catalog
+    walked = nearly_complete.assert_option_mls_are_the_two_recipe_tiers(
+        crafting_catalog.load_catalog())
+    assert walked > 0

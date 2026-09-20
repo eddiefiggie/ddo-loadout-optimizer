@@ -40,6 +40,16 @@ var _browseNoDropWording = (function () {
 var _browseReachReport = (typeof slotReachabilityReport !== "undefined")
   ? slotReachabilityReport
   : (typeof require !== "undefined" ? require("./model.js").slotReachabilityReport : null);
+// #823 — Nearly Complete's two recipe MLs, from model.js rather than re-typed.
+// Browse runs the mapping BACKWARDS (tier -> a display ML for the pool's pseudo
+// item) but it is the same pair of numbers, and a fourth hand-written copy is a
+// fourth place to miss when a boundary moves.
+var _ncHeroicML = (typeof NC_HEROIC_ML !== "undefined")
+  ? NC_HEROIC_ML
+  : (typeof require !== "undefined" ? require("./model.js").NC_HEROIC_ML : 11);
+var _ncLegendaryML = (typeof NC_LEGENDARY_ML !== "undefined")
+  ? NC_LEGENDARY_ML
+  : (typeof require !== "undefined" ? require("./model.js").NC_LEGENDARY_ML : 35);
 var _browseReachLines = (function () {
   const P = (typeof Projection !== "undefined") ? Projection
     : (typeof require !== "undefined" ? require("./projection.js") : null);
@@ -353,7 +363,7 @@ function ncRow(opt) {
     variant_id: `Nearly Completed: ${label} (${opt.tier})`,
     source_item: `Nearly Completed — ${opt.category}`,
     slot: `Nearly Completed (${opt.category})`,
-    ml: opt.tier === "legendary" ? 35 : 11,
+    ml: opt.tier === "legendary" ? _ncLegendaryML : _ncHeroicML,
     verification: "verified",
     affixes,
     scaling: [],
