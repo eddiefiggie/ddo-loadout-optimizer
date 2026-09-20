@@ -104,6 +104,72 @@ INSIGHT_MIN_ML = essence_pool.INSIGHT_MIN_ML
 #: #815 — the bonus type every stated `Insightful X` effect carries.
 INSIGHT_BONUS_TYPE = "Insight"
 
+#: #817 — the bonus type Essence Crafting gives a SKILL.
+#:
+#: Sourced from the other direction. #193 read all 157 EFFECT pages and found the
+#: type for 22; the BONUS-TYPE pages were never read, and one of them states it:
+#:
+#:   "Sources of competence bonus to skills: Named or randomly generated items,
+#:    Essence Crafting, Colorless Augments"      - `Competence bonus`
+#:
+#: Corroborated by the one skill #193 did find: `Haggle`, "+20 Competence
+#: ([[Essence Crafting]])". And checked for a competitor - `Enhancement bonus`,
+#: `Quality bonus` and `Exceptional bonus` do not mention Essence Crafting at
+#: all, so nothing else claims this ground.
+#:
+#: Membership is `table 2c`'s `Skill` group, the same sourced list the curve join
+#: already uses for the `Skill` curve row.
+SKILL_BONUS_TYPE = "Competence"
+SKILL_GROUP = "Skill"
+GROUPS_SHARD = os.path.join(ROOT, "data", "seed", "compendium",
+                            "essence_recipe_groups.json")
+
+
+def _skill_names():
+    with open(GROUPS_SHARD, encoding="utf-8") as fh:
+        return set(json.load(fh)["scaling_groups"][SKILL_GROUP])
+
+
+def assert_no_stated_skill_contradicts_competence(harvested, skills) -> int:
+    """#817 — the check that licences the skill rule.
+
+    `Competence bonus` states that Essence Crafting is a source of competence to
+    skills. That is a claim about a population, so it is checked against the
+    population: no skill whose type #193 DID find may disagree.
+
+    Insightful skills are exempt and handled by #815 — `Insightful Haggle` is
+    Insight, which is the insight variant of the same effect, not a competing
+    answer for the base.
+
+    Refuses to pass over an empty skill list, which would make the rule reach
+    nothing while looking satisfied.
+    """
+    if not skills:
+        raise PlacementError(
+            "no skills in the group — the Competence rule would apply to nothing "
+            "and this guard would pass vacuously")
+    seen, offenders = 0, []
+    for name, rec in (harvested or {}).items():
+        if name not in skills or name.startswith(essence_pool.INSIGHTFUL_PREFIX):
+            continue
+        if (rec or {}).get("provenance") != "stated":
+            continue
+        seen += 1
+        got = (rec.get("value") or {}).get("bonus_type")
+        if got != SKILL_BONUS_TYPE:
+            offenders.append((name, got))
+    if not seen:
+        raise PlacementError(
+            "no stated non-Insightful skill at all — the `Competence bonus` page "
+            "is the only evidence and nothing corroborates it, so the rule must "
+            "not be applied")
+    if offenders:
+        raise PlacementError(
+            f"stated skill(s) that are NOT Competence: {offenders}. The "
+            "`Competence bonus` page's claim does not hold over the skills whose "
+            "type is actually known, so the rule is wrong.")
+    return seen
+
 
 def assert_insightful_is_always_insight(harvested) -> int:
     """The evidence behind the `Insightful X` -> `Insight` rule, asserted rather
@@ -422,6 +488,8 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
     placements = crafting["placements"]
     assert_slot_map_covers_the_table(placements)
     assert_insightful_is_always_insight(bonus_types)
+    skill_names = _skill_names()
+    assert_no_stated_skill_contradicts_competence(bonus_types, skill_names)
 
     curves = crafting["values_by_ml"]["effects"]
     mapping = curve_join.resolve_all()["mapping"]
@@ -529,6 +597,11 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
                     resolved_type = bt["value"]["bonus_type"]
                 elif usable and insightful:
                     resolved_type = INSIGHT_BONUS_TYPE
+                elif usable and effect in skill_names:
+                    # #817 — a SKILL, and `Competence bonus` names Essence
+                    # Crafting as a source of competence to skills. Ordered after
+                    # the Insightful branch so `Insightful Balance` stays Insight.
+                    resolved_type = SKILL_BONUS_TYPE
                 if resolved_type:
                     bonus_type = resolved_type
                     rec["type_sourced"] = True

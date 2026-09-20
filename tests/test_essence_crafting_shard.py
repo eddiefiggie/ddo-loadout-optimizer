@@ -285,7 +285,16 @@ def test_every_sourced_placement_passed_both_checks():
                 # and `assert_insightful_is_always_insight` fails the build if a
                 # counter-example ever lands. Anything else is a type from
                 # nowhere.
+                # #817 adds a THIRD legitimate origin. A sourced type is either
+                # stated by the harvest, or read off one of two rules that each
+                # trace to the wiki:
+                #   - `Insightful X` -> Insight (#815, 9 of 9 stated)
+                #   - a SKILL -> Competence (#817, `Competence bonus` names
+                #     Essence Crafting as a source of competence to skills, and
+                #     the one stated skill, Haggle, agrees)
+                # Anything else is a type from nowhere.
                 insightful = row["effect"].startswith(_pool.INSIGHTFUL_PREFIX)
+                is_skill = row["effect"] in _ep._skill_names()
                 stated = bool(bt and bt.get("provenance") == "stated")
                 if stated:
                     if bt["value"]["bonus_type"] != row.get("bonus_type"):
@@ -293,8 +302,11 @@ def test_every_sourced_placement_passed_both_checks():
                 elif insightful:
                     if row.get("bonus_type") != "Insight":
                         offenders.append((where, "Insightful but not typed Insight"))
+                elif is_skill:
+                    if row.get("bonus_type") != "Competence":
+                        offenders.append((where, "a skill but not typed Competence"))
                 else:
-                    offenders.append((where, "bonus type neither stated nor Insightful"))
+                    offenders.append((where, "bonus type from no stated source or rule"))
                 if row.get("stat") not in stats:
                     offenders.append((where, "stat is not one the catalog uses"))
                 if not row.get("rankable"):

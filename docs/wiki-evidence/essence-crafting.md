@@ -673,3 +673,52 @@ slot→group (#806), Melee/Ranged (#804), three menus one effect each (#797), th
 ML-10 gates, effects per menu (`table 1b`), magnitude by ML (#810), the automatic
 Enhancement bonus (#799), combined prefixes and their scaling (#800, #812), and
 augment slots surviving disjunction (#798).
+
+## The bonus type, read from the other direction (2026-09-19, #817)
+
+#193 read all 157 **effect** pages and found a stated bonus type for 22. #815
+then typed the `Insightful X` half from that harvest (9 of 9 stated are Insight).
+That left 41 effects, 222 placements, asking the player.
+
+**The bonus-type pages had never been read.** One of them states the answer for
+nearly half of what was left:
+
+> "Sources of competence bonus to **skills**: Named or randomly generated items ·
+> **Essence Crafting** · Colorless Augments"
+> — `Competence bonus`
+
+Corroborated by the one skill #193 did type: `Haggle`, *"+20 **Competence**
+([[Essence Crafting]])"*. And checked for a competitor — **`Enhancement bonus`,
+`Quality bonus` and `Exceptional bonus` do not mention Essence Crafting at all**,
+so nothing else claims this ground.
+
+Membership is `table 2c`'s `Skill` group, the same sourced list the curve join
+already uses for the `Skill` row. The rule is ordered AFTER the Insightful one,
+so `Insightful Balance` stays Insight — the insight variant is a different
+enchantment, not a competing answer for the base, and `Insightful Haggle` being
+stated Insight is that ordering read off the harvest.
+
+`assert_no_stated_skill_contradicts_competence` checks the claim against the
+population it is about: no skill whose type #193 *did* find may disagree. It
+refuses to pass over an empty skill group or zero stated skills.
+
+| | placements (of 523) |
+|---|---|
+| typed before #815 | 93 |
+| after #815 (`Insightful` → Insight) | 233 |
+| **after #817 (skills → Competence)** | **334** |
+| on/off flags — need no type | 68 |
+| **still asking** | **121**, across 23 effects |
+
+### The lesson worth keeping
+
+A harvest that reads one side exhaustively can still miss the answer. #193 read
+157 effect pages and recorded the silence honestly; the silence was real, and the
+statement was on a page it had no reason to open. **When a harvest comes back
+empty, ask what the other end of the relation would say.**
+
+The 23 effects that remain are not skills and have no such page: `Sheltering`,
+`False Life`, `Assassinate`, `Fortification`, `Wizardry`, `Dodge`, `Stunning`,
+`Diversion`, the two Alacrities, `Shatter`, `Vertigo`, `Spell Penetration`,
+`Deadly`, `Tendon Slice`, `Doubleshot`, `Armor-Piercing`, `Shield Bashing`,
+`Underwater Action`, `Incite`, `Negative Amplification`, `Accuracy`, `Deception`.
