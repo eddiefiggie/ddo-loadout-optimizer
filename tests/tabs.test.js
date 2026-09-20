@@ -54,4 +54,4 @@ test("nextTab ignores non-navigation keys", () => {
   assert.strictEqual(nextTab("browse", "Enter"), "browse");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

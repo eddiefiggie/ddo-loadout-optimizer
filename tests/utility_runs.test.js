@@ -340,5 +340,5 @@ function check(name, fn) {
   });
   console.log(`    ${attr.binding} ${r4.perTarget[attr.binding]} -> ${r6.perTarget[attr.binding]}, ${FOM} ${r6.perTarget[FOM]}`);
 
-  console.log(`\n${passed} passed, ${failed} failed`);
+  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })().catch((e) => { console.error(e); process.exit(1); });

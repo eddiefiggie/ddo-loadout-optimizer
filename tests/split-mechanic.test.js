@@ -167,4 +167,4 @@ test("#683 the built dataset installs a family whose counts sum to its total", (
   assert.ok(line([fams[0].spellings[0]]), "the shipped family must produce a sentence");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

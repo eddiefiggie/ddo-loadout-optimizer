@@ -110,4 +110,4 @@ test("U2: S&B main hand draws from the one-handed weapon bucket", () => {
 });
 
 
-if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`); });

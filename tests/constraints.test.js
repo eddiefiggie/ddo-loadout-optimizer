@@ -150,4 +150,4 @@ test("U2/B5 buildModel: BOTH rings of a two-ring list survive the dominance pre-
   assert.ok(ids.includes("RingB") && ids.includes("RingC"), "both pinned rings survived dominance");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

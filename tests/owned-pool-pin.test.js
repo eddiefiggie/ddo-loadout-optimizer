@@ -112,4 +112,4 @@ test("the notice says what was included and how to undo it", () => {
     "no notice when nothing was overridden");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

@@ -128,4 +128,4 @@ test("#459 the notice reaches the shared content model and the exporter roster",
     "#668 — a notice absent from the roster reaches none of the four surfaces");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

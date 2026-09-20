@@ -2982,4 +2982,4 @@ test("#825: the wizard renders the generated clause, not a copy of it", () => {
 });
 
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

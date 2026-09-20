@@ -1143,7 +1143,7 @@ test("U8/R8: an export of a build with no expanded affix is unchanged", () => {
     "native affixes render exactly as before");
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`); });
 
 // ---------------------------------------------------------------------------
 // #245 — the craft-carried line and the opt-out scope disclosure must ride

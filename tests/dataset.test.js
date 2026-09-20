@@ -2278,7 +2278,7 @@ test("#348 U3/KTD8: the declared container order covers the stamped counting set
     "the default container must cover every counted name exactly once");
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`); });
 
 // ---------------------------------------------------------------------------
 // #345 — THE BROWSER SHARES ONE GLOBAL SCOPE. Node gives every file its own

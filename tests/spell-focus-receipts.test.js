@@ -158,4 +158,4 @@ test("AE6: the Markdown export renders the SAME collapsed line the app renders",
   assert.ok(md.includes(appLine), "and the share export renders the same text, character for character");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

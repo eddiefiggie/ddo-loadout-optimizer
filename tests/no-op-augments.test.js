@@ -97,5 +97,5 @@ const slot = (name, variants, card = 1) => ({ slot: name, cardinality: card, var
       ["Topaz of Conjured Power"], "only the winning augment is placed");
   });
 
-  console.log(`\n${passed} passed, ${failed} failed`);
+  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })();

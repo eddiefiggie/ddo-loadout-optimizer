@@ -157,4 +157,4 @@ test("#677 the stale Max help text no longer claims the tool cannot verify caps"
     "the replacement must point at the ceiling line that now carries the fact");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

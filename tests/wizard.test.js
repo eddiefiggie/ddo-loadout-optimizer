@@ -3068,7 +3068,7 @@ test("#745: the row carries the bracket classes, and the CSS draws them without 
   assert.ok(/\.wz-ctl button\[aria-pressed="true"\]/.test(css), "the pressed toggle is styled");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 
 // ---------------------------------------------------------------------------
 // #110 U1 — blocklist state reaches the query.

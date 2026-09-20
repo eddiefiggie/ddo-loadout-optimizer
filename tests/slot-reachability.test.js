@@ -520,4 +520,4 @@ test("#766: a Slaver's host's typed slots are a route, keyed by the host's own (
     "Shackles reach a save through the Suffix Resistance umbrella, expanded inside the option");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

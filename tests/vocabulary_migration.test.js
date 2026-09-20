@@ -618,5 +618,5 @@ const MIGRATED = new Set([
       `${SCD} must credit the max of its Legendary sources, not their sum (got ${got})`);
   });
 
-  console.log(`\n${passed} passed, ${failed} failed`);
+  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })().catch((e) => { console.error(e); process.exit(1); });

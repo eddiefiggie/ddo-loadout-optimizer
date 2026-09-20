@@ -345,7 +345,7 @@ test("#518: renaming a character to its own name is a no-op success", () => {
   assert.deepStrictEqual(F.readProgress(st).Aurelia, { A: true });
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 
 test("#773: an item the player described is not on the farming checklist", () => {
   // They typed it in because they have it. Listing it as something to go and

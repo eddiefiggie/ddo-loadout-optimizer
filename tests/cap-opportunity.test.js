@@ -140,4 +140,4 @@ test("#747: worst first, capped at three lines, with the rest named once", () =>
     "the overflow is named once rather than repeating the whole sentence");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

@@ -293,4 +293,4 @@ test("#530: re-importing the SAME file twice does not duplicate", () => {
   assert.strictEqual(V.listVersions(store).length, 1, "the same save arriving twice is one save");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

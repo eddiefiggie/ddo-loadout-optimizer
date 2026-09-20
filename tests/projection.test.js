@@ -1127,7 +1127,7 @@ test("#614: the wording is defined ONCE, so no surface can respell it", () => {
     "the phrase itself appears only in projection.js");
 });
 
-if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`);
+process.on("exit", () => { if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`); });
 
 // ---------------------------------------------------------------------------
 // #245 — the craft-carried disclosure. An item whose every ranked contribution
