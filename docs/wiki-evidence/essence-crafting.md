@@ -804,3 +804,62 @@ Our harvest also placed `Spell Resistance` at Orbs / Prefix, which the live row 
 list. Not touched — yourddo does not place it on Orbs either, so there is no pair to
 override — but recorded, because it is the second harvest entry the live page no longer
 backs.
+
+## 2026-09-20 — #843: the solver's pool reads the same catalog as the bench
+
+Until #843 `src/essence_pool.py` joined three wiki shards — placement table 1b,
+the bonus-type harvest (`essence_crafting-bonus-types.md`) and the curve join —
+and offered the solver **38** options, unchanged after #839 moved the bench to
+`veteran-software/yourddo`. The two paths then described one crafting system
+from two sources. Now the pool is built FROM `essence_placements["groups"]`, the
+catalog `src/essence_source.build_catalog` emits, so the solver and the bench are
+provably the same rows (`tests/test_essence_pool.py` re-derives the shipped pool
+from the shipped catalog and asserts equality).
+
+**The gate did not move; the source under it did.** An option is still offered
+only when placement, bonus type and ML curve are all sourced and the stat is one
+the catalog ranks. Measured on the built dataset, pinned in the test:
+
+| family | yourddo placements | offered | of which on/off | compound withheld (fully sourced) |
+|---|---|---|---|---|
+| Trinket | 260 | 167 | 7 | 20 |
+| Rune Arm | 110 | 70 | 4 | 0 |
+| Ring | 131 | 48 | 5 | 32 |
+| Melee | 138 | 71 | 50 | 0 |
+| **total** | **639** | **356** | **66** | **52** |
+
+Every one of the wiki pool's 38 rows survives (pinned as `WIKI_POOL_ROWS`).
+
+Three rulings this recorded, each an instance of *never infer a value*:
+
+- **A stat the catalog carries only as an on/off flag is offered on/off.** `Holy`,
+  `Anarchic`, every `X Bane` — typed `Bool` on every native carrier. yourddo
+  carries a curve for some of these; the solver buckets the stat present/absent
+  and a numeric 6 in that bucket would rank presence six times over. Minted as
+  `Bool`, value 1 at every ML — the same rule the bench applies (#838), applied
+  at build time from the same population (`catalog_presence`, every native
+  carrier typed `Bool`), and checked record by record against the app's own
+  vocabulary in `tests/essence-crafting.test.js`.
+- **A flag on a stat the catalog VALUES is withheld.** yourddo says `Efficient
+  Metamagic - Empower` grants nothing numeric; the catalog types it Enhancement on
+  every carrier. A `Bool` 1 beside those would be a presence and a number in two
+  buckets that add. Six placements, disclosed as `flag-in-a-magnitude-stat`.
+- **Compound recipes are withheld whole.** The container is FLAT — one stat per
+  record — and `Sheltering` grants Physical and Magical Sheltering from one
+  shard. Splitting it would let the solver take half a craft. 52 fully sourced
+  ones are counted and named in the result (`compound_deferred`), and #844 is the
+  shape change that serves them. Until it lands the bench and the solver disagree
+  on exactly this class, and on nothing else.
+
+Two mechanics this made real rather than latent. The **Extra slot's own ML-10
+gate** ("Extra enchantment slots are not available on items under minimum level
+10") had coincided with the Insight-effect gate because every Extra option was
+Insight-typed; `Perform` (Competence, recipe floor 1) is now on the Trinket Extra
+menu, and the pool raises it to 10 in its own right, which the old test had
+predicted. And `Natural Armor` is out because the stat join quarantines the name,
+not because a second list says so — the wiki-side `wiki_groups` keeps its own
+exclusion, now owned by `essence_placements.WIKI_EXCLUDED_EFFECTS`.
+
+`src/essence_pool.py` no longer opens the wiki shards; `essence_placements.py`
+does, for the disagreement ledger, the dice magnitudes and `wiki_groups`, and
+`tests/test_essence_crafting_shard.py` names it as the reader.

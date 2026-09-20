@@ -66,7 +66,9 @@ def test_no_two_options_share_a_key():
     # #817 — 1009 not 1007: +2, the two `Dodge` Essence options (Trinket Prefix
     # and Suffix) that became offerable once `Dodge bonus` supplied the type the
     # effect page never carried.
-    assert len(seen) == 1009, f"option population is {len(seen)}, expected 1009"
+    # #843 — 1327 not 1009: +318, the Essence pool read from the yourddo catalog
+    # instead of the wiki shards (356 options over 38; every one of the 38 kept).
+    assert len(seen) == 1327, f"option population is {len(seen)}, expected 1327"
 
 
 def test_the_quarterstaff_flag_is_load_bearing():
@@ -96,7 +98,8 @@ def test_the_build_publishes_its_own_coverage():
     # #764 — 1007, per the population note above. stamped == distinct is the
     # property that matters and is what the widened discriminator restores.
     # #817 — +2 `Dodge` Essence options; see test_no_two_options_share_a_key.
-    assert cov["stamped"] == cov["distinct"] == 1009
+    # #843 — +318 Essence options; see test_no_two_options_share_a_key.
+    assert cov["stamped"] == cov["distinct"] == 1327
     assert cov["by_pool"]["slavers"] == 184   # #766
     assert cov["by_pool"][ci.PER_ITEM_POOL] == 147, (
         "the per-item Nearly Complete pools are in scope — a handle that cannot "

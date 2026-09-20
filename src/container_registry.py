@@ -230,18 +230,18 @@ REGISTRY = {
         host_marker="slavers_slots"),
     "essence_crafting": _c(
         FLAT, (), VERIFIED_SAFE, True,
-        "Essence Crafting Trinket menus, the Gem of Many Facets' three (#193/#599). "
-        "Flat is CORRECT here rather than merely tolerated, which is what separates "
-        "it from legendary_green_steel: a crafted Essence effect grants "
-        "exactly ONE stat by construction — the pool is built one record per "
-        "(menu, effect) from a placement table whose cells are single effects, so "
-        "there is no multi-affix option for a flat shape to split. `Insightful "
-        "Constitution` is not a second affix, it is Constitution in the Insight "
-        "bucket, and the builder resolves that to (stat, bonus_type) before a record "
-        "exists. The solver constrains Sigma <= 1 per MENU (three independent "
-        "single-pick slots on one host), so a player is never told they get one part "
-        "of something they crafted whole. Reachable: three verified Gem tiers carry "
-        "`essence_slots`.",
+        "Essence Crafting menus — the Gem of Many Facets' three and the other three "
+        "host families (#193/#599/#764). Flat is CORRECT here rather than merely "
+        "tolerated, and since #843 it is correct by EXCLUSION rather than by "
+        "construction: the yourddo catalog does carry multi-enchantment recipes "
+        "(`Sheltering` grants Physical and Magical Sheltering from one shard), and "
+        "`essence_pool` withholds every one of them (`compound-recipe`, #844) rather "
+        "than splitting a craft into halves the solver could take separately. So no "
+        "record here carries more than one stat, and the pool's tests pin that. "
+        "`Insightful Constitution` is not a second affix, it is Constitution in the "
+        "Insight bucket, resolved to (stat, bonus_type) before a record exists. The "
+        "solver constrains Sigma <= 1 per MENU (three independent single-pick slots "
+        "on one host). Reachable: 44 verified hosts carry `essence_slots`.",
         host_marker="essence_slots"),
     "roll_groups": _c(
         FLAT, (), VERIFIED_SAFE, True,

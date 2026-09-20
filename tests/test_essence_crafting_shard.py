@@ -110,20 +110,29 @@ def test_the_shard_declares_what_is_wired_and_what_is_not():
     assert "135" in blocker, "the blocker must keep the size of the remaining gap"
 
 
-# The files allowed to open the shard, and why. Neither is a solver input.
+# The files allowed to open the shard, and why. None is a solver input.
 #
-#   merge_harvest.py       reads `placements` ONLY, for the effect ROSTER that
-#                          drives the bonus-type harvest. Never a magnitude.
-#   essence_curve_join.py  reads `values_by_ml` deliberately — resolving the
-#                          effect-name -> curve-row join (#599) IS its job. It is
-#                          allowed the magnitudes and denied a route into the
-#                          build, which the next test enforces.
+#   merge_harvest.py        reads `placements` ONLY, for the effect ROSTER that
+#                           drives the bonus-type harvest. Never a magnitude.
+#   essence_curve_join.py   reads `values_by_ml` deliberately — resolving the
+#                           effect-name -> curve-row join (#599) IS its job. It is
+#                           allowed the magnitudes and denied a route into the
+#                           build, which the next test enforces.
+#   essence_placements.py   reads the shard for the WIKI side of the bench: the
+#                           disagreement ledger, the dice magnitudes and the
+#                           `wiki_groups` the placement overrides are checked
+#                           against (#795, #839, #840).
+#
+# #843 — `essence_pool.py` LEFT this list. The solver's pool reads the yourddo
+# catalog the placements module emits, not the shard; a pool that opened the
+# shard again would be the two paths drifting apart, which is the defect #843
+# closed.
 ROSTER_READER = "scripts/merge_harvest.py"
 JOIN_MODULE = os.path.join("src", "essence_curve_join.py")
 POOL_MODULE = os.path.join("src", "essence_pool.py")
 PLACEMENTS_MODULE = os.path.join("src", "essence_placements.py")
 COMBINED_MODULE = os.path.join("src", "essence_combined.py")
-SHARD_READERS = sorted([ROSTER_READER, JOIN_MODULE, POOL_MODULE])
+SHARD_READERS = sorted([ROSTER_READER, JOIN_MODULE, PLACEMENTS_MODULE])
 # Tests may name the shard freely: asserting ON the data is the opposite of
 # feeding it to the solver, and a test cannot ship a value into a loadout. The
 # allowance is by directory so a new guard file does not have to edit this list.
@@ -197,7 +206,8 @@ def test_the_curve_join_is_reached_only_through_the_pool_builder():
     number with neither.
 
     #795 admitted a second caller, `essence_placements`, which serves the
-    player-authored item builder. Admission is not a free pass: the allowlist buys
+    player-authored item builder — and since #843 is the ONLY caller that matters,
+    the pool builder having stopped reading the join. Admission is not a free pass: the allowlist buys
     nothing on its own, so `test_every_sourced_placement_passed_both_checks` below
     asserts the property the allowlist is standing in for, over the real built
     output. Widening this list without that assertion would be weakening the guard
@@ -217,28 +227,24 @@ def test_the_curve_join_is_reached_only_through_the_pool_builder():
         "a sourced bonus type or a catalog stat name.")
 
 
-def test_only_the_two_empty_essence_menus_remain_unserved():
+def test_no_essence_menu_remains_unserved():
     """The player-facing half.
 
-    #193 wired the Gem's three Trinket menus; #764 wired the other three families,
-    whose placements had been in the seed since 2026-08-27 while only the pipeline
-    was Trinket-only. This asserted that NINE labels stayed disclosed, which was
-    right then and is wrong now — seven of them are served.
+    #193 wired the Gem's three Trinket menus; #764 wired the other three families.
+    Two labels stayed allowlisted after that — `Rune Arm - Suffix` and `Melee -
+    Extra` — because every effect in them was untyped on the wiki, so the pool's
+    offering for those menus was empty: a source gap, which was to close "when
+    the wiki states a type — not when someone writes code".
 
-    The two that remain are disclosed for a DIFFERENT reason, and the distinction
-    is the whole point of this guard: a pool exists for both, and every effect in
-    them is untyped, so the pool's offering for those two menus is empty. That is a
-    source gap, not a pipeline gap, and it closes when the wiki states a type — not
-    when someone writes code.
+    #843 closed it from the other side. The pool reads the yourddo catalog, which
+    types effects in both menus, and every one of the twelve Essence labels is
+    served. An Essence label on the allowlist now would be the gate vouching for a
+    gap that closed; an Essence label the gate reports UNSERVED would be a family's
+    menu going empty, which is a finding to attribute.
     """
     from src import crafting_coverage
     ec = sorted(x for x in crafting_coverage.UNSERVED_ALLOWLIST if x.startswith("Essence Crafting:"))
-    assert ec == ["Essence Crafting: Melee - Extra",
-                  "Essence Crafting: Rune Arm - Suffix"], ec
-    for part in ("Extra", "Prefix", "Suffix"):
-        assert f"Essence Crafting: Trinket - {part}" not in ec, (
-            f"Trinket {part} is served by the essence_crafting pool now; leaving it "
-            "allowlisted makes the gate vouch for a gap that closed (#193).")
+    assert ec == [], ec
 
 
 def test_every_sourced_placement_passed_both_checks():
@@ -256,8 +262,9 @@ def test_every_sourced_placement_passed_both_checks():
     import json as _json
     from src import essence_placements as _ep
     from src import essence_pool as _pool
+    from src import essence_placements as _placements
 
-    bonus_types = _pool._load(_pool.BONUS_TYPE_SHARD)["harvested"]
+    bonus_types = _placements._load(_placements.BONUS_TYPE_SHARD)["harvested"]
     with open(os.path.join(ROOT, "web", "data", "items.json"), encoding="utf-8") as fh:
         built = _json.load(fh)
     table = built.get("essence_placements") or {}
@@ -369,8 +376,8 @@ def test_every_combined_magnitude_passed_the_checks_that_licence_it():
     # dataset — which is a weaker claim about the product and exactly the same
     # claim about the module.
     from src import essence_combined as _ec
-    from src import essence_pool as _epool
-    _crafting = _epool._load(_epool.CRAFTING_SHARD)
+    from src import essence_placements as _eplacements
+    _crafting = _eplacements._load(_eplacements.CRAFTING_SHARD)
     _placements = (built.get("essence_placements") or {}).get("groups") or {}
     combined = _ec.build_combined_pool(
         catalog_stats={a.get("name") for v in built.get("items", [])

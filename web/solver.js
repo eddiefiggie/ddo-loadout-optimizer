@@ -1273,6 +1273,10 @@ function buildProgram(model) {
           item: xv.variant.variant_id, family: opt.family, menu: opt.menu, effect: opt.effect,
           name: opt.name, stat: opt.stat, bonus_type: opt.bonus_type,
           value, unit: opt.unit || "flat", wiki_url: opt.wiki_url,
+          // #843 — an on/off option (`Holy`, `Undead Bane`): value 1 in the
+          // `Bool` bucket, like the native affix it stands beside. Carried so
+          // the report says "present" rather than "+1".
+          presence: !!opt.presence,
         });
         slotVars.push(n);
         extraConstraints.push(`${n} - ${xv.name} <= 0`); // only when the host item is equipped
@@ -3785,7 +3789,12 @@ function essenceReportFor(model, placed) {
     // in the ordinary case rather than explaining something that did not happen.
     craftedDown,
     placed: (placed || []).map((p) => ({ item: p.item, menu: p.menu, effect: p.effect,
-                                         stat: p.stat, bonus_type: p.bonus_type, value: p.value })),
+                                         stat: p.stat, bonus_type: p.bonus_type, value: p.value,
+                                         presence: !!p.presence })),
+    // #843 — fully sourced compound recipes the pool withholds (#844), so the
+    // notice can say what class of shard is missing instead of "most".
+    compoundDeferred: cov ? (cov.compound_deferred || 0) : null,
+    compoundIssue: cov ? (cov.compound_deferred_issue || null) : null,
     offered: cov ? cov.offered_all : null,
     total: cov ? cov.total_all : null,
     insightMinMl: cov ? cov.insight_min_ml : null,

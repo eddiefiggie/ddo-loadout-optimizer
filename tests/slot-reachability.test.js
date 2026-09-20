@@ -72,10 +72,19 @@ test("#743: Off Hand is augment-reachable for Assassinate", () => {
 
 // ---- the two boundaries the issue established, which must survive -----------
 
-test("#743: NO weapon or off-hand route supplies Assassinate at Insight, by any channel", () => {
+test("#743: the ONLY weapon route to Assassinate at Insight is an Essence craft, and Off Hand has none", () => {
+  // #843 RE-RATIFIED. This asserted NO weapon or off-hand route at Insight, by
+  // any channel, and that was a fact about the wiki-shard Essence pool (38
+  // rows, none on a Melee Extra menu), not about the game: the wiki's own
+  // placement table lists `Insightful Assassinate` on Melee weapons / Extra,
+  // yourddo agrees, and the pool now offers it. So the Melee blank can craft it
+  // in its Extra menu (ML 10+). Every OTHER channel still supplies none, which
+  // is the boundary worth keeping: a native or augment Insight route on a weapon
+  // would still be a false claim.
   const r = routes("Assassinate").filter((x) => (x.slot === "Weapon" || x.slot === "Off Hand")
     && x.bonusTypes.includes("Insight"));
-  assert.deepStrictEqual(r, [], `expected no Insight weapon/off-hand route, got ${JSON.stringify(r)}`);
+  assert.deepStrictEqual(r.map((x) => [x.slot, x.route]), [["Weapon", "essence"]],
+    `expected exactly the Essence route on Weapon, got ${JSON.stringify(r)}`);
 });
 
 test("#743: no Weapon or Off Hand host declares a Miserable Viktranium slot", () => {
@@ -246,14 +255,21 @@ test("#743 U3: a crafting route names its channel", () => {
 });
 
 test("#743 U3: never over-claims a bonus type for a slot that lacks it", () => {
-  // Weapon carries Assassinate at Enhancement only. A line that unions types
-  // across slots would offer the player Quality on a weapon, which is false.
+  // Weapon carries Assassinate natively at Enhancement only. A line that unions
+  // types across slots would offer the player Quality on a weapon, which is
+  // false. #843 — Insight IS reachable on a weapon now, through one channel
+  // only: the Essence Crafting line (see the re-ratified boundary above). So
+  // Insight is banned on every Weapon line EXCEPT that one, and Quality on all.
+  let essenceInsight = 0;
   for (const l of lines("Assassinate", ML34)) {
     if (!/Weapon/.test(l)) continue;
-    if (/Quality|Insight/.test(l)) {
+    if (/Quality/.test(l)) assert.fail(`a Weapon line claims a type no weapon carries: ${l}`);
+    if (/Insight/.test(l)) {
+      if (/Essence Crafting/.test(l)) { essenceInsight++; continue; }
       assert.fail(`a Weapon line claims a type no weapon carries: ${l}`);
     }
   }
+  assert.ok(essenceInsight >= 1, "the Essence Insight route on Weapon must be described, not hidden");
 });
 
 test("#743 U3: no recommendation words — the line describes, it does not advise", () => {
