@@ -1097,8 +1097,10 @@ test("#810: every placement with a 36-row curve carries its magnitude", () => {
   // names Essence Crafting as a source of competence to skills, and the one
   // skill #193 typed (`Haggle`) agrees. Enhancement, Quality and Exceptional do
   // not mention Essence Crafting at all, so nothing competes for the claim.
-  assert.strictEqual(cov.type_sourced, 334);
-  assert.strictEqual(cov.sourced, 312, "the conjunction follows both halves");
+  // #817 — 340 not 334: +6, `Dodge`. Its type is stated on `Dodge bonus`, a page
+  // #193 never opened because it read `Dodge`, which is silent.
+  assert.strictEqual(cov.type_sourced, 340);
+  assert.strictEqual(cov.sourced, 318, "the conjunction follows both halves");
   assert.ok(cov.sourced <= Math.min(cov.magnitude_sourced, cov.type_sourced),
     "the conjunction can never exceed either half");
 });
@@ -1310,8 +1312,9 @@ test("#817: what still asks is smaller, and is not a skill", () => {
       }
     }
   }
-  assert.strictEqual(n, 121);
-  assert.strictEqual(asking.size, 23);
+  assert.strictEqual(n, 115);
+  assert.strictEqual(asking.size, 22);
+  assert.ok(!asking.has("Dodge"), "Dodge is sourced from the `Dodge bonus` page");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

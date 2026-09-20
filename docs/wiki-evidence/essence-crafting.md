@@ -722,3 +722,46 @@ The 23 effects that remain are not skills and have no such page: `Sheltering`,
 `Diversion`, the two Alacrities, `Shatter`, `Vertigo`, `Spell Penetration`,
 `Deadly`, `Tendon Slice`, `Doubleshot`, `Armor-Piercing`, `Shield Bashing`,
 `Underwater Action`, `Incite`, `Negative Amplification`, `Accuracy`, `Deception`.
+
+### Sweeping the bonus-type pages for the rest (2026-09-19, #817)
+
+After skills, 23 effects still asked. All 25 bonus-type pages in the app's
+vocabulary were then read — the sweep the skill find suggested.
+
+**Result: one more, and a clean negative for the other 22.**
+
+`Dodge` is an **Enhancement** bonus:
+
+> "Items · **Essence Crafting**: Up to +14% **enhancement bonus**. Up to +6%
+> **insight bonus**."
+> — `Dodge bonus`, Items
+
+#193 read the page `Dodge`, which is silent. The statement lives on `Dodge
+bonus` — a *separate* page, which exists only because dodge is itself an AC bonus
+type. Checked for the other 22: **no `<Name> bonus` page exists for any of them.**
+
+The insight half of that quote agrees with #815's `Insightful X` → Insight rule,
+a third independent corroboration.
+
+**Known discrepancy, taken deliberately.** The page's magnitudes run one lower
+than `table 3b` at the top — "+14%" where the curve reaches 15 at ML 34–36, and
+"+6%" insight where `Ins. Dodge` reaches 7. Only the TYPE is taken from here; the
+magnitude comes from `table 3b` as it does for every effect.
+
+**One false positive worth recording**, because trusting it would have been
+wrong: `Armor bonus` mentions Essence Crafting *and* contains the word "Dodge" —
+but the Essence line is about `Armored Bracers` (+1-7), and "dodge bonus" appears
+only in the closing list of other AC bonus types. A keyword hit is not a
+statement.
+
+Pages checked with no Essence Crafting mention at all: `Enhancement`, `Insight`,
+`Quality`, `Exceptional`, `Profane`, `Sacred`, `Morale`, `Luck`, `Resistance`,
+`Deflection`, `Shield`, `Equipment`, `Artifact`, `Implement`, `Legendary`,
+`Alchemical`, `Primal`, `Festive`, `Determination`. No page: `Vitality`,
+`Untyped`, `Orb`.
+
+| | placements (of 523) |
+|---|---|
+| typed | **340** |
+| on/off flags — need no type | 68 |
+| **still asking** | **115**, across 22 effects |

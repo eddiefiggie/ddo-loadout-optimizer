@@ -97,8 +97,12 @@ test("the index covers every stamped option row and nothing else", () => {
   // discriminator to (family, menu): `Insightful Constitution` is a Trinket Prefix
   // AND a Ring Prefix, so under the old `menu`-only key the two collapsed and
   // blocking one would have silently blocked the other.
-  assert.strictEqual(idx.length, 1007, "index size is the stamped population");
-  assert.strictEqual(new Set(idx.map((r) => r.id)).size, 1007, "ids stay unique through the index");
+  // #817 — 1009 not 1007: +2, the two `Dodge` Essence options (Trinket Prefix and
+  // Suffix) that became offerable once the BONUS-TYPE page sweep supplied the type
+  // the effect page never carried. The solver's own Essence menu grew, not just
+  // the player-authored bench.
+  assert.strictEqual(idx.length, 1009, "index size is the stamped population");
+  assert.strictEqual(new Set(idx.map((r) => r.id)).size, 1009, "ids stay unique through the index");
   for (const r of idx) {
     assert.ok(r.id.startsWith("craft:"), r.id);
     assert.ok(r.name, `row with no display name: ${r.id}`);

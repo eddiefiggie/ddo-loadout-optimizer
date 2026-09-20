@@ -37,7 +37,13 @@ gear-planner still ships no Essence Crafting pool. The type is recorded on the
 
 ## Coverage
 
-**22 of 157** craftable effects carry a wiki-stated bonus type.
+**23 of 157** craftable effects carry a wiki-stated bonus type.
+
+> 22 until 2026-09-19. `Dodge` was added by #817, which swept the BONUS-TYPE
+> pages rather than the effect pages: the original harvest read `Dodge`, which
+> is silent, while the statement lives on `Dodge bonus` — a separate page that
+> exists because dodge is itself an AC bonus type. No other effect on the
+> remaining list has a `<Name> bonus` page.
 
 | Provenance | Count | Solver-eligible |
 |---|---:|---|
@@ -129,7 +135,7 @@ shards alone; the 112 is re-derivable from the stamp named above.)
 
 12 of the 22 effects with a wiki-stated CRAFTED type also carry a harvested
 tooltip. If a carrier's tooltip were admissible it would agree on all 12. It
-agrees on 9 and **contradicts on 3**:
+agrees on 10 and **contradicts on 3**:
 
 | Effect | Crafted type (this document) | Carrier tooltip says | Carrier |
 |---|---|---|---|

@@ -190,10 +190,14 @@
    "harvested": "2026-08-29"
   },
   "Dodge": {
-   "value": null,
-   "provenance": "unsourced",
-   "raw": "[page-silent] Page read in full; no Essence Crafting / Cannith Crafting mention on it.",
-   "harvested": "2026-08-29"
+   "value": {
+    "bonus_type": "Enhancement",
+    "join": "same-line"
+   },
+   "provenance": "stated",
+   "raw": "* [[Essence Crafting]]: Up to +14% enhancement bonus. Up to +6% insight bonus. (page 'Dodge bonus', section Items) -- #193 read the page `Dodge`, which is silent; the statement lives on `Dodge bonus`, a separate page that exists because dodge is itself an AC bonus type. Found 2026-09-19 (#817) by sweeping the BONUS-TYPE pages rather than the effect pages.",
+   "harvested": "2026-09-19",
+   "note": "Only the TYPE is taken from this page. Its magnitudes disagree with table 3b at the top - it says 'up to +14%' where the Dodge curve reaches 15 at ML34-36, and '+6%' insight where Ins. Dodge reaches 7 - so NO range is recorded here and the magnitude comes from table 3b as it does for every other effect. Recording the range would have been a claim this shard does not stand behind, and test_the_join_agrees_with_the_independently_harvested_bonus_type_ranges would have had to absorb a third disagreement it is built to refuse. The insight half of the same sentence agrees with #815's Insightful rule, which is a third independent corroboration of THAT."
   },
   "Doubleshot": {
    "value": null,
