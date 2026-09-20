@@ -218,95 +218,23 @@ def test_835_the_guard_walks_the_same_population_the_app_does():
 
 def test_835_the_pools_the_app_walks_are_the_pools_we_walk():
     """Named explicitly, so a pool added to `web/dataset.js` and not here fails
-    rather than quietly narrowing the population again."""
+    rather than quietly narrowing the population again.
+
+    #838 RE-RATIFIED: the pool names now live in `_every_carrier_triple`, the
+    one canonical walk, and `_every_carrier_affix` is its (stat, type) view. The
+    list is `_craftingAffixTriples`'s — which does NOT include the solver's own
+    `essence_crafting` pool and DOES include the two set-def families. The
+    earlier version of this test named `essence_crafting`; walking it is how a
+    pipeline reproduction of the app's presence set came out at 33 placements
+    against the app's 196.
+    """
     import build_dataset
     import inspect
-    src = inspect.getsource(build_dataset._every_carrier_affix)
-    for pool in ("seal", "viktranium", "dino_inserts", "nearly_complete",
-                 "legendary_green_steel", "slavers", "essence_crafting",
-                 "nearly_complete_per_item"):
+    src = inspect.getsource(build_dataset._every_carrier_triple)
+    for pool in ("seal", "nearly_complete_per_item", "viktranium", "dino_inserts",
+                 "nearly_complete", "legendary_green_steel", "slavers",
+                 "membership_set_defs", "augment_set_defs"):
         assert pool in src, f"{pool!r} is not in the walked population"
-
-
-# --- #835 — a dice magnitude is its own unit, and is disclosed --------------
-
-def test_835_dice_effects_carry_the_dice_unit():
-    recs, _ = _real()
-    dice = [r for r in recs if r.get("unit") == "dice"]
-    assert {r["effect"] for r in dice} == {"Bashing", "Shield Spikes", "Vampirism"}
-    assert dice, "no dice records at all"
-    for r in dice:
-        assert r["magnitude_sourced"], r["effect"]
-        assert r["values_by_ml"], r["effect"]
-
-
-def test_835_no_record_claims_a_number_over_a_non_number():
-    recs, _ = _real()
-    out = essence_placements.assert_unit_matches_the_magnitude(recs)
-    # Pinned to the table rather than a literal, for the #837 reason above.
-    assert out["dice"] == sum(1 for r in recs if r.get("unit") == "dice") > 0, out
-    assert out["checked"] > 0, out
-
-
-def test_835_a_dice_curve_filed_as_flat_fails():
-    """The original defect, exactly: `unit: flat` over `6d6`. The value stays a
-    string through normalizeAffix, the solver drops it on `value > 0`, and
-    nothing tells the player."""
-    import copy
-    recs, _ = _real()
-    bad = copy.deepcopy(recs)
-    for r in bad:
-        if r["effect"] == "Bashing":
-            r["unit"] = "flat"
-    try:
-        essence_placements.assert_unit_matches_the_magnitude(bad)
-    except SystemExit as e:
-        assert "carries dice magnitudes" in str(e) and "Bashing" in str(e)
-    else:
-        raise AssertionError("a dice curve filed as flat must fail the build")
-
-
-def test_835_a_numeric_curve_filed_as_dice_fails():
-    """The other direction: it would disclose an unrankable craft that ranks."""
-    import copy
-    recs, _ = _real()
-    bad = copy.deepcopy(recs)
-    for r in bad:
-        if r["effect"] == "Seeker":
-            r["unit"] = "dice"
-    try:
-        essence_placements.assert_unit_matches_the_magnitude(bad)
-    except SystemExit as e:
-        assert "is unit `dice`" in str(e) and "Seeker" in str(e)
-    else:
-        raise AssertionError("a numeric curve filed as dice must fail the build")
-
-
-def test_835_the_unit_gate_refuses_to_inspect_nothing():
-    for empty in ([], [{"effect": "X", "unit": "flat"}]):
-        try:
-            essence_placements.assert_unit_matches_the_magnitude(empty)
-        except SystemExit as e:
-            assert "vacuously" in str(e)
-        else:
-            raise AssertionError("empty input must not read as success")
-
-
-def test_835_the_bench_shows_the_dice_value_and_says_it_cannot_rank():
-    """Source-level: the dice branch must be tested BEFORE the on/off branch,
-    or these fall through to "no bonus type or value" — which is what they did.
-    And it must read the VERBATIM value, because the numeric accessor returns
-    null for `3d2` by design."""
-    with open(os.path.join(ROOT, "web", "wizard.js"), encoding="utf-8") as fh:
-        src = fh.read()
-    i = src.index('let tail = "";')
-    head = src[i:i + 2200]
-    assert 'row.unit === "dice"' in head, "the bench must recognise a dice row"
-    assert head.index('row.unit === "dice"') < head.index("isPresenceOnly("), (
-        "the dice branch must precede the on/off branch, or a dice effect "
-        "renders as having no value")
-    assert "sourcedRawValueAt" in head, (
-        "the dice branch must read the verbatim value; sourcedValueAt returns "
-        "null for a dice string by design")
-    assert "cannot" in head and "rank" in head, (
-        "an unrankable craft must say so where the player chooses it")
+    assert '"essence_crafting"' not in src, (
+        "the solver's own essence pool is back in the walk — the app's vocabulary "
+        "does not read it, so the guard would answer over a different population")

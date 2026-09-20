@@ -401,6 +401,36 @@
     return isFinite(v) ? v : null;
   }
 
+  /** #838 — is this row an on/off flag in the catalog that the crafting table
+   *  nonetheless publishes a SCALING value for?
+   *
+   *  Two facts about two different things. Real items print `Flaming Blast`
+   *  with no number, so the vocabulary (rightly) calls it presence-only; the
+   *  crafting table prints 4..7 by minimum level for the crafted version. The
+   *  bench used to take the first as proof of the second's absence and say
+   *  "no bonus type or value". The affix STAYS a flag for the solver — that is
+   *  how the catalog buckets it and nothing here can rank the number — but
+   *  the row must not claim there is no value.
+   *
+   *  Decided HERE, with the bench's own presence predicate, and not in the
+   *  pipeline: the pipeline sees raw affixes, the vocabulary is built on
+   *  normalized ones, and the two disagree on which typeless "1" is a flag.
+   *  Dice are #835's branch and come first; a constant curve (`Vorpal`, 1 at
+   *  every level) is genuinely on/off and is not this.
+   */
+  function isFlagWithCurve(row, vocab, ctx) {
+    if (!row || !row.magnitude_sourced || row.unit === "dice") return false;
+    var stat = (vocab && vocab.canonical) ? vocab.canonical(row.stat) : row.stat;
+    if (!_isPresenceOnly(stat, vocab, ctx)) return false;
+    var seen = {}, n = 0;
+    for (var i = 0; i < (row.values_by_ml || []).length; i++) {
+      var v = row.values_by_ml[i];
+      if (v === null || v === undefined || v === "") continue;
+      if (!seen[String(v)]) { seen[String(v)] = 1; n++; }
+    }
+    return n > 1;
+  }
+
   /** #835 — the crafting table's own value at this ML, VERBATIM.
    *
    *  `sourcedValueAt` above coerces with `Number()` and returns null when that
@@ -1273,7 +1303,7 @@
     isPresenceEffect: function (stat, vocab, ctx) { return _isPresenceOnly(stat, vocab, ctx); },
     MENUS: MENUS.slice(), menuLabel: menuLabel, deriveName: deriveName,
     nativeAffixes: nativeAffixes, essenceCraftedName: essenceCraftedName,
-    sourcedRawValueAt: sourcedRawValueAt,
+    sourcedRawValueAt: sourcedRawValueAt, isFlagWithCurve: isFlagWithCurve,
     weaponSplit: function (ctx) { return _weaponSplit(ctx); },
     essenceGroupFor: essenceGroupFor, menusFor: menusFor, effectsFor: effectsFor,
     automaticAffixes: automaticAffixes, unmodelledAutomatic: unmodelledAutomatic,

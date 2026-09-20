@@ -1503,4 +1503,76 @@ test("#828: a presence flag carries no magnitude and claims no provenance", () =
   assert.strictEqual(rows[0].name, "Eternal Faith");
 });
 
+
+// --- #838 — an on/off flag the crafting table nonetheless values --------------
+function placements_groups() { return placements.groups; }
+
+test("#838: the population, measured with the app's OWN vocabulary on the built dataset", () => {
+  // Three pipeline reproductions of this count gave 204, 198 and 33. The bench
+  // renders from THIS vocabulary, so this is the number — pinned so it cannot
+  // drift unnoticed the way it went from 6 to ~200 when the table tripled.
+  let placements = 0, dice = 0, constant = 0; const stats = new Set();
+  for (const group of Object.keys(placements_groups())) {
+    for (const menu of ["Prefix", "Suffix", "Extra"]) {
+      for (const r of placements_groups()[group][menu] || []) {
+        for (const p of (r.parts || [r])) {
+          if (C.isFlagWithCurve(p, vocab, ctx)) { placements++; stats.add(p.stat); }
+          else if (p.unit === "dice") dice++;
+          else if (p.stat === "Vorpal" && p.magnitude_sourced) constant++;
+        }
+      }
+    }
+  }
+  assert.ok(placements > 100, `only ${placements} — the predicate or the vocabulary broke`);
+  assert.strictEqual(placements, 196);
+  assert.strictEqual(stats.size, 66);
+  assert.ok(stats.has("Flaming Blast") && stats.has("Anarchic") && stats.has("Freezing Ice"));
+  assert.ok(!stats.has("Gnoll Bane"), "Gnoll Bane is not a flag in the app's vocabulary");
+  assert.ok(!stats.has("Vorpal"), "a constant curve is genuinely on/off");
+  assert.ok(dice >= 6 && constant >= 1, "the excluded cases must still be present to be excluded");
+});
+
+test("#838: the predicate refuses dice, constant curves, and non-flags", () => {
+  const row = (over) => Object.assign({ stat: "Flaming Blast", magnitude_sourced: true, unit: "flat",
+    values_by_ml: Array.from({ length: 36 }, (_, i) => (i < 20 ? 4 : 7)) }, over);
+  assert.strictEqual(C.isFlagWithCurve(row(), vocab, ctx), true, "the real case");
+  assert.strictEqual(C.isFlagWithCurve(row({ unit: "dice" }), vocab, ctx), false, "dice is #835's branch");
+  assert.strictEqual(C.isFlagWithCurve(row({ values_by_ml: Array(36).fill(1) }), vocab, ctx), false, "constant");
+  assert.strictEqual(C.isFlagWithCurve(row({ magnitude_sourced: false, values_by_ml: undefined }), vocab, ctx), false, "no curve");
+  assert.strictEqual(C.isFlagWithCurve(row({ stat: "Charisma" }), vocab, ctx), false, "not a flag");
+  assert.strictEqual(C.isFlagWithCurve(null, vocab, ctx), false);
+});
+
+test("#838: the affix still mints as a FLAG — the solver is unchanged", () => {
+  // Only the disclosure moves. The catalog buckets this as presence and nothing
+  // here can rank the table's number, so a value must NOT reach the solver.
+  //
+  // `Flaming Blast` has no single-effect placement — it is granted only as a
+  // half of compound recipes — so the fixture is one such recipe, read off the
+  // built dataset: `Desert Eclipse` on Melee weapons / Prefix, which a
+  // Weapon/Daggers entry reaches (the slot the #773 fixture already proves).
+  const v = C.validateEntry({ uid: 9, slot: "Weapon", type: "Daggers", ml: 30, augments: [],
+    affixes: [{ menu: "Prefix", effect: "Desert Eclipse" }] }, ctx);
+  assert.deepStrictEqual(v.errors, [], v.errors.join(" | "));
+  const fb = v.entry.affixes[0].parts.find((p) => p.stat === "Flaming Blast");
+  assert.ok(fb, "the Flaming Blast half is minted");
+  assert.strictEqual(fb.presence, true, "…as a FLAG");
+  assert.strictEqual(fb.value, undefined, "…with no value for the solver");
+  const minted = C.nativeAffixes(v.entry, ctx).find((a) => a.name === "Flaming Blast");
+  assert.deepStrictEqual([minted.type, minted.value], ["Bool", "1"]);
+});
+
+test("#838: the bench tests the valued-flag branch BEFORE the on/off branch, in both places", () => {
+  // The whole defect was branch order: the on/off test fired first and said
+  // "no value" over a published curve. Same shape as #835's dice guard.
+  const wiz = fs.readFileSync(path.join(__dirname, "..", "web", "wizard.js"), "utf-8");
+  const main = wiz.slice(wiz.indexOf('let tail = "";'), wiz.indexOf('let tail = "";') + 8000);
+  assert.ok(main.indexOf("isFlagWithCurve(row") > -1, "the main row must consult the predicate");
+  assert.ok(main.indexOf("isFlagWithCurve(row") < main.indexOf("isPresenceOnly(vocab.canonical ? vocab.canonical(row.stat)"),
+    "main row: the valued-flag branch must precede the on/off branch");
+  const part = wiz.slice(wiz.indexOf("const partRows = recipe"), wiz.indexOf("const partRows = recipe") + 2500);
+  assert.ok(part.indexOf("flagValued") > -1 && part.indexOf("isFlagWithCurve(pe") > -1, "part rows must consult it too");
+  assert.ok(part.indexOf("const ctrls = flagValued") > -1, "part rows: the valued-flag branch must come first in the ctrls chain");
+});
+
 process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

@@ -2654,31 +2654,48 @@ def write(dataset: dict, path: str = OUT_PATH) -> None:
         fh.write("\n")
 
 
-def _every_carrier_affix(out):
-    """`(stat, bonus_type)` for everything in the built dataset that can carry an
-    affix — the item roster and every crafting pool (#835).
+def _every_carrier_triple(out):
+    """`(stat, bonus_type, value)` over EXACTLY the population `web/dataset.js`'s
+    `_craftingAffixTriples` walks — the item roster, then `seal`,
+    `nearly_complete_per_item`, the five atomic pools, and the two set-def
+    families' tier affixes. NOT `essence_crafting`: the app never reads the
+    solver's own essence pool when it decides what is a flag and what has a
+    magnitude, and a walk that does answers differently from the bench that
+    renders the answer.
 
-    Mirrors `web/dataset.js::_craftingAffixTriples` deliberately: that function
-    decides `untypedOnly`, and a guard that asks "does anything type this effect"
-    over a SMALLER population than the app uses will answer yes when the app says
-    no. That is exactly how `Tendon Slice` was ruled untyped while `Slaver's
-    Extra Slot` carried `Tendon Slice +4 (Enhancement)`.
+    This is the one walk, kept for the #835 guard. It does NOT reproduce the
+    app's presence/magnitude classification exactly — a #838 attempt to do so
+    gave 33 placements where the app reports 196, and the difference was not
+    run down — which is why #838 decides in the bench, with the app's own
+    predicate, rather than here.
     """
     for it in out.get("items") or []:
         for a in it.get("affixes") or []:
-            yield (a.get("name"), a.get("type"))
-    for key in ("seal", "viktranium", "dino_inserts", "nearly_complete",
-                "legendary_green_steel", "slavers", "essence_crafting"):
+            yield (a.get("name"), a.get("type"), a.get("value"))
+    for o in out.get("seal") or []:
+        yield (o.get("stat"), o.get("bonus_type"), o.get("value"))
+    for arr in (out.get("nearly_complete_per_item") or {}).values():
+        for o in arr or []:
+            yield (o.get("stat"), o.get("bonus_type"), o.get("value"))
+    for key in ("viktranium", "dino_inserts", "nearly_complete",
+                "legendary_green_steel", "slavers"):
         for o in out.get(key) or []:
             if not isinstance(o, dict):
                 continue
-            for a in o.get("affixes") or []:
-                yield (a.get("stat"), a.get("bonus_type"))
-            if o.get("stat"):
-                yield (o.get("stat"), o.get("bonus_type"))
-    for arr in (out.get("nearly_complete_per_item") or {}).values():
-        for o in arr or []:
-            yield (o.get("stat"), o.get("bonus_type"))
+            affs = o.get("affixes") if o.get("affixes") else ([o] if o.get("stat") else [])
+            for a in affs:
+                yield (a.get("stat"), a.get("bonus_type"), a.get("value"))
+    for key in ("membership_set_defs", "augment_set_defs"):
+        for d in (out.get(key) or {}).values():
+            for tier in (d.get("tiers") or []):
+                for a in tier.get("affixes") or []:
+                    yield (a.get("stat"), a.get("bonus_type"), a.get("value"))
+
+
+def _every_carrier_affix(out):
+    """The `(stat, bonus_type)` view of the one walk above (#835's guard reads it)."""
+    for n, t, _ in _every_carrier_triple(out):
+        yield (n, t)
 
 
 def main() -> None:
