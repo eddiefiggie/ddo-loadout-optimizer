@@ -394,6 +394,17 @@ def assert_wiki_overrides_are_live(recipes, wiki_groups) -> dict:
     return {"overrides": len(WIKI_PLACEMENT_OVERRIDES)}
 
 
+# #838 lives in the BENCH, not here. Whether a stat is an on/off flag is a fact
+# about the app's vocabulary (`web/dataset.js`), and the bench must answer it
+# with the same predicate as the branch being corrected, or the two can drift.
+# A pipeline reproduction of that classification was tried and gave 33
+# placements against the 196 the app itself reports on the same dataset; the
+# discrepancy was NOT run down — it was not worth a fourth population — and the
+# reproduction was removed rather than left disagreeing. `custom-items.js`'s
+# `isFlagWithCurve` decides at render time, and `tests/custom-items.test.js`
+# pins the population with the app's real vocabulary on the built dataset.
+
+
 def build_catalog(catalog_stats=None, wiki_curves=None, catalog_units=None,
                   catalog_types=None, wiki_groups=None) -> dict:
     """The placement catalog, keyed `[group][menu] -> [options]`.
@@ -503,6 +514,16 @@ def build_catalog(catalog_stats=None, wiki_curves=None, catalog_units=None,
             floor = min_ml or 1
             if bonus == INSIGHT_BONUS_TYPE:
                 floor = max(floor, INSIGHT_MIN_ML)
+            # #838 — a stat the catalog carries as an on/off FLAG whose crafted
+            # version nonetheless has a published, SCALING curve. The two are
+            # different facts about different things: real items print `Flaming
+            # Blast` with no number, and the crafting table prints 4..7 by ML.
+            # The bench used to take the first as proof of the second's absence
+            # and say "no bonus type or value". The affix stays a flag for the
+            # solver — that is how the catalog buckets it and nothing here can
+            # rank the number — but the record now SAYS the table has a value.
+            # Dice are #835's branch; a constant curve (`Vorpal`, 1 at every
+            # level) is genuinely on/off and is counted, not marked.
             part = {"stat": stat, "source_stat": raw_stat,
                     "source_bonus_type": source_bonus,
                     "quarantined": raw_stat in quarantined,
@@ -588,6 +609,7 @@ def build_catalog(catalog_stats=None, wiki_curves=None, catalog_units=None,
     coverage["type_no_bucket"] = sorted(no_bucket_types)
     if wiki_groups is not None:
         assert_wiki_overrides_are_live(recipes, wiki_groups)
+
     if catalog_types is not None:
         assert_every_minted_type_has_a_bucket(groups, catalog_types)
     return {"groups": groups, "coverage": coverage,

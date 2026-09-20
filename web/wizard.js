@@ -4369,6 +4369,15 @@ ${(() => {
             + ` <span class="wz-help">on-hit proc — the crafting table's own value at ML `
             + `${wzEsc(d.ml || "?")}. It has no bonus type, and the optimizer cannot `
             + `rank dice, so it will not count toward your priorities.</span></span>`;
+        } else if (row && M.isFlagWithCurve && M.isFlagWithCurve(row, vocab, customItemCtx())) {
+          // #838 — an on/off flag the crafting table nonetheless values. The
+          // affix stays a flag for the solver; the row stops claiming there is
+          // no value.
+          const fv = M.sourcedRawValueAt ? M.sourcedRawValueAt(row, d.ml) : null;
+          tail = `<span class="wz-custom-flag">on/off in this build`
+            + ` <span class="wz-help">the crafting table publishes +${wzEsc(fv == null ? "?" : fv)} at ML `
+            + `${wzEsc(d.ml || "?")} for the crafted version, but this tool ranks the effect as`
+            + ` present or absent, so the number does not count toward your priorities.</span></span>`;
         } else if (row && isPresenceOnly(vocab.canonical ? vocab.canonical(row.stat) : row.stat, vocab)) {
           tail = `<span class="wz-custom-flag">on/off — no bonus type or value</span>`;
         } else if (row) {
@@ -4405,6 +4414,8 @@ ${(() => {
         const partRows = recipe ? recipe.effects.map((pe, pi) => {
           const supplied = ((chosen && chosen.parts) || [])[pi] || {};
           const flag = isPresenceOnly(vocab.canonical ? vocab.canonical(pe.stat) : pe.stat, vocab);
+          // #838 — same rule for a compound half, tested BEFORE the plain flag.
+          const flagValued = flag && M.isFlagWithCurve && M.isFlagWithCurve(pe, vocab, customItemCtx());
           // #812 — a combined half scales with ML too, where the existing join
           // resolves the name; asked for where it does not.
           const pv = M.sourcedValueAt(pe, d.ml);
@@ -4421,7 +4432,11 @@ ${(() => {
             ? `<span class="wz-custom-sourced">${wzEsc(pe.bonus_type)}</span>`
             : `<select data-custom-part="${wzEsc(menu)}:${pi}"><option value="">Type on your item…</option>`
               + `${btypes.map((t) => opt(t, supplied.bonus_type)).join("")}</select>`;
-          const ctrls = flag
+          const ctrls = flagValued
+            ? `<span class="wz-custom-flag">on/off in this build <span class="wz-help">the crafting table`
+              + ` publishes +${wzEsc((M.sourcedRawValueAt && M.sourcedRawValueAt(pe, d.ml)) || "?")} at ML`
+              + ` ${wzEsc(d.ml || "?")}, but this tool ranks the effect as present or absent.</span></span>`
+            : flag
             ? `<span class="wz-custom-flag">on/off — no bonus type or value</span>`
             : ptype
               + (pe.magnitude_sourced
