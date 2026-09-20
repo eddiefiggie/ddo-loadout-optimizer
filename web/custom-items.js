@@ -401,6 +401,23 @@
     return isFinite(v) ? v : null;
   }
 
+  /** #835 — the crafting table's own value at this ML, VERBATIM.
+   *
+   *  `sourcedValueAt` above coerces with `Number()` and returns null when that
+   *  fails, which is exactly right for a numeric accessor and is what keeps a
+   *  dice magnitude out of anything that would compare it. But a dice effect
+   *  still has a published value — `3d2` — and the bench used to tell the
+   *  player it had none. This returns the string so the bench can say it,
+   *  without giving any caller a number that is not one.
+   */
+  function sourcedRawValueAt(row, ml) {
+    if (!row || !row.magnitude_sourced || !Array.isArray(row.values_by_ml)) return null;
+    var n = Number(ml);
+    if (!isFinite(n) || Math.floor(n) !== n || n < 1 || n > row.values_by_ml.length) return null;
+    var v = row.values_by_ml[n - 1];
+    return (v === null || v === undefined || v === "") ? null : String(v);
+  }
+
   /** #800 — the combined prefixes offerable in one group's Prefix menu.
    *
    *  A combined prefix is ONE shard granting TWO effects into the single prefix
@@ -1193,6 +1210,7 @@
     isPresenceEffect: function (stat, vocab, ctx) { return _isPresenceOnly(stat, vocab, ctx); },
     MENUS: MENUS.slice(), menuLabel: menuLabel, deriveName: deriveName,
     nativeAffixes: nativeAffixes, essenceCraftedName: essenceCraftedName,
+    sourcedRawValueAt: sourcedRawValueAt,
     weaponSplit: function (ctx) { return _weaponSplit(ctx); },
     essenceGroupFor: essenceGroupFor, menusFor: menusFor, effectsFor: effectsFor,
     automaticAffixes: automaticAffixes, unmodelledAutomatic: unmodelledAutomatic,

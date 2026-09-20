@@ -127,8 +127,10 @@ SKILL_BONUS_TYPE = "Competence"
 #:
 #: Two causes, and they are checked differently:
 #:
-#: - `untyped` — every carrier in the catalog spells the affix `Untyped` and not
-#:   one spells it with a type. This is the same signal `web/dataset.js` already
+#: - `untyped` — every carrier spells the affix `Untyped` and not one spells it
+#:   with a type. NO effect currently qualifies; the branch stays because the
+#:   guard validates it and `Tendon Slice` was wrongly admitted under it once.
+#:   This is the same signal `web/dataset.js` already
 #:   derives as `untypedOnly` to refuse the declared-credit control, for the
 #:   reason #235 records: "the credit control asks the player to pick a BONUS
 #:   TYPE, and this stat has none. Every choice is wrong." The Essence bench asked
@@ -141,11 +143,24 @@ SKILL_BONUS_TYPE = "Competence"
 #: re-derives both causes from the built data on every build, so an effect that
 #: gains a typed carrier upstream fails rather than staying silently untyped.
 NO_BONUS_TYPE = {
-    "Tendon Slice": "untyped",
     "Bashing": "dice",
     "Shield Spikes": "dice",
     "Vampirism": "dice",
 }
+
+#: `Tendon Slice` was listed here as `untyped` and is NOT (#835). The claim was
+#: "every carrier spells it Untyped"; `Slaver's Extra Slot` carries
+#: `Tendon Slice +4 (Enhancement)` and its legendary twin at +10. The guard that
+#: should have caught it walked only the item roster while `web/dataset.js`
+#: derives `untypedOnly` over the item roster AND every crafting pool — and it
+#: read `a["name"]`/`a["type"]` where pipeline affixes are spelled `stat` /
+#: `bonus_type`, so it collected nothing at all and could not fail.
+#:
+#: Left as a comment rather than deleted because the correction is the useful
+#: part: a typed carrier in ANOTHER system does not type the Essence-crafted
+#: effect either (`no effect is typed by a different carrier` — see
+#: `docs/wiki-evidence/essence-crafting-bonus-types.md`), so Tendon Slice's
+#: crafted bonus type is UNSOURCED, which is a third answer and not this one.
 
 #: How a dice magnitude is spelled in `table 3b` — `6d6`, `3d2`.
 _DICE = __import__("re").compile(r"^\s*\d+\s*d\s*\d+\s*$", __import__("re").I)
@@ -569,6 +584,54 @@ def assert_slot_map_covers_the_table(placements) -> int:
     return len(table)
 
 
+def assert_unit_matches_the_magnitude(records) -> dict:
+    """A `unit` is a claim about what the VALUE is (#835).
+
+    `flat` and `pct` both say "this is a number". `web/dataset.js` leaves a
+    non-numeric value as a string and the solver gates contributions on
+    `value > 0`, so a dice magnitude filed as `flat` produces a craft that is
+    silently inert — the worse half of which is that nothing anywhere says so.
+
+    Fails in BOTH directions, because both are how this rots: a dice curve filed
+    as a number, and a numeric curve filed as `dice`, which would disclose an
+    unrankable craft that in fact ranks fine.
+
+    Refuses to pass over an empty table.
+    """
+    if not records:
+        raise SystemExit(
+            "unit/magnitude gate: no placement records \u2014 this guard would pass "
+            "vacuously")
+    problems = []
+    seen_any_curve = False
+    for rec in records:
+        curve = [v for v in (rec.get("values_by_ml") or []) if v not in (None, "")]
+        if not curve:
+            continue
+        seen_any_curve = True
+        unit = rec.get("unit")
+        dice = [v for v in curve if _DICE.match(str(v))]
+        if unit == "dice":
+            if len(dice) != len(curve):
+                problems.append(
+                    f"{rec['effect']!r} is unit `dice` but its curve is not all "
+                    f"dice (e.g. {curve[:3]}) \u2014 it would be disclosed as "
+                    "unrankable while ranking fine")
+        elif dice:
+            problems.append(
+                f"{rec['effect']!r} carries dice magnitudes (e.g. {dice[:3]}) "
+                f"under unit {unit!r}, which claims a number. The value stays a "
+                "string, the solver drops it, and nothing tells the player.")
+    if not seen_any_curve:
+        raise SystemExit(
+            "unit/magnitude gate: no record carries a curve \u2014 this guard "
+            "would pass vacuously")
+    if problems:
+        raise SystemExit("unit/magnitude gate failed:\n  " + "\n  ".join(problems))
+    return {"dice": sum(1 for r in records if r.get("unit") == "dice"),
+            "checked": sum(1 for r in records if r.get("values_by_ml"))}
+
+
 def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
     """Every placement in the table, annotated for the builder.
 
@@ -661,6 +724,15 @@ def build_placement_catalog(catalog_stats=None, catalog_units=None) -> dict:
                     unit_ok = len(units) == 1
                     if unit_ok:
                         unit = next(iter(units))
+                # #835 — a DICE magnitude is its own unit. `table 3b` publishes
+                # `1d6`..`6d6` for these, and calling that `flat` is a claim that
+                # the value is a number: `web/dataset.js` leaves a non-numeric
+                # value as a string, and the solver gates contributions on
+                # `value > 0`, which is false for `"6d6"`. The craft is inert.
+                # Saying `dice` lets every layer downstream say so out loud
+                # instead of each discovering it.
+                if curve and all(_DICE.match(str(v)) for v in curve if v not in (None, "")):
+                    unit, unit_ok = "dice", True
                 usable = rankable and effect not in essence_pool.EXCLUDED_EFFECTS
                 # The MAGNITUDE half. `unit_ok` still gates it: a stat the catalog
                 # spells both flat and percent has no single unit, so a number
