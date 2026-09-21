@@ -6496,3 +6496,44 @@ test("#774: the load boundary coerces the on/off marker to a real boolean", () =
     for (const c of calls) assert.ok(/onBusy: busyFor/.test(c), `a results render without the busy hook: ${c.slice(0, 120)}`);
   });
 }
+
+// ---- #849: "Report a problem" on the Share tab ------------------------------
+{
+  const sliceFn = (name) => {
+    const at = WIZARD_SRC.indexOf(`function ${name}(`);
+    assert.ok(at > 0, `${name} exists`);
+    return WIZARD_SRC.slice(at, WIZARD_SRC.indexOf("\n    function ", at + 1));
+  };
+
+  test("#849: the Share panel carries the report block, and its copy names what the file holds", () => {
+    const html = sliceFn("sharePanelHTML");
+    assert.ok(/id="wz-share-report"/.test(html), "the button");
+    assert.ok(/class="wz-share-report"/.test(html), "in its own block, not the export row");
+    assert.ok(/ownedNames/.test(html), "the copy names the one list a player may strip");
+    assert.ok(/Nothing is sent until you press Submit/.test(html), "the title says nothing leaves the page on click");
+    assert.ok(/saves a reproduction file/.test(html) && !/copies/.test(html), "the copy says the file is saved, not copied");
+  });
+
+  test("#849: the report button saves the file through the exporter and opens the form synchronously", () => {
+    const fn = sliceFn("wireShareExports");
+    assert.ok(/getElementById\("wz-share-report"\)/.test(fn), "wired");
+    assert.ok(/LoadoutExport\.toReportJSON\(rec, ctx\)/.test(fn), "the payload comes from the exporter");
+    assert.ok(/LoadoutExport\.reportIssueUrl\(ctx\)/.test(fn), "so does the URL");
+    assert.ok(/JSON\.stringify\(LoadoutExport\.toReportJSON\(rec, ctx\)\)/.test(fn) && !/toReportJSON\(rec, ctx\), null, 2/.test(fn),
+      "the report is MINIFIED — pretty-printing doubles a file that is already 56 KB");
+    assert.ok(/typeof BUILD !== "undefined" \? BUILD : null/.test(fn), "the footer BUILD rides as appBuild, guarded for the node harness");
+    assert.ok(/datasetBuild: currentBuildId\(\)/.test(fn), "the dataset build rides beside it — the two move independently");
+    assert.ok(/downloadFile\(fname, text, "application\/json"\)/.test(fn), "always a file");
+    assert.ok(!/clipboard/.test(fn.slice(fn.indexOf("reportBtn.onclick"), fn.indexOf("// BBCode is meant"))), "never the clipboard");
+    // The popup is opened INSIDE the click, right after the download, with no await between.
+    const dl = fn.indexOf('downloadFile(fname, text, "application/json")');
+    const open = fn.indexOf('window.open(url, "_blank", "noopener")', dl);
+    assert.ok(dl > 0 && open > dl && !/await|\.then\(/.test(fn.slice(dl, open)), "window.open follows the download synchronously");
+    assert.ok(/open it here/.test(fn), "a blocked popup is reported with the URL as a link, not swallowed");
+  });
+
+  test("#849: the report block is styled", () => {
+    const css = fs.readFileSync(path.join(__dirname, "..", "web", "styles.css"), "utf-8");
+    assert.ok(/\.wz-share-report\s*\{/.test(css), "the block has a rule");
+  });
+}

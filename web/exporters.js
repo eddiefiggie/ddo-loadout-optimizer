@@ -669,6 +669,61 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     };
   }
 
+  // ---- #849: "Report a problem" ------------------------------------------------
+  // Every player report that closed as not-reproduced (#679) or forked into two
+  // issues for one report (#699/#700) lacked the same thing: the solve inputs.
+  // Every report that carried an export was diagnosed from the file alone (#645).
+  // The envelope above already IS that file, so a report is the envelope plus a
+  // `report` block naming what the envelope's `app_build_id` does not: that field
+  // is the DATASET build (persist.js `stampedBuildId`), and a triager needs the
+  // footer BUILD too, because the two move independently. Additive-optional on
+  // the ddo-loadout/v1 contract (like `utility` and `ordered` before it): the
+  // format and schema_version are unchanged, so a report file still imports.
+  // WRITE-ONCE like toPortableJSON — `core` aliases the live record; stringify at
+  // once. `Object.assign` onto a fresh object never touches the envelope's own.
+  const REPORT_ISSUE_URL = "https://github.com/eddiefiggie/ddo-loadout-optimizer/issues/new";
+  // The issue-form file the URL opens. Its field ids (`build`, `dataset`) are
+  // what the query string below prefills; tests/exporters.test.js asserts the
+  // file exists and carries those ids, so a rename on either side goes red.
+  const REPORT_TEMPLATE = "player-report.yml";
+  // The report is a FILE, never a paste. Measured in the browser on build
+  // 09202026.16 with ONE ranked priority: the minified envelope is 55,977
+  // characters (`core` 39 KB, of which the chosen items' affix lists are 32 KB;
+  // `resolved` 16 KB) and pretty-printed 104,245 — past GitHub's 65,536-character
+  // issue-body cap before a second priority is added. GitHub attaches `.json`
+  // directly (docs: "Data and tabular files (.csv, .tsv, .log, .json, .jsonc)",
+  // 25 MB), so the form takes the file and the page never touches the clipboard.
+
+  function toReportJSON(rec, ctx) {
+    const c = ctx || {};
+    const inputs = (rec && rec.inputs) || {};
+    const owned = inputs.pool === "owned";
+    return Object.assign(toPortableJSON(rec, c.nowIso), {
+      report: {
+        app_build: c.appBuild || null,
+        dataset_build: (rec && rec.stampedBuildId) || null,
+        user_agent: c.userAgent || null,
+        // Named so the player (and the triager) can see at a glance whether the
+        // file carries a Trove inventory — the one thing in it the page did not
+        // already show them, and the thing the issue form tells them they may
+        // strip. A count, not the names: the names ride in `core.inputs`.
+        owned_pool: owned,
+        owned_names_count: owned && Array.isArray(inputs.ownedNames) ? inputs.ownedNames.length : 0,
+      },
+    });
+  }
+
+  /** The new-issue URL for a report: the form template plus its `build` and
+   *  `dataset` fields prefilled by id. The export itself never rides here — a URL
+   *  cannot carry it and the form's own textarea is where it goes. */
+  function reportIssueUrl(ctx) {
+    const c = ctx || {};
+    const q = [["template", REPORT_TEMPLATE]];
+    if (c.appBuild) { q.push(["title", `Loadout report: build ${c.appBuild}`]); q.push(["build", String(c.appBuild)]); }
+    if (c.datasetBuild) q.push(["dataset", String(c.datasetBuild)]);
+    return `${REPORT_ISSUE_URL}?${q.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`;
+  }
+
   // ---- DDOBuilderV2 .gearset (U1-U3) ----
 
   // App slot -> DDOBuilderV2 file-grammar label, in the order the file emits them.
@@ -884,6 +939,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
 
   const api = {
     toMarkdown, toCsv, toPrintHtml, toBBCode, toPortableJSON, toGearset,
+    toReportJSON, reportIssueUrl, REPORT_ISSUE_URL, REPORT_TEMPLATE,
     setBonusDetail, csvSafe, csvRow, htmlEsc, bbEsc, mdEsc,
     constraintPairs, constraintLines, fmtAffix, cue, legendText,
     // #668 — exported so the coverage guard can compare the roster against the

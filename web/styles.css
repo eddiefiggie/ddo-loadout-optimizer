@@ -1810,6 +1810,11 @@ input.wz-ml { width: 120px; }
 /* export buttons: a tidy, evenly-sized row directly under the loadout picker */
 .wz-share-btns { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); max-width: 34rem; }
 .wz-share-btns .btn { flex: 1 1 0; min-width: 6rem; text-align: center; }
+/* #849 — Report a problem: its own block under the exports, because a report is
+   a different job from sharing and the help copy has to say what the file holds. */
+.wz-share-report { max-width: 34rem; padding-top: var(--sp-3); border-top: 1px solid var(--border-2); }
+.wz-share-report .wz-help { margin: 0 0 var(--sp-2); }
+.wz-share-report code, .wz-filestat code { font-size: var(--fs-xs); }
 
 /* U13: single-loadout print view — a body-level container the @media print
    rules isolate so only the loadout prints. */
