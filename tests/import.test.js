@@ -10,11 +10,7 @@ const {
 // from the destructure above.
 const I = require("../web/import.js");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.message}`); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 const sampleCsv = fs.readFileSync(
   path.join(__dirname, "fixtures", "trove-sample.csv"), "utf8");
@@ -143,7 +139,6 @@ test("U5: owned filter retains a boolean-only-eligible variant", () => {
   assert.strictEqual(owned[0].affixes[0].bonus_type, "boolean");
 });
 
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 
 
 // --- #408: stacked-item plurals -------------------------------------------

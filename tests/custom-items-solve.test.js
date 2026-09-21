@@ -34,11 +34,7 @@ const C = require(path.join(ROOT, "web/custom-items.js"));
 const Proj = require(path.join(ROOT, "web/projection.js"));
 const Exporters = require(path.join(ROOT, "web/exporters.js"));
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); passed += 1; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e && e.message); failed++; process.exitCode = 1; }
-}
+const { test, fail } = require("./_harness");
 
 const DAGGER = {
   uid: 1, name: "My Cannith dagger", slot: "Weapon", type: "Daggers", ml: 36,
@@ -269,5 +265,4 @@ function baseState(over) {
       "the credited carrier must be the player's item, named as theirs");
   });
 
-  process.on("exit", () => { console.log(`\n  ${passed} passed, ${failed} failed`); });
-})().catch((e) => { console.error("ERR", (e && e.stack) || e); process.exit(1); });
+})().catch((e) => { fail("custom-items-solve: unexpected error outside a test", e); });

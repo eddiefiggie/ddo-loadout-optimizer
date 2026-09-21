@@ -10,11 +10,7 @@ const fs = require("fs");
 const path = require("path");
 const M = require("../web/model.js");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 const DS = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
 
@@ -162,4 +158,3 @@ test("the load message names a stale craft the same way it names an item", () =>
     "a live crafted block says nothing on load");
 });
 
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

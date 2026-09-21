@@ -28,11 +28,7 @@ require("../web/model.js").setSplitMechanics([{
   issue: 683,
 }]);
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 const rec = {
   name: "Sook - Reaper",
@@ -1149,7 +1145,6 @@ test("U8/R8: an export of a build with no expanded affix is unchanged", () => {
     "native affixes render exactly as before");
 });
 
-process.on("exit", () => { if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`); });
 
 // ---------------------------------------------------------------------------
 // #245 — the craft-carried line and the opt-out scope disclosure must ride
@@ -2035,7 +2030,6 @@ test("#603: the gearset label stays self-describing, because it prints with no c
   }
 });
 
-console.log(`\n  ${passed} passed`);
 
 test("#663: the Jump soft-cap disclosure reaches ALL FOUR export surfaces", () => {
   // The reason this test exists in this shape. Every exporter HAND-ENUMERATES the

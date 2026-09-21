@@ -29,25 +29,18 @@ const path = require("path");
 const M = require("../web/model.js");
 const { solveEnv } = require("./parity/capture_golden.js");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
-}
+const { test, atest: testAsync, fail } = require("./_harness");
 
-/** The ASYNC runner. Every solve-driven assertion must go through this.
+/** The ASYNC runner (the shared harness's `atest`, #853). Every solve-driven
+ *  assertion must go through this.
  *
- *  The sync `test()` above reports PASS the moment its callback returns, so a
+ *  A sync runner reports PASS the moment its callback returns, so a
  *  callback that merely STARTS a promise is reported green before a single
  *  assertion has run — and a rejection lands in an unhandled catch that prints
  *  after the summary line. Two tests in the first draft of this file did exactly
  *  that and reported PASS against a tree where the feature did not exist. That is
  *  the vacuous-guard failure the repo's own conventions warn about: a test which
  *  cannot fail is worse than no test, because it reads as coverage. */
-async function testAsync(name, fn) {
-  try { await fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
-}
 
 const ROOT = path.join(__dirname, "..");
 const raw = JSON.parse(fs.readFileSync(path.join(ROOT, "web", "data", "items.json"), "utf8"));
@@ -114,8 +107,7 @@ test("#742 gate 3: augBest admits a pinned augment that advances nothing", () =>
   try {
     env = await solveEnv();
   } catch (e) {
-    console.error(`FAIL #742: could not prepare the solve environment\n  ${e.message}`);
-    failed++; process.exitCode = 1;
+    fail("#742: could not prepare the solve environment", e);
     return;
   }
   const { dataset } = env;
@@ -176,7 +168,6 @@ test("#742 gate 3: augBest admits a pinned augment that advances nothing", () =>
       "a block is a hard rule — it must win at the solver, not just in the dialog");
   });
 
-  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })();
 
 // ---- U1: state, the control, and what the control promises ------------------

@@ -47,11 +47,7 @@ const CORRECTIONS = JSON.parse(fs.readFileSync(
 const CREDITED_AS = { "Legendary Conditioning": "Conditioning" };
 const creditedAs = (canon) => CREDITED_AS[canon] || canon;
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
-}
+const { test, fail } = require("./_harness");
 
 // ---------------------------------------------------------------------------
 // Every solver-visible channel, as one walk. A rename that reaches the item
@@ -618,5 +614,4 @@ const MIGRATED = new Set([
       `${SCD} must credit the max of its Legendary sources, not their sum (got ${got})`);
   });
 
-  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
-})().catch((e) => { console.error(e); process.exit(1); });
+})().catch((e) => { fail("vocabulary_migration: unexpected error outside a test", e); });

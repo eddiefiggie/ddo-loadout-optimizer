@@ -14,11 +14,7 @@ const O = require("../web/overrides.js");
 const DN = require("../web/dataset.js");
 const Model = require("../web/model.js");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 const DATA = path.join(__dirname, "..", "web", "data", "items.json");
 function loadPool() {
@@ -1190,7 +1186,6 @@ test("#88 U11: an empty list yields no rows, not a placeholder row", () => {
   assert.deepStrictEqual(O.managerRows(null), []);
 });
 
-process.on("exit", () => { if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`); });
 
 // ---------------------------------------------------------------------------
 // #426 — the crafted creation surface. poolPickerEntries collapses a whole

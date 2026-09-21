@@ -144,11 +144,7 @@ function dataset() {
   return _ds;
 }
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
-}
+const { test, fail } = require("./_harness");
 
 (async () => {
   const golden = JSON.parse(fs.readFileSync(GOLDEN, "utf8"));
@@ -560,8 +556,7 @@ function test(name, fn) {
     });
   }
 
-  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
-})().catch((e) => { console.error(e); process.exit(1); });
+})().catch((e) => { fail("solver_golden: unexpected error outside a test", e); });
 
 // #110 (U10) — the blocklist A/B pair's integrity guard, mirroring the
 // declared-credit guard above: deleting the `blocklist` field would demote the

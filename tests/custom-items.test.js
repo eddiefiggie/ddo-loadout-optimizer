@@ -20,11 +20,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-let passed = 0, failed = 0;
-const test = (name, fn) => {
-  try { fn(); console.log("PASS " + name); passed++; }
-  catch (e) { console.log("FAIL " + name + " \n  " + (e && e.message)); failed++; process.exitCode = 1; }
-};
+const { test } = require("./_harness");
 
 const C = require("../web/custom-items.js");
 const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js");
@@ -1575,4 +1571,3 @@ test("#838: the bench tests the valued-flag branch BEFORE the on/off branch, in 
   assert.ok(part.indexOf("const ctrls = flagValued") > -1, "part rows: the valued-flag branch must come first in the ctrls chain");
 });
 
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

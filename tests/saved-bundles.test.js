@@ -8,11 +8,7 @@
 const assert = require("assert");
 const B = require("../web/saved-bundles.js");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log(`  PASS ${name}`); passed++; }
-  catch (e) { console.log(`  FAIL ${name} \n    ${e.message}`); failed++; }
-}
+const { test } = require("./_harness");
 
 /** A localStorage stand-in. `failOn` makes setItem throw, so the failure paths
  *  are exercised against a real throw rather than a stubbed return value. */
@@ -233,5 +229,3 @@ test("MERGE: a failed write reports failure rather than a silent loss", () => {
   assert.strictEqual(r.full, true);
 });
 
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed\n`); });
-if (failed) process.exit(1);

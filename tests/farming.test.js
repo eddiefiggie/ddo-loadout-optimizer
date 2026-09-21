@@ -6,11 +6,7 @@ const assert = require("assert");
 const F = require("../web/farming.js");
 const R = require("../web/results.js");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 function fakeStorage(limit) {
   const map = new Map();
@@ -345,7 +341,6 @@ test("#518: renaming a character to its own name is a no-op success", () => {
   assert.deepStrictEqual(F.readProgress(st).Aurelia, { A: true });
 });
 
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 
 test("#773: an item the player described is not on the farming checklist", () => {
   // They typed it in because they have it. Listing it as something to go and

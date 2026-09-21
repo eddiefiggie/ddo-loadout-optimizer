@@ -8,11 +8,7 @@ const {
 const Farm = require("../web/farming.js");
 const { migrateLoadout } = require("../web/dataset.js");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 function fakeStorage(failOnSet) {
   const m = {};
@@ -1004,4 +1000,3 @@ test("#766: a saved result keeps its Slaver's placements", () => {
     "slaversPlaced is on the save allowlist — a restored build must not lose its crafts");
 });
 
-process.on("exit", () => { if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`); });
