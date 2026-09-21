@@ -1313,6 +1313,70 @@
       + (raise ? "." : " — or rank Magical Sheltering Cap (the wiki's MRR Cap) to raise the ceiling instead.");
   }
 
+  // #850 — the model bridge for the tier-rename stamp, in the `_splitMechanicFor`
+  // shape (browser global when model.js loads ahead of this file, require()'d
+  // under node) and NOT the `_modelModule()` one: in the browser that helper
+  // returns only the two twin-id functions, so a lookup hung off it is silent
+  // on the live site while every node test passes.
+  const _tierRenamesFor = (typeof tierRenamesFor !== "undefined") ? tierRenamesFor
+    : (typeof require !== "undefined" ? require("./model.js").tierRenamesFor : null);
+
+  /** #850 — a ranked presence effect that an item family RENAMES on upgrade
+   *  (`Ethereal` at ML 8 -> `Ghostly` at ML 30 on Wraithborn Emerald), where the
+   *  wiki rules the two names distinct rather than one mechanic at two
+   *  magnitudes, so nothing joins them and ranking one name never reaches the
+   *  other tier. One line per ranked stat, grouped over every unjoined
+   *  transition naming it, quoting the ruling's own sentence so the app and
+   *  every export carry the same words. Reads the stamp dataset.js installed
+   *  into model.js at load — the build's sweep and rulings, nothing inferred
+   *  here. Silent when no ranked stat is renamed anywhere — the ordinary case.
+   *  The Utility tier's sentinel is skipped: the tier counts both names. */
+  function tierRenameNoticeLines(rec) {
+    const snap = (rec && rec.snapshot) || rec || {};
+    const q = (rec && rec.query) || snap.query || {};
+    const targets = Array.isArray(q.targets) ? q.targets : [];
+    if (typeof _tierRenamesFor !== "function") return [];
+    const out = [];
+    for (const stat of targets) {
+      if (stat === UTILITY_NAME) continue;
+      const trs = _tierRenamesFor(stat).slice()
+        // The transition with the most families leads: it supplies the example
+        // and the first names, so a one-off compound shape (`Ethereal -> Feather
+        // Falling + Ghostly`, one family) never fronts a six-family disclosure.
+        .sort((a, b) => b.families.length - a.families.length || (a.key < b.key ? -1 : 1));
+      if (!trs.length) continue;
+      const fams = []; let lower = 0, upper = 0; let sentence = "";
+      const siblingSets = [];
+      for (const t of trs) {
+        const onLower = t.dropped.includes(stat);
+        if (onLower) lower += t.families.length; else upper += t.families.length;
+        siblingSets.push(new Set(onLower ? t.gained : t.dropped));
+        for (const f of t.families) fams.push(f);
+        if (!sentence && t.sentence) sentence = t.sentence;
+      }
+      // The name the OTHER tier carries in every transition is the rename; a
+      // name only some transitions carry is a tier that also GAINED something
+      // (Book of Spirits adds True Seeing beside Ghostly) and is said so, never
+      // presented as what Ethereal became.
+      const union = new Set(); for (const ss of siblingSets) for (const n of ss) union.add(n);
+      const common = [...union].filter((n) => siblingSets.every((ss) => ss.has(n))).sort();
+      const extras = [...union].filter((n) => !common.includes(n)).sort();
+      const carries = common.length
+        ? `${common.join(" and ")} instead${extras.length ? ` (some of them also gain ${extras.join(" or ")})` : ""}`
+        : `${[...union].sort().join(" or ")} instead`;
+      const n = fams.length;
+      const named = fams.slice(0, 3).map((f) => f.base).join(", ") + (n > 3 ? ` and ${n - 3} more` : "");
+      const ex = fams[0];
+      const where = lower && upper ? "one tier" : (lower ? "the lower tier" : "the upper tier");
+      const other = lower && upper ? "the other tier" : (lower ? "the upper tier" : "the lower tier");
+      out.push(`${stat} is renamed on upgrade by ${n} item famil${n === 1 ? "y" : "ies"} (${named}): `
+        + `${where} carries ${stat} and ${other} carries ${carries}`
+        + ` (${ex.from}, ML ${ex.from_ml} \u2192 ${ex.to}, ML ${ex.to_ml}).`
+        + ` Ranking ${stat} alone does not reach ${other}. ${sentence}`);
+    }
+    return out;
+  }
+
   /** #713 (#214 Option C) — a ranked stat whose harvested wiki tooltip states a
    *  condition, ruled `disclose` in conditional_adjudications.json: the credit
    *  stands, and the result says when it applies. One line per such ranked stat,
@@ -2844,6 +2908,10 @@
         // Same channel and same reason: a recipient must not read the total as
         // always-on when the tooltip says when it applies.
         conditionalNotice: conditionalNoticeLines(rec),
+        // #850 — ranked presence effects an item family renames on upgrade, where
+        // the wiki rules the names distinct. Same channel: a recipient reading
+        // "Ethereal" ranked must know the legendary tier was never searched.
+        tierRenameNotice: tierRenameNoticeLines(rec),
         // #683 — the disclosed name split (null unless a spelling of a disclosed
         // family was ranked). Same channel and same reason as the two above: a
         // recipient must not read the mechanic's total as settled when the wiki
@@ -3552,7 +3620,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, mrrCapLine, conditionalNoticeLines, splitMechanicLine, capSurplusLines, capOpportunityLines, CAP_OPPORTUNITY_MIN_PICKS, slotReachabilityLines, slotReachabilitySummary, REACH_SUMMARY_NAME_LIMIT, packFilterNoticeLines, setFilterNoticeLines,
+    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, mrrCapLine, conditionalNoticeLines, tierRenameNoticeLines, splitMechanicLine, capSurplusLines, capOpportunityLines, CAP_OPPORTUNITY_MIN_PICKS, slotReachabilityLines, slotReachabilitySummary, REACH_SUMMARY_NAME_LIMIT, packFilterNoticeLines, setFilterNoticeLines,
     essenceNoticeLines, greenSteelNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)

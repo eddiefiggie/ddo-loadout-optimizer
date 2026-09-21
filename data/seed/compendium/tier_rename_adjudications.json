@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "title": "tier-rename adjudications (#850)",
+    "note": "One ruling per rename TRANSITION found by src/tier_rename.sweep: a counted presence effect (metadata.utility_counting_set) present on an item family's lower tier and absent on the next, with another counted effect appearing in its place. The key is `dropped -> gained` with each side's names sorted and joined by ` + `. The build refuses a transition with no ruling and a ruling with no transition. `joined`: both sides mint one shared stat through web/dataset.js COMPOSITE_COMPONENTS (tests/dataset.test.js proves `stat` is minted by every name on both sides). `distinct`: the wiki rules them different effects; `sentence` is what the result says to a player who ranked either name. `pending-wiki`: unruled; `sentence` says so and `evidence` names the harvest. Never merge names here — this file discloses, it does not alias.",
+    "evidence_docs": ["docs/wiki-evidence/ghost-touch-family.md", "docs/wiki-evidence/boolean-composites.md"],
+    "ruled_on": "2026-09-21"
+  },
+  "ruled": {
+    "Blurry -> Lesser Displacement": {
+      "disposition": "joined",
+      "stat": "Concealment",
+      "evidence": "Miss chance: Concealment — Dusk 10%, Blurry 20%, Lesser Displacement 25% (one mechanic at three magnitudes). Both names mint Concealment in COMPOSITE_COMPONENTS; ghost-touch-family.md §\"The issue's third open question\"."
+    },
+    "Dusk -> Lesser Displacement": {
+      "disposition": "joined",
+      "stat": "Concealment",
+      "evidence": "Miss chance: Concealment — Dusk 10%, Blurry 20%, Lesser Displacement 25%. Dusk mints Concealment 10 since #746 (ghost-touch-family.md, \"What shipped from this ruling\")."
+    },
+    "Lesser Displacement -> Blurry": {
+      "disposition": "joined",
+      "stat": "Concealment",
+      "evidence": "The four Medium Armors of the Black Earth / Crushing Wave / Eternal Flame / Howling Hatred carry Lesser Displacement at ML 8 and Blurry at ML 31 — a DOWNGRADE of the same mechanic on upgrade, as the catalog states it. Both mint Concealment, so the solver ranks the tiers on their real numbers (25 vs 20) and nothing is hidden by the name."
+    },
+    "Ethereal -> Ghostly": {
+      "disposition": "distinct",
+      "sentence": "The wiki lists both as sources of the incorporeal bypass but rules Ghostly strictly more (it adds a 10% incorporeal miss chance and +5 Hide and Move Silently), so the two are not merged. Rank Ghostly as well if the bypass is what you want at the upper tier.",
+      "evidence": "docs/wiki-evidence/ghost-touch-family.md, ruled 2026-09-18: the shared-stat mint is REFUSED; Incorporeal#Bypassing the incorporeal miss chance lists Ethereal and Ghostly side by side as sources of one mechanic, and the Ghostly page states the two extra grants. Families: Cold Iron Bracers, Duskbone Ring, Ethereal Ring, Wraithborn Emerald."
+    },
+    "Ethereal -> Ghostly + True Seeing": {
+      "disposition": "distinct",
+      "sentence": "The wiki lists both as sources of the incorporeal bypass but rules Ghostly strictly more (it adds a 10% incorporeal miss chance and +5 Hide and Move Silently), so the two are not merged. Rank Ghostly as well if the bypass is what you want at the upper tier.",
+      "evidence": "Same ruling as `Ethereal -> Ghostly` (ghost-touch-family.md); the upper tier also GAINS True Seeing, which is not a rename and is listed only because the transition key spells out every counted change. Family: Book of Spirits."
+    },
+    "Ethereal -> Feather Falling + Ghostly": {
+      "disposition": "distinct",
+      "sentence": "The wiki lists both as sources of the incorporeal bypass but rules Ghostly strictly more (it adds a 10% incorporeal miss chance and +5 Hide and Move Silently), so the two are not merged. Rank Ghostly as well if the bypass is what you want at the upper tier.",
+      "evidence": "Same ruling as `Ethereal -> Ghostly` (ghost-touch-family.md); the upper tier also GAINS Feather Falling. Family: Ethereal Bracers (ML 13 -> Epic, ML 27)."
+    },
+    "Ghostly -> Lesser Displacement": {
+      "disposition": "distinct",
+      "sentence": "Incorporeality and Concealment are separate miss-chance axes on the wiki (checked in the order Dodge, then Incorporeal, then Concealment, and multiplied), so the two names are different effects and are not merged.",
+      "evidence": "docs/wiki-evidence/ghost-touch-family.md §\"Incorporeal is its own miss-chance axis, not Concealment\", quoting Miss chance. Family: Bracelets of Subtle Life (Ghostly at ML 8, Lesser Displacement at ML 31) — the #747 reporter's own item."
+    },
+    "Dusk -> Ghostly": {
+      "disposition": "distinct",
+      "sentence": "Concealment and Incorporeality are separate miss-chance axes on the wiki (checked in the order Dodge, then Incorporeal, then Concealment, and multiplied), so the two names are different effects and are not merged.",
+      "evidence": "docs/wiki-evidence/ghost-touch-family.md §\"Incorporeal is its own miss-chance axis, not Concealment\": Dusk is Concealment 10%, Ghostly is Incorporeal 10%. Family: Golden Guile (ML 16 -> Epic, ML 20)."
+    }
+  }
+}

@@ -1857,6 +1857,16 @@ const NOTICES = [
     subject: "conditional effect", cls: NOTICE_QUALIFYING,
     jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
     render: (c) => conditionalNotice(c.query, c.result) },
+  // #850 — QUALIFYING, like #683 directly below and for the same reason: the
+  // player CAN press something (rank the sibling name too) but the wiki rules
+  // the two names different effects, so the app does not merge them and does
+  // not present ranking the other as "the fix" — it says what the upper tier
+  // carries and lets the player decide. The jump is offered because the choice,
+  // if they want it, lives on the priorities step.
+  { name: "tierRenameNotice", id: "tier-rename", title: "RENAMED ON UPGRADE",
+    subject: "tier rename", cls: NOTICE_QUALIFYING,
+    jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
+    render: (c) => tierRenameNotice(c.query, c.result) },
   // #683 — QUALIFYING, like the #573 disclosure and unlike the #663 one directly
   // above. The player CAN press something — rank the other spelling and reach the
   // remaining sets — but whether that is correct is exactly the unverified
@@ -2172,6 +2182,16 @@ function conditionalNotice(query, result) {
   if (!lines || !lines.length) return "";
   return lines.map((l) =>
     `<p class="scope-note conditional-note" role="status">${esc(l)}</p>`).join("");
+}
+
+/** #850 — a ranked presence effect an item family renames on upgrade. Reads the
+ *  SHARED lines from projection, never a second wording. */
+function tierRenameNotice(query, result) {
+  const lines = (Proj && Proj.tierRenameNoticeLines)
+    ? Proj.tierRenameNoticeLines({ snapshot: result, query }) : [];
+  if (!lines || !lines.length) return "";
+  return lines.map((l) =>
+    `<p class="scope-note tier-rename-note" role="status">${esc(l)}</p>`).join("");
 }
 
 /** #459 — where a capped stat's surplus is, and which picks carry it. Reads the
@@ -3854,7 +3874,7 @@ function upgradesList(probed, list) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { concessionOutcome, concessionFailedOutcome, upgradesList,
-    renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, pinnedUnownedNoticeEntries, playerAuthoredNoticeEntries, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, jumpSoftCapNotice, mrrCapNotice, conditionalNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+    renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, pinnedUnownedNoticeEntries, playerAuthoredNoticeEntries, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, jumpSoftCapNotice, mrrCapNotice, conditionalNotice, tierRenameNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,

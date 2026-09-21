@@ -12,6 +12,12 @@ const Proj = require("../web/projection.js");
 require("../web/model.js").setConditionalDisclosures({ "Orb Bonus": {
   label: "+4 Orb Bonus", sentence: "only while the orb is equipped and you are actively blocking",
   tooltip: "+4 Orb Bonus: While this orb is equipped and you are actively blocking, you gain a +4 orb bonus to all saving throws, as well as Acid, Cold, Fire, Electric, and Sonic resistances." } });
+// #850 — one unjoined tier-rename transition, installed by hand for the same
+// reason: the all-notices fixture ranks `Ethereal` so the disclosure fires.
+require("../web/model.js").setTierRenameFamilies({ transitions: [
+  { key: "Ethereal -> Ghostly", dropped: ["Ethereal"], gained: ["Ghostly"], disposition: "distinct",
+    sentence: "The wiki rules Ghostly strictly more, so the two are not merged.",
+    families: [ { category: "augment", base: "Wraithborn Emerald", from: "Wraithborn Emerald", from_ml: 8, to: "Legendary Wraithborn Emerald", to_ml: 30 } ] } ] });
 require("../web/model.js").setSplitMechanics([{
   mechanic: "Critical Multiplier on a 19-20",
   spellings: ["Critical Multiplier on a 19-20", "Critical Multiplier on a roll of 19-20"],
@@ -2088,11 +2094,11 @@ test("#701 every exporter carries the MRR cap disclosure, and stays silent under
  *  silently skip it, which is the same vacuity that let five notices rot. */
 const ALL_NOTICES_REC = {
   name: "Every notice",
-  query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering", "Orb Bonus"], armorType: "light", craftingRung: "no-niche-crafting", augCeiling: 30 },
-  inputs: { ml: 34, armor: "light", pool: "all", priorities: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering", "Orb Bonus"], craftingRung: "no-niche-crafting" },
+  query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering", "Orb Bonus", "Ethereal"], armorType: "light", craftingRung: "no-niche-crafting", augCeiling: 30 },
+  inputs: { ml: 34, armor: "light", pool: "all", priorities: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering", "Orb Bonus", "Ethereal"], craftingRung: "no-niche-crafting" },
   snapshot: {
     status: "optimal", chosen: [], setsActive: [],
-    query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering", "Orb Bonus"], armorType: "light", craftingRung: "no-niche-crafting", augCeiling: 30 },
+    query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering", "Orb Bonus", "Ethereal"], armorType: "light", craftingRung: "no-niche-crafting", augCeiling: 30 },
     // #701 — light armor (any armor keeps the Dodge notice; cloth or light is what
     // keys the MRR one) and a Magical Sheltering total over light's cap of 100.
     // #713 — Orb Bonus is the one `disclose` ruling shipped, so ranking it
@@ -2278,5 +2284,34 @@ test("#713 every exporter carries the conditional-effect disclosure, and stays s
   test("#849: the report is a file, never a paste — the exporter has no inline/clipboard path", () => {
     assert.strictEqual(Xp.reportDelivery, undefined, "no delivery switch: a one-priority build is 56 KB minified, past any paste");
     assert.strictEqual(Xp.REPORT_INLINE_LIMIT, undefined);
+  });
+}
+
+// ---- #850: the tier-rename disclosure reaches ALL FOUR export surfaces ---------
+{
+  const M = require("../web/model.js");
+  test("#850: every exporter carries the tier-rename disclosure, and stays silent when nothing renamed is ranked", () => {
+    M.setTierRenameFamilies({ transitions: [
+      { key: "Ethereal -> Ghostly", dropped: ["Ethereal"], gained: ["Ghostly"], disposition: "distinct",
+        sentence: "Not merged by ruling.",
+        families: [ { category: "augment", base: "Wraithborn Emerald", from: "Wraithborn Emerald", from_ml: 8, to: "Legendary Wraithborn Emerald", to_ml: 30 } ] } ] });
+    const ranked = { name: "Wraith", query: { targets: ["Ethereal"] },
+      inputs: { ml: 34, pool: "all", priorities: ["Ethereal"] },
+      snapshot: { status: "optimal", chosen: [], setsActive: [], effective: { Ethereal: 1 }, query: { targets: ["Ethereal"] } } };
+    const other = { ...ranked, query: { targets: ["Strength"] }, snapshot: { ...ranked.snapshot, query: { targets: ["Strength"] } } };
+    for (const [name, fn] of [["markdown", toMarkdown], ["BBCode", toBBCode], ["CSV", toCsv], ["print HTML", toPrintHtml]]) {
+      assert.ok(/Ethereal is renamed on upgrade by 1 item family/.test(fn(ranked) || ""),
+        `${name} must carry the rename disclosure — a recipient reading "Ethereal" ranked must know the legendary tier was never searched`);
+      assert.ok(/Not merged by ruling/.test(fn(ranked) || ""), `${name} quotes the ruling`);
+      assert.ok(!/renamed on upgrade/.test(fn(other) || ""), `${name} must stay silent when no renamed name is ranked`);
+    }
+    assert.ok(/Renamed on upgrade/.test(toCsv(ranked) || ""), "the CSV row label");
+    // Silence check against a cleared stamp, then restore the file-level fixture.
+    M.setTierRenameFamilies(null);
+    assert.ok(!/renamed on upgrade/.test(toMarkdown(ranked) || ""), "an older dataset with no stamp discloses nothing");
+    M.setTierRenameFamilies({ transitions: [
+      { key: "Ethereal -> Ghostly", dropped: ["Ethereal"], gained: ["Ghostly"], disposition: "distinct",
+        sentence: "The wiki rules Ghostly strictly more, so the two are not merged.",
+        families: [ { category: "augment", base: "Wraithborn Emerald", from: "Wraithborn Emerald", from_ml: 8, to: "Legendary Wraithborn Emerald", to_ml: 30 } ] } ] });
   });
 }

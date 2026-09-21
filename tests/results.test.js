@@ -2740,6 +2740,10 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       // #713 — qualifying like #683: the wiki states the condition and the catalog
       // credits the full value; that is a fact about the data, not the query.
       conditionalNotice: ["CREDITED IN FULL, GRANTED ON A CONDITION", "qualifying"],
+      // #850 — qualifying like #683 directly below: the player can rank the sibling
+      // name, but the wiki rules the names distinct, so offering that as the fix
+      // would take a side the app declined to take.
+      tierRenameNotice: ["RENAMED ON UPGRADE", "qualifying"],
       // #683 — qualifying like the #573 entry two rows up, NOT actionable like the
       // #663 one directly above. The player can press something (rank the other
       // spelling) but whether that is correct is the unverified question itself, so
@@ -2771,7 +2775,7 @@ test("#448: the registry is the ONLY source — nothing classifies a notice but 
 
   assert.deepStrictEqual(Object.keys(R.NOTICE_TABLE), single.map((n) => n.name),
     "NOTICE_TABLE is derived from the registry, in registry order");
-  assert.strictEqual(single.length, 21, "the twenty-one single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one, #701 the MRR cap one, #747 the cap-opportunity one)");
+  assert.strictEqual(single.length, 22, "the twenty-two single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one, #701 the MRR cap one, #747 the cap-opportunity one, #850 the tier-rename one)");
   assert.deepStrictEqual(split.map((n) => n.name),
     ["artifactNotice", "pinnedUnownedNotice", "playerAuthoredNotice", "boundNotice", "zeroSourceNotice"],
     "and the five multi-fact notices come through their U10 entry functions "
@@ -2803,7 +2807,7 @@ test("#448: registry ORDER is the on-screen order within a class, and splits lea
     "artifactNotice", "pinnedUnownedNotice", "playerAuthoredNotice", "boundNotice", "zeroSourceNotice",
     "staleSnapshotNotice", "outbidNotice", "saturationNotice", "emptySlotNotice",
     "absorptionQuarantineNotice", "craftingExcludedNotice", "augCeilingNotice",
-    "dodgeMaxDexNotice", "jumpSoftCapNotice", "mrrCapNotice", "conditionalNotice", "splitMechanicNotice", "capSurplusNotice", "capOpportunityNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
+    "dodgeMaxDexNotice", "jumpSoftCapNotice", "mrrCapNotice", "conditionalNotice", "tierRenameNotice", "splitMechanicNotice", "capSurplusNotice", "capOpportunityNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
   ]);
 });
 
@@ -4818,5 +4822,86 @@ test("#240: a set with no recorded piece count falls back rather than printing j
     assert.ok(/const hosted = typeof onBusy === "function";/.test(w));
     assert.ok(/\$\{hosted \? "" : `<div class="wz-ring"><\/div>`\}/.test(w),
       "one indicator, not two: the card-local ring only when no host overlay will show");
+  });
+}
+
+// ---- #850: the tier-rename notice ---------------------------------------------
+{
+  const M = require("../web/model.js");
+  const STAMP = { transitions: [
+    { key: "Ethereal -> Ghostly", dropped: ["Ethereal"], gained: ["Ghostly"], disposition: "distinct",
+      sentence: "The wiki rules Ghostly strictly more, so the two are not merged.",
+      families: [
+        { category: "augment", base: "Wraithborn Emerald", from: "Wraithborn Emerald", from_ml: 8, to: "Legendary Wraithborn Emerald", to_ml: 30 },
+        { category: "item", base: "Cold Iron Bracers", from: "Cold Iron Bracers", from_ml: 5, to: "Legendary Cold Iron Bracers", to_ml: 29 },
+        { category: "item", base: "Duskbone Ring", from: "Duskbone Ring", from_ml: 5, to: "Legendary Duskbone Ring", to_ml: 29 },
+        { category: "item", base: "Ethereal Ring", from: "Ethereal Ring", from_ml: 3, to: "Epic Ethereal Ring", to_ml: 20 } ] },
+    { key: "Ethereal -> Ghostly + True Seeing", dropped: ["Ethereal"], gained: ["Ghostly", "True Seeing"], disposition: "distinct",
+      sentence: "The wiki rules Ghostly strictly more, so the two are not merged.",
+      families: [ { category: "item", base: "Book of Spirits", from: "Book of Spirits", from_ml: 3, to: "Legendary Book of Spirits", to_ml: 29 } ] },
+    { key: "Blurry -> Lesser Displacement", dropped: ["Blurry"], gained: ["Lesser Displacement"], disposition: "joined", stat: "Concealment",
+      families: [ { category: "item", base: "Cloak of Autumn", from: "Cloak of Autumn", from_ml: 5, to: "Legendary Cloak of Autumn", to_ml: 29 } ] },
+  ] };
+
+  test("#850: model keeps only the UNJOINED transitions and answers by either side", () => {
+    M.setTierRenameFamilies(STAMP);
+    assert.deepStrictEqual(M.tierRenamesFor("Ethereal").map((t) => t.key),
+      ["Ethereal -> Ghostly", "Ethereal -> Ghostly + True Seeing"]);
+    assert.deepStrictEqual(M.tierRenamesFor("Ghostly").map((t) => t.key),
+      ["Ethereal -> Ghostly", "Ethereal -> Ghostly + True Seeing"], "the upper-tier name finds the same transitions");
+    assert.deepStrictEqual(M.tierRenamesFor("Blurry"), [], "a joined pair is not disclosed — both names mint Concealment");
+    assert.deepStrictEqual(M.tierRenamesFor("Strength"), []);
+    assert.deepStrictEqual(M.tierRenamesFor(null), []);
+    M.setTierRenameFamilies(null);
+    assert.deepStrictEqual(M.tierRenamesFor("Ethereal"), [], "an older dataset with no stamp discloses nothing");
+    M.setTierRenameFamilies(STAMP);
+  });
+
+  test("#850: the notice groups every transition naming the ranked stat, names the families and quotes the ruling", () => {
+    M.setTierRenameFamilies(STAMP);
+    const on = R.tierRenameNotice({ targets: ["Ethereal", "Strength"] }, { status: "optimal", effective: {} });
+    assert.ok(/class="scope-note tier-rename-note"/.test(on), on);
+    assert.ok(/Ethereal is renamed on upgrade by 5 item families \(Wraithborn Emerald, Cold Iron Bracers, Duskbone Ring and 2 more\)/.test(on), on);
+    assert.ok(/the lower tier carries Ethereal and the upper tier carries Ghostly instead \(some of them also gain True Seeing\)/.test(on),
+      "the name EVERY upper tier carries is the rename; a name only one tier adds is an extra, never what Ethereal became — " + on);
+    assert.ok(/\(Wraithborn Emerald, ML 8 → Legendary Wraithborn Emerald, ML 30\)/.test(on), "one concrete example");
+    assert.ok(/Ranking Ethereal alone does not reach the upper tier\./.test(on), on);
+    assert.ok(/The wiki rules Ghostly strictly more, so the two are not merged\./.test(on), "quotes the ruling's sentence");
+    assert.strictEqual((on.match(/<p /g) || []).length, 1, "ONE line for Ethereal, not one per transition");
+    // Ranked from the other side: the upper-tier name says what the lower tier carries.
+    const up = R.tierRenameNotice({ targets: ["Ghostly"] }, { status: "optimal" });
+    assert.ok(/Ghostly is renamed on upgrade by 5 item families/.test(up) && /the upper tier carries Ghostly and the lower tier carries Ethereal instead \(/.test(up), up);
+    assert.ok(/does not reach the lower tier\./.test(up), up);
+    // Silent for a joined pair, an unranked name, the Utility sentinel and an empty query.
+    assert.strictEqual(R.tierRenameNotice({ targets: ["Blurry", "Strength"] }, { status: "optimal" }), "");
+    assert.strictEqual(R.tierRenameNotice({ targets: [M.UTILITY_SENTINEL] }, { status: "optimal" }), "", "the tier counts both names");
+    assert.strictEqual(R.tierRenameNotice({ targets: [] }, { status: "optimal" }), "");
+    // The stamp is the build's, not a hand copy: uninstalling it silences the notice.
+    M.setTierRenameFamilies(null);
+    assert.strictEqual(R.tierRenameNotice({ targets: ["Ethereal"] }, { status: "optimal" }), "");
+    M.setTierRenameFamilies(STAMP);
+  });
+
+  test("#850: when the transitions share no sibling, both names are offered and neither is called the rename", () => {
+    M.setTierRenameFamilies({ transitions: [
+      { key: "Dusk -> Ghostly", dropped: ["Dusk"], gained: ["Ghostly"], disposition: "distinct", sentence: "Axes.",
+        families: [ { category: "item", base: "Golden Guile", from: "Golden Guile", from_ml: 16, to: "Epic Golden Guile", to_ml: 20 } ] },
+      { key: "Dusk -> Soundproof", dropped: ["Dusk"], gained: ["Soundproof"], disposition: "distinct", sentence: "Axes.",
+        families: [ { category: "item", base: "Quiet Hood", from: "Quiet Hood", from_ml: 4, to: "Legendary Quiet Hood", to_ml: 29 },
+                    { category: "item", base: "Still Boots", from: "Still Boots", from_ml: 4, to: "Legendary Still Boots", to_ml: 29 } ] } ] });
+    const on = R.tierRenameNotice({ targets: ["Dusk"] }, { status: "optimal" });
+    assert.ok(/by 3 item families \(Quiet Hood, Still Boots, Golden Guile\)/.test(on), "the larger transition leads — " + on);
+    assert.ok(/the upper tier carries Ghostly or Soundproof instead \(Quiet Hood, ML 4/.test(on), on);
+    M.setTierRenameFamilies(STAMP);
+  });
+
+  test("#850: a single-family rename reads in the singular and names it once", () => {
+    M.setTierRenameFamilies({ transitions: [
+      { key: "Ghostly -> Lesser Displacement", dropped: ["Ghostly"], gained: ["Lesser Displacement"], disposition: "distinct",
+        sentence: "Separate axes.", families: [ { category: "item", base: "Bracelets of Subtle Life", from: "Bracelets of Subtle Life", from_ml: 8, to: "Legendary Bracelets of Subtle Life", to_ml: 31 } ] } ] });
+    const on = R.tierRenameNotice({ targets: ["Lesser Displacement"] }, { status: "optimal" });
+    assert.ok(/renamed on upgrade by 1 item family \(Bracelets of Subtle Life\)/.test(on), on);
+    assert.ok(/the upper tier carries Lesser Displacement and the lower tier carries Ghostly instead/.test(on), on);
+    M.setTierRenameFamilies(STAMP);
   });
 }
