@@ -67,15 +67,22 @@ test("a list-shaped Ring pin is read through the shared authority", () => {
   assert.deepStrictEqual([...ids].sort(), ["R1", "R2", "T1"]);
 });
 
-test("augments keep the #359 branch and take no pin exemption", () => {
+test("#851: augments keep the #359 branch, and a PINNED augment is exempt from it like a worn pin", () => {
   const owns = ownsFrom(new Set([]));
   const pinned = new Set(["A1"]);
   const aug = v("Topaz", { variant_id: "A1", category: "augment", acquirable: false });
   // ownedAugments off => full catalog, as before.
   assert.strictEqual(W.ownedPoolAdmits(aug, owns, pinned, false), true);
-  // ownedAugments on => owned-union-acquirable decides, NOT the pin.
-  assert.strictEqual(W.ownedPoolAdmits(aug, owns, pinned, true), false,
-    "augments cannot be pinned; the pin set must not smuggle one in");
+  // ownedAugments on => owned-union-acquirable decides for an UNPINNED augment...
+  assert.strictEqual(W.ownedPoolAdmits(aug, owns, new Set(), true), false);
+  // ...and the pin wins for a pinned one. This test used to assert the opposite
+  // on the note "augments cannot be pinned"; #742 made them pinnable and the
+  // override × filter matrix (tests/override-matrix.test.js) found the silent drop.
+  assert.strictEqual(W.ownedPoolAdmits(aug, owns, pinned, true), true,
+    "a pinned unowned augment stays, exactly as a pinned unowned item does (#721)");
+  // Disclosed through the same fact the worn pins use, only when the filter is ON.
+  assert.deepStrictEqual(W.pinnedUnownedNames("owned", new Set(["Other"]), {}, [aug], owns, ["A1"], true), ["Topaz"]);
+  assert.deepStrictEqual(W.pinnedUnownedNames("owned", new Set(["Other"]), {}, [aug], owns, ["A1"], false), []);
 });
 
 // ---- the disclosure: an override that is silent is the mirror of #369 --------

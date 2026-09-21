@@ -1090,6 +1090,35 @@
     return lines;
   }
 
+  /** #742/#851 — pinned augments the solve could not place: one line each,
+   *  naming the pin and the reason the solver or the gates recorded. The pin is
+   *  never erased (suppress-dont-erase-user-constraints-on-transient-invalidity),
+   *  so the line also says it returns when the condition lifts. */
+  function augPinNoticeLines(result) {
+    const report = (result && result.augPinReport) || [];
+    return report.filter((e) => e && e.variant_id).map((e) =>
+      `${e.variant_id} is pinned but was not placed: ${e.reason || "the pool could not place it"}. `
+      + "The pin is kept and returns when that changes.");
+  }
+
+  /** #851 — pins the solve kept THROUGH a soft candidacy filter (an excluded set,
+   *  a content pack you did not tick): the pin is the more specific instruction,
+   *  so the item stays, and this is the half that keeps the override from being
+   *  silent — the mirror of PINNED, NOT OWNED. */
+  function pinnedThroughNoticeLines(result) {
+    const list = (result && result.pinnedThrough) || [];
+    return list.filter((e) => e && e.variant_id).map((e) => {
+      const name = e.name || e.variant_id;
+      if (e.filter === "excluded-set") {
+        return `${name} was kept because you pinned it, although you excluded its set (${e.detail}). Unpin it to keep that exclusion whole.`;
+      }
+      if (e.filter === "content-not-owned") {
+        return `${name} was kept because you pinned it, although its pack (${e.detail}) is not in the content you own. Unpin it to keep this solve to content you own.`;
+      }
+      return `${name} was kept because you pinned it, although a filter would have excluded it.`;
+    });
+  }
+
   /** #245 — the niche-crafting opt-out, as a plain sentence for the notice
    *  surface and every export. Reads the solved query's flag off the snapshot
    *  (and the saved inputs as the restore-path fallback), never the live
@@ -2939,6 +2968,9 @@
         // #194 — the Legendary Green Steel disclosure rides the same channel.
         greenSteelNotice: greenSteelNoticeLines(snap),
         setPinNotice: setPinNoticeLines(snap),
+        // #742/#851 — the two pin disclosures the same channel carries.
+        augPinNotice: augPinNoticeLines(snap),
+        pinnedThroughNotice: pinnedThroughNoticeLines(snap),
         // #449 (U2, R15) — the ONE full statement that qualifies every fraction
         // in the document. Rendered once per export, never per stat: repeated
         // under each of eight priorities it reads as boilerplate and stops being
@@ -3629,7 +3661,7 @@
     // (results card and every exporter read them from here; never respell)
     PENALTY_COUNTED_WORDING, itemPenalties, penaltyDisclosure,
     // #110 — the blocklist disclosure sentences
-    blockNoticeLines, setPinNoticeLines,
+    blockNoticeLines, setPinNoticeLines, augPinNoticeLines, pinnedThroughNoticeLines,
     // U10 — the four multi-fact notices, one addressable entry per fired branch
     artifactNoticeEntries, pinnedUnownedNoticeEntries, playerAuthoredNoticeEntries, zeroSourceNoticeEntries, boundNoticeEntries,
     NOTICE_ACTIONABLE, NOTICE_QUALIFYING, NOTICE_INFORMATIONAL,

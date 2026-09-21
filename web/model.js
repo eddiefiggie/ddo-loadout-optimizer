@@ -1767,6 +1767,17 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
  *           disclosures, which is why nothing here is discarded.
  */
 function filterEligiblePool(eligAll, query) {
+  // #851 — the pinned ids, so the two SOFT filters below (excluded sets, content
+  // not owned) can honour a pin the way the ML floor, the augment ceiling, the
+  // Artifact opt-in and the owned pool already do (KD5: a pin is the more specific
+  // instruction). Measured before this: a pinned member of an excluded set and a
+  // pinned item from an unticked pack both landed in the excluded list and left
+  // the pool in silence — the #721 shape at two more layers. The blocklist is
+  // deliberately NOT exempted: the pin search refuses to pin a blocked item, so a
+  // blocked pin can only arrive by a hand-edited save, and smuggling it through
+  // would let a corrupted import defeat a block.
+  const _pinnedIds = queryGates(query).pinnedIds;
+  const pinnedThrough = [];
   const excludedSets = Array.isArray(query.excludedSets) && query.excludedSets.length
     ? new Set(query.excludedSets) : null;
   const setExcluded = [];
@@ -1812,7 +1823,13 @@ function filterEligiblePool(eligAll, query) {
     const kept = [];
     for (const cand of elig) {
       const sets = (cand.set_bonus || []).map((sb) => sb && sb.set).filter(Boolean);
-      (sets.some((nm) => excludedSets.has(nm)) ? setExcluded : kept).push(cand);
+      const hit = sets.filter((nm) => excludedSets.has(nm));
+      if (hit.length && _pinnedIds.has(variantKey(cand))) {
+        pinnedThrough.push({ variant_id: variantKey(cand), name: cand.source_item || variantKey(cand),
+          filter: "excluded-set", detail: hit.join(", ") });
+        kept.push(cand); continue;
+      }
+      (hit.length ? setExcluded : kept).push(cand);
     }
     elig = kept;
   }
@@ -1825,11 +1842,16 @@ function filterEligiblePool(eligAll, query) {
       const pack = cand.location_pack || null;
       if (!pack || pack === "Free to Play") { packUncheckable.count += 1; kept.push(cand); continue; }
       if (ownedPacks.has(pack)) { kept.push(cand); continue; }
+      if (_pinnedIds.has(variantKey(cand))) {
+        pinnedThrough.push({ variant_id: variantKey(cand), name: cand.source_item || variantKey(cand),
+          filter: "content-not-owned", detail: pack });
+        kept.push(cand); continue;
+      }
       packExcluded.push(cand);
     }
     elig = kept;
   }
-  return { elig, blocked, setExcluded, packExcluded, packUncheckable, excludedSets, ownedPacks };
+  return { elig, blocked, setExcluded, packExcluded, packUncheckable, excludedSets, ownedPacks, pinnedThrough };
 }
 
 function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, legendaryGreenSteel = [], augmentSetDefs = {}, utilityCountingSet = null, nearlyCompletePerItem = {}, essenceCrafting = [], slavers = []) {
@@ -2045,8 +2067,33 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // #743 — one shared chain (see `filterEligiblePool`): `eligible()` is not the
   // whole gate, and the reachability disclosure reads the same pool this does.
   const { elig: eligFiltered, blocked, setExcluded, packExcluded, packUncheckable,
-    excludedSets, ownedPacks } = filterEligiblePool(eligAll, query);
+    excludedSets, ownedPacks, pinnedThrough } = filterEligiblePool(eligAll, query);
   let elig = eligFiltered;
+
+  // #851 — pinned AUGMENTS the eligibility gates excluded (the ML cap, the
+  // crafting rung, the Set Augment ownership gate), reported rather than
+  // swallowed. `variantConflict` deliberately does not exempt a pin from those
+  // three — a pin cannot make an ML 30 gem slottable at cap 20, or override the
+  // rung the player just chose — but before this the pinned augment simply
+  // never entered the pool and nothing said so: `augPinReport` (#742) is built
+  // in the solver over the augments that DID enter, so it could not see one that
+  // never arrived. This seeds it. Measured: cap 20, `Legendary Wraithborn
+  // Emerald` (ML 30) pinned -> placed [], report [] before; report names it now.
+  const augPinExcluded = [];
+  {
+    const ids = pinnedAugmentIds(query);
+    if (ids.size) {
+      const g = queryGates(query);
+      const kept = new Set(eligAll.filter((v) => v.category === "augment").map((v) => variantKey(v)));
+      for (const v of variants) {
+        if (v.category !== "augment") continue;
+        const id = variantKey(v);
+        if (!ids.has(id) || kept.has(id)) continue;
+        augPinExcluded.push({ variant_id: id, color: (v.aug_color || {}).color || null,
+          reason: variantConflict(v, query, g) || "excluded from the pool" });
+      }
+    }
+  }
 
   // Pinned variant ids (U6): kept through the dominance pre-filter so a pinned
   // item's pick var always exists for its `= 1` constraint. Empty when absent.
@@ -2376,6 +2423,11 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // here survives into the program.
     pinnedSets: _setPins.pinned,
     setPinReport: _setPins.report,
+    // #851 — see the two blocks above: pins honoured through the soft candidacy
+    // filters, and pinned augments the gates excluded. Both ride the model into
+    // the solver's result so the notices and every export can say so.
+    pinnedThrough: pinnedThrough || [],
+    augPinExcluded,
     intrinsicCaps, mlCap,
     // #91 (U3, KTD3) — the counting set rides the MODEL, never the persisted
     // query: buildProgram reads it from here to widen its own targetSet and

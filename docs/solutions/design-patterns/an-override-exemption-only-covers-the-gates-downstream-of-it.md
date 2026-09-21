@@ -89,3 +89,31 @@ usually in a comment rather than the title.
 silent *override* would reproduce the same defect from the other direction: the
 player's stated pool no longer describes the solve, and nothing on screen
 admits it. The exemption and its disclosure ship together or neither ships.
+
+## Enforcement (#851, 2026-09-21)
+
+This note is no longer the only thing holding the rule. `tests/override-matrix.test.js`
+is the override × filter matrix: every override a player can express (pin, block,
+floor, cap, declared credit, custom item, set pin, augment pin) against every
+filter that admits or removes a candidate (the ML cap and floor, the augment
+ceiling, the Artifact opt-in, the crafting rung, race, alignment, armor type, the
+druid oath, the weapon style, the Set Augment gate, content ownership, excluded
+sets, the owned pool and owned augments, verification, the dominance prune, and
+Unique Equipped). Each cell holds exactly one of `honored` / `refused` / `n/a`,
+says why, and carries the assertion that proves it.
+
+The columns and rows are enumerated from the code, not from the test: every key
+`buildQuery` writes and every persisted input key must be classified, every reason
+string `variantConflict` can return must map to a column, and every row × column
+must hold a cell. A new filter, a new gate, or a new override with no ruling turns
+the suite red — proven by adding a fake query key, a fake gate reason, and deleting
+a cell, each of which failed the run.
+
+The first pass through the matrix found four silent swallows the six-fix history
+above had not reached — a pinned augment the ML cap or the crafting rung excluded, a
+pinned augment the owned-augments filter dropped, a pinned member of an excluded
+set, and a pinned item from an unticked content pack — and they shipped with it:
+the augment cases are reported as **PINNED AUGMENT NOT PLACED** (the #742 report,
+which had no renderer, now seeded from the gates), the owned-augments case is
+honored and disclosed as PINNED, NOT OWNED, and the set / pack cases are honored
+and disclosed as **PINNED THROUGH A FILTER**.

@@ -40,6 +40,10 @@
     // restored build could not otherwise say whether a pin landed, was suppressed,
     // or conflicted. Plain JSON by construction (see classifySetPins).
     "setPinReport",
+    // #742/#851 — what the player's augment pins and filter-crossing pins did,
+    // kept for the same reason setPinReport is: a restored build must still say
+    // which pin was not placed, or was kept through a filter, and why.
+    "augPinReport", "pinnedThrough",
     // U4/U5 — the declared-credit disclosure. Two allowlists, not one: the INPUT
     // list below carries the declaration, this one carries what it DID. Without
     // it the credit still solves correctly on load while the honesty line R9
