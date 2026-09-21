@@ -401,6 +401,28 @@ function conditionalDisclosureFor(stat) {
   return Object.prototype.hasOwnProperty.call(_CONDITIONAL, stat) ? _CONDITIONAL[stat] : null;
 }
 
+// #850 — tier-rename families: a counted presence effect that changes NAME when
+// an item family upgrades (`Ethereal` at ML 8, `Ghostly` at ML 30 on the same
+// augment). The build sweeps every family, adjudicates each transition in
+// tier_rename_adjudications.json, and stamps `metadata.tier_rename_families`.
+// Only the UNJOINED transitions are kept here — `distinct` and `pending-wiki`,
+// each carrying the sentence the result quotes — because a `joined` pair (Blurry
+// / Lesser Displacement, both minting Concealment) needs no disclosure: the
+// solver already ranks those tiers on their real numbers. Installed from
+// dataset.js on load, same two-runtime bridge as the conditional map above.
+let _TIER_RENAMES = [];
+function setTierRenameFamilies(stamp) {
+  const list = (stamp && Array.isArray(stamp.transitions)) ? stamp.transitions : [];
+  _TIER_RENAMES = list.filter((t) => t && typeof t === "object" && t.disposition !== "joined"
+    && typeof t.sentence === "string" && Array.isArray(t.dropped) && Array.isArray(t.gained));
+}
+/** The unjoined transitions naming `stat` on either side — the ones a player who
+ *  ranked `stat` is not reaching by that name. `[]` when none. */
+function tierRenamesFor(stat) {
+  if (stat == null) return [];
+  return _TIER_RENAMES.filter((t) => t.dropped.includes(stat) || t.gained.includes(stat));
+}
+
 let _SPLIT_MECHANICS = [];
 function setSplitMechanics(list) {
   _SPLIT_MECHANICS = Array.isArray(list) ? list.slice() : [];
@@ -2540,7 +2562,7 @@ function poolStatNames(model) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { poolStatNames, setIntrinsicCaps, setSplitMechanics, splitMechanicFor, setConditionalDisclosures, conditionalDisclosureFor,
+  module.exports = { poolStatNames, setIntrinsicCaps, setSplitMechanics, splitMechanicFor, setConditionalDisclosures, conditionalDisclosureFor, setTierRenameFamilies, tierRenamesFor,
     intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, MRR_CAP_BY_ARMOR, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     slotReachabilityFor, slotReachabilityReport, filterEligiblePool,

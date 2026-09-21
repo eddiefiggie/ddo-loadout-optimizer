@@ -563,6 +563,17 @@ function installConditionalDisclosures(map) {
   }
 }
 
+// #850 — same bridge for the tier-rename stamp (`metadata.tier_rename_families`).
+// An older cached dataset has no such key; installing null is correct there,
+// because the stamp's absence means "no family is disclosed as renamed", which is
+// exactly the pre-#850 behavior.
+function installTierRenameFamilies(stamp) {
+  if (typeof setTierRenameFamilies !== "undefined") { setTierRenameFamilies(stamp); return; }
+  if (typeof require !== "undefined") {
+    try { require("./model.js").setTierRenameFamilies(stamp); } catch (e) { /* model.js absent: no-op */ }
+  }
+}
+
 function installSplitMechanics(list) {
   if (typeof setSplitMechanics !== "undefined") { setSplitMechanics(list); return; }
   if (typeof require !== "undefined") {
@@ -612,6 +623,7 @@ function normalizeDataset(dataset) {
   // which is exactly the pre-#683 behavior.
   installSplitMechanics(meta.split_mechanic_disclosures || []);
   installConditionalDisclosures(meta.conditional_disclosures || {});
+  installTierRenameFamilies(meta.tier_rename_families || null);
   const crossAdd = meta.cross_add || {};
   dataset._crossAdd = crossAdd;
   installCrossAdd(crossAdd);

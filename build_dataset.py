@@ -53,6 +53,7 @@ from src import dragons_edge_split as dragons_edge_split_mod
 from src import heightened_awareness as heightened_awareness_mod
 from src import command_split as command_split_mod
 from src import affix_tooltip as affix_tooltip_mod
+from src import tier_rename as tier_rename_mod
 from src import absorption_split as absorption_split_mod
 from src import elemental_resistance_split as er_split_mod
 from src import enchantment_split as enchantment_split_mod
@@ -2615,6 +2616,25 @@ def build() -> dict:
     # setConditionalDisclosures via dataset.js).
     out["metadata"]["affix_tooltip_coverage"] = _affix_tooltip_coverage
     out["metadata"]["conditional_disclosures"] = _conditional_disclosures
+    # #850 — tier-rename families: a counted presence effect that changes NAME
+    # when an item family upgrades (`Ethereal` at ML 8, `Ghostly` at ML 30 on
+    # the same augment). Swept over the built variants against the counting set
+    # the Utility tier reads, and adjudicated in tier_rename_adjudications.json:
+    # `joined` (both names mint one stat, nothing to disclose), `distinct` or
+    # `pending-wiki` (the result names the sibling to a player who ranked either
+    # name). `check` raises on an unruled transition, a stale ruling, a `joined`
+    # ruling with no stat, an unjoined one with no sentence, and on a sweep that
+    # finds nothing over a populated catalog. The 2026-09-10 triage note ran this
+    # once by hand and found the population; this is that sweep as a guard.
+    # Swept over `out["items"]` at the end of the build, and the sweep reads BOTH
+    # affix shapes: in memory an affix is `{stat, bonus_type: "boolean"}` until
+    # `_native_affix` writes `{name, type: "Bool"}` at rest. A sweep keyed on the
+    # native shape alone saw every worn family as carrying nothing here while
+    # tests/test_tier_rename.py, reading items.json, saw all 45 — and two builds
+    # produced two different "stale" lists. `tier_rename._name_type` is the seam.
+    out["metadata"]["tier_rename_families"] = tier_rename_mod.check(
+        tier_rename_mod.sweep(out["items"], out["metadata"]["utility_counting_set"]),
+        tier_rename_mod.load_adjudications(), len(out["items"]))
     out["metadata"]["split_mechanic_disclosures"] = split_mechanics_mod.stamp(
         _split_mechanics, _split_measured)
 

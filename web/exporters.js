@@ -62,6 +62,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     { key: "jumpSoftCapNotice", csv: "Jump soft cap" },
     { key: "mrrCapNotice", csv: "MRR cap" },
     { key: "conditionalNotice", csv: "Conditional effect" },
+    { key: "tierRenameNotice", csv: "Renamed on upgrade" },
     { key: "splitMechanicNotice", csv: "Split mechanic" },
     { key: "capSurplusNotice", csv: "Cap surplus" },
     // #747 — beside its mirror above, and exported for the same reason: a

@@ -2678,3 +2678,46 @@ test("#529: composite-minted affixes count as scorable, `eligible` flag or not",
   assert.ok(_scorableNames(realData, raw).has("Concealment"),
     "a stat that exists only as a composite component is still scorable");
 });
+
+// ---- #850: the build's `joined` rulings are proven against the mint table --------
+// The Python guard requires a `joined` ruling to NAME the shared stat; it cannot
+// read this file to check the claim. This is the other half: every name on both
+// sides of a `joined` transition in the built stamp mints exactly that stat here,
+// so "joined" is a fact about COMPOSITE_COMPONENTS and not a word in a JSON file.
+{
+  const fs = require("fs");
+  const path = require("path");
+  const ITEMS = path.join(__dirname, "..", "web", "data", "items.json");
+  const stamp = fs.existsSync(ITEMS) ? JSON.parse(fs.readFileSync(ITEMS, "utf-8")).metadata.tier_rename_families : null;
+
+  test("#850: every `joined` transition's names all mint the ruling's stat in COMPOSITE_COMPONENTS", () => {
+    if (!stamp) return;
+    const joined = stamp.transitions.filter((t) => t.disposition === "joined");
+    assert.ok(joined.length >= 3, "the Concealment family (Blurry / Dusk / Lesser Displacement) is joined");
+    for (const t of joined) {
+      for (const n of [...t.dropped, ...t.gained]) {
+        const mints = (COMPOSITE_COMPONENTS[n] || []).map((c) => c.name);
+        assert.ok(mints.includes(t.stat), `${t.key}: ruled joined on ${t.stat}, but ${n} mints [${mints}] — the ruling is a claim the table does not back`);
+      }
+    }
+  });
+
+  test("#850: no `distinct` transition has both sides minting one shared stat (or it should be ruled joined)", () => {
+    if (!stamp) return;
+    for (const t of stamp.transitions.filter((x) => x.disposition !== "joined")) {
+      const shared = [...t.dropped, ...t.gained].map((n) => new Set((COMPOSITE_COMPONENTS[n] || []).map((c) => c.name)));
+      const common = shared.reduce((acc, s) => new Set([...acc].filter((x) => s.has(x))));
+      assert.strictEqual(common.size, 0, `${t.key}: every name mints ${[...common]} — that is a joined pair wearing a distinct ruling`);
+    }
+  });
+
+  test("#850: the stamp installs into model.js at load, unjoined only", () => {
+    if (!stamp) return;
+    const M = require("../web/model.js");
+    M.setTierRenameFamilies(stamp);
+    assert.ok(M.tierRenamesFor("Ethereal").length >= 3, "Ethereal is renamed to Ghostly on three transition shapes");
+    assert.deepStrictEqual(M.tierRenamesFor("Blurry"), [], "joined pairs are not installed");
+    assert.ok(M.tierRenamesFor("Ethereal").every((t) => typeof t.sentence === "string" && t.sentence.length > 20));
+    M.setTierRenameFamilies(null);
+  });
+}
