@@ -39,11 +39,7 @@ const { normalizeDataset, buildPickerVocabulary } = require("../web/dataset.js")
 const ROOT = path.join(__dirname, "..");
 const EB = "Enhancement Bonus (Weapon)";
 
-let passed = 0, failed = 0;
-function check(name, fn) {
-  try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
-}
+const { test: check, fail } = require("./_harness");
 
 (async () => {
   const Highs = require(path.join(ROOT, "web", "vendor", "highs.js"));
@@ -340,5 +336,4 @@ function check(name, fn) {
   });
   console.log(`    ${attr.binding} ${r4.perTarget[attr.binding]} -> ${r6.perTarget[attr.binding]}, ${FOM} ${r6.perTarget[FOM]}`);
 
-  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
-})().catch((e) => { console.error(e); process.exit(1); });
+})().catch((e) => { fail("utility_runs: unexpected error outside a test", e); });

@@ -9,11 +9,7 @@
 const assert = require("assert");
 const P = require("../web/projection.js");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 function rec(parts, { cap = 20, shown = 20, intrinsic = {}, stat = "Doublestrike", chosen = [] } = {}) {
   return {
@@ -128,4 +124,3 @@ test("#459 the notice reaches the shared content model and the exporter roster",
     "#668 — a notice absent from the roster reaches none of the four surfaces");
 });
 
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

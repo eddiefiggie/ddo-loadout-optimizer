@@ -23,11 +23,7 @@ const M = require("../web/model.js");
 const Proj = require("../web/projection.js");
 const W = require("../web/wizard.js");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 // Driven against the REAL built catalog, not fixtures. The evidence table in
 // docs/plans/2026-09-12-001-feat-slot-reachability-disclosure-plan.md was measured
@@ -536,4 +532,3 @@ test("#766: a Slaver's host's typed slots are a route, keyed by the host's own (
     "Shackles reach a save through the Suffix Resistance umbrella, expanded inside the option");
 });
 
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

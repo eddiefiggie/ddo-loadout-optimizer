@@ -9,11 +9,7 @@ const data = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")
 ));
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 // minimal synthetic variant factory
 function v(name, slot, affixes, opts = {}) {
@@ -2982,4 +2978,3 @@ test("#825: the wizard renders the generated clause, not a copy of it", () => {
 });
 
 
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

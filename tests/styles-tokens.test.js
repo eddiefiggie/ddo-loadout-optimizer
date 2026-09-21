@@ -19,11 +19,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 const CSS_DIR = path.join(__dirname, "..", "web");
 const FILES = fs.readdirSync(CSS_DIR).filter((f) => f.endsWith(".css")).sort();
@@ -90,4 +86,3 @@ test("#830: a var() WITH a fallback is allowed, defined or not", () => {
   }
 });
 
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

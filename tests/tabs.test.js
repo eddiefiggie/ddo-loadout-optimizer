@@ -2,17 +2,7 @@
 const assert = require("assert");
 const { activeTab, nextTab, TAB_IDS } = require("../web/app.js");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try {
-    fn();
-    console.log(`PASS ${name}`);
-    passed++;
-  } catch (e) {
-    console.error(`FAIL ${name}\n  ${e.message}`);
-    failed++; process.exitCode = 1;
-  }
-}
+const { test } = require("./_harness");
 
 test("TAB_IDS are solver then browse", () => {
   assert.deepStrictEqual(TAB_IDS, ["solver", "browse"]);
@@ -54,4 +44,3 @@ test("nextTab ignores non-navigation keys", () => {
   assert.strictEqual(nextTab("browse", "Enter"), "browse");
 });
 
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

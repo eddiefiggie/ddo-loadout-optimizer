@@ -10,11 +10,7 @@ const P = require("../web/projection.js");
 const realData = normalizeDataset(JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf-8")));
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 function names(it) { return it.affixes.map((a) => a.name); }
 function find(it, n) { return it.affixes.find((a) => a.name === n); }
@@ -2278,7 +2274,6 @@ test("#348 U3/KTD8: the declared container order covers the stamped counting set
     "the default container must cover every counted name exactly once");
 });
 
-process.on("exit", () => { if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`); });
 
 // ---------------------------------------------------------------------------
 // #345 — THE BROWSER SHARES ONE GLOBAL SCOPE. Node gives every file its own

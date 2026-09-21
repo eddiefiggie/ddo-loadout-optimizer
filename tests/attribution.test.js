@@ -8,11 +8,7 @@ const R = require("../web/results.js");
 const vendor = path.join(__dirname, "..", "web", "vendor") + "/";
 const Highs = require(vendor + "highs.js");
 
-let passed = 0, failed = 0;
-async function test(name, fn) {
-  try { await fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
-}
+const { atest: test } = require("./_harness");
 
 function item(id, slot, affixes) {
   return {
@@ -304,5 +300,4 @@ function setHost(id, slotName, affixes, setName, colors, tiers) {
     } finally { CAM.setCrossAdd({}); }
   });
 
-  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })();

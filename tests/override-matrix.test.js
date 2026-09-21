@@ -33,12 +33,7 @@ const W = require("../web/wizard.js");
 const P = require("../web/projection.js");
 const { INPUT_KEYS } = require("../web/persist.js");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
-}
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
+const { test, atest, fail } = require("./_harness");
 
 const SRC = (f) => fs.readFileSync(path.join(__dirname, "..", "web", f), "utf-8");
 const WIZ = SRC("wizard.js"), MOD = SRC("model.js"), CUSTOM = SRC("custom-items.js");
@@ -393,17 +388,13 @@ test("#851: the two pin reports survive a save and are registered notices", () =
   if (!DATA) return;
   let env;
   try { env = await require("./parity/capture_golden.js").solveEnv(); }
-  catch (e) { console.log("  FAIL #851 end to end: could not prepare the solve environment\n   ", e.message); failed++; process.exitCode = 1; return; }
+  catch (e) { fail("#851 end to end: could not prepare the solve environment", e); return; }
   const { dataset } = env;
   const { solveLexicographic } = require("../web/solver.js");
   const solve = (q) => solveLexicographic(M.buildModel(
     dataset.items, q, dataset.dino_inserts, dataset.nearly_complete, dataset.viktranium,
     dataset.seal, dataset.membership_set_defs, dataset.legendary_green_steel,
     {}, null, dataset.nearly_complete_per_item, dataset.essence_crafting), env.highs);
-  const atest = async (name, fn) => {
-    try { await fn(); passed++; console.log("  PASS", name); }
-    catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
-  };
 
   const GEM = "Legendary Wraithborn Emerald";   // ML 30, Green
   await atest("#851 end to end: augment-pin × ml-cap — the result names the pin the cap excluded", async () => {

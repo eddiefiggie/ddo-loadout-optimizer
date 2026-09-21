@@ -1,41 +1,29 @@
-// #826 — the JS suite's own pass/fail counters are honest.
+// #826, then #853 — the JS suite has ONE runner, and every file uses it.
 //
-// Every test file prints `N passed, M failed` from its own counters. That print
-// used to sit at a fixed POSITION in the file, so tests declared below it ran,
-// set `process.exitCode`, and were never counted: `results.test.js` reported 153
-// while running 323, and `wizard.test.js` reported 229 while running 511. Nine
-// files under-reported by 648 tests between them.
-//
-// Redness was never at risk — `test()` sets `process.exitCode` in its catch and
-// `scripts/run_js_tests.sh` stops on a non-zero exit. What was wrong is the
-// signal a human reads, and it is the one AGENTS.md warns about: "a fully green
-// suite can cover none of the diff". A `0 failed` printed ABOVE a later FAIL is
-// worse than no count at all.
-//
-// The fix is position-independence, not a re-sort: the summary prints from a
-// `process.on("exit")` handler, so it cannot matter where it is declared. This
-// file asserts that every test file does it that way, so a forty-first file
-// cannot start the cycle over.
+// #782: 39 of 40 files printed `N passed` on a run that FAILed. #826: summaries
+// printed from a fixed POSITION, so 648 tests ran after their own count. Both
+// were harness defects, both were fixed in every file by hand, and the guard
+// this file was born as pinned the output shape — `process.on("exit", ...)`
+// with both counts — while forty copies of the runner stayed. #853 replaced the
+// copies with `tests/_harness.js`; this file now asserts the inverse: NO test
+// file declares a runner, a counter or a summary of its own, and the one
+// harness prints the position-independent, two-count summary the old guard
+// demanded. A forty-fourth file cannot start the cycle over in either
+// direction.
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 const DIR = __dirname;
 const FILES = fs.readdirSync(DIR).filter((f) => f.endsWith(".test.js")).sort();
-const SUMMARY = /\$\{passed\} passed, \$\{failed\} failed/;
-/** The summary must be registered as an exit handler, on its own line. */
-const HANDLED = /process\.on\("exit",[^\n]*\$\{passed\} passed, \$\{failed\} failed/;
+const HARNESS = fs.readFileSync(path.join(DIR, "_harness.js"), "utf-8");
+const src = (f) => fs.readFileSync(path.join(DIR, f), "utf-8");
 
-function summaryLinesOf(file) {
-  const src = fs.readFileSync(path.join(DIR, file), "utf-8");
-  return src.split("\n").filter((l) => SUMMARY.test(l));
-}
+const REQUIRE = /require\("\.\/_harness"\)/;
+const LOCAL_RUNNER = /^(?:async\s+)?function\s+\w+\s*\(\s*name\s*,\s*fn\s*\)|^const\s+\w+\s*=\s*(?:async\s+)?\(\s*name\s*,\s*fn\s*\)\s*=>/m;
+const LOCAL_COUNTER = /^let passed = 0|\bpassed\+\+|\bfailed\+\+|\bpassed \+= 1|\bif \((?:failed|passed)\)|process\.exit\(/m;
+const LOCAL_SUMMARY = /\$\{passed\} passed|process\.on\("exit"/;
 
 test("#826: the scan actually sees the suite", () => {
   assert.ok(FILES.length >= 30,
@@ -44,33 +32,32 @@ test("#826: the scan actually sees the suite", () => {
   assert.ok(FILES.includes("suite-reporting.test.js"), "the scan must include itself");
 });
 
-test("#826: every test file reports a pass/fail count", () => {
-  assert.ok(FILES.length, "no files scanned — this check would pass vacuously");
-  const silent = FILES.filter((f) => summaryLinesOf(f).length === 0);
-  assert.deepStrictEqual(silent, [],
-    "test file(s) that never print a count — a file nobody counts is a file "
-    + "nobody notices going quiet");
+test("#853: every test file requires the one harness", () => {
+  const missing = FILES.filter((f) => !REQUIRE.test(src(f)));
+  assert.deepStrictEqual(missing, [], "test file(s) that do not require ./_harness");
 });
 
-test("#826: every count is printed from an exit handler, not a position", () => {
-  assert.ok(FILES.length, "no files scanned — this check would pass vacuously");
-  const positional = [];
-  for (const f of FILES) {
-    const lines = summaryLinesOf(f);
-    assert.strictEqual(lines.length, 1, `${f} has ${lines.length} summary prints; expected 1`);
-    if (!HANDLED.test(lines[0])) positional.push(f);
-  }
-  assert.deepStrictEqual(positional, [],
-    "test file(s) printing their count at a fixed position. Tests declared after "
-    + "that line still run and still fail the build, but are not in the number the "
-    + "file prints — which is how nine files came to under-report 648 tests. "
-    + 'Print from `process.on("exit", ...)` instead.');
+test("#853: no test file declares a runner, a counter or a summary of its own", () => {
+  const runners = FILES.filter((f) => LOCAL_RUNNER.test(src(f)));
+  assert.deepStrictEqual(runners, [], "a `function test(name, fn)` (or check / testAsync) declared in a test file — use the harness");
+  const counters = FILES.filter((f) => LOCAL_COUNTER.test(src(f)));
+  assert.deepStrictEqual(counters, [], "a local pass/fail counter, or a per-file call to exit the process — the harness owns the counts and the exit code (a leftover exit-on-failure line was a ReferenceError the first migration run found)");
+  const summaries = FILES.filter((f) => LOCAL_SUMMARY.test(src(f).replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "")));
+  assert.deepStrictEqual(summaries, [], "a per-file summary print or exit handler — the harness owns the summary");
 });
 
-test("#826: this file obeys its own rule", () => {
-  const mine = summaryLinesOf("suite-reporting.test.js");
-  assert.strictEqual(mine.length, 1);
-  assert.ok(HANDLED.test(mine[0]), "the guard must not be the exception it forbids");
+test("#826: the harness prints its two-count summary from an exit handler", () => {
+  assert.match(HARNESS, /process\.on\("exit",/, "position-independent");
+  assert.match(HARNESS, /\$\{counts\.passed\} passed, \$\{counts\.failed\} failed/, "both counts, always");
+  assert.match(HARNESS, /process\.exitCode = 1/, "a failure is red to the runner script");
 });
 
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
+test("#853: the harness honours JS_TEST_FILTER and awaits a promise-returning test", () => {
+  assert.match(HARNESS, /process\.env\.JS_TEST_FILTER/);
+  assert.match(HARNESS, /typeof r\.then === "function"/, "a started-but-unsettled promise is never reported PASS");
+});
+
+test("#853: the harness itself is not scanned as a test file", () => {
+  assert.ok(!FILES.includes("_harness.js"));
+  assert.ok(!/\.test\.js$/.test("_harness.js"));
+});

@@ -89,6 +89,8 @@ python3 tests/run_tests.py                     # Python suite, stdlib-only runne
 ./scripts/run_js_tests.sh                      # JS suite — one file per invocation
 ```
 
+**Every JS test file uses `tests/_harness.js` and declares no runner of its own.** `const { test } = require("./_harness")` (`atest` is the same function for files that `await` it; `fail(name, err)` for a block that reports a result the runner did not see). It awaits a promise-returning test, prints `N passed, M failed` from an exit handler, and `JS_TEST_FILTER=<substring> node tests/x.test.js` runs one test by name. `tests/suite-reporting.test.js` fails on a file that declares `function test(`, a `passed` counter, or its own summary — #782 and #826 were both harness defects fixed forty times over, which is why there is one copy now (#853).
+
 **Run the JS suite through `scripts/run_js_tests.sh`, not a bare loop.** It runs one file per invocation (`node a.js b.js` executes only the first, which has silently skipped the golden solver check before), it stops on the first red file instead of scrolling it past a wall of PASS lines, and it builds `web/data/items.json` when that gitignored artifact is absent. Without those last two, a missing dataset makes `dataset.test.js` and `browse.test.js` throw on require while the loop discards the exit code — the crash reads as a pass. CI does this correctly; local sweeps are where it slips.
 
 A golden or parity diff after a data change is sometimes expected rather than a regression — re-ratify it deliberately, never blanket-accept.

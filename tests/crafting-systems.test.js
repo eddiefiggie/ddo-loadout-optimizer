@@ -2,11 +2,7 @@
 const assert = require("assert");
 const { SYSTEMS, get, systemForStation, actionLabel } = require("../web/crafting-systems.js");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 test("every system resolves its correct labels", () => {
   assert.strictEqual(get("nearly-finished").action_label, "Apply Nearly Finished option: {effect}");
@@ -55,4 +51,3 @@ test("viktranium's slot_types is the in-game order: Melancholic, Dolorous, Miser
   assert.deepStrictEqual(get("viktranium").slot_types, ["Melancholic", "Dolorous", "Miserable", "Woeful"]);
 });
 
-process.on("exit", () => { if (!process.exitCode) console.log(`\n${passed} passed, ${failed} failed`); });

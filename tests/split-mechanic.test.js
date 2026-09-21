@@ -11,11 +11,7 @@ const Proj = require("../web/projection.js");
 const fs = require("fs");
 const path = require("path");
 
-let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log(`PASS ${name}`); passed++; }
-  catch (e) { console.error(`FAIL ${name}\n  ${e.stack || e.message}`); failed++; process.exitCode = 1; }
-}
+const { test } = require("./_harness");
 
 const FAMILY = {
   mechanic: "Critical Multiplier on a 19-20",
@@ -167,4 +163,3 @@ test("#683 the built dataset installs a family whose counts sum to its total", (
   assert.ok(line([fams[0].spellings[0]]), "the shipped family must produce a sentence");
 });
 
-process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });

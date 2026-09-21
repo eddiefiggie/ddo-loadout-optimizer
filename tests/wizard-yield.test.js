@@ -16,11 +16,7 @@
 const assert = require("assert");
 const { yieldToPaint, PAINT_STALL_FALLBACK_MS } = require("../web/wizard.js");
 
-let passed = 0, failed = 0;
-async function test(name, fn) {
-  try { await fn(); console.log("PASS", name); passed++; }
-  catch (e) { console.error("FAIL", name, "\n ", e.stack || e.message); failed++; process.exitCode = 1; }
-}
+const { atest: test } = require("./_harness");
 
 (async () => {
   await test("is exported and returns a promise", () => {
@@ -165,5 +161,4 @@ async function test(name, fn) {
     });
   });
 
-  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })();

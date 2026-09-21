@@ -8,11 +8,7 @@ const { normalizeDataset } = require("../web/dataset.js");
 const vendor = path.join(__dirname, "..", "web", "vendor") + "/";
 const Highs = require(vendor + "highs.js");
 
-let passed = 0, failed = 0;
-async function test(name, fn) {
-  try { await fn(); passed++; console.log("  PASS", name); }
-  catch (e) { console.log("  FAIL", name, "\n   ", e.message); failed++; process.exitCode = 1; }
-}
+const { atest: test } = require("./_harness");
 
 // build a worn variant + a single-variant slot
 function item(id, slot, affixes) {
@@ -7474,7 +7470,6 @@ async function withCrossAdd(map, fn) {
     assert.ok(consulted > 0, "the supplied predicate was never consulted at all");
   });
 
-  process.on("exit", () => { console.log(`\n${passed} passed, ${failed} failed`); });
 })();
 
 // ---- skipped bonus types ------------------------------------------------------
