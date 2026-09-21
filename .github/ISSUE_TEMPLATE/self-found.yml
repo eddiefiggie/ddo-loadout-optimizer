@@ -1,0 +1,65 @@
+# #849 — the form for issues filed from a sweep, review, or audit rather than a
+# player report. AGENTS.md: "An issue body is a claim about the code — look the
+# code up." #789, #798 and #822 were each filed and withdrawn within two days,
+# after the author looked. These three fields move that look to filing time.
+name: Self-found (sweep, review, audit)
+description: An issue found by reading the code or the data, not reported by a player. Three fields are required before the claim is a claim.
+title: ""
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Fill the three measurement fields **before** writing the claim. If the measurement does not support the claim, do not file — a withdrawn issue costs a reader the same as a wrong one.
+  - type: input
+    id: build
+    attributes:
+      label: Measured on build
+      description: The footer `BUILD` (or the `main` commit) the numbers below were taken from.
+      placeholder: "09202026.16 at a1b2c3d"
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: The command run
+      description: What produced the measurement — a grep, a script, a parity-harness solve, a browser read. Paste it so the next reader can re-run it.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: measurement
+    attributes:
+      label: The number measured
+      description: The count, the value, or the loadout that came back. A count is a claim about a population — name the population's definition and where the dataset already stamps it, if it does.
+    validations:
+      required: true
+  - type: input
+    id: premise
+    attributes:
+      label: The file and line that carries the premise
+      description: One `path:line` in the current tree that says what this issue claims the code does.
+      placeholder: "web/model.js:857"
+    validations:
+      required: true
+  - type: textarea
+    id: claim
+    attributes:
+      label: The claim
+      description: What is wrong, what it costs, and who it reaches. Player-visible, or internal only?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What to change
+      description: Optional. If a guard is proposed, say how it will be proven to fail before it is trusted.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before filing
+      options:
+        - label: I checked `docs/solutions/` and `docs/wiki-evidence/` for a prior ruling on this area.
+          required: true
+        - label: This is not one of the non-goals listed in `AGENTS.md`.
+          required: true

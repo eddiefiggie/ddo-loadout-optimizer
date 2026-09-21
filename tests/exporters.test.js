@@ -2204,3 +2204,79 @@ test("#713 every exporter carries the conditional-effect disclosure, and stays s
   assert.ok(/Conditional effect/.test(toCsv(orb) || ""), "the CSV row is present");
 });
 
+
+// ---- #849: "Report a problem" -----------------------------------------------
+// The report is the ddo-loadout/v1 envelope plus a `report` block; the URL it
+// opens prefills the issue form by FIELD ID, so the form file and the URL are
+// checked against each other here rather than trusted to stay in step.
+{
+  const Xp = require("../web/exporters.js");
+  const fs = require("fs");
+  const path = require("path");
+  const TEMPLATE_DIR = path.join(__dirname, "..", ".github", "ISSUE_TEMPLATE");
+
+  test("#849: toReportJSON is the v1 envelope plus a report block, format unchanged", () => {
+    const j = Xp.toReportJSON(richRec, { appBuild: "09202026.16", userAgent: "UA/1", nowIso: "2026-09-20T00:00:00Z" });
+    assert.strictEqual(j.format, "ddo-loadout/v1", "a report file still imports as a loadout");
+    assert.strictEqual(j.schema_version, 1);
+    assert.strictEqual(j.exported_at, "2026-09-20T00:00:00Z");
+    assert.strictEqual(j.app_build_id, "08032026.1", "the envelope's own field keeps meaning the dataset build");
+    assert.strictEqual(j.core, richRec, "core is still the verbatim record");
+    assert.deepStrictEqual(j.report, {
+      app_build: "09202026.16", dataset_build: "08032026.1", user_agent: "UA/1",
+      owned_pool: false, owned_names_count: 0,
+    });
+  });
+
+  test("#849: an owned-pool record says so and counts its names, without copying them into the block", () => {
+    const rec = Object.assign({}, richRec, { inputs: Object.assign({}, richRec.inputs, { pool: "owned", ownedNames: ["A", "B", "C"] }) });
+    const j = Xp.toReportJSON(rec, {});
+    assert.strictEqual(j.report.owned_pool, true);
+    assert.strictEqual(j.report.owned_names_count, 3);
+    assert.ok(!("owned_names" in j.report), "the names ride in core.inputs, where the form tells the player to strip them");
+    assert.strictEqual(j.report.app_build, null, "no context -> null, never a guessed build");
+  });
+
+  test("#849: reportIssueUrl opens the player form with build and dataset prefilled by field id", () => {
+    const u = Xp.reportIssueUrl({ appBuild: "09202026.16", datasetBuild: "2026-09-20T01" });
+    assert.ok(u.startsWith(Xp.REPORT_ISSUE_URL + "?"), u);
+    assert.ok(u.includes(`template=${Xp.REPORT_TEMPLATE}`), "names the form file");
+    assert.ok(u.includes("build=09202026.16"), "prefills the build field");
+    assert.ok(u.includes("dataset=2026-09-20T01"), "prefills the dataset field");
+    assert.ok(u.includes("title=Loadout%20report%3A%20build%2009202026.16"), "the title is encoded");
+    const bare = Xp.reportIssueUrl({});
+    assert.strictEqual(bare, `${Xp.REPORT_ISSUE_URL}?template=${Xp.REPORT_TEMPLATE}`, "no context -> just the form");
+  });
+
+  test("#849: the form file the URL names exists and carries every id the URL prefills", () => {
+    const file = path.join(TEMPLATE_DIR, Xp.REPORT_TEMPLATE);
+    assert.ok(fs.existsSync(file), `${Xp.REPORT_TEMPLATE} is missing from .github/ISSUE_TEMPLATE`);
+    const yml = fs.readFileSync(file, "utf-8");
+    const prefilled = Xp.reportIssueUrl({ appBuild: "x", datasetBuild: "y" })
+      .split("?")[1].split("&").map((kv) => kv.split("=")[0])
+      .filter((k) => k !== "template" && k !== "title");
+    assert.deepStrictEqual(prefilled, ["build", "dataset"], "the prefilled keys this test knows about");
+    for (const id of prefilled) assert.ok(new RegExp(`^\\s*id:\\s*${id}\\s*$`, "m").test(yml), `form field id "${id}" is missing — the URL prefills it`);
+    assert.ok(/^\s*id:\s*export\s*$/m.test(yml), "the form has the export box");
+    assert.ok(!/render:\s*json/.test(yml), "the export box is a plain textarea — an attachment link inside a json fence would not be clickable");
+    assert.ok(/[Aa]ttach|[Dd]rag/.test(yml), "the form asks for the file to be attached");
+    assert.ok(/ownedNames/.test(yml), "the form says what the file contains and names the one list a player may strip");
+    assert.ok(fs.existsSync(path.join(TEMPLATE_DIR, "self-found.yml")), "the self-found form exists beside it");
+  });
+
+  test("#849: the self-found form requires the three measurement fields before the claim", () => {
+    const yml = fs.readFileSync(path.join(TEMPLATE_DIR, "self-found.yml"), "utf-8");
+    for (const id of ["build", "command", "measurement", "premise", "claim"]) {
+      const at = yml.indexOf(`id: ${id}`);
+      assert.ok(at > 0, `field "${id}"`);
+      const block = yml.slice(at, yml.indexOf("- type:", at + 1) > 0 ? yml.indexOf("- type:", at + 1) : undefined);
+      assert.ok(/required:\s*true/.test(block), `field "${id}" is required`);
+    }
+    assert.ok(yml.indexOf("id: premise") < yml.indexOf("id: claim"), "the premise comes before the claim");
+  });
+
+  test("#849: the report is a file, never a paste — the exporter has no inline/clipboard path", () => {
+    assert.strictEqual(Xp.reportDelivery, undefined, "no delivery switch: a one-priority build is 56 KB minified, past any paste");
+    assert.strictEqual(Xp.REPORT_INLINE_LIMIT, undefined);
+  });
+}

@@ -4958,6 +4958,14 @@ ${(() => {
             <button class="btn ghost" id="wz-share-gearset" type="button" title="A .gearset file DDOBuilderV2 can import directly (Gear → Import). Crafting and your solve inputs ride below the import, as notes.">DDOBuilderV2</button>
           </div>
           <div id="wz-share-stat" class="wz-filestat"></div>
+          <div class="wz-share-report">
+            <p class="wz-help">Something wrong with this loadout — a wrong item, a number that does not match the game, a pin
+              or block that was not honored? <strong>Report a problem</strong> saves a reproduction file (this build's
+              settings, priorities, pins, blocks, result and stat breakdown — and, if you solved from items you own, the item
+              names from your import) and opens a GitHub issue form with the build fields filled in. Attach the file to the
+              form; you can delete its <code>ownedNames</code> list first if you would rather keep it private.</p>
+            <button class="btn ghost" id="wz-share-report" type="button" title="Saves a reproduction file and opens the issue form. Nothing is sent until you press Submit on GitHub.">Report a problem</button>
+          </div>
           ${dataBlockHTML("share")}
         </div>`;
     }
@@ -4999,6 +5007,7 @@ ${(() => {
       const printBtn = document.getElementById("wz-share-print");
       const jsonBtn = document.getElementById("wz-share-json");
       const gearsetBtn = document.getElementById("wz-share-gearset");
+      const reportBtn = document.getElementById("wz-share-report");
       if (mdBtn) mdBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.md`, LoadoutExport.toMarkdown(rec), "text/markdown"); };
       if (csvBtn) csvBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.csv`, LoadoutExport.toCsv(rec), "text/csv"); };
       if (printBtn) printBtn.onclick = () => { const rec = selected(); if (rec) printLoadout(rec); };
@@ -5010,6 +5019,32 @@ ${(() => {
       // (Gear Planner Files (*.gearset)), so the download must carry it or the user
       // has to switch the dialog to "All files" to see their own export.
       if (gearsetBtn) gearsetBtn.onclick = () => { const rec = selected(); if (rec) downloadFile(`${slug(rec.name)}.gearset`, LoadoutExport.toGearset(rec), "text/plain"); };
+      // #849 — Report a problem: the envelope plus a `report` block, saved as a
+      // file and the issue form opened with the build fields prefilled. A file,
+      // never the clipboard: a one-priority build already serializes to 56 KB
+      // minified (measured, exporters.js), past any sensible paste and near
+      // GitHub's body cap, and the form attaches `.json` directly. window.open
+      // runs SYNCHRONOUSLY inside the click — a popup opened later is outside the
+      // user gesture and gets blocked — and a blocked popup is reported with the
+      // URL as a link rather than swallowed, as the farming Copy button reports
+      // a blocked clipboard.
+      if (reportBtn) reportBtn.onclick = () => {
+        const rec = selected(); if (!rec) return;
+        // eslint-disable-next-line no-undef
+        const ctx = { appBuild: (typeof BUILD !== "undefined" ? BUILD : null), datasetBuild: currentBuildId(),
+          userAgent: (typeof navigator !== "undefined" && navigator.userAgent) || null };
+        const text = JSON.stringify(LoadoutExport.toReportJSON(rec, ctx));
+        const url = LoadoutExport.reportIssueUrl(ctx);
+        const fname = `${slug(rec.name)}.report.json`;
+        downloadFile(fname, text, "application/json");
+        const win = window.open(url, "_blank", "noopener");
+        const s = document.getElementById("wz-share-stat");
+        if (s) {
+          s.className = win ? "wz-filestat" : "wz-filestat warn";
+          s.innerHTML = `Report saved as <code>${esc(fname)}</code> — attach it to the issue form's file box.`
+            + (win ? "" : ` The form did not open — <a href="${esc(url)}" target="_blank" rel="noopener">open it here</a>.`);
+        }
+      };
       // BBCode is meant to be pasted into a forum post — copy to clipboard (with a
       // .txt download fallback if the clipboard API is blocked), and confirm.
       if (bbBtn) bbBtn.onclick = () => {

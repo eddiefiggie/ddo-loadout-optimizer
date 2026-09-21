@@ -1,0 +1,57 @@
+# #849 — the player report form. The app's "Report a problem" action (Share tab)
+# opens this form with `build` and `dataset` prefilled through the URL, keyed by
+# the field ids below; tests/exporters.test.js asserts those ids exist here, so
+# renaming a field without changing web/exporters.js `reportIssueUrl` goes red.
+name: Report a loadout problem
+description: A wrong item, a wrong number, a stacking total that looks off, a pin or block that was not honored.
+title: "Loadout report: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **The fastest way to file this is from the app.** Open the result, go to the **Share** tab, and press **Report a problem**. That saves a reproduction file and opens this form with the build fields filled in. Every report that could not be reproduced was missing exactly that file, and every report that carried it was diagnosed from the file alone.
+  - type: input
+    id: build
+    attributes:
+      label: Build stamp
+      description: The **Build** value in the site footer. The app fills this in when you arrive from "Report a problem".
+      placeholder: "09202026.16"
+    validations:
+      required: true
+  - type: input
+    id: dataset
+    attributes:
+      label: Dataset build
+      description: Filled in by the app. Leave it blank if you are filing by hand.
+  - type: textarea
+    id: export
+    attributes:
+      label: The reproduction file
+      description: |
+        Attach the `.report.json` file the app saved — drag it into this box, or use the paperclip below it. It is the only thing a report needs to be reproduced.
+
+        **What it contains, so you can decide what to share:** your build name, every setting on the Character and Gear pool steps, your priorities in order, your pins and blocks, the loadout the solver returned, and the stat-by-stat breakdown of where each point came from. If you solved from **items you own**, it also lists the item names from your Trove import under `ownedNames` — delete that list from the file before attaching it if you would rather keep it private. It never contains your login, your character's server, or anything the page did not already show you.
+      placeholder: Drop the file here.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: The item, number, or behavior you think is right.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What you got instead
+      description: What the tool showed. Name the item, slot, stat, or notice.
+    validations:
+      required: true
+  - type: input
+    id: wiki
+    attributes:
+      label: Wiki page, if you have one
+      description: Every value in this tool traces to the DDO Wiki, so a link to the item or effect page settles it fastest.
+      placeholder: "https://ddowiki.com/page/Item:..."

@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 09202026.15 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 09202026.16 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 
 ---
@@ -81,7 +81,7 @@ A second case, found by re-running the bonus-type audit (#88): **`Meridian Fragm
 
 **When a gate gets stricter, we say that too.** Armor type is now **required** before the character step will continue, alongside race and your ML cap. This is a behavior change, not a relabelling: until this build you could advance without it, and the solve would then hand you a loadout you may not be able to wear — armor filters which body armor is equippable. Forged races are exempt; they wear a docent and have no armor choice to make. **A build name is now required too**, for the same reason and with the same honesty: the character step will not continue without one. Naming used to be asked for from a panel beside the form, which meant the one moment that actually needed a name — the unsaved-changes prompt offering “Save and continue” — sent your cursor to a field you had never looked at. The name is now the first thing the Required group asks for, and saving sits in the step's own action bar beside Continue. Existing saved builds are unaffected: every record is keyed by its name, so none of them can have been saved without one. A build you saved earlier that carries no armor still loads, and still shows the loadout it was solved for; the character step marks armor as needing an answer rather than silently blocking you somewhere else.
 
-**Found a wrong value?** [Open an issue](https://github.com/eddiefiggie/ddo-loadout-optimizer/issues). Reports are checked against the wiki and, when confirmed, usually come with a new automated check so the same class of error can't come back.
+**Found a wrong value?** On the result's **Share** tab, press **Report a problem**: it saves a reproduction file (your settings, priorities, pins, the loadout and its stat breakdown) and opens a [GitHub issue form](https://github.com/eddiefiggie/ddo-loadout-optimizer/issues/new/choose) with the build filled in. Reports that carry that file get diagnosed from the file alone; the ones that could not be reproduced were missing exactly it. Reports are checked against the wiki and, when confirmed, usually come with a new automated check so the same class of error can't come back.
 
 ## How to use it
 
