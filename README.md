@@ -4,7 +4,7 @@
 
 🎮 **Play it now:** https://eddiefiggie.github.io/ddo-loadout-optimizer/ · **Code:** https://github.com/eddiefiggie/ddo-loadout-optimizer
 
-**Current build:** 09202026.17 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
+**Current build:** 09202026.18 — the live site's footer shows the deployed value. `tests/test_build_stamp.py` fails the build when this line drifts from `web/app.js`, so it cannot go stale silently.
 
 
 ---
@@ -106,7 +106,7 @@ A short guided wizard walks you through it:
 
 Above the tabs, the notes panel carries an **Upgrades** card. Ask it to search and it looks for builds that reach the same totals while completing another set, freeing a slot, taking fewer crafting steps, or picking up a stat you never ranked — and it shows you only the ones that **cost you nothing**. Widen the bar if you want to see trades, and a suggestion still has to clear it twice: the loss must be small as a share of that priority's total, *and* what it buys must outweigh it once your ranking is taken into account. A point of your first priority is worth far more than a point of your last, so "+1 Dodge for −5 Melee Power" can never reach you. For the one trade you want priced by name, the **Ranked Priorities** tab asks it directly: *what would giving ground here buy me?*
 
-Don't like a slot? **Pin** an item you insist on wearing, **lock** a slot empty, or **free** it, then re-solve in place. Keep getting gear you've already rejected? **Block** it in the gear-pool step — search anything placeable (items *and* augments), tick a whole family across searches, and block the selection in one action; the result then reports itself as optimal *given your exclusions*. **Name** your build in the character step's Required group and **save** it from any step's action bar, beside Continue — saving works at any step, not only after a solve, and reopening a saved build returns you to the step you stopped on. Everything stays in your browser; **Your data**, in the header and on the Share tab, moves every saved build between devices.
+Don't like a slot? **Pin** an item you insist on wearing, **lock** a slot empty, or **free** it, then re-solve in place. A pin is the more specific instruction, so it is honored through the soft filters (the ML floor, the Artifact opt-in, your owned-gear import, an excluded set, a content pack you did not tick) and the result says so each time; where a pin cannot be honored (an item above your ML cap, a race-locked item, a pinned augment the cap or your crafting rung excludes) the result says that too, and the pin is kept for when the condition lifts. Keep getting gear you've already rejected? **Block** it in the gear-pool step — search anything placeable (items *and* augments), tick a whole family across searches, and block the selection in one action; the result then reports itself as optimal *given your exclusions*. **Name** your build in the character step's Required group and **save** it from any step's action bar, beside Continue — saving works at any step, not only after a solve, and reopening a saved build returns you to the step you stopped on. Everything stays in your browser; **Your data**, in the header and on the Share tab, moves every saved build between devices.
 
 There's also a **Browse items** view for searching the whole roster when you just want to look something up.
 

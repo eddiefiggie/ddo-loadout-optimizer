@@ -74,6 +74,9 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     { key: "packFilterNotice", csv: "Content not owned" },
     { key: "setFilterNotice", csv: "Excluded sets" },
     { key: "setPinNotice", csv: "Required sets" },
+    // #742/#851 — the two pin disclosures beside the set pins they mirror.
+    { key: "augPinNotice", csv: "Pinned augment" },
+    { key: "pinnedThroughNotice", csv: "Pinned through filter" },
     { key: "essenceNotice", csv: "Essence crafting" },
     { key: "greenSteelNotice", csv: "Legendary Green Steel" },
   ];

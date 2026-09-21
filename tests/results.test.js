@@ -2744,6 +2744,10 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       // name, but the wiki rules the names distinct, so offering that as the fix
       // would take a side the app declined to take.
       tierRenameNotice: ["RENAMED ON UPGRADE", "qualifying"],
+      // #742/#851 — actionable like the set pins: every line names a pin to
+      // remove or a cap / rung / ownership tick to change.
+      augPinNotice: ["PINNED AUGMENT NOT PLACED", "actionable"],
+      pinnedThroughNotice: ["PINNED THROUGH A FILTER", "actionable"],
       // #683 — qualifying like the #573 entry two rows up, NOT actionable like the
       // #663 one directly above. The player can press something (rank the other
       // spelling) but whether that is correct is the unverified question itself, so
@@ -2775,7 +2779,7 @@ test("#448: the registry is the ONLY source — nothing classifies a notice but 
 
   assert.deepStrictEqual(Object.keys(R.NOTICE_TABLE), single.map((n) => n.name),
     "NOTICE_TABLE is derived from the registry, in registry order");
-  assert.strictEqual(single.length, 22, "the twenty-two single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one, #701 the MRR cap one, #747 the cap-opportunity one, #850 the tier-rename one)");
+  assert.strictEqual(single.length, 24, "the twenty-four single-fact notices (#459 added the cap-surplus disclosure, #194 the Legendary Green Steel one, #701 the MRR cap one, #747 the cap-opportunity one, #850 the tier-rename one, #851 the two pin disclosures)");
   assert.deepStrictEqual(split.map((n) => n.name),
     ["artifactNotice", "pinnedUnownedNotice", "playerAuthoredNotice", "boundNotice", "zeroSourceNotice"],
     "and the five multi-fact notices come through their U10 entry functions "
@@ -2807,7 +2811,7 @@ test("#448: registry ORDER is the on-screen order within a class, and splits lea
     "artifactNotice", "pinnedUnownedNotice", "playerAuthoredNotice", "boundNotice", "zeroSourceNotice",
     "staleSnapshotNotice", "outbidNotice", "saturationNotice", "emptySlotNotice",
     "absorptionQuarantineNotice", "craftingExcludedNotice", "augCeilingNotice",
-    "dodgeMaxDexNotice", "jumpSoftCapNotice", "mrrCapNotice", "conditionalNotice", "tierRenameNotice", "splitMechanicNotice", "capSurplusNotice", "capOpportunityNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "upgradeNotice",
+    "dodgeMaxDexNotice", "jumpSoftCapNotice", "mrrCapNotice", "conditionalNotice", "tierRenameNotice", "splitMechanicNotice", "capSurplusNotice", "capOpportunityNotice", "essenceNotice", "greenSteelNotice", "blockNotice", "packFilterNotice", "setFilterNotice", "setPinNotice", "augPinNotice", "pinnedThroughNotice", "upgradeNotice",
   ]);
 });
 

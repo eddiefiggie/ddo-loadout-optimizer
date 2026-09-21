@@ -522,7 +522,9 @@ function buildProgram(model) {
   // the query, so the solver and the pool cannot disagree about what is pinned.
   const pinnedAugs = (model.pinnedAugments instanceof Set)
     ? model.pinnedAugments : new Set(model.pinnedAugments || []);
-  const augPinReport = []; // #742 — pins the pool cannot satisfy
+  // #742 — pins the pool cannot satisfy. #851 — seeded with the pinned augments
+  // the eligibility gates excluded before the pool was built (see buildModel).
+  const augPinReport = (model.augPinExcluded || []).map((e) => Object.assign({}, e));
   const augBest = new Map(); // aug variant -> Map("stat||type" -> best value)
   for (const aug of model.augments || []) {
     const best = new Map();
@@ -1677,7 +1679,7 @@ function buildProgram(model) {
     forcedOffVars: forcedOffSlotVars(xVars, model.query && model.query.slotConstraints),
     extraVars, extraConstraints, penaltyKeys, augMeta, placeMeta, setMeta,
     // #742 — the reporting step needs this too; see `augmentsPlaced` below.
-    pinnedAugs, augPinReport, dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, lgsMeta, slaversMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
+    pinnedAugs, augPinReport, pinnedThrough: model.pinnedThrough || [], dinoMeta, ncMeta, rollMeta, vikMeta, sealMeta, lgsMeta, slaversMeta, essMeta, jokerMeta, jokerVars, memberMeta, memberVars, setAugMeta, setAugVars: [...setAugMeta.keys()], setAugColorMeta, hostsVar, _zc: zc,
     // #91 (U3) — the Utility tier's stage state: whether the sentinel is
     // ranked, the per-effect indicator binaries, and their name/ceiling meta.
     utilityEnabled, utilityVars, utilityMeta,
@@ -2491,7 +2493,9 @@ function readSolution(res, program, precomputedVisible) {
   }
   const out = { chosen, effective, augmentsPlaced, setsActive,
     // #742 — pins the pool could not satisfy. Reported, never erased.
-    augPinReport: program.augPinReport || [], dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, lgsPlaced, slaversPlaced, essPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced,
+    augPinReport: program.augPinReport || [],
+    // #851 — pins honoured through the excluded-set / content filters.
+    pinnedThrough: program.pinnedThrough || [], dinoPlaced, ncPlaced, rollPlaced, vikPlaced, sealPlaced, lgsPlaced, slaversPlaced, essPlaced, jokerPlaced, membershipPlaced, setAugmentsPlaced,
     // #449 U1 (KTD9) — the achieved/ceiling census, built HERE rather than in
     // solveLexicographic so the tieBreak:false alternatives path (solveConstrained,
     // which spreads this object) carries its OWN numbers. renderBuild is generic
@@ -3240,6 +3244,13 @@ async function solveLexicographic(model, highs, opts = {}) {
     // character must still be able to say why a pin did not land, without
     // re-solving. Empty array when the player pinned nothing.
     setPinReport,
+    // #742/#851 — the pinned-augment report and the pins kept through a filter.
+    // `readSolution` has carried `augPinReport` since #742, but this assembly
+    // never copied it, so on the main solve path it reached nobody: "reported,
+    // never erased" was true of `out` and false of the result. Found by the
+    // override × filter matrix's end-to-end run. Plain JSON, under RESULT_KEEP.
+    augPinReport: sol.augPinReport || [],
+    pinnedThrough: sol.pinnedThrough || [],
     creditReport: buildCreditReport(program, prim, model, floorReport, visible),
     // #88 U8 (R13/R14/R30) — what the player's bonus-type overrides did. Plain
     // JSON by construction so persist.js can keep it under RESULT_KEEP: a restored

@@ -1136,7 +1136,8 @@ function buildQuery(state, vocab, items) {
       state.pool, state.ownedNames, state.slotConstraints, items,
       (v) => ((typeof TroveImport !== "undefined" && TroveImport.ownedHasCatalogName)
         ? TroveImport.ownedHasCatalogName(state.ownedNames, v.source_item || v.variant_id)
-        : state.ownedNames.has(v.source_item || v.variant_id))),
+        : state.ownedNames.has(v.source_item || v.variant_id)),
+      state.pinnedAugments, !!state.ownedAugments),
     // #346 (U1, KTD4) — a rung that excludes augments forces the ceiling to null
     // in the SOLVED query. The control keeps the player's typed value so it comes
     // back when they climb the ladder again (U2), but a solve that placed no
@@ -1229,12 +1230,15 @@ var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
  *  Reads through the shared `pinnedVariantIds` authority rather than walking the
  *  constraint shapes here, so a list-shaped Ring pin is seen exactly as the
  *  solver sees it. */
-function pinnedIdSet(slotConstraints) {
+function pinnedIdSet(slotConstraints, pinnedAugments) {
   const out = new Set();
   for (const c of Object.values(slotConstraints || {})) {
     if (!c || c.type !== "pin") continue;
     _pinnedVariantIds(c).forEach((id) => out.add(id));
   }
+  // #851 — the augment pins join the same set, so the owned-pool escape hatch and
+  // its disclosure cannot disagree with `queryGates` about what "pinned" means.
+  for (const id of (Array.isArray(pinnedAugments) ? pinnedAugments : [])) if (id) out.add(String(id));
   return out;
 }
 
@@ -1256,24 +1260,34 @@ function pinnedIdSet(slotConstraints) {
  *  for, so the one ownership predicate (TroveImport's, which handles Trove's
  *  plural spellings) stays the only definition of "owned" — see #408.
  *
- *  Augments take the #359 branch and no pin exemption: augments cannot be
- *  pinned today, and their pool is already owned-UNION-acquirable. */
+ *  Augments take the #359 branch AFTER the pin check (#851): an augment pin is
+ *  honoured through the owned-augments filter exactly as a worn pin is honoured
+ *  through the owned pool, and disclosed the same way. */
 function ownedPoolAdmits(v, owns, pinnedIds, ownedAugments) {
   if (!v) return false;
   // `pinIdOf` is the pin flow's OWN id derivation, reused rather than restated:
   // if the two ever disagreed about what to call a variant, the exemption would
   // miss exactly the pins it exists to protect.
-  if (v.category === "augment") return !ownedAugments || v.acquirable === true || owns(v);
+  //
+  // #851 — the pin check now runs BEFORE the augment branch. It used to sit
+  // after it, on the note "augments cannot be pinned today"; #742 made them
+  // pinnable and the note went stale, so a pinned augment the import did not
+  // list was dropped by the #359 branch in silence — the #721 defect for the
+  // other half of the pool. `pinnedIds` carries the augment pins too (see
+  // `pinnedIdSet`), and the disclosure (`pinnedUnownedNames`) names them.
   if (pinnedIds && pinnedIds.has(pinIdOf(v))) return true;
+  if (v.category === "augment") return !ownedAugments || v.acquirable === true || owns(v);
   return owns(v);
 }
 
 /** #721 — the disclosure's fact: pinned items the owned-gear import does not
  *  carry, by display name. Empty off the owned pool (nothing is being filtered),
  *  which is what keeps the notice from firing on a full-catalog solve. */
-function pinnedUnownedNames(pool, ownedNames, slotConstraints, items, owns) {
+function pinnedUnownedNames(pool, ownedNames, slotConstraints, items, owns, pinnedAugments, ownedAugments) {
   if (pool !== "owned" || !ownedNames) return [];
-  const pinned = pinnedIdSet(slotConstraints);
+  // #851 — augment pins count only when the owned-augments filter is ON: with it
+  // off the augment pool is the full catalog and nothing overrode anything.
+  const pinned = pinnedIdSet(slotConstraints, ownedAugments ? pinnedAugments : null);
   if (!pinned.size) return [];
   const out = [];
   const seen = new Set();
@@ -6246,7 +6260,7 @@ ${(() => {
         // #721 — the pin escape hatch. See `ownedPoolAdmits`: this filter runs
         // upstream of buildModel, so the pin exemptions inside variantConflict
         // cannot reach it and a pinned unowned item was dropped in silence.
-        const pinned = pinnedIdSet(state.slotConstraints);
+        const pinned = pinnedIdSet(state.slotConstraints, state.pinnedAugments);
         // #773 — the player's own items are appended AFTER the owned filter, never
         // through it. A Trove export lists what the catalog knows the player has;
         // an item the player typed in is owned by construction and by definition

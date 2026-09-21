@@ -1646,6 +1646,21 @@ function blockNotice(result) {
 /** #539 — what the player's set pins did. Reads the SHARED sentences from
  *  projection.js, like every other notice, so the page and the exports cannot
  *  disagree about whether a pin landed. */
+/** #742/#851 — pinned augments the solve could not place. Reads the SHARED lines
+ *  from projection, never a second wording. */
+function augPinNotice(result) {
+  const lines = (Proj && Proj.augPinNoticeLines) ? Proj.augPinNoticeLines(result) : [];
+  if (!lines || !lines.length) return "";
+  return lines.map((l) => `<p class="scope-note aug-pin-note" role="status">${esc(l)}</p>`).join("");
+}
+
+/** #851 — pins kept through a soft candidacy filter. Same shape. */
+function pinnedThroughNotice(result) {
+  const lines = (Proj && Proj.pinnedThroughNoticeLines) ? Proj.pinnedThroughNoticeLines(result) : [];
+  if (!lines || !lines.length) return "";
+  return lines.map((l) => `<p class="scope-note pinned-through-note" role="status">${esc(l)}</p>`).join("");
+}
+
 function setPinNotice(result, opts) {
   const lines = (Proj && Proj.setPinNoticeLines) ? Proj.setPinNoticeLines(result) : [];
   if (!lines.length) return "";
@@ -1925,6 +1940,16 @@ const NOTICES = [
   { name: "setPinNotice", id: "required-sets", title: "REQUIRED SETS", subject: "required sets",
     cls: NOTICE_ACTIONABLE, jump: { label: "Review required sets →", step: "pool", anchor: "#wz-setpin-search" },
     render: (c) => setPinNotice(c.result, { canPrice: !!c.canPriceSetPin }) },
+  // #742/#851 — ACTIONABLE like the set pins directly above: every line names a
+  // pin the player can remove, or a cap / rung / ownership tick they can change.
+  { name: "augPinNotice", id: "pinned-augment", title: "PINNED AUGMENT NOT PLACED", subject: "pinned augment",
+    cls: NOTICE_ACTIONABLE, jump: { label: "Review pins →", step: "pool", anchor: "#wz-pin-search" },
+    render: (c) => augPinNotice(c.result) },
+  // #851 — ACTIONABLE for the #721 reason: the pin overrode a filter the player
+  // set, and the one thing they may want to do (unpin) lives on the pool step.
+  { name: "pinnedThroughNotice", id: "pinned-through-filter", title: "PINNED THROUGH A FILTER", subject: "pinned through a filter",
+    cls: NOTICE_ACTIONABLE, jump: { label: "Review pins →", step: "pool", anchor: "#wz-pin-search" },
+    render: (c) => pinnedThroughNotice(c.result) },
   // #499 — `jump: null` for the same reason `outbidNotice` carries one: the card
   // already holds the control that resolves it, and a jump beside it would offer
   // a second, worse route to the thing the player is looking straight at.
@@ -3874,7 +3899,7 @@ function upgradesList(probed, list) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { concessionOutcome, concessionFailedOutcome, upgradesList,
-    renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, pinnedUnownedNoticeEntries, playerAuthoredNoticeEntries, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, jumpSoftCapNotice, mrrCapNotice, conditionalNotice, tierRenameNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+    renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, pinnedUnownedNoticeEntries, playerAuthoredNoticeEntries, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, jumpSoftCapNotice, mrrCapNotice, conditionalNotice, tierRenameNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, augPinNotice, pinnedThroughNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,

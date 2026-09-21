@@ -2098,6 +2098,9 @@ const ALL_NOTICES_REC = {
   inputs: { ml: 34, armor: "light", pool: "all", priorities: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering", "Orb Bonus", "Ethereal"], craftingRung: "no-niche-crafting" },
   snapshot: {
     status: "optimal", chosen: [], setsActive: [],
+    // #742/#851 — one pinned augment the gates excluded, one pin kept through a filter.
+    augPinReport: [{ variant_id: "Deconstructor", color: "Red", reason: "above your ML 20 cap" }],
+    pinnedThrough: [{ variant_id: "Ring of Zed", name: "Ring of Zed", filter: "excluded-set", detail: "Zed Set" }],
     query: { targets: ["Dodge", "Jump", "Critical Multiplier on a 19-20", "Doublestrike", "Magical Sheltering", "Orb Bonus", "Ethereal"], armorType: "light", craftingRung: "no-niche-crafting", augCeiling: 30 },
     // #701 — light armor (any armor keeps the Dodge notice; cloth or light is what
     // keys the MRR one) and a Magical Sheltering total over light's cap of 100.
