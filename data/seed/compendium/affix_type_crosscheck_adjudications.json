@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "title": "bonus-type cross-check adjudications (#852)",
+    "note": "One ruling per harvested affix name whose tooltip states a bonus type that its own carrier does not store for that name (src/affix_tooltip.cross_check). `mismatched-harvest`: the #713 harvest captured the tooltip of a DIFFERENT enchantment on the carrier page than the key names, so the sentence is not evidence for this name at all; `evidence` is that tooltip verbatim so a re-harvest that replaces it retires the ruling (the build then reports it stale). `tooltip-not-authoritative`: the wiki sentence itself is known wrong; `why` names the ruling. A ruling never changes a stored type — the corrections overlay does that, with its own evidence. `modelled-differently`: the wiki is right about the game and the model types it otherwise on purpose; `why` names the ruling.",
+    "ruled_on": "2026-09-21",
+    "follow_up": "Both rulings below are harvest defects, not type defects: re-harvest the right tooltip for each (in-app Browser pane, same-origin, docs/wiki-evidence/harvest-method.md) and the ruling retires itself."
+  },
+  "ruled": {
+    "Armor Class": {
+      "disposition": "mismatched-harvest",
+      "why": "The key is the Armor Class stat, which items store under nine bonus types (Armor 899 carriers, Shield 375, Deflection 170, Insight 198, Natural 149, ...). The harvest captured the carrier's '+1 Enhancement Bonus' armor-enhancement tooltip, which is the item's Enhancement Bonus (Armor) affix, not an Armor Class enchantment. No Armor Class type is asserted by this sentence.",
+      "evidence": "+1 Enhancement Bonus: +1 enhancement bonus to Armor Class."
+    },
+    "Repair": {
+      "disposition": "mismatched-harvest",
+      "why": "The key is the Repair SKILL (carrier stores it at Competence, 26 Competence carriers overall). The harvest captured the carrier's 'Repair Amplification' tooltip — a different enchantment (Enhancement bonus to incoming repair healing) — so the stated Enhancement is not evidence about the skill's type. Re-harvest the Repair skill tooltip to settle it.",
+      "evidence": "Repair Amplification: This effect amplifies all incoming repair healing by +27 (Enhancement bonus). Includes spells, potions, and other effects."
+    },
+    "Enhancement Bonus (Weapon)": {
+      "disposition": "modelled-differently",
+      "why": "The harvested carrier is a cursed '-1 Quarterstaff of Lesser Halfling Bane': the wiki calls its -1 an Enhancement Bonus, and it is one in the game. The catalog stores every NEGATIVE magnitude at type Penalty (#614) so an avoidable curse never occupies the Enhancement bucket and is never credited as a contribution; the ceiling census and the stat cards read Penalty as its own row. The typing is a deliberate model choice, not a data error, and the +N carriers of Enhancement Bonus (Weapon) store Enhancement as the tooltip says.",
+      "evidence": "-1 Enhancement Bonus: This weapon is less well-made than normal, giving a -1 penalty to attack and damage rolls."
+    }
+  }
+}

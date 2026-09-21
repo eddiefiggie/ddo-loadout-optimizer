@@ -1634,6 +1634,15 @@ def build() -> dict:
     _affix_tooltip_coverage = affix_tooltip_mod.check(
         _tooltip_shard, _cond_adj, sorted(_tooltip_roster), _quarantine_affix_names)
     _conditional_disclosures = affix_tooltip_mod.disclosures(_cond_adj)
+    # #852 — the bonus-type cross-check: every harvested tooltip's stated type
+    # against what its own carrier stores (and, for a label whose prefix names a
+    # different type — `Exceptional Seeker +5` stating Insight — against every
+    # carrier still stored at the label's type: the #697 regression guard).
+    # Runs AFTER the type corrections overlay, so a corrected carrier agrees and
+    # an uncorrected one is the finding. Raises on an unruled disagreement, a
+    # stale ruling, evidence drift, and a run that compared nothing.
+    _affix_type_cross_check = affix_tooltip_mod.cross_check(
+        _tooltip_shard, variants, affix_tooltip_mod.load_crosscheck_adjudications())
 
     _split_mechanics = split_mechanics_mod.load(SPLIT_MECHANICS_PATH)
     _split_spellings = [sp for _e in _split_mechanics for sp in _e.get("spellings") or []]
@@ -2615,6 +2624,7 @@ def build() -> dict:
     # and the `disclose` rulings the web layer installs (model.js
     # setConditionalDisclosures via dataset.js).
     out["metadata"]["affix_tooltip_coverage"] = _affix_tooltip_coverage
+    out["metadata"]["affix_type_cross_check"] = _affix_type_cross_check
     out["metadata"]["conditional_disclosures"] = _conditional_disclosures
     # #850 — tier-rename families: a counted presence effect that changes NAME
     # when an item family upgrades (`Ethereal` at ML 8, `Ghostly` at ML 30 on
