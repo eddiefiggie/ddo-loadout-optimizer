@@ -174,3 +174,162 @@ def test_built_dataset_stamps_coverage_and_the_disclose_map():
                 except (TypeError, ValueError):
                     continue
                 assert a["name"] in covered, a["name"]
+
+
+# --- #852: the bonus-type cross-check ------------------------------------------
+
+def test_stated_type_reads_the_three_shapes_and_nothing_else():
+    assert T.stated_type("Strength +3: This item gives the wearer the power of Ogre Strength, granting a +3 Enhancement bonus to Strength.") == "Enhancement"
+    assert T.stated_type("Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits") == "Insight"
+    assert T.stated_type("Fire Lore +11: Passive: Your Fire spells gain a 11% Equipment bonus to their chance to critical hit.") == "Equipment"
+    assert T.stated_type("Healing Amplification: amplifies all incoming positive energy healing by +8 (Exceptional bonus).") == "Exceptional"
+    assert T.stated_type("Good Luck +2: This item gives a +2 Luck bonus to all saves and skill checks.") == "Luck"
+    assert T.stated_type("Insightful Dexterity +3: +3 Insightful bonus to Dexterity") == "Insight", "the wiki's spelling maps to the catalog's"
+    assert T.stated_type("Rage Charges: This item has 3 charges of Rage.") is None
+    assert T.stated_type("Damage Reduction 5/-: reduces damage by 5") is None
+    assert T.stated_type("a +3 Mysterious bonus to nothing") is None, "an unknown type word is never read as a type"
+    assert T.stated_type("") is None and T.stated_type(None) is None
+
+
+def test_label_type_and_strip_label():
+    assert T.label_type("Exceptional Seeker +5") == "Exceptional"
+    assert T.label_type("Insightful Alluring Skills Bonus") == "Insight"
+    assert T.label_type("Seeker +5") is None
+    assert T._strip_label("Exceptional Alluring Skills Bonus") == "alluring skills bonus"
+    assert T._strip_label("Good Luck +2") == "good luck"
+    assert T._strip_label("Dodge +8%") == "dodge"
+
+
+def _shard(**entries):
+    return {"_meta": {}, "harvested": {k: {"provenance": "stated", "carrier": f"Item:{k}", "wiki_url": f"https://ddowiki.com/page/Item:{k.replace(' ', '_')}", **v}
+                                       for k, v in entries.items()}}
+
+
+def _rec(name, wiki, affixes):
+    return {"source_item": name, "variant_id": name, "wiki_url": wiki,
+            "affixes": [{"name": a[0], "type": a[1], "value": "1", **({"via": a[2]} if len(a) > 2 else {})} for a in affixes]}
+
+
+def _xraises(fn, *a):
+    try:
+        fn(*a)
+    except SystemExit as e:
+        return str(e)
+    raise AssertionError("expected SystemExit, nothing raised")
+
+
+def _fixture():
+    sh = _shard(**{
+        "Strength": {"label": "Strength +3", "tooltip": "Strength +3: +3 Enhancement bonus to Strength."},
+        "Seeker": {"label": "Exceptional Seeker +5", "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits."},
+        "Good Luck": {"label": "Good Luck +2", "tooltip": "Good Luck +2: This item gives a +2 Luck bonus to all saves and skill checks."},
+        "Repair": {"label": "Repair Amplification", "tooltip": "Repair Amplification: +10 Enhancement bonus to repair healing."},
+        "Rage Charges": {"label": "Rage Charges", "tooltip": "Rage Charges: 3 charges."},
+        "Sneak Attack": {"label": "Sneak Attack", "tooltip": "+2 Artifact bonus to sneak attack dice."},
+    })
+    sh["harvested"]["Sneak Attack"]["wiki_url"] = "https://ddowiki.com/page/Set:Not_An_Item"
+    recs = [
+        _rec("Strength", "https://ddowiki.com/page/Item:Strength", [("Strength", "Enhancement")]),
+        _rec("Seeker", "https://ddowiki.com/page/Item:Seeker", [("Seeker", "Insight")]),
+        _rec("Good Luck", "https://ddowiki.com/page/Item:Good_Luck", [("Fortitude Save", "Luck", "Good Luck"), ("Bluff", "Luck", "Good Luck")]),
+        _rec("Repair", "https://ddowiki.com/page/Item:Repair", [("Repair", "Competence")]),
+        _rec("Rage Charges", "https://ddowiki.com/page/Item:Rage_Charges", [("Rage Charges", "Enhancement")]),
+    ]
+    adj = {"ruled": {"Repair": {"disposition": "mismatched-harvest", "why": "captured the amplification tooltip",
+                                "evidence": "Repair Amplification: +10 Enhancement bonus to repair healing."}}}
+    return sh, recs, adj
+
+
+def test_cross_check_classifies_every_entry_and_stamps_the_population():
+    sh, recs, adj = _fixture()
+    st = T.cross_check(sh, recs, adj)
+    assert st["names"] == 6 and st["compared"] == 4, st
+    assert st["agree"] == 2 and st["agree_via_components"] == ["Good Luck"]
+    assert [d["name"] for d in st["disagree_ruled"]] == ["Repair"] and st["disagree_ruled"][0]["disposition"] == "mismatched-harvest"
+    assert st["label_disagrees_with_tooltip"] == [{"name": "Seeker", "stated": "Insight", "label_type": "Exceptional"}]
+    assert st["no_stated_type"] == ["Rage Charges"]
+    assert st["carrier_not_an_item"] == [{"name": "Sneak Attack", "carrier": "Item:Sneak Attack"}]
+
+
+def test_an_unruled_disagreement_fails_and_names_the_fix():
+    sh, recs, adj = _fixture()
+    msg = _xraises(T.cross_check, sh, recs, {"ruled": {}})
+    assert "Repair" in msg and "states Enhancement" in msg and "stores ['Competence']" in msg and "affix_type_corrections.json" in msg
+
+
+def test_the_697_shape_a_carrier_re_typed_back_to_the_labels_type_fails():
+    sh, recs, adj = _fixture()
+    # A refresh re-types one Seeker carrier to Exceptional — the label's type,
+    # which the tooltip contradicts. The harvested carrier still agrees; the
+    # guard is the count of carriers at the label's type.
+    recs.append(_rec("Other Helm", "https://ddowiki.com/page/Item:Other_Helm", [("Seeker", "Exceptional")]))
+    msg = _xraises(T.cross_check, sh, recs, adj)
+    assert "Seeker" in msg and "1 carrier(s) still store it at the label's type Exceptional" in msg
+
+
+def test_a_stale_ruling_evidence_drift_and_a_bad_disposition_fail():
+    sh, recs, adj = _fixture()
+    stale = {"ruled": dict(adj["ruled"], Strength={"disposition": "mismatched-harvest", "why": "x", "evidence": "y"})}
+    assert "Strength: ruling is stale" in _xraises(T.cross_check, sh, recs, stale)
+    drift = {"ruled": {"Repair": dict(adj["ruled"]["Repair"], evidence="something else")}}
+    assert "evidence is not the tooltip" in _xraises(T.cross_check, sh, recs, drift)
+    bad = {"ruled": {"Repair": dict(adj["ruled"]["Repair"], disposition="ignore")}}
+    assert "outside" in _xraises(T.cross_check, sh, recs, bad)
+
+
+def test_zero_comparisons_over_a_populated_catalog_is_a_broken_check():
+    sh, recs, adj = _fixture()
+    # Break the carrier match: no record's URL resolves.
+    for r in recs:
+        r["wiki_url"] = "https://ddowiki.com/page/Nowhere"
+    try:
+        T.cross_check(sh, recs, {"ruled": {}})
+    except ValueError as e:
+        assert "compared zero names" in str(e)
+    else:
+        raise AssertionError("a run that compared nothing must not pass")
+    assert T.cross_check(sh, [], {"ruled": {}})["compared"] == 0, "an empty catalog is the one honest zero"
+
+
+def test_cross_check_reads_the_in_memory_affix_shape_too():
+    sh, recs, adj = _fixture()
+    for r in recs:
+        r["affixes"] = [{"stat": a["name"], "bonus_type": a["type"], "value": 1, **({"via": a["via"]} if "via" in a else {})} for a in r["affixes"]]
+    assert T.cross_check(sh, recs, adj)["compared"] == 4
+
+
+def test_the_shipped_adjudications_cover_the_built_dataset_and_the_stamp_matches():
+    if not os.path.exists(ITEMS):
+        return
+    data = json.load(open(ITEMS, encoding="utf-8"))
+    st = T.cross_check(T.load_shard(), data["items"], T.load_crosscheck_adjudications())
+    assert data["metadata"]["affix_type_cross_check"] == st, "the stamp is the check — rebuild after changing either"
+    assert st["compared"] >= 170 and st["agree"] >= 160, st
+    # The three rulings shipped: two harvest defects (the wrong tooltip was
+    # captured for the key), one deliberate model divergence (#614 types a
+    # cursed -1 as Penalty). None is a type defect in the catalog.
+    by = {d["name"]: d["disposition"] for d in st["disagree_ruled"]}
+    assert by == {"Armor Class": "mismatched-harvest", "Repair": "mismatched-harvest",
+                  "Enhancement Bonus (Weapon)": "modelled-differently"}, by
+    # #697, as a field: the label says Exceptional, the tooltip says Insight, and
+    # no carrier stores Seeker at Exceptional any more.
+    assert {"name": "Seeker", "stated": "Insight", "label_type": "Exceptional"} in st["label_disagrees_with_tooltip"]
+    assert not any(a["name"] == "Seeker" and a.get("type") == "Exceptional" for it in data["items"] for a in it["affixes"])
+
+
+def test_the_guard_fails_on_a_corrupted_type_in_the_real_data():
+    if not os.path.exists(ITEMS):
+        return
+    data = json.load(open(ITEMS, encoding="utf-8"))
+    sh = T.load_shard()
+    url = sh["harvested"]["Strength"]["wiki_url"]
+    items = copy.deepcopy(data["items"])
+    flipped = 0
+    for it in items:
+        if T._norm_url(it.get("wiki_url")) == T._norm_url(url):
+            for a in it["affixes"]:
+                if a["name"] == "Strength":
+                    a["type"] = "Quality"; flipped += 1
+    assert flipped, "the harvested Strength carrier is in the dataset"
+    msg = _xraises(T.cross_check, sh, items, T.load_crosscheck_adjudications())
+    assert "Strength: the tooltip states Enhancement" in msg

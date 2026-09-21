@@ -54,6 +54,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHARD_PATH = os.path.join(ROOT, "data", "seed", "compendium", "affix_tooltip.json")
 ADJUDICATIONS_PATH = os.path.join(ROOT, "data", "seed", "compendium",
                                   "conditional_adjudications.json")
+CROSSCHECK_ADJUDICATIONS_PATH = os.path.join(ROOT, "data", "seed", "compendium",
+                                             "affix_type_crosscheck_adjudications.json")
 
 DISPOSITIONS = ("constant", "quarantine", "disclose")
 
@@ -188,3 +190,248 @@ def check(shard: dict, adjudications: dict, roster, quarantine_names=()) -> dict
             "candidates": [{"name": c["name"], "markers": c["markers"]} for c in cands],
             "by_disposition": by_disp,
             "harvested": (shard.get("_meta") or {}).get("harvested")}
+
+
+# ---------------------------------------------------------------------------
+# #852 — the bonus-type CROSS-CHECK: the type each carrier stores against the
+# type the wiki's rendered tooltip states for that enchantment.
+#
+# gear-planner stays the source of truth for WHICH affixes a record has. The
+# tooltip is the source of truth for the TYPE when the two disagree — that is the
+# standing rule affix_type_corrections.json applies, one carrier at a time, after
+# a player notices a stacking total that is off (#259, #363, #697 with eighteen
+# corrections). #697's own resolution shows the evidence was already on disk:
+# "every one of the 18 Exceptional Seeker carriers renders 'Provides a +N Insight
+# bonus'" — read from this shard, by hand, after a report. This reads it at build
+# time, for every harvested name, before anyone reports anything.
+#
+# What is compared, exactly. Each shard entry was read from ONE carrier page
+# (`carrier` / `wiki_url`), and the sentence lives in the enchantment template,
+# so the tooltip is evidence for the (name, engraved label) pair, not for every
+# type a name is ever stored under: `Assassinate` is legitimately Enhancement on
+# one item and Insight on another. So:
+#
+#   1. the harvested carrier's own stored type for `name` must equal the stated
+#      type (the exact evidence chain), and
+#   2. when the engraved label carries a type prefix (`Exceptional Seeker +5`)
+#      that DIFFERS from the stated type (`Insight`), no carrier anywhere may
+#      still store the name at the label's type — that is the #697 shape, and
+#      the count of such carriers is the regression guard. After #697's
+#      corrections it is zero; a refresh that re-types one goes red.
+#
+# A name the carrier stores only as expanded components (`Good Luck` -> Luck
+# bonus to every save and skill, tagged `via`) is compared through those
+# components' types. A carrier that is not an item record (a set page, the
+# Solar/Lunar gem page), a tooltip that states no type (charges, DR, metamagic
+# efficiency), and a name the carrier does not store at all are each COUNTED and
+# NAMED in the stamp, never silently skipped — the stamp is the population
+# ("a count is a claim about a population").
+#
+# Disagreements must be ruled in affix_type_crosscheck_adjudications.json:
+#   * ``mismatched-harvest``      — the tooltip is for a DIFFERENT enchantment
+#                                   than the key (`Repair` harvested the item's
+#                                   Repair Amplification sentence); evidence is the
+#                                   tooltip verbatim, and a re-harvest retires it.
+#   * ``tooltip-not-authoritative`` — the wiki sentence is known wrong or stale;
+#                                   `why` says so and names the ruling.
+#   * ``modelled-differently``     — the wiki is right about the game and the model
+#                                   types it otherwise ON PURPOSE (a `-1` weapon's
+#                                   Enhancement penalty is stored `Penalty` so a curse
+#                                   never competes in a bonus bucket); `why` names the
+#                                   ruling that chose that.
+# `cross_check` raises on an unruled disagreement, on a ruling whose evidence is
+# not the tooltip the shard carries (the sentence moved: re-read), on a stale
+# ruling (the name agrees now), and — like `check` — refuses to vouch for a run
+# that compared nothing over a populated catalog.
+# ---------------------------------------------------------------------------
+
+CROSSCHECK_DISPOSITIONS = ("mismatched-harvest", "tooltip-not-authoritative", "modelled-differently")
+
+# The bonus-type words a tooltip can state, spelled as the catalog stores them.
+# `Insightful` and `Natural Armor` are the two spellings the wiki uses that the
+# catalog does not. Nothing outside this list is ever read as a type.
+_TYPE_WORDS = ("Enhancement", "Insight", "Insightful", "Quality", "Exceptional", "Profane",
+               "Sacred", "Artifact", "Competence", "Luck", "Morale", "Legendary", "Festive",
+               "Equipment", "Untyped", "Natural Armor", "Deflection", "Shield", "Resistance",
+               "Orb", "Implement", "Vitality", "Armor")
+_TYPE_ALIAS = {"Insightful": "Insight", "Natural Armor": "Natural"}
+_T = "|".join(re.escape(t) for t in _TYPE_WORDS)
+#: The three shapes a tooltip states a type in. Narrow on purpose: "+N <Type>
+#: bonus", "<Type> bonus to", and "(<Type> bonus)". Anything else is None.
+TYPE_PATTERNS = (
+    re.compile(r"[+-]\s*\d+%?\s+(" + _T + r")\s+bonus", re.I),
+    re.compile(r"\b(" + _T + r")\s+bonus\s+to\b", re.I),
+    re.compile(r"\((" + _T + r")\s+bonus\)", re.I),
+)
+#: Engraved-label prefixes that name a type. `Exceptional Seeker +5` -> Exceptional.
+LABEL_PREFIX = {"Insightful": "Insight", "Quality": "Quality", "Exceptional": "Exceptional",
+                "Profane": "Profane", "Sacred": "Sacred", "Legendary": "Legendary"}
+
+
+def stated_type(tooltip: str):
+    """The bonus type a tooltip states, spelled as the catalog stores it, or None.
+    Never guesses: a sentence outside the three shapes above returns None."""
+    for pat in TYPE_PATTERNS:
+        m = pat.search(tooltip or "")
+        if m:
+            word = m.group(1)
+            canon = next(t for t in _TYPE_WORDS if t.lower() == word.lower())
+            return _TYPE_ALIAS.get(canon, canon)
+    return None
+
+
+def label_type(label: str):
+    """The type an engraved label's prefix names, or None."""
+    lab = str(label or "")
+    for prefix, t in LABEL_PREFIX.items():
+        if lab.startswith(prefix + " "):
+            return t
+    return None
+
+
+def _norm_url(u: str) -> str:
+    """One spelling for a wiki page URL: the harvest strips `?` (the privacy
+    guard), the catalog encodes it as %3F; underscores and spaces are the same
+    page; case is not significant."""
+    from urllib.parse import unquote
+    x = unquote(str(u or ""))
+    x = re.sub(r"(%3F|\?)$", "", x, flags=re.I)
+    return x.replace("_", " ").strip().lower()
+
+
+def _aff_name(a):
+    return a.get("name") if a.get("name") is not None else a.get("stat")
+
+
+def _aff_type(a):
+    t = a.get("type") if a.get("type") is not None else a.get("bonus_type")
+    return "Bool" if t == "boolean" else t
+
+
+def _strip_label(label: str) -> str:
+    """`Exceptional Alluring Skills Bonus` -> `alluring skills bonus`;
+    `Good Luck +2` -> `good luck`."""
+    lab = re.sub(r"\s*[+-]?\d+%?$", "", str(label or "")).strip()
+    for prefix in LABEL_PREFIX:
+        if lab.startswith(prefix + " "):
+            lab = lab[len(prefix) + 1:]
+    return lab.strip().lower()
+
+
+def load_crosscheck_adjudications(path: str = CROSSCHECK_ADJUDICATIONS_PATH) -> dict:
+    if not os.path.exists(path):
+        return {"_meta": {}, "ruled": {}}
+    return _load(path)
+
+
+def cross_check(shard: dict, records, adjudications: dict) -> dict:
+    """Compare every harvested tooltip's stated type against what its carrier
+    stores; raise on any unruled disagreement. Returns the metadata stamp."""
+    harvested = (shard or {}).get("harvested") or {}
+    ruled = (adjudications or {}).get("ruled") or {}
+    records = list(records or [])
+
+    by_url = {}
+    stored_at = {}
+    for v in records:
+        u = _norm_url(v.get("wiki_url"))
+        if u:
+            by_url.setdefault(u, []).append(v)
+        for a in v.get("affixes") or []:
+            t = _aff_type(a)
+            if t == "Bool":
+                continue
+            stored_at.setdefault(_aff_name(a), {}).setdefault(t, 0)
+            stored_at[_aff_name(a)][t] += 1
+
+    out = {"agree": [], "agree_via_components": [], "label_disagrees_with_tooltip": [],
+           "disagree": [], "no_stated_type": [], "carrier_not_an_item": [],
+           "affix_not_on_carrier": [], "not_stated": []}
+    disagreements = {}
+    for name, e in sorted(harvested.items()):
+        e = e or {}
+        if e.get("provenance") != "stated":
+            out["not_stated"].append(name)
+            continue
+        st = stated_type(e.get("tooltip"))
+        if not st:
+            out["no_stated_type"].append(name)
+            continue
+        recs = by_url.get(_norm_url(e.get("wiki_url")), [])
+        if not recs:
+            out["carrier_not_an_item"].append({"name": name, "carrier": e.get("carrier")})
+            continue
+        direct = set()
+        components = set()
+        want = _strip_label(e.get("label")) or name.lower()
+        for v in recs:
+            for a in v.get("affixes") or []:
+                t = _aff_type(a)
+                if t == "Bool":
+                    continue
+                if _aff_name(a) == name:
+                    direct.add(t)
+                elif a.get("via") and _strip_label(a.get("via")) in (want, name.lower()):
+                    components.add(t)
+        kinds = direct or components
+        if not kinds:
+            out["affix_not_on_carrier"].append({"name": name, "label": e.get("label")})
+            continue
+        lt = label_type(e.get("label"))
+        at_label_type = stored_at.get(name, {}).get(lt, 0) if (lt and lt != st) else 0
+        if st in kinds and not at_label_type:
+            entry = {"name": name, "stated": st}
+            if lt and lt != st:
+                entry["label_type"] = lt
+                out["label_disagrees_with_tooltip"].append(entry)
+            (out["agree"] if direct else out["agree_via_components"]).append(name)
+            continue
+        d = {"name": name, "label": e.get("label"), "stated": st,
+             "carrier_stores": sorted(k for k in kinds if k is not None),
+             "carrier": e.get("carrier"), "tooltip": e.get("tooltip")}
+        if at_label_type:
+            d["label_type"] = lt
+            d["carriers_at_label_type"] = at_label_type
+        disagreements[name] = d
+
+    problems = []
+    for name, d in disagreements.items():
+        r = ruled.get(name)
+        if not r:
+            where = (f"{d['carriers_at_label_type']} carrier(s) still store it at the label's type {d['label_type']}"
+                     if d.get("carriers_at_label_type") else f"its carrier {d['carrier']} stores {d['carrier_stores']}")
+            problems.append(
+                f"{name}: the tooltip states {d['stated']} ({d['label']!r}) but {where} — "
+                "correct the type (affix_type_corrections.json) or rule it in "
+                "affix_type_crosscheck_adjudications.json")
+            continue
+        if r.get("disposition") not in CROSSCHECK_DISPOSITIONS:
+            problems.append(f"{name}: disposition {r.get('disposition')!r} is outside {CROSSCHECK_DISPOSITIONS}")
+        if (r.get("evidence") or "") != (d.get("tooltip") or ""):
+            problems.append(f"{name}: the ruling's evidence is not the tooltip the shard carries — the wiki sentence moved; re-read before trusting the ruling")
+        if not r.get("why"):
+            problems.append(f"{name}: a ruling needs a `why`")
+        d["disposition"] = r.get("disposition")
+        out["disagree"].append(d)
+    for name in ruled:
+        if name not in disagreements:
+            problems.append(f"{name}: ruling is stale — the tooltip and its carrier agree now (or the name left the shard); retire it deliberately")
+    if problems:
+        raise SystemExit("affix bonus-type cross-check failed:\n  " + "\n  ".join(problems))
+
+    compared = len(out["agree"]) + len(out["agree_via_components"]) + len(out["disagree"])
+    if records and harvested and not compared:
+        raise ValueError("the bonus-type cross-check compared zero names over a populated catalog — "
+                         "the carrier match or the type parser is broken, not clean")
+    return {
+        "names": len(harvested),
+        "compared": compared,
+        "agree": len(out["agree"]),
+        "agree_via_components": out["agree_via_components"],
+        "disagree_ruled": out["disagree"],
+        "label_disagrees_with_tooltip": out["label_disagrees_with_tooltip"],
+        "no_stated_type": out["no_stated_type"],
+        "carrier_not_an_item": out["carrier_not_an_item"],
+        "affix_not_on_carrier": out["affix_not_on_carrier"],
+        "not_stated": out["not_stated"],
+    }
