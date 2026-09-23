@@ -317,7 +317,13 @@ def test_a_slot_that_uses_both_spellings_resolves_to_neither():
     for key in [("Enhancement Bonus", "Weapon"), ("Enhancement Bonus", "Armor"),
                 ("Life Shield", "Weapon")]:
         _true(m.get(key), f"{key} must still resolve — its slot carries no bare form")
-    _eq(len(m), 23, "the slot-qualified map's size, re-ratified deliberately")
+    # 397c673 — 22, not 23. The single departure is `("Craftable", "Trinket")`:
+    # the refresh's `[Crafted]` restructure removed the `Craftable` marker affix
+    # from the roster entirely, so there is no such name left to slot-qualify.
+    # Everything else in the map is byte-identical to the pre-refresh set.
+    _eq(len(m), 22, "the slot-qualified map's size, re-ratified deliberately")
+    _true(("Craftable", "Trinket") not in m,
+          "the `Craftable` marker is gone upstream; if it returns, re-ratify the size")
 
 
 def test_the_guard_refuses_to_inspect_zero_records():

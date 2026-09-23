@@ -389,8 +389,11 @@ def test_the_built_dataset_gives_every_essence_host_its_menus():
     and all three menus, so nothing can craft across families."""
     hosts = {it["source_item"]: it for it in _dataset()["items"] if it.get("essence_slots")}
     assert len(hosts) == 44, sorted(hosts)
-    for gem in ("Gem of Many Facets [Crafted]", "Epic Gem of Many Facets [Crafted]",
-                "Legendary Gem of Many Facets [Crafted]"):
+    # 397c673 — the `[Crafted]` suffix is gone: upstream collapsed each twin onto its
+    # base name. The host POPULATION is unchanged (44, same family split), only the
+    # names are. See tests/test_crafted_twins.py for the family's retirement.
+    for gem in ("Gem of Many Facets", "Epic Gem of Many Facets",
+                "Legendary Gem of Many Facets"):
         assert gem in hosts, gem
     by_family = {}
     for name, it in hosts.items():
@@ -406,7 +409,8 @@ def test_the_heroic_gem_can_reach_no_insight_option_and_no_extra_menu():
     """ML 5 against two minimums of 10. Its Extra menu is empty in game, and the
     notice says so rather than letting it read as missing data."""
     ds = _dataset()
-    heroic = next(it for it in ds["items"] if it["source_item"] == "Gem of Many Facets [Crafted]")
+    heroic = next(it for it in ds["items"]
+                  if it["source_item"] == "Gem of Many Facets" and it.get("essence_slots"))
     assert heroic["ml"] < essence_pool.INSIGHT_MIN_ML
     reachable = [o for o in ds["essence_crafting"] if heroic["ml"] >= o["min_ml"]]
     assert reachable, "the heroic Gem must still reach the non-Insight options"

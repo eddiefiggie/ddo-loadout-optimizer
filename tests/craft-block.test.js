@@ -101,8 +101,11 @@ test("the index covers every stamped option row and nothing else", () => {
   // Suffix) that became offerable once the BONUS-TYPE page sweep supplied the type
   // the effect page never carried. The solver's own Essence menu grew, not just
   // the player-authored bench.
-  assert.strictEqual(idx.length, 1406, "index size is the stamped population");
-  assert.strictEqual(new Set(idx.map((r) => r.id)).size, 1406, "ids stay unique through the index");
+  // 397c673 — 1446 not 1406: +40 Legendary Green Steel skill-group rows. The pool
+  // key widened to (tier, skill group) in the same commit; without that the 40 new
+  // rows collapsed 12 options onto 6 keys and blocking one would have blocked another.
+  assert.strictEqual(idx.length, 1446, "index size is the stamped population");
+  assert.strictEqual(new Set(idx.map((r) => r.id)).size, 1446, "ids stay unique through the index");
   for (const r of idx) {
     assert.ok(r.id.startsWith("craft:"), r.id);
     assert.ok(r.name, `row with no display name: ${r.id}`);

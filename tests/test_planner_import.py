@@ -77,7 +77,14 @@ def test_reader_names_reach_the_built_dataset():
     _, stats = P.load_planner_items(exclude_names=set())
     missing = [r["name"] for r in recs if r["name"] not in present]
     # only the Dinosaur Bone host names (owned by the synthetic dino blanks) may be absent
-    assert all("Dino" in m or "Bone" in m for m in missing), \
+    # 397c673 — `Leaves of the Forest` is also absent, and deliberately: it is
+    # upstream's placeholder for the FAMILY INDEX page (ML 1, a single `TBD` affix,
+    # url pointing at a page that renders a table of the real `(level N)` variants).
+    # build_dataset drops it because shipping it breaks owned-item import — the
+    # importer strips `(level N)` to match an in-game name, so a player owning any
+    # real tier would also match this shell. See _UPSTREAM_PLACEHOLDERS there.
+    assert all("Dino" in m or "Bone" in m or m == "Leaves of the Forest"
+               for m in missing), \
         f"unexpected gear-planner names missing from the dataset: {missing[:8]}"
 
 

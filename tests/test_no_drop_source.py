@@ -26,6 +26,14 @@ BRACERS_HEROIC = "Bracers of the Spider Queen"
 BRACERS_LEGENDARY = "Legendary Bracers of the Spider Queen"
 
 
+def _retired_2026_09_22():
+    """The 397c673 retirement block: `{item name: recorded evidence}`."""
+    with open(SHARD, encoding="utf-8") as fh:
+        doc = json.load(fh)
+    return (doc.get("_retired") or {}).get(
+        "2026-09-22-gear-planner-refresh", {}).get("entries") or {}
+
+
 def _retired_2026_08_18():
     """The #374/U4 retirement block: `{item name: recorded evidence}`."""
     with open(SHARD, encoding="utf-8") as fh:
@@ -313,24 +321,41 @@ def test_the_shipped_shard_passes_the_guards_against_the_real_roster():
     # `_retired["2026-08-18-gear-planner-refresh"]`. Four of the six carried
     # `confirmed_no_source`, hence exactly -6 entries and -4 confirmed. The delta
     # is pinned as arithmetic below, not just as two new numbers.
+    #
+    # 397c673 — re-ratified 216 -> 208 and confirmed 36 -> 28. Update 81.2 shipped
+    # the quest `Raiding the Raiders` on 2026-08-19, AFTER the 2026-08-13 triage
+    # that recorded these eight items' Location sections as empty, so upstream now
+    # records a source for all eight and the staleness guard fired again. Each was
+    # re-read on its own RENDERED wiki page before retirement into
+    # `_retired["2026-09-22-gear-planner-refresh"]`. All eight carried
+    # `confirmed_no_source`, hence exactly -8 entries and -8 confirmed.
+    #
+    # The two Spider Queen bracers are among the eight. They were this shard's
+    # pinned exemplars from the original player report, so the pin is INVERTED
+    # rather than deleted: they must now be absent from the live shard and present
+    # in the retirement, which is a stronger statement than dropping the names.
     entries = no_drop_source.load(SHARD)
-    assert len(entries) == 216
+    assert len(entries) == 208
     retired = _retired_2026_08_18()
     assert len(retired) == 6 and not (set(retired) & set(entries)), \
         "a retired entry must leave the live shard, not sit in both"
-    assert {BRACERS_HEROIC, BRACERS_LEGENDARY} <= set(entries)
+    retired_new = _retired_2026_09_22()
+    assert len(retired_new) == 8 and not (set(retired_new) & set(entries)), \
+        "a retired entry must leave the live shard, not sit in both"
+    assert {BRACERS_HEROIC, BRACERS_LEGENDARY} <= set(retired_new)
+    assert not ({BRACERS_HEROIC, BRACERS_LEGENDARY} & set(entries))
     assert "Coronach (historic) [Crafted]" not in entries
     records, _stats = planner_items.load_planner_items()
     result = no_drop_source.check(entries, records)
-    assert len(result["confirmed"]) == 36
-    assert BRACERS_HEROIC in result["confirmed"]
-    assert BRACERS_LEGENDARY in result["confirmed"]
+    assert len(result["confirmed"]) == 28
+    assert BRACERS_HEROIC not in result["confirmed"]
+    assert BRACERS_LEGENDARY not in result["confirmed"]
     assert "Cataclysmic Buckler" in result["confirmed"]  # the #244 verdict
     # #93 — the exemplar and the still-obtainable event items.
     assert "Seeker Tap of Spellsight" in result["confirmed"]
     assert "Green Steel Greatclub" in result["wiki_has_source"]
     assert "The Admiral of Bling" in result["wiki_has_source"]
-    assert result["checked"] == 216
+    assert result["checked"] == 208
     # Every confirmed entry carries its evidence chain (the guard enforces it;
     # this asserts the shipped data actually exercises that path 19 times).
     for name in result["confirmed"]:
@@ -351,8 +376,11 @@ def test_the_built_dataset_flags_the_seeded_items_and_counts_coverage():
     # #374/U4 — re-ratified 40 -> 36: the 2026-08-18 refresh records a quest source
     # for four previously `confirmed_no_source` items (both `… of the Deep`
     # families), each wiki-re-read before retirement. See the sibling shard test.
-    assert len(flagged) == 36
-    assert BRACERS_HEROIC in flagged and BRACERS_LEGENDARY in flagged
+    # 397c673 — re-ratified 36 -> 28: the eight `Raiding the Raiders` retirements,
+    # all of which had carried `confirmed_no_source`. The Spider Queen bracers are
+    # two of them, so their pin is inverted (see the sibling shard test).
+    assert len(flagged) == 28
+    assert BRACERS_HEROIC not in flagged and BRACERS_LEGENDARY not in flagged
     assert "Cataclysmic Buckler" in flagged
     assert "Seeker Tap of Spellsight" in flagged   # the #93 exemplar
     assert "Green Steel Greatclub" not in flagged  # Festivult still grants it
@@ -384,21 +412,40 @@ def test_the_built_dataset_flags_the_seeded_items_and_counts_coverage():
     #   +1  net, 223 -> 224
     # and correspondingly confirmed 40 -> 36 (four retired entries were
     # `confirmed_no_source`), wiki_has_source 182 -> 180 (the other two).
-    assert cov["triage_universe"] == 224
-    assert cov["confirmed_no_source"] == 36
+    #
+    # 397c673 — re-ratified 224 -> 239, attributed rather than read off the build:
+    #   -8   the `Raiding the Raiders` retirements LEAVE the universe (upstream now
+    #        records a quest source for each, which is why they were retired)
+    #   +21  three new level-variant families (Mindcleaver / Shadowblade / Thorn
+    #        Blade, seven tiers each), all with an empty location_quest
+    #   +2   `Epic Diabolist's Ring` and `Epic Infested Chainmail` lost the quest
+    #        they used to record, so they enter the universe undispositioned
+    #   -1   `Coronach (historic) [Crafted]` ceased to exist in the [Crafted]
+    #        restructure; the plain `Coronach (historic)` is already dispositioned
+    #   ------
+    #   +14  net, 224 -> 238
+    # confirmed 36 -> 28 (all eight retirements were confirmed_no_source), and
+    # wiki_has_source is UNCHANGED at 180 — none of the eight carried that verdict.
+    assert cov["triage_universe"] == 238
+    assert cov["confirmed_no_source"] == 28
     assert cov["wiki_has_source"] == 180
     # 224-item universe, 216 dispositioned in the shard: the remainder is the
     # single invalid-title item recorded tracker-only, plus the seven new
     # `Flame Blade` tiers awaiting triage. Named, so a NINTH cannot appear silently.
-    assert cov["unverified"] == cov["triage_universe"] - 216 == 8
+    assert cov["unverified"] == cov["triage_universe"] - 208 == 30
     undispositioned = sorted({v["source_item"] for v in universe}
                              - set(no_drop_source.load(SHARD)))
-    assert undispositioned == ["Coronach (historic) [Crafted]"] + [
-        f"Flame Blade (level {n})" for n in (1, 10, 15, 20, 25, 30, 5)], undispositioned
-    assert cov["flagged_variants"] == 36
-    assert BRACERS_HEROIC in cov["confirmed_items"]
-    assert BRACERS_LEGENDARY in cov["confirmed_items"]
-    assert len(cov["confirmed_items"]) == 36
+    # Named in full, so a THIRTY-FIRST cannot appear silently. Everything here is
+    # awaiting triage, not flagged: an unverified item shows nothing player-facing.
+    assert undispositioned == sorted(
+        ["Epic Diabolist's Ring", "Epic Infested Chainmail"]
+        + [f"{fam} (level {n})"
+           for fam in ("Flame Blade", "Mindcleaver", "Shadowblade", "Thorn Blade")
+           for n in (1, 5, 10, 15, 20, 25, 30)]), undispositioned
+    assert cov["flagged_variants"] == 28
+    assert BRACERS_HEROIC not in cov["confirmed_items"]
+    assert BRACERS_LEGENDARY not in cov["confirmed_items"]
+    assert len(cov["confirmed_items"]) == 28
     # the six retired items really did leave the universe — that is the premise
     # the retirement rests on, checked at the built-dataset level too
     assert not (set(_retired_2026_08_18()) & {v["source_item"] for v in universe})
@@ -425,8 +472,9 @@ def test_374_every_retired_entry_records_the_review_that_un_flagged_it():
     record a quest for it. A retirement whose premise is not in the data is a
     no-drop flag deleted on assertion.
     """
-    entries = _retired_2026_08_18()
-    assert len(entries) == 6, sorted(entries)
+    entries = dict(_retired_2026_08_18())
+    entries.update(_retired_2026_09_22())
+    assert len(entries) == 14, sorted(entries)
     records, _stats = planner_items.load_planner_items()
     by_name = {r.get("name"): r for r in records}
     for name, evidence in entries.items():
@@ -441,4 +489,5 @@ def test_374_every_retired_entry_records_the_review_that_un_flagged_it():
             f"still live and must not be retired")
     # and the retirement really is what moved the pinned counts
     assert len(no_drop_source.load(SHARD)) + len(entries) == 222, \
-        "222 was the pre-refresh entry count; the delta must be exactly the retirement"
+        ("222 was the entry count before the 2026-08-18 refresh; every departure since "
+         "must be a recorded retirement, not a deletion. 208 live + 6 + 8 retired = 222.")

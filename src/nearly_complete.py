@@ -139,9 +139,21 @@ def assert_tier_boundary_is_real(items) -> dict:
             f"{NC_HEROIC_ML} / Legendary {NC_LEGENDARY_ML}): {stranded}; "
             f"e.g. {named}")
 
+    # 397c673 — the name is checked only when it ASSERTS a tier. A `Legendary X`
+    # host at a heroic ML is still a contradiction and still stops the build. The
+    # reverse direction was retired: it read the ABSENCE of the prefix as a claim
+    # of "heroic", which held only while every legendary host happened to be
+    # prefixed. The Terror of the Demon Lords raid breaks that convention — eight
+    # of its ML35 end-chest hosts are plainly named (`The Prince of Demons`,
+    # `The Butcher's Mind`, ...) and upstream files them under three new per-item
+    # pools (`Nearly Complete: Ability Score` / `Insightful Ability Score` /
+    # `Spell Focus`). Their ML35 is stated on each item's own wiki page
+    # (`minlevel = 35`) and the raid is Legendary CR 37, so the ML is right and the
+    # naming convention is simply not universal. Treating a plain name as a heroic
+    # claim would have failed the build on eight correctly-tiered hosts.
     disagree = [(it.get("ml"), it["variant_id"]) for it in hosts
                 if it["variant_id"].startswith(_LEGENDARY_NAME_PREFIX)
-                != (_nc_tier_from_ml(it.get("ml")) == "legendary")]
+                and _nc_tier_from_ml(it.get("ml")) != "legendary"]
     if disagree:
         problems.append(
             "host(s) whose name and ML-derived tier disagree: "

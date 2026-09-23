@@ -33,6 +33,37 @@
 //     #789 was filed on that miscount and closed once the receipts were read.
 //     The other 23 fixtures are byte-identical.
 //
+//   397c673 (2026-09-22) — FOUR fixtures moved on the Update 81.3 re-vendor, and
+//   the other 20 are byte-identical. The solver code did not change: re-running the
+//   CURRENT code against the PRE-REFRESH dataset reproduces this golden exactly, so
+//   every move below is attributable to data alone. Two improved, one is a
+//   `chosen`-only tie, and one went DOWN and is the only one that needed an argument.
+//     * `endgame-tank-ml34`: Magical Sheltering 133 -> 142, the three higher-ranked
+//       targets unchanged. Five slots reshuffle and `Legendary Green Steel Bastard
+//       Sword` enters at Main Hand — the 40 new Green Steel skill-group rows are
+//       what make it competitive. Nothing above it lost, so this is a pure gain.
+//     * `absorption-sonic-flag-ml26`: Fire Absorption 40 -> 41, Sonic unchanged.
+//     * `endgame-dex-ml36`: perTarget BYTE-IDENTICAL, `chosen` moved. A tie-break,
+//       which is exactly the class a golden cannot adjudicate on its own — recorded
+//       as such rather than read as an improvement. Worth noting that `The Queen of
+//       Rot` (Terror of the Demon Lords) is one of the entering slots: the raid loot
+//       ties into an endgame Dex build without beating it.
+//     * `riposte-split-ac-saves-ml34`: all three saves DOWN 4 (38/38/37 ->
+//       34/34/33) while Physical Sheltering, ranked BELOW them, went 117 -> 124.
+//       Under strict lexicographic priority that shape is either a defect or proof
+//       the higher total became unreachable, and it is the latter: upstream retyped
+//       the heroic Slaver's Suffix `Resistance` option from `Enhancement 4` to
+//       `Resistance 4`, matching the Legendary sibling it had always disagreed with
+//       (`Resistance 10`). Typed Enhancement it stacked with every other Resistance
+//       save source; typed Resistance it shares their bucket and takes the max. So
+//       the pre-refresh 38/38/37 was inflated by an over-stack and 34/34/33 is the
+//       corrected answer. Measured, not assumed: blocking the ring the new solve
+//       picks still yields 34/34/33, so the single ring swap (`Five Rings` ->
+//       `Legendary Band of Faith and Fortress`) is a CONSEQUENCE of the retype and
+//       not its cause. Pinned independently of this snapshot by the named assertion
+//       "397c673 — both Slaver's Resistance suffixes are Resistance-typed", which
+//       was written first and proven red against the pre-refresh dataset.
+//
 //   #717/#718 (2026-09-05) — FOUR fixtures moved, every one of them a fixture that
 //   ranks a skill or a save, every delta UPWARD, and the other 20 byte-identical.
 //   `Good Luck` (all saves + all 21 skills, type Luck) and the four `* Skills
@@ -535,6 +566,43 @@ const { test, fail } = require("./_harness");
     assert.ok(exceptional.length >= 1 && exceptional.every((v) => v.category === "Weapon"),
       "the Exceptional sibling stays a Weapon option — one option moved, not the family");
   });
+  // 397c673 — the named assertion for the one golden move that LOOKED like a
+  // regression, written before the snapshot was regenerated (per
+  // docs/solutions/conventions/a-gate-cascade-is-the-refresh-report-not-an-obstacle.md
+  // §"named assertions BEFORE the golden"): a snapshot is a change detector, and
+  // its sanctioned remedy for a red is to overwrite the objection, so the mechanic
+  // is pinned here instead.
+  //
+  // `riposte-split-ac-saves-ml34` lost 4 on all three saves while a LOWER-priority
+  // target gained 7, which under strict lexicographic priority can only be right if
+  // the higher total became unreachable. It did: upstream retyped the heroic
+  // Slaver's Suffix `Resistance` option from `Enhancement 4` to `Resistance 4`,
+  // matching the Legendary sibling it always disagreed with (`Resistance 10`). The
+  // old typing let one option stack with every other Resistance-typed save source;
+  // the new one shares their bucket and takes the max. So the pre-refresh 38/38/37
+  // was inflated, and 34/34/33 is the corrected answer — measured, not assumed:
+  // blocking the ring the new solve picks still yields 34/34/33, so the ring swap
+  // is a consequence of the retype and not its cause.
+  test("397c673 — both Slaver's Resistance suffixes are Resistance-typed, so they share one bucket", () => {
+    const opts = (dataset().slavers || []).filter((o) =>
+      (o.affixes || []).some((a) => /Save$/.test(a.stat)));
+    const byType = new Set();
+    let seen = 0;
+    for (const o of opts) {
+      for (const a of o.affixes || []) {
+        if (!/Save$/.test(a.stat)) continue;
+        if (!/^Resistance/.test(o.name || "")) continue;
+        byType.add(a.bonus_type);
+        seen++;
+      }
+    }
+    assert.ok(seen > 0, "refuse to pass over zero Slaver's save options");
+    assert.deepStrictEqual([...byType], ["Resistance"],
+      "a Slaver's `Resistance` option typed anything but `Resistance` stacks with the " +
+      "universal Resistance bonus the game takes the MAX of — that is the over-stack " +
+      "upstream corrected at 397c673, and re-introducing it would inflate every save solve");
+  });
+
   const DC_TWINS = ["provenance-alias-sacred-dc-ml34",
                     "provenance-components-sacred-dc-ml34"];
   test("#365/#766 — the provenance twins still solve identically", () => {

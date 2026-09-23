@@ -1,10 +1,23 @@
 {
  "_meta": {
-  "title": "wiki-sourced ML36 augment tier (#260)",
-  "note": "gear-planner's crafting.json (verified against upstream master 2026-08-12) tops out at ML32 in every color pool, but the wiki's Category:Minimum level 36 augments holds the 63 top-tier sale augments (Diamond/Ruby/Sapphire/Topaz). Without them every ML36 solve slots one tier low. This shard is the wiki-sourced gap fill, injected into the same color pools so downstream processing (color normalization, fits_slots, verification) treats them exactly like natives.",
-  "vocabulary_rule": "Each entry's affix (name, type) is anchored to its highest gear-planner SIBLING in the same color pool (recorded per entry) and MUST match it at build time — the vocabulary is gear-planner's, per the structural-sourcing rule, so 'Sapphire of Protection +12' emits Armor Class/Deflection like its +11 sibling (the wiki's 'Protection bonus' wording IS the Deflection bonus — 169 worn affixes already use this vocabulary). Only the VALUE is new, and it must appear verbatim in the recorded tooltip.",
-  "stale_guard": "The build FAILS when (a) an entry's name appears in the upstream pool — gear-planner added the tier, retire this shard; (b) an entry's sibling vanishes or its affix vocabulary moves; (c) an entry's value is absent from its own recorded tooltip. A shard that cannot go stale unnoticed is the only kind worth having (#207).",
-  "evidence_rule": "Every entry carries the verbatim item-page description (the rendered slotted-effect tooltip) and its wiki URL. Harvested 2026-08-12, same-origin from a ddowiki tab, two batched revisions calls."
+  "status": "RETIRED 2026-09-22 — evidence artifact, NOT a build input",
+  "retired_because": "The vendored gear-planner snapshot moved to 397c673 (2026-09-23) and upstream now carries all 63 ML36 augments natively in every color pool. That is the exact condition this shard's own staleness guard named as its retirement trigger (\"an entry whose name appears upstream fails the build — gear-planner added the tier\").",
+  "verification": {
+   "entries": 63,
+   "present_upstream": 63,
+   "identical_after_canon_rename": 59,
+   "divergent": 4,
+   "divergence": "Ruby of Acid/Flame/Frost/Shock (10d6) — this shard stored the dice count as the affix value (Bool 10); upstream stores Bool 1 at all ten tiers of each family, keeping the dice count in the item NAME only. Resolved in upstream's favour: it is internally consistent across every sibling, and `Bool` is a PRESENCE type (web/dataset.js PRESENCE_TYPES), so the value is not ranked as a magnitude and the change is behaviour-neutral.",
+   "note_on_the_other_9": "A first pass against the RAW dump showed 12 divergences; the extra 9 (Combustion vs Fire Spell Power and siblings) were an artifact of comparing before affix_name_corrections runs. Our canon is Combustion, upstream's name is the alias, and build_dataset applies the rename to the crafting catalog before this comparison.",
+   "verified_against": "397c673a3561d65974d8e1079c5a0fa781ce1172"
+  },
+  "original_meta": {
+   "title": "wiki-sourced ML36 augment tier (#260)",
+   "note": "gear-planner's crafting.json (verified against upstream master 2026-08-12) tops out at ML32 in every color pool, but the wiki's Category:Minimum level 36 augments holds the 63 top-tier sale augments (Diamond/Ruby/Sapphire/Topaz). Without them every ML36 solve slots one tier low. This shard is the wiki-sourced gap fill, injected into the same color pools so downstream processing (color normalization, fits_slots, verification) treats them exactly like natives.",
+   "vocabulary_rule": "Each entry's affix (name, type) is anchored to its highest gear-planner SIBLING in the same color pool (recorded per entry) and MUST match it at build time — the vocabulary is gear-planner's, per the structural-sourcing rule, so 'Sapphire of Protection +12' emits Armor Class/Deflection like its +11 sibling (the wiki's 'Protection bonus' wording IS the Deflection bonus — 169 worn affixes already use this vocabulary). Only the VALUE is new, and it must appear verbatim in the recorded tooltip.",
+   "stale_guard": "The build FAILS when (a) an entry's name appears in the upstream pool — gear-planner added the tier, retire this shard; (b) an entry's sibling vanishes or its affix vocabulary moves; (c) an entry's value is absent from its own recorded tooltip. A shard that cannot go stale unnoticed is the only kind worth having (#207).",
+   "evidence_rule": "Every entry carries the verbatim item-page description (the rendered slotted-effect tooltip) and its wiki URL. Harvested 2026-08-12, same-origin from a ddowiki tab, two batched revisions calls."
+  }
  },
  "harvested": {
   "Diamond of Balance +22": {

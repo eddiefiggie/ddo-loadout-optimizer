@@ -3349,7 +3349,13 @@ test("U4/262: noDropNote renders the note for a flagged item, nothing otherwise"
 test("U4/262: a real flagged item carries the note; an unflagged one doesn't", () => {
   const flagged = realData.items.filter((v) => v.no_drop_source === true);
   assert.ok(flagged.length >= 2, "the wiki-confirmed items survive dataset normalization");
-  assert.ok(flagged.some((v) => /Bracers of the Spider Queen/.test(v.variant_id)));
+  // 397c673 — the Spider Queen bracers were the exemplar and are no longer flagged:
+  // Update 81.2 shipped `Raiding the Raiders` (2026-08-19), which sources them, so
+  // the shard retired both after re-reading their wiki pages. The exemplar moves to
+  // the #93 case and their absence is pinned, so a regression that re-flags a
+  // sourced item still fails here.
+  assert.ok(flagged.some((v) => /Seeker Tap of Spellsight/.test(v.variant_id)));
+  assert.ok(!flagged.some((v) => /Bracers of the Spider Queen/.test(v.variant_id)));
   for (const v of flagged) assert.ok(noDropNote(v).includes("no known live drop source"));
   const plain = realData.items.find((v) => !v.no_drop_source);
   assert.strictEqual(noDropNote(plain), "");

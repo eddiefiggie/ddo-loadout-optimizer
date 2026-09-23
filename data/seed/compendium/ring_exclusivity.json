@@ -11,11 +11,11 @@
     "consumed_by": "src/ring_exclusivity.py, via build_dataset.py - stamps `duplicable_ring` per item"
   },
   "counts": {
-    "population": 435,
+    "population": 436,
     "exclusive": 45,
     "minor_artifact": 19,
     "both": 1,
-    "duplicable": 372
+    "duplicable": 373
   },
   "harvested": {
     "A Memento of Mori": {
@@ -4367,6 +4367,16 @@
       "provenance": "stated",
       "raw": "bind recorded, exclusive unset (Template:Bind default false); not a Minor Artifact",
       "harvested": "2026-08-28"
+    },
+    "Legendary Ring of the Buccaneer (level 36)": {
+      "value": {
+        "exclusive": false,
+        "minor_artifact": false,
+        "duplicable": true
+      },
+      "provenance": "stated",
+      "raw": "Category:Finger items; NOT in Category:Exclusive and in no Minor Artifact category; bind = {{Bind|BtA|BoA}} with exclusive unset (Template:Bind default false). Categories read via prop=categories on 2026-09-22.",
+      "harvested": "2026-09-22"
     }
   }
 }

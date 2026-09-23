@@ -1,1190 +1,1202 @@
 {
- "_meta": {
-  "title": "wiki-sourced affix bonus-type corrections (#259)",
-  "note": "gear-planner is the single source of truth for WHICH affixes a record has, read structurally. The DDO Wiki is the source of truth for the BONUS TYPE when the two disagree and the wiki's rendered tooltip states it outright. A wrong type is a different defect from a wrong value: the magnitude is right, but the affix lands in the wrong stacking bucket and over- or under-stacks against everything else granting the stat.",
-  "why_not_value_corrections": "src/value_corrections.py overwrites the VALUE and nothing else, and its stale guard is keyed on the value field. Each corrections mechanism changes exactly one field so its guard cannot be weakened for the sake of another field's fix.",
-  "stale_guard": "Every entry records `from` — the type gear-planner currently carries — and `value` — the magnitude the tooltip was verified against. The build FAILS if either no longer matches upstream, and FAILS if an entry reaches no record in any channel (renamed/dropped upstream), rather than silently pinning or silently no-opping.",
-  "evidence_rule": "Every entry carries the verbatim rendered tooltip stating the bonus type, and the wiki page it was read from.",
-  "sneak_attack_class": "#608 — 20 entries share one cause and are worth reading as a class. The wiki renders these through Template:Sneak Attack Bonus, whose SECOND parameter is the bonus type. Upstream maps that parameter to `type` correctly when it is present (Seal of House Avithoul's `|Insightful` arrives as Insight) and, when it is ABSENT, falls back to the affix NAME — minting a bonus type `Sneak Attack` that the game does not have. The template documents the real default: \"An undefined or empty value will use : Enhancement\". Every entry is verified against the RENDERED tooltip rather than that documentation, because the template's own source comments call the default an assumption (\"Sneak Attack Bonus default type assumed to be Enhancement bonus\", reasoned from its not stacking with Deception). The rendered tooltip states Enhancement outright, which the evidence rule above requires and the comment does not supply.",
-  "seeker_exceptional_class": "#697 — 18 entries share one cause and are worth reading as a class. Template:Seeker's third parameter `exc` renders the LABEL 'Exceptional Seeker +N' and a tooltip that states the type the game applies: 'Provides a +N Insight bonus to confirm critical hits, and a +N Insight bonus to critical hit damage'. The Seeker page says it outright — 'The former Exceptional Seeker grants Insight bonus' — and a player's combat log confirmed it on the Legendary Helm of the Warblade. #392 ruled these Exceptional from the invocation's third parameter, which is the visible-label layer; the tooltip is the stronger layer (bundled-template-values-live-in-the-tooltip-not-the-cell.md), exactly as the Barnacled Buckler entry above records for Elemental Resistance. Every one of the 18 tooltips was read from its own page on 2026-09-04; none is inferred from a sibling. docs/wiki-evidence/seeker-bonus-type.md carries the re-ruling."
- },
- "Moment to Moment": [
-  {
-   "name": "Action Boost Charges",
-   "from": "Untyped",
-   "to": "Enhancement",
-   "value": "1",
-   "tooltip": "Slotted Effect: +1 Enhancement bonus to Action Boost Charges.",
-   "wiki_url": "https://ddowiki.com/page/Item:Moment_to_Moment",
-   "verified": "2026-08-12",
-   "note": "Enchantments line reads 'Minor Action Boost Enhancement'. All 19 worn-item sources of Action Boost Charges in the dataset are Enhancement-typed; stored Untyped, this augment stacked with every one of them."
-  }
- ],
- "Legendary Moment to Legendary Moment": [
-  {
-   "name": "Action Boost Charges",
-   "from": "Untyped",
-   "to": "Enhancement",
-   "value": "3",
-   "tooltip": "Slotted Effect: +3 Enhancement bonus to Action Boost Charges.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Moment_to_Legendary_Moment",
-   "verified": "2026-08-12",
-   "note": "Enchantments line reads 'Action Boost Enhancement'. Player-reported (2026-08-12 batch, data/bug_reports.txt); the report named this tier."
-  }
- ],
- "Barnacled Buckler": [
-  {
-   "name": "Elemental Resistance",
-   "from": "Competence",
-   "to": "Insight",
-   "value": "10",
-   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
-   "template": "{{Elemental Resistance|elemental|10|insight}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Barnacled_Buckler",
-   "verified": "2026-08-19",
-   "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
-  }
- ],
- "Epic Chain of Conviction": [
-  {
-   "name": "Elemental Resistance",
-   "from": "Competence",
-   "to": "Insight",
-   "value": "10",
-   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
-   "template": "{{Elemental Resistance|elemental|10|insight}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Chain_of_Conviction",
-   "verified": "2026-08-19",
-   "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
-  }
- ],
- "Epic Death's Rampart": [
-  {
-   "name": "Elemental Resistance",
-   "from": "Competence",
-   "to": "Insight",
-   "value": "10",
-   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
-   "template": "{{Elemental Resistance|elemental|10|insight}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Death%27s_Rampart",
-   "verified": "2026-08-19",
-   "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
-  }
- ],
- "Jeweled Cloak (level 23)": [
-  {
-   "name": "Elemental Resistance",
-   "from": "Competence",
-   "to": "Insight",
-   "value": "10",
-   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
-   "template": "{{Elemental Resistance|elemental|10|insight}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Jeweled_Cloak",
-   "verified": "2026-08-19",
-   "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
-  }
- ],
- "Jeweled Cloak (level 24)": [
-  {
-   "name": "Elemental Resistance",
-   "from": "Competence",
-   "to": "Insight",
-   "value": "10",
-   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
-   "template": "{{Elemental Resistance|elemental|10|insight}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Jeweled_Cloak",
-   "verified": "2026-08-19",
-   "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
-  }
- ],
- "Jeweled Cloak (level 25)": [
-  {
-   "name": "Elemental Resistance",
-   "from": "Competence",
-   "to": "Insight",
-   "value": "10",
-   "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
-   "template": "{{Elemental Resistance|elemental|10|insight}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Jeweled_Cloak",
-   "verified": "2026-08-19",
-   "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
-  }
- ],
- "Litany of the Dead": [
-  {
-   "name": "Litany of the Dead - Ability Bonus",
-   "from": null,
-   "to": "Profane",
-   "value": "1",
-   "tooltip": "Litany of the Dead - Ability Bonus: The Litany of the Dead enhances the physical and mental abilities of its owner. Grants a +1 Profane bonus to all Abilities.",
-   "template": "{{Litany of the Dead|1|Ability}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Litany_of_the_Dead",
-   "verified": "2026-08-20",
-   "note": "#367 — upstream carries this affix with NO `type` key at all (one of the ~90 key-less affixes left after the 2026-08-18 re-encoding, #374), while its own Combat sibling on the same item and both Epic-tier affixes are Profane. `from` is null because that is the faithful record of an absent key, and it is what lets apply() match a.get(\"type\") is None. Left untyped, the six ability scores this expands into (src/umbrella.py _NAMED_UMBRELLA) would land in the untyped bucket and stack with every Profane source instead of competing with them. Ruling: docs/wiki-evidence/litany-of-the-dead.md."
-  }
- ],
- "_retired_2026_08_18": {
-  "why": "#374/U4 — upstream adopted this retype in the 2026-08-18 refresh: Juiblex's Reign now carries ('Acid Absorption','Insight','15') natively, which is exactly what this shard and its paired item_value_corrections entry produced. Retired as a no-op; kept as the record. SCOPE, re-checked 2026-08-18 during the test re-ratification: ONLY the Juiblex entry was adopted. The two `Moment to Moment` augment entries were retired in the same edit WITHOUT cause — upstream still emits ('Action Boost Charges','Untyped') on both Yellow-Augment-Slot stones, so their wiki-verified retype is still live and still needed, and retiring them would have silently re-opened the #259 double-count against the 19 Enhancement-typed worn sources. They are restored above. Every entry retired here must be confirmed adopted in the refreshed raw, per-entry.",
-  "verified": "2026-08-18 against upstream commit 767a7f747d0e7d211a702b8c456348e1c36ba699",
-  "entries": {
-   "Juiblex's Reign": [
+  "_meta": {
+    "title": "wiki-sourced affix bonus-type corrections (#259)",
+    "note": "gear-planner is the single source of truth for WHICH affixes a record has, read structurally. The DDO Wiki is the source of truth for the BONUS TYPE when the two disagree and the wiki's rendered tooltip states it outright. A wrong type is a different defect from a wrong value: the magnitude is right, but the affix lands in the wrong stacking bucket and over- or under-stacks against everything else granting the stat.",
+    "why_not_value_corrections": "src/value_corrections.py overwrites the VALUE and nothing else, and its stale guard is keyed on the value field. Each corrections mechanism changes exactly one field so its guard cannot be weakened for the sake of another field's fix.",
+    "stale_guard": "Every entry records `from` — the type gear-planner currently carries — and `value` — the magnitude the tooltip was verified against. The build FAILS if either no longer matches upstream, and FAILS if an entry reaches no record in any channel (renamed/dropped upstream), rather than silently pinning or silently no-opping.",
+    "evidence_rule": "Every entry carries the verbatim rendered tooltip stating the bonus type, and the wiki page it was read from.",
+    "sneak_attack_class": "#608 — 20 entries share one cause and are worth reading as a class. The wiki renders these through Template:Sneak Attack Bonus, whose SECOND parameter is the bonus type. Upstream maps that parameter to `type` correctly when it is present (Seal of House Avithoul's `|Insightful` arrives as Insight) and, when it is ABSENT, falls back to the affix NAME — minting a bonus type `Sneak Attack` that the game does not have. The template documents the real default: \"An undefined or empty value will use : Enhancement\". Every entry is verified against the RENDERED tooltip rather than that documentation, because the template's own source comments call the default an assumption (\"Sneak Attack Bonus default type assumed to be Enhancement bonus\", reasoned from its not stacking with Deception). The rendered tooltip states Enhancement outright, which the evidence rule above requires and the comment does not supply.",
+    "seeker_exceptional_class": "#697 — 18 entries share one cause and are worth reading as a class. Template:Seeker's third parameter `exc` renders the LABEL 'Exceptional Seeker +N' and a tooltip that states the type the game applies: 'Provides a +N Insight bonus to confirm critical hits, and a +N Insight bonus to critical hit damage'. The Seeker page says it outright — 'The former Exceptional Seeker grants Insight bonus' — and a player's combat log confirmed it on the Legendary Helm of the Warblade. #392 ruled these Exceptional from the invocation's third parameter, which is the visible-label layer; the tooltip is the stronger layer (bundled-template-values-live-in-the-tooltip-not-the-cell.md), exactly as the Barnacled Buckler entry above records for Elemental Resistance. Every one of the 18 tooltips was read from its own page on 2026-09-04; none is inferred from a sibling. docs/wiki-evidence/seeker-bonus-type.md carries the re-ruling."
+  },
+  "Moment to Moment": [
     {
-     "name": "Acid Absorption",
-     "from": "Enhancement",
-     "to": "Insight",
-     "value": "15",
-     "tooltip": "Insightful Acid Absorption +15%: Passive: 15% Insight Bonus to Acid Absorption.",
-     "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
-     "verified": "2026-08-13",
-     "note": "#288 — the tooltip states an Insight bonus; gear-planner types it Enhancement, so it wrongly max-competed with worn Enhancement absorption. `value` is the post-value-correction magnitude: the sibling item_value_corrections.json entry lands 16 -> 15 first (value corrections apply before type corrections in build_dataset.py)."
+      "name": "Action Boost Charges",
+      "from": "Untyped",
+      "to": "Enhancement",
+      "value": "1",
+      "tooltip": "Slotted Effect: +1 Enhancement bonus to Action Boost Charges.",
+      "wiki_url": "https://ddowiki.com/page/Item:Moment_to_Moment",
+      "verified": "2026-08-12",
+      "note": "Enchantments line reads 'Minor Action Boost Enhancement'. All 19 worn-item sources of Action Boost Charges in the dataset are Enhancement-typed; stored Untyped, this augment stacked with every one of them."
     }
-   ]
-  }
- },
- "Assassin Initiate's Leathers (level 13)": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "2",
-   "tooltip": "Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate%27s_Leathers_%28level_13%29",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Assassin Initiate's Leathers (level 14)": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "2",
-   "tooltip": "Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate%27s_Leathers_%28level_14%29",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Assassin Initiate's Leathers (level 15)": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "3",
-   "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate%27s_Leathers_%28level_15%29",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Backstabber's Gloves (level 12)": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "3",
-   "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_12%29",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Backstabber's Gloves (level 13)": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "4",
-   "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_13%29",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Backstabber's Gloves (level 14)": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "4",
-   "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_14%29",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Backstabber's Gloves (level 23)": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "5",
-   "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_23%29",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Backstabber's Gloves (level 24)": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "5",
-   "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_24%29",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Backstabber's Gloves (level 25)": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "5",
-   "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_25%29",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Bravo's Sword": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "5",
-   "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Bravo%27s_Sword",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Drow Piwafwi": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "5",
-   "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Drow_Piwafwi",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Goggles of Intuition": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "2",
-   "tooltip": "Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Goggles_of_Intuition",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Lenses of Opportunity": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "3",
-   "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Lenses_of_Opportunity",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Polycurse Dagger": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "3",
-   "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Polycurse_Dagger",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Rebellion": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "5",
-   "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Rebellion",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Seal of House Avithoul": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "5",
-   "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Seal_of_House_Avithoul",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Shard of the Shadowfell": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "4",
-   "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Shard_of_the_Shadowfell",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Tharne's Goggles": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "5",
-   "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Tharne%27s_Goggles",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Treason": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "3",
-   "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Treason",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "Wretched Twilight": [
-  {
-   "name": "Sneak Attack Bonus",
-   "from": "Sneak Attack",
-   "to": "Enhancement",
-   "value": "4",
-   "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
-   "wiki_url": "https://ddowiki.com/page/Item:Wretched_Twilight",
-   "verified": "2026-08-30",
-   "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
-  }
- ],
- "_note_619": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30. The `value` recorded below is 10, not the upstream 1, because item_value_corrections.json runs FIRST — by the time this file applies, the magnitude is already corrected.",
- "Cormyrian Green Dragonhide Armor": [
-  {
-   "name": "Magical Efficiency",
-   "from": "Bool",
-   "to": "Enhancement",
-   "value": "10",
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonhide_Armor",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Cormyrian Green Dragonplate Armor": [
-  {
-   "name": "Magical Efficiency",
-   "from": "Bool",
-   "to": "Enhancement",
-   "value": "10",
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonplate_Armor",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Cormyrian Green Dragonscale Armor": [
-  {
-   "name": "Magical Efficiency",
-   "from": "Bool",
-   "to": "Enhancement",
-   "value": "10",
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Armor",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Cormyrian Green Dragonscale Docent": [
-  {
-   "name": "Magical Efficiency",
-   "from": "Bool",
-   "to": "Enhancement",
-   "value": "10",
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Docent",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Cormyrian Green Dragonscale Robe": [
-  {
-   "name": "Magical Efficiency",
-   "from": "Bool",
-   "to": "Enhancement",
-   "value": "10",
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Robe",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Green Dragonscale Bracers": [
-  {
-   "name": "Magical Efficiency",
-   "from": "Bool",
-   "to": "Enhancement",
-   "value": "10",
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Green_Dragonscale_Bracers",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Legendary Green Dragonscale Bracers": [
-  {
-   "name": "Magical Efficiency",
-   "from": "Bool",
-   "to": "Enhancement",
-   "value": "10",
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Green_Dragonscale_Bracers",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Staff of the Petitioner": [
-  {
-   "name": "Magical Efficiency",
-   "from": "Bool",
-   "to": "Enhancement",
-   "value": "10",
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Staff_of_the_Petitioner",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Stone Shoes": [
-  {
-   "name": "Unconsciousness Range",
-   "from": "Bool",
-   "to": "Enhancement",
-   "value": "100",
-   "tooltip": "Weighty Asset: This item is so heavy you find it hard to be dragged anywhere - even to your grave. You benefit from a +100 Enhancement bonus to increased unconsciousness range.",
-   "wiki_url": "https://ddowiki.com/page/Item:Stone_Shoes",
-   "verified": "2026-08-30",
-   "issue": 632,
-   "note": "#632 — keyed on `Unconsciousness Range` because affix_name_corrections runs BEFORE this file and #649 renamed the canonical and has already merged `Weighty Asset` into it. The engraved name rides on `via`."
-  }
- ],
- "Legendary Stone Shoes": [
-  {
-   "name": "Unconsciousness Range",
-   "from": "Bool",
-   "to": "Enhancement",
-   "value": "100",
-   "tooltip": "Weighty Asset: This item is so heavy you find it hard to be dragged anywhere - even to your grave. You benefit from a +100 Enhancement bonus to increased unconsciousness range.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stone_Shoes",
-   "verified": "2026-08-30",
-   "issue": 632,
-   "note": "#632 — keyed on `Unconsciousness Range` because affix_name_corrections runs BEFORE this file and #649 renamed the canonical and has already merged `Weighty Asset` into it. The engraved name rides on `via`."
-  }
- ],
- "Ward Token": [
-  {
-   "name": "Unconsciousness Range",
-   "from": "Bool",
-   "to": "Enhancement",
-   "value": "40",
-   "tooltip": "Unconscious page, 'Extending unconsciousness range': \"Holding On: +40 enhancement bonus\" (quoted verbatim, lower-case in the source). That is DDO's Enhancement bonus type — the same list types Undying and Weighty Asset identically, which is what makes the three one bucket. The enchantment's own page states the magnitude but no type: \"Your range of unconsciousness extends by 40 hitpoints.\"",
-   "wiki_url": "https://ddowiki.com/page/Item:Ward_Token",
-   "verified": "2026-08-30",
-   "issue": 632,
-   "note": "#632 — keyed on `Unconsciousness Range` because affix_name_corrections runs BEFORE this file and #649 renamed the canonical and has already merged `Holding On` into it. The engraved name rides on `via`."
-  }
- ],
- "Black Lace Blindfold": [
-  {
-   "name": "Dexterity",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
-   "wiki_url": "https://ddowiki.com/page/Item:Black_Lace_Blindfold",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
-  }
- ],
- "Epic Black Lace Blindfold": [
-  {
-   "name": "Dexterity",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Black_Lace_Blindfold",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
-  }
- ],
- "Epic Linen Wraps": [
-  {
-   "name": "Dexterity",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Linen_Wraps",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
-  }
- ],
- "Linen Wraps": [
-  {
-   "name": "Dexterity",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
-   "wiki_url": "https://ddowiki.com/page/Item:Linen_Wraps",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
-  }
- ],
- "Piledriver": [
-  {
-   "name": "Dexterity",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
-   "wiki_url": "https://ddowiki.com/page/Item:Piledriver",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
-  }
- ],
- "Amulet of the Brute": [
-  {
-   "name": "Intelligence",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
-   "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Brute",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
+  ],
+  "Legendary Moment to Legendary Moment": [
+    {
+      "name": "Action Boost Charges",
+      "from": "Untyped",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Slotted Effect: +3 Enhancement bonus to Action Boost Charges.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Moment_to_Legendary_Moment",
+      "verified": "2026-08-12",
+      "note": "Enchantments line reads 'Action Boost Enhancement'. Player-reported (2026-08-12 batch, data/bug_reports.txt); the report named this tier."
+    }
+  ],
+  "Barnacled Buckler": [
+    {
+      "name": "Elemental Resistance",
+      "from": "Competence",
+      "to": "Insight",
+      "value": "10",
+      "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+      "template": "{{Elemental Resistance|elemental|10|insight}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Barnacled_Buckler",
+      "verified": "2026-08-19",
+      "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
+    }
+  ],
+  "Epic Chain of Conviction": [
+    {
+      "name": "Elemental Resistance",
+      "from": "Competence",
+      "to": "Insight",
+      "value": "10",
+      "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+      "template": "{{Elemental Resistance|elemental|10|insight}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Chain_of_Conviction",
+      "verified": "2026-08-19",
+      "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
+    }
+  ],
+  "Epic Death's Rampart": [
+    {
+      "name": "Elemental Resistance",
+      "from": "Competence",
+      "to": "Insight",
+      "value": "10",
+      "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+      "template": "{{Elemental Resistance|elemental|10|insight}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Death%27s_Rampart",
+      "verified": "2026-08-19",
+      "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
+    }
+  ],
+  "Jeweled Cloak (level 23)": [
+    {
+      "name": "Elemental Resistance",
+      "from": "Competence",
+      "to": "Insight",
+      "value": "10",
+      "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+      "template": "{{Elemental Resistance|elemental|10|insight}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Jeweled_Cloak",
+      "verified": "2026-08-19",
+      "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
+    }
+  ],
+  "Jeweled Cloak (level 24)": [
+    {
+      "name": "Elemental Resistance",
+      "from": "Competence",
+      "to": "Insight",
+      "value": "10",
+      "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+      "template": "{{Elemental Resistance|elemental|10|insight}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Jeweled_Cloak",
+      "verified": "2026-08-19",
+      "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
+    }
+  ],
+  "Jeweled Cloak (level 25)": [
+    {
+      "name": "Elemental Resistance",
+      "from": "Competence",
+      "to": "Insight",
+      "value": "10",
+      "tooltip": "Competence Elemental Resistance - 10: This item provides a +10 Insight bonus to your Acid, Cold, Fire, and Electrical resistances.",
+      "template": "{{Elemental Resistance|elemental|10|insight}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Jeweled_Cloak",
+      "verified": "2026-08-19",
+      "note": "#379 — the 2026-08-18 refresh re-typed this Insight -> Competence, following the visible cell. docs/wiki-evidence/elemental-resistance.md (#191) already ruled on exactly this: \"The legacy dialect's visible label lies about the type\" — the rendering reads `Competence Elemental Resistance - N` even when the bonus is Insight, and the tooltip is the authority. Here the wiki is more explicit still: the template invocation itself names the type, `{{Elemental Resistance|elemental|10|insight}}`, so this is the wiki stating the bonus type outright rather than an inference from rendered text. Correcting back to Insight also restores the elemental_resistance split, which joins by (item, bonus type) and had quarantined all six carriers."
+    }
+  ],
+  "Litany of the Dead": [
+    {
+      "name": "Litany of the Dead - Ability Bonus",
+      "from": null,
+      "to": "Profane",
+      "value": "1",
+      "tooltip": "Litany of the Dead - Ability Bonus: The Litany of the Dead enhances the physical and mental abilities of its owner. Grants a +1 Profane bonus to all Abilities.",
+      "template": "{{Litany of the Dead|1|Ability}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Litany_of_the_Dead",
+      "verified": "2026-08-20",
+      "note": "#367 — upstream carries this affix with NO `type` key at all (one of the ~90 key-less affixes left after the 2026-08-18 re-encoding, #374), while its own Combat sibling on the same item and both Epic-tier affixes are Profane. `from` is null because that is the faithful record of an absent key, and it is what lets apply() match a.get(\"type\") is None. Left untyped, the six ability scores this expands into (src/umbrella.py _NAMED_UMBRELLA) would land in the untyped bucket and stack with every Profane source instead of competing with them. Ruling: docs/wiki-evidence/litany-of-the-dead.md."
+    }
+  ],
+  "_retired_2026_08_18": {
+    "why": "#374/U4 — upstream adopted this retype in the 2026-08-18 refresh: Juiblex's Reign now carries ('Acid Absorption','Insight','15') natively, which is exactly what this shard and its paired item_value_corrections entry produced. Retired as a no-op; kept as the record. SCOPE, re-checked 2026-08-18 during the test re-ratification: ONLY the Juiblex entry was adopted. The two `Moment to Moment` augment entries were retired in the same edit WITHOUT cause — upstream still emits ('Action Boost Charges','Untyped') on both Yellow-Augment-Slot stones, so their wiki-verified retype is still live and still needed, and retiring them would have silently re-opened the #259 double-count against the 19 Enhancement-typed worn sources. They are restored above. Every entry retired here must be confirmed adopted in the refreshed raw, per-entry.",
+    "verified": "2026-08-18 against upstream commit 767a7f747d0e7d211a702b8c456348e1c36ba699",
+    "entries": {
+      "Juiblex's Reign": [
+        {
+          "name": "Acid Absorption",
+          "from": "Enhancement",
+          "to": "Insight",
+          "value": "15",
+          "tooltip": "Insightful Acid Absorption +15%: Passive: 15% Insight Bonus to Acid Absorption.",
+          "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
+          "verified": "2026-08-13",
+          "note": "#288 — the tooltip states an Insight bonus; gear-planner types it Enhancement, so it wrongly max-competed with worn Enhancement absorption. `value` is the post-value-correction magnitude: the sibling item_value_corrections.json entry lands 16 -> 15 first (value corrections apply before type corrections in build_dataset.py)."
+        }
+      ]
+    }
   },
-  {
-   "name": "Wisdom",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Brute",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
-  }
- ],
- "Brawn's Spirits": [
-  {
-   "name": "Intelligence",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
-   "wiki_url": "https://ddowiki.com/page/Item:Brawn%27s_Spirits",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
-  },
-  {
-   "name": "Wisdom",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Brawn%27s_Spirits",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
-  }
- ],
- "Epic Brawn's Spirits": [
-  {
-   "name": "Intelligence",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn%27s_Spirits",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
-  },
-  {
-   "name": "Wisdom",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn%27s_Spirits",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
-  }
- ],
- "Girdle of Giants' Brawn (level 14)": [
-  {
-   "name": "Intelligence",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
-   "wiki_url": "https://ddowiki.com/page/Item:Girdle_of_Giants%27_Brawn_(level_14)",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
-  }
- ],
- "Legendary Brawn's Spirits": [
-  {
-   "name": "Intelligence",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn%27s_Spirits",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
-  },
-  {
-   "name": "Wisdom",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn%27s_Spirits",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
-  }
- ],
- "Epic Ring of Baphomet": [
-  {
-   "name": "Wisdom",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
-  },
-  {
-   "name": "Charisma",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
-  }
- ],
- "Legendary Ring of Baphomet": [
-  {
-   "name": "Wisdom",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
-  },
-  {
-   "name": "Charisma",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
-  }
- ],
- "Ring of Baphomet": [
-  {
-   "name": "Wisdom",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Baphomet",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
-  },
-  {
-   "name": "Charisma",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Baphomet",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
-  }
- ],
- "Accomplice": [
-  {
-   "name": "Charisma",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Accomplice",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
-  }
- ],
- "Epic Stinkpelt's Hide": [
-  {
-   "name": "Charisma",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Stinkpelt%27s_Hide",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
-  }
- ],
- "Legendary Stinkpelt's Hide": [
-  {
-   "name": "Charisma",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stinkpelt%27s_Hide",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
-  }
- ],
- "Stinkpelt's Hide": [
-  {
-   "name": "Charisma",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Stinkpelt%27s_Hide",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
-  }
- ],
- "Tchurvul's Kukri": [
-  {
-   "name": "Charisma",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Tchurvul%27s_Kukri",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
-  }
- ],
- "-1 Quarterstaff of Lesser Halfling Bane": [
-  {
-   "name": "Strength",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-1",
-   "tooltip": "Cursed: Curse of Weakness: Passive: -1 Penalty to Strength.",
-   "wiki_url": "https://ddowiki.com/page/Item:-1_Quarterstaff_of_Lesser_Halfling_Bane",
-   "verified": "2026-08-30",
-   "issue": 615,
-   "note": "#615 — keyed on `Strength` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Weakness` into it."
-  }
- ],
- "Baphomet's Reign": [
-  {
-   "name": "Maximum Spell Points (%)",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-5",
-   "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
-   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
-   "verified": "2026-08-30",
-   "issue": 639,
-   "note": "#639 — keyed on `Maximum Spell Points (%)`; affix_name_corrections has already merged `Mind Drain` into it."
-  }
- ],
- "Clouded Dreams": [
-  {
-   "name": "Maximum Spell Points (%)",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-5",
-   "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
-   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
-   "verified": "2026-08-30",
-   "issue": 639,
-   "note": "#639 — keyed on `Maximum Spell Points (%)`; affix_name_corrections has already merged `Mind Drain` into it."
-  }
- ],
- "Legendary Lucid Dreams": [
-  {
-   "name": "Maximum Spell Points (%)",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-5",
-   "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
-   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
-   "verified": "2026-08-30",
-   "issue": 639,
-   "note": "#639 — keyed on `Maximum Spell Points (%)`; affix_name_corrections has already merged `Mind Drain` into it."
-  }
- ],
- "Lucid Dreams": [
-  {
-   "name": "Maximum Spell Points (%)",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-5",
-   "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
-   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
-   "verified": "2026-08-30",
-   "issue": 639,
-   "note": "#639 — keyed on `Maximum Spell Points (%)`; affix_name_corrections has already merged `Mind Drain` into it."
-  }
- ],
- "Fleshshaper's Brigandine": [
-  {
-   "name": "Wizardry",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-30",
-   "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
-   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
-   "verified": "2026-08-30",
-   "issue": 639,
-   "note": "#639 — keyed on `Wizardry`; affix_name_corrections has already merged `Power Drain` into it."
-  }
- ],
- "Fleshshaper's Docent": [
-  {
-   "name": "Wizardry",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-30",
-   "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
-   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
-   "verified": "2026-08-30",
-   "issue": 639,
-   "note": "#639 — keyed on `Wizardry`; affix_name_corrections has already merged `Power Drain` into it."
-  }
- ],
- "Infused Chaos Docent": [
-  {
-   "name": "Wizardry",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-30",
-   "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
-   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
-   "verified": "2026-08-30",
-   "issue": 639,
-   "note": "#639 — keyed on `Wizardry`; affix_name_corrections has already merged `Power Drain` into it."
-  }
- ],
- "Infused Chaosrobe": [
-  {
-   "name": "Wizardry",
-   "from": "Bool",
-   "to": "Penalty",
-   "value": "-30",
-   "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
-   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
-   "verified": "2026-08-30",
-   "issue": 639,
-   "note": "#639 — keyed on `Wizardry`; affix_name_corrections has already merged `Power Drain` into it."
-  }
- ],
- "Bracers of Twisting Shade (level 18)": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "3",
-   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{seeker|3|exc}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_18)",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Bracers of Twisting Shade (level 23)": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "4",
-   "tooltip": "Exceptional Seeker +4: Provides a +4 Insight bonus to confirm critical hits, and a +4 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{seeker|4|exc}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_23)",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Bracers of Twisting Shade (level 24)": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "4",
-   "tooltip": "Exceptional Seeker +4: Provides a +4 Insight bonus to confirm critical hits, and a +4 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{seeker|4|exc}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_24)",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Bracers of Twisting Shade (level 25)": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "5",
-   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{seeker|5|exc}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_25)",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Steady Handed Armbands (level 23)": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "3",
-   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|3|Exceptional}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Steady_Handed_Armbands_(level_23)",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Steady Handed Armbands (level 24)": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "4",
-   "tooltip": "Exceptional Seeker +4: Provides a +4 Insight bonus to confirm critical hits, and a +4 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|4|Exceptional}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Steady_Handed_Armbands_(level_24)",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Steady Handed Armbands (level 25)": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "5",
-   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|5|Exceptional}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Steady_Handed_Armbands_(level_25)",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Souvenir Coin": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "3",
-   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|3|Exceptional}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Souvenir_Coin",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Golden Souvenir Coin": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "3",
-   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|3|Exceptional}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Golden_Souvenir_Coin",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Legendary Souvenir Coin": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "5",
-   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|5|Exceptional}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Souvenir_Coin",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Legendary Golden Souvenir Coin": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "5",
-   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|5|Exceptional}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Golden_Souvenir_Coin",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Helm of the Warblade": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "3",
-   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|3|Exceptional}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Helm_of_the_Warblade",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Legendary Helm of the Warblade": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "5",
-   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|5|Exceptional}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Helm_of_the_Warblade",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Iron Cloak of the Wolf": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "3",
-   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|3|exc}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Iron_Cloak_of_the_Wolf",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Mithral Cloak of the Wolf": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "4",
-   "tooltip": "Exceptional Seeker +4: Provides a +4 Insight bonus to confirm critical hits, and a +4 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|4|exc}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Mithral_Cloak_of_the_Wolf",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Adamantine Cloak of the Wolf": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "5",
-   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|5|exc}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Cloak_of_the_Wolf",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Slice": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "3",
-   "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|3|exc}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Slice",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ],
- "Horseshoe Crab Shield (level 26)": [
-  {
-   "name": "Seeker",
-   "from": "Exceptional",
-   "to": "Insight",
-   "value": "5",
-   "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
-   "template": "{{Seeker|5|exc}}",
-   "wiki_url": "https://ddowiki.com/page/Item:Horseshoe_Crab_Shield_(level_26)",
-   "verified": "2026-09-04",
-   "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-  }
- ]
+  "Assassin Initiate's Leathers (level 13)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "2",
+      "tooltip": "Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate%27s_Leathers_%28level_13%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Assassin Initiate's Leathers (level 14)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "2",
+      "tooltip": "Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate%27s_Leathers_%28level_14%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Assassin Initiate's Leathers (level 15)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate%27s_Leathers_%28level_15%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Backstabber's Gloves (level 12)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_12%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Backstabber's Gloves (level 13)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "4",
+      "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_13%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Backstabber's Gloves (level 14)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "4",
+      "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_14%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Backstabber's Gloves (level 23)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_23%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Backstabber's Gloves (level 24)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_24%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Backstabber's Gloves (level 25)": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_25%29",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Bravo's Sword": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Bravo%27s_Sword",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Drow Piwafwi": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Drow_Piwafwi",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Goggles of Intuition": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "2",
+      "tooltip": "Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Goggles_of_Intuition",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Lenses of Opportunity": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Lenses_of_Opportunity",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Polycurse Dagger": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Polycurse_Dagger",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Rebellion": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Rebellion",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Seal of House Avithoul": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Seal_of_House_Avithoul",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Shard of the Shadowfell": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "4",
+      "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Shard_of_the_Shadowfell",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Tharne's Goggles": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "5",
+      "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Tharne%27s_Goggles",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Treason": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "3",
+      "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Treason",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "Wretched Twilight": [
+    {
+      "name": "Sneak Attack Bonus",
+      "from": "Sneak Attack",
+      "to": "Enhancement",
+      "value": "4",
+      "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
+      "wiki_url": "https://ddowiki.com/page/Item:Wretched_Twilight",
+      "verified": "2026-08-30",
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+    }
+  ],
+  "_note_619": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30. The `value` recorded below is 10, not the upstream 1, because item_value_corrections.json runs FIRST — by the time this file applies, the magnitude is already corrected.",
+  "Cormyrian Green Dragonhide Armor": [
+    {
+      "name": "Magical Efficiency",
+      "from": "Bool",
+      "to": "Enhancement",
+      "value": "10",
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonhide_Armor",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+    }
+  ],
+  "Cormyrian Green Dragonplate Armor": [
+    {
+      "name": "Magical Efficiency",
+      "from": "Bool",
+      "to": "Enhancement",
+      "value": "10",
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonplate_Armor",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+    }
+  ],
+  "Cormyrian Green Dragonscale Armor": [
+    {
+      "name": "Magical Efficiency",
+      "from": "Bool",
+      "to": "Enhancement",
+      "value": "10",
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Armor",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+    }
+  ],
+  "Cormyrian Green Dragonscale Docent": [
+    {
+      "name": "Magical Efficiency",
+      "from": "Bool",
+      "to": "Enhancement",
+      "value": "10",
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Docent",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+    }
+  ],
+  "Cormyrian Green Dragonscale Robe": [
+    {
+      "name": "Magical Efficiency",
+      "from": "Bool",
+      "to": "Enhancement",
+      "value": "10",
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Robe",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+    }
+  ],
+  "Green Dragonscale Bracers": [
+    {
+      "name": "Magical Efficiency",
+      "from": "Bool",
+      "to": "Enhancement",
+      "value": "10",
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Green_Dragonscale_Bracers",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+    }
+  ],
+  "Legendary Green Dragonscale Bracers": [
+    {
+      "name": "Magical Efficiency",
+      "from": "Bool",
+      "to": "Enhancement",
+      "value": "10",
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Green_Dragonscale_Bracers",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+    }
+  ],
+  "Staff of the Petitioner": [
+    {
+      "name": "Magical Efficiency",
+      "from": "Bool",
+      "to": "Enhancement",
+      "value": "10",
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Staff_of_the_Petitioner",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
+    }
+  ],
+  "Stone Shoes": [
+    {
+      "name": "Unconsciousness Range",
+      "from": "Bool",
+      "to": "Enhancement",
+      "value": "100",
+      "tooltip": "Weighty Asset: This item is so heavy you find it hard to be dragged anywhere - even to your grave. You benefit from a +100 Enhancement bonus to increased unconsciousness range.",
+      "wiki_url": "https://ddowiki.com/page/Item:Stone_Shoes",
+      "verified": "2026-08-30",
+      "issue": 632,
+      "note": "#632 — keyed on `Unconsciousness Range` because affix_name_corrections runs BEFORE this file and #649 renamed the canonical and has already merged `Weighty Asset` into it. The engraved name rides on `via`."
+    }
+  ],
+  "Legendary Stone Shoes": [
+    {
+      "name": "Unconsciousness Range",
+      "from": "Bool",
+      "to": "Enhancement",
+      "value": "100",
+      "tooltip": "Weighty Asset: This item is so heavy you find it hard to be dragged anywhere - even to your grave. You benefit from a +100 Enhancement bonus to increased unconsciousness range.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stone_Shoes",
+      "verified": "2026-08-30",
+      "issue": 632,
+      "note": "#632 — keyed on `Unconsciousness Range` because affix_name_corrections runs BEFORE this file and #649 renamed the canonical and has already merged `Weighty Asset` into it. The engraved name rides on `via`."
+    }
+  ],
+  "Ward Token": [
+    {
+      "name": "Unconsciousness Range",
+      "from": "Bool",
+      "to": "Enhancement",
+      "value": "40",
+      "tooltip": "Unconscious page, 'Extending unconsciousness range': \"Holding On: +40 enhancement bonus\" (quoted verbatim, lower-case in the source). That is DDO's Enhancement bonus type — the same list types Undying and Weighty Asset identically, which is what makes the three one bucket. The enchantment's own page states the magnitude but no type: \"Your range of unconsciousness extends by 40 hitpoints.\"",
+      "wiki_url": "https://ddowiki.com/page/Item:Ward_Token",
+      "verified": "2026-08-30",
+      "issue": 632,
+      "note": "#632 — keyed on `Unconsciousness Range` because affix_name_corrections runs BEFORE this file and #649 renamed the canonical and has already merged `Holding On` into it. The engraved name rides on `via`."
+    }
+  ],
+  "Black Lace Blindfold": [
+    {
+      "name": "Dexterity",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+      "wiki_url": "https://ddowiki.com/page/Item:Black_Lace_Blindfold",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
+    }
+  ],
+  "Epic Black Lace Blindfold": [
+    {
+      "name": "Dexterity",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Black_Lace_Blindfold",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
+    }
+  ],
+  "Epic Linen Wraps": [
+    {
+      "name": "Dexterity",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Linen_Wraps",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
+    }
+  ],
+  "Linen Wraps": [
+    {
+      "name": "Dexterity",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+      "wiki_url": "https://ddowiki.com/page/Item:Linen_Wraps",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
+    }
+  ],
+  "Piledriver": [
+    {
+      "name": "Dexterity",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+      "wiki_url": "https://ddowiki.com/page/Item:Piledriver",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Dexterity` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Clumsiness` into it."
+    }
+  ],
+  "Amulet of the Brute": [
+    {
+      "name": "Intelligence",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+      "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Brute",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
+    },
+    {
+      "name": "Wisdom",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Brute",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+    }
+  ],
+  "Brawn's Spirits": [
+    {
+      "name": "Intelligence",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+      "wiki_url": "https://ddowiki.com/page/Item:Brawn%27s_Spirits",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
+    },
+    {
+      "name": "Wisdom",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Brawn%27s_Spirits",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+    }
+  ],
+  "Epic Brawn's Spirits": [
+    {
+      "name": "Intelligence",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn%27s_Spirits",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
+    },
+    {
+      "name": "Wisdom",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn%27s_Spirits",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+    }
+  ],
+  "Girdle of Giants' Brawn (level 14)": [
+    {
+      "name": "Intelligence",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+      "wiki_url": "https://ddowiki.com/page/Item:Girdle_of_Giants%27_Brawn_(level_14)",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
+    }
+  ],
+  "Legendary Brawn's Spirits": [
+    {
+      "name": "Intelligence",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn%27s_Spirits",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Intelligence` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Dullness` into it."
+    },
+    {
+      "name": "Wisdom",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn%27s_Spirits",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+    }
+  ],
+  "Epic Ring of Baphomet": [
+    {
+      "name": "Wisdom",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+    },
+    {
+      "name": "Charisma",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+    }
+  ],
+  "Legendary Ring of Baphomet": [
+    {
+      "name": "Wisdom",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+    },
+    {
+      "name": "Charisma",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+    }
+  ],
+  "Ring of Baphomet": [
+    {
+      "name": "Wisdom",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Baphomet",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Wisdom` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Foolishness` into it."
+    },
+    {
+      "name": "Charisma",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Baphomet",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+    }
+  ],
+  "Accomplice": [
+    {
+      "name": "Charisma",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Accomplice",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+    }
+  ],
+  "Epic Stinkpelt's Hide": [
+    {
+      "name": "Charisma",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Stinkpelt%27s_Hide",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+    }
+  ],
+  "Legendary Stinkpelt's Hide": [
+    {
+      "name": "Charisma",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stinkpelt%27s_Hide",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+    }
+  ],
+  "Stinkpelt's Hide": [
+    {
+      "name": "Charisma",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Stinkpelt%27s_Hide",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+    }
+  ],
+  "Tchurvul's Kukri": [
+    {
+      "name": "Charisma",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Tchurvul%27s_Kukri",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Charisma` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Repulsiveness` into it."
+    }
+  ],
+  "-1 Quarterstaff of Lesser Halfling Bane": [
+    {
+      "name": "Strength",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-1",
+      "tooltip": "Cursed: Curse of Weakness: Passive: -1 Penalty to Strength.",
+      "wiki_url": "https://ddowiki.com/page/Item:-1_Quarterstaff_of_Lesser_Halfling_Bane",
+      "verified": "2026-08-30",
+      "issue": 615,
+      "note": "#615 — keyed on `Strength` because affix_name_corrections runs BEFORE this file and has already merged `Curse of Weakness` into it."
+    }
+  ],
+  "Baphomet's Reign": [
+    {
+      "name": "Maximum Spell Points (%)",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-5",
+      "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
+      "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+      "verified": "2026-08-30",
+      "issue": 639,
+      "note": "#639 — keyed on `Maximum Spell Points (%)`; affix_name_corrections has already merged `Mind Drain` into it."
+    }
+  ],
+  "Clouded Dreams": [
+    {
+      "name": "Maximum Spell Points (%)",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-5",
+      "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
+      "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+      "verified": "2026-08-30",
+      "issue": 639,
+      "note": "#639 — keyed on `Maximum Spell Points (%)`; affix_name_corrections has already merged `Mind Drain` into it."
+    }
+  ],
+  "Legendary Lucid Dreams": [
+    {
+      "name": "Maximum Spell Points (%)",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-5",
+      "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
+      "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+      "verified": "2026-08-30",
+      "issue": 639,
+      "note": "#639 — keyed on `Maximum Spell Points (%)`; affix_name_corrections has already merged `Mind Drain` into it."
+    }
+  ],
+  "Lucid Dreams": [
+    {
+      "name": "Maximum Spell Points (%)",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-5",
+      "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
+      "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+      "verified": "2026-08-30",
+      "issue": 639,
+      "note": "#639 — keyed on `Maximum Spell Points (%)`; affix_name_corrections has already merged `Mind Drain` into it."
+    }
+  ],
+  "Fleshshaper's Brigandine": [
+    {
+      "name": "Wizardry",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-30",
+      "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
+      "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+      "verified": "2026-08-30",
+      "issue": 639,
+      "note": "#639 — keyed on `Wizardry`; affix_name_corrections has already merged `Power Drain` into it."
+    }
+  ],
+  "Fleshshaper's Docent": [
+    {
+      "name": "Wizardry",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-30",
+      "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
+      "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+      "verified": "2026-08-30",
+      "issue": 639,
+      "note": "#639 — keyed on `Wizardry`; affix_name_corrections has already merged `Power Drain` into it."
+    }
+  ],
+  "Infused Chaos Docent": [
+    {
+      "name": "Wizardry",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-30",
+      "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
+      "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+      "verified": "2026-08-30",
+      "issue": 639,
+      "note": "#639 — keyed on `Wizardry`; affix_name_corrections has already merged `Power Drain` into it."
+    }
+  ],
+  "Infused Chaosrobe": [
+    {
+      "name": "Wizardry",
+      "from": "Bool",
+      "to": "Penalty",
+      "value": "-30",
+      "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
+      "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+      "verified": "2026-08-30",
+      "issue": 639,
+      "note": "#639 — keyed on `Wizardry`; affix_name_corrections has already merged `Power Drain` into it."
+    }
+  ],
+  "Bracers of Twisting Shade (level 18)": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "3",
+      "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{seeker|3|exc}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_18)",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Bracers of Twisting Shade (level 23)": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "4",
+      "tooltip": "Exceptional Seeker +4: Provides a +4 Insight bonus to confirm critical hits, and a +4 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{seeker|4|exc}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_23)",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Bracers of Twisting Shade (level 24)": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "4",
+      "tooltip": "Exceptional Seeker +4: Provides a +4 Insight bonus to confirm critical hits, and a +4 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{seeker|4|exc}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_24)",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Bracers of Twisting Shade (level 25)": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "5",
+      "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{seeker|5|exc}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_Twisting_Shade_(level_25)",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Steady Handed Armbands (level 23)": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "3",
+      "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|3|Exceptional}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Steady_Handed_Armbands_(level_23)",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Steady Handed Armbands (level 24)": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "4",
+      "tooltip": "Exceptional Seeker +4: Provides a +4 Insight bonus to confirm critical hits, and a +4 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|4|Exceptional}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Steady_Handed_Armbands_(level_24)",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Steady Handed Armbands (level 25)": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "5",
+      "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|5|Exceptional}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Steady_Handed_Armbands_(level_25)",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Souvenir Coin": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "3",
+      "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|3|Exceptional}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Souvenir_Coin",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Golden Souvenir Coin": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "3",
+      "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|3|Exceptional}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Golden_Souvenir_Coin",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Legendary Souvenir Coin": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "5",
+      "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|5|Exceptional}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Souvenir_Coin",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Legendary Golden Souvenir Coin": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "5",
+      "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|5|Exceptional}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Golden_Souvenir_Coin",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Helm of the Warblade": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "3",
+      "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|3|Exceptional}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Helm_of_the_Warblade",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Legendary Helm of the Warblade": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "5",
+      "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|5|Exceptional}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Helm_of_the_Warblade",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Iron Cloak of the Wolf": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "3",
+      "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|3|exc}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Iron_Cloak_of_the_Wolf",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Mithral Cloak of the Wolf": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "4",
+      "tooltip": "Exceptional Seeker +4: Provides a +4 Insight bonus to confirm critical hits, and a +4 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|4|exc}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Mithral_Cloak_of_the_Wolf",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Adamantine Cloak of the Wolf": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "5",
+      "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|5|exc}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Adamantine_Cloak_of_the_Wolf",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Slice": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "3",
+      "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|3|exc}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Slice",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Horseshoe Crab Shield (level 26)": [
+    {
+      "name": "Seeker",
+      "from": "Exceptional",
+      "to": "Insight",
+      "value": "5",
+      "tooltip": "Exceptional Seeker +5: Provides a +5 Insight bonus to confirm critical hits, and a +5 Insight bonus to critical hit damage (before multipliers are applied).",
+      "template": "{{Seeker|5|exc}}",
+      "wiki_url": "https://ddowiki.com/page/Item:Horseshoe_Crab_Shield_(level_26)",
+      "verified": "2026-09-04",
+      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+    }
+  ],
+  "Facet of Condensed Power": [
+    {
+      "name": "Magical Efficiency",
+      "from": "Bool",
+      "to": "Enhancement",
+      "value": "1",
+      "tooltip": "Slotted Effect: Power Store: -10% Enhancement bonus to Spell Points cost reduction.",
+      "wiki_url": "https://ddowiki.com/page/Item:Facet_of_Condensed_Power",
+      "verified": "2026-09-22",
+      "note": "397c673 regression repair. Upstream carried this augment as ('Magical Efficiency', 'Enhancement', 1) at 767a7f7 and degraded it to ('Power Store', 'Bool', 1) at 397c673 — both the name and the type. Our canon rename ('Power Store' -> 'Magical Efficiency', affix_name_corrections) restores the name and runs on the crafting catalog before this shard reaches the augment pool; this entry restores the type, returning the record to exactly what upstream itself shipped before the refresh. A Bool here is an unread template magnitude, not a real on/off, which is what tests/test_magical_efficiency.py guards. SEPARATE, PRE-EXISTING: the wiki states the magnitude as 10 ('-10% Enhancement bonus'), while upstream has said 1 both before and after the refresh. This shard corrects the TYPE only by design, and the crafting channel has no value-correction path, so the magnitude is filed as follow-up rather than changed here."
+    }
+  ]
 }

@@ -15,10 +15,11 @@ def _raises(exc, fn, *args, **kwargs):
     raise AssertionError(f"expected {exc.__name__} to be raised")
 
 
-def test_catalog_loads_the_83_pools():
+def test_catalog_loads_the_84_pools():
     cat = CC.load_catalog()
     assert isinstance(cat, dict)
-    assert len(cat) == 83, "the native crafting catalog carries 83 pool keys"
+    # 397c673 — 84 not 83: upstream added the `Active` pool.
+    assert len(cat) == 84, "the native crafting catalog carries 84 pool keys"
 
 
 def test_menu_pool_shape_parses():
@@ -85,7 +86,10 @@ def test_legendary_green_steel_records_resolve_natively():
     # #687 — ONE builder over the six T<n> (Equipment|Weapon) menus, keyed by
     # (item_class, tier). #194 — records are ATOMIC: stats live in `affixes`.
     recs = CC.legendary_green_steel_records()
-    assert len(recs) == 116, "81 accessory + 35 weapon options"
+    # 397c673 — upstream grew Legendary Green Steel 116 -> 156 by adding skill-group
+    # variants (accessory 81 unchanged, weapon 35 -> 75). Re-ratified against the
+    # refreshed snapshot, not bumped to silence a red.
+    assert len(recs) == 156, "81 accessory + 75 weapon options"
     stats = {a["stat"] for r in recs for a in r["affixes"]}
     assert "Acid Resistance" in stats or "Acid Intensity" in stats
     assert {(r["item_class"], r["tier"]) for r in recs} == set(CC.LEGENDARY_GREEN_STEEL_KEYS)

@@ -1,254 +1,248 @@
 {
- "_meta": {
-  "field": "umbrella_adjudications",
-  "retired": {
-   "Deific Focus": "#214 (2026-09-04): retired, not re-recorded. The name left the rankable set because its three carriers are now quarantined in conditional_affix_quarantine.json — the tooltip states a conditional, ramping, single-school, five-second effect stored as its stack ceiling, and the wiki gives no sustained value. The atomic ruling (it is not a Spell Focus umbrella) was correct and is preserved by the quarantine note; there is no rankable name left for the detector to ask about.",
-   "Magical Resistance Rating Cap": "#702 (2026-09-04): retired, not re-recorded. The name left the rankable set because it was an alias VARIANT all along — gear-planner spells the same set bonus Magical Sheltering Cap, and the only carrier of this spelling was the hand-curated augment_sets.json seed (the entry's own claim that gear-planner's Adherent of the Mists tiers carry it was wrong: raw/gearplanner_sets.json has no such spelling). It now resolves through affix_aliases.json; the canonical contains no detector head-word, so it needs no ruling of its own."
+  "_meta": {
+    "field": "umbrella_adjudications",
+    "retired": {
+      "Deific Focus": "#214 (2026-09-04): retired, not re-recorded. The name left the rankable set because its three carriers are now quarantined in conditional_affix_quarantine.json — the tooltip states a conditional, ramping, single-school, five-second effect stored as its stack ceiling, and the wiki gives no sustained value. The atomic ruling (it is not a Spell Focus umbrella) was correct and is preserved by the quarantine note; there is no rankable name left for the detector to ask about.",
+      "Magical Resistance Rating Cap": "#702 (2026-09-04): retired, not re-recorded. The name left the rankable set because it was an alias VARIANT all along — gear-planner spells the same set bonus Magical Sheltering Cap, and the only carrier of this spelling was the hand-curated augment_sets.json seed (the entry's own claim that gear-planner's Adherent of the Mists tiers carry it was wrong: raw/gearplanner_sets.json has no such spelling). It now resolves through affix_aliases.json; the canonical contains no detector head-word, so it needs no ruling of its own.",
+      "Fortitude Save Vs Disease": "397c673 refresh (2026-09-22): retired, not re-recorded. The name left the rankable set because upstream dropped the Green Steel option that carried it — 'Fortitude Save Vs Disease' is present in the 767a7f7 crafting dump and absent from 397c673, so there is no rankable name left for the detector to ask about. The atomic ruling was correct and is preserved here: its stored effect is self-scoping (an Insight bonus to Fortitude saves versus disease ONLY), a narrower stat than any save family component rather than a bundle of them. Restore the entry if a later snapshot brings the option back. Original evidence: 'A Green Steel option whose stored effect is self-scoping: an Insight bonus to Fortitude saves versus disease ONLY — a narrower stat than any save family component, not a bundle of them.'"
+    },
+    "note": "#211 detector rulings. Each entry settles a flagged candidate as `atomic` — a real distinct stat, not an umbrella — with the rendered-tooltip reading (or the standing wiki-evidence ruling) that proves it. The disposition vocabulary is CLOSED at ['atomic']: a name a mechanism models (an expansion family in src/spell_focus.py/_UNIVERSAL, src/umbrella.py, a split module, or a cross-add source) must NOT carry an entry — its registration resolves it, and the detector rejects a stale entry. An unadjudicated candidate FAILS THE BUILD. See docs/wiki-evidence/umbrella-adjudication-sweep.md."
   },
-  "note": "#211 detector rulings. Each entry settles a flagged candidate as `atomic` — a real distinct stat, not an umbrella — with the rendered-tooltip reading (or the standing wiki-evidence ruling) that proves it. The disposition vocabulary is CLOSED at ['atomic']: a name a mechanism models (an expansion family in src/spell_focus.py/_UNIVERSAL, src/umbrella.py, a split module, or a cross-add source) must NOT carry an entry — its registration resolves it, and the detector rejects a stale entry. An unadjudicated candidate FAILS THE BUILD. See docs/wiki-evidence/umbrella-adjudication-sweep.md."
- },
- "harvested": {
-  "Alignment Absorption": {
-   "disposition": "atomic",
-   "evidence": "Alignment Absorption +18%: Passive: 18% Enhancement Bonus to Alignment Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
-   "source_invocation": "{{Absorption|Alignment|18}}",
-   "observed_on": "Item:Epic Ring of Baphomet",
-   "harvested": "2026-08-13"
-  },
-  "Armor Mastery": {
-   "disposition": "atomic",
-   "evidence": "Armor Mastery +2: Passive: +2 Enhancement bonus to the Max Dex Bonus of your equipped light, medium, or heavy armor. This benefit does not apply to the Max Dex Bonus of a Tower Shield.",
-   "source_invocation": "{{Armor Mastery|2}}",
-   "observed_on": "Item:Daggertooth's Belt (level 12)",
-   "harvested": "2026-08-13"
-  },
-  "Blighted Lore": {
-   "disposition": "atomic",
-   "evidence": "Blighted Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Acid + Negative + Poison + Evil (Specifically Evil, not other alignments or Light). It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
-   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
-   "harvested": "2026-08-18"
-  },
-  "Breath Weapon Focus": {
-   "disposition": "atomic",
-   "evidence": "Breath Weapon Focus +4: +4 Equipment bonus to the DC of Breath Weapon spells.",
-   "source_invocation": "{{Spell Focus|Breath Weapon|4}}",
-   "observed_on": "Item:Dragon Eyes",
-   "harvested": "2026-08-13"
-  },
-  "Chaos Absorption": {
-   "disposition": "atomic",
-   "evidence": "Chaos Absorption +17%: Passive: 17% Enhancement Bonus to Chaos Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
-   "source_invocation": "{{Absorption|Chaos|17}}",
-   "observed_on": "Item:Bracers of Order and Chaos",
-   "harvested": "2026-08-13"
-  },
-  "Creeping Dust Lore": {
-   "disposition": "atomic",
-   "evidence": "Creeping Dust Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Acid + Cold. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
-   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
-   "harvested": "2026-08-18"
-  },
-  "Curse Resistance": {
-   "disposition": "atomic",
-   "evidence": "Curse Resistance +5: Passive: +5 Enhancement bonus to saves versus curses.",
-   "source_invocation": "{{Save|Curse|5}}",
-   "observed_on": "Item:Cursebane Focus",
-   "harvested": "2026-08-13"
-  },
-  "Dark Restoration Lore": {
-   "disposition": "atomic",
-   "evidence": "Dark Restoration Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Positive + Negative + Poison. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
-   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
-   "harvested": "2026-08-18"
-  },
-  "Enchantment Save": {
-   "disposition": "atomic",
-   "evidence": "Enchantment Save +6: +6 Resistance bonus to your saves versus enchantments",
-   "source_invocation": "{{Save|e|6}}",
-   "observed_on": "Item:Adherence",
-   "harvested": "2026-08-13"
-  },
-  "Evil Absorption": {
-   "disposition": "atomic",
-   "evidence": "Evil Absorption +11%: Passive: 11% Enhancement Bonus to Evil Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
-   "source_invocation": "{{Absorption|Evil|11}}",
-   "observed_on": "Item:Bone Figurine",
-   "harvested": "2026-08-13"
-  },
-  "Firestorm Lore": {
-   "disposition": "atomic",
-   "evidence": "Firestorm Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Fire + Electric. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
-   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
-   "harvested": "2026-08-18"
-  },
-  "Force Absorption": {
-   "disposition": "atomic",
-   "evidence": "Force Absorption +11%: Passive: 11% Enhancement Bonus to Force Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
-   "source_invocation": "{{Absorption|Force|11}}",
-   "observed_on": "Item:Bulwark of Snow",
-   "harvested": "2026-08-13"
-  },
-  "Fortitude Save Vs Disease": {
-   "disposition": "atomic",
-   "evidence": "A Green Steel option whose stored effect is self-scoping: an Insight bonus to Fortitude saves versus disease ONLY — a narrower stat than any save family component, not a bundle of them.",
-   "source_invocation": "green_steel option 'Fortitude Save Vs Disease' (Insight 4)",
-   "observed_on": "green_steel pool",
-   "harvested": "2026-08-13"
-  },
-  "Frozen Depths Lore": {
-   "disposition": "atomic",
-   "evidence": "Frozen Depths Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Cold + Negative + Poison. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
-   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
-   "harvested": "2026-08-18"
-  },
-  "Frozen Storm Lore": {
-   "disposition": "atomic",
-   "evidence": "Frozen Storm Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Cold + Electric. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
-   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
-   "harvested": "2026-08-18"
-  },
-  "Good Absorption": {
-   "disposition": "atomic",
-   "evidence": "Good Absorption +23%: Passive: 23% Enhancement Bonus to Good Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
-   "source_invocation": "{{Absorption|Good|23}}",
-   "observed_on": "dino insert: Fragment of Extraplanar Alignment",
-   "harvested": "2026-08-13"
-  },
-  "Illusion Save": {
-   "disposition": "atomic",
-   "evidence": "Illusion Save +7: +7 Resistance bonus to your saves versus illusions",
-   "source_invocation": "{{Save|Illusion|7|Resistance}}",
-   "observed_on": "Item:Eyes of Enlightenment",
-   "harvested": "2026-08-13"
-  },
-  "Law Absorption": {
-   "disposition": "atomic",
-   "evidence": "Law Absorption +17%: Passive: 17% Enhancement Bonus to Law Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
-   "source_invocation": "{{Absorption|Law|17}}",
-   "observed_on": "Item:Bracers of Order and Chaos",
-   "harvested": "2026-08-13"
-  },
-  "Light Absorption": {
-   "disposition": "atomic",
-   "evidence": "Light Absorption +22%: Passive: 22% Enhancement Bonus to Light Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
-   "source_invocation": "{{Absorption|Light|22}}",
-   "observed_on": "Item:A Memento of Mori",
-   "harvested": "2026-08-13"
-  },
-  "Light Resistance": {
-   "disposition": "atomic",
-   "evidence": "Light Resistance +36: Passive: +36 Enhancement bonus to your Light Resistance.",
-   "source_invocation": "{{Elemental Resistance|Light|36}}",
-   "observed_on": "Item:Epic Phiarlan Mirror Cloak",
-   "harvested": "2026-08-13"
-  },
-  "Moonlit Haunt Lore": {
-   "disposition": "atomic",
-   "evidence": "Moonlit Haunt Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Force + Negative + Poison. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
-   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
-   "harvested": "2026-08-18"
-  },
-  "Negative Energy Absorption": {
-   "disposition": "atomic",
-   "evidence": "Negative Energy Absorption +20%: This effect absorbs 20% of all negative damage the character would have taken, after all other protections have been penetrated.",
-   "source_invocation": "{{Absorption|Negative|20}}",
-   "observed_on": "Item:First Light (level 10)",
-   "harvested": "2026-08-13"
-  },
-  "Negative Resistance": {
-   "disposition": "atomic",
-   "evidence": "Negative Resistance +21: Passive: +21 Enhancement bonus to your Negative Resistance.",
-   "source_invocation": "{{Elemental Resistance|Negative|21}}",
-   "observed_on": "Item:First Light (level 10)",
-   "harvested": "2026-08-13"
-  },
-  "Poison Absorption": {
-   "disposition": "atomic",
-   "evidence": "Poison Absorption +21%: Passive: 21% Enhancement Bonus to Poison Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
-   "source_invocation": "{{Absorption|Poison|21}}",
-   "observed_on": "Item:Astral Spore Pendant",
-   "harvested": "2026-08-13"
-  },
-  "Poison Resistance": {
-   "disposition": "atomic",
-   "evidence": "Poison Resistance +33: Passive: +33 Enhancement bonus to your Poison Resistance.",
-   "source_invocation": "{{Elemental Resistance|Poison|33}}",
-   "observed_on": "Item:Crystalline Wristlet",
-   "harvested": "2026-08-13"
-  },
-  "Purifying Flame Lore": {
-   "disposition": "atomic",
-   "evidence": "Purifying Flame Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Fire + Light + Alignment. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
-   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
-   "harvested": "2026-08-18"
-  },
-  "Radiance Intensity": {
-   "disposition": "atomic",
-   "evidence": "Radiance Intensity +12%: +12% Enhancement bonus to critical damage with Light and Alignment spells.",
-   "source_invocation": "{{Intensity|Radiance|12}}",
-   "observed_on": "Item:Mad Angels' Manacles",
-   "harvested": "2026-08-13"
-  },
-  "Repair Amplification": {
-   "disposition": "atomic",
-   "evidence": "Repair Amplification: This effect amplifies all incoming repair healing by +27 (Enhancement bonus). Includes spells, potions, and other effects.",
-   "source_invocation": "{{HealingAmp|27|Repair}}",
-   "observed_on": "Item:Boots of Uncanny Mending",
-   "harvested": "2026-08-13"
-  },
-  "Repair Intensity": {
-   "disposition": "atomic",
-   "evidence": "Repair Intensity +12%: +12% Enhancement bonus to critical damage with Repair and Rust spells.",
-   "source_invocation": "{{Intensity|Repair|12}}",
-   "observed_on": "rendered invocation (carrier family: Mad Angels' Manacles pattern)",
-   "harvested": "2026-08-13"
-  },
-  "Rune Arm Focus": {
-   "disposition": "atomic",
-   "evidence": "Standing ruling, docs/wiki-evidence/spell-focus-universal.md quoting the wiki: Rune Arm Focus 'isn't directly tied to a Spell School but to the Rune Arm itself'.",
-   "source_invocation": "wiki quote (see ruling)",
-   "observed_on": "docs/wiki-evidence/spell-focus-universal.md",
-   "harvested": "2026-08-13"
-  },
-  "Silver Flame Lore": {
-   "disposition": "atomic",
-   "evidence": "Silver Flame Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Positive + Light + Alignment. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
-   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
-   "harvested": "2026-08-18"
-  },
-  "Spell Resistance": {
-   "disposition": "atomic",
-   "evidence": "Spell Resistance +17: +17 Enhancement bonus to Spell Resistance.",
-   "source_invocation": "{{Spell Resistance|17}}",
-   "observed_on": "Item:Aberrant Robe",
-   "harvested": "2026-08-13"
-  },
-  "Spell Save": {
-   "disposition": "atomic",
-   "evidence": "Spell Save +5: This item gives a +5 Resistance bonus to your saves versus spells.",
-   "source_invocation": "{{Save|Spell|5}}",
-   "observed_on": "Item:Band of the Imprisoned One",
-   "harvested": "2026-08-13"
-  },
-  "Strength of Purpose": {
-   "disposition": "atomic",
-   "evidence": "A Bool presence effect (Viktranium option 'Woeful: Strength of Purpose', Bool 1): a named proc tracked as present-or-absent under the boolean presence-affix rule, carrying no magnitude to expand. Flagged only because the name contains the ability word 'Strength'.",
-   "source_invocation": "viktranium option, Bool",
-   "observed_on": "viktranium pool",
-   "harvested": "2026-08-13"
-  },
-  "Thunderstorm Lore": {
-   "disposition": "atomic",
-   "evidence": "Thunderstorm Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Electric + Sonic. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
-   "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
-   "harvested": "2026-08-18"
-  },
-  "Your attacks and offensive spells have a chance to reduce enemy Physical and Magical Resistance Rating.": {
-   "disposition": "atomic",
-   "evidence": "A verbatim Bool proc sentence (Viktranium 'Woeful Shadows' / dino insert 'Shadowhorn', Bool 1): recorded proc text tracked as presence, no magnitude to expand. Flagged only because the sentence contains the word 'Resistance'.",
-   "source_invocation": "viktranium + dino_inserts options, Bool",
-   "observed_on": "viktranium / dino_inserts pools",
-   "harvested": "2026-08-13"
+  "harvested": {
+    "Alignment Absorption": {
+      "disposition": "atomic",
+      "evidence": "Alignment Absorption +18%: Passive: 18% Enhancement Bonus to Alignment Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
+      "source_invocation": "{{Absorption|Alignment|18}}",
+      "observed_on": "Item:Epic Ring of Baphomet",
+      "harvested": "2026-08-13"
+    },
+    "Armor Mastery": {
+      "disposition": "atomic",
+      "evidence": "Armor Mastery +2: Passive: +2 Enhancement bonus to the Max Dex Bonus of your equipped light, medium, or heavy armor. This benefit does not apply to the Max Dex Bonus of a Tower Shield.",
+      "source_invocation": "{{Armor Mastery|2}}",
+      "observed_on": "Item:Daggertooth's Belt (level 12)",
+      "harvested": "2026-08-13"
+    },
+    "Blighted Lore": {
+      "disposition": "atomic",
+      "evidence": "Blighted Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Acid + Negative + Poison + Evil (Specifically Evil, not other alignments or Light). It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+      "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+      "harvested": "2026-08-18"
+    },
+    "Breath Weapon Focus": {
+      "disposition": "atomic",
+      "evidence": "Breath Weapon Focus +4: +4 Equipment bonus to the DC of Breath Weapon spells.",
+      "source_invocation": "{{Spell Focus|Breath Weapon|4}}",
+      "observed_on": "Item:Dragon Eyes",
+      "harvested": "2026-08-13"
+    },
+    "Chaos Absorption": {
+      "disposition": "atomic",
+      "evidence": "Chaos Absorption +17%: Passive: 17% Enhancement Bonus to Chaos Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
+      "source_invocation": "{{Absorption|Chaos|17}}",
+      "observed_on": "Item:Bracers of Order and Chaos",
+      "harvested": "2026-08-13"
+    },
+    "Creeping Dust Lore": {
+      "disposition": "atomic",
+      "evidence": "Creeping Dust Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Acid + Cold. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+      "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+      "harvested": "2026-08-18"
+    },
+    "Curse Resistance": {
+      "disposition": "atomic",
+      "evidence": "Curse Resistance +5: Passive: +5 Enhancement bonus to saves versus curses.",
+      "source_invocation": "{{Save|Curse|5}}",
+      "observed_on": "Item:Cursebane Focus",
+      "harvested": "2026-08-13"
+    },
+    "Dark Restoration Lore": {
+      "disposition": "atomic",
+      "evidence": "Dark Restoration Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Positive + Negative + Poison. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+      "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+      "harvested": "2026-08-18"
+    },
+    "Enchantment Save": {
+      "disposition": "atomic",
+      "evidence": "Enchantment Save +6: +6 Resistance bonus to your saves versus enchantments",
+      "source_invocation": "{{Save|e|6}}",
+      "observed_on": "Item:Adherence",
+      "harvested": "2026-08-13"
+    },
+    "Evil Absorption": {
+      "disposition": "atomic",
+      "evidence": "Evil Absorption +11%: Passive: 11% Enhancement Bonus to Evil Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
+      "source_invocation": "{{Absorption|Evil|11}}",
+      "observed_on": "Item:Bone Figurine",
+      "harvested": "2026-08-13"
+    },
+    "Firestorm Lore": {
+      "disposition": "atomic",
+      "evidence": "Firestorm Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Fire + Electric. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+      "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+      "harvested": "2026-08-18"
+    },
+    "Force Absorption": {
+      "disposition": "atomic",
+      "evidence": "Force Absorption +11%: Passive: 11% Enhancement Bonus to Force Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
+      "source_invocation": "{{Absorption|Force|11}}",
+      "observed_on": "Item:Bulwark of Snow",
+      "harvested": "2026-08-13"
+    },
+    "Frozen Depths Lore": {
+      "disposition": "atomic",
+      "evidence": "Frozen Depths Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Cold + Negative + Poison. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+      "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+      "harvested": "2026-08-18"
+    },
+    "Frozen Storm Lore": {
+      "disposition": "atomic",
+      "evidence": "Frozen Storm Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Cold + Electric. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+      "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+      "harvested": "2026-08-18"
+    },
+    "Good Absorption": {
+      "disposition": "atomic",
+      "evidence": "Good Absorption +23%: Passive: 23% Enhancement Bonus to Good Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
+      "source_invocation": "{{Absorption|Good|23}}",
+      "observed_on": "dino insert: Fragment of Extraplanar Alignment",
+      "harvested": "2026-08-13"
+    },
+    "Illusion Save": {
+      "disposition": "atomic",
+      "evidence": "Illusion Save +7: +7 Resistance bonus to your saves versus illusions",
+      "source_invocation": "{{Save|Illusion|7|Resistance}}",
+      "observed_on": "Item:Eyes of Enlightenment",
+      "harvested": "2026-08-13"
+    },
+    "Law Absorption": {
+      "disposition": "atomic",
+      "evidence": "Law Absorption +17%: Passive: 17% Enhancement Bonus to Law Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
+      "source_invocation": "{{Absorption|Law|17}}",
+      "observed_on": "Item:Bracers of Order and Chaos",
+      "harvested": "2026-08-13"
+    },
+    "Light Absorption": {
+      "disposition": "atomic",
+      "evidence": "Light Absorption +22%: Passive: 22% Enhancement Bonus to Light Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
+      "source_invocation": "{{Absorption|Light|22}}",
+      "observed_on": "Item:A Memento of Mori",
+      "harvested": "2026-08-13"
+    },
+    "Light Resistance": {
+      "disposition": "atomic",
+      "evidence": "Light Resistance +36: Passive: +36 Enhancement bonus to your Light Resistance.",
+      "source_invocation": "{{Elemental Resistance|Light|36}}",
+      "observed_on": "Item:Epic Phiarlan Mirror Cloak",
+      "harvested": "2026-08-13"
+    },
+    "Moonlit Haunt Lore": {
+      "disposition": "atomic",
+      "evidence": "Moonlit Haunt Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Force + Negative + Poison. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+      "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+      "harvested": "2026-08-18"
+    },
+    "Negative Energy Absorption": {
+      "disposition": "atomic",
+      "evidence": "Negative Energy Absorption +20%: This effect absorbs 20% of all negative damage the character would have taken, after all other protections have been penetrated.",
+      "source_invocation": "{{Absorption|Negative|20}}",
+      "observed_on": "Item:First Light (level 10)",
+      "harvested": "2026-08-13"
+    },
+    "Negative Resistance": {
+      "disposition": "atomic",
+      "evidence": "Negative Resistance +21: Passive: +21 Enhancement bonus to your Negative Resistance.",
+      "source_invocation": "{{Elemental Resistance|Negative|21}}",
+      "observed_on": "Item:First Light (level 10)",
+      "harvested": "2026-08-13"
+    },
+    "Poison Absorption": {
+      "disposition": "atomic",
+      "evidence": "Poison Absorption +21%: Passive: 21% Enhancement Bonus to Poison Absorption. (Absorption reduces damage from an element by a percentage, after resistance have been taken into account.)",
+      "source_invocation": "{{Absorption|Poison|21}}",
+      "observed_on": "Item:Astral Spore Pendant",
+      "harvested": "2026-08-13"
+    },
+    "Poison Resistance": {
+      "disposition": "atomic",
+      "evidence": "Poison Resistance +33: Passive: +33 Enhancement bonus to your Poison Resistance.",
+      "source_invocation": "{{Elemental Resistance|Poison|33}}",
+      "observed_on": "Item:Crystalline Wristlet",
+      "harvested": "2026-08-13"
+    },
+    "Purifying Flame Lore": {
+      "disposition": "atomic",
+      "evidence": "Purifying Flame Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Fire + Light + Alignment. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+      "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+      "harvested": "2026-08-18"
+    },
+    "Radiance Intensity": {
+      "disposition": "atomic",
+      "evidence": "Radiance Intensity +12%: +12% Enhancement bonus to critical damage with Light and Alignment spells.",
+      "source_invocation": "{{Intensity|Radiance|12}}",
+      "observed_on": "Item:Mad Angels' Manacles",
+      "harvested": "2026-08-13"
+    },
+    "Repair Amplification": {
+      "disposition": "atomic",
+      "evidence": "Repair Amplification: This effect amplifies all incoming repair healing by +27 (Enhancement bonus). Includes spells, potions, and other effects.",
+      "source_invocation": "{{HealingAmp|27|Repair}}",
+      "observed_on": "Item:Boots of Uncanny Mending",
+      "harvested": "2026-08-13"
+    },
+    "Repair Intensity": {
+      "disposition": "atomic",
+      "evidence": "Repair Intensity +12%: +12% Enhancement bonus to critical damage with Repair and Rust spells.",
+      "source_invocation": "{{Intensity|Repair|12}}",
+      "observed_on": "rendered invocation (carrier family: Mad Angels' Manacles pattern)",
+      "harvested": "2026-08-13"
+    },
+    "Rune Arm Focus": {
+      "disposition": "atomic",
+      "evidence": "Standing ruling, docs/wiki-evidence/spell-focus-universal.md quoting the wiki: Rune Arm Focus 'isn't directly tied to a Spell School but to the Rune Arm itself'.",
+      "source_invocation": "wiki quote (see ruling)",
+      "observed_on": "docs/wiki-evidence/spell-focus-universal.md",
+      "harvested": "2026-08-13"
+    },
+    "Silver Flame Lore": {
+      "disposition": "atomic",
+      "evidence": "Silver Flame Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Positive + Light + Alignment. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+      "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+      "harvested": "2026-08-18"
+    },
+    "Spell Resistance": {
+      "disposition": "atomic",
+      "evidence": "Spell Resistance +17: +17 Enhancement bonus to Spell Resistance.",
+      "source_invocation": "{{Spell Resistance|17}}",
+      "observed_on": "Item:Aberrant Robe",
+      "harvested": "2026-08-13"
+    },
+    "Spell Save": {
+      "disposition": "atomic",
+      "evidence": "Spell Save +5: This item gives a +5 Resistance bonus to your saves versus spells.",
+      "source_invocation": "{{Save|Spell|5}}",
+      "observed_on": "Item:Band of the Imprisoned One",
+      "harvested": "2026-08-13"
+    },
+    "Strength of Purpose": {
+      "disposition": "atomic",
+      "evidence": "A Bool presence effect (Viktranium option 'Woeful: Strength of Purpose', Bool 1): a named proc tracked as present-or-absent under the boolean presence-affix rule, carrying no magnitude to expand. Flagged only because the name contains the ability word 'Strength'.",
+      "source_invocation": "viktranium option, Bool",
+      "observed_on": "viktranium pool",
+      "harvested": "2026-08-13"
+    },
+    "Thunderstorm Lore": {
+      "disposition": "atomic",
+      "evidence": "Thunderstorm Lore: a Combined Spell Lore. Spell_Lore section 'Combined Spell Lore' — \"Certain, rare enchantments provide bonus Spell Critical chance to multiple elements\" — lists it against a FIXED element set: Electric + Sonic. It is its own enchantment over its own elements, not an umbrella over the ten-name 'Types of spell lore' roster, and no wiki statement ties a universal lore name to a combined-lore name. Flagged only because #366 made 'Lore' a family head-word; the pre-existing deliberate exclusion in src/cross_add.py is unchanged. Expanding it on the resemblance would be inference, which the data gate forbids.",
+      "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
+      "harvested": "2026-08-18"
+    },
+    "Your attacks and offensive spells have a chance to reduce enemy Physical and Magical Resistance Rating.": {
+      "disposition": "atomic",
+      "evidence": "A verbatim Bool proc sentence (Viktranium 'Woeful Shadows' / dino insert 'Shadowhorn', Bool 1): recorded proc text tracked as presence, no magnitude to expand. Flagged only because the sentence contains the word 'Resistance'.",
+      "source_invocation": "viktranium + dino_inserts options, Bool",
+      "observed_on": "viktranium / dino_inserts pools",
+      "harvested": "2026-08-13"
+    }
   }
- }
 }

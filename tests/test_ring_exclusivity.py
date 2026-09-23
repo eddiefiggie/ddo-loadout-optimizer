@@ -64,9 +64,12 @@ def _dataset():
 
 def test_the_shipped_shard_covers_the_whole_harvested_ring_population():
     shard = ring_exclusivity.load(SHARD_PATH)
-    assert len(shard["harvested"]) == 435
-    assert shard["counts"] == {"population": 435, "exclusive": 45,
-                               "minor_artifact": 19, "both": 1, "duplicable": 372}
+    # 397c673 — 436 not 435: `Legendary Ring of the Buccaneer (level 36)` arrived with the
+    # refresh and was harvested (Category:Finger items, NOT Category:Exclusive, no Minor
+    # Artifact category, bind {{Bind|BtA|BoA}} with exclusive unset) -> duplicable.
+    assert len(shard["harvested"]) == 436
+    assert shard["counts"] == {"population": 436, "exclusive": 45,
+                               "minor_artifact": 19, "both": 1, "duplicable": 373}
 
 
 def test_every_shipped_entry_is_stated_and_cites_what_it_read():

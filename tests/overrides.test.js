@@ -120,8 +120,12 @@ test("the 161 unstamped boolean-composite components are ineligible", () => {
   // 24 is suppressed by the keep-the-highest rule; measured, not assumed.
   // Re-ratified rather than accepted: `eligible` is UNCHANGED at 20,496, which is
   // the property that matters — every one of the 248 is refused by the predicate.
-  assert.strictEqual(derived.length, 837,
-    "normalizeDataset generates 837 composite components carrying no provenance stamp");
+  // 397c673 — +4 since the U81.3 refresh: the Terror of the Demon Lords raid items
+  // add composite carriers. The in-loop assertion is the one that matters and is
+  // unchanged: each generated component is marked and ineligible, so the refresh
+  // minted no UNMARKED component.
+  assert.strictEqual(derived.length, 841,
+    "normalizeDataset generates 841 composite components carrying no provenance stamp");
   assert.ok(derived.every((a) => !O.isEligible(a)),
     "and the predicate refuses every one of them, so it cannot be a `via` presence test");
 });
@@ -391,7 +395,12 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   //
   //   64 + 5 = 69. The previous line's "+16 Elemental Resistances" is unchanged and
   //   already counted in the 45,311 this builds on.
-  assert.strictEqual(total, 45380, "post-normalize pool size");
+  // 397c673 — 45,671 not 45,380: +291, the affix population the refreshed snapshot
+  // carries. 60 genuinely new items (20 of them the raid), 40 new Legendary Green
+  // Steel rows, and the ML36 augment tier now arriving natively instead of through
+  // our retired shard. A pool SIZE moving on a snapshot refresh is expected; what
+  // must not move silently is the eligible count, asserted just below.
+  assert.strictEqual(total, 45671, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -479,7 +488,13 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // coincidence to re-pin. An `Enhancement Bonus` restored by a slot-keyed join is
   // an engraved affix with a real bonus type, so it lands in both populations;
   // had only the pool moved, the join would be minting something underived.
-  assert.strictEqual(eligible, 20576, "engraved, eligible affixes");
+  // 397c673 — 20,653 not 20,576: +77 engraved eligible affixes from the refreshed
+  // snapshot (raid loot, the 40 new Green Steel rows, the natively-arriving ML36
+  // augment tier). The pool moved +291 on the same refresh, so the two no longer
+  // move by an identical amount as they did for the #792 slot-keyed join — that
+  // identity was the signature of THAT change, not an invariant: a snapshot that
+  // adds Bool/untyped affixes grows the pool without growing the eligible set.
+  assert.strictEqual(eligible, 20653, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -540,7 +555,15 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   //   3,325-to-2 majority onto every host, the armour five would have come back
   //   spelled `(Weapon)` and this line would still read 13,401 — the split is what
   //   distinguishes reading the slot from guessing the winner.
-  assert.deepStrictEqual(byCat, { item: 13401, weapon: 6162, augment: 1013 });
+  // 397c673 — item 13,418 (+17), weapon 6,223 (+61), augment 1,012 (-1). The three
+  // deltas sum to +77, which is exactly the eligible move asserted above, and that
+  // sum is the cross-check rather than the individual numbers: a category moving
+  // without the total moving with it would mean a record changed CATEGORY rather
+  // than the roster growing. The weapon share is the largest because most of the
+  // refresh's new items are weapons — the ten raid weapons plus the Mindcleaver /
+  // Shadowblade / Thorn Blade level families and the Legendary pirate set — and
+  // because gap_corrections restored weapon affixes the [Crafted] collapse dropped.
+  assert.deepStrictEqual(byCat, { item: 13418, weapon: 6223, augment: 1012 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {
@@ -628,7 +651,8 @@ test("the generator marks composite components, so provenance is read not inferr
   // 837 not 589 since #746 — the 248 from `Dusk` and `Ghostly`, and as with the two
   // moves before it the in-loop assertion is the one that matters: each new
   // component is marked and ineligible, so the ruling minted no unmarked component.
-  assert.strictEqual(marked, 837, "every generated composite component carries the mark");
+  // 397c673 — 841 not 837: +4 from the raid items; see the sibling assertion.
+  assert.strictEqual(marked, 841, "every generated composite component carries the mark");
   const one = pool.items.flatMap((v) => v.affixes || []).find((a) => a._compositeOf);
   assert.ok(!Object.keys(one).includes("_compositeOf"), "and the mark is non-enumerable");
 });
@@ -723,8 +747,13 @@ test("#88 U6: every eligible pool row is addressable, and keys are unique across
   // options; the two Suffix `Resistance` umbrellas expand into six `via`-stamped
   // save rows, which R7 excludes exactly as it excludes the receipts above, and
   // the umbrella rows themselves are gone — so 184 - 2 - 2 = 180 eligible rows.
-  assert.strictEqual(rows, 867, "the eligible pool-row population");
-  assert.strictEqual(seen.size, 844, "distinct keys");   // #766: +180, every Slaver's row distinct
+  // 397c673 — 900 not 867: +33 eligible pool rows, from the 40 Legendary Green
+  // Steel skill-group options the refresh added (the remainder are `via`-stamped
+  // component skills, which R7 excludes exactly as it excludes the receipts above).
+  assert.strictEqual(rows, 900, "the eligible pool-row population");
+  // 397c673 — 877 not 844: +33, matching the +33 eligible rows above exactly, so
+  // every one of the new Green Steel rows is addressable under its own key.
+  assert.strictEqual(seen.size, 877, "distinct keys");
 });
 
 test("#88 U6: three same-stat seal entries at different bonus types get three distinct keys", () => {

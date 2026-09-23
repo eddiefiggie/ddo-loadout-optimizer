@@ -413,7 +413,8 @@ def test_the_worklist_emits_every_parrying_invocation_including_roman():
     assert proc.returncode == 0, proc.stderr
     lines = [l for l in proc.stdout.splitlines() if l.strip()]
 
-    assert len(lines) == 9, lines
+    # 397c673 — 10: {{Parrying|7}} joins the nine distinct invocations.
+    assert len(lines) == 10, lines
     for roman in ("{{Parrying|I}}", "{{Parrying|IV}}", "{{Parrying|VIII}}"):
         assert roman in lines, f"{roman} must be refreshed — the lookup is not a formula"
 

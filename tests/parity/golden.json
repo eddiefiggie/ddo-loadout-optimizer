@@ -1,7 +1,7 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-09-18",
- "dataset": "web/data/items.json (9194 items)",
+ "generated": "2026-09-23",
+ "dataset": "web/data/items.json (9208 items)",
  "fixture_count": 24,
  "solves": {
   "heroic-str-melee": {
@@ -151,13 +151,13 @@
    "perTarget": {
     "Constitution": 37,
     "Physical Sheltering": 126,
-    "Magical Sheltering": 133,
+    "Magical Sheltering": 142,
     "Fortification": 283
    },
    "effective": {
     "Constitution": 37,
     "Physical Sheltering": 126,
-    "Magical Sheltering": 133,
+    "Magical Sheltering": 142,
     "Fortification": 283
    },
    "chosen": [
@@ -179,7 +179,7 @@
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Grick-skin Gauntlets"
+     "variant": "The Cruel Hands of Fate"
     },
     {
      "slot": "Goggles",
@@ -187,23 +187,19 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Crisis Helm"
+     "variant": "Malicia's Crown (level 12)"
     },
     {
      "slot": "Main Hand",
-     "variant": "Echo of Whelm"
+     "variant": "Legendary Green Steel Bastard Sword"
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Climber's Remembrance"
+     "variant": "Legendary Memento of Flame"
     },
     {
      "slot": "Off Hand",
      "variant": "Legendary Cataclysmic Buckler"
-    },
-    {
-     "slot": "Ring",
-     "variant": "Legendary Neglected Wedding Ring"
     },
     {
      "slot": "Ring",
@@ -237,20 +233,16 @@
      "variant": "Legendary Braided Cutcord"
     },
     {
-     "slot": "Boots",
-     "variant": "Death's Deferral"
+     "slot": "Bracers",
+     "variant": "Bracelets of Flourishing Fauna"
     },
     {
      "slot": "Cloak",
-     "variant": "Cloak of Night (level 12)"
-    },
-    {
-     "slot": "Goggles",
-     "variant": "Legendary Doctor Gustav's Warped Lenses"
+     "variant": "The Queen of Rot"
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Cowl of the Drow Devotee"
+     "variant": "Legendary Duergarcraft Cowl"
     },
     {
      "slot": "Main Hand",
@@ -266,7 +258,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Nocturne Ring"
+     "variant": "Ring of Shadows (level 12)"
     },
     {
      "slot": "Trinket",
@@ -1169,11 +1161,11 @@
    "status": "optimal",
    "perTarget": {
     "Sonic Absorption": 20,
-    "Fire Absorption": 40
+    "Fire Absorption": 41
    },
    "effective": {
     "Sonic Absorption": 20,
-    "Fire Absorption": 40
+    "Fire Absorption": 41
    },
    "chosen": [
     {
@@ -1182,11 +1174,7 @@
     },
     {
      "slot": "Belt",
-     "variant": "Epic Purging the Pantheon"
-    },
-    {
-     "slot": "Gloves",
-     "variant": "Blurfingered Gloves"
+     "variant": "Belt of Braided Beards"
     },
     {
      "slot": "Goggles",
@@ -1194,7 +1182,7 @@
     },
     {
      "slot": "Main Hand",
-     "variant": "Echo of Whelm"
+     "variant": "Legendary Green Steel Bastard Sword"
     },
     {
      "slot": "Off Hand",
@@ -1206,7 +1194,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Ring of Shadows (level 23)"
+     "variant": "Ring of Shadows (level 24)"
     },
     {
      "slot": "Trinket",
@@ -1465,17 +1453,17 @@
    "status": "optimal",
    "perTarget": {
     "Armor Class": 171,
-    "Reflex Save": 38,
-    "Will Save": 38,
-    "Fortitude Save": 37,
-    "Physical Sheltering": 117
+    "Reflex Save": 34,
+    "Will Save": 34,
+    "Fortitude Save": 33,
+    "Physical Sheltering": 124
    },
    "effective": {
     "Armor Class": 171,
-    "Reflex Save": 38,
-    "Will Save": 38,
-    "Fortitude Save": 37,
-    "Physical Sheltering": 117
+    "Reflex Save": 34,
+    "Will Save": 34,
+    "Fortitude Save": 33,
+    "Physical Sheltering": 124
    },
    "chosen": [
     {
@@ -1524,7 +1512,7 @@
     },
     {
      "slot": "Ring",
-     "variant": "Five Rings"
+     "variant": "Legendary Band of Faith and Fortress"
     },
     {
      "slot": "Ring",

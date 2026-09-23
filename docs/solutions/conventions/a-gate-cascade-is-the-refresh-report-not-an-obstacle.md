@@ -2,7 +2,7 @@
 title: "A gate cascade during a data refresh is the refresh report, not an obstacle"
 module: data-pipeline
 date: 2026-08-19
-last_updated: 2026-08-19
+last_updated: 2026-09-23
 category: conventions
 problem_type: convention
 component: tooling
@@ -21,6 +21,8 @@ applies_when:
   - "An upstream or wiki ruling contradicts the project's own canonical spelling and a canon-defence migration is under way"
   - "Regenerating tests/parity/golden.json for a chosen-only diff, where the golden's sanctioned remedy for a red is to overwrite the objection"
   - "A negative test for a new guard passes but the failure output carries some other gate's message, not the guard under test"
+  - "A ratified golden moves in a shape strict lexicographic priority forbids — a higher-ranked target DOWN while a lower-ranked one goes UP"
+  - "Data is hand-carried between a browser and the repo through a DOM or clipboard bridge"
 symptoms:
   - "Each fix clears one gate and immediately exposes the next, so the refresh reads as an obstacle course rather than as the guard system's report"
   - "A corrections table is retired in bulk when the verifying evidence covered only some of its records"
@@ -317,6 +319,46 @@ the wiki's `{{Elemental Resistance|elemental|10|insight}}` invocation, which sta
 parameter. Nothing was ambiguous and no harvest was needed. Closed by PR #387 with six
 `affix_type_corrections.json` entries. See
 [`read-the-standing-ruling-and-judge-the-strongest-evidence-layer.md`](read-the-standing-ruling-and-judge-the-strongest-evidence-layer.md).
+
+## Amendment, 2026-09-23 — the U81.3 refresh, and two techniques this doc did not have
+
+`767a7f7…` -> `397c673a…`, vendored for the Terror of the Demon Lords raid. **Fifteen gates**,
+the same shape as 2026-08-18: each invisible until the one before it cleared. Report of record:
+[`docs/reports/2026-09-23-gear-planner-u81-3-refresh.md`](../../reports/2026-09-23-gear-planner-u81-3-refresh.md).
+It confirms the six classes rather than adding a seventh — class 1 (retire) took the whole ML36
+shard, class 3 (a ruling against your canon) took the `Power Store` unfold, class 5 (per-item
+verification) took 21 wiki pages. Two techniques are new and generalise.
+
+### Separate the code from the data before adjudicating a moved golden
+
+One fixture moved in the shape that is supposed to be impossible: three higher-priority targets
+DOWN 4 while a lower-priority one went UP 7, under strict lexicographic priority. Before
+arguing about why, run the **current code against the pre-refresh dataset**. It reproduced the
+old golden exactly, which converts "is this a solver regression or a data change?" from a
+judgement into a measurement, and it costs one file copy.
+
+Then probe the mechanism rather than reading the loadout diff. The diff showed one ring
+swapping, which *looks* like the cause; blocking that ring produced the same lowered totals, so
+the swap was a consequence. The real cause was upstream retyping a Slaver's option from
+`Enhancement 4` to `Resistance 4` — the old typing let one option stack with every other
+Resistance save source, so the pre-refresh number was an **over-stack**, and the "regression"
+was a bug fix. A loadout diff names what changed; only a probe names why.
+
+### A transport bridge you have not hashed is a bridge you have not checked
+
+Wikitext came browser -> repo through the DOM bridge, as in the 2026-09-05 harvest. The
+transcription silently dropped ten lines. It was caught by computing SHA-256 of the returned
+text **in the browser** and again on the file on disk and comparing — which took one extra
+call and found a defect that no downstream gate would have noticed, because the missing lines
+were a field no guard asserts on. Hash both ends of any hand-carried transport, every time.
+
+### One more instance of "stale is a claim about the world"
+
+The `no_drop_source` staleness guard fired on eight entries and it was right to: the quest that
+sources them shipped six days AFTER the triage that recorded their pages as empty. The original
+verdicts were not wrong — the game changed under them. Retiring with `prior_verdict` preserved
+says that; deleting the entries would have read as the triage having been sloppy.
+
 
 ## Related
 

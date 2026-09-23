@@ -184,7 +184,18 @@ def test_the_shipping_shard_renames_ki_and_cites_the_wiki():
     # those two set tiers are the plural's only carriers in the corpus — and the
     # umbrella detector flagged it immediately. Neither canon defence nor a merge:
     # the canonical is absent from the sets channel, so nothing collapses.
-    assert len(entries) == 25
+    #
+    # 397c673 — 25 -> 30. Five entries arrived with the U81.3 refresh, all folds
+    # restoring one bucket that upstream had split, all with ZERO same-item
+    # co-occurrence (the rule that separates a spelling from a merge):
+    #   `Power Store` -> `Magical Efficiency`, restoring the fold upstream itself
+    #     carried until 767a7f7 and dropped at 397c673; both wiki pages define one
+    #     mechanic (an Enhancement %% spell-point-cost discount).
+    #   `Inherent {Acid,Cold,Electric,Fire} Resistance -` -> the plain resistance
+    #     stat. Upstream's T2/T3 (Equipment) pools carry the engraved label with the
+    #     magnitude stripped, leaving a trailing " -"; the wiki sentence names the
+    #     stat outright ("...provides a +5 Insight bonus to your Acid Resistance").
+    assert len(entries) == 30
     e = next(x for x in entries if x["source_name"] == "Ki")
     assert e["source_name"] == "Ki"
     assert e["canonical_name"] == "Enhanced Ki"
@@ -221,7 +232,12 @@ def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
     # those two set tiers are the plural's only carriers in the corpus — and the
     # umbrella detector flagged it immediately. Neither canon defence nor a merge:
     # the canonical is absent from the sets channel, so nothing collapses.
-    assert cov["names_corrected"] == 25
+    # 397c673 — 30, which is the SHARD SIZE: `names_corrected` counts declared
+    # corrections, not the subset that hit this channel (`hit_names` is that, and
+    # it is asserted just below). Of the five new entries only `Power Store` reaches
+    # items; the four `Inherent <element> Resistance -` folds are crafting-only,
+    # which assert_all_reached covers across channels.
+    assert cov["names_corrected"] == 30
     shard = name_corrections.load(SHARD)
     raw_names = {a.get("name") for a in name_corrections._iter_affix_dicts(
         vocabulary._load(vocabulary.ITEMS_PATH))}
@@ -235,8 +251,14 @@ def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
     # #769 — `Spell Saves` is the third: it occurs FOUR times in the whole corpus,
     # all of them inside the two `Slave's Endurance` set tiers, so the sets channel
     # is the only one it can reach.
+    # 397c673 — the four `Inherent <element> Resistance -` folds join the
+    # not-on-the-item-roster set: upstream carries them only in the T2/T3 (Equipment)
+    # CRAFTING pools, never on an item. assert_all_reached is what proves they reach
+    # a channel at all; a per-channel miss is expected and by design.
     assert set(cov["hit_names"]) == {e["source_name"] for e in shard} - \
-        {"Damage vs. the Helpless", "Spell Intensity", "Spell Saves"}
+        {"Damage vs. the Helpless", "Spell Intensity", "Spell Saves",
+         "Inherent Acid Resistance -", "Inherent Cold Resistance -",
+         "Inherent Electric Resistance -", "Inherent Fire Resistance -"}
     # #632 — 1,394: +3, the two `Weighty Asset` carriers (Stone Shoes, Legendary
     # Stone Shoes) and the one `Holding On` carrier (Ward Token), merged into
     # `Undying`. A rename count is the right place to notice a merge reaching more
@@ -249,7 +271,19 @@ def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
     # 1428 -> 1440: #649 renames the 12 item records engraved `Undying` onto the
     # mechanic name. (The two `Undying Sapphire` augments are moved by the
     # crafting channel, not this one, so they are not in this count.)
-    assert cov["affixes_renamed"] == 1440, cov["affixes_renamed"]
+    # 397c673 — 1450, and the +10 is itemised rather than read off the build:
+    #   +8  `Power Store`, brand new to the roster (0 -> 8). Upstream dropped its own
+    #       fold to `Magical Efficiency`, so our canon rename now does that work.
+    #   -1  `Mind Drain` (4 -> 3): the `[Crafted]` collapse cost `Lucid Dreams` its
+    #       copy. gap_corrections restores the affix, but AFTER this call.
+    #   -1  `Fire Spell Power` (177 -> 176) and -1 `Force Spell Power` (120 -> 119),
+    #       both the same collapse.
+    #   +1  `Acid Spell Power` (135 -> 136), +1 `Cold Lore` (83 -> 84),
+    #       +2  `Negative Spell Power` (153 -> 155), +1 `False Life (%)` (34 -> 35):
+    #       new carriers, the last of them `The Prince of Demons`.
+    #   ----
+    #   +10 net, 1440 -> 1450.
+    assert cov["affixes_renamed"] == 1450, cov["affixes_renamed"]
     # whatever the count, no source spelling may survive the pass
     for e in shard:
         assert not any(a.get("name") == e["source_name"]
@@ -397,13 +431,30 @@ def test_374_the_shard_declares_thirteen_and_marks_the_canon_defence():
     # those two set tiers are the plural's only carriers in the corpus — and the
     # umbrella detector flagged it immediately. Neither canon defence nor a merge:
     # the canonical is absent from the sets channel, so nothing collapses.
-    assert len(entries) == 25
+    assert len(entries) == 30
     merges = [e for e in entries if e.get("merge_into_existing")]
     # #649 added `Undying` itself, so the three unconsciousness sources are all
     # merges now rather than two merges into a native third.
-    assert len(merges) == 10, [e["source_name"] for e in merges]
+    # 397c673 — 15: all five new entries are merges (`Power Store` and the four
+    # `Inherent <element> Resistance -` folds), each restoring one bucket upstream
+    # had split and each carrying the wiki evidence the merge path requires.
+    assert len(merges) == 15, [e["source_name"] for e in merges]
+    # 397c673 — an entry can now be BOTH, and three are. `merge_into_existing` says
+    # the canonical was native when the entry was written; `canon_defense` says
+    # upstream has since stopped emitting it. Those are claims about different
+    # moments, and the refresh made both true of the `Unconsciousness Range` trio:
+    # upstream carried the canonical in its crafting dump at 767a7f7 (3 occurrences,
+    # which is why they were written as merges) and carries it nowhere at 397c673
+    # while still emitting all three variants. The merge flag is kept and is
+    # currently inert — it re-applies the moment upstream reintroduces the canonical.
+    BOTH_MERGE_AND_DEFENCE = {"Weighty Asset", "Holding On", "Undying"}
     for m in merges:
         assert m.get("evidence"), f"{m['source_name']}: a merge must cite its wiki evidence"
+        if m["source_name"] in BOTH_MERGE_AND_DEFENCE:
+            assert m.get("canon_defense") and m.get("canon_defense_note"), (
+                f"{m['source_name']}: declared both a merge and a canon defence, so it must "
+                "record WHY the canonical stopped being native")
+            continue
         assert not m.get("canon_defense"), (
             f"{m['source_name']} is a merge, not canon defence — upstream is not "
             "misspelling our canon, it is keeping two names the game treats as one")
@@ -418,7 +469,13 @@ def test_374_the_shard_declares_thirteen_and_marks_the_canon_defence():
     # `Legendary Conditioning` away into `False Life (%)` (34 -> 0) — so they now
     # carry `canon_defense` on their own merits, and `armed_canon_variants()` arms
     # all thirteen. See docs/reports/2026-08-18-gear-planner-canon-migration.md §6.1.
-    assert len(defence) == 13, [e["source_name"] for e in defence]
+    #
+    # 397c673 — 13 -> 16. Upstream stopped emitting `Unconsciousness Range`
+    # entirely (3 occurrences in the 767a7f7 crafting dump, 0 at 397c673) while
+    # still emitting all three variants, so the `Weighty Asset` / `Holding On` /
+    # `Undying` renames stopped being tidy-ups and became load-bearing canon
+    # defences. `armed_canon_variants()` arms all sixteen.
+    assert len(defence) == 16, [e["source_name"] for e in defence]
     # And no pending markers survive: the refresh armed every entry, and the
     # exemption is self-retiring — `assert_canon_defense` is red while one outlives
     # its data (pinned by test_374_assert_canon_defense_fires_when_a_landed_entry…).
@@ -468,9 +525,13 @@ def test_374_every_canonical_survives_split_type_with_a_stat_left():
     # canonical pre-existed in the sets channel, here it pre-exists in the items
     # channel, so neither entry is a merge — each rename lands a channel's lone
     # spelling onto the name every other channel already uses.
+    # 397c673 adds `Magical Efficiency` (the Power Store refold) and the four plain
+    # elemental resistances (the `Inherent <element> Resistance -` folds).
     assert canonicals == (set(FLIPPED) | {"Enhanced Ki", "Legendary Conditioning",
                                           "Unconsciousness Range", "Spell Critical Damage",
-                                          "Spell Save"}
+                                          "Spell Save", "Magical Efficiency",
+                                          "Acid Resistance", "Cold Resistance",
+                                          "Electric Resistance", "Fire Resistance"}
                           | ABILITY_MERGES | SP_MERGES), sorted(canonicals)
     for e in _shard():
         canonical = e["canonical_name"]
@@ -643,7 +704,9 @@ def test_374_assert_canon_defense_passes_on_the_refreshed_tree():
     vacuous in the other sense: the four tests above show it firing both ways.
     """
     armed = vocabulary.armed_canon_variants()
-    assert len(armed) == 13, armed
+    # 397c673 — 16: the three `Unconsciousness Range` renames armed when upstream
+    # stopped emitting our canonical. See the sibling shard test for the evidence.
+    assert len(armed) == 16, armed
     name_corrections.assert_canon_defense(_shard(), armed)
     # the equality is real, checked from the declared side too
     declared = {c["source_name"] for c in _shard()

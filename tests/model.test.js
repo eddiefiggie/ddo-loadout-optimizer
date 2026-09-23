@@ -2857,11 +2857,30 @@ test("#648/real data: the niche-crafting rung restores the pre-fix prune", () =>
   };
   const m = M.buildModel(data.items, q, [], [], [], [], {}, [], {}, null, {},
                          data.essence_crafting);
-  let n = 0;
+  // 397c673 — 3, not 0, and the ORIGINAL intent is what is re-asserted below.
+  //
+  // The zero depended on the `[Crafted]` twin pair. On the pre-refresh tree the
+  // essence host was `Gem of Many Facets [Crafted]` (0 affixes, 3 essence slots)
+  // and its base sibling carried everything it had plus a `Craftable (hidden)`
+  // affix, so the base DOMINATED the twin and the twin pruned. The refresh
+  // collapsed the pair onto one record, which now carries the essence slots AND
+  // the two joker set groups AND no affixes — and nothing is left to dominate it.
+  //
+  // Surviving is correct: with crafting off these Gems are still wildcard set
+  // pieces, which is a real benefit that has nothing to do with the empty pool.
+  // What must NOT survive is a variant kept alive purely for crafting it cannot
+  // do, so that is what this now asserts: every survivor earns its place by some
+  // non-crafting means.
+  const survivors = [];
   for (const w of m.worn || []) {
-    for (const x of w.variants || []) if ((x.essence_slots || []).length) n++;
+    for (const x of w.variants || []) if ((x.essence_slots || []).length) survivors.push(x);
   }
-  assert.strictEqual(n, 0, "no pool, no protection");
+  assert.strictEqual(survivors.length, 3, "only the three Gem tiers survive");
+  for (const x of survivors) {
+    assert.ok(/Gem of Many Facets/.test(x.variant_id), x.variant_id);
+    assert.ok((x.joker_set_groups || []).length > 0,
+              `${x.variant_id} survives the emptied pool for no non-crafting reason`);
+  }
 });
 
 // ---- #766 Slaver's crafting ---------------------------------------------------

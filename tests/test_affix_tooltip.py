@@ -61,7 +61,10 @@ def test_the_shipped_shard_covers_the_roster_and_every_candidate_is_ruled():
     # 213/212 since #715: +1, `Eldritch Blast Dice`, missed by the first Lunar/Solar
     # pass because the table's row label is `Blast Dice` and the search used our
     # canonical name.
-    assert cov["names"] == 213 and cov["stated"] == 212, cov
+    # 214/213 since 397c673: +1, `Power of the Frozen Thunderstorm`, read off
+    # Item:The_Volley's_Aria (Terror of the Demon Lords). `Minor Spell Penetration`
+    # remains the one unmatched roster name, unchanged from before the refresh.
+    assert cov["names"] == 214 and cov["stated"] == 213, cov
     assert cov["unmatched"] == ["Minor Spell Penetration"]
     # 19 not 25 since #715: the six above left the register. The remaining 19 are
     # 12 set-tier-only stats (the Named_item_sets half, still to harvest), the six
@@ -156,7 +159,7 @@ def test_built_dataset_stamps_coverage_and_the_disclose_map():
         return
     data = json.load(open(ITEMS, encoding="utf-8"))
     cov = data["metadata"]["affix_tooltip_coverage"]
-    assert cov["names"] == 213 and cov["by_disposition"]["disclose"] == ["Orb Bonus"]  # #724, #715
+    assert cov["names"] == 214 and cov["by_disposition"]["disclose"] == ["Orb Bonus"]  # #724, #715
     assert set(data["metadata"]["conditional_disclosures"]) == {"Orb Bonus"}
     assert "actively blocking" in data["metadata"]["conditional_disclosures"]["Orb Bonus"]["sentence"]
     # The roster the build computed is covered: no rankable numeric item stat is

@@ -348,7 +348,10 @@ def test_the_shipped_shard_compares_every_entry():
     report = parrying_split.check_against_snapshots(shard)
 
     assert not report["problems"], report["problems"][:3]
-    assert report["compared"] == len(shard["harvested"]) == 139
+    # 397c673 — 140: `Legendary Swashbuckler (level 36)` arrived with the refresh
+    # carrying {{Parrying|7}}, a magnitude 6 had been the ceiling for. Harvested
+    # with its rendered tooltip rather than extrapolated from the arabic-N pattern.
+    assert report["compared"] == len(shard["harvested"]) == 140
 
 
 def test_the_guard_makes_no_network_call():

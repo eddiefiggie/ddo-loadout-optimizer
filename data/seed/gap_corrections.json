@@ -5,7 +5,8 @@
   "sanctioned_exception": "The ONLY sanctioned override of gear-planner's sole-authority rule (U7). Applied ADDITIVELY by build_dataset.py: gap affixes are APPENDED to the native affix block; an entry is skipped if the item already carries that (name,type) so it can never double-count.",
   "scope": "A genuine gap is a base-seed affix whose STAT is absent from gear-planner's native parse of that item ENTIRELY (not merely typed differently). Type-mismatches (base 'Accuracy +5' vs gear-planner Accuracy/Competence) and cross-name synonyms gear-planner already represents (Protection=Armor Class/Deflection, Shield=Armor Class/Shield, Natural Armor=Armor Class/Natural, Competence Healing Amplification=Healing Amplification/Competence, Spellcasting Implement=Universal Spell Power/Implement, Vitality=False Life/Vitality, Lifesealed=Negative Energy Absorption) are NOT gaps — restoring them would re-introduce the Insightful/Insight-class double-counts U4b/U7 correctly removed. Across all 89 base∪gear-planner collision items, exactly one item has a genuine gap: Ophael's Cincture.",
   "ophaels_cincture": "Wiki (Item:Ophael's_Cincture) category tags: Strength/Constitution/Dexterity/Intelligence/Wisdom/Charisma +15, Insightful +7 each, Quality +3 each — i.e. +15/+7/+3 to ALL ability scores. gear-planner captured only Deception (Enhancement +12, Insight +6) and Seeker (+15); it lacks every ability score. This overlay restores the 18 missing ability affixes (6 abilities x Enhancement 15 / Insight 7 / Quality 3). Deception/Seeker are NOT restored (gear-planner already has them).",
-  "status_2026_08_02": "Ophael's Cincture entry REMOVED. Its 18 ability-score affixes were NOT a genuine affix gap: the DDO wiki Enchantments list only Deception/Insightful Deception/Seeker + the 'Sealed in Undeath' slot. The ability scores are the Undeath seal POOL (all 18 outcomes), already modeled as a SINGLE-PICK via the item's seal_slots. The gap-fill duplicated the seal pool as flat all-apply affixes, over-counting (a chosen seal grants ONE, not all six/eighteen). Reverting; the seal slot provides the single ability-score bonus."
+  "status_2026_08_02": "Ophael's Cincture entry REMOVED. Its 18 ability-score affixes were NOT a genuine affix gap: the DDO wiki Enchantments list only Deception/Insightful Deception/Seeker + the 'Sealed in Undeath' slot. The ability scores are the Undeath seal POOL (all 18 outcomes), already modeled as a SINGLE-PICK via the item's seal_slots. The gap-fill duplicated the seal pool as flat all-apply affixes, over-counting (a chosen seal grants ONE, not all six/eighteen). Reverting; the seal slot provides the single ability-score bonus.",
+  "status_2026_09_22": "SCOPE WIDENED, deliberately. The 397c673 refresh collapsed 45 `X [Crafted]` records onto their base name and the surviving record carries the SMALLER pre-craft affix block, so 21 items silently lost 39 affixes the DDO wiki still states outright. 24 of the 45 lost only a `Craftable*` marker and are left alone. This is the same class as the Orcus' Reign entry (#288): the stat is absent from gear-planner's native parse ENTIRELY, which is the scope note's own definition of a genuine gap — not a retype and not a synonym. Each restored affix is the (name, type, value) triple gear-planner itself carried at 767a7f7, with the stat and magnitude re-confirmed on the item's own RENDERED wiki page (action=parse) on 2026-09-22. Retire these entries if upstream restores the fuller parse. TWO TYPE READINGS ARE NOT SETTLED and are restored as-was rather than re-adjudicated here: The Disciplinator and Toven's Hammer carry `Fortification/Insight` in gear-planner while the wiki engraves 'Exceptional Fortification (+10%)'. Filed as follow-up rather than changed silently."
  },
  "Orcus' Reign": [
   {
@@ -16,6 +17,390 @@
    "wiki_url": "https://ddowiki.com/page/Item:Orcus%27_Reign",
    "verified": "2026-08-13",
    "note": "#288 — the U81 pull-back ADDED this affix; gear-planner's snapshot predates it entirely, so this is a genuine gap (the stat is absent from the native parse), not a retype."
+  }
+ ],
+ "Arcing Sky (level 13)": [
+  {
+   "name": "Dodge",
+   "type": "Enhancement",
+   "value": "6",
+   "wiki_url": "https://ddowiki.com/page/Item:Arcing_Sky",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Dodge +6%: +6% Enhancement bonus to Dodge'; 'Inherent Electric Resistance - 5: This item provides a +5 Insight bonus'"
+  },
+  {
+   "name": "Electric Resistance",
+   "type": "Insight",
+   "value": "5",
+   "wiki_url": "https://ddowiki.com/page/Item:Arcing_Sky",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Dodge +6%: +6% Enhancement bonus to Dodge'; 'Inherent Electric Resistance - 5: This item provides a +5 Insight bonus'"
+  }
+ ],
+ "Candlelight": [
+  {
+   "name": "Lesser Undead Guard",
+   "type": "Bool",
+   "value": "1",
+   "wiki_url": "https://ddowiki.com/page/Item:Candlelight",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Lesser Undead Guard: This armor burns those Undead that attack the wearer'"
+  }
+ ],
+ "Chill of Winter (level 13)": [
+  {
+   "name": "Cold Resistance",
+   "type": "Insight",
+   "value": "5",
+   "wiki_url": "https://ddowiki.com/page/Item:Chill_of_Winter",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Inherent Cold Resistance - 5: This item provides a +5 Insight bonus'"
+  }
+ ],
+ "Chulchannad's Claw": [
+  {
+   "name": "Cold Absorption",
+   "type": "Enhancement",
+   "value": "10",
+   "wiki_url": "https://ddowiki.com/page/Item:Chulchannad%27s_Claw",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Cold Absorption +10%: Passive: 10% Enhancement Bonus to Cold Absorption'; 'Inherent Cold Resistance - 5 ... +5 Insight bonus'"
+  },
+  {
+   "name": "Cold Resistance",
+   "type": "Insight",
+   "value": "5",
+   "wiki_url": "https://ddowiki.com/page/Item:Chulchannad%27s_Claw",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Cold Absorption +10%: Passive: 10% Enhancement Bonus to Cold Absorption'; 'Inherent Cold Resistance - 5 ... +5 Insight bonus'"
+  }
+ ],
+ "Flame Warden": [
+  {
+   "name": "Fire Resistance",
+   "type": "Enhancement",
+   "value": "3",
+   "wiki_url": "https://ddowiki.com/page/Item:Flame_Warden",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Fire Resistance +3: Passive: +3 Enhancement bonus'; 'Reflex Save +1: This item gives a +1 Resistance bonus to your Reflex saves'"
+  },
+  {
+   "name": "Reflex Save",
+   "type": "Resistance",
+   "value": "1",
+   "wiki_url": "https://ddowiki.com/page/Item:Flame_Warden",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Fire Resistance +3: Passive: +3 Enhancement bonus'; 'Reflex Save +1: This item gives a +1 Resistance bonus to your Reflex saves'"
+  }
+ ],
+ "Flicker": [
+  {
+   "name": "Reflex Save",
+   "type": "Resistance",
+   "value": "2",
+   "wiki_url": "https://ddowiki.com/page/Item:Flicker",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Reflex Save +2: ... +2 Resistance bonus to your Reflex saves'; 'Power II: This item grants the wearer +20 maximum spell points' (the wiki states the stat and the rank; the Enhancement type is gear-planner's own prior parse)"
+  },
+  {
+   "name": "Power",
+   "type": "Enhancement",
+   "value": "2",
+   "wiki_url": "https://ddowiki.com/page/Item:Flicker",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Reflex Save +2: ... +2 Resistance bonus to your Reflex saves'; 'Power II: This item grants the wearer +20 maximum spell points' (the wiki states the stat and the rank; the Enhancement type is gear-planner's own prior parse)"
+  }
+ ],
+ "Glorious Obscenity": [
+  {
+   "name": "Spot",
+   "type": "Enhancement",
+   "value": "5",
+   "wiki_url": "https://ddowiki.com/page/Item:Glorious_Obscenity",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Enhanced Spot +5: Passive: +5 Enhancement bonus to the Spot skill'; 'Seeker +6: Provides a +6 Enhancement bonus to confirm critical hits'"
+  },
+  {
+   "name": "Seeker",
+   "type": "Enhancement",
+   "value": "6",
+   "wiki_url": "https://ddowiki.com/page/Item:Glorious_Obscenity",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Enhanced Spot +5: Passive: +5 Enhancement bonus to the Spot skill'; 'Seeker +6: Provides a +6 Enhancement bonus to confirm critical hits'"
+  }
+ ],
+ "Hand of the Tombs": [
+  {
+   "name": "Fire Resistance",
+   "type": "Insight",
+   "value": "5",
+   "wiki_url": "https://ddowiki.com/page/Item:Hand_of_the_Tombs",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Inherent Fire Resistance - 5: This item provides a +5 Insight bonus'"
+  }
+ ],
+ "Khyber's Fury": [
+  {
+   "name": "Fortification",
+   "type": "Enhancement",
+   "value": "75",
+   "wiki_url": "https://ddowiki.com/page/Item:Khyber%27s_Fury",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Fortification +75%: This suit of armor or shield produces a magical force'"
+  }
+ ],
+ "Lucid Dreams": [
+  {
+   "name": "Potency",
+   "type": "Equipment",
+   "value": "48",
+   "wiki_url": "https://ddowiki.com/page/Item:Lucid_Dreams",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Potency +48: Passive: +48 Equipment bonus to each Spell Power'; 'Spell Lore VI: ... 6% Equipment bonus'; 'Mind Drain: This item reduces your maximum spell points by 5%'; 'Will Save -2: ... -2 penalty to your Will save'"
+  },
+  {
+   "name": "Spell Lore",
+   "type": "Equipment",
+   "value": "6",
+   "wiki_url": "https://ddowiki.com/page/Item:Lucid_Dreams",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Potency +48: Passive: +48 Equipment bonus to each Spell Power'; 'Spell Lore VI: ... 6% Equipment bonus'; 'Mind Drain: This item reduces your maximum spell points by 5%'; 'Will Save -2: ... -2 penalty to your Will save'"
+  },
+  {
+   "name": "Mind Drain",
+   "type": "Bool",
+   "value": "1",
+   "wiki_url": "https://ddowiki.com/page/Item:Lucid_Dreams",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Potency +48: Passive: +48 Equipment bonus to each Spell Power'; 'Spell Lore VI: ... 6% Equipment bonus'; 'Mind Drain: This item reduces your maximum spell points by 5%'; 'Will Save -2: ... -2 penalty to your Will save'"
+  },
+  {
+   "name": "Will Save",
+   "type": "Penalty",
+   "value": "-2",
+   "wiki_url": "https://ddowiki.com/page/Item:Lucid_Dreams",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Potency +48: Passive: +48 Equipment bonus to each Spell Power'; 'Spell Lore VI: ... 6% Equipment bonus'; 'Mind Drain: This item reduces your maximum spell points by 5%'; 'Will Save -2: ... -2 penalty to your Will save'"
+  }
+ ],
+ "Recoyle": [
+  {
+   "name": "Force Spell Power",
+   "type": "Equipment",
+   "value": "54",
+   "wiki_url": "https://ddowiki.com/page/Item:Recoyle",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Anathema: Increases all threat generated by spells by 25%'; 'Impulse +54: Passive: +54 Equipment bonus to Force ... Spell Power' (our canon renames upstream's 'Force Spell Power' to 'Impulse')"
+  },
+  {
+   "name": "Anathema",
+   "type": "Bool",
+   "value": "1",
+   "wiki_url": "https://ddowiki.com/page/Item:Recoyle",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Anathema: Increases all threat generated by spells by 25%'; 'Impulse +54: Passive: +54 Equipment bonus to Force ... Spell Power' (our canon renames upstream's 'Force Spell Power' to 'Impulse')"
+  }
+ ],
+ "Strinati's Hand Cannon": [
+  {
+   "name": "Wizardry",
+   "type": "Enhancement",
+   "value": "2",
+   "wiki_url": "https://ddowiki.com/page/Item:Strinati%27s_Hand_Cannon",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Wizardry II: This item grants the wearer +50 maximum spell points' (stat and rank stated; Enhancement type is gear-planner's own prior parse)"
+  }
+ ],
+ "The Devourer's Hunger": [
+  {
+   "name": "Cold Spell Power",
+   "type": "Equipment",
+   "value": "48",
+   "wiki_url": "https://ddowiki.com/page/Item:The_Devourer%27s_Hunger",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Glaciation +48: Passive: +48 Equipment bonus to Cold Spell Power'; 'False Life: This item grants the wearer +10 maximum health'"
+  },
+  {
+   "name": "False Life",
+   "type": "Enhancement",
+   "value": "10",
+   "wiki_url": "https://ddowiki.com/page/Item:The_Devourer%27s_Hunger",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Glaciation +48: Passive: +48 Equipment bonus to Cold Spell Power'; 'False Life: This item grants the wearer +10 maximum health'"
+  }
+ ],
+ "The Disciplinator": [
+  {
+   "name": "Fortification",
+   "type": "Insight",
+   "value": "10",
+   "wiki_url": "https://ddowiki.com/page/Item:The_Disciplinator",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Exceptional Fortification (+10%)'; 'Fortitude Save +5: ... +5 Resistance bonus'; 'Physical Sheltering +13: +13 Enhancement bonus to Physical Resistance Rating'"
+  },
+  {
+   "name": "Physical Sheltering",
+   "type": "Enhancement",
+   "value": "13",
+   "wiki_url": "https://ddowiki.com/page/Item:The_Disciplinator",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Exceptional Fortification (+10%)'; 'Fortitude Save +5: ... +5 Resistance bonus'; 'Physical Sheltering +13: +13 Enhancement bonus to Physical Resistance Rating'"
+  },
+  {
+   "name": "Fortitude Save",
+   "type": "Resistance",
+   "value": "5",
+   "wiki_url": "https://ddowiki.com/page/Item:The_Disciplinator",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Exceptional Fortification (+10%)'; 'Fortitude Save +5: ... +5 Resistance bonus'; 'Physical Sheltering +13: +13 Enhancement bonus to Physical Resistance Rating'"
+  }
+ ],
+ "The Pea Shooter": [
+  {
+   "name": "Potency",
+   "type": "Equipment",
+   "value": "28",
+   "wiki_url": "https://ddowiki.com/page/Item:The_Pea_Shooter",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Potency +28: Passive: +28 Equipment bonus to each Spell Power'; 'Inherent Acid Resistance - 5 ... +5 Insight bonus'"
+  },
+  {
+   "name": "Acid Resistance",
+   "type": "Insight",
+   "value": "5",
+   "wiki_url": "https://ddowiki.com/page/Item:The_Pea_Shooter",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Potency +28: Passive: +28 Equipment bonus to each Spell Power'; 'Inherent Acid Resistance - 5 ... +5 Insight bonus'"
+  }
+ ],
+ "Thought Spike (starter)": [
+  {
+   "name": "Will Save",
+   "type": "Resistance",
+   "value": "1",
+   "wiki_url": "https://ddowiki.com/page/Item:Thought_Spike",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Will Save +1: ... +1 Resistance bonus to your Will saves'. The `Starter` Bool is NOT restored — it is a gear-planner variant marker, absent from the wiki."
+  }
+ ],
+ "Thought Spike": [
+  {
+   "name": "Will Save",
+   "type": "Resistance",
+   "value": "1",
+   "wiki_url": "https://ddowiki.com/page/Item:Thought_Spike",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Will Save +1: This item gives a +1 Resistance bonus to your Will saves'"
+  }
+ ],
+ "Tira's Splendor": [
+  {
+   "name": "Healing Amplification",
+   "type": "Equipment",
+   "value": "40",
+   "wiki_url": "https://ddowiki.com/page/Item:Tira%27s_Splendor",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Deathblock: The wearer of this item is immune to all death spells'; 'Equipment Healing Amplification +40'"
+  },
+  {
+   "name": "Deathblock",
+   "type": "Bool",
+   "value": "1",
+   "wiki_url": "https://ddowiki.com/page/Item:Tira%27s_Splendor",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Deathblock: The wearer of this item is immune to all death spells'; 'Equipment Healing Amplification +40'"
+  }
+ ],
+ "Titan's Fist": [
+  {
+   "name": "Intelligence",
+   "type": "Enhancement",
+   "value": "6",
+   "wiki_url": "https://ddowiki.com/page/Item:Titan%27s_Fist",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Intelligence +6: ... a +6 Enhancement bonus to Intelligence'; 'Kinetic Lore V: Passive: ... 15% Equipment' (rank V = gear-planner's 5)"
+  },
+  {
+   "name": "Kinetic Lore",
+   "type": "Equipment",
+   "value": "5",
+   "wiki_url": "https://ddowiki.com/page/Item:Titan%27s_Fist",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Intelligence +6: ... a +6 Enhancement bonus to Intelligence'; 'Kinetic Lore V: Passive: ... 15% Equipment' (rank V = gear-planner's 5)"
+  }
+ ],
+ "Toven's Hammer": [
+  {
+   "name": "Potency",
+   "type": "Equipment",
+   "value": "48",
+   "wiki_url": "https://ddowiki.com/page/Item:Toven%27s_Hammer",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Potency +48: Passive: +48 Equipment bonus to each Spell Power'; 'Exceptional Fortification (+10%)'"
+  },
+  {
+   "name": "Fortification",
+   "type": "Insight",
+   "value": "10",
+   "wiki_url": "https://ddowiki.com/page/Item:Toven%27s_Hammer",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Potency +48: Passive: +48 Equipment bonus to each Spell Power'; 'Exceptional Fortification (+10%)'"
+  }
+ ],
+ "Trial by Fire": [
+  {
+   "name": "False Life",
+   "type": "Vitality",
+   "value": "20",
+   "wiki_url": "https://ddowiki.com/page/Item:Trial_by_Fire",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Vitality +20: Passive: +20 Vitality bonus to Hit Points' (gear-planner's name for this is 'False Life' typed Vitality — a known synonym this shard's scope note already lists); 'Inherent Fire Resistance - 5 ... +5 Insight bonus'"
+  },
+  {
+   "name": "Fire Resistance",
+   "type": "Insight",
+   "value": "5",
+   "wiki_url": "https://ddowiki.com/page/Item:Trial_by_Fire",
+   "verified": "2026-09-22",
+   "issue": null,
+   "note": "#[Crafted]-restructure backfill — restored verbatim from gear-planner's own parse at 767a7f7. Evidence: rendered page: 'Vitality +20: Passive: +20 Vitality bonus to Hit Points' (gear-planner's name for this is 'False Life' typed Vitality — a known synonym this shard's scope note already lists); 'Inherent Fire Resistance - 5 ... +5 Insight bonus'"
   }
  ]
 }

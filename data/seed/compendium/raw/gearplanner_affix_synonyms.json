@@ -242,12 +242,6 @@
         "synonyms": []
     },
     {
-        "name": "Magical Efficiency",
-        "synonyms": [
-            "Power Store"
-        ]
-    },
-    {
         "name": "Magical Sheltering",
         "synonyms": [
             "Magical Resistance Rating",
@@ -484,6 +478,12 @@
         "name": "Will Save",
         "synonyms": [
             "Will saves"
+        ]
+    },
+    {
+        "name": "Imbue Dice",
+        "synonyms": [
+            "bonus Imbue Dice"
         ]
     }
 ]

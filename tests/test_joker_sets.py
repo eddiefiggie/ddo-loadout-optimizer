@@ -48,11 +48,14 @@ def test_every_gem_tier_is_attached():
     """U5 (#139) — INVERTS the prior guard. The 2026-07-27 wildcard plan deferred the
     heroic and Epic tiers for lack of a source; both pools are now wiki-harvested
     (docs/wiki-evidence/gem-of-many-facets.md), so every offered variant is wired.
-    All six — three tiers, each plus its `[Crafted]` twin — must carry two groups."""
+    397c673 — THREE, not six. Upstream collapsed the `[Crafted]` twins onto their
+    base names, so each tier now exists once. The substantive claim is unchanged and
+    is what this test is really about: every shipped Gem tier carries BOTH joker
+    groups. See tests/test_crafted_twins.py for the family's retirement."""
     d = json.load(open(ITEMS_PATH, encoding="utf-8"))
     gems = [it for it in _all_items(d)
             if "Gem of Many Facets" in str(it.get("variant_id") or "")]
-    assert len(gems) == 6, f"expected 6 Gem variants, found {len(gems)}"
+    assert len(gems) == 3, f"expected 3 Gem variants, found {len(gems)}"
     for it in gems:
         groups = it.get("joker_set_groups") or []
         assert len(groups) == 2, f"{it.get('variant_id')} should carry two pools, got {len(groups)}"

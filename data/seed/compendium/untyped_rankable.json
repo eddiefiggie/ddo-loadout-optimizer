@@ -188,6 +188,14 @@
       "reason": "wiki: '1d8 piercing damage on a successful melee attack' against the wearer. An on-hit proc. Needs #331. Also typed elsewhere, so the untyped instances may additionally be a parse gap.",
       "wiki_url": "https://ddowiki.com/page/Thorn_Guard",
       "verified": "2026-08-29"
+    },
+    {
+      "name": "Max Filigree Slots",
+      "items": 95,
+      "category": "unrankable-concept",
+      "reason": "Filigrees are a declared NON-GOAL, declined 2026-09-17 (#196) — see AGENTS.md. This is a slot COUNT, not a magnitude a player can rank: it says how many filigrees the item can hold, and the filigree effects that would give it meaning are not modelled at all. Ranking it would sort gear by an empty container. NOTE FOR THE NEXT READER: the non-goal was argued partly on there being no filigree data in any source ('the whole seed tree holds exactly one filigree string'); the 397c673 refresh changes that premise — upstream now carries a per-item slot count on 95 items. It still carries no filigree EFFECTS or pools, so the decision stands and this stays quarantined; but the factual basis moved, and reopening remains the owner's call on a player report naming filigrees.",
+      "wiki_url": "https://ddowiki.com/page/Filigree",
+      "verified": "2026-09-22"
     }
   ],
   "_retired_2026_08_18": {
@@ -326,13 +334,14 @@
     "verdict": "All 22 reviewed against the DDO Wiki. NONE is admitted to the picker.",
     "why_none": "The candidate rule finds untyped affixes that LOOK like worn magnitudes. Reading each page shows every one is something else: a proc, a conditional or spell-specific effect, a real magnitude for a concept this app does not rank (qualified Damage Reduction), an upstream parse gap on an affix that is typed elsewhere, or a page that does not exist. That is a result, not an absence of one — the queue no longer carries 22 names whose status nobody had checked.",
     "categories": {
-      "no-wiki-page": 5,
-      "proc": 5,
       "conditional": 5,
-      "unrankable-concept": 3,
+      "no-wiki-page": 5,
+      "not-a-stat": 2,
       "parse-gap": 2,
-      "not-a-stat": 2
+      "proc": 5,
+      "unrankable-concept": 4
     },
-    "revisit_when": "A proc verdict changes if #331 ships proc valuation. A conditional verdict changes if #214 gives the pipeline a way to tell a conditional from a constant. A parse-gap verdict changes on a gear-planner refresh that types the remaining instances — which is exactly how the 21 names retired on 2026-08-18 resolved."
+    "revisit_when": "A proc verdict changes if #331 ships proc valuation. A conditional verdict changes if #214 gives the pipeline a way to tell a conditional from a constant. A parse-gap verdict changes on a gear-planner refresh that types the remaining instances — which is exactly how the 21 names retired on 2026-08-18 resolved.",
+    "_note_397c673": "397c673 — `Max Filigree Slots` joined `unrankable-concept`: a slot COUNT on 95 items, and filigrees are a declared non-goal (#196). Tally re-derived from the list."
   }
 }

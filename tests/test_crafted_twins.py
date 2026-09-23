@@ -177,6 +177,42 @@ def test_a_crafting_label_the_base_already_had_is_not_an_addition():
     assert r["capacity_divergent"] == [], "a shared label is not added capacity"
 
 
+
+# --- 397c673: the `[Crafted]` family is GONE from upstream -----------------------
+#
+# The refresh collapsed all 45 `X [Crafted]` records onto their base name, keeping
+# the base name and the SMALLER pre-craft affix block. There is no twin to pair
+# with any more, so every population below is 0.
+#
+# The machinery is NOT deleted: `web/model.js` still folds a block on either half,
+# and upstream may restore the split. What the zeros must not become is a vacuous
+# green — "0 pairs" is exactly the shape a broken derivation also produces. So each
+# zero here is paired with an INDEPENDENT proof of its premise read from the raw
+# snapshot (`_raw_crafted_names()`): the family is absent because upstream stopped
+# emitting it, not because `derive` stopped finding it. If upstream brings the
+# suffix back, that helper goes non-empty and these tests go red for re-ratification.
+EXPECTED_PAIRS = 0
+
+
+def _raw_crafted_names():
+    """`[Crafted]` item names in the vendored raw dump — the premise, read at source."""
+    raw_path = os.path.join(ROOT, "data", "seed", "compendium", "raw",
+                            "gearplanner_items.json")
+    with open(raw_path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    return sorted(i["name"] for i in raw
+                  if isinstance(i.get("name"), str)
+                  and i["name"].endswith(crafted_twins.SUFFIX))
+
+
+def test_the_crafted_suffix_really_is_absent_upstream():
+    """The premise every zero below rests on, asserted once and at source."""
+    assert _raw_crafted_names() == [], (
+        "upstream carries `[Crafted]` records again — the 397c673 collapse has been "
+        "reverted. Re-ratify EXPECTED_PAIRS and the coverage block deliberately; the "
+        "pairing tests below are currently pinned at zero.")
+
+
 # --- the shipped dataset --------------------------------------------------------
 
 def test_the_shipped_catalog_derives_a_clean_pairing():
@@ -185,9 +221,11 @@ def test_the_shipped_catalog_derives_a_clean_pairing():
         return
     r = _derive(data["items"])
     assert r["problems"] == [], r["problems"]
-    assert r["inspected"] == 45, f"45 `[Crafted]` records today, saw {r['inspected']}"
-    assert len(r["pairs"]) == 45, "every one of them pairs; an orphan would be a problem"
-    assert len(r["identity"]) == 90, "both halves of each pair are addressable"
+    assert r["inspected"] == EXPECTED_PAIRS, (
+        f"expected {EXPECTED_PAIRS} `[Crafted]` records, saw {r['inspected']}")
+    assert len(r["pairs"]) == EXPECTED_PAIRS
+    assert len(r["identity"]) == 2 * EXPECTED_PAIRS
+    assert _raw_crafted_names() == [], "the zero above must be upstream's, not the derivation's"
 
 
 def test_the_built_dataset_publishes_the_identity():
@@ -204,27 +242,25 @@ def test_the_built_dataset_publishes_the_identity():
         # carries a SERVED label its base does not, which is precisely what
         # capacity divergence means. +41, matching the 41 hosts the Essence pool
         # started serving. Recorded rather than raised, by this module's design.
-        "inspected": 45, "pairs": 45, "capacity_divergent": 45}
+        # 397c673 — 0 not 45: upstream collapsed the whole `[Crafted]` family onto
+        # the base names, so there is nothing left to pair or to diverge.
+        "inspected": 0, "pairs": 0, "capacity_divergent": 0}
+    assert _raw_crafted_names() == [], "the zeros above must be upstream's"
     divergent = {d["crafted"] for d in meta["crafted_twin_identity_divergent"]}
     # #764 — the set was the four Trinket declarers; it is now every crafted twin
     # that declares a served Essence menu, across all four families. Naming all 45
     # would pin a roster that moves whenever a blank is added, so this pins the
     # PROPERTY instead: the original four are still in it, and every member's
     # divergence is an Essence label rather than something unrelated that crept in.
-    for gem in ("Gem of Many Facets [Crafted]", "Epic Gem of Many Facets [Crafted]",
-                "Legendary Gem of Many Facets [Crafted]", "Trinket [Crafted]"):
-        assert gem in divergent, gem
-    assert len(divergent) == 45, sorted(divergent)
+    assert divergent == set(), sorted(divergent)
     for d in meta["crafted_twin_identity_divergent"]:
         assert d["served_labels"], f"{d['crafted']} is divergent for no stated label"
         assert all(l.startswith("Essence Crafting: ") for l in d["served_labels"]), d
     identity = meta["crafted_twin_identity"]
-    assert identity["Legendary Gem of Many Facets [Crafted]"] == "Legendary Gem of Many Facets", \
-        "the item #547 was reported about"
-    assert identity["Legendary Gem of Many Facets"] == "Legendary Gem of Many Facets", \
-        "the base maps to itself, so the consumer never has to know which side it holds"
-    # Non-vacuity: an absent key must mean "only itself", not "map missing".
-    assert len(identity) == 90
+    # #547's own item survives the collapse under its base name alone, so the map
+    # is empty rather than self-mapping: an absent key already means "only itself".
+    assert "Legendary Gem of Many Facets [Crafted]" not in identity
+    assert identity == {}
     assert "Icon of the Bitterwind" not in identity
 
 
@@ -247,7 +283,9 @@ def test_every_shipped_pair_is_a_strict_affix_subset():
         assert {key(a) for a in crafted.get("affixes") or []} <= \
                {key(a) for a in base.get("affixes") or []}, name
         checked += 1
-    assert checked == 45, f"the loop must actually inspect 45 pairs, saw {checked}"
+    assert checked == EXPECTED_PAIRS, (
+        f"the loop inspected {checked} pairs, expected {EXPECTED_PAIRS}")
+    assert _raw_crafted_names() == [], "the zero above must be upstream's, not this loop's"
 
 
 def test_the_inert_label_is_really_inert():

@@ -1,7 +1,8 @@
 {
   "_source": "generated from data/seed/compendium/raw/gearplanner_crafting.json pool keys UNIONED with gearplanner_items.json crafting[] markers (U2/R14/R12): the 83 pool-bearing slots plus 12 pool-less Cannith player-crafting slots that item markers still reference. Closed structural set, integrity-gated, no alias/lint. Regenerate on a reviewed re-import via src.vocabulary.generate_crafting_slot_registry.",
-  "count": 95,
+  "count": 96,
   "crafting_slots": [
+    "Active",
     "Almost There",
     "Blue Augment Slot",
     "Claw (Accessory)",
@@ -97,5 +98,6 @@
     "Woeful (Accessory)",
     "Woeful (Weapon)",
     "Yellow Augment Slot"
-  ]
+  ],
+  "_note_397c673": "Regenerated for the U81.3 refresh: 95 -> 96, the single addition being the `Active` pool upstream added at 397c673. No slot was removed."
 }

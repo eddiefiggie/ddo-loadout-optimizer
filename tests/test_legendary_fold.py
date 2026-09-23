@@ -282,9 +282,16 @@ def test_built_dataset_carries_no_prefixed_stat_and_credits_the_base():
     # fold, and it folds to `Conditioning` — including the two Solar Gem of
     # Enduring augments #376 added (34 worn carriers + 2 = 36).
     assert set(based) == {"Conditioning"}, based
-    assert based["Conditioning"] == 36, based
-    assert native == {"Accuracy": 14, "Armor-Piercing": 22, "Deadly": 3,
+    # 397c673 — 37: `The Prince of Demons` (Terror of the Demon Lords, ML35)
+    # engraves {{Conditioning|10|Legendary}}, a 37th carrier. 36 + 1 = 37.
+    assert based["Conditioning"] == 37, based
+    # 397c673 — Armor-Piercing 22 -> 23 and Deadly 3 -> 4, both from Terror of the
+    # Demon Lords raid loot: `The Skull of the Horned King` engraves
+    # {{Armor-Piercing|25}} and `The Unbreakable Divinity` engraves {{Deadly|4|Quality}}.
+    # Accuracy and Spell Penetration are untouched.
+    assert native == {"Accuracy": 14, "Armor-Piercing": 23, "Deadly": 4,
                       "Spell Penetration": 12}, native
     # the population as a whole is unchanged, which is the claim that matters
     assert set(based) | set(native) == targets
-    assert sum(based.values()) + sum(native.values()) == 87, (based, native)
+    # 87 -> 90: +1 Conditioning, +1 Armor-Piercing, +1 Deadly, all raid loot.
+    assert sum(based.values()) + sum(native.values()) == 90, (based, native)
