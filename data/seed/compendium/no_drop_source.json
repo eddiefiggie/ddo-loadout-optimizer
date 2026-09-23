@@ -8,7 +8,8 @@
       "wiki_has_source"
     ],
     "guard_rules": "The build FAILS when (a) an entry carries a verdict outside the closed vocabulary; (b) an entry names an item absent from the planner roster (anti-orphan — renamed or dropped upstream); (c) a confirmed_no_source entry is missing its evidence snapshot, wiki_url, or harvested date; (d) STALENESS: an entry's item carries a non-empty upstream `quests` array (the raw planner list, NOT the derived location_quest string) — the wiki/gear-planner now records a source, and un-flagging is a manual review event, never automatic. An ABSENT shard or an EMPTY harvested map is fully inert (no flags, no coverage block) — the deliberate exclude-until-verified empty-seed exception; once entries exist, every guard fires and a zero-inspected pass is refused.",
-    "provenance_vocabulary": "`stated` — the verdict was read off the item's own rendered wiki page (the absorption/enchantment discipline; nothing weaker is admitted here)."
+    "provenance_vocabulary": "`stated` — the verdict was read off the item's own rendered wiki page (the absorption/enchantment discipline; nothing weaker is admitted here).",
+    "_note_397c673": "2026-09-22 — 8 entries flipped confirmed_no_source -> wiki_has_source after the 397c673 refresh surfaced a non-empty upstream `quests` array ('Raiding the Raiders') for each. This is the shard's staleness guard working as designed: it refuses to un-flag automatically, and each flip was re-verified on the item's own rendered wiki page. The prior verdict and its evidence are preserved per entry under `prior_verdict` — the original reading was not wrong, the game changed under it."
   },
   "harvested": {
     "+1 Intimidating Dagger of Acid": {
@@ -67,13 +68,6 @@
       "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Minor_Striding",
       "harvested": "2026-08-13"
     },
-    "Bracers of the Spider Queen": {
-      "verdict": "confirmed_no_source",
-      "provenance": "stated",
-      "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
-      "wiki_url": "https://ddowiki.com/page/Item:Bracers_of_the_Spider_Queen",
-      "harvested": "2026-08-13"
-    },
     "Brooch of Waterbreathing": {
       "verdict": "confirmed_no_source",
       "provenance": "stated",
@@ -114,13 +108,6 @@
       "provenance": "stated",
       "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
       "wiki_url": "https://ddowiki.com/page/Item:Coronach_(historic)",
-      "harvested": "2026-08-13"
-    },
-    "Duergarcraft Robe": {
-      "verdict": "confirmed_no_source",
-      "provenance": "stated",
-      "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
-      "wiki_url": "https://ddowiki.com/page/Item:Duergarcraft_Robe",
       "harvested": "2026-08-13"
     },
     "Epic Adherent's Pendant": {
@@ -718,13 +705,6 @@
       "wiki_url": "https://ddowiki.com/page/Item:Founder%27s_Helm",
       "harvested": "2026-08-13"
     },
-    "Great Forge Helm": {
-      "verdict": "confirmed_no_source",
-      "provenance": "stated",
-      "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
-      "wiki_url": "https://ddowiki.com/page/Item:Great_Forge_Helm",
-      "harvested": "2026-08-13"
-    },
     "Green Steel Greatclub": {
       "verdict": "wiki_has_source",
       "provenance": "stated",
@@ -737,13 +717,6 @@
       "provenance": "stated",
       "evidence": "the current Festivult page lists Unbound Blank Greensteel Weapons among gold-coin rewards (the Greatclub is its named example of the family); Festivult runs annually",
       "wiki_url": "https://ddowiki.com/page/Item:Green_Steel_Light_Hammer",
-      "harvested": "2026-08-13"
-    },
-    "High Priestess' Focus": {
-      "verdict": "confirmed_no_source",
-      "provenance": "stated",
-      "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
-      "wiki_url": "https://ddowiki.com/page/Item:High_Priestess'_Focus",
       "harvested": "2026-08-13"
     },
     "Lawrence's Robe of Trivial Knowledge": {
@@ -821,13 +794,6 @@
       "provenance": "stated",
       "evidence": "legendary-crafted from Epic Bracers of the Hunter (the page's legendary param records the epic predecessor)",
       "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Hunter",
-      "harvested": "2026-08-13"
-    },
-    "Legendary Bracers of the Spider Queen": {
-      "verdict": "confirmed_no_source",
-      "provenance": "stated",
-      "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
-      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Spider_Queen",
       "harvested": "2026-08-13"
     },
     "Legendary Bramble-Casters": {
@@ -928,13 +894,6 @@
       "wiki_url": "https://ddowiki.com/page/Item:Legendary_Dragon's_Eye",
       "harvested": "2026-08-13"
     },
-    "Legendary Duergarcraft Robe": {
-      "verdict": "confirmed_no_source",
-      "provenance": "stated",
-      "evidence": "location channels (quest/chest params) present and empty in wikitext; rendered page shows no Location section; no epic/legendary crafting lineage recorded",
-      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Duergarcraft_Robe",
-      "harvested": "2026-08-13"
-    },
     "Legendary Dusk Heart": {
       "verdict": "wiki_has_source",
       "provenance": "stated",
@@ -1019,13 +978,6 @@
       "wiki_url": "https://ddowiki.com/page/Item:Legendary_Golden_Guile",
       "harvested": "2026-08-13"
     },
-    "Legendary Great Forge Helm": {
-      "verdict": "confirmed_no_source",
-      "provenance": "stated",
-      "evidence": "quest/chest params present and empty; the epic param carries the flag value 'no' (not a crafting lineage); rendered page shows no acquisition heading",
-      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Great_Forge_Helm",
-      "harvested": "2026-08-13"
-    },
     "Legendary Grim's Bracelet": {
       "verdict": "wiki_has_source",
       "provenance": "stated",
@@ -1045,13 +997,6 @@
       "provenance": "stated",
       "evidence": "legendary-crafted from Epic Helm of the Red Dragon (the page's legendary param records the epic predecessor)",
       "wiki_url": "https://ddowiki.com/page/Item:Legendary_Helm_of_the_Red_Dragon",
-      "harvested": "2026-08-13"
-    },
-    "Legendary High Priestess' Focus": {
-      "verdict": "confirmed_no_source",
-      "provenance": "stated",
-      "evidence": "quest/chest params present and empty; the epic param carries the flag value 'no' (not a crafting lineage); rendered page shows no acquisition heading",
-      "wiki_url": "https://ddowiki.com/page/Item:Legendary_High_Priestess'_Focus",
       "harvested": "2026-08-13"
     },
     "Legendary Hruvayah's Medallion": {
@@ -1534,6 +1479,19 @@
         "Drow Wizard's Greaves": "entry already carried verdict `wiki_has_source` (quest Stealing from Sorcere, optional chest); the refreshed upstream snapshot now records it too, so the dataset gap it flagged is closed",
         "Legendary Drow Wizard's Greaves": "entry already carried verdict `wiki_has_source` (quest Stealing from Sorcere, optional chest); the refreshed upstream snapshot now records it too, so the dataset gap it flagged is closed",
         "Dark Star of the Deep": "wiki now reads `Location: A Blood Pact, Gnolls' Grotto` and files the page under `A Blood Pact loot` (re-read 2026-08-18)"
+      }
+    },
+    "2026-09-22-gear-planner-refresh": {
+      "why": "The 397c673 refresh records `Raiding the Raiders` as the quest source for these eight items, which fired the no-drop-source staleness guard. Un-flagging is a manual review event, never automatic, so each was re-read on its own RENDERED wiki page (action=parse, not wikitext) before retiring. All eight carried `confirmed_no_source` from the 2026-08-13 harvest and were genuinely stale rather than merely superseded: the quest that sources them did not exist when they were triaged.",
+      "entries": {
+        "Bracers of the Spider Queen": "carried verdict `confirmed_no_source` from the 2026-08-13 harvest; the rendered page now reads 'Location: Raiding the Raiders, end chest' (re-read 2026-09-22). The quest shipped in Update 81.2 on 2026-08-19, AFTER that harvest — the original reading was correct when made and the item gained a live drop source afterwards.",
+        "Duergarcraft Robe": "carried verdict `confirmed_no_source` from the 2026-08-13 harvest; the rendered page now reads 'Location: Raiding the Raiders, end chest' (re-read 2026-09-22). The quest shipped in Update 81.2 on 2026-08-19, AFTER that harvest — the original reading was correct when made and the item gained a live drop source afterwards.",
+        "Great Forge Helm": "carried verdict `confirmed_no_source` from the 2026-08-13 harvest; the rendered page now reads 'Location: Raiding the Raiders, end chest' (re-read 2026-09-22). The quest shipped in Update 81.2 on 2026-08-19, AFTER that harvest — the original reading was correct when made and the item gained a live drop source afterwards.",
+        "High Priestess' Focus": "carried verdict `confirmed_no_source` from the 2026-08-13 harvest; the rendered page now reads 'Location: Raiding the Raiders, end chest' (re-read 2026-09-22). The quest shipped in Update 81.2 on 2026-08-19, AFTER that harvest — the original reading was correct when made and the item gained a live drop source afterwards.",
+        "Legendary Bracers of the Spider Queen": "carried verdict `confirmed_no_source` from the 2026-08-13 harvest; the rendered page now reads 'Location: Raiding the Raiders, end chest' (re-read 2026-09-22). The quest shipped in Update 81.2 on 2026-08-19, AFTER that harvest — the original reading was correct when made and the item gained a live drop source afterwards.",
+        "Legendary Duergarcraft Robe": "carried verdict `confirmed_no_source` from the 2026-08-13 harvest; the rendered page now reads 'Location: Raiding the Raiders, end chest' (re-read 2026-09-22). The quest shipped in Update 81.2 on 2026-08-19, AFTER that harvest — the original reading was correct when made and the item gained a live drop source afterwards.",
+        "Legendary Great Forge Helm": "carried verdict `confirmed_no_source` from the 2026-08-13 harvest; the rendered page now reads 'Location: Raiding the Raiders, end chest' (re-read 2026-09-22). The quest shipped in Update 81.2 on 2026-08-19, AFTER that harvest — the original reading was correct when made and the item gained a live drop source afterwards.",
+        "Legendary High Priestess' Focus": "carried verdict `confirmed_no_source` from the 2026-08-13 harvest; the rendered page now reads 'Location: Raiding the Raiders, end chest' (re-read 2026-09-22). The quest shipped in Update 81.2 on 2026-08-19, AFTER that harvest — the original reading was correct when made and the item gained a live drop source afterwards."
       }
     }
   }

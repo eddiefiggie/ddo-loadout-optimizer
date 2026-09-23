@@ -19,13 +19,17 @@ ITEMS = os.path.join(os.path.dirname(__file__), "..", "web", "data", "items.json
 def test_native_build_sources_both_classes_from_the_catalog():
     out = lgs.build_legendary_green_steel()
     recs = out["records"]
-    assert len(recs) == 116 == out["source_options"], "81 accessory + 35 weapon options, one record each"
+    # 397c673 — upstream grew Legendary Green Steel 116 -> 156 by adding skill-group
+    # variants (accessory 81 unchanged, weapon 35 -> 75). Re-ratified against the
+    # refreshed snapshot, not bumped to silence a red.
+    assert len(recs) == 156 == out["source_options"], "81 accessory + 75 weapon options, one record each"
     assert out["coverage"]["options_split"] == 0
     assert out["coverage"]["pending"] is False
     by = out["coverage"]["by_class"]
     assert set(by) == {"accessory", "weapon"}
     assert (by["accessory"]["source_options"], by["accessory"]["options_eligible"]) == (81, 81)
-    assert (by["weapon"]["source_options"], by["weapon"]["options_eligible"]) == (35, 35)
+    # 397c673 — the weapon half grew 35 -> 75 with upstream's skill-group variants.
+    assert (by["weapon"]["source_options"], by["weapon"]["options_eligible"]) == (75, 75)
     assert by["accessory"]["tiers_sourced"] == by["weapon"]["tiers_sourced"] == [1, 2, 3]
     assert by["accessory"]["tiers_pending"] == by["weapon"]["tiers_pending"] == []
     assert "gearplanner_crafting.json" in out["coverage"]["source"]
@@ -42,7 +46,8 @@ def test_native_build_sources_both_classes_from_the_catalog():
         assert r["source_stations"] and all("Legendary Altar" in st for st in r["source_stations"]), r
     multi = [r for r in recs if len(r["affixes"]) > 1]
     assert len([r for r in multi if r["item_class"] == "accessory"]) == 24
-    assert len([r for r in multi if r["item_class"] == "weapon"]) == 1
+    # 397c673 — 3 not 1; see tests/test_container_registry.py for the same count.
+    assert len([r for r in multi if r["item_class"] == "weapon"]) == 3
 
 
 def test_records_are_deterministic_in_class_then_tier_order():

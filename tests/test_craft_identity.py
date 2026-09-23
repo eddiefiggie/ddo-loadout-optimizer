@@ -70,7 +70,10 @@ def test_no_two_options_share_a_key():
     # record each: Sheltering, Combat Mastery, …); nothing else moved.
     # #843 — 1327 not 1009: +318, the Essence pool read from the yourddo catalog
     # instead of the wiki shards (356 options over 38; every one of the 38 kept).
-    assert len(seen) == 1406, f"option population is {len(seen)}, expected 1406"
+    # 397c673 — 1446 not 1406: +40 Legendary Green Steel skill-group rows. The pool
+    # key widened to (tier, skill group) in the same commit, because the added rows
+    # collapsed 12 options onto 6 keys under the old tier-only discriminator.
+    assert len(seen) == 1446, f"option population is {len(seen)}, expected 1446"
 
 
 def test_the_quarterstaff_flag_is_load_bearing():
@@ -101,7 +104,7 @@ def test_the_build_publishes_its_own_coverage():
     # property that matters and is what the widened discriminator restores.
     # #817 — +2 `Dodge` Essence options; see test_no_two_options_share_a_key.
     # #843 — +318 Essence options; see test_no_two_options_share_a_key.
-    assert cov["stamped"] == cov["distinct"] == 1406
+    assert cov["stamped"] == cov["distinct"] == 1446
     assert cov["by_pool"]["slavers"] == 184   # #766
     assert cov["by_pool"][ci.PER_ITEM_POOL] == 147, (
         "the per-item Nearly Complete pools are in scope — a handle that cannot "

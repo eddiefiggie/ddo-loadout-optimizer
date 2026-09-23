@@ -836,11 +836,6 @@
       "pack": "Secrets of the Artificers",
       "via": "`Adpack` template on the page (the page IS in that pack)"
     },
-    "House Deneith": {
-      "kind": "unknown",
-      "pack": null,
-      "via": "no classifying category"
-    },
     "House of Pain": {
       "kind": "pack-quest",
       "pack": "Masterminds of Sharn",
@@ -1390,11 +1385,6 @@
       "kind": "pack-quest",
       "pack": "Masterminds of Sharn",
       "via": "Quest infobox `adpack` parameter"
-    },
-    "Ruins of Gianthold": {
-      "kind": "pack-quest",
-      "pack": "Ruins of Gianthold",
-      "via": "`Adpack` template on the page (the page IS in that pack)"
     },
     "Ruins of Myth Drannor": {
       "kind": "pack-quest",
@@ -2700,6 +2690,53 @@
       "kind": "pack-quest",
       "pack": "The Chill of Ravenloft",
       "via": "Quest infobox `adpack` parameter"
+    },
+    "Terror of the Demon Lords": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter",
+      "harvested": "2026-09-22",
+      "note": "The Update 81.3 raid (2026-09-16). Its quest page reads `| adpack = Terror of Demogorgon`, `raid = yes`, `legendary = 37`, patron Battlehammer Expedition."
+    },
+    "Raiding the Raiders": {
+      "kind": "pack-quest",
+      "pack": "Terror of Demogorgon",
+      "via": "Quest infobox `adpack` parameter",
+      "harvested": "2026-09-22",
+      "note": "The Update 81.2 quest (2026-08-19). `| adpack = Terror of Demogorgon`, `raid = false` despite the name. It is the source the no_drop_source shard's eight 2026-09-22 retirements gained."
+    },
+    "Ruins of Gianthold (heroic)": {
+      "kind": "pack-quest",
+      "pack": "Ruins of Gianthold",
+      "via": "`Adpack` template on the page (the page IS in that pack)",
+      "harvested": "2026-09-22",
+      "note": "Upstream renamed the wilderness-area value from `Ruins of Gianthold` to `Ruins of Gianthold (heroic)` at 397c673. Same page signal, same verdict as the entry it supersedes: the page opens with {{Adpack|adpack=Ruins of Gianthold|cost=950|release_date=2013/02/19}}."
+    },
+    "House Deneith Enclave": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "no classifying category",
+      "harvested": "2026-09-22",
+      "note": "Upstream renamed the value from `House Deneith` at 397c673. Same verdict as the entry it supersedes: the page is the public Dragonmarked-House enclave and carries no `Adpack` template and no classifying category, so it stays `unknown` and renders under 'Source unknown' rather than being guessed from the name."
+    }
+  },
+  "_retired": {
+    "2026-09-22-gear-planner-refresh": {
+      "why": "The 397c673 refresh renamed two `location_quest` values, which fired the mapping's stale-entry report. Each superseded entry is preserved with the verdict it carried, and the replacement was re-read on the same wiki page rather than copied on faith.",
+      "entries": {
+        "House Deneith": {
+          "kind": "unknown",
+          "pack": null,
+          "via": "no classifying category",
+          "superseded_by": "House Deneith Enclave"
+        },
+        "Ruins of Gianthold": {
+          "kind": "pack-quest",
+          "pack": "Ruins of Gianthold",
+          "via": "`Adpack` template on the page (the page IS in that pack)",
+          "superseded_by": "Ruins of Gianthold (heroic)"
+        }
+      }
     }
   }
 }

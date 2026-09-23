@@ -136,13 +136,41 @@ test("#374: the correction roster is the declaration, and every entry is armed",
   // whole corpus, all inside the two `Slave's Endurance` set tiers, so it is
   // invisible to every channel but one and a refresh that touched only items would
   // never notice it. It existed unreachable until #769 admitted the set.
-  assert.strictEqual(CORRECTIONS.length, 25,
-    "25 armed variants — 13 upstream-spelling corrections (#374), 10 " +
-    "evidence-bound merges (#632, #615, #639, #649) and 2 wiki-name corrections " +
-    "(#672, #769); a new entry needs its own assertion, not a bump");
-  assert.strictEqual(CORRECTIONS.filter((c) => c.merge_into_existing).length, 10,
-    "ten entries are merges, and a merge must cite the wiki page that says the " +
+  // 397c673 — 30, and the five additions are all merges of a bucket UPSTREAM SPLIT,
+  // which is a kind this roster had not carried: every earlier merge folded a name
+  // the project judged subordinate, while these restore a fold upstream itself used
+  // to apply. Each gets its own line here rather than a bump, and each is asserted
+  // by name below.
+  //   `Power Store` -> `Magical Efficiency`. Upstream carried this exact fold in its
+  //   affix-synonyms table until 767a7f7 and DROPPED it at 397c673, moving 8 item
+  //   records and 1 augment onto a standalone name. Both wiki pages define one
+  //   mechanic: Power_Store is "an enhancement bonus of -10% spell point cost" and
+  //   Magical_Efficiency is "a X% Enhancement discount to the Spell Point cost".
+  //   Left split, one mechanic would sit in two buckets and SUM.
+  //   `Inherent {Acid,Cold,Electric,Fire} Resistance -` -> the plain resistance stat,
+  //   four entries. Upstream's T2/T3 (Equipment) pools carry the engraved label with
+  //   the magnitude stripped off the end, leaving a trailing " -"; the wiki sentence
+  //   names the stat outright ("...provides a +5 Insight bonus to your Acid
+  //   Resistance"). Crafting-channel only, which is why they reach no item.
+  assert.strictEqual(CORRECTIONS.length, 30,
+    "30 armed variants — 13 upstream-spelling corrections (#374), 15 " +
+    "evidence-bound merges (#632, #615, #639, #649, 397c673) and 2 wiki-name " +
+    "corrections (#672, #769); a new entry needs its own assertion, not a bump");
+  assert.strictEqual(CORRECTIONS.filter((c) => c.merge_into_existing).length, 15,
+    "fifteen entries are merges, and a merge must cite the wiki page that says the " +
     "two names are one stat");
+  // The five 397c673 merges, by name, so adding a sixth cannot ride the count.
+  for (const [src, canon] of [["Power Store", "Magical Efficiency"],
+                              ["Inherent Acid Resistance -", "Acid Resistance"],
+                              ["Inherent Cold Resistance -", "Cold Resistance"],
+                              ["Inherent Electric Resistance -", "Electric Resistance"],
+                              ["Inherent Fire Resistance -", "Fire Resistance"]]) {
+    const e = CORRECTIONS.find((c) => c.source_name === src);
+    assert.ok(e, `${src} is declared`);
+    assert.strictEqual(e.canonical_name, canon);
+    assert.ok(e.merge_into_existing, `${src} restores a bucket upstream split, so it is a merge`);
+    assert.ok(e.evidence && e.wiki_url, `${src} must cite the wiki page that says the two are one stat`);
+  }
   // The retired canonical, asserted by name: this is the entry a future refresh is
   // most likely to drop, because `Undying` still looks like a stat name.
   const retired = CORRECTIONS.find((c) => c.source_name === "Undying");
@@ -400,12 +428,28 @@ test("#380: the retired untyped-proc adjudications still reach the presence path
   assert.ok(retired.length > 100, `the retirement is the population under test (${retired.length})`);
   const unreachable = retired.filter(
     (n) => !vocab.presence.has(n) && !vocab.suggestions.includes(n)).sort();
-  // The only two that do not reach it are word-cap casualties, hidden by the
-  // presence-name shape filter and not by the retirement: a full sentence and a
-  // five-word named effect. Both are pinned by dataset.test.js's #228 casualty set.
+  // Two are word-cap casualties, hidden by the presence-name shape filter and not
+  // by the retirement: a full sentence and a five-word named effect. Both are
+  // pinned by dataset.test.js's #228 casualty set.
+  //
+  // 397c673 adds a THIRD, and it is a rename rather than a shape casualty:
+  // upstream renamed `Wind Frenzy` to the wiki's own spelling `Wild Frenzy` (same
+  // three carriers — Insanity and both `Madness of the Demon Lords` tiers), so the
+  // retired name reaches nothing because the name itself is gone from the corpus.
+  // `Wild Frenzy` is adjudicated in this shard's live `quarantined` list, where it
+  // re-entered the untyped-proc population: the refresh also moved the two Madness
+  // tiers from `Bool 1` to untyped numerics, which is what trips the candidate rule.
+  // So the build-around effect is NOT lost — it moved names, and the new name is
+  // ruled. Retiring this entry instead would erase the record of where it went.
   assert.deepStrictEqual(unreachable,
-    ["Hidden Effect: Increases all threat generated by", "The Dragging of the Depths"],
-    "every retired proc but the two word-cap casualties is still a presence effect");
+    ["Hidden Effect: Increases all threat generated by", "The Dragging of the Depths",
+     "Wind Frenzy"],
+    "every retired proc but the two word-cap casualties and the renamed `Wind Frenzy` " +
+    "is still a presence effect");
+  const live = (shard.quarantined || []).map((e) => e.name);
+  assert.ok(live.includes("Wild Frenzy"),
+    "`Wind Frenzy` reaches nothing because upstream renamed it; its successor must be " +
+    "adjudicated, or the rename silently drops a build-around effect");
 });
 
 test("#380: `utilityNotCounted` is the build stamp, both halves of it", () => {

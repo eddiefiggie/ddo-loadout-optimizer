@@ -66,7 +66,14 @@ BASELINE_UNSERVED_LABELS = 4   # #766 took Slaver's ten labels off the list; #84
 # #765 — 55 not 199: -144, the item-slots the newly-served roll labels carried.
 # #843 — 15 not 55: -40, the 39 Rune Arm SUFFIX slots and the 1 Melee EXTRA slot
 # that stayed counted while those two menus offered nothing.
-BASELINE_UNSERVED_ITEM_SLOTS = 15   # 336 - 24 typed Slaver's slots - 30 Set Bonus slots - 83 (#764) - 40 (#843)
+# 397c673 — 8 not 15: -7, and every one of them is the `[Crafted]` collapse. The
+# twins each declared the same joker labels as their base, so the counts halve
+# with the twins gone: `Random set 1` 6 -> 3 and `Random set 2` 6 -> 3 (the three
+# Gem of Many Facets tiers, base + twin -> base only), and `One of the following
+# sets, at random` 2 -> 1. `One of the following combinations` is unchanged at 1.
+# The LABEL count is unchanged at 4, which is the point of pinning both halves:
+# this is a population shrinking, not a label becoming served or unserved.
+BASELINE_UNSERVED_ITEM_SLOTS = 8   # was 15; -7 from the 397c673 [Crafted] collapse
 
 # #371 — the per-item split as measured on the built dataset.
 BASELINE_PER_ITEM_DECLARERS = 65

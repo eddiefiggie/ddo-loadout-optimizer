@@ -542,7 +542,8 @@ def test_legendary_green_steel_no_longer_splits_options():
     assert cr.REGISTRY[name]["shape"] == cr.ATOMIC
     assert not cr.REGISTRY[name]["splits_options"]
     assert cr.REGISTRY[name]["reachable"]
-    assert (len(data[name]), source[name]) == (116, 116)
+    # 397c673 — 156 not 116; see tests/test_crafting_catalog.py for the split.
+    assert (len(data[name]), source[name]) == (156, 156)
     marker = cr.REGISTRY[name]["host_marker"]
     assert marker == "legendary_green_steel_tiers"
     hosts = [it for it in data["items"] if it.get(marker)]
@@ -559,7 +560,9 @@ def test_legendary_green_steel_no_longer_splits_options():
     # being handed to a player one part at a time.
     multi = [r for r in data[name] if len(r.get("affixes") or []) > 1]
     assert len([r for r in multi if r["item_class"] == "accessory"]) == 24
-    assert len([r for r in multi if r["item_class"] == "weapon"]) == 1
+    # 397c673 — 3 not 1: upstream's 40 new skill-group rows include two more
+    # multi-affix weapon options. The accessory count is unchanged at 24.
+    assert len([r for r in multi if r["item_class"] == "weapon"]) == 3
     for r in multi:
         assert all(a.get("stat") for a in r["affixes"]), r
     for legacy in ("green_steel", "thunder_forged"):

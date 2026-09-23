@@ -22,7 +22,8 @@ def test_registries_generate_nonempty_and_deterministic():
     assert r1 == r2, "registry generation must be deterministic"
     assert len(r1["affix_names"]) > 1000, "expected the full affix-name vocabulary"
     assert len(r1["bonus_types"]) > 30, "expected the bonus-type vocabulary"
-    assert len(r1["crafting_slots"]) == 83, "expected the 83 crafting-slot keys"
+    # 397c673 — 84 not 83: upstream added the `Active` pool.
+    assert len(r1["crafting_slots"]) == 84, "expected the 84 crafting-slot keys"
     # sorted (deterministic) order
     assert r1["affix_names"] == sorted(r1["affix_names"])
 
@@ -147,7 +148,10 @@ def test_freshness_reads_and_detects_drift():
     # #374/U4 — re-ratified from `ec3e595…` (2026-08-01) to the vendored refresh.
     # The raw mirror was re-fetched pinned to this SHA; SOURCE.json records the
     # exact four-file curl. The stamp moves ONLY when a vendoring happens.
-    assert recorded == "767a7f747d0e7d211a702b8c456348e1c36ba699"
+    #
+    # 397c673 (2026-09-23), re-vendored for Update 81.3 — the Terror of the Demon
+    # Lords raid. All four files re-fetched pinned to this SHA, never from master.
+    assert recorded == "397c673a3561d65974d8e1079c5a0fa781ce1172"
     # a wrong expected commit surfaces drift
     _raises(V.FreshnessError, V.assert_freshness, expected_commit="deadbeef")
 
@@ -160,7 +164,7 @@ def test_crafting_slot_registry_generates_and_matches_frozen():
     assert gen == V.generate_crafting_slot_registry()
     assert gen == sorted(gen)
     # pool keys (83) ∪ item markers (adds the 12 pool-less crafting slots) = 95
-    assert len(gen) == 95, "crafting-slot registry = 83 pool keys ∪ item crafting[] markers"
+    assert len(gen) == 96, "crafting-slot registry = 84 pool keys ∪ item crafting[] markers"
     assert "Sealed in Undeath" in gen and "T1 (Weapon)" in gen
     # #374/U5 — the 12 pool-less markers are unchanged in COUNT and identity; only
     # their prefix moved, 1:1, `Cannith: *` -> `Essence Crafting: *`. Update 79
@@ -632,8 +636,15 @@ def test_the_real_seed_resolves_the_real_vocabulary():
     # carriers are quarantined (a conditional, ramping effect stored as its stack
     # ceiling — conditional_affix_quarantine.json), so the detector stopped asking
     # about it and its atomic ruling was retired (`_meta.retired`). 37 - 1 = 36.
-    assert report["candidates"] == 36
-    assert report["atomic"] == 36
+    #
+    # 36 -> 35 at 397c673: `Fortitude Save Vs Disease` left the rankable set because
+    # upstream dropped the Green Steel option that carried it (present at 767a7f7,
+    # absent at 397c673), so the detector stopped asking and its atomic ruling was
+    # retired into `_meta.retired`. 36 - 1 = 35. The four `Inherent <element>
+    # Resistance -` names the refresh added are NOT candidates: they fold to the plain
+    # resistance stats via affix_name_corrections before the detector runs.
+    assert report["candidates"] == 35
+    assert report["atomic"] == 35
     # The detector's first sweep found three live umbrellas; they must stay
     # MODELED (expanded away), never re-enter the rankable vocabulary silently.
     for name in ("Resistance", "Elemental Resonance", "Combat Mastery",
@@ -978,10 +989,15 @@ def test_374_local_affix_names_are_minted_by_a_rename_or_a_local_fold():
     #     re-encoded the type field, so `Ki` went 0 -> 20 gate-visible occurrences.
     # Both are additions to the SAME two-arm legitimacy join asserted above, not a
     # widening of it. See docs/reports/2026-08-18-gear-planner-canon-migration.md §6.1.
+    # 397c673 adds `Unconsciousness Range`: upstream carried it natively in the
+    # crafting dump until 767a7f7 and carries it nowhere now, so the canonical the
+    # three `Weighty Asset` / `Holding On` / `Undying` renames mint is repo-minted
+    # from this refresh onward and the raw baseline can no longer contain it.
     assert set(minted) == {
         "Combustion", "Corrosion", "Devotion", "Glaciation", "Impulse",
         "Magnetism", "Nullification", "Resonance", "Ice Lore", "Void Lore",
-        "Damage to helpless enemies", "Legendary Conditioning", "Enhanced Ki"}, minted
+        "Damage to helpless enemies", "Legendary Conditioning", "Enhanced Ki",
+        "Unconsciousness Range"}, minted
     # the folded names are exactly PROTECTED_CANON (11 after the refresh added
     # `Legendary Conditioning -> False Life (%)` upstream); the rest are rename-only
     assert set(V.PROTECTED_CANON) < set(minted)

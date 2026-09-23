@@ -1,725 +1,733 @@
 {
- "_meta": {
-  "title": "wiki-sourced item value corrections (#207)",
-  "note": "gear-planner is the single source of truth for WHICH affixes an item has, read structurally. The DDO Wiki is the source of truth for the VALUE. When the two disagree and the wiki's rendered tooltip is unambiguous, the wiki wins and the correction is recorded here with its evidence.",
-  "why_not_gap_corrections": "data/seed/gap_corrections.json is ADDITIVE ONLY — it appends affixes gear-planner is missing and deliberately SKIPS any (name, type) the item already carries, so it can never re-introduce the Insightful/Insight double-counts that removal fixed. It therefore cannot correct a value, and widening it to overwrite would put that guard at risk. This file overwrites, and nothing else does.",
-  "stale_guard": "Every entry records `from` — the value gear-planner currently carries. The build FAILS if `from` no longer matches, rather than silently pinning a number over a source that has since changed. That is what stops this file from quietly going stale the way the value it corrects did.",
-  "evidence_rule": "Every entry carries the verbatim rendered tooltip, not the visible cell. A bundled template hides its numbers in the tooltip; see docs/solutions/conventions/bundled-template-values-live-in-the-tooltip-not-the-cell.md."
- },
- "_note_288": "U81 balance pull-back (#288): most ML35 'Reign' minor artifacts had over-scaled effects reduced after release; gear-planner's snapshot predates the change. Rendered tooltips captured 2026-08-13. Baphomet's and Yeenoghu's Reigns were checked and match; the six ML32 Unholy Defiler artifacts were swept the same day and all match (no entries).",
- "_retired_2026_08_18": {
-  "why": "#374/U4 — the 2026-08-18 gear-planner refresh ADOPTED every correction in this shard. Verified programmatically against the refreshed raw: 16 of 17 affixes now read our wiki-verified `to` value exactly, with ZERO divergences. The seventeenth (Juiblex's Reign / Acid Absorption) is the same story read through its paired type correction — upstream now carries ('Acid Absorption','Insight','15'), adopting both our value AND the retype. The corrections are therefore no-ops, and their staleness guard fired precisely because their premise (upstream is wrong) no longer holds. Retained here as the record of a verify-first win rather than deleted.",
-  "verified": "2026-08-18 against upstream commit 767a7f747d0e7d211a702b8c456348e1c36ba699",
-  "entries": {
-   "Legendary Argonnessen Eye Band": [
-    {
-     "name": "Spell Focus Mastery",
-     "type": "Equipment",
-     "from": "5",
-     "to": "8",
-     "tooltip": "Spell Focus Mastery +8: +8 Equipment bonus to the DC of all your spells.",
-     "wiki_url": "https://ddowiki.com/page/Item:Legendary_Argonnessen_Eye_Band",
-     "verified": "2026-08-09",
-     "note": "The item's other three enchantments agree with gear-planner exactly (Insightful Wizardry 155, Insightful Spell Penetration 5, Sacred Spell Focus Mastery 3), and the heroic Argonnessen Eye Band agrees on all four. Only this row is stale."
-    }
-   ],
-   "Orcus' Reign": [
-    {
-     "name": "Necromancy Focus",
-     "type": "Insight",
-     "from": "9",
-     "to": "8",
-     "tooltip": "Insightful Necromancy Focus +8: +8 Insight bonus to the DC of Necromancy spells.",
-     "wiki_url": "https://ddowiki.com/page/Item:Orcus%27_Reign",
-     "verified": "2026-08-13",
-     "note": "The missing Quality False Life +15 is the sibling gap_corrections.json entry."
-    }
-   ],
-   "Juiblex's Reign": [
-    {
-     "name": "Sheltering",
-     "type": "Insight",
-     "from": "22",
-     "to": "21",
-     "tooltip": "Insightful Sheltering +21: +21 Insight bonus to Physical and Magical Resistance Ratings",
-     "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
-     "verified": "2026-08-13"
-    },
-    {
-     "name": "False Life",
-     "type": "Profane",
-     "from": "59",
-     "to": "56",
-     "tooltip": "Profane Lifeforce +56: +56 Profane bonus to Hit Points.",
-     "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
-     "verified": "2026-08-13",
-     "note": "The wiki names the enchantment 'Profane Lifeforce'; gear-planner stores the stat as False Life. Value only."
-    },
-    {
-     "name": "Acid Absorption",
-     "type": "Enhancement",
-     "from": "16",
-     "to": "15",
-     "tooltip": "Insightful Acid Absorption +15%: Passive: 15% Insight Bonus to Acid Absorption.",
-     "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
-     "verified": "2026-08-13",
-     "note": "Targeted at the CURRENT (pre-correction) type: the sibling affix_type_corrections.json entry retypes Enhancement -> Insight after this value lands."
-    }
-   ],
-   "Demogorgon's Reign": [
-    {
-     "name": "Fortification",
-     "type": "Insight",
-     "from": "90",
-     "to": "87",
-     "tooltip": "Insightful Fortification +87%: +87% Insight bonus to reduced chance of taking critical damage on a critical hit.",
-     "wiki_url": "https://ddowiki.com/page/Item:Demogorgon%27s_Reign",
-     "verified": "2026-08-13"
-    },
-    {
-     "name": "Potency",
-     "type": "Quality",
-     "from": "31",
-     "to": "30",
-     "tooltip": "Quality Potency +30: Passive: +30 Quality bonus to each Spell Power.",
-     "wiki_url": "https://ddowiki.com/page/Item:Demogorgon%27s_Reign",
-     "verified": "2026-08-13"
-    }
-   ],
-   "Fraz-Urb'luu's Reign": [
-    {
-     "name": "Kinetic Lore",
-     "type": "Equipment",
-     "from": "26",
-     "to": "25",
-     "tooltip": "Kinetic Lore +25: Passive: Your Force, Physical and Untyped spells gain a 25% Equipment bonus to their chance to critical hit.",
-     "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb%27luu%27s_Reign",
-     "verified": "2026-08-13"
-    },
-    {
-     "name": "Command",
-     "type": "Competence",
-     "from": "2",
-     "to": "8",
-     "tooltip": "Command: Passive: +8 competence bonus on Charisma based skill checks. Command armor and command shields make their owners very noticeable, imposing a -6 penalty on Hide checks.",
-     "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb%27luu%27s_Reign",
-     "verified": "2026-08-13",
-     "note": "The one correction that goes UP. Value only; whether the -6 Hide penalty should be modelled is open question #192."
-    },
-    {
-     "name": "Impulse",
-     "type": "Quality",
-     "from": "44",
-     "to": "43",
-     "tooltip": "Quality Impulse +43: Passive: +43 Quality bonus to Force, Untyped, Slashing, Piercing, and Bludgeoning Spell Power.",
-     "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb%27luu%27s_Reign",
-     "verified": "2026-08-13"
-    },
-    {
-     "name": "Evocation Focus",
-     "type": "Equipment",
-     "from": "18",
-     "to": "16",
-     "tooltip": "Evocation Focus +16: +16 Equipment bonus to the DC of Evocation spells.",
-     "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb%27luu%27s_Reign",
-     "verified": "2026-08-13"
-    }
-   ],
-   "Zuggtmoy's Reign": [
-    {
-     "name": "Acid Lore",
-     "type": "Equipment",
-     "from": "26",
-     "to": "25",
-     "tooltip": "Acid Lore +25: Passive: Your Acid spells gain a 25% Equipment bonus to their chance to critical hit.",
-     "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy%27s_Reign",
-     "verified": "2026-08-13"
-    },
-    {
-     "name": "Transmutation Focus",
-     "type": "Insight",
-     "from": "9",
-     "to": "8",
-     "tooltip": "Insightful Transmutation Focus +8: +8 Insight bonus to the DC of Transmutation spells.",
-     "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy%27s_Reign",
-     "verified": "2026-08-13"
-    },
-    {
-     "name": "Corrosion",
-     "type": "Quality",
-     "from": "44",
-     "to": "43",
-     "tooltip": "Quality Corrosion +43: Passive: +43 Quality bonus to Acid Spell Power.",
-     "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy%27s_Reign",
-     "verified": "2026-08-13"
-    },
-    {
-     "name": "Conjuration Focus",
-     "type": "Insight",
-     "from": "9",
-     "to": "8",
-     "tooltip": "Insightful Conjuration Focus +8: +8 Insight bonus to the DC of Conjuration spells.",
-     "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy%27s_Reign",
-     "verified": "2026-08-13"
-    }
-   ],
-   "Lolth's Reign": [
-    {
-     "name": "Sheltering",
-     "type": "Insight",
-     "from": "22",
-     "to": "21",
-     "tooltip": "Insightful Sheltering +21: +21 Insight bonus to Physical and Magical Resistance Ratings",
-     "wiki_url": "https://ddowiki.com/page/Item:Lolth%27s_Reign",
-     "verified": "2026-08-13"
-    }
-   ],
-   "Graz'zt's Reign": [
-    {
-     "name": "Armor Class",
-     "type": "Natural",
-     "from": "17",
-     "to": "16",
-     "tooltip": "Natural Armor +16: Passive: +16 Natural Armor Bonus to Armor Class.",
-     "wiki_url": "https://ddowiki.com/page/Item:Graz%27zt%27s_Reign",
-     "verified": "2026-08-13"
-    }
-   ]
-  }
- },
- "_note_619": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30. This file runs BEFORE affix_type_corrections.json in build_dataset.py, so it corrects 1 -> 10 while the type is still Bool; the type shard then records value 10.",
- "Cormyrian Green Dragonhide Armor": [
-  {
-   "name": "Magical Efficiency",
-   "type": "Bool",
-   "from": 1,
-   "to": 10,
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonhide_Armor",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Cormyrian Green Dragonplate Armor": [
-  {
-   "name": "Magical Efficiency",
-   "type": "Bool",
-   "from": 1,
-   "to": 10,
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonplate_Armor",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Cormyrian Green Dragonscale Armor": [
-  {
-   "name": "Magical Efficiency",
-   "type": "Bool",
-   "from": 1,
-   "to": 10,
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Armor",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Cormyrian Green Dragonscale Docent": [
-  {
-   "name": "Magical Efficiency",
-   "type": "Bool",
-   "from": 1,
-   "to": 10,
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Docent",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Cormyrian Green Dragonscale Robe": [
-  {
-   "name": "Magical Efficiency",
-   "type": "Bool",
-   "from": 1,
-   "to": 10,
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Robe",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Green Dragonscale Bracers": [
-  {
-   "name": "Magical Efficiency",
-   "type": "Bool",
-   "from": 1,
-   "to": 10,
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Green_Dragonscale_Bracers",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Legendary Green Dragonscale Bracers": [
-  {
-   "name": "Magical Efficiency",
-   "type": "Bool",
-   "from": 1,
-   "to": 10,
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Green_Dragonscale_Bracers",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Staff of the Petitioner": [
-  {
-   "name": "Magical Efficiency",
-   "type": "Bool",
-   "from": 1,
-   "to": 10,
-   "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
-   "wiki_url": "https://ddowiki.com/page/Item:Staff_of_the_Petitioner",
-   "verified": "2026-08-30",
-   "issue": 619,
-   "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30."
-  }
- ],
- "Stone Shoes": [
-  {
-   "name": "Weighty Asset",
-   "type": "Bool",
-   "from": 1,
-   "to": 100,
-   "tooltip": "Weighty Asset: This item is so heavy you find it hard to be dragged anywhere - even to your grave. You benefit from a +100 Enhancement bonus to increased unconsciousness range.",
-   "wiki_url": "https://ddowiki.com/page/Item:Stone_Shoes",
-   "verified": "2026-08-30",
-   "issue": 632
-  }
- ],
- "Legendary Stone Shoes": [
-  {
-   "name": "Weighty Asset",
-   "type": "Bool",
-   "from": 1,
-   "to": 100,
-   "tooltip": "Weighty Asset: This item is so heavy you find it hard to be dragged anywhere - even to your grave. You benefit from a +100 Enhancement bonus to increased unconsciousness range.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stone_Shoes",
-   "verified": "2026-08-30",
-   "issue": 632
-  }
- ],
- "Ward Token": [
-  {
-   "name": "Holding On",
-   "type": "Bool",
-   "from": 1,
-   "to": 40,
-   "tooltip": "Unconscious page, 'Extending unconsciousness range': \"Holding On: +40 enhancement bonus\" (quoted verbatim, lower-case in the source). That is DDO's Enhancement bonus type — the same list types Undying and Weighty Asset identically, which is what makes the three one bucket. The enchantment's own page states the magnitude but no type: \"Your range of unconsciousness extends by 40 hitpoints.\"",
-   "wiki_url": "https://ddowiki.com/page/Item:Ward_Token",
-   "verified": "2026-08-30",
-   "issue": 632
-  }
- ],
- "Black Lace Blindfold": [
-  {
-   "name": "Curse of Clumsiness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
-   "wiki_url": "https://ddowiki.com/page/Item:Black_Lace_Blindfold",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Epic Black Lace Blindfold": [
-  {
-   "name": "Curse of Clumsiness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Black_Lace_Blindfold",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Epic Linen Wraps": [
-  {
-   "name": "Curse of Clumsiness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Linen_Wraps",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Linen Wraps": [
-  {
-   "name": "Curse of Clumsiness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
-   "wiki_url": "https://ddowiki.com/page/Item:Linen_Wraps",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Piledriver": [
-  {
-   "name": "Curse of Clumsiness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
-   "wiki_url": "https://ddowiki.com/page/Item:Piledriver",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Amulet of the Brute": [
-  {
-   "name": "Curse of Dullness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
-   "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Brute",
-   "verified": "2026-08-30",
-   "issue": 615
+  "_meta": {
+    "title": "wiki-sourced item value corrections (#207)",
+    "note": "gear-planner is the single source of truth for WHICH affixes an item has, read structurally. The DDO Wiki is the source of truth for the VALUE. When the two disagree and the wiki's rendered tooltip is unambiguous, the wiki wins and the correction is recorded here with its evidence.",
+    "why_not_gap_corrections": "data/seed/gap_corrections.json is ADDITIVE ONLY — it appends affixes gear-planner is missing and deliberately SKIPS any (name, type) the item already carries, so it can never re-introduce the Insightful/Insight double-counts that removal fixed. It therefore cannot correct a value, and widening it to overwrite would put that guard at risk. This file overwrites, and nothing else does.",
+    "stale_guard": "Every entry records `from` — the value gear-planner currently carries. The build FAILS if `from` no longer matches, rather than silently pinning a number over a source that has since changed. That is what stops this file from quietly going stale the way the value it corrects did.",
+    "evidence_rule": "Every entry carries the verbatim rendered tooltip, not the visible cell. A bundled template hides its numbers in the tooltip; see docs/solutions/conventions/bundled-template-values-live-in-the-tooltip-not-the-cell.md."
   },
-  {
-   "name": "Curse of Foolishness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Brute",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Brawn's Spirits": [
-  {
-   "name": "Curse of Dullness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
-   "wiki_url": "https://ddowiki.com/page/Item:Brawn%27s_Spirits",
-   "verified": "2026-08-30",
-   "issue": 615
+  "_note_288": "U81 balance pull-back (#288): most ML35 'Reign' minor artifacts had over-scaled effects reduced after release; gear-planner's snapshot predates the change. Rendered tooltips captured 2026-08-13. Baphomet's and Yeenoghu's Reigns were checked and match; the six ML32 Unholy Defiler artifacts were swept the same day and all match (no entries).",
+  "_retired_2026_08_18": {
+    "why": "#374/U4 — the 2026-08-18 gear-planner refresh ADOPTED every correction in this shard. Verified programmatically against the refreshed raw: 16 of 17 affixes now read our wiki-verified `to` value exactly, with ZERO divergences. The seventeenth (Juiblex's Reign / Acid Absorption) is the same story read through its paired type correction — upstream now carries ('Acid Absorption','Insight','15'), adopting both our value AND the retype. The corrections are therefore no-ops, and their staleness guard fired precisely because their premise (upstream is wrong) no longer holds. Retained here as the record of a verify-first win rather than deleted.",
+    "verified": "2026-08-18 against upstream commit 767a7f747d0e7d211a702b8c456348e1c36ba699",
+    "entries": {
+      "Legendary Argonnessen Eye Band": [
+        {
+          "name": "Spell Focus Mastery",
+          "type": "Equipment",
+          "from": "5",
+          "to": "8",
+          "tooltip": "Spell Focus Mastery +8: +8 Equipment bonus to the DC of all your spells.",
+          "wiki_url": "https://ddowiki.com/page/Item:Legendary_Argonnessen_Eye_Band",
+          "verified": "2026-08-09",
+          "note": "The item's other three enchantments agree with gear-planner exactly (Insightful Wizardry 155, Insightful Spell Penetration 5, Sacred Spell Focus Mastery 3), and the heroic Argonnessen Eye Band agrees on all four. Only this row is stale."
+        }
+      ],
+      "Orcus' Reign": [
+        {
+          "name": "Necromancy Focus",
+          "type": "Insight",
+          "from": "9",
+          "to": "8",
+          "tooltip": "Insightful Necromancy Focus +8: +8 Insight bonus to the DC of Necromancy spells.",
+          "wiki_url": "https://ddowiki.com/page/Item:Orcus%27_Reign",
+          "verified": "2026-08-13",
+          "note": "The missing Quality False Life +15 is the sibling gap_corrections.json entry."
+        }
+      ],
+      "Juiblex's Reign": [
+        {
+          "name": "Sheltering",
+          "type": "Insight",
+          "from": "22",
+          "to": "21",
+          "tooltip": "Insightful Sheltering +21: +21 Insight bonus to Physical and Magical Resistance Ratings",
+          "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
+          "verified": "2026-08-13"
+        },
+        {
+          "name": "False Life",
+          "type": "Profane",
+          "from": "59",
+          "to": "56",
+          "tooltip": "Profane Lifeforce +56: +56 Profane bonus to Hit Points.",
+          "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
+          "verified": "2026-08-13",
+          "note": "The wiki names the enchantment 'Profane Lifeforce'; gear-planner stores the stat as False Life. Value only."
+        },
+        {
+          "name": "Acid Absorption",
+          "type": "Enhancement",
+          "from": "16",
+          "to": "15",
+          "tooltip": "Insightful Acid Absorption +15%: Passive: 15% Insight Bonus to Acid Absorption.",
+          "wiki_url": "https://ddowiki.com/page/Item:Juiblex%27s_Reign",
+          "verified": "2026-08-13",
+          "note": "Targeted at the CURRENT (pre-correction) type: the sibling affix_type_corrections.json entry retypes Enhancement -> Insight after this value lands."
+        }
+      ],
+      "Demogorgon's Reign": [
+        {
+          "name": "Fortification",
+          "type": "Insight",
+          "from": "90",
+          "to": "87",
+          "tooltip": "Insightful Fortification +87%: +87% Insight bonus to reduced chance of taking critical damage on a critical hit.",
+          "wiki_url": "https://ddowiki.com/page/Item:Demogorgon%27s_Reign",
+          "verified": "2026-08-13"
+        },
+        {
+          "name": "Potency",
+          "type": "Quality",
+          "from": "31",
+          "to": "30",
+          "tooltip": "Quality Potency +30: Passive: +30 Quality bonus to each Spell Power.",
+          "wiki_url": "https://ddowiki.com/page/Item:Demogorgon%27s_Reign",
+          "verified": "2026-08-13"
+        }
+      ],
+      "Fraz-Urb'luu's Reign": [
+        {
+          "name": "Kinetic Lore",
+          "type": "Equipment",
+          "from": "26",
+          "to": "25",
+          "tooltip": "Kinetic Lore +25: Passive: Your Force, Physical and Untyped spells gain a 25% Equipment bonus to their chance to critical hit.",
+          "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb%27luu%27s_Reign",
+          "verified": "2026-08-13"
+        },
+        {
+          "name": "Command",
+          "type": "Competence",
+          "from": "2",
+          "to": "8",
+          "tooltip": "Command: Passive: +8 competence bonus on Charisma based skill checks. Command armor and command shields make their owners very noticeable, imposing a -6 penalty on Hide checks.",
+          "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb%27luu%27s_Reign",
+          "verified": "2026-08-13",
+          "note": "The one correction that goes UP. Value only; whether the -6 Hide penalty should be modelled is open question #192."
+        },
+        {
+          "name": "Impulse",
+          "type": "Quality",
+          "from": "44",
+          "to": "43",
+          "tooltip": "Quality Impulse +43: Passive: +43 Quality bonus to Force, Untyped, Slashing, Piercing, and Bludgeoning Spell Power.",
+          "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb%27luu%27s_Reign",
+          "verified": "2026-08-13"
+        },
+        {
+          "name": "Evocation Focus",
+          "type": "Equipment",
+          "from": "18",
+          "to": "16",
+          "tooltip": "Evocation Focus +16: +16 Equipment bonus to the DC of Evocation spells.",
+          "wiki_url": "https://ddowiki.com/page/Item:Fraz-Urb%27luu%27s_Reign",
+          "verified": "2026-08-13"
+        }
+      ],
+      "Zuggtmoy's Reign": [
+        {
+          "name": "Acid Lore",
+          "type": "Equipment",
+          "from": "26",
+          "to": "25",
+          "tooltip": "Acid Lore +25: Passive: Your Acid spells gain a 25% Equipment bonus to their chance to critical hit.",
+          "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy%27s_Reign",
+          "verified": "2026-08-13"
+        },
+        {
+          "name": "Transmutation Focus",
+          "type": "Insight",
+          "from": "9",
+          "to": "8",
+          "tooltip": "Insightful Transmutation Focus +8: +8 Insight bonus to the DC of Transmutation spells.",
+          "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy%27s_Reign",
+          "verified": "2026-08-13"
+        },
+        {
+          "name": "Corrosion",
+          "type": "Quality",
+          "from": "44",
+          "to": "43",
+          "tooltip": "Quality Corrosion +43: Passive: +43 Quality bonus to Acid Spell Power.",
+          "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy%27s_Reign",
+          "verified": "2026-08-13"
+        },
+        {
+          "name": "Conjuration Focus",
+          "type": "Insight",
+          "from": "9",
+          "to": "8",
+          "tooltip": "Insightful Conjuration Focus +8: +8 Insight bonus to the DC of Conjuration spells.",
+          "wiki_url": "https://ddowiki.com/page/Item:Zuggtmoy%27s_Reign",
+          "verified": "2026-08-13"
+        }
+      ],
+      "Lolth's Reign": [
+        {
+          "name": "Sheltering",
+          "type": "Insight",
+          "from": "22",
+          "to": "21",
+          "tooltip": "Insightful Sheltering +21: +21 Insight bonus to Physical and Magical Resistance Ratings",
+          "wiki_url": "https://ddowiki.com/page/Item:Lolth%27s_Reign",
+          "verified": "2026-08-13"
+        }
+      ],
+      "Graz'zt's Reign": [
+        {
+          "name": "Armor Class",
+          "type": "Natural",
+          "from": "17",
+          "to": "16",
+          "tooltip": "Natural Armor +16: Passive: +16 Natural Armor Bonus to Armor Class.",
+          "wiki_url": "https://ddowiki.com/page/Item:Graz%27zt%27s_Reign",
+          "verified": "2026-08-13"
+        }
+      ]
+    }
   },
-  {
-   "name": "Curse of Foolishness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Brawn%27s_Spirits",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Epic Brawn's Spirits": [
-  {
-   "name": "Curse of Dullness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn%27s_Spirits",
-   "verified": "2026-08-30",
-   "issue": 615
-  },
-  {
-   "name": "Curse of Foolishness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn%27s_Spirits",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Girdle of Giants' Brawn (level 14)": [
-  {
-   "name": "Curse of Dullness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
-   "wiki_url": "https://ddowiki.com/page/Item:Girdle_of_Giants%27_Brawn_(level_14)",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Legendary Brawn's Spirits": [
-  {
-   "name": "Curse of Dullness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn%27s_Spirits",
-   "verified": "2026-08-30",
-   "issue": 615
-  },
-  {
-   "name": "Curse of Foolishness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn%27s_Spirits",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Epic Ring of Baphomet": [
-  {
-   "name": "Curse of Foolishness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
-   "verified": "2026-08-30",
-   "issue": 615
-  },
-  {
-   "name": "Curse of Repulsiveness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Legendary Ring of Baphomet": [
-  {
-   "name": "Curse of Foolishness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
-   "verified": "2026-08-30",
-   "issue": 615
-  },
-  {
-   "name": "Curse of Repulsiveness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Ring of Baphomet": [
-  {
-   "name": "Curse of Foolishness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
-   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Baphomet",
-   "verified": "2026-08-30",
-   "issue": 615
-  },
-  {
-   "name": "Curse of Repulsiveness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Baphomet",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Accomplice": [
-  {
-   "name": "Curse of Repulsiveness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Accomplice",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Epic Stinkpelt's Hide": [
-  {
-   "name": "Curse of Repulsiveness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Epic_Stinkpelt%27s_Hide",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Legendary Stinkpelt's Hide": [
-  {
-   "name": "Curse of Repulsiveness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stinkpelt%27s_Hide",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Stinkpelt's Hide": [
-  {
-   "name": "Curse of Repulsiveness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Stinkpelt%27s_Hide",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Tchurvul's Kukri": [
-  {
-   "name": "Curse of Repulsiveness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
-   "wiki_url": "https://ddowiki.com/page/Item:Tchurvul%27s_Kukri",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "-1 Quarterstaff of Lesser Halfling Bane": [
-  {
-   "name": "Curse of Weakness",
-   "type": "Bool",
-   "from": 1,
-   "to": -1,
-   "tooltip": "Cursed: Curse of Weakness: Passive: -1 Penalty to Strength.",
-   "wiki_url": "https://ddowiki.com/page/Item:-1_Quarterstaff_of_Lesser_Halfling_Bane",
-   "verified": "2026-08-30",
-   "issue": 615
-  }
- ],
- "Baphomet's Reign": [
-  {
-   "name": "Mind Drain",
-   "type": "Bool",
-   "from": 1,
-   "to": -5,
-   "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
-   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
-   "verified": "2026-08-30",
-   "issue": 639
-  }
- ],
- "Clouded Dreams": [
-  {
-   "name": "Mind Drain",
-   "type": "Bool",
-   "from": 1,
-   "to": -5,
-   "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
-   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
-   "verified": "2026-08-30",
-   "issue": 639
-  }
- ],
- "Legendary Lucid Dreams": [
-  {
-   "name": "Mind Drain",
-   "type": "Bool",
-   "from": 1,
-   "to": -5,
-   "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
-   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
-   "verified": "2026-08-30",
-   "issue": 639
-  }
- ],
- "Lucid Dreams": [
-  {
-   "name": "Mind Drain",
-   "type": "Bool",
-   "from": 1,
-   "to": -5,
-   "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
-   "wiki_url": "https://ddowiki.com/page/Mind_Drain",
-   "verified": "2026-08-30",
-   "issue": 639
-  }
- ],
- "Fleshshaper's Brigandine": [
-  {
-   "name": "Power Drain",
-   "type": "Bool",
-   "from": 1,
-   "to": -30,
-   "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
-   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
-   "verified": "2026-08-30",
-   "issue": 639
-  }
- ],
- "Fleshshaper's Docent": [
-  {
-   "name": "Power Drain",
-   "type": "Bool",
-   "from": 1,
-   "to": -30,
-   "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
-   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
-   "verified": "2026-08-30",
-   "issue": 639
-  }
- ],
- "Infused Chaos Docent": [
-  {
-   "name": "Power Drain",
-   "type": "Bool",
-   "from": 1,
-   "to": -30,
-   "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
-   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
-   "verified": "2026-08-30",
-   "issue": 639
-  }
- ],
- "Infused Chaosrobe": [
-  {
-   "name": "Power Drain",
-   "type": "Bool",
-   "from": 1,
-   "to": -30,
-   "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
-   "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
-   "verified": "2026-08-30",
-   "issue": 639
-  }
- ]
+  "_note_619": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30. This file runs BEFORE affix_type_corrections.json in build_dataset.py, so it corrects 1 -> 10 while the type is still Bool; the type shard then records value 10.",
+  "Cormyrian Green Dragonhide Armor": [
+    {
+      "name": "Power Store",
+      "type": "Bool",
+      "from": 1,
+      "to": 10,
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonhide_Armor",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30.",
+      "_repointed_2026_09_22": "Was name='Magical Efficiency'. The 397c673 refresh dropped upstream's 'Power Store' -> 'Magical Efficiency' fold, so this item now carries the affix under its engraved name at value-correction time. Our canon is still Magical Efficiency: affix_name_corrections merges it back, but that runs AFTER value corrections in the item channel, so the target here must be the upstream name. Mechanic, type, value and evidence are unchanged."
+    }
+  ],
+  "Cormyrian Green Dragonplate Armor": [
+    {
+      "name": "Power Store",
+      "type": "Bool",
+      "from": 1,
+      "to": 10,
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonplate_Armor",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30.",
+      "_repointed_2026_09_22": "Was name='Magical Efficiency'. The 397c673 refresh dropped upstream's 'Power Store' -> 'Magical Efficiency' fold, so this item now carries the affix under its engraved name at value-correction time. Our canon is still Magical Efficiency: affix_name_corrections merges it back, but that runs AFTER value corrections in the item channel, so the target here must be the upstream name. Mechanic, type, value and evidence are unchanged."
+    }
+  ],
+  "Cormyrian Green Dragonscale Armor": [
+    {
+      "name": "Power Store",
+      "type": "Bool",
+      "from": 1,
+      "to": 10,
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Armor",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30.",
+      "_repointed_2026_09_22": "Was name='Magical Efficiency'. The 397c673 refresh dropped upstream's 'Power Store' -> 'Magical Efficiency' fold, so this item now carries the affix under its engraved name at value-correction time. Our canon is still Magical Efficiency: affix_name_corrections merges it back, but that runs AFTER value corrections in the item channel, so the target here must be the upstream name. Mechanic, type, value and evidence are unchanged."
+    }
+  ],
+  "Cormyrian Green Dragonscale Docent": [
+    {
+      "name": "Power Store",
+      "type": "Bool",
+      "from": 1,
+      "to": 10,
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Docent",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30.",
+      "_repointed_2026_09_22": "Was name='Magical Efficiency'. The 397c673 refresh dropped upstream's 'Power Store' -> 'Magical Efficiency' fold, so this item now carries the affix under its engraved name at value-correction time. Our canon is still Magical Efficiency: affix_name_corrections merges it back, but that runs AFTER value corrections in the item channel, so the target here must be the upstream name. Mechanic, type, value and evidence are unchanged."
+    }
+  ],
+  "Cormyrian Green Dragonscale Robe": [
+    {
+      "name": "Power Store",
+      "type": "Bool",
+      "from": 1,
+      "to": 10,
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Cormyrian_Green_Dragonscale_Robe",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30.",
+      "_repointed_2026_09_22": "Was name='Magical Efficiency'. The 397c673 refresh dropped upstream's 'Power Store' -> 'Magical Efficiency' fold, so this item now carries the affix under its engraved name at value-correction time. Our canon is still Magical Efficiency: affix_name_corrections merges it back, but that runs AFTER value corrections in the item channel, so the target here must be the upstream name. Mechanic, type, value and evidence are unchanged."
+    }
+  ],
+  "Green Dragonscale Bracers": [
+    {
+      "name": "Power Store",
+      "type": "Bool",
+      "from": 1,
+      "to": 10,
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Green_Dragonscale_Bracers",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30.",
+      "_repointed_2026_09_22": "Was name='Magical Efficiency'. The 397c673 refresh dropped upstream's 'Power Store' -> 'Magical Efficiency' fold, so this item now carries the affix under its engraved name at value-correction time. Our canon is still Magical Efficiency: affix_name_corrections merges it back, but that runs AFTER value corrections in the item channel, so the target here must be the upstream name. Mechanic, type, value and evidence are unchanged."
+    }
+  ],
+  "Legendary Green Dragonscale Bracers": [
+    {
+      "name": "Power Store",
+      "type": "Bool",
+      "from": 1,
+      "to": 10,
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Green_Dragonscale_Bracers",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30.",
+      "_repointed_2026_09_22": "Was name='Magical Efficiency'. The 397c673 refresh dropped upstream's 'Power Store' -> 'Magical Efficiency' fold, so this item now carries the affix under its engraved name at value-correction time. Our canon is still Magical Efficiency: affix_name_corrections merges it back, but that runs AFTER value corrections in the item channel, so the target here must be the upstream name. Mechanic, type, value and evidence are unchanged."
+    }
+  ],
+  "Staff of the Petitioner": [
+    {
+      "name": "Power Store",
+      "type": "Bool",
+      "from": 1,
+      "to": 10,
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Staff_of_the_Petitioner",
+      "verified": "2026-08-30",
+      "issue": 619,
+      "note": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30.",
+      "_repointed_2026_09_22": "Was name='Magical Efficiency'. The 397c673 refresh dropped upstream's 'Power Store' -> 'Magical Efficiency' fold, so this item now carries the affix under its engraved name at value-correction time. Our canon is still Magical Efficiency: affix_name_corrections merges it back, but that runs AFTER value corrections in the item channel, so the target here must be the upstream name. Mechanic, type, value and evidence are unchanged."
+    }
+  ],
+  "Stone Shoes": [
+    {
+      "name": "Weighty Asset",
+      "type": "Bool",
+      "from": 1,
+      "to": 100,
+      "tooltip": "Weighty Asset: This item is so heavy you find it hard to be dragged anywhere - even to your grave. You benefit from a +100 Enhancement bonus to increased unconsciousness range.",
+      "wiki_url": "https://ddowiki.com/page/Item:Stone_Shoes",
+      "verified": "2026-08-30",
+      "issue": 632
+    }
+  ],
+  "Legendary Stone Shoes": [
+    {
+      "name": "Weighty Asset",
+      "type": "Bool",
+      "from": 1,
+      "to": 100,
+      "tooltip": "Weighty Asset: This item is so heavy you find it hard to be dragged anywhere - even to your grave. You benefit from a +100 Enhancement bonus to increased unconsciousness range.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stone_Shoes",
+      "verified": "2026-08-30",
+      "issue": 632
+    }
+  ],
+  "Ward Token": [
+    {
+      "name": "Holding On",
+      "type": "Bool",
+      "from": 1,
+      "to": 40,
+      "tooltip": "Unconscious page, 'Extending unconsciousness range': \"Holding On: +40 enhancement bonus\" (quoted verbatim, lower-case in the source). That is DDO's Enhancement bonus type — the same list types Undying and Weighty Asset identically, which is what makes the three one bucket. The enchantment's own page states the magnitude but no type: \"Your range of unconsciousness extends by 40 hitpoints.\"",
+      "wiki_url": "https://ddowiki.com/page/Item:Ward_Token",
+      "verified": "2026-08-30",
+      "issue": 632
+    }
+  ],
+  "Black Lace Blindfold": [
+    {
+      "name": "Curse of Clumsiness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+      "wiki_url": "https://ddowiki.com/page/Item:Black_Lace_Blindfold",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Epic Black Lace Blindfold": [
+    {
+      "name": "Curse of Clumsiness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Black_Lace_Blindfold",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Epic Linen Wraps": [
+    {
+      "name": "Curse of Clumsiness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Linen_Wraps",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Linen Wraps": [
+    {
+      "name": "Curse of Clumsiness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+      "wiki_url": "https://ddowiki.com/page/Item:Linen_Wraps",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Piledriver": [
+    {
+      "name": "Curse of Clumsiness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Clumsiness: Passive: -1 Penalty to Dexterity.",
+      "wiki_url": "https://ddowiki.com/page/Item:Piledriver",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Amulet of the Brute": [
+    {
+      "name": "Curse of Dullness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+      "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Brute",
+      "verified": "2026-08-30",
+      "issue": 615
+    },
+    {
+      "name": "Curse of Foolishness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Amulet_of_the_Brute",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Brawn's Spirits": [
+    {
+      "name": "Curse of Dullness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+      "wiki_url": "https://ddowiki.com/page/Item:Brawn%27s_Spirits",
+      "verified": "2026-08-30",
+      "issue": 615
+    },
+    {
+      "name": "Curse of Foolishness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Brawn%27s_Spirits",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Epic Brawn's Spirits": [
+    {
+      "name": "Curse of Dullness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn%27s_Spirits",
+      "verified": "2026-08-30",
+      "issue": 615
+    },
+    {
+      "name": "Curse of Foolishness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Brawn%27s_Spirits",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Girdle of Giants' Brawn (level 14)": [
+    {
+      "name": "Curse of Dullness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+      "wiki_url": "https://ddowiki.com/page/Item:Girdle_of_Giants%27_Brawn_(level_14)",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Legendary Brawn's Spirits": [
+    {
+      "name": "Curse of Dullness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Dullness: Passive: -1 Penalty to Intelligence.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn%27s_Spirits",
+      "verified": "2026-08-30",
+      "issue": 615
+    },
+    {
+      "name": "Curse of Foolishness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Brawn%27s_Spirits",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Epic Ring of Baphomet": [
+    {
+      "name": "Curse of Foolishness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
+      "verified": "2026-08-30",
+      "issue": 615
+    },
+    {
+      "name": "Curse of Repulsiveness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Ring_of_Baphomet",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Legendary Ring of Baphomet": [
+    {
+      "name": "Curse of Foolishness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
+      "verified": "2026-08-30",
+      "issue": 615
+    },
+    {
+      "name": "Curse of Repulsiveness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Ring_of_Baphomet",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Ring of Baphomet": [
+    {
+      "name": "Curse of Foolishness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Foolishness: Passive: -1 Penalty to Wisdom.",
+      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Baphomet",
+      "verified": "2026-08-30",
+      "issue": 615
+    },
+    {
+      "name": "Curse of Repulsiveness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Ring_of_Baphomet",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Accomplice": [
+    {
+      "name": "Curse of Repulsiveness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Accomplice",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Epic Stinkpelt's Hide": [
+    {
+      "name": "Curse of Repulsiveness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Epic_Stinkpelt%27s_Hide",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Legendary Stinkpelt's Hide": [
+    {
+      "name": "Curse of Repulsiveness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Stinkpelt%27s_Hide",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Stinkpelt's Hide": [
+    {
+      "name": "Curse of Repulsiveness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Stinkpelt%27s_Hide",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Tchurvul's Kukri": [
+    {
+      "name": "Curse of Repulsiveness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Repulsiveness: Passive: -1 Penalty to Charisma.",
+      "wiki_url": "https://ddowiki.com/page/Item:Tchurvul%27s_Kukri",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "-1 Quarterstaff of Lesser Halfling Bane": [
+    {
+      "name": "Curse of Weakness",
+      "type": "Bool",
+      "from": 1,
+      "to": -1,
+      "tooltip": "Cursed: Curse of Weakness: Passive: -1 Penalty to Strength.",
+      "wiki_url": "https://ddowiki.com/page/Item:-1_Quarterstaff_of_Lesser_Halfling_Bane",
+      "verified": "2026-08-30",
+      "issue": 615
+    }
+  ],
+  "Baphomet's Reign": [
+    {
+      "name": "Mind Drain",
+      "type": "Bool",
+      "from": 1,
+      "to": -5,
+      "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
+      "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+      "verified": "2026-08-30",
+      "issue": 639
+    }
+  ],
+  "Clouded Dreams": [
+    {
+      "name": "Mind Drain",
+      "type": "Bool",
+      "from": 1,
+      "to": -5,
+      "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
+      "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+      "verified": "2026-08-30",
+      "issue": 639
+    }
+  ],
+  "Legendary Lucid Dreams": [
+    {
+      "name": "Mind Drain",
+      "type": "Bool",
+      "from": 1,
+      "to": -5,
+      "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
+      "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+      "verified": "2026-08-30",
+      "issue": 639
+    }
+  ],
+  "Lucid Dreams": [
+    {
+      "name": "Mind Drain",
+      "type": "Bool",
+      "from": 1,
+      "to": -5,
+      "tooltip": "Mind Drain: This item reduces your maximum spell points by 5% while worn. Recorded as a -5 Penalty to Maximum Spell Points (%).",
+      "wiki_url": "https://ddowiki.com/page/Mind_Drain",
+      "verified": "2026-08-30",
+      "issue": 639
+    }
+  ],
+  "Fleshshaper's Brigandine": [
+    {
+      "name": "Power Drain",
+      "type": "Bool",
+      "from": 1,
+      "to": -30,
+      "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
+      "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+      "verified": "2026-08-30",
+      "issue": 639
+    }
+  ],
+  "Fleshshaper's Docent": [
+    {
+      "name": "Power Drain",
+      "type": "Bool",
+      "from": 1,
+      "to": -30,
+      "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
+      "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+      "verified": "2026-08-30",
+      "issue": 639
+    }
+  ],
+  "Infused Chaos Docent": [
+    {
+      "name": "Power Drain",
+      "type": "Bool",
+      "from": 1,
+      "to": -30,
+      "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
+      "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+      "verified": "2026-08-30",
+      "issue": 639
+    }
+  ],
+  "Infused Chaosrobe": [
+    {
+      "name": "Power Drain",
+      "type": "Bool",
+      "from": 1,
+      "to": -30,
+      "tooltip": "Power Drain (enchantment): This item reserves some of your power in order to function. You lose 30 maximum spell points (or up to 60 if you are a Sorcerer or Favored Soul). Recorded as a -30 Penalty to Wizardry.",
+      "wiki_url": "https://ddowiki.com/page/Power_Drain_(enchantment)",
+      "verified": "2026-08-30",
+      "issue": 639
+    }
+  ]
 }

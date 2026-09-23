@@ -78,7 +78,11 @@ def test_no_legacy_affix_keys_at_rest():
     # #640 — 9,194: +3, the `Solar Gem of Arcana` family. Upstream carries it at NO
     # tier, so unlike #631's Epic-only gap this adds a whole family rather than a
     # missing tier of an existing one.
-    assert len(items) == 9194, f"expected 9194 items, saw {len(items)}"
+    # 397c673 — 9208 not 9194: the refreshed snapshot adds 60 genuinely new items
+    # (20 Terror of the Demon Lords raid + 40 others) and renames 60 more; one
+    # upstream placeholder (`Leaves of the Forest`, the family index page) is
+    # dropped in build_dataset, hence 9209 - 1.
+    assert len(items) == 9208, f"expected 9208 items, saw {len(items)}"
     gems = [it for it in items
             if "(Epic)" in (it.get("source_item") or "")
             and (it.get("source_item", "").startswith("Lunar Gem")

@@ -75,6 +75,27 @@ AMPLIFICATION_STATS = ("Healing Amplification", "Repair Amplification", "Negativ
 CRAFTED_CHANNELS = ("nearly_complete", "nearly_complete_per_item", "viktranium",
                     "seal", "dino_inserts", "legendary_green_steel")
 
+# Legendary Green Steel is a TIERED system, and its design is one bonus type PER
+# TIER precisely so the three tiers stack on one item — the same shape as its
+# False Life (Profane/Insight/Quality) and Wizardry lines. The one-type rule
+# below is about channels that mint ONE bundled effect; applied to a tiered pool
+# it would forbid the thing the pool exists to do. So Green Steel is held to a
+# stricter, per-tier rule in its own test instead of being exempted outright.
+#
+# The 397c673 snapshot is what made this live: it grew the pool 116 -> 156 rows
+# and the new rows are the first Green Steel amplification options this repo has
+# ever carried (the pre-refresh build had NONE, which is why the one-type rule
+# had never met a tiered counter-example). Verified 2026-09-22 against the wiki's
+# own per-tier pages, which state the type and the magnitude together:
+#   Legendary Green Steel items/Tier 1 — "Enhancement Positive Healing Amplification +30"
+#   Legendary Green Steel items/Tier 2 — "Equipment Positive Healing Amplification +50"
+#   Legendary Green Steel items/Tier 3 — "Competence Positive Healing Amplification +70"
+GREEN_STEEL = "legendary_green_steel"
+
+GREEN_STEEL_TIER_TYPES = {
+    "Healing Amplification": {1: "Enhancement", 2: "Equipment", 3: "Competence"},
+}
+
 # How dominant the worn type must be before arm 2 treats it as the stat's bucket.
 # Measured margins today: Healing 120 vs 55, Repair 48 vs 3, Negative 37 vs 5.
 _DOMINANCE = 2.0
@@ -129,6 +150,39 @@ def _crafted_rows():
     return rows
 
 
+def _bundled_crafted_rows():
+    """`_crafted_rows` minus the Green Steel pool.
+
+    Arms 1 and 3 are about channels that mint ONE bundled effect. Green Steel is
+    tiered and types each tier differently on purpose, so including it would make
+    both arms fail on correct, wiki-confirmed data. It gets `test_green_steel_types_each_tier_once_and_matches_the_wiki` instead, which is strictly
+    more demanding than the rule it replaces: one type per tier AND the exact
+    tier->type mapping the wiki states.
+    """
+    rows = _crafted_rows()
+    return {stat: {bt: [(c, v) for c, v in occ if c != GREEN_STEEL]
+                   for bt, occ in by_type.items()
+                   if any(c != GREEN_STEEL for c, _ in occ)}
+            for stat, by_type in rows.items()}
+
+
+def _green_steel_amplification():
+    """{stat: {tier: {bonus_type: [value, ...]}}} for the Green Steel pool alone."""
+    rows = {}
+    for record in _build().get(GREEN_STEEL) or []:
+        if not isinstance(record, dict):
+            continue
+        for affix in record.get("affixes") or []:
+            if not isinstance(affix, dict):
+                continue
+            name, bonus_type = _affix_name_and_type(affix)
+            if name in AMPLIFICATION_STATS:
+                (rows.setdefault(name, {})
+                     .setdefault(record.get("tier"), {})
+                     .setdefault(bonus_type, []).append(affix.get("value")))
+    return rows
+
+
 def _worn_types():
     """{stat: Counter(bonus_type)} over worn items and augment variants."""
     counts = {s: collections.Counter() for s in AMPLIFICATION_STATS}
@@ -144,7 +198,7 @@ def _worn_types():
 
 def test_each_crafted_amplification_stat_carries_one_bonus_type():
     """A stat retyped in one crafted channel but not the others stacks with itself."""
-    rows = _crafted_rows()
+    rows = _bundled_crafted_rows()
     for stat in AMPLIFICATION_STATS:
         by_type = rows[stat]
         if len(by_type) <= 1:
@@ -208,7 +262,7 @@ def test_crafted_amplification_matches_the_wiki_ruled_bonus_type():
     game change — but it IS a review event that must be settled by re-reading the
     tooltip, not by following upstream.
     """
-    crafted = _crafted_rows()
+    crafted = _bundled_crafted_rows()
     for stat, expected in RULED_TYPES.items():
         types = sorted(str(t) for t in crafted[stat])
         assert types == [expected], (
@@ -241,3 +295,40 @@ def test_the_triple_is_actually_present_to_inspect():
         assert sum(worn[stat].values()) >= 20, (
             f"{stat}: only {sum(worn[stat].values())} worn/augment rows found. Arm 2 compares against "
             "that population; if the affix dialect moves again this reads zero and asserts nothing.")
+
+
+def test_green_steel_types_each_tier_once_and_matches_the_wiki():
+    """Green Steel's per-tier typing is the design, so pin the design.
+
+    Arms 1 and 3 exempt this pool because a tiered system types each tier
+    differently ON PURPOSE — that is what lets the three tiers stack on one item.
+    Exempting a channel with nothing in its place would be a hole, so this arm is
+    stricter than the rule it replaces:
+
+    * exactly ONE bonus type per (stat, tier) — two types inside a single tier
+      really would be one effect in two buckets, which is arm 1's concern and
+      still a defect here;
+    * the tier -> type mapping matches `GREEN_STEEL_TIER_TYPES`, harvested from
+      the wiki's own per-tier pages, so upstream retyping a tier is a review
+      event rather than something the relative arms would wave through.
+
+    Refuses to pass over zero rows: this pool carried no amplification options at
+    all before the 397c673 refresh, and a pool that silently empties again must
+    not read as agreement.
+    """
+    rows = _green_steel_amplification()
+    for stat, expected_by_tier in GREEN_STEEL_TIER_TYPES.items():
+        by_tier = rows.get(stat) or {}
+        assert by_tier, (
+            f"{stat}: the Legendary Green Steel pool carries no amplification rows to inspect, "
+            "so this guard would pass vacuously. The pool gained them at 397c673; if upstream "
+            "dropped them again, retire this mapping deliberately rather than leaving it green.")
+        for tier, expected in expected_by_tier.items():
+            got = by_tier.get(tier)
+            assert got, f"{stat}: Green Steel tier {tier} carries no rows; expected {expected!r}"
+            types = sorted(str(t) for t in got)
+            assert types == [expected], (
+                f"{stat}: Green Steel tier {tier} grants it as {types}, but the wiki's "
+                f"'Legendary Green Steel items/Tier {tier}' page states {expected!r} "
+                "(harvested 2026-09-22). Two types inside one tier is one effect in two "
+                "buckets; a changed type is a wiki question, not an upstream one.")

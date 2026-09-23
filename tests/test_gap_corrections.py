@@ -60,8 +60,34 @@ def test_overlay_carries_exactly_the_sanctioned_entries():
     # the one genuine gap since: the U81 pull-back gave Orcus' Reign a Quality
     # False Life +15 that gear-planner's snapshot predates entirely. Pin the
     # exact contents so a drive-by addition to the sanctioned exception is loud.
+    #
+    # 397c673 — 22 keys, not one. The refresh's `[Crafted]` restructure collapsed 45
+    # `X [Crafted]` records onto their base name and kept the SMALLER pre-craft affix
+    # block, so 21 items silently lost 39 affixes the DDO wiki still states outright.
+    # That is this shard's own definition of a genuine gap: the stat is absent from
+    # gear-planner's native parse ENTIRELY, not merely typed differently. Each restored
+    # affix is the (name, type, value) triple gear-planner itself carried at 767a7f7,
+    # with the stat and magnitude re-confirmed on the item's own RENDERED wiki page.
+    # Retire these the moment upstream restores the fuller parse.
+    #
+    # The roster is still pinned exactly, so a drive-by addition stays loud — that is
+    # what this test is for, and widening it to a count would give that up.
     corrections = B.load_gap_corrections()
-    assert list(corrections.keys()) == ["Orcus' Reign"], list(corrections.keys())
+    assert sorted(corrections) == sorted([
+        "Orcus' Reign",
+        "Arcing Sky (level 13)", "Candlelight", "Chill of Winter (level 13)",
+        "Chulchannad's Claw", "Flame Warden", "Flicker", "Glorious Obscenity",
+        "Hand of the Tombs", "Khyber's Fury", "Lucid Dreams", "Recoyle",
+        "Strinati's Hand Cannon", "The Devourer's Hunger", "The Disciplinator",
+        "The Pea Shooter", "Thought Spike", "Thought Spike (starter)",
+        "Tira's Splendor", "Titan's Fist", "Toven's Hammer", "Trial by Fire",
+    ]), sorted(corrections)
+    # Every restored affix cites the page it was re-read on, and the 2026-09-22 batch
+    # says which snapshot it is repairing — an overlay entry with no provenance is how
+    # a "temporary" workaround becomes permanent.
+    for name, entries in corrections.items():
+        for e in entries:
+            assert e.get("wiki_url") and e.get("verified"), (name, e)
     entry = corrections["Orcus' Reign"][0]
     assert (entry["name"], entry["type"], entry["value"]) == (
         "False Life", "Quality", "15")

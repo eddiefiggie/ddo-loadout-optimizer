@@ -1,5 +1,6 @@
 # Wiki evidence — the ML36 augment tier (#260)
 
+**Status:** RETIRED 2026-09-22 — upstream carries the tier natively. See the closing section.
 **Verified:** 2026-08-12 (Chrome-MCP, same-origin from a ddowiki tab)
 **Sources:** https://ddowiki.com/page/Category:Minimum_level_36_augments (the
 category table and membership list) and each member's `Item:` page (two batched
@@ -59,3 +60,49 @@ targets `[Melee Power, Balance]`, ML36: **42/43 before → 44/44 after**. The
 ability Diamonds (+15 Enhancement) are shadowed by worn endgame gear in pure
 single-lens solves and earn their keep under slot pressure — that is the game
 working as designed, not a gap.
+
+
+---
+
+## Retirement (2026-09-22)
+
+The shard is gone. The 397c673 (2026-09-23) gear-planner re-vendor carries all 63 ML36
+augments natively in every color pool, which is the exact condition the shard's own staleness
+guard named as its retirement trigger: *"An entry whose name appears upstream fails the build
+— gear-planner added the tier; retire the shard entry rather than shipping a duplicate."*
+
+What was removed: `data/seed/compendium/ml36_augments.json`, `src/ml36_augments.py`,
+`tests/test_ml36_augments.py`, the `load`/`check`/`inject` calls in `build_dataset.py`, and
+the `metadata.ml36_augment_coverage` block (which nothing consumed).
+
+What was kept: the 63 harvested tooltips, moved verbatim to
+`docs/wiki-evidence/ml36-augment-tier-harvest.json` as an evidence artifact outside the seed
+tree, so nothing can load it as a build input again. Retirement records evidence; it does not
+delete it.
+
+### The adjudication, per record
+
+All 63 are present upstream. Compared against the catalog **after** `affix_name_corrections`
+runs — comparing against the raw dump instead is what produced a first, wrong answer of 12
+divergences, nine of which were only our canon (`Combustion`) meeting upstream's alias
+(`Fire Spell Power`) before the rename that reconciles them.
+
+- **59 byte-identical** on (name, type, value), pool and ML.
+- **4 divergent**, all the elemental dice: `Ruby of Acid / Flame / Frost / Shock (10d6)`. This
+  shard stored the dice count as the affix VALUE (`Bool 10`); upstream stores `Bool 1` at all
+  ten tiers of each family and keeps the dice count in the item NAME. **Resolved in upstream's
+  favour**, on two grounds: it is internally consistent across every sibling where ours was an
+  outlier against its own nine, and `Bool` is a PRESENCE type (`web/dataset.js`
+  `PRESENCE_TYPES`), so the value is never ranked as a magnitude and the change is
+  behaviour-neutral. Our `10` was a latent defect, not a loss.
+
+The augment SET the solver sees is therefore unchanged by this retirement — only the
+provenance moved, from our wiki harvest to upstream. `Solar Gem of Arcana` (Heroic and
+Legendary) made the same journey out of `augment_tier_gap.json` at the same refresh, at our
+exact values, and upstream additionally supplies the acquisition quest we never had.
+
+### What is NOT retired
+
+`augment_tier_gap.json` survives with 82 entries. Upstream still carries only 17 Epic
+(ML 20) Lunar/Solar gems out of 103 families, so that gap is real and unchanged — including
+`Solar Gem of Arcana (Epic)`, now the only tier of its family upstream does not carry.

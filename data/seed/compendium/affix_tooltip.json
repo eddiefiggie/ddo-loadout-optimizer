@@ -1752,6 +1752,14 @@
       "harvested": "2026-09-04",
       "label": "Wizardry II",
       "tooltip": "Wizardry II: This item grants the wearer +50 maximum spell points. Sorcerers and Favored Souls gain up to double spell points from items."
+    },
+    "Power of the Frozen Thunderstorm": {
+      "carrier": "Item:The_Volley's_Aria",
+      "wiki_url": "https://ddowiki.com/page/Item:The_Volley%27s_Aria",
+      "provenance": "stated",
+      "harvested": "2026-09-22",
+      "label": "Power of the Frozen Thunderstorm +169",
+      "tooltip": "Power of the Frozen Thunderstorm +169: Passive: +169 Equipment bonus to Cold, Sonic and Electric Spell Power."
     }
   }
 }

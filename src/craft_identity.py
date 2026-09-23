@@ -66,6 +66,16 @@ def _option(rec) -> str:
     return f"{rec.get('stat')}|{rec.get('bonus_type')}|{rec.get('value')}"
 
 
+def _secondary(rec) -> str:
+    """The first affix after the primary — the skill group a Green Steel option grants.
+
+    Empty for a single-affix row, which is what a pool whose rows carry only their
+    primary produces; those are separated by the primary alone, exactly as before.
+    """
+    affixes = rec.get("affixes") or []
+    return str(affixes[1].get("stat")) if len(affixes) > 1 else ""
+
+
 def _qs(rec) -> str:
     """The quarterstaff discriminator — empty unless the row carries the flag."""
     return "|qs" if rec.get("quarterstaff") else ""
@@ -79,7 +89,16 @@ POOL_KEY = {
     "viktranium": lambda r: f"{r.get('slot_type')}|{r.get('category')}{_qs(r)}",
     "dino_inserts": lambda r: f"{r.get('dino_type')}|{r.get('category')}{_qs(r)}",
     "nearly_complete": lambda r: str(r.get("category")),
-    "legendary_green_steel": lambda r: str(r.get("tier")),
+    # #270 refresh 397c673 — (tier, skill group), not tier alone. The option `name`
+    # records only the PRIMARY stat, and the 397c673 snapshot grew this pool from 116
+    # rows to 156 by adding skill-group variants: `False Life` tier 1 now exists three
+    # times over, pairing the same Profane +28 with the Balance/Hide/Move Silently
+    # group, with Concentration, and with Jump/Swim. Tier alone collapsed those three
+    # craftable options onto one key (12 collisions over 6 keys, all False Life and
+    # Wizardry at tiers 1-3), so blocking one skill group would silently block the
+    # other two. The first SECONDARY affix names the group and separates all 156.
+    "legendary_green_steel": lambda r: "{}|{}".format(
+        r.get("tier"), _secondary(r)),
     # #766 — the slot and the tier locate a Slaver's option in its pool.
     "slavers": lambda r: f"{r.get('slot')}|{r.get('tier')}",
     # #764 — (family, menu), not menu alone. The pool served Trinkets only until

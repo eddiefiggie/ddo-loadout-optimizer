@@ -72,7 +72,6 @@ from src import type_corrections as type_corrections_mod
 from src import augment_acquirability as acquirability_mod
 from src import conditional_quarantine as cond_quarantine_mod
 from src import legendary_fold as legendary_fold_mod
-from src import ml36_augments as ml36_augments_mod
 from src import viktranium_pool_corrections as vik_pool_mod
 from src import no_drop_source as no_drop_source_mod
 from src import planner_items as planner_mod
@@ -329,8 +328,6 @@ ACQUIRABILITY_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "augment_acquirability.json")
 COND_QUARANTINE_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "conditional_affix_quarantine.json")
-ML36_AUGMENTS_PATH = os.path.join(
-    HERE, "data", "seed", "compendium", "ml36_augments.json")
 # #365 — curated wiki-sourced Viktranium pool relocations (misfiled options).
 VIK_POOL_CORRECTIONS_PATH = os.path.join(
     HERE, "data", "seed", "compendium", "viktranium_pool_corrections.json")
@@ -734,31 +731,16 @@ def build() -> dict:
     # seal, dino, viktranium, nearly-complete, green-steel, thunder-forged. The
     # 244 protected-name occurrences in gearplanner_crafting.json are unreachable
     # from the item-roster call further down.
-    #
-    # KTD8 — this MUST stay above `ml36_augments.check` below. Our own ML36 shard
-    # carries protected canon names anchored to their gear-planner siblings, and
-    # `check` raises SystemExit when an entry's affix vocabulary no longer matches
-    # its sibling's. Renaming first makes that comparison our canon against our
-    # canon; renaming after it would kill the build before any of this runs.
     _name_coverage_crafting = name_corrections_mod.apply(crafting, _name_corrections)
-    # #260 — inject the wiki-sourced ML36 augment tier into the color pools.
-    # gear-planner stops at ML32; the wiki holds the 63 top-tier sale augments,
-    # each anchored to its gear-planner sibling's affix vocabulary and guarded
-    # against staleness (upstream adding the tier), a broken sibling anchor, and
-    # a tooltip that no longer states the value. check() runs on the PRISTINE
-    # catalog — that is what the staleness guard means — then inject() appends
-    # in the pools' native shape so every consumer below treats them as natives.
-    #
-    # #374/KTD8 — "pristine" now means pristine with respect to TIER CONTENT (the
-    # staleness guard's actual subject: upstream adding an ML36 tier), NOT with
-    # respect to affix spelling. The name corrections above have already run, by
-    # design: the shard's own affix names are our canon, so comparing them to a
-    # not-yet-renamed sibling would fail the build on a spelling difference this
-    # pipeline exists to erase. Chosen over re-anchoring the shard entries, which
-    # would need redoing on every future upstream rename.
-    _ml36_entries = ml36_augments_mod.load(ML36_AUGMENTS_PATH)
-    _ml36_checked = ml36_augments_mod.check(_ml36_entries, crafting)
-    _ml36_coverage = ml36_augments_mod.inject(_ml36_entries, crafting)
+    # #260 RETIRED at the 397c673 (2026-09-23) refresh. The shard injected a
+    # wiki-sourced ML36 augment tier because gear-planner stopped at ML32; upstream
+    # now carries all 63 natively in every color pool, which is the exact condition
+    # the shard's own staleness guard named as its retirement trigger. The harvested
+    # tooltips are preserved as evidence in
+    # docs/wiki-evidence/ml36-augment-tier-harvest.json, and the adjudication — 63/63
+    # present upstream, 59 byte-identical once our canon rename above has run, and 4
+    # elemental-dice entries resolved in upstream's favour — is recorded in
+    # docs/wiki-evidence/ml36-augment-tier.md.
     # Seal types with a non-empty verified pool gate which "Sealed in X" hosts the
     # reader recovers from the raw dump (Undeath sourced; Mist/Gloom pending).
     _verified_seal_types = {r["seal_type"]
@@ -807,6 +789,20 @@ def build() -> dict:
     dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(
         dino_seed, crafting, sets_catalog=_set_catalog, planner_items=_raw_items)
     _host_pipeline_names = {b.get("source_item") for b in dino_blanks}
+    # 397c673 — upstream's placeholder for the `Leaves of the Forest` FAMILY INDEX
+    # page, dropped rather than shipped. It is not an item: ML 1, a single `TBD`
+    # affix (the only `TBD` in the whole dump), and a url pointing at
+    # /page/Item:Leaves_of_the_Forest, which renders a TABLE of the real
+    # `(level 15|16|17|22|23|24)` variants instead of an infobox — the material
+    # harvest hit the same thing, where the page's `material` param is a DPL query
+    # rather than a value. Shipping it breaks owned-item import concretely: the
+    # importer strips `(level N)` to match an in-game name that carries no level, so
+    # a player owning any real tier would match this ML 1 shell as well, and
+    # `web/import.js` has no rule to choose between two records of the same name.
+    # That invariant is asserted by tests/test_level_suffix_is_redundant.py.
+    # Retire this line if upstream turns the record into a real item or drops it.
+    _UPSTREAM_PLACEHOLDERS = {"Leaves of the Forest"}
+    _host_pipeline_names |= _UPSTREAM_PLACEHOLDERS
     # #364 — the blank REPLACES the same-named gear-planner record (its name is
     # excluded from the reader just below), so it must inherit that record's
     # item-quality fields or they are silently lost. `artifact` was: the six
@@ -2320,9 +2316,6 @@ def build() -> dict:
                 "items": _type_coverage_items,
                 "augments": _type_coverage_augments,
             },
-            # #260 — the wiki-sourced ML36 augment tier: what the guard vouched
-            # for per color, and what was injected into the pools.
-            "ml36_augment_coverage": {**_ml36_coverage, "checked": _ml36_checked},
             # #365 — the wiki-sourced Viktranium pool relocations: which
             # misfiled options were moved, and into which pools.
             "viktranium_pool_corrections": {**_vik_pool_coverage,

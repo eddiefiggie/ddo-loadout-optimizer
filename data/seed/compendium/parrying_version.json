@@ -41,6 +41,11 @@
     "{{parrying|viii}}": {
       "tooltip": "Parrying VIII: Passive: +4 Insight bonus to Armor Class, +4 Insight bonus to Fortitude, Reflex, and Will Saving throws.",
       "harvested": "2026-08-08"
+    },
+    "{{parrying|7}}": {
+      "tooltip": "Parrying +7: +7 Insight bonus to Armor Class, +7 Insight bonus to Saves.",
+      "harvested": "2026-09-22",
+      "note": "New magnitude at the 397c673 refresh — 6 was the previous ceiling. Captured rather than extrapolated from the arabic-N pattern, because a rendered tooltip is the only thing that proves the pattern holds at a value nobody had seen."
     }
   },
   "harvested": {
@@ -1433,6 +1438,16 @@
       "provenance": "stated",
       "raw": "{{Parrying|3}}",
       "harvested": "2026-08-08"
+    },
+    "Legendary Swashbuckler (level 36)": {
+      "value": {
+        "version": "7",
+        "armor_class": 7,
+        "saves": 7
+      },
+      "provenance": "stated",
+      "raw": "{{Parrying|7}}",
+      "harvested": "2026-09-22"
     }
   }
 }

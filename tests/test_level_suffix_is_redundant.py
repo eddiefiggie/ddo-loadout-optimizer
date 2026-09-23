@@ -42,7 +42,26 @@ def test_the_level_in_the_name_is_always_the_item_s_ml():
     # Non-vacuity: a rename upstream would empty this and the assertion below would
     # pass by inspecting nothing, which is exactly when the importer would break.
     assert len(rows) > 500, f"only {len(rows)} suffixed names found; the pattern no longer matches"
-    mismatched = [(i["source_item"], i.get("ml")) for i, _, lvl in rows if i.get("ml") != lvl]
+    # 397c673 — one KNOWN wiki self-contradiction, allowlisted by name so a SECOND
+    # one cannot hide behind it. `Item:Legendary Ratkiller (level 36)` is the page's
+    # own title, but the infobox on that page states `Minimum Level 32`, and
+    # gear-planner scraped both faithfully — so the disagreement is the wiki's, not
+    # upstream's and not ours. ml=32 is the sourced value (the infobox states it);
+    # the suffix is the page title. Stripping the suffix to match an owned name is
+    # still correct here, because the base name `Legendary Ratkiller` is what the
+    # importer needs; what is lost is only the suffix's claim about the level, which
+    # was already wrong. Verified on the rendered page 2026-09-22.
+    WIKI_TITLE_DISAGREES_WITH_ITS_OWN_INFOBOX = {"Legendary Ratkiller (level 36)": 32}
+    mismatched = [(i["source_item"], i.get("ml")) for i, _, lvl in rows
+                  if i.get("ml") != lvl
+                  and WIKI_TITLE_DISAGREES_WITH_ITS_OWN_INFOBOX.get(i["source_item"]) != i.get("ml")]
+    # The allowlist must stay live: if upstream or the wiki fixes the page, this
+    # entry stops matching anything and should be retired rather than left standing.
+    _allowlisted = [i for i, _, lvl in rows
+                    if i["source_item"] in WIKI_TITLE_DISAGREES_WITH_ITS_OWN_INFOBOX]
+    assert len(_allowlisted) == 1, (
+        "the Legendary Ratkiller allowlist entry matches nothing — the page was "
+        "probably fixed; retire the entry instead of leaving it asserting a stale claim")
     assert not mismatched, (
         "a `(level N)` suffix disagrees with the item's `ml`: "
         + ", ".join(f"{n} has ml={m}" for n, m in mismatched[:8])

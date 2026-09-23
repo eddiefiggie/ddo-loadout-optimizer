@@ -402,7 +402,14 @@ test("U4/262: the flag survives into the browse row projection (real dataset)", 
   const list = browsableItems(data);
   const flagged = list.filter((v) => v.no_drop_source === true);
   assert.ok(flagged.length >= 2, "the wiki-confirmed items reach the browse rows");
-  assert.ok(flagged.some((v) => /Bracers of the Spider Queen/.test(v.variant_id)));
+  // 397c673 — the Spider Queen bracers were this test's exemplar and are no longer
+  // flagged: Update 81.2 shipped `Raiding the Raiders` (2026-08-19), which sources
+  // them, so the shard retired both after re-reading their wiki pages. The exemplar
+  // moves to `Seeker Tap of Spellsight` (the #93 case) rather than the assertion
+  // being dropped, and the bracers' absence is pinned so a regression that re-flags
+  // a sourced item is still caught here.
+  assert.ok(flagged.some((v) => /Seeker Tap of Spellsight/.test(v.variant_id)));
+  assert.ok(!flagged.some((v) => /Bracers of the Spider Queen/.test(v.variant_id)));
   for (const v of flagged) {
     assert.ok(B.noDropBadge(v).includes("no known live drop source"));
   }
