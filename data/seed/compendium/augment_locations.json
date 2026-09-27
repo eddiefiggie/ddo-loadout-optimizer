@@ -1,0 +1,7653 @@
+{
+ "_meta": {
+  "title": "Where each NAMED augment is found — the wiki's own `locations` field",
+  "harvested": "2026-09-27",
+  "source": "ddowiki.com, `{{Item Augment}}` infobox `locations` parameter on each augment's own `Item:<name>` page, batched MediaWiki API (action=query, prop=revisions, 20 titles per POST, ~1.5s apart) per docs/wiki-evidence/harvest-method.md",
+  "why": "The Farming List's hunting list for augments. gear-planner carries no acquisition data for any augment (location_quest is empty on all of them), so without this the list could say which augment to slot but never where to get it.",
+  "shape": "Each `locations` line on the wiki is `Place + how + detail;`. `place` is linked by the wiki's own template to the page of that exact title; `how` is the wiki's own source kind (loot, rewards, purchasable augments, reward items); `detail` is the chest / cost text with wiki link markup reduced to its label and `<br/>` to ` ; `.",
+  "population": "Every augment in the catalog WITHOUT `acquirable` (the 472 named ones, per docs/wiki-evidence/augment-acquirability.md). The 675 acquirable (Common/Uncommon/Rare) augments are NOT harvested here: the rarity ruling already states where they come from (vendors, Mysterious Remnants, random chest loot), and all 675 were verified 2026-09-27 to be members of those categories at exactly `Item:<name>` (sha256 of the sorted stripped names equals that of the catalog's acquirable set).",
+  "no_page": "82 named augments — every one an `(Epic)` Solar or Lunar Gem — have no wiki page at `Item:<name>`. They are recorded with `page: null` and render with no link and no location, never a guessed one.",
+  "verification": "The name list sent to the wiki hashed identically on both sides (sha256 897cc207…). The harvested payload was hashed in the browser before readback and re-hashed on disk (sha256 7a46500d…). All 112 distinct places were checked with prop=info and exist (Joe Candymaker redirects to The Night Revels).",
+  "counts": {
+   "named": 472,
+   "with_page": 390,
+   "no_page": 82,
+   "location_lines": 1087,
+   "distinct_places": 112
+  }
+ },
+ "common_page_prefix": "Item:",
+ "named": {
+  "A History of Draconic Interference": {
+   "page": "Item:A History of Draconic Interference",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "A Legendary History of Draconic Interference": {
+   "page": "Item:A Legendary History of Draconic Interference",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "A Treatise on Battle": {
+   "page": "Item:A Treatise on Battle",
+   "locations": [
+    {
+     "place": "Fire Over Morgrave",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Arrowbound Topaz": {
+   "page": "Item:Arrowbound Topaz",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Bestiary of the Planes": {
+   "page": "Item:Bestiary of the Planes",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "Brightbane Emerald": {
+   "page": "Item:Brightbane Emerald",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Citrene of Greater Dragonmarks": {
+   "page": "Item:Citrene of Greater Dragonmarks",
+   "locations": [
+    {
+     "place": "The Final Enemy",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Clearwater Diamond": {
+   "page": "Item:Clearwater Diamond",
+   "locations": [
+    {
+     "place": "Under the Cover of Darkness",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Coalescent Ruby": {
+   "page": "Item:Coalescent Ruby",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Crystallized Drop of Tea": {
+   "page": "Item:Crystallized Drop of Tea",
+   "locations": [
+    {
+     "place": "Through the Tulgey Wood",
+     "how": "loot",
+     "detail": "locked chest, end chest, second secret chest"
+    }
+   ]
+  },
+  "Crystallized Unicorn Tear": {
+   "page": "Item:Crystallized Unicorn Tear",
+   "locations": [
+    {
+     "place": "One Dame Thing After Another",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Deconstructor": {
+   "page": "Item:Deconstructor",
+   "locations": [
+    {
+     "place": "Brothers of the Forge",
+     "how": "loot",
+     "detail": "Elite or higher end chest"
+    }
+   ]
+  },
+  "Demonheart Emerald": {
+   "page": "Item:Demonheart Emerald",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Diamond of Festive Charisma +2": {
+   "page": "Item:Diamond of Festive Charisma +2",
+   "locations": [
+    {
+     "place": "Flurry (NPC)",
+     "how": "purchasable augments",
+     "detail": "Snowpeaks Festival event craftable augment ; (20) Gold Snowpeaks Coin ; (100) Silver Snowpeaks Coin"
+    },
+    {
+     "place": "Snowpeaks Festival",
+     "how": "reward items",
+     "detail": ""
+    }
+   ]
+  },
+  "Diamond of Festive Constitution +2": {
+   "page": "Item:Diamond of Festive Constitution +2",
+   "locations": [
+    {
+     "place": "Joe Candymaker",
+     "how": "purchasable augments",
+     "detail": "The Night Revels event craftable augment ; (80) Piece of Darkest Chocolate ; (60) Spooky Almond ; (60) Black Apple ; (60) Shadowy Caramel ; (60) Pinch of Sinister Cinnamon"
+    },
+    {
+     "place": "The Night Revels",
+     "how": "reward items",
+     "detail": ""
+    }
+   ]
+  },
+  "Diamond of Festive Dexterity +2": {
+   "page": "Item:Diamond of Festive Dexterity +2",
+   "locations": [
+    {
+     "place": "Flurry (NPC)",
+     "how": "purchasable augments",
+     "detail": "Snowpeaks Festival event craftable augment ; (20) Gold Snowpeaks Coin ; (100) Silver Snowpeaks Coin"
+    },
+    {
+     "place": "Snowpeaks Festival",
+     "how": "reward items",
+     "detail": ""
+    }
+   ]
+  },
+  "Diamond of Festive Intelligence +2": {
+   "page": "Item:Diamond of Festive Intelligence +2",
+   "locations": [
+    {
+     "place": "Joe Candymaker",
+     "how": "purchasable augments",
+     "detail": "The Night Revels event craftable augment ; (80) Piece of Darkest Chocolate ; (60) Spooky Almond ; (60) Black Apple ; (60) Shadowy Caramel ; (60) Pinch of Sinister Cinnamon"
+    },
+    {
+     "place": "The Night Revels",
+     "how": "reward items",
+     "detail": ""
+    }
+   ]
+  },
+  "Diamond of Festive Strength +2": {
+   "page": "Item:Diamond of Festive Strength +2",
+   "locations": [
+    {
+     "place": "Euphonia's Barter Box",
+     "how": "purchasable augments",
+     "detail": "Treasure of Crystal Cove event craftable augment ; (1500) Silver Doubloon ; (600) Golden Doubloon ; (45) Stolen Jasper ; (900) Green Dragonshard"
+    },
+    {
+     "place": "Treasure of Crystal Cove",
+     "how": "reward items",
+     "detail": ""
+    }
+   ]
+  },
+  "Diamond of Festive Wisdom +2": {
+   "page": "Item:Diamond of Festive Wisdom +2",
+   "locations": [
+    {
+     "place": "Joe Candymaker",
+     "how": "purchasable augments",
+     "detail": "The Night Revels event craftable augment ; (80) Piece of Darkest Chocolate ; (60) Spooky Almond ; (60) Black Apple ; (60) Shadowy Caramel ; (60) Pinch of Sinister Cinnamon"
+    },
+    {
+     "place": "The Night Revels",
+     "how": "reward items",
+     "detail": ""
+    }
+   ]
+  },
+  "Diamond of Vitality +20": {
+   "page": "Item:Diamond of Vitality +20",
+   "locations": [
+    {
+     "place": "Balkar Aislin",
+     "how": "purchasable augments",
+     "detail": "Upper Necropolis ; (20) Shred of Tapestry"
+    },
+    {
+     "place": "Tattered Tapestries",
+     "how": "reward items",
+     "detail": ""
+    },
+    {
+     "place": "The Crucible",
+     "how": "loot",
+     "detail": "Underwater chest (Heroic only)"
+    }
+   ]
+  },
+  "Diamond of the Magi": {
+   "page": "Item:Diamond of the Magi",
+   "locations": [
+    {
+     "place": "Under the Cover of Darkness",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Dismagicka": {
+   "page": "Item:Dismagicka",
+   "locations": [
+    {
+     "place": "The Dryad and the Demigod",
+     "how": "loot",
+     "detail": "End chest and optional chest"
+    }
+   ]
+  },
+  "Draconic Soul Gem": {
+   "page": "Item:Draconic Soul Gem",
+   "locations": [
+    {
+     "place": "The Fall of Truth",
+     "how": "loot",
+     "detail": "(Epic Elite or higher) end chest"
+    }
+   ]
+  },
+  "Emerald of Arcane Empowerment": {
+   "page": "Item:Emerald of Arcane Empowerment",
+   "locations": [
+    {
+     "place": "Hunt or Be Hunted",
+     "how": "loot",
+     "detail": "End chest"
+    },
+    {
+     "place": "Item:Hunter Rune",
+     "how": "purchasable augments",
+     "detail": "(1250) Hunter Rune"
+    }
+   ]
+  },
+  "Emerald of Bitter Wounds": {
+   "page": "Item:Emerald of Bitter Wounds",
+   "locations": [
+    {
+     "place": "The Dryad and the Demigod",
+     "how": "loot",
+     "detail": "End chest or optional chest"
+    }
+   ]
+  },
+  "Emerald of Greater Rage": {
+   "page": "Item:Emerald of Greater Rage",
+   "locations": [
+    {
+     "place": "Swim at Your Own Risk",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Emerald of Greater Smiting": {
+   "page": "Item:Emerald of Greater Smiting",
+   "locations": [
+    {
+     "place": "Danger at Dunwater",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Encyclopedia of the Dead, Vol. 1": {
+   "page": "Item:Encyclopedia of the Dead, Vol. 1",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "Encyclopedia of the Dead, Vol. 3": {
+   "page": "Item:Encyclopedia of the Dead, Vol. 3",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "Essence of Constellation, Broken and Reforged": {
+   "page": "Item:Essence of Constellation, Broken and Reforged",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) The Broken Blade of Constellation ; (1) The Shattered Hilt of Constellation"
+    },
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Constellation, Cursed Blade"
+    }
+   ]
+  },
+  "Essence of Dark Diversion": {
+   "page": "Item:Essence of Dark Diversion",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Dark Diversion"
+    }
+   ]
+  },
+  "Essence of Pomura's Memento": {
+   "page": "Item:Essence of Pomura's Memento",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Pomura's Memento"
+    }
+   ]
+  },
+  "Essence of The Masque": {
+   "page": "Item:Essence of The Masque",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) The Masque"
+    }
+   ]
+  },
+  "Essence of Ultimatum": {
+   "page": "Item:Essence of Ultimatum",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Ultimatum"
+    }
+   ]
+  },
+  "Essence of the Champion of the Twins": {
+   "page": "Item:Essence of the Champion of the Twins",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Champion of the Twins"
+    }
+   ]
+  },
+  "Essence of the Cloak of Strahd": {
+   "page": "Item:Essence of the Cloak of Strahd",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) The Invisible Cloak of Strahd"
+    }
+   ]
+  },
+  "Essence of the Cobalt Guard": {
+   "page": "Item:Essence of the Cobalt Guard",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Cobalt Guard"
+    }
+   ]
+  },
+  "Essence of the Cracked Core": {
+   "page": "Item:Essence of the Cracked Core",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Cracked Core"
+    }
+   ]
+  },
+  "Essence of the Dethek Runestone": {
+   "page": "Item:Essence of the Dethek Runestone",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Dethek Runestone"
+    }
+   ]
+  },
+  "Essence of the Epic Litany of the Dead": {
+   "page": "Item:Essence of the Epic Litany of the Dead",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Epic Litany of the Dead"
+    }
+   ]
+  },
+  "Essence of the Nullscale Armor": {
+   "page": "Item:Essence of the Nullscale Armor",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Nullscale Armor"
+    }
+   ]
+  },
+  "Essence of the Spear of the Mournlands": {
+   "page": "Item:Essence of the Spear of the Mournlands",
+   "locations": [
+    {
+     "place": "Soulforge",
+     "how": "purchasable augments",
+     "detail": "Hall of Heroes ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Spear of the Mournlands"
+    }
+   ]
+  },
+  "Facet of Coalesced Impacts": {
+   "page": "Item:Facet of Coalesced Impacts",
+   "locations": [
+    {
+     "place": "Illithid Invasion",
+     "how": "loot",
+     "detail": "any chest"
+    }
+   ]
+  },
+  "Facet of Condensed Power": {
+   "page": "Item:Facet of Condensed Power",
+   "locations": [
+    {
+     "place": "Illithid Invasion",
+     "how": "loot",
+     "detail": "any chest"
+    }
+   ]
+  },
+  "Facet of Psionic Intrusion": {
+   "page": "Item:Facet of Psionic Intrusion",
+   "locations": [
+    {
+     "place": "Illithid Invasion",
+     "how": "loot",
+     "detail": "any chest"
+    }
+   ]
+  },
+  "Feareater": {
+   "page": "Item:Feareater",
+   "locations": [
+    {
+     "place": "The Dryad and the Demigod",
+     "how": "loot",
+     "detail": "End chest and optional chest"
+    }
+   ]
+  },
+  "Globe of Cursed Blood": {
+   "page": "Item:Globe of Cursed Blood",
+   "locations": [
+    {
+     "place": "Illithid Invasion",
+     "how": "loot",
+     "detail": "any chest"
+    }
+   ]
+  },
+  "Globe of Imperial Blood": {
+   "page": "Item:Globe of Imperial Blood",
+   "locations": [
+    {
+     "place": "Gianthold Tor",
+     "how": "loot",
+     "detail": "Black Dragon (Heroic Elite or higher) optional chest"
+    }
+   ]
+  },
+  "Globe of True Imperial Blood": {
+   "page": "Item:Globe of True Imperial Blood",
+   "locations": [
+    {
+     "place": "Return to Gianthold Tor",
+     "how": "loot",
+     "detail": "Black Dragon (Epic Elite or higher) optional chest"
+    }
+   ]
+  },
+  "Golem's Heart": {
+   "page": "Item:Golem's Heart",
+   "locations": [
+    {
+     "place": "A Study in Sable",
+     "how": "loot",
+     "detail": "Elite or higher end chest or Wollstonecraft's optional chest (unconfirmed)"
+    }
+   ]
+  },
+  "Guide to Animal Handling": {
+   "page": "Item:Guide to Animal Handling",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "How To Cast Fast": {
+   "page": "Item:How To Cast Fast",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "How To Cast Faster": {
+   "page": "Item:How To Cast Faster",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "Legendary Arrowbound Topaz": {
+   "page": "Item:Legendary Arrowbound Topaz",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Legendary Bestiary of the Planes": {
+   "page": "Item:Legendary Bestiary of the Planes",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "Legendary Brightbane Emerald": {
+   "page": "Item:Legendary Brightbane Emerald",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Legendary Coalescent Ruby": {
+   "page": "Item:Legendary Coalescent Ruby",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Legendary Demonheart Emerald": {
+   "page": "Item:Legendary Demonheart Emerald",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Legendary Guide to Animal Handling": {
+   "page": "Item:Legendary Guide to Animal Handling",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "Legendary Moment to Legendary Moment": {
+   "page": "Item:Legendary Moment to Legendary Moment",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "Legendary Ruby of Acid Blast": {
+   "page": "Item:Legendary Ruby of Acid Blast",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Legendary Ruby of Flaming Blast": {
+   "page": "Item:Legendary Ruby of Flaming Blast",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Legendary Ruby of Icy Blast": {
+   "page": "Item:Legendary Ruby of Icy Blast",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Legendary Ruby of Implement's Acid": {
+   "page": "Item:Legendary Ruby of Implement's Acid",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Legendary Ruby of Implement's Flame": {
+   "page": "Item:Legendary Ruby of Implement's Flame",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Legendary Ruby of Implement's Frost": {
+   "page": "Item:Legendary Ruby of Implement's Frost",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Legendary Ruby of Implement's Wind": {
+   "page": "Item:Legendary Ruby of Implement's Wind",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Legendary Ruby of Maiming": {
+   "page": "Item:Legendary Ruby of Maiming",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Legendary Ruby of Shocking Blast": {
+   "page": "Item:Legendary Ruby of Shocking Blast",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Legendary Sapphire of Riposte": {
+   "page": "Item:Legendary Sapphire of Riposte",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Legendary Silvertongue Sapphire": {
+   "page": "Item:Legendary Silvertongue Sapphire",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Legendary Swordcrossed Topaz": {
+   "page": "Item:Legendary Swordcrossed Topaz",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Legendary Undying Sapphire": {
+   "page": "Item:Legendary Undying Sapphire",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Legendary Wraithborn Emerald": {
+   "page": "Item:Legendary Wraithborn Emerald",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Lifetaker": {
+   "page": "Item:Lifetaker",
+   "locations": [
+    {
+     "place": "Witch Hunt",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Abjuration (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Abjuration (Heroic)": {
+   "page": "Item:Lunar Gem of Abjuration (Heroic)",
+   "locations": [
+    {
+     "place": "The Proper Authorities",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Abjuration (Legendary)": {
+   "page": "Item:Lunar Gem of Abjuration (Legendary)",
+   "locations": [
+    {
+     "place": "The Proper Authorities",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Accuracy (Heroic)": {
+   "page": "Item:Lunar Gem of Accuracy (Heroic)",
+   "locations": [
+    {
+     "place": "The Safehold",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Rats in a Cage",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Vornir Frosthelm's chest"
+    },
+    {
+     "place": "The Final Draw",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Accuracy (Legendary)": {
+   "page": "Item:Lunar Gem of Accuracy (Legendary)",
+   "locations": [
+    {
+     "place": "The Safehold",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Rats in a Cage",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Vornir Frosthelm's chest"
+    },
+    {
+     "place": "The Final Draw",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Balance and Tumble (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Balance and Tumble (Heroic)": {
+   "page": "Item:Lunar Gem of Balance and Tumble (Heroic)",
+   "locations": [
+    {
+     "place": "Locked Away (Part One)",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "Cormoran Stoneboots' chest"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "Tesaron's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Balance and Tumble (Legendary)": {
+   "page": "Item:Lunar Gem of Balance and Tumble (Legendary)",
+   "locations": [
+    {
+     "place": "Locked Away (Part One)",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "Cormoran Stoneboots' chest"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "Tesaron's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Blast Dice (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Blast Dice (Heroic)": {
+   "page": "Item:Lunar Gem of Blast Dice (Heroic)",
+   "locations": [
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "secret area chest"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "Gruorg's chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "The Decomposter's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Blast Dice (Legendary)": {
+   "page": "Item:Lunar Gem of Blast Dice (Legendary)",
+   "locations": [
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "secret area chest"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "Gruorg's chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "The Decomposter's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Charisma (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Charisma (Heroic)": {
+   "page": "Item:Lunar Gem of Charisma (Heroic)",
+   "locations": [
+    {
+     "place": "Death Hosts This Banquet",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Rats in a Cage",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Wizard's Labyrinth",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "Dead Man's Wrath's chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "Shadow Demon's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Charisma (Legendary)": {
+   "page": "Item:Lunar Gem of Charisma (Legendary)",
+   "locations": [
+    {
+     "place": "Death Hosts This Banquet",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Rats in a Cage",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Wizard's Labyrinth",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "Dead Man's Wrath's chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "Shadow Demon's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Conjuration (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Conjuration (Heroic)": {
+   "page": "Item:Lunar Gem of Conjuration (Heroic)",
+   "locations": [
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "J'anara's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Conjuration (Legendary)": {
+   "page": "Item:Lunar Gem of Conjuration (Legendary)",
+   "locations": [
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "J'anara's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Constitution (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Constitution (Heroic)": {
+   "page": "Item:Lunar Gem of Constitution (Heroic)",
+   "locations": [
+    {
+     "place": "Oghma's Song",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Constitution (Legendary)": {
+   "page": "Item:Lunar Gem of Constitution (Legendary)",
+   "locations": [
+    {
+     "place": "Oghma's Song",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Dexterity (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Dexterity (Heroic)": {
+   "page": "Item:Lunar Gem of Dexterity (Heroic)",
+   "locations": [
+    {
+     "place": "Voices of the Dead",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Knife's Edge",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Locked Away (Part Two)",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "optional chest"
+    }
+   ]
+  },
+  "Lunar Gem of Dexterity (Legendary)": {
+   "page": "Item:Lunar Gem of Dexterity (Legendary)",
+   "locations": [
+    {
+     "place": "Voices of the Dead",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Knife's Edge",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Locked Away (Part Two)",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "optional chest"
+    }
+   ]
+  },
+  "Lunar Gem of Disable Device and Open Lock (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Disable Device and Open Lock (Heroic)": {
+   "page": "Item:Lunar Gem of Disable Device and Open Lock (Heroic)",
+   "locations": [
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "Dead Man's Wrath's chest"
+    },
+    {
+     "place": "Thrall of Duty",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "end chest and Yeenoghu's followers' chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "J'anara's chest (rare)"
+    }
+   ]
+  },
+  "Lunar Gem of Disable Device and Open Lock (Legendary)": {
+   "page": "Item:Lunar Gem of Disable Device and Open Lock (Legendary)",
+   "locations": [
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "Dead Man's Wrath's chest"
+    },
+    {
+     "place": "Thrall of Duty",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "end chest and Yeenoghu's followers' chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "J'anara's chest (rare)"
+    }
+   ]
+  },
+  "Lunar Gem of Enchantment (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Enchantment (Heroic)": {
+   "page": "Item:Lunar Gem of Enchantment (Heroic)",
+   "locations": [
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "red-named rare encounter chests (rare)"
+    }
+   ]
+  },
+  "Lunar Gem of Enchantment (Legendary)": {
+   "page": "Item:Lunar Gem of Enchantment (Legendary)",
+   "locations": [
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "red-named rare encounter chests (rare)"
+    }
+   ]
+  },
+  "Lunar Gem of Evocation (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Evocation (Heroic)": {
+   "page": "Item:Lunar Gem of Evocation (Heroic)",
+   "locations": [
+    {
+     "place": "The Proper Authorities",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Zarazurthu's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Evocation (Legendary)": {
+   "page": "Item:Lunar Gem of Evocation (Legendary)",
+   "locations": [
+    {
+     "place": "The Proper Authorities",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Zarazurthu's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Haggle and Perform (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Haggle and Perform (Heroic)": {
+   "page": "Item:Lunar Gem of Haggle and Perform (Heroic)",
+   "locations": [
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Fangs of Winter's chest"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Haggle and Perform (Legendary)": {
+   "page": "Item:Lunar Gem of Haggle and Perform (Legendary)",
+   "locations": [
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Fangs of Winter's chest"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Heal and Listen (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Heal and Listen (Heroic)": {
+   "page": "Item:Lunar Gem of Heal and Listen (Heroic)",
+   "locations": [
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "Lamordian Hook Horror Matriarch's chest"
+    },
+    {
+     "place": "Going Rogue",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "Tesaron's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Heal and Listen (Legendary)": {
+   "page": "Item:Lunar Gem of Heal and Listen (Legendary)",
+   "locations": [
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "Lamordian Hook Horror Matriarch's chest"
+    },
+    {
+     "place": "Going Rogue",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "Tesaron's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Healing Amplification (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Healing Amplification (Heroic)": {
+   "page": "Item:Lunar Gem of Healing Amplification (Heroic)",
+   "locations": [
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Yegora's chest, and Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "The Darkness and the Light",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "Max Entsetzen's chest"
+    },
+    {
+     "place": "Thrall of Duty",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Healing Amplification (Legendary)": {
+   "page": "Item:Lunar Gem of Healing Amplification (Legendary)",
+   "locations": [
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Yegora's chest, and Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "The Darkness and the Light",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "Max Entsetzen's chest"
+    },
+    {
+     "place": "Thrall of Duty",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Hide and Move Silently (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Hide and Move Silently (Heroic)": {
+   "page": "Item:Lunar Gem of Hide and Move Silently (Heroic)",
+   "locations": [
+    {
+     "place": "Ends and Means",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Final Draw",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Hide and Move Silently (Legendary)": {
+   "page": "Item:Lunar Gem of Hide and Move Silently (Legendary)",
+   "locations": [
+    {
+     "place": "Ends and Means",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Final Draw",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Illusion (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Illusion (Heroic)": {
+   "page": "Item:Lunar Gem of Illusion (Heroic)",
+   "locations": [
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "Althea's chest"
+    },
+    {
+     "place": "The Final Draw",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "If It Wasn't For Bad Luck",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "J'anara's chest (rare)"
+    }
+   ]
+  },
+  "Lunar Gem of Illusion (Legendary)": {
+   "page": "Item:Lunar Gem of Illusion (Legendary)",
+   "locations": [
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "Althea's chest"
+    },
+    {
+     "place": "The Final Draw",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "If It Wasn't For Bad Luck",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "J'anara's chest (rare)"
+    }
+   ]
+  },
+  "Lunar Gem of Intelligence (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Intelligence (Heroic)": {
+   "page": "Item:Lunar Gem of Intelligence (Heroic)",
+   "locations": [
+    {
+     "place": "The House of Gems",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Rats in a Cage",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Wizard's Labyrinth",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Locked Away (Part Two)",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Intelligence (Legendary)": {
+   "page": "Item:Lunar Gem of Intelligence (Legendary)",
+   "locations": [
+    {
+     "place": "The House of Gems",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Rats in a Cage",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Wizard's Labyrinth",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Locked Away (Part Two)",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Jump and Swim (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Jump and Swim (Heroic)": {
+   "page": "Item:Lunar Gem of Jump and Swim (Heroic)",
+   "locations": [
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Wish Upon a Card",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "red-named rare encounter chests"
+    }
+   ]
+  },
+  "Lunar Gem of Jump and Swim (Legendary)": {
+   "page": "Item:Lunar Gem of Jump and Swim (Legendary)",
+   "locations": [
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Wish Upon a Card",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "red-named rare encounter chests"
+    }
+   ]
+  },
+  "Lunar Gem of Linguistics (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Linguistics (Heroic)": {
+   "page": "Item:Lunar Gem of Linguistics (Heroic)",
+   "locations": [
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Linguistics (Legendary)": {
+   "page": "Item:Lunar Gem of Linguistics (Legendary)",
+   "locations": [
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Magical Protection (Epic)": {
+   "page": "Item:Lunar Gem of Magical Protection (Epic)",
+   "locations": [
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Magical Protection (Heroic)": {
+   "page": "Item:Lunar Gem of Magical Protection (Heroic)",
+   "locations": [
+    {
+     "place": "Book Burning",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "secret area chest"
+    },
+    {
+     "place": "Thrall of Duty",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "The Decomposter's chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "Romira and Juvian's chest (requires completion of Sleeping with the Fishes and visits to The Cerulean Hills and Ruins of Myth Drannor)"
+    }
+   ]
+  },
+  "Lunar Gem of Magical Protection (Legendary)": {
+   "page": "Item:Lunar Gem of Magical Protection (Legendary)",
+   "locations": [
+    {
+     "place": "Book Burning",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "secret area chest"
+    },
+    {
+     "place": "Thrall of Duty",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "The Decomposter's chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "Romira and Juvian's chest (requires completion of Sleeping with the Fishes and visits to The Cerulean Hills and Ruins of Myth Drannor)"
+    }
+   ]
+  },
+  "Lunar Gem of Melee Power (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Melee Power (Heroic)": {
+   "page": "Item:Lunar Gem of Melee Power (Heroic)",
+   "locations": [
+    {
+     "place": "The Zulkir's Plan",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Thrall of Duty",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "red-named rare encounter chests"
+    }
+   ]
+  },
+  "Lunar Gem of Melee Power (Legendary)": {
+   "page": "Item:Lunar Gem of Melee Power (Legendary)",
+   "locations": [
+    {
+     "place": "The Zulkir's Plan",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Thrall of Duty",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "red-named rare encounter chests"
+    }
+   ]
+  },
+  "Lunar Gem of Natural Armor (Heroic)": {
+   "page": "Item:Lunar Gem of Natural Armor (Heroic)",
+   "locations": [
+    {
+     "place": "Ettercap Incursion",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "The Final Draw",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "Shedrak of the Eyes's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Natural Armor (Legendary)": {
+   "page": "Item:Lunar Gem of Natural Armor (Legendary)",
+   "locations": [
+    {
+     "place": "Ettercap Incursion",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "The Final Draw",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "Shedrak of the Eyes's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Necromancy (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Necromancy (Heroic)": {
+   "page": "Item:Lunar Gem of Necromancy (Heroic)",
+   "locations": [
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Going Rogue",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Necromancy (Legendary)": {
+   "page": "Item:Lunar Gem of Necromancy (Legendary)",
+   "locations": [
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Going Rogue",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Negative Amplification (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Negative Amplification (Heroic)": {
+   "page": "Item:Lunar Gem of Negative Amplification (Heroic)",
+   "locations": [
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Goranathanil's chest"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Zoo Creeper",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Back to the Abyss",
+     "how": "loot",
+     "detail": "Forgefeeder's chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Depthdigger's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Negative Amplification (Legendary)": {
+   "page": "Item:Lunar Gem of Negative Amplification (Legendary)",
+   "locations": [
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Goranathanil's chest"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Zoo Creeper",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Back to the Abyss",
+     "how": "loot",
+     "detail": "Forgefeeder's chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Depthdigger's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Pact Dice (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Pact Dice (Heroic)": {
+   "page": "Item:Lunar Gem of Pact Dice (Heroic)",
+   "locations": [
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "locked chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "If It Wasn't For Bad Luck",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "Gruorg's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Pact Dice (Legendary)": {
+   "page": "Item:Lunar Gem of Pact Dice (Legendary)",
+   "locations": [
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "locked chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "If It Wasn't For Bad Luck",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "Gruorg's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Physical Protection (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Physical Protection (Heroic)": {
+   "page": "Item:Lunar Gem of Physical Protection (Heroic)",
+   "locations": [
+    {
+     "place": "Portal to Below",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "Cormoran Stoneboots' chest"
+    }
+   ]
+  },
+  "Lunar Gem of Physical Protection (Legendary)": {
+   "page": "Item:Lunar Gem of Physical Protection (Legendary)",
+   "locations": [
+    {
+     "place": "Portal to Below",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "Cormoran Stoneboots' chest"
+    }
+   ]
+  },
+  "Lunar Gem of Ranged Power (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Ranged Power (Heroic)": {
+   "page": "Item:Lunar Gem of Ranged Power (Heroic)",
+   "locations": [
+    {
+     "place": "Times Long Past",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "Potion Paw's chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Depthdigger's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Ranged Power (Legendary)": {
+   "page": "Item:Lunar Gem of Ranged Power (Legendary)",
+   "locations": [
+    {
+     "place": "Times Long Past",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "Potion Paw's chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Depthdigger's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Repair Amplification (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Repair Amplification (Heroic)": {
+   "page": "Item:Lunar Gem of Repair Amplification (Heroic)",
+   "locations": [
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Yegora's chest, and Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "House Lyrandar uprising optional chest"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "locked chest"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "The Decomposter's chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "\"find out what Y'lara knows\" optional chest"
+    }
+   ]
+  },
+  "Lunar Gem of Repair Amplification (Legendary)": {
+   "page": "Item:Lunar Gem of Repair Amplification (Legendary)",
+   "locations": [
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Yegora's chest, and Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "House Lyrandar uprising optional chest"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "locked chest"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "The Decomposter's chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "\"find out what Y'lara knows\" optional chest"
+    }
+   ]
+  },
+  "Lunar Gem of Repair and Use Magic Device (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Repair and Use Magic Device (Heroic)": {
+   "page": "Item:Lunar Gem of Repair and Use Magic Device (Heroic)",
+   "locations": [
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "Max Entsetzen's chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Repair and Use Magic Device (Legendary)": {
+   "page": "Item:Lunar Gem of Repair and Use Magic Device (Legendary)",
+   "locations": [
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "Max Entsetzen's chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Search and Spot (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Search and Spot (Heroic)": {
+   "page": "Item:Lunar Gem of Search and Spot (Heroic)",
+   "locations": [
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Wish Upon a Card",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Search and Spot (Legendary)": {
+   "page": "Item:Lunar Gem of Search and Spot (Legendary)",
+   "locations": [
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Wish Upon a Card",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Spell Difficulty (Epic)": {
+   "page": "Item:Lunar Gem of Spell Difficulty (Epic)",
+   "locations": [
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Spell Difficulty (Heroic)": {
+   "page": "Item:Lunar Gem of Spell Difficulty (Heroic)",
+   "locations": [
+    {
+     "place": "Seeds of Decay",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Wizard's Labyrinth",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "cookbook optional chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "Romira and Juvian's chest (requires completion of Sleeping with the Fishes and visits to The Cerulean Hills and Ruins of Myth Drannor)"
+    }
+   ]
+  },
+  "Lunar Gem of Spell Difficulty (Legendary)": {
+   "page": "Item:Lunar Gem of Spell Difficulty (Legendary)",
+   "locations": [
+    {
+     "place": "Seeds of Decay",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Wizard's Labyrinth",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "cookbook optional chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "Romira and Juvian's chest (requires completion of Sleeping with the Fishes and visits to The Cerulean Hills and Ruins of Myth Drannor)"
+    }
+   ]
+  },
+  "Lunar Gem of Spellpower (Epic)": {
+   "page": "Item:Lunar Gem of Spellpower (Epic)",
+   "locations": [
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Spellpower (Heroic)": {
+   "page": "Item:Lunar Gem of Spellpower (Heroic)",
+   "locations": [
+    {
+     "place": "The Key to the Mythal",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "secret area chest"
+    },
+    {
+     "place": "A Long Way to Mushrooms",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Spellpower (Legendary)": {
+   "page": "Item:Lunar Gem of Spellpower (Legendary)",
+   "locations": [
+    {
+     "place": "The Key to the Mythal",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "secret area chest"
+    },
+    {
+     "place": "A Long Way to Mushrooms",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Lunar Gem of Strength (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Strength (Heroic)": {
+   "page": "Item:Lunar Gem of Strength (Heroic)",
+   "locations": [
+    {
+     "place": "Seeds of Decay",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Proper Authorities",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Going Rogue",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Depthdigger's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Strength (Legendary)": {
+   "page": "Item:Lunar Gem of Strength (Legendary)",
+   "locations": [
+    {
+     "place": "Seeds of Decay",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Proper Authorities",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Going Rogue",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Depthdigger's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Swift Charging (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Swift Charging (Heroic)": {
+   "page": "Item:Lunar Gem of Swift Charging (Heroic)",
+   "locations": [
+    {
+     "place": "Book Burning",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "Dead Man's Wrath's chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "Romira and Juvian's chest (requires completion of Sleeping with the Fishes and visits to The Cerulean Hills and Ruins of Myth Drannor)"
+    }
+   ]
+  },
+  "Lunar Gem of Swift Charging (Legendary)": {
+   "page": "Item:Lunar Gem of Swift Charging (Legendary)",
+   "locations": [
+    {
+     "place": "Book Burning",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "Dead Man's Wrath's chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "Romira and Juvian's chest (requires completion of Sleeping with the Fishes and visits to The Cerulean Hills and Ruins of Myth Drannor)"
+    }
+   ]
+  },
+  "Lunar Gem of Transmutation (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Transmutation (Heroic)": {
+   "page": "Item:Lunar Gem of Transmutation (Heroic)",
+   "locations": [
+    {
+     "place": "Ends and Means",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Thrall of Duty",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "falling course chest"
+    }
+   ]
+  },
+  "Lunar Gem of Transmutation (Legendary)": {
+   "page": "Item:Lunar Gem of Transmutation (Legendary)",
+   "locations": [
+    {
+     "place": "Ends and Means",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Thrall of Duty",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "falling course chest"
+    }
+   ]
+  },
+  "Lunar Gem of Weapon Damage (Heroic)": {
+   "page": "Item:Lunar Gem of Weapon Damage (Heroic)",
+   "locations": [
+    {
+     "place": "Secrets of the Red Wizards",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Knife's Edge",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Zoo Creeper",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "Tesaron's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Weapon Damage (Legendary)": {
+   "page": "Item:Lunar Gem of Weapon Damage (Legendary)",
+   "locations": [
+    {
+     "place": "Secrets of the Red Wizards",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Knife's Edge",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Zoo Creeper",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "Tesaron's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Wisdom (Epic)": {
+   "page": null
+  },
+  "Lunar Gem of Wisdom (Heroic)": {
+   "page": "Item:Lunar Gem of Wisdom (Heroic)",
+   "locations": [
+    {
+     "place": "Ettercap Incursion",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darkness and the Light",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Vornir Frosthelm's chest"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "Gruorg's chest"
+    },
+    {
+     "place": "Back to the Abyss",
+     "how": "loot",
+     "detail": "Forgefeeder's chest"
+    }
+   ]
+  },
+  "Lunar Gem of Wisdom (Legendary)": {
+   "page": "Item:Lunar Gem of Wisdom (Legendary)",
+   "locations": [
+    {
+     "place": "Ettercap Incursion",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darkness and the Light",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Vornir Frosthelm's chest"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "Gruorg's chest"
+    },
+    {
+     "place": "Back to the Abyss",
+     "how": "loot",
+     "detail": "Forgefeeder's chest"
+    }
+   ]
+  },
+  "Meridian Fragment": {
+   "page": "Item:Meridian Fragment",
+   "locations": [
+    {
+     "place": "Fire on Thunder Peak",
+     "how": "loot",
+     "detail": "Warded chest"
+    }
+   ]
+  },
+  "Moment to Moment": {
+   "page": "Item:Moment to Moment",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "Ravil's Book of Legendary Recipes": {
+   "page": "Item:Ravil's Book of Legendary Recipes",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "Ravil's Book of Recipes": {
+   "page": "Item:Ravil's Book of Recipes",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "Ruby of Acid Blast": {
+   "page": "Item:Ruby of Acid Blast",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Ruby of Disintegration": {
+   "page": "Item:Ruby of Disintegration",
+   "locations": [
+    {
+     "place": "Wake Me Up Inside",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Ruby of Fey Bane": {
+   "page": "Item:Ruby of Fey Bane",
+   "locations": [
+    {
+     "place": "Wake Me Up Inside",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Ruby of Flaming Blast": {
+   "page": "Item:Ruby of Flaming Blast",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Ruby of Ghostbane": {
+   "page": "Item:Ruby of Ghostbane",
+   "locations": [
+    {
+     "place": "Joe Candymaker",
+     "how": "purchasable augments",
+     "detail": "The Night Revels event craftable augment ; (120) Piece of Darkest Chocolate ; (50) Spooky Almond ; (50) Black Apple ; (50) Shadowy Caramel ; (50) Pinch of Sinister Cinnamon"
+    },
+    {
+     "place": "Mabar Endless Night Festival",
+     "how": "loot",
+     "detail": ""
+    }
+   ]
+  },
+  "Ruby of Icy Blast": {
+   "page": "Item:Ruby of Icy Blast",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Ruby of Implement's Acid": {
+   "page": "Item:Ruby of Implement's Acid",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Ruby of Implement's Flame": {
+   "page": "Item:Ruby of Implement's Flame",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Ruby of Implement's Frost": {
+   "page": "Item:Ruby of Implement's Frost",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Ruby of Implement's Wind": {
+   "page": "Item:Ruby of Implement's Wind",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Ruby of Maiming": {
+   "page": "Item:Ruby of Maiming",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Ruby of Shocking Blast": {
+   "page": "Item:Ruby of Shocking Blast",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Ruby of the Adamantine Blessing": {
+   "page": "Item:Ruby of the Adamantine Blessing",
+   "locations": [
+    {
+     "place": "Euphonia's Barter Box",
+     "how": "purchasable augments",
+     "detail": "Treasure of Crystal Cove event craftable augment ; (1500) Silver Doubloon ; (600) Golden Doubloon ; (45) Stolen Jasper ; (900) Green Dragonshard"
+    },
+    {
+     "place": "Treasure of Crystal Cove",
+     "how": "reward items",
+     "detail": ""
+    }
+   ]
+  },
+  "Ruby of the Crushing Wave": {
+   "page": "Item:Ruby of the Crushing Wave",
+   "locations": [
+    {
+     "place": "Ghost of a Chance (epic)",
+     "how": "loot",
+     "detail": "Optional puzzle chest"
+    }
+   ]
+  },
+  "Ruby of the Endless Night": {
+   "page": "Item:Ruby of the Endless Night",
+   "locations": [
+    {
+     "place": "Joe Candymaker",
+     "how": "purchasable augments",
+     "detail": "The Night Revels event craftable augment ; (120) Piece of Darkest Chocolate ; (50) Spooky Almond ; (50) Black Apple ; (50) Shadowy Caramel ; (50) Pinch of Sinister Cinnamon"
+    },
+    {
+     "place": "Mabar Endless Night Festival",
+     "how": "loot",
+     "detail": ""
+    }
+   ]
+  },
+  "Ruby of the Iron Hand": {
+   "page": "Item:Ruby of the Iron Hand",
+   "locations": [
+    {
+     "place": "Flurry (NPC)",
+     "how": "purchasable augments",
+     "detail": "Snowpeaks Festival event craftable augment ; (20) Gold Snowpeaks Coin ; (100) Silver Snowpeaks Coin"
+    },
+    {
+     "place": "Snowpeaks Festival",
+     "how": "reward items",
+     "detail": ""
+    }
+   ]
+  },
+  "Ruby of the Snowpeaks": {
+   "page": "Item:Ruby of the Snowpeaks",
+   "locations": [
+    {
+     "place": "Flurry (NPC)",
+     "how": "purchasable augments",
+     "detail": "Snowpeaks Festival event craftable augment ; (20) Gold Snowpeaks Coin ; (100) Silver Snowpeaks Coin"
+    },
+    {
+     "place": "Snowpeaks Festival",
+     "how": "reward items",
+     "detail": ""
+    }
+   ]
+  },
+  "Ruby of the Surging Tide": {
+   "page": "Item:Ruby of the Surging Tide",
+   "locations": [
+    {
+     "place": "Euphonia's Barter Box",
+     "how": "purchasable augments",
+     "detail": "Treasure of Crystal Cove event craftable augment ; (1500) Silver Doubloon ; (700) Golden Doubloon ; (45) Stolen Jasper ; (1000) Green Dragonshard"
+    },
+    {
+     "place": "Treasure of Crystal Cove",
+     "how": "reward items",
+     "detail": ""
+    }
+   ]
+  },
+  "Ruby of the Vampire Slayer": {
+   "page": "Item:Ruby of the Vampire Slayer",
+   "locations": [
+    {
+     "place": "Joe Candymaker",
+     "how": "purchasable augments",
+     "detail": "The Night Revels event craftable augment ; (120) Piece of Darkest Chocolate ; (50) Spooky Almond ; (50) Black Apple ; (50) Shadowy Caramel ; (50) Pinch of Sinister Cinnamon"
+    },
+    {
+     "place": "Mabar Endless Night Festival",
+     "how": "loot",
+     "detail": ""
+    }
+   ]
+  },
+  "Sapphire of Crushing Wave Guard": {
+   "page": "Item:Sapphire of Crushing Wave Guard",
+   "locations": [
+    {
+     "place": "Old Tomb, New Tenants",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Sapphire of Good Luck +1 (named)": {
+   "page": "Item:Sapphire of Good Luck +1 (named)",
+   "locations": [
+    {
+     "place": "The Haunting of Saltmarsh",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Sapphire of Good Luck +3": {
+   "page": "Item:Sapphire of Good Luck +3",
+   "locations": [
+    {
+     "place": "The Haunting of Saltmarsh",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Sapphire of Greater Heroism": {
+   "page": "Item:Sapphire of Greater Heroism",
+   "locations": [
+    {
+     "place": "Immortality Lessons",
+     "how": "loot",
+     "detail": "end chest and Sweet Granny's chest"
+    }
+   ]
+  },
+  "Sapphire of Heroism": {
+   "page": "Item:Sapphire of Heroism",
+   "locations": [
+    {
+     "place": "Immortality Lessons",
+     "how": "loot",
+     "detail": "end chest and Sweet Granny's chest"
+    }
+   ]
+  },
+  "Sapphire of Riposte": {
+   "page": "Item:Sapphire of Riposte",
+   "locations": [
+    {
+     "place": "ToEE: Depths of the Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: First Level and Earth Temple",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    },
+    {
+     "place": "ToEE: Lower Temple Complex",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Sapphire of Snowpeaks Speed": {
+   "page": "Item:Sapphire of Snowpeaks Speed",
+   "locations": [
+    {
+     "place": "Flurry (NPC)",
+     "how": "purchasable augments",
+     "detail": "Snowpeaks Festival event craftable augment ; (20) Gold Snowpeaks Coin ; (100) Silver Snowpeaks Coin"
+    },
+    {
+     "place": "Snowpeaks Festival",
+     "how": "reward items",
+     "detail": ""
+    }
+   ]
+  },
+  "Scourge of the Outsiders": {
+   "page": "Item:Scourge of the Outsiders",
+   "locations": [
+    {
+     "place": "The Thornwright",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Set Augment: Alluring Elocution": {
+   "page": "Item:Set Augment: Alluring Elocution",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Tattered Scrolls of the Broken One"
+    }
+   ]
+  },
+  "Set Augment: Arcane Barrier": {
+   "page": "Item:Set Augment: Arcane Barrier",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Mantle of Escher"
+    }
+   ]
+  },
+  "Set Augment: Arcane Guardian": {
+   "page": "Item:Set Augment: Arcane Guardian",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Citadel's Gaze"
+    }
+   ]
+  },
+  "Set Augment: Bold Tactician": {
+   "page": "Item:Set Augment: Bold Tactician",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Page Regalia: Exiled Tactica"
+    }
+   ]
+  },
+  "Set Augment: Brutal Blows": {
+   "page": "Item:Set Augment: Brutal Blows",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Mail of the Mroranon"
+    }
+   ]
+  },
+  "Set Augment: Cruel Cut": {
+   "page": "Item:Set Augment: Cruel Cut",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) The Family's Blessing"
+    }
+   ]
+  },
+  "Set Augment: Cunning Impact": {
+   "page": "Item:Set Augment: Cunning Impact",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Strange Tidings"
+    }
+   ]
+  },
+  "Set Augment: Dusk Raider": {
+   "page": "Item:Set Augment: Dusk Raider",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Coat of Van Richten"
+    }
+   ]
+  },
+  "Set Augment: Esoterica": {
+   "page": "Item:Set Augment: Esoterica",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Cloak of the Mountain"
+    }
+   ]
+  },
+  "Set Augment: Imbued Infusion": {
+   "page": "Item:Set Augment: Imbued Infusion",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Kelas' Volatile Mixture"
+    }
+   ]
+  },
+  "Set Augment: Legendary Bulwark": {
+   "page": "Item:Set Augment: Legendary Bulwark",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) The Stablestone"
+    }
+   ]
+  },
+  "Set Augment: Paragon Guard": {
+   "page": "Item:Set Augment: Paragon Guard",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Platemail of Strahd"
+    }
+   ]
+  },
+  "Set Augment: Perfect Silence": {
+   "page": "Item:Set Augment: Perfect Silence",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Vestments of Ravenloft"
+    }
+   ]
+  },
+  "Set Augment: Piercing Mind": {
+   "page": "Item:Set Augment: Piercing Mind",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Staggershockers"
+    }
+   ]
+  },
+  "Set Augment: Quickblade": {
+   "page": "Item:Set Augment: Quickblade",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Guided Sight"
+    }
+   ]
+  },
+  "Set Augment: Subtle Blade": {
+   "page": "Item:Set Augment: Subtle Blade",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Page Regalia: Unsanctioned Arcana"
+    }
+   ]
+  },
+  "Set Augment: Touch of Power": {
+   "page": "Item:Set Augment: Touch of Power",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Attunement's Gaze"
+    }
+   ]
+  },
+  "Set Augment: Tough Shields": {
+   "page": "Item:Set Augment: Tough Shields",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Dumathoin's Bracers"
+    }
+   ]
+  },
+  "Set Augment: Truthful Blow": {
+   "page": "Item:Set Augment: Truthful Blow",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Helm of the Final Watcher"
+    }
+   ]
+  },
+  "Set Augment: Visions of the Beyond": {
+   "page": "Item:Set Augment: Visions of the Beyond",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Crystalline Gauntlets"
+    }
+   ]
+  },
+  "Set Augment: Wild Fortitude": {
+   "page": "Item:Set Augment: Wild Fortitude",
+   "locations": [
+    {
+     "place": "Cauldron of Cadence",
+     "how": "purchasable augments",
+     "detail": "The Hut from Beyond ; (50) Thread of Fate ; (1) Empty Soul Vessel ; (1) Quori-Infused Core"
+    }
+   ]
+  },
+  "Silvertongue Sapphire": {
+   "page": "Item:Silvertongue Sapphire",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Solar Gem of Abjuration (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Abjuration (Heroic)": {
+   "page": "Item:Solar Gem of Abjuration (Heroic)",
+   "locations": [
+    {
+     "place": "Locked Away (Part Two)",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Abjuration (Legendary)": {
+   "page": "Item:Solar Gem of Abjuration (Legendary)",
+   "locations": [
+    {
+     "place": "Locked Away (Part Two)",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Alignment Absorption (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Alignment Absorption (Heroic)": {
+   "page": "Item:Solar Gem of Alignment Absorption (Heroic)",
+   "locations": [
+    {
+     "place": "Back to the Abyss",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Alignment Absorption (Legendary)": {
+   "page": "Item:Solar Gem of Alignment Absorption (Legendary)",
+   "locations": [
+    {
+     "place": "Back to the Abyss",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Arcana (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Arcana (Heroic)": {
+   "page": "Item:Solar Gem of Arcana (Heroic)",
+   "locations": [
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Arcana (Legendary)": {
+   "page": "Item:Solar Gem of Arcana (Legendary)",
+   "locations": [
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Arcane Endurance (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Arcane Endurance (Heroic)": {
+   "page": "Item:Solar Gem of Arcane Endurance (Heroic)",
+   "locations": [
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Arcane Endurance (Legendary)": {
+   "page": "Item:Solar Gem of Arcane Endurance (Legendary)",
+   "locations": [
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Armor Layers (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Armor Layers (Heroic)": {
+   "page": "Item:Solar Gem of Armor Layers (Heroic)",
+   "locations": [
+    {
+     "place": "Voices of the Dead",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "House Lyrandar uprising optional chest"
+    },
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "cookbook optional chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "bonus chest for completing all optionals"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "Toruk the Prophet's chest"
+    }
+   ]
+  },
+  "Solar Gem of Armor Layers (Legendary)": {
+   "page": "Item:Solar Gem of Armor Layers (Legendary)",
+   "locations": [
+    {
+     "place": "Voices of the Dead",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "House Lyrandar uprising optional chest"
+    },
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "cookbook optional chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "bonus chest for completing all optionals"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "Toruk the Prophet's chest"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "locked chest (on Heroic and Legendary due to a bug)"
+    }
+   ]
+  },
+  "Solar Gem of Assassination (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Assassination (Heroic)": {
+   "page": "Item:Solar Gem of Assassination (Heroic)",
+   "locations": [
+    {
+     "place": "Book Burning",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Assassination (Legendary)": {
+   "page": "Item:Solar Gem of Assassination (Legendary)",
+   "locations": [
+    {
+     "place": "Book Burning",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Attack (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Attack (Heroic)": {
+   "page": "Item:Solar Gem of Attack (Heroic)",
+   "locations": [
+    {
+     "place": "Zoo Creeper",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Attack (Legendary)": {
+   "page": "Item:Solar Gem of Attack (Legendary)",
+   "locations": [
+    {
+     "place": "Zoo Creeper",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Balance and Tumble (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Balance and Tumble (Heroic)": {
+   "page": "Item:Solar Gem of Balance and Tumble (Heroic)",
+   "locations": [
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "cookbook optional chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "Shedrak of the Eyes's chest"
+    }
+   ]
+  },
+  "Solar Gem of Balance and Tumble (Legendary)": {
+   "page": "Item:Solar Gem of Balance and Tumble (Legendary)",
+   "locations": [
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "cookbook optional chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "Shedrak of the Eyes's chest"
+    }
+   ]
+  },
+  "Solar Gem of Blast Dice (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Blast Dice (Heroic)": {
+   "page": "Item:Solar Gem of Blast Dice (Heroic)",
+   "locations": [
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Depthdigger's chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Blast Dice (Legendary)": {
+   "page": "Item:Solar Gem of Blast Dice (Legendary)",
+   "locations": [
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Depthdigger's chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Charisma (Epic)": {
+   "page": "Item:Solar Gem of Charisma (Epic)",
+   "locations": [
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Charisma (Heroic)": {
+   "page": "Item:Solar Gem of Charisma (Heroic)",
+   "locations": [
+    {
+     "place": "Ettercap Incursion",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "Lamordian Hook Horror Matriarch's chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Charisma (Legendary)": {
+   "page": "Item:Solar Gem of Charisma (Legendary)",
+   "locations": [
+    {
+     "place": "Ettercap Incursion",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "Lamordian Hook Horror Matriarch's chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Conjuration (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Conjuration (Heroic)": {
+   "page": "Item:Solar Gem of Conjuration (Heroic)",
+   "locations": [
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "If It Wasn't For Bad Luck",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Conjuration (Legendary)": {
+   "page": "Item:Solar Gem of Conjuration (Legendary)",
+   "locations": [
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "If It Wasn't For Bad Luck",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Constitution (Epic)": {
+   "page": "Item:Solar Gem of Constitution (Epic)",
+   "locations": [
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Constitution (Heroic)": {
+   "page": "Item:Solar Gem of Constitution (Heroic)",
+   "locations": [
+    {
+     "place": "Seeds of Decay",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Locked Away (Part One)",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Wish Upon a Card",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Constitution (Legendary)": {
+   "page": "Item:Solar Gem of Constitution (Legendary)",
+   "locations": [
+    {
+     "place": "Seeds of Decay",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Locked Away (Part One)",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Wish Upon a Card",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Critical Confirmation (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Critical Confirmation (Heroic)": {
+   "page": "Item:Solar Gem of Critical Confirmation (Heroic)",
+   "locations": [
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "red-named rare encounter chests (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Critical Confirmation (Legendary)": {
+   "page": "Item:Solar Gem of Critical Confirmation (Legendary)",
+   "locations": [
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "red-named rare encounter chests (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Cruelty (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Cruelty (Heroic)": {
+   "page": "Item:Solar Gem of Cruelty (Heroic)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Heroic)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Oghma's Song",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Depthdigger's chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Cruelty (Legendary)": {
+   "page": "Item:Solar Gem of Cruelty (Legendary)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Legendary)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Oghma's Song",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Depthdigger's chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Damage (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Damage (Heroic)": {
+   "page": "Item:Solar Gem of Damage (Heroic)",
+   "locations": [
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Damage (Legendary)": {
+   "page": "Item:Solar Gem of Damage (Legendary)",
+   "locations": [
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Dexterity (Epic)": {
+   "page": "Item:Solar Gem of Dexterity (Epic)",
+   "locations": [
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Dexterity (Heroic)": {
+   "page": "Item:Solar Gem of Dexterity (Heroic)",
+   "locations": [
+    {
+     "place": "Portal to Below",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Locked Away (Part One)",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Long Way to Mushrooms",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Dexterity (Legendary)": {
+   "page": "Item:Solar Gem of Dexterity (Legendary)",
+   "locations": [
+    {
+     "place": "Portal to Below",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Locked Away (Part One)",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Long Way to Mushrooms",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Disable Device and Open Lock (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Disable Device and Open Lock (Heroic)": {
+   "page": "Item:Solar Gem of Disable Device and Open Lock (Heroic)",
+   "locations": [
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Experiment Y's chest"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Disable Device and Open Lock (Legendary)": {
+   "page": "Item:Solar Gem of Disable Device and Open Lock (Legendary)",
+   "locations": [
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Experiment Y's chest"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Dodge (Epic)": {
+   "page": "Item:Solar Gem of Dodge (Epic)",
+   "locations": [
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Dodge (Heroic)": {
+   "page": "Item:Solar Gem of Dodge (Heroic)",
+   "locations": [
+    {
+     "place": "The House of Gems",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Ends and Means",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "bonus chest for completing all optionals"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "\"find out what Y'lara knows\" optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Dodge (Legendary)": {
+   "page": "Item:Solar Gem of Dodge (Legendary)",
+   "locations": [
+    {
+     "place": "The House of Gems",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Ends and Means",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "bonus chest for completing all optionals"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "\"find out what Y'lara knows\" optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Dodge Cap (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Dodge Cap (Heroic)": {
+   "page": "Item:Solar Gem of Dodge Cap (Heroic)",
+   "locations": [
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Dodge Cap (Legendary)": {
+   "page": "Item:Solar Gem of Dodge Cap (Legendary)",
+   "locations": [
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Doubleshot (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Doubleshot (Heroic)": {
+   "page": "Item:Solar Gem of Doubleshot (Heroic)",
+   "locations": [
+    {
+     "place": "Portal to Below",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Knife's Edge",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "Potion Paw's chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "Gruorg's chest"
+    }
+   ]
+  },
+  "Solar Gem of Doubleshot (Legendary)": {
+   "page": "Item:Solar Gem of Doubleshot (Legendary)",
+   "locations": [
+    {
+     "place": "Portal to Below",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Knife's Edge",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "Potion Paw's chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "Gruorg's chest"
+    }
+   ]
+  },
+  "Solar Gem of Doublestrike (Epic)": {
+   "page": "Item:Solar Gem of Doublestrike (Epic)",
+   "locations": [
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Doublestrike (Heroic)": {
+   "page": "Item:Solar Gem of Doublestrike (Heroic)",
+   "locations": [
+    {
+     "place": "Ettercap Incursion",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Rats in a Cage",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Locked Away (Part Two)",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "Toruk the Prophet's chest"
+    }
+   ]
+  },
+  "Solar Gem of Doublestrike (Legendary)": {
+   "page": "Item:Solar Gem of Doublestrike (Legendary)",
+   "locations": [
+    {
+     "place": "Ettercap Incursion",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Rats in a Cage",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Locked Away (Part Two)",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "Toruk the Prophet's chest"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "locked chest (on Heroic and Legendary due to a bug)"
+    }
+   ]
+  },
+  "Solar Gem of Elemental Absorption (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Elemental Absorption (Heroic)": {
+   "page": "Item:Solar Gem of Elemental Absorption (Heroic)",
+   "locations": [
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Vornir Frosthelm's chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "A Long Way to Mushrooms",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    }
+   ]
+  },
+  "Solar Gem of Elemental Absorption (Legendary)": {
+   "page": "Item:Solar Gem of Elemental Absorption (Legendary)",
+   "locations": [
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Vornir Frosthelm's chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "A Long Way to Mushrooms",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    }
+   ]
+  },
+  "Solar Gem of Enchantment (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Enchantment (Heroic)": {
+   "page": "Item:Solar Gem of Enchantment (Heroic)",
+   "locations": [
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Enchantment (Legendary)": {
+   "page": "Item:Solar Gem of Enchantment (Legendary)",
+   "locations": [
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Enduring (Heroic)": {
+   "page": "Item:Solar Gem of Enduring (Heroic)",
+   "locations": [
+    {
+     "place": "Secrets of the Red Wizards",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Magic of Myth Drannor (Heroic)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Rats in a Cage",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Proper Authorities",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Enduring (Legendary)": {
+   "page": "Item:Solar Gem of Enduring (Legendary)",
+   "locations": [
+    {
+     "place": "Secrets of the Red Wizards",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Magic of Myth Drannor (Legendary)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Rats in a Cage",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Proper Authorities",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Evocation (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Evocation (Heroic)": {
+   "page": "Item:Solar Gem of Evocation (Heroic)",
+   "locations": [
+    {
+     "place": "Locked Away (Part One)",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Evocation (Legendary)": {
+   "page": "Item:Solar Gem of Evocation (Legendary)",
+   "locations": [
+    {
+     "place": "Locked Away (Part One)",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Force Absorption (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Force Absorption (Heroic)": {
+   "page": "Item:Solar Gem of Force Absorption (Heroic)",
+   "locations": [
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Force Absorption (Legendary)": {
+   "page": "Item:Solar Gem of Force Absorption (Legendary)",
+   "locations": [
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Fortification Bypass (Epic)": {
+   "page": "Item:Solar Gem of Fortification Bypass (Epic)",
+   "locations": [
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    }
+   ]
+  },
+  "Solar Gem of Fortification Bypass (Heroic)": {
+   "page": "Item:Solar Gem of Fortification Bypass (Heroic)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Heroic)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Goranathanil's chest (rare)"
+    },
+    {
+     "place": "The Knife's Edge",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Zoo Creeper",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Zarazurthu's chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Fortification Bypass (Legendary)": {
+   "page": "Item:Solar Gem of Fortification Bypass (Legendary)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Legendary)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Goranathanil's chest (rare)"
+    },
+    {
+     "place": "The Knife's Edge",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Zoo Creeper",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Zarazurthu's chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Fortitude (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Fortitude (Heroic)": {
+   "page": "Item:Solar Gem of Fortitude (Heroic)",
+   "locations": [
+    {
+     "place": "Times Long Past",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "House Lyrandar uprising optional chest"
+    },
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "J'anara's chest"
+    }
+   ]
+  },
+  "Solar Gem of Fortitude (Legendary)": {
+   "page": "Item:Solar Gem of Fortitude (Legendary)",
+   "locations": [
+    {
+     "place": "Times Long Past",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "House Lyrandar uprising optional chest"
+    },
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "J'anara's chest"
+    }
+   ]
+  },
+  "Solar Gem of Haggle and Perform (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Haggle and Perform (Heroic)": {
+   "page": "Item:Solar Gem of Haggle and Perform (Heroic)",
+   "locations": [
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "Shadow Demon's chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "J'anara's chest"
+    }
+   ]
+  },
+  "Solar Gem of Haggle and Perform (Legendary)": {
+   "page": "Item:Solar Gem of Haggle and Perform (Legendary)",
+   "locations": [
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "Shadow Demon's chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "J'anara's chest"
+    }
+   ]
+  },
+  "Solar Gem of Heal and Listen (Heroic)": {
+   "page": "Item:Solar Gem of Heal and Listen (Heroic)",
+   "locations": [
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Experiment Y's chest"
+    }
+   ]
+  },
+  "Solar Gem of Heal and Listen (Legendary)": {
+   "page": "Item:Solar Gem of Heal and Listen (Legendary)",
+   "locations": [
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Experiment Y's chest"
+    }
+   ]
+  },
+  "Solar Gem of Healing Amplification (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Healing Amplification (Heroic)": {
+   "page": "Item:Solar Gem of Healing Amplification (Heroic)",
+   "locations": [
+    {
+     "place": "The Zulkir's Plan",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Cerulean Hills",
+     "how": "loot",
+     "detail": "Romira and Juvian's chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "Lamordian Hook Horror Matriarch's chest"
+    },
+    {
+     "place": "Going Rogue",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Healing Amplification (Legendary)": {
+   "page": "Item:Solar Gem of Healing Amplification (Legendary)",
+   "locations": [
+    {
+     "place": "The Zulkir's Plan",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "Lamordian Hook Horror Matriarch's chest"
+    },
+    {
+     "place": "Going Rogue",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Hide and Move Silently (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Hide and Move Silently (Heroic)": {
+   "page": "Item:Solar Gem of Hide and Move Silently (Heroic)",
+   "locations": [
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "Lamordian Hook Horror Matriarch's chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Zarazurthu's chest"
+    }
+   ]
+  },
+  "Solar Gem of Hide and Move Silently (Legendary)": {
+   "page": "Item:Solar Gem of Hide and Move Silently (Legendary)",
+   "locations": [
+    {
+     "place": "The Wish",
+     "how": "loot",
+     "detail": "Lamordian Hook Horror Matriarch's chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Zarazurthu's chest"
+    }
+   ]
+  },
+  "Solar Gem of Illusion (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Illusion (Heroic)": {
+   "page": "Item:Solar Gem of Illusion (Heroic)",
+   "locations": [
+    {
+     "place": "Locked Away (Part Two)",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Illusion (Legendary)": {
+   "page": "Item:Solar Gem of Illusion (Legendary)",
+   "locations": [
+    {
+     "place": "Locked Away (Part Two)",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Imbuement (Epic)": {
+   "page": "Item:Solar Gem of Imbuement (Epic)",
+   "locations": [
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    }
+   ]
+  },
+  "Solar Gem of Imbuement (Heroic)": {
+   "page": "Item:Solar Gem of Imbuement (Heroic)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Heroic)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Voices of the Dead",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Imbuement (Legendary)": {
+   "page": "Item:Solar Gem of Imbuement (Legendary)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Legendary)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Voices of the Dead",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Intelligence (Epic)": {
+   "page": "Item:Solar Gem of Intelligence (Epic)",
+   "locations": [
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Intelligence (Heroic)": {
+   "page": "Item:Solar Gem of Intelligence (Heroic)",
+   "locations": [
+    {
+     "place": "Oghma's Song",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Intelligence (Legendary)": {
+   "page": "Item:Solar Gem of Intelligence (Legendary)",
+   "locations": [
+    {
+     "place": "Oghma's Song",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Jump and Swim (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Jump and Swim (Heroic)": {
+   "page": "Item:Solar Gem of Jump and Swim (Heroic)",
+   "locations": [
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "If It Wasn't For Bad Luck",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "Yeenoghu's followers' chest"
+    }
+   ]
+  },
+  "Solar Gem of Jump and Swim (Legendary)": {
+   "page": "Item:Solar Gem of Jump and Swim (Legendary)",
+   "locations": [
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "If It Wasn't For Bad Luck",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "Yeenoghu's followers' chest"
+    }
+   ]
+  },
+  "Solar Gem of Linguistics (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Linguistics (Heroic)": {
+   "page": "Item:Solar Gem of Linguistics (Heroic)",
+   "locations": [
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "cookbook optional"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Linguistics (Legendary)": {
+   "page": "Item:Solar Gem of Linguistics (Legendary)",
+   "locations": [
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "cookbook optional"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of MRR Cap (Epic)": {
+   "page": null
+  },
+  "Solar Gem of MRR Cap (Heroic)": {
+   "page": "Item:Solar Gem of MRR Cap (Heroic)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Heroic)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "red-named rare encounter chests (rare)"
+    },
+    {
+     "place": "The Wizard's Labyrinth",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Locked Away (Part One)",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of MRR Cap (Legendary)": {
+   "page": "Item:Solar Gem of MRR Cap (Legendary)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Legendary)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "red-named rare encounter chests (rare)"
+    },
+    {
+     "place": "The Wizard's Labyrinth",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Locked Away (Part One)",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Flocked Together",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Magical Resistance Rating (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Magical Resistance Rating (Heroic)": {
+   "page": "Item:Solar Gem of Magical Resistance Rating (Heroic)",
+   "locations": [
+    {
+     "place": "The Darkness and the Light",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Safehold",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "Althea's chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "Drev'kalor's chest"
+    }
+   ]
+  },
+  "Solar Gem of Magical Resistance Rating (Legendary)": {
+   "page": "Item:Solar Gem of Magical Resistance Rating (Legendary)",
+   "locations": [
+    {
+     "place": "The Safehold",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darkness and the Light",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "Althea's chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "Drev'kalor's chest"
+    }
+   ]
+  },
+  "Solar Gem of Melee Power (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Melee Power (Heroic)": {
+   "page": "Item:Solar Gem of Melee Power (Heroic)",
+   "locations": [
+    {
+     "place": "The Key to the Mythal",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "\"find out what Y'lara knows\" optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Melee Power (Legendary)": {
+   "page": "Item:Solar Gem of Melee Power (Legendary)",
+   "locations": [
+    {
+     "place": "The Key to the Mythal",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "\"find out what Y'lara knows\" optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Missile Deflection (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Missile Deflection (Heroic)": {
+   "page": "Item:Solar Gem of Missile Deflection (Heroic)",
+   "locations": [
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Missile Deflection (Legendary)": {
+   "page": "Item:Solar Gem of Missile Deflection (Legendary)",
+   "locations": [
+    {
+     "place": "The Price of an Egg",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Necromancy (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Necromancy (Heroic)": {
+   "page": "Item:Solar Gem of Necromancy (Heroic)",
+   "locations": [
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Necromancy (Legendary)": {
+   "page": "Item:Solar Gem of Necromancy (Legendary)",
+   "locations": [
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Negative Amplification (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Negative Amplification (Heroic)": {
+   "page": "Item:Solar Gem of Negative Amplification (Heroic)",
+   "locations": [
+    {
+     "place": "Secrets of the Red Wizards",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "falling course chest"
+    }
+   ]
+  },
+  "Solar Gem of Negative Amplification (Legendary)": {
+   "page": "Item:Solar Gem of Negative Amplification (Legendary)",
+   "locations": [
+    {
+     "place": "Secrets of the Red Wizards",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "falling course chest"
+    }
+   ]
+  },
+  "Solar Gem of Pact Dice (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Pact Dice (Heroic)": {
+   "page": "Item:Solar Gem of Pact Dice (Heroic)",
+   "locations": [
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Pact Dice (Legendary)": {
+   "page": "Item:Solar Gem of Pact Dice (Legendary)",
+   "locations": [
+    {
+     "place": "A Light in the Attic",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Body and Mind",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Physical Resistance Rating (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Physical Resistance Rating (Heroic)": {
+   "page": "Item:Solar Gem of Physical Resistance Rating (Heroic)",
+   "locations": [
+    {
+     "place": "Secrets of the Red Wizards",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darkness and the Light",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Zoo Creeper",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Going Rogue",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "Shedrak of the Eyes's chest"
+    }
+   ]
+  },
+  "Solar Gem of Physical Resistance Rating (Legendary)": {
+   "page": "Item:Solar Gem of Physical Resistance Rating (Legendary)",
+   "locations": [
+    {
+     "place": "Secrets of the Red Wizards",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Darkness and the Light",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Zoo Creeper",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Going Rogue",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "Shedrak of the Eyes's chest"
+    }
+   ]
+  },
+  "Solar Gem of Ranged Power (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Ranged Power (Heroic)": {
+   "page": "Item:Solar Gem of Ranged Power (Heroic)",
+   "locations": [
+    {
+     "place": "Seeds of Decay",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Fangs of Winter's chest"
+    },
+    {
+     "place": "The Final Draw",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "Drev'kalor's chest"
+    }
+   ]
+  },
+  "Solar Gem of Ranged Power (Legendary)": {
+   "page": "Item:Solar Gem of Ranged Power (Legendary)",
+   "locations": [
+    {
+     "place": "Seeds of Decay",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Fangs of Winter's chest"
+    },
+    {
+     "place": "The Final Draw",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "Drev'kalor's chest"
+    }
+   ]
+  },
+  "Solar Gem of Reflex (Epic)": {
+   "page": "Item:Solar Gem of Reflex (Epic)",
+   "locations": [
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Reflex (Heroic)": {
+   "page": "Item:Solar Gem of Reflex (Heroic)",
+   "locations": [
+    {
+     "place": "Book Burning",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "The Cerulean Hills",
+     "how": "loot",
+     "detail": "Romira and Juvian's chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "locked chest"
+    },
+    {
+     "place": "Wish Upon a Card",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Reflex (Legendary)": {
+   "page": "Item:Solar Gem of Reflex (Legendary)",
+   "locations": [
+    {
+     "place": "Book Burning",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "locked chest"
+    },
+    {
+     "place": "Wish Upon a Card",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Repair Amplification (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Repair Amplification (Heroic)": {
+   "page": "Item:Solar Gem of Repair Amplification (Heroic)",
+   "locations": [
+    {
+     "place": "Voices of the Dead",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Thrall of Duty",
+     "how": "loot",
+     "detail": "K'rthol the Sentinel's chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "bonus chest for completing all optionals"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Back to the Abyss",
+     "how": "loot",
+     "detail": "Forgefeeder's chest"
+    }
+   ]
+  },
+  "Solar Gem of Repair Amplification (Legendary)": {
+   "page": "Item:Solar Gem of Repair Amplification (Legendary)",
+   "locations": [
+    {
+     "place": "Voices of the Dead",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Thrall of Duty",
+     "how": "loot",
+     "detail": "K'rthol the Sentinel's chest"
+    },
+    {
+     "place": "Burning Down the House",
+     "how": "loot",
+     "detail": "bonus chest for completing all optionals"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Back to the Abyss",
+     "how": "loot",
+     "detail": "Forgefeeder's chest"
+    }
+   ]
+  },
+  "Solar Gem of Repair and Use Magic Device (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Repair and Use Magic Device (Heroic)": {
+   "page": "Item:Solar Gem of Repair and Use Magic Device (Heroic)",
+   "locations": [
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Experiment Y's chest"
+    },
+    {
+     "place": "Back to the Abyss",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Repair and Use Magic Device (Legendary)": {
+   "page": "Item:Solar Gem of Repair and Use Magic Device (Legendary)",
+   "locations": [
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Experiment Y's chest"
+    },
+    {
+     "place": "Back to the Abyss",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Rune Arm DCs (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Rune Arm DCs (Heroic)": {
+   "page": "Item:Solar Gem of Rune Arm DCs (Heroic)",
+   "locations": [
+    {
+     "place": "Ends and Means",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Rune Arm DCs (Legendary)": {
+   "page": "Item:Solar Gem of Rune Arm DCs (Legendary)",
+   "locations": [
+    {
+     "place": "Ends and Means",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Search and Spot (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Search and Spot (Heroic)": {
+   "page": "Item:Solar Gem of Search and Spot (Heroic)",
+   "locations": [
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "Max Entsetzen's chest"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Search and Spot (Legendary)": {
+   "page": "Item:Solar Gem of Search and Spot (Legendary)",
+   "locations": [
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "Max Entsetzen's chest"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Sneak Attack Damage (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Sneak Attack Damage (Heroic)": {
+   "page": "Item:Solar Gem of Sneak Attack Damage (Heroic)",
+   "locations": [
+    {
+     "place": "Death Hosts This Banquet",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Knife's Edge",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Long Way to Mushrooms",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Sneak Attack Damage (Legendary)": {
+   "page": "Item:Solar Gem of Sneak Attack Damage (Legendary)",
+   "locations": [
+    {
+     "place": "Death Hosts This Banquet",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Knife's Edge",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Long Way to Mushrooms",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Sneak Attack Dice (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Sneak Attack Dice (Heroic)": {
+   "page": "Item:Solar Gem of Sneak Attack Dice (Heroic)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Heroic)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Goranathanil's chest and red-named rare encounter chests (rare)"
+    },
+    {
+     "place": "The Knife's Edge",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "optional chest (rare)"
+    },
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Zarazurthu's chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Sneak Attack Dice (Legendary)": {
+   "page": "Item:Solar Gem of Sneak Attack Dice (Legendary)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Legendary)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Goranathanil's chest and red-named rare encounter chests (rare)"
+    },
+    {
+     "place": "The Knife's Edge",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "optional chest (rare)"
+    },
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Zarazurthu's chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Spell Critical Chance (Epic)": {
+   "page": "Item:Solar Gem of Spell Critical Chance (Epic)",
+   "locations": [
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    }
+   ]
+  },
+  "Solar Gem of Spell Critical Chance (Heroic)": {
+   "page": "Item:Solar Gem of Spell Critical Chance (Heroic)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Heroic)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Yegora's chest (rare), and Romira and Juvian's right chest (rare, requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "The Wizard's Labyrinth",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Proper Authorities",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Back to the Abyss",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Spell Critical Chance (Legendary)": {
+   "page": "Item:Solar Gem of Spell Critical Chance (Legendary)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Legendary)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Yegora's chest (rare), and Romira and Juvian's right chest (rare, requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "The Wizard's Labyrinth",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Proper Authorities",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Back to the Abyss",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Spell Critical Damage (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Spell Critical Damage (Heroic)": {
+   "page": "Item:Solar Gem of Spell Critical Damage (Heroic)",
+   "locations": [
+    {
+     "place": "The Zulkir's Plan",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Cerulean Hills",
+     "how": "loot",
+     "detail": "Romira and Juvian's chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "Creepy Heart optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Spell Critical Damage (Legendary)": {
+   "page": "Item:Solar Gem of Spell Critical Damage (Legendary)",
+   "locations": [
+    {
+     "place": "The Zulkir's Plan",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "Creepy Heart optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Spell DCs (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Spell DCs (Heroic)": {
+   "page": "Item:Solar Gem of Spell DCs (Heroic)",
+   "locations": [
+    {
+     "place": "Portal to Below",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "Cormoran Stoneboots' chest"
+    }
+   ]
+  },
+  "Solar Gem of Spell DCs (Legendary)": {
+   "page": "Item:Solar Gem of Spell DCs (Legendary)",
+   "locations": [
+    {
+     "place": "Portal to Below",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "Cormoran Stoneboots' chest"
+    }
+   ]
+  },
+  "Solar Gem of Spell Penetration (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Spell Penetration (Heroic)": {
+   "page": "Item:Solar Gem of Spell Penetration (Heroic)",
+   "locations": [
+    {
+     "place": "Times Long Past",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "Toruk the Prophet's chest"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "falling course optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Spell Penetration (Legendary)": {
+   "page": "Item:Solar Gem of Spell Penetration (Legendary)",
+   "locations": [
+    {
+     "place": "Times Long Past",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "Toruk the Prophet's chest"
+    },
+    {
+     "place": "The Fetid Wedding",
+     "how": "loot",
+     "detail": "falling course optional chest and locked chest (on Heroic and Legendary in the latter due to a bug)"
+    }
+   ]
+  },
+  "Solar Gem of Spellpower (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Spellpower (Heroic)": {
+   "page": "Item:Solar Gem of Spellpower (Heroic)",
+   "locations": [
+    {
+     "place": "Oghma's Song",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Wizard's Labyrinth",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Wish Upon a Card",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "Shadow Demon's chest"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Spellpower (Legendary)": {
+   "page": "Item:Solar Gem of Spellpower (Legendary)",
+   "locations": [
+    {
+     "place": "Oghma's Song",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Wizard's Labyrinth",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Wish Upon a Card",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "Shadow Demon's chest"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Strength (Epic)": {
+   "page": "Item:Solar Gem of Strength (Epic)",
+   "locations": [
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Strength (Heroic)": {
+   "page": "Item:Solar Gem of Strength (Heroic)",
+   "locations": [
+    {
+     "place": "The House of Gems",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "Althea's chest"
+    },
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "Yeenoghu's followers' chest"
+    }
+   ]
+  },
+  "Solar Gem of Strength (Legendary)": {
+   "page": "Item:Solar Gem of Strength (Legendary)",
+   "locations": [
+    {
+     "place": "The House of Gems",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "Althea's chest"
+    },
+    {
+     "place": "Demon in the Rough",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Blood Pact",
+     "how": "loot",
+     "detail": "Yeenoghu's followers' chest"
+    }
+   ]
+  },
+  "Solar Gem of Strikethrough (Epic)": {
+   "page": "Item:Solar Gem of Strikethrough (Epic)",
+   "locations": [
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    }
+   ]
+  },
+  "Solar Gem of Strikethrough (Heroic)": {
+   "page": "Item:Solar Gem of Strikethrough (Heroic)",
+   "locations": [
+    {
+     "place": "Death Hosts This Banquet",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Magic of Myth Drannor (Heroic)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Rats in a Cage",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Strikethrough (Legendary)": {
+   "page": "Item:Solar Gem of Strikethrough (Legendary)",
+   "locations": [
+    {
+     "place": "Death Hosts This Banquet",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Magic of Myth Drannor (Legendary)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "Rats in a Cage",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Cold Snap",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Swift Charging (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Swift Charging (Heroic)": {
+   "page": "Item:Solar Gem of Swift Charging (Heroic)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Heroic)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "The Safehold",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Ends and Means",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Swift Charging (Legendary)": {
+   "page": "Item:Solar Gem of Swift Charging (Legendary)",
+   "locations": [
+    {
+     "place": "Magic of Myth Drannor (Legendary)",
+     "how": "rewards",
+     "detail": "Elite and True Elite"
+    },
+    {
+     "place": "The Safehold",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Covered Culvert",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Ends and Means",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Stealing from Sorcere",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Tactical DCs (Epic)": {
+   "page": "Item:Solar Gem of Tactical DCs (Epic)",
+   "locations": [
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Solar Gem of Tactical DCs (Heroic)": {
+   "page": "Item:Solar Gem of Tactical DCs (Heroic)",
+   "locations": [
+    {
+     "place": "The Key to the Mythal",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Dinosaur Crisis",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "Creepy Heart optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Tactical DCs (Legendary)": {
+   "page": "Item:Solar Gem of Tactical DCs (Legendary)",
+   "locations": [
+    {
+     "place": "The Key to the Mythal",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Body Snatchers",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "Creepy Heart optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Threat Decrease (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Threat Decrease (Heroic)": {
+   "page": "Item:Solar Gem of Threat Decrease (Heroic)",
+   "locations": [
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Yegora's chest, and Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "Potion Paw's chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "red-named rare encounter chests"
+    }
+   ]
+  },
+  "Solar Gem of Threat Decrease (Legendary)": {
+   "page": "Item:Solar Gem of Threat Decrease (Legendary)",
+   "locations": [
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Yegora's chest, and Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Snowfall and Sunlight",
+     "how": "loot",
+     "detail": "Potion Paw's chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "red-named rare encounter chests"
+    }
+   ]
+  },
+  "Solar Gem of Threat Increase (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Threat Increase (Heroic)": {
+   "page": "Item:Solar Gem of Threat Increase (Heroic)",
+   "locations": [
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Goranathanil's and Yegora's chests, and Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "House Lyrandar uprising optional chest"
+    },
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Fangs of Winter's chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Zarazurthu's chest"
+    }
+   ]
+  },
+  "Solar Gem of Threat Increase (Legendary)": {
+   "page": "Item:Solar Gem of Threat Increase (Legendary)",
+   "locations": [
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Goranathanil's and Yegora's chests, and Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Sleeping with the Fishes",
+     "how": "loot",
+     "detail": "House Lyrandar uprising optional chest"
+    },
+    {
+     "place": "Land of Lamordia",
+     "how": "loot",
+     "detail": "Fangs of Winter's chest"
+    },
+    {
+     "place": "The Darklake",
+     "how": "loot",
+     "detail": "Zarazurthu's chest"
+    }
+   ]
+  },
+  "Solar Gem of Transmutation (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Transmutation (Heroic)": {
+   "page": "Item:Solar Gem of Transmutation (Heroic)",
+   "locations": [
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Heroic)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Transmutation (Legendary)": {
+   "page": "Item:Solar Gem of Transmutation (Legendary)",
+   "locations": [
+    {
+     "place": "Special Delivery",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "The Chill of Ravenloft (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    },
+    {
+     "place": "Tower of Vengeance",
+     "how": "loot",
+     "detail": "end chest (rare)"
+    },
+    {
+     "place": "Terror of Demogorgon (Legendary)",
+     "how": "rewards",
+     "detail": "any difficulty"
+    }
+   ]
+  },
+  "Solar Gem of Will (Epic)": {
+   "page": null
+  },
+  "Solar Gem of Will (Heroic)": {
+   "page": "Item:Solar Gem of Will (Heroic)",
+   "locations": [
+    {
+     "place": "Death Hosts This Banquet",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "The Cerulean Hills",
+     "how": "loot",
+     "detail": "Romira and Juvian's chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "Drev'kalor's chest"
+    }
+   ]
+  },
+  "Solar Gem of Will (Legendary)": {
+   "page": "Item:Solar Gem of Will (Legendary)",
+   "locations": [
+    {
+     "place": "Death Hosts This Banquet",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Ruins of Myth Drannor",
+     "how": "loot",
+     "detail": "Romira and Juvian's right chest (requires completion of Sleeping with the Fishes)"
+    },
+    {
+     "place": "Beneath the City Streets",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Hideous to Behold",
+     "how": "loot",
+     "detail": "Drev'kalor's chest"
+    }
+   ]
+  },
+  "Solar Gem of Wisdom (Epic)": {
+   "page": "Item:Solar Gem of Wisdom (Epic)",
+   "locations": [
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Wisdom (Heroic)": {
+   "page": "Item:Solar Gem of Wisdom (Heroic)",
+   "locations": [
+    {
+     "place": "The Safehold",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "Toil and Trouble",
+     "how": "loot",
+     "detail": "optional chest"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "Creepy Heart optional chest"
+    }
+   ]
+  },
+  "Solar Gem of Wisdom (Legendary)": {
+   "page": "Item:Solar Gem of Wisdom (Legendary)",
+   "locations": [
+    {
+     "place": "The Safehold",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "A Miner Sacrifice",
+     "how": "loot",
+     "detail": "end chest"
+    },
+    {
+     "place": "For Want of a Heart",
+     "how": "loot",
+     "detail": "Creepy Heart optional chest"
+    }
+   ]
+  },
+  "Storm's Bulwark": {
+   "page": "Item:Storm's Bulwark",
+   "locations": [
+    {
+     "place": "The Knight Who Cried Windmill",
+     "how": "loot",
+     "detail": "End chest"
+    }
+   ]
+  },
+  "Swordcrossed Topaz": {
+   "page": "Item:Swordcrossed Topaz",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "The Art of Persuasion, Vol. 1": {
+   "page": "Item:The Art of Persuasion, Vol. 1",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "The Art of Persuasion, Vol. 3": {
+   "page": "Item:The Art of Persuasion, Vol. 3",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "The Art of Sabotage, Vol. 1": {
+   "page": "Item:The Art of Sabotage, Vol. 1",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "The Art of Sabotage, Vol. 3": {
+   "page": "Item:The Art of Sabotage, Vol. 3",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "The Blackstone Liturgy": {
+   "page": "Item:The Blackstone Liturgy",
+   "locations": [
+    {
+     "place": "Fire Over Morgrave",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "The Book of Defense: Fortitude": {
+   "page": "Item:The Book of Defense: Fortitude",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "The Book of Defense: Reflexes": {
+   "page": "Item:The Book of Defense: Reflexes",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "The Book of Defense: Willpower": {
+   "page": "Item:The Book of Defense: Willpower",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "The Eye of Daanvi": {
+   "page": "Item:The Eye of Daanvi",
+   "locations": [
+    {
+     "place": "Order in the Court!",
+     "how": "loot",
+     "detail": "End chest"
+    }
+   ]
+  },
+  "The Eye of Dolurrh": {
+   "page": "Item:The Eye of Dolurrh",
+   "locations": [
+    {
+     "place": "The Hand and the Eyes",
+     "how": "loot",
+     "detail": "End chest"
+    }
+   ]
+  },
+  "The Eye of Lamannia": {
+   "page": "Item:The Eye of Lamannia",
+   "locations": [
+    {
+     "place": "Growing Pains",
+     "how": "loot",
+     "detail": "End chest"
+    }
+   ]
+  },
+  "The Eye of Mabar": {
+   "page": "Item:The Eye of Mabar",
+   "locations": [
+    {
+     "place": "Army of Eternal Night",
+     "how": "loot",
+     "detail": "End chest"
+    }
+   ]
+  },
+  "The Eye of Shavarath": {
+   "page": "Item:The Eye of Shavarath",
+   "locations": [
+    {
+     "place": "Three Paths to Battle",
+     "how": "loot",
+     "detail": "End chest"
+    }
+   ]
+  },
+  "The Finite Limits of Construction": {
+   "page": "Item:The Finite Limits of Construction",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "The Infinite Limits of Construction": {
+   "page": "Item:The Infinite Limits of Construction",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "The Legendary Book of Defense: Fortitude": {
+   "page": "Item:The Legendary Book of Defense: Fortitude",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "The Legendary Book of Defense: Reflexes": {
+   "page": "Item:The Legendary Book of Defense: Reflexes",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "The Legendary Book of Defense: Willpower": {
+   "page": "Item:The Legendary Book of Defense: Willpower",
+   "locations": [
+    {
+     "place": "Vecna Unleashed",
+     "how": "loot",
+     "detail": "Any quest end chest"
+    }
+   ]
+  },
+  "The Master's Gift": {
+   "page": "Item:The Master's Gift",
+   "locations": [
+    {
+     "place": "Legacy Altar of Epic Rituals",
+     "how": "purchasable augments",
+     "detail": "The Twelve ; (5) Greater Token of the Twelve ; (1) Mantle of the Worldshaper ; (1) Voice of the Master"
+    }
+   ]
+  },
+  "Topaz of Abjuration Power": {
+   "page": "Item:Topaz of Abjuration Power",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Topaz of Anthem": {
+   "page": "Item:Topaz of Anthem",
+   "locations": [
+    {
+     "place": "Precious Cargo",
+     "how": "loot",
+     "detail": "End chest"
+    }
+   ]
+  },
+  "Topaz of Augmented Summoning": {
+   "page": "Item:Topaz of Augmented Summoning",
+   "locations": [
+    {
+     "place": "The Feywild",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Topaz of Conjured Power": {
+   "page": "Item:Topaz of Conjured Power",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Topaz of Enchanted Power": {
+   "page": "Item:Topaz of Enchanted Power",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Topaz of Evocation Power": {
+   "page": "Item:Topaz of Evocation Power",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Topaz of Illusory Power": {
+   "page": "Item:Topaz of Illusory Power",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Topaz of Lesser Dragonmarks": {
+   "page": "Item:Topaz of Lesser Dragonmarks",
+   "locations": [
+    {
+     "place": "The Final Enemy",
+     "how": "loot",
+     "detail": "End chest"
+    }
+   ]
+  },
+  "Topaz of Minor Rage": {
+   "page": "Item:Topaz of Minor Rage",
+   "locations": [
+    {
+     "place": "Swim at Your Own Risk",
+     "how": "loot",
+     "detail": "End chest"
+    }
+   ]
+  },
+  "Topaz of Minor Smiting": {
+   "page": "Item:Topaz of Minor Smiting",
+   "locations": [
+    {
+     "place": "Danger at Dunwater",
+     "how": "loot",
+     "detail": "End chest"
+    }
+   ]
+  },
+  "Topaz of Necromantic Power": {
+   "page": "Item:Topaz of Necromantic Power",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Topaz of Quick Movements": {
+   "page": "Item:Topaz of Quick Movements",
+   "locations": [
+    {
+     "place": "The Feywild",
+     "how": "loot",
+     "detail": "Any rare encounter chest"
+    }
+   ]
+  },
+  "Topaz of Transmuted Power": {
+   "page": "Item:Topaz of Transmuted Power",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Undying Sapphire": {
+   "page": "Item:Undying Sapphire",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  },
+  "Weaverwisp Melody": {
+   "page": "Item:Weaverwisp Melody",
+   "locations": [
+    {
+     "place": "Fire Over Morgrave",
+     "how": "loot",
+     "detail": "end chest"
+    }
+   ]
+  },
+  "Wraithborn Emerald": {
+   "page": "Item:Wraithborn Emerald",
+   "locations": [
+    {
+     "place": "The Isle of Dread",
+     "how": "loot",
+     "detail": "Any chest"
+    }
+   ]
+  }
+ }
+}

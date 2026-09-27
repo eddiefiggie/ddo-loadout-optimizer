@@ -3792,8 +3792,12 @@ test("#487: the row has TWO states — ON is filled and bold, OFF is hollow and 
   assert.ok(!/aug-filled\.is-(tracked|ranked) \.aug-name/.test(rules),
     "a gem's name is not styled by which of its stats got credited");
   const gem = _cssRule(css, ".pd-line.aug-filled .aug-name {");
-  assert.ok(/font-weight: 700/.test(gem) && /#fff/.test(gem),
-    "a slotted gem is ON — filled mark, bold name");
+  assert.ok(/font-weight: 700/.test(gem), "a slotted gem is ON — filled mark, bold name");
+  // …in its OWN colour, not the credited-stat white. A gem that rolls several
+  // stats up printed its name and every stat in the same bold white, and the
+  // player could not tell which line was the gem to slot.
+  assert.ok(/var\(--src-name\)/.test(gem) && !/#fff/.test(gem),
+    "the gem's name is set apart from the white stats it grants");
 
   // One filled colour, and nothing keyed to a stat's RANK.
   const filledColour = _cssRule(css, ".pd-line.is-tracked .pd-ln-mark,");
@@ -4904,3 +4908,80 @@ test("#240: a set with no recorded piece count falls back rather than printing j
     M.setTierRenameFamilies(STAMP);
   });
 }
+
+
+// ---- where the item comes from, and whose name is whose -----------------------
+
+test("source line: the quest and its pack link to the wiki under the item name", () => {
+  const v = { variant_id: "Tor Ring", affixes: [], location_quest: "Gianthold Tor",
+    location_pack: "Ruins of Gianthold", location_kind: "pack-quest",
+    location_url: "https://ddowiki.com/page/Gianthold_Tor",
+    location_pack_url: "https://ddowiki.com/page/Ruins_of_Gianthold" };
+  const html = R.equippedRow("Ring", { variant: v, idx: 0 }, {});
+  const head = html.slice(html.indexOf('<div class="pd-card-head">'), html.indexOf('<div class="pd-rbody'));
+  assert.ok(/class="pd-rsrc"/.test(head), "it sits in the card head, beside the name and ML");
+  assert.ok(head.includes('href="https://ddowiki.com/page/Gianthold_Tor"'), "the quest links to its page");
+  assert.ok(head.includes('href="https://ddowiki.com/page/Ruins_of_Gianthold"'), "and so does the pack");
+  assert.ok(/title="From: Gianthold Tor · Ruins of Gianthold"/.test(head), "the full text rides the title");
+});
+
+test("source line: each gap is stated as its own fact, never as a guessed link", () => {
+  const line = (v) => R.sourceLine(Object.assign({ variant_id: "X" }, v));
+  assert.ok(/Morten Edgewright/.test(line({ location_quest: "Morten Edgewright", location_kind: "vendor" }))
+    && /\(vendor\)/.test(line({ location_quest: "Morten Edgewright", location_kind: "vendor" })),
+    "a vendor is named as one, not given a pack it cannot have");
+  assert.ok(!/<a /.test(line({ location_quest: "Somewhere", location_kind: "unknown" })),
+    "no confirmed page, no link");
+  assert.ok(/Epic-crafted from Adherent&#39;s Pendant/.test(
+    line({ location_lineage: { kind: "epic-crafted", from: "Adherent's Pendant" } })));
+  assert.ok(/Source not recorded/.test(line({})));
+  assert.ok(/Your described item/.test(line({ player_authored: true, location_quest: "Nowhere" })),
+    "an item the player typed in is theirs, not something to go and find");
+});
+
+test("source line: renders on every card, so an empty slot keeps the head the same height", () => {
+  const html = R.equippedRow("Ring", null, {});
+  assert.ok(/class="pd-rsrc"/.test(html), "an empty slot still reserves the line");
+  const css = _reachCss();
+  assert.ok(/min-height: 1\.4em/.test(_cssRule(css, ".pd-rsrc {")), "…at the same height as a filled one");
+  assert.ok(/text-overflow: ellipsis/.test(_cssRule(css, ".pd-rsrc {")), "one line, never a wrap");
+});
+
+test("craft name: a named roll-up craft is a header with its stats nested beneath", () => {
+  const v = { variant_id: "Eyes", affixes: [] };
+  const opt = { slot_type: "Dolorous", name: "Combat Mastery", category: "Accessory",
+    affixes: [{ stat: "Stunning", bonus_type: "Quality", value: 3 },
+              { stat: "Vertigo", bonus_type: "Quality", value: 3 }] };
+  const maps = blockMaps({ vikByItem: new Map([["Eyes", [opt]]]) });
+  const html = R.craftSection(v, 0, maps, { keys: new Set(), byStat: new Map(), list: [] }, null, new Set());
+  assert.ok(/<span class="craft-name">Combat Mastery<\/span>/.test(html), "the craft's name, in the name colour");
+  assert.ok(/<ul class="pd-sub">[\s\S]*Stunning[\s\S]*Vertigo[\s\S]*<\/ul>/.test(html), "its stats nested under it");
+  const css = _reachCss();
+  assert.ok(/var\(--src-name\)/.test(_cssRule(css, ".craft-name {")));
+});
+
+// Deliberately NOT proven red: a "nothing changed" guard. It passes on the
+// pre-change tree by design — it pins that the roll-up treatment above does not
+// leak onto a craft with only one stat to show.
+test("craft name: a single-affix craft keeps its one line", () => {
+  const v = { variant_id: "Eyes", affixes: [] };
+  const maps = blockMaps({ vikByItem: new Map([["Eyes",
+    [{ slot_type: "Dolorous", name: "Seeker", stat: "Seeker", bonus_type: "Enhancement", value: 15, unit: "flat" }]]]) });
+  const html = R.craftSection(v, 0, maps, { keys: new Set(), byStat: new Map(), list: [] }, null, new Set());
+  assert.ok(!/craft-name/.test(html) && !/pd-sub/.test(html), "nothing to roll up, nothing to nest");
+});
+
+test("craft name: a Dinosaur Bone insert's name is split from its stat", () => {
+  const v = { variant_id: "Bow", affixes: [] };
+  const maps = blockMaps({ dinoByIndex: new Map([[0,
+    [{ dino_type: "Fang", name: "Razorfang",
+       affixes: [{ stat: "Deadly", bonus_type: "Insight", value: 4, unit: "flat" }] }]]]) });
+  const html = R.craftSection(v, 0, maps, { keys: new Set(), byStat: new Map(), list: [] }, null, new Set());
+  assert.ok(/<span class="craft-name">Razorfang<\/span>, Deadly/.test(html), html);
+});
+
+test("wikiLink: only an http(s) URL becomes a link, and the text is always escaped", () => {
+  assert.strictEqual(R.wikiLink("A <b>", null), "A &lt;b&gt;");
+  assert.ok(/href="#"/.test(R.wikiLink("x", "javascript:alert(1)")), "a hostile scheme is inert");
+  assert.ok(/rel="noopener"/.test(R.wikiLink("x", "https://ddowiki.com/page/X")));
+});

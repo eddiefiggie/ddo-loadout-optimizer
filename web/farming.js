@@ -23,9 +23,14 @@
   //     ("Advance to level 15"). 7,836 of 8,047 gear variants have one; 211 do
   //     not. Those 211 are a visible group here, never a silent omission.
   //
-  //   * AUGMENTS carry NOTHING. Not a sparse field — zero of 1,063 augment
-  //     records have any acquisition data at all. So this list can tell a player
-  //     which augment to slot and must not pretend to tell them where to find it.
+  //   * AUGMENTS carry no `location_quest` — gear-planner records no acquisition
+  //     data for any of them. The DDO wiki does, in the `locations` field of each
+  //     augment's own page, and the build stamps that harvest as
+  //     `augment_locations` on the 390 named augments that have a page. The 675
+  //     acquirable ones are vendor / Mysterious Remnant / random-chest stock by
+  //     the wiki's own rarity ruling (#359), and 82 named Epic Solar/Lunar gems
+  //     have no wiki page at all. Those three cases are stated as three different
+  //     facts in the hunting list below, never collapsed into one.
   //
   //   * ADVENTURE PACK is still not upstream in gear-planner, and #495 supplies it
   //     from a curated, wiki-sourced mapping the build stamps onto each variant as
@@ -75,6 +80,11 @@
         // own entry. The chain is followed by reading each item, never collapsed here.
         lineage: v.location_lineage || NO_SOURCE,
         wikiUrl: v.wiki_url || null,
+        // The wiki pages for the source and its adventure pack, stamped by the build
+        // (src/wiki_links.py) only for titles confirmed to exist. Absent means "no
+        // page to link", and the name renders as plain text.
+        sourceUrl: v.location_url || null,
+        packUrl: v.location_pack_url || null,
         // #262 — an item the wiki records no live source for. It is still a
         // solver candidate, and a farming list that silently lists it as
         // something to go and get would be the worst possible place to omit that.
@@ -102,13 +112,81 @@
     return { augments, crafts };
   }
 
+  /** How the wiki says an augment is obtained, as one of three distinct facts.
+   *
+   *    named     — the wiki's own `locations` lines, each place linked;
+   *    common    — acquirable (#359): vendor, Mysterious Remnant or random chest
+   *                loot, per the wiki's rarity ruling, with nothing to farm;
+   *    no-page   — a named augment the wiki has no page for (82 Epic Solar/Lunar
+   *                gems). Saying "common" or "unknown source" for these would each
+   *                be a different wrong claim.
+   *    unknown   — no record reached this list at all (a saved build from before
+   *                the build stamped the fields, or a lookup the caller omitted).
+   */
+  function huntStatus(rec) {
+    if (!rec) return "unknown";
+    if (rec.acquirable) return "common";
+    if (rec.augment_locations && rec.augment_locations.length) return "named";
+    return "no-page";
+  }
+
+  /** The augment hunting list: every distinct augment the build slots, with where
+   *  the wiki says to get it, plus the places that yield more than one of them.
+   *
+   *  `augmentsById` maps a variant_id to its dataset record; the snapshot does not
+   *  carry the location fields, so the caller supplies the lookup. Without it every
+   *  augment is `unknown`, which the panel says rather than implying no source. */
+  function huntingList(augments, augmentsById) {
+    const lookup = (id) => {
+      if (!augmentsById) return null;
+      if (typeof augmentsById.get === "function") return augmentsById.get(id) || null;
+      return augmentsById[id] || null;
+    };
+    const byName = new Map();
+    for (const a of augments || []) {
+      const prev = byName.get(a.name);
+      if (prev) { prev.copies += 1; if (!prev.hosts.includes(a.host)) prev.hosts.push(a.host); continue; }
+      const rec = lookup(a.name);
+      byName.set(a.name, {
+        name: a.name,
+        color: a.color || null,
+        hosts: [a.host],
+        copies: 1,
+        status: huntStatus(rec),
+        url: (rec && rec.augment_page_url) || null,
+        locations: ((rec && rec.augment_locations) || []).map((l) => ({
+          place: l.place, url: l.place_url || null, how: l.how || "", detail: l.detail || "",
+        })),
+      });
+    }
+    const ORDER = { named: 0, "no-page": 1, unknown: 2, common: 3 };
+    const items = [...byName.values()].sort((x, y) =>
+      ORDER[x.status] - ORDER[y.status] || x.name.localeCompare(y.name));
+    // A place that drops several of YOUR augments is one run instead of several —
+    // the same ordering promise the gear sources make. Only named augments have
+    // places; a place counts each augment once however many lines name it.
+    const places = new Map();
+    for (const it of items) {
+      for (const l of it.locations) {
+        if (!places.has(l.place)) places.set(l.place, { place: l.place, url: l.url, augments: [] });
+        const p = places.get(l.place);
+        if (!p.augments.includes(it.name)) p.augments.push(it.name);
+      }
+    }
+    const runs = [...places.values()]
+      .filter((p) => p.augments.length > 1)
+      .sort((x, y) => y.augments.length - x.augments.length || x.place.localeCompare(y.place));
+    return { items, runs };
+  }
+
   /** The plan.
    *
    *  `sources` are ordered by how many of YOUR items each one yields, biggest
    *  first — that ordering is the whole point of grouping. "These three items
    *  all drop in Gianthold Tor" turns thirteen lookups into one run, and it is
    *  the only thing this list can tell a player that the Loadout tab cannot. */
-  function farmingPlan(rec) {
+  function farmingPlan(rec, opts) {
+    const o = opts || {};
     const snapshot = (rec && rec.snapshot) || {};
     const entries = equippedEntries(snapshot);
     const bySource = new Map();
@@ -139,6 +217,10 @@
         // `kind` distinguishes "we could not source a pack" from "this is not the
         // sort of thing that has one" (a vendor, a crafting station, an event).
         adventurePack: (items[0] && items[0].pack) || NO_SOURCE,
+        // Every item in a source group shares its `location_quest`, so the first
+        // item's links are the group's. Null when the wiki page was not confirmed.
+        url: (items[0] && items[0].sourceUrl) || null,
+        packUrl: (items[0] && items[0].packUrl) || null,
         kind: (items[0] && items[0].kind) || "unknown",
         items: items.slice().sort((a, b) => a.item.localeCompare(b.item)),
         itemCount: items.reduce((n, i) => n + i.copies, 0),
@@ -181,13 +263,19 @@
       || b.itemCount - a.itemCount
       || a.name.localeCompare(b.name));
 
-    const { augments, crafts } = prescriptions(rec || {});
+    const { augments, crafts: rawCrafts } = prescriptions(rec || {});
+    // Each crafting step links to its system's wiki page where one was confirmed
+    // (metadata.wiki_crafting_urls); a family with no page stays plain text.
+    const craftUrls = o.craftUrls || {};
+    const crafts = rawCrafts.map((c) => Object.assign({}, c, { url: craftUrls[c.family] || null }));
+    const hunt = huntingList(augments, o.augmentsById);
     return {
       sources,
       groups,
       unsourced,
       augments,
       crafts,
+      hunt,
       counts: {
         items: entries.reduce((n, e) => n + e.copies, 0),
         distinctItems: entries.length,
@@ -195,6 +283,7 @@
         groups: groups.length,
         unsourced: unsourced.length,
         augments: augments.length,
+        distinctAugments: hunt.items.length,
         crafts: crafts.length,
       },
     };
@@ -364,6 +453,15 @@
 
   // ---- text export ---------------------------------------------------------
 
+  /** What to say for an augment with no `locations` lines, per status. ONE wording
+   *  shared by the panel and the Markdown, so the two cannot drift apart. `named`
+   *  has nothing to add: its locations are the statement. */
+  const HUNT_STATUS_WORDING = {
+    common: "Common augment — bought from augment vendors or for Mysterious Remnants, and found in random chests; no specific place to farm.",
+    "no-page": "The DDO wiki has no page for this augment, so no source is recorded.",
+    unknown: "This augment is not in the loaded dataset, so no source can be shown for it.",
+  };
+
   /** The list as plain Markdown, for a forum post or a second monitor. Carries
    *  the same disclosures the on-screen list does: a farming list that drops the
    *  "no known source" flag or the unknown-pack caveat on its way out would let
@@ -371,6 +469,11 @@
   function farmingMarkdown(plan, opts) {
     const o = opts || {};
     const lines = [];
+    // A name with a confirmed wiki page becomes a Markdown link; one without stays
+    // plain text. `]` and `)` are escaped so a name containing them cannot break
+    // the link it sits in.
+    const mdEsc = (t) => String(t).replace(/([\[\]])/g, "\\$1");
+    const link = (text, url) => (url ? `[${mdEsc(text)}](${String(url).replace(/\)/g, "%29")})` : String(text));
     lines.push(`# Farming list${o.character ? ` — ${o.character}` : ""}`);
     lines.push("");
     lines.push(`${plan.counts.items} items across ${plan.counts.sources} source${plan.counts.sources === 1 ? "" : "s"}.`);
@@ -381,7 +484,8 @@
     lines.push("> Sources are grouped by adventure pack where the DDO wiki states one. Anything it does not is listed under Source unknown rather than guessed at.");
     lines.push("");
     for (const s of plan.sources) {
-      lines.push(`## ${s.name}`);
+      lines.push(`## ${link(s.name, s.url)}`);
+      if (s.adventurePack) lines.push(`Adventure pack: ${link(s.adventurePack, s.packUrl)}`);
       for (const i of s.items) {
         lines.push(`- ${i.item}${i.copies > 1 ? ` ×${i.copies}` : ""} — ${i.slots.join(", ")}${i.ml != null ? ` (ML ${i.ml})` : ""}`
           // The ONE shared wording (projection.js), never a per-surface respelling.
@@ -400,24 +504,39 @@
       }
       lines.push("");
     }
-    if (plan.augments.length) {
-      lines.push("## Augments to slot");
+    const hunt = plan.hunt || { items: [], runs: [] };
+    if (hunt.items.length) {
+      lines.push("## Augment hunting list");
       lines.push("");
-      lines.push("No augment in the dataset carries acquisition data, so this says which to slot and where it goes — not where to get it.");
-      for (const a of plan.augments) lines.push(`- ${a.name} → ${a.host}`);
+      lines.push("Where the DDO wiki says each augment comes from.");
+      if (hunt.runs.length) {
+        lines.push("");
+        lines.push("Places that drop more than one of your augments:");
+        for (const r of hunt.runs) lines.push(`- ${link(r.place, r.url)} — ${r.augments.length}: ${r.augments.join(", ")}`);
+      }
+      lines.push("");
+      for (const a of hunt.items) {
+        lines.push(`- ${link(a.name, a.url)}${a.copies > 1 ? ` ×${a.copies}` : ""} → ${a.hosts.join(", ")}`);
+        for (const l of a.locations) {
+          lines.push(`  - ${link(l.place, l.url)} (${l.how})${l.detail ? ` — ${l.detail}` : ""}`);
+        }
+        const said = HUNT_STATUS_WORDING[a.status];
+        if (said) lines.push(`  - ${said}`);
+      }
       lines.push("");
     }
     if (plan.crafts.length) {
       lines.push("## Crafting steps");
       lines.push("");
-      for (const c of plan.crafts) lines.push(`- ${c.host}: ${c.label}`);
+      for (const c of plan.crafts) lines.push(`- ${c.host}: ${link(c.label, c.url)}`);
       lines.push("");
     }
     return lines.join("\n");
   }
 
   const api = {
-    PROGRESS_KEY, farmingPlan, equippedEntries, prescriptions, clearProgress, renameProgress,
+    PROGRESS_KEY, farmingPlan, equippedEntries, prescriptions, huntingList, HUNT_STATUS_WORDING,
+    clearProgress, renameProgress,
     writeProgress, mergeProgress,
     loadProgress, toggleAcquired, readProgress, farmingMarkdown,
   };

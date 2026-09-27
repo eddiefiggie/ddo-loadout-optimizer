@@ -177,14 +177,134 @@ test("#495: sources group by pack first, with siblings for what is not pack cont
   assert.ok(plan.groups.slice(1).every((g) => !g.isPack));
 });
 
-test("#501: augments are listed to slot, not to find", () => {
-  // Zero of 1,063 augment records carry acquisition data. Listing them beside
-  // the quests would imply a source this list does not have.
+// The augment hunting list. Augments carry no `location_quest`; the build stamps
+// the wiki's own `locations` field onto the named ones (src/wiki_links.py), and
+// the list states which of four facts applies to each gem rather than one vague
+// "no data".
+const AUGS = new Map([
+  ["Legendary Sapphire of Riposte", { variant_id: "Legendary Sapphire of Riposte", category: "augment",
+    augment_page_url: "https://ddowiki.com/page/Item:Legendary_Sapphire_of_Riposte",
+    augment_locations: [
+      { place: "ToEE: Depths of the Temple", place_url: "https://ddowiki.com/page/ToEE:_Depths_of_the_Temple", how: "loot", detail: "Any rare encounter chest" },
+      { place: "Zoo Creeper", place_url: "https://ddowiki.com/page/Zoo_Creeper", how: "loot", detail: "end chest" }] }],
+  ["Solar Gem of Attack (Legendary)", { variant_id: "Solar Gem of Attack (Legendary)", category: "augment",
+    augment_page_url: "https://ddowiki.com/page/Item:Solar_Gem_of_Attack_(Legendary)",
+    augment_locations: [
+      { place: "Zoo Creeper", place_url: "https://ddowiki.com/page/Zoo_Creeper", how: "loot", detail: "end chest (rare)" },
+      { place: "Zoo Creeper", place_url: "https://ddowiki.com/page/Zoo_Creeper", how: "loot", detail: "optional chest" }] }],
+  ["Diamond of Constitution +12", { variant_id: "Diamond of Constitution +12", category: "augment", acquirable: true,
+    augment_page_url: "https://ddowiki.com/page/Item:Diamond_of_Constitution_%2B12" }],
+  ["Solar Gem of Attack (Epic)", { variant_id: "Solar Gem of Attack (Epic)", category: "augment" }],
+]);
+const HUNT_IN = [
+  { host: "Ring A", name: "Legendary Sapphire of Riposte" },
+  { host: "Ring B", name: "Legendary Sapphire of Riposte" },
+  { host: "Helm", name: "Solar Gem of Attack (Legendary)" },
+  { host: "Belt", name: "Diamond of Constitution +12" },
+  { host: "Belt", name: "Solar Gem of Attack (Epic)" },
+  { host: "Belt", name: "Renamed Upstream" },
+];
+
+test("hunt: each augment states which of the four facts applies", () => {
+  const h = F.huntingList(HUNT_IN, AUGS);
+  const by = Object.fromEntries(h.items.map((a) => [a.name, a]));
+  assert.strictEqual(by["Legendary Sapphire of Riposte"].status, "named");
+  assert.strictEqual(by["Diamond of Constitution +12"].status, "common",
+    "an acquirable augment is bought or found anywhere, not farmed");
+  assert.strictEqual(by["Solar Gem of Attack (Epic)"].status, "no-page",
+    "a named augment the wiki has no page for is NOT 'common' and NOT 'unknown'");
+  assert.strictEqual(by["Renamed Upstream"].status, "unknown", "no record reached the list");
+  assert.strictEqual(new Set(Object.values(F.HUNT_STATUS_WORDING)).size, 3,
+    "three distinct sentences for the three statuses with no locations");
+});
+
+test("hunt: one row per augment, with every host and copy counted", () => {
+  const h = F.huntingList(HUNT_IN, AUGS);
+  const rip = h.items.find((a) => a.name === "Legendary Sapphire of Riposte");
+  assert.strictEqual(rip.copies, 2, "two slotted copies means farm two");
+  assert.deepStrictEqual(rip.hosts, ["Ring A", "Ring B"]);
+  assert.strictEqual(h.items.filter((a) => a.name === rip.name).length, 1, "deduplicated");
+  assert.strictEqual(h.items[0].status, "named", "the ones with places to go lead the list");
+});
+
+test("hunt: a place yielding several of your augments is a run, counted once per augment", () => {
+  const h = F.huntingList(HUNT_IN, AUGS);
+  assert.strictEqual(h.runs.length, 1, "only Zoo Creeper drops more than one of them");
+  assert.strictEqual(h.runs[0].place, "Zoo Creeper");
+  assert.deepStrictEqual(h.runs[0].augments.sort(),
+    ["Legendary Sapphire of Riposte", "Solar Gem of Attack (Legendary)"],
+    "two lines naming Zoo Creeper for one gem still count that gem once");
+});
+
+test("hunt: without a lookup every augment is 'unknown', never silently sourceless", () => {
+  const h = F.huntingList(HUNT_IN, null);
+  assert.ok(h.items.every((a) => a.status === "unknown"));
+});
+
+test("hunt: the panel links each augment and each place to the wiki", () => {
   const plan = F.farmingPlan(rec([it("Host Ring", "Ring", "Gianthold Tor", 30)]));
-  plan.augments = [{ host: "Host Ring", name: "Topaz of Doublestrike", color: "Yellow" }];
+  plan.hunt = F.huntingList(HUNT_IN, AUGS);
   const html = R.farmingPanel(plan, {}, {});
-  assert.ok(/Augments to slot/.test(html), "their own section, named for what it can tell you");
-  assert.ok(/not where to find it/.test(html), "with the limit said out loud");
+  assert.ok(/Augment hunting list/.test(html));
+  assert.ok(html.includes('href="https://ddowiki.com/page/Item:Legendary_Sapphire_of_Riposte"'), "the augment's own page");
+  assert.ok(html.includes('href="https://ddowiki.com/page/Zoo_Creeper"'), "the place it drops in");
+  assert.ok(/Places that drop more than one of your augments/.test(html), "the runs lead");
+  assert.ok(html.includes(F.HUNT_STATUS_WORDING["no-page"]), "the no-page gem says so");
+  assert.ok(html.includes(F.HUNT_STATUS_WORDING.common), "the common gem says so");
+  assert.ok(!/href="[^"]*Solar_Gem_of_Attack_\(Epic\)/.test(html), "no link is built for a page that does not exist");
+  assert.ok(/rel="noopener"/.test(html) && /target="_blank"/.test(html), "opens in a new tab, without an opener");
+});
+
+test("links: a source and its pack link to the wiki only when the build confirmed the page", () => {
+  const plan = F.farmingPlan(rec([
+    it("Tor Ring", "Ring", "Gianthold Tor", 30, { location_pack: "Ruins of Gianthold", location_kind: "pack-quest",
+      location_url: "https://ddowiki.com/page/Gianthold_Tor", location_pack_url: "https://ddowiki.com/page/Ruins_of_Gianthold" }),
+    it("Odd Boots", "Feet", "Some Unpaged Place", 30),
+  ]));
+  const tor = plan.sources.find((s) => s.name === "Gianthold Tor");
+  assert.strictEqual(tor.url, "https://ddowiki.com/page/Gianthold_Tor");
+  assert.strictEqual(tor.packUrl, "https://ddowiki.com/page/Ruins_of_Gianthold");
+  assert.strictEqual(plan.sources.find((s) => s.name === "Some Unpaged Place").url, null);
+  const html = R.farmingPanel(plan, {}, {});
+  assert.ok(html.includes('href="https://ddowiki.com/page/Gianthold_Tor"'));
+  assert.ok(html.includes('href="https://ddowiki.com/page/Ruins_of_Gianthold"'));
+  assert.ok(!/<a[^>]*>Some Unpaged Place<\/a>/.test(html), "an unconfirmed title stays plain text");
+  const md = F.farmingMarkdown(plan, {});
+  assert.ok(md.includes("## [Gianthold Tor](https://ddowiki.com/page/Gianthold_Tor)"));
+  assert.ok(md.includes("Adventure pack: [Ruins of Gianthold](https://ddowiki.com/page/Ruins_of_Gianthold)"));
+  assert.ok(md.includes("## Some Unpaged Place"), "…and plain in the Markdown too");
+});
+
+test("links: a crafting step links to its system's page from the build's confirmed map", () => {
+  const plan = F.farmingPlan(rec([it("Host", "Ring", "Gianthold Tor", 30)]),
+    { craftUrls: { vik: "https://ddowiki.com/page/Viktranium_Experiment_crafting" } });
+  assert.deepStrictEqual(plan.crafts, [], "this fixture prescribes no craft");
+  plan.crafts = [{ host: "Host", label: "Slot Dolorous Viktranium augment", family: "vik",
+    url: "https://ddowiki.com/page/Viktranium_Experiment_crafting" },
+    { host: "Host", label: "Unseal one effect", family: "seal", url: null }];
+  const html = R.farmingPanel(plan, {}, {});
+  assert.ok(html.includes('href="https://ddowiki.com/page/Viktranium_Experiment_crafting"'));
+  assert.ok(/Unseal one effect/.test(html) && !/<a[^>]*>Unseal one effect/.test(html));
+});
+
+test("hunt: the render path's augment lookup is hoisted, not in a let's dead zone", () => {
+  // The first solve with the hunting list failed outright — "Cannot access
+  // 'farmAugById' before initialization" — because renderResults calls
+  // currentPlan() from a function declared above the cache's `let`. Nothing in
+  // the DOM-free suites drives renderResults end to end, so the source is the
+  // only place this is checkable.
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "web", "results.js"), "utf8");
+  assert.ok(/\bvar farmAugById\b/.test(src), "declared with var");
+  assert.ok(!/\b(let|const) farmAugById\b/.test(src), "never with let/const");
+  assert.ok(/FarmingList\.farmingPlan\(liveRecord\(\), farmOpts\(\)\)/.test(src),
+    "and the live plan is built WITH the lookup, or every augment reads 'unknown'");
+});
+
+test("links: a Markdown link cannot be broken by the name it carries", () => {
+  const plan = F.farmingPlan(rec([it("R", "Ring", "Odd [Name]", 30,
+    { location_url: "https://ddowiki.com/page/Odd_(x)" })]));
+  const md = F.farmingMarkdown(plan, {});
+  assert.ok(md.includes("## [Odd \\[Name\\]](https://ddowiki.com/page/Odd_(x%29)"), md);
 });
 
 test("#501: progress is per character, and a failed write does not look saved", () => {
