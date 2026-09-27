@@ -27,6 +27,7 @@ from src import colors as colors_mod
 from src import set_parser as set_mod
 from src import dino as dino_mod
 from src import adventure_packs as packs_mod
+from src import wiki_links as wiki_links_mod
 from src import crafting_lineage as lineage_mod
 from src import dino_parser as dino_parser_mod
 from src import nearly_complete as nc_mod
@@ -1374,6 +1375,14 @@ def build() -> dict:
     # reads, and a pool-record field does not survive expansion.
     _acq_coverage = acquirability_mod.apply(variants, _acquirable)
     acquirability_mod.assert_join(_acq_coverage, ACQUIRABILITY_PATH)
+    # Wiki links for where things come from: the quest and adventure-pack pages on gear,
+    # and each augment's own page plus the drop places its `locations` field names.
+    # AFTER acquirability, because an acquirable augment is linked by that ruling rather
+    # than by the named-augment harvest; the guard fails the build when the harvest no
+    # longer matches the catalog's named augments in either direction.
+    _wiki_links = wiki_links_mod.load()
+    wiki_links_mod.apply(variants, _wiki_links, _pack_mapping)
+    _wiki_link_coverage = wiki_links_mod.check(variants, _wiki_links, _pack_mapping)
     # #205 — the same treatment for universal spell-DC affixes. `Spell Focus
     # Mastery` raises the DC of every school, but a school-ranked target credited
     # only exact name matches, so no sacred/quality/insightful focus could ever be
@@ -2305,6 +2314,10 @@ def build() -> dict:
             # #495 — what the curated location_quest -> pack mapping actually covers,
             # measured against the live population rather than claimed by a date.
             "adventure_pack_coverage": _pack_coverage,
+            # What the wiki-link stage reached, and the crafting-system pages the
+            # Farming List's crafting steps link to (only titles confirmed to exist).
+            "wiki_link_coverage": _wiki_link_coverage,
+            "wiki_crafting_urls": wiki_links_mod.crafting_urls(_wiki_links),
             # #285 — what the crafted-predecessor backfill reached.
             "crafting_lineage_coverage": _lineage_coverage,
             "value_corrections_coverage": _value_coverage,

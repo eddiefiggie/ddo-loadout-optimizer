@@ -220,6 +220,15 @@ function safeUrl(u) {
   return /^https?:\/\//i.test(String(u || "")) ? esc(u) : "#";
 }
 
+/** A name linked to its DDO wiki page, or the plain escaped name when there is no
+ *  confirmed page. The build stamps a URL only for a title it checked exists
+ *  (src/wiki_links.py), so an absent URL is a stated gap, not a link to guess. */
+function wikiLink(text, url, cls) {
+  if (!url) return esc(text);
+  return `<a class="wiki-link${cls ? " " + cls : ""}" href="${safeUrl(url)}" target="_blank" rel="noopener"`
+    + ` title="Open ${esc(text)} on the DDO wiki">${esc(text)}</a>`;
+}
+
 // Craft/augment prescriptions applied to an equipped item (augments, Dino inserts,
 // Nearly Completed, choice slots, Viktranium, seals, wildcard), as labeled chips.
 // Used by the Loadout card so every applied bonus is visible. Returns an array.
@@ -439,11 +448,48 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
       <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
       <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
       ${meta}
+      ${sourceLine(v && !locked ? v : null)}
     </div>
     ${body || `<div class="pd-rbody"></div>`}
     <div class="pd-card-foot">${notes}</div>
     ${menu}
   </div>`;
+}
+
+/** Where the item on a Loadout card comes from, as one line under its name: the
+ *  quest or raid, then the adventure pack, each linked to its DDO wiki page when
+ *  the build confirmed one exists.
+ *
+ *  Rendered on EVERY card, occupied or not, because the head is a fixed band
+ *  (#469): a line present on some cards and absent on others would put the ML of
+ *  neighbouring cards on different baselines. One line, ellipsised; the full text
+ *  rides the `title`.
+ *
+ *  The wordings follow the Farming List's, for the same reason it gives: a
+ *  vendor has no pack because a vendor is not pack content, which is a different
+ *  fact from "the wiki records no pack". */
+const SOURCE_KIND_NOTE = { vendor: "vendor", crafting: "crafting", event: "event" };
+function sourceLine(v) {
+  if (!v) return `<div class="pd-rsrc" aria-hidden="true"></div>`;
+  let html = "", text = "";
+  const src = v.location_quest;
+  const lin = v.location_lineage;
+  if (v.player_authored === true) {
+    html = `<span class="muted">Your described item</span>`; text = "Your described item";
+  } else if (src) {
+    const pack = v.location_pack;
+    const note = !pack && SOURCE_KIND_NOTE[v.location_kind];
+    html = wikiLink(src, v.location_url, "pd-rsrc-quest")
+      + (pack && pack !== src ? ` <span class="pd-rsrc-sep" aria-hidden="true">·</span> ${wikiLink(pack, v.location_pack_url, "pd-rsrc-pack")}` : "")
+      + (note ? ` <span class="muted">(${esc(note)})</span>` : "");
+    text = src + (pack && pack !== src ? ` · ${pack}` : "") + (note ? ` (${note})` : "");
+  } else if (lin && lin.from) {
+    text = `${lin.kind === "legendary-crafted" ? "Legendary" : "Epic"}-crafted from ${lin.from}`;
+    html = esc(text);
+  } else {
+    html = `<span class="muted">Source not recorded</span>`; text = "Source not recorded";
+  }
+  return `<div class="pd-rsrc" title="From: ${esc(text)}"><span class="pd-rsrc-lbl">From</span> ${html}</div>`;
 }
 
 /** #453 U2 / #455 — this solve's credited contributions for one item, indexed.
@@ -725,6 +771,24 @@ function subLines(affixes, contribIdx, ranked) {
   return `<ul class="pd-sub">${list.map((a) => {
     const cls = affixChipClass(a, cover, contribIdx.keys, ranked);
     const key = Proj.affixCoverageKey(a);
+    return `<li class="is-${cls}">${esc(affixLabel(a, { mark: false }))}</li>`;
+  }).join("")}</ul>`;
+}
+
+/** The stats a NAMED, multi-affix craft grants, indented under its name — the same
+ *  shape an augment row has, so a roll-up craft (a Viktranium Combat Mastery, a
+ *  Silverfang insert, an Airwarded shard) reads as "this one thing gives these".
+ *
+ *  Classified against the RAW records and rendered COLLAPSED, exactly as the Stats
+ *  section does (#453 KTD1): the craft label has always shown the collapsed
+ *  enchantment, and the collapse is what destroys the member names classification
+ *  needs. */
+function craftSubLines(records, contribIdx, ranked) {
+  const raw = records || [];
+  if (!raw.length) return "";
+  const cover = Proj.affixStatCoverage(raw);
+  return `<ul class="pd-sub">${collapseExpansions(raw).map((a) => {
+    const cls = affixChipClass(a, cover, contribIdx.keys, ranked);
     return `<li class="is-${cls}">${esc(affixLabel(a, { mark: false }))}</li>`;
   }).join("")}</ul>`;
 }
@@ -1113,7 +1177,21 @@ function craftSection(v, idx, maps, contribIdx, ranked) {
     // for its station: a qualifier the row needs but which must not compete with
     // the value for attention.
     const note = parts.note ? ` <span class="muted">· ${esc(parts.note)}</span>` : "";
-    return stackLine(cls, where, `${esc(parts.what)}${note}`, {
+    // A craft that rolls several stats up under one name gets the augment row's
+    // shape: the name as a header in its own colour, its stats nested beneath in
+    // the stat treatment. Printed inline, the name and the stats were the same
+    // bold white and a player could not tell which words were the thing to craft
+    // and which were what it gives. A single-affix craft keeps its one line.
+    const records = r.empty ? [] : Proj.craftAffixRecords(r.o);
+    let what = `${esc(parts.what)}${note}`;
+    if (!r.empty && r.o.name && records.length > 1) {
+      what = `<span class="craft-name">${esc(r.o.name)}</span>${note}${craftSubLines(records, contribIdx, ranked)}`;
+    } else if (!r.empty && r.family === "dino" && r.o.name && parts.what.startsWith(`${r.o.name}, `)) {
+      // Dino's label is "Name, stat" in one string; the name is split off so it
+      // takes the name colour rather than the stat's.
+      what = `<span class="craft-name">${esc(r.o.name)}</span>, ${esc(parts.what.slice(r.o.name.length + 2))}${note}`;
+    }
+    return stackLine(cls, where, what, {
       cls: `craft-${esc(r.family)}`,
       mark: r.empty ? "◇" : LINE_MARK[cls],
       title: parts.title,
@@ -3102,9 +3180,26 @@ function renderResults(container, { model, result, query, dataset, highs, onAfte
   // #501 — the Farming List. `character` names whose progress is being ticked;
   // without one the list still renders and the ticks simply have nowhere to go,
   // which is stated rather than silently discarded.
+  // The dataset's augment records, for the hunting list's locations — the solve
+  // snapshot carries an augment's id and affixes, not where it drops. Built lazily
+  // and once per render; the dataset does not change under a render.
+  //
+  // `var`, not `let`: the first render path calls `currentPlan()` from a function
+  // declared earlier in this body, BEFORE this line has run, and a `let` there is
+  // in its temporal dead zone — the solve failed with "Cannot access
+  // 'farmAugById' before initialization". A hoisted `var` reads `undefined`.
+  var farmAugById;
+  function farmOpts() {
+    if (!farmAugById) {
+      farmAugById = new Map(((dataset && dataset.items) || [])
+        .filter((r) => r && r.category === "augment").map((r) => [r.variant_id, r]));
+    }
+    return { augmentsById: farmAugById,
+      craftUrls: (dataset && dataset.metadata && dataset.metadata.wiki_crafting_urls) || {} };
+  }
   function currentPlan() {
     return (typeof FarmingList !== "undefined" && FarmingList.farmingPlan)
-      ? FarmingList.farmingPlan(liveRecord()) : null;
+      ? FarmingList.farmingPlan(liveRecord(), farmOpts()) : null;
   }
   /** Rebuild the panel's CONTENT only. Wiring lives outside this function on
    *  purpose — see the delegation block below. */
@@ -3740,10 +3835,10 @@ function farmingPanel(plan, acquired, opts) {
   };
 
   const sourceBlock = (s) => `<section class="farm-source">
-    <h4 class="farm-source-name">${esc(s.name)}
+    <h4 class="farm-source-name">${wikiLink(s.name, s.url)}
       <span class="farm-source-count">${esc(s.itemCount)} item${s.itemCount === 1 ? "" : "s"}</span></h4>
     ${s.adventurePack
-      ? `<p class="farm-pack">${esc(s.adventurePack)}</p>`
+      ? `<p class="farm-pack">${wikiLink(s.adventurePack, s.packUrl)}</p>`
       : `<p class="farm-pack muted">${esc(PACK_GAP_WORDING[s.kind] || PACK_GAP_WORDING.unknown)}</p>`}
     <ul class="farm-items">${s.items.map(tick).join("")}</ul>
   </section>`;
@@ -3757,27 +3852,46 @@ function farmingPanel(plan, acquired, opts) {
         <ul class="farm-items">${plan.unsourced.map(tick).join("")}</ul>
       </section>` : "";
 
-  // Augments get their own section and an explicit disclaimer, because the
-  // dataset carries acquisition data for exactly none of them. Listing them
-  // beside the quests would imply a source this list does not have.
-  const augs = plan.augments.length
-    ? `<section class="farm-source is-gap">
-        <h4 class="farm-source-name">Augments to slot
-          <span class="farm-source-count">${esc(plan.augments.length)}</span></h4>
-        <p class="farm-pack muted">No augment in the dataset carries acquisition data, so this says which augment
-          goes where — not where to find it.</p>
-        <ul class="farm-items">${plan.augments.map((a) => `<li class="farm-item farm-plain">
-          <span class="farm-item-name">${esc(a.name)}</span>
-          <span class="farm-item-meta">→ ${esc(a.host)}</span></li>`).join("")}</ul>
+  // The augment hunting list. Augments get their own section because they are
+  // found differently from gear: one gem can drop in a dozen places, and a common
+  // one is bought rather than farmed. The wiki's `locations` field supplies the
+  // places (src/wiki_links.py); a gem with none says which of the three reasons
+  // applies, in the one wording the Markdown export shares.
+  const hunt = plan.hunt || { items: [], runs: [] };
+  const HUNT_WORDING = (typeof FarmingList !== "undefined" && FarmingList.HUNT_STATUS_WORDING)
+    || (typeof require !== "undefined" ? require("./farming.js").HUNT_STATUS_WORDING : {});
+  const huntItem = (a) => `<li class="farm-item farm-plain farm-hunt-item is-${esc(a.status)}">
+      <span class="farm-item-name">${wikiLink(a.name, a.url)}${a.copies > 1 ? ` <span class="farm-copies">×${esc(a.copies)}</span>` : ""}</span>
+      <span class="farm-item-meta">→ ${esc(a.hosts.join(", "))}</span>
+      ${a.locations.length
+        ? `<ul class="farm-hunt-locs">${a.locations.map((l) => `<li>${wikiLink(l.place, l.url)}`
+            + ` <span class="farm-hunt-how">${esc(l.how)}</span>`
+            + `${l.detail ? ` <span class="farm-item-meta">· ${esc(l.detail)}</span>` : ""}</li>`).join("")}</ul>`
+        : `<span class="farm-hunt-none">${esc(HUNT_WORDING[a.status] || "")}</span>`}
+    </li>`;
+  const runs = hunt.runs.length
+    ? `<div class="farm-hunt-runs"><p class="farm-pack">Places that drop more than one of your augments:</p>
+        <ul class="farm-items">${hunt.runs.map((r) => `<li class="farm-item farm-plain">
+          <span class="farm-item-name">${wikiLink(r.place, r.url)}
+            <span class="farm-source-count">${esc(r.augments.length)} augments</span></span>
+          <span class="farm-item-meta">${esc(r.augments.join(", "))}</span></li>`).join("")}</ul></div>`
+    : "";
+  const augs = hunt.items.length
+    ? `<section class="farm-source farm-hunt">
+        <h4 class="farm-source-name">Augment hunting list
+          <span class="farm-source-count">${esc(hunt.items.length)}</span></h4>
+        <p class="farm-pack muted">Where the DDO wiki says each augment comes from. Place names open their wiki page.</p>
+        ${runs}
+        <ul class="farm-items">${hunt.items.map(huntItem).join("")}</ul>
       </section>` : "";
 
   const crafts = plan.crafts.length
     ? `<section class="farm-source">
         <h4 class="farm-source-name">Crafting steps
           <span class="farm-source-count">${esc(plan.crafts.length)}</span></h4>
-        <p class="farm-pack muted">Do these once you have the item in hand.</p>
+        <p class="farm-pack muted">Do these once you have the item in hand. Each step links to its crafting system's wiki page where there is one.</p>
         <ul class="farm-items">${plan.crafts.map((x) => `<li class="farm-item farm-plain">
-          <span class="farm-item-name">${esc(x.label)}</span>
+          <span class="farm-item-name">${wikiLink(x.label, x.url)}</span>
           <span class="farm-item-meta">→ ${esc(x.host)}</span></li>`).join("")}</ul>
       </section>` : "";
 
@@ -3790,9 +3904,10 @@ function farmingPanel(plan, acquired, opts) {
       ${c.unsourced ? `<span><strong>${esc(c.unsourced)}</strong> without a recorded source</span>` : ""}
       ${c.crafts ? `<span><strong>${esc(c.crafts)}</strong> crafting steps</span>` : ""}
     </div>
-    <p class="farm-disclosure">Adventure pack is not in the dataset yet, so these are grouped by the source name the
-      DDO wiki records — a quest, a raid, a vendor, a crafting station or an event, in its own words. Nothing here
-      guesses which pack a quest belongs to.</p>
+    <p class="farm-disclosure">Grouped by the source the DDO wiki records — a quest, a raid, a vendor, a crafting
+      station or an event, in its own words — with its adventure pack where the wiki states one. Linked names open
+      their wiki page; a name without a link has no page we could confirm. Nothing here guesses which pack a quest
+      belongs to.</p>
     <div class="farm-actions">
       <button class="btn ghost farm-copy" type="button">Copy as Markdown</button>
       <button class="btn ghost farm-print" type="button">Print</button>
@@ -3899,7 +4014,7 @@ function upgradesList(probed, list) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { concessionOutcome, concessionFailedOutcome, upgradesList,
-    renderResults, buildViews, utilityCard, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, pinnedUnownedNoticeEntries, playerAuthoredNoticeEntries, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, jumpSoftCapNotice, mrrCapNotice, conditionalNotice, tierRenameNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, augPinNotice, pinnedThroughNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+    renderResults, buildViews, utilityCard, wikiLink, sourceLine, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, pinnedUnownedNoticeEntries, playerAuthoredNoticeEntries, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, jumpSoftCapNotice, mrrCapNotice, conditionalNotice, tierRenameNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, augPinNotice, pinnedThroughNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,

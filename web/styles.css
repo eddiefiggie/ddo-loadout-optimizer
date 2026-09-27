@@ -37,6 +37,7 @@
   --qualify: #8fa2c4;         /* qualifying: card edge, class tag, summary marker */
   --set: #f0b45a;             /* set-bonus attribution */
   --artifact: #b98cff;        /* the one equipped Artifact (violet) — distinct from set gold + blue accent */
+  --src-name: #cdb8ff;        /* the NAME of a slotted augment or roll-up craft — the source its white stat lines come from; kept off the link blue so a name does not read as clickable */
 
   /* type scale (fluid) */
   --fs-hero: clamp(2.2rem, 6vw, 3.2rem);
@@ -1412,6 +1413,13 @@ input.wz-ml { width: 120px; }
   background: linear-gradient(90deg, transparent, var(--border-2) 18%, var(--border-2) 82%, transparent); }
 .pd-card-head .pd-rname { min-height: 2.6em; display: flex; align-items: flex-start; }
 .pd-rmeta { min-height: 1.4em; }
+/* Where the item comes from: quest or raid, then adventure pack, linked to the
+   wiki. One line on every card (empty on an empty slot) so the head stays one
+   band across the grid; the full text is the element's title. */
+.pd-rsrc { min-height: 1.4em; font-size: var(--fs-xs); color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-rsrc-lbl { color: var(--faint); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.9em; }
+.pd-rsrc-sep { color: var(--faint); }
 /* #471 — state moves to the card's TOP EDGE. It was an inset ring around the
    whole card plus a recoloured item name; the ring competed with the new head
    tint for the same pixels, and an edge reads as a label on the card while a
@@ -1601,7 +1609,14 @@ input.wz-ml { width: 120px; }
    This was `.aug-filled.is-tracked` bold-white and `.aug-filled.is-ranked`
    white-not-bold — the same mark-says-one-thing/text-says-another split that was
    reported on False Life, one level down. */
-.pd-line.aug-filled .aug-name { color: #fff; font-weight: 700; }
+/* The gem's NAME takes its own colour, not the white its credited stats take. A
+   gem that rolls up several stats (a Legendary Sapphire of Riposte) printed its
+   name and every stat in the same bold white, and a player could not tell which
+   line was the thing to go and slot. Bold still says "slotted"; the colour says
+   "this is the source, the lines under it are what it gives". */
+.pd-line.aug-filled .aug-name { color: var(--src-name); font-weight: 700; }
+/* The same treatment for a named craft whose stats are nested under it. */
+.craft-name { color: var(--src-name); font-weight: 700; }
 /* #472 — the `.aug-pip` family is gone with the chips it belonged to. Nothing
    emits it: the row marker carries the slot colour now. It was kept in #471 on
    the belief that the paperdoll cell and the browse rows still drew pips; they
@@ -1944,6 +1959,20 @@ input.wz-ml { width: 120px; }
 .farm-item-meta { font-size: var(--fs-xs); color: var(--faint); }
 .farm-nodrop { font-size: var(--fs-xs); color: var(--quarantined); flex-basis: 100%; }
 .farm-plain { padding-left: 0; }
+/* A link to the DDO wiki: the app's link colour, underlined only on hover so a
+   list of place names does not read as a wall of underlines. */
+a.wiki-link { color: var(--accent); text-decoration: none; }
+a.wiki-link:hover, a.wiki-link:focus-visible { text-decoration: underline; }
+/* The augment hunting list: each gem, then the places the wiki says it drops. */
+.farm-hunt-locs { list-style: none; margin: 2px 0 0; padding: 0 0 0 var(--sp-3); flex-basis: 100%;
+  display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-xs); }
+.farm-hunt-how { font-size: 0.9em; color: var(--faint); border: 1px solid var(--border-2);
+  border-radius: 4px; padding: 0 4px; }
+.farm-hunt-none { flex-basis: 100%; font-size: var(--fs-xs); color: var(--faint); padding-left: var(--sp-3); }
+.farm-hunt-runs { margin-bottom: var(--sp-2); padding-bottom: var(--sp-2); border-bottom: 1px dashed var(--border-2); }
+.farm-hunt .farm-item-name a.wiki-link { font-weight: 600; }
+/* Long, and read as one list — it spans the grid rather than sharing a row. */
+.farm-hunt { grid-column: 1 / -1; }
 @media (min-width: 640px) {
   .farm-groups { grid-template-columns: repeat(2, 1fr); }
 }
