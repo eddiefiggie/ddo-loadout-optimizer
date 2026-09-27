@@ -1951,10 +1951,16 @@ input.wz-ml { width: 120px; }
   padding: 4px 0; border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
 .farm-item:last-child { border-bottom: 0; }
 .farm-check { display: inline-flex; align-items: baseline; gap: var(--sp-2); cursor: pointer; min-width: 0; }
+/* #867 — a tick row centres rather than baseline-aligns. The name moved OUT of the
+   label (it is a link now), which left the label holding only the 44px checkbox:
+   with no text of its own, its baseline became its bottom edge and the box rode a
+   line above the name. */
+.farm-item:not(.farm-plain) { align-items: center; }
 .farm-item-name { color: var(--text); overflow-wrap: anywhere; }
 /* A collected item stays on the list — a farming plan you can no longer read is
    not a record of what you did. It is struck through and dimmed instead. */
 .farm-item.is-got .farm-item-name { text-decoration: line-through; color: var(--faint); }
+.farm-item.is-got .farm-item-name a.wiki-link { color: var(--faint); }
 .farm-copies { color: var(--accent); font-weight: 700; }
 .farm-item-meta { font-size: var(--fs-xs); color: var(--faint); }
 .farm-nodrop { font-size: var(--fs-xs); color: var(--quarantined); flex-basis: 100%; }

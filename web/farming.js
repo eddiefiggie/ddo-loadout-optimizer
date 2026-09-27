@@ -473,7 +473,11 @@
     // plain text. `]` and `)` are escaped so a name containing them cannot break
     // the link it sits in.
     const mdEsc = (t) => String(t).replace(/([\[\]])/g, "\\$1");
-    const link = (text, url) => (url ? `[${mdEsc(text)}](${String(url).replace(/\)/g, "%29")})` : String(text));
+    // Only an http(s) URL becomes a link, matching the panel's `safeUrl`: a crafted
+    // or synthesized record could carry something else, and a Markdown link to it
+    // would be pasted into a forum as though it were a page.
+    const link = (text, url) => (/^https?:\/\//i.test(String(url || ""))
+      ? `[${mdEsc(text)}](${String(url).replace(/\)/g, "%29")})` : String(text));
     lines.push(`# Farming list${o.character ? ` — ${o.character}` : ""}`);
     lines.push("");
     lines.push(`${plan.counts.items} items across ${plan.counts.sources} source${plan.counts.sources === 1 ? "" : "s"}.`);
@@ -487,7 +491,7 @@
       lines.push(`## ${link(s.name, s.url)}`);
       if (s.adventurePack) lines.push(`Adventure pack: ${link(s.adventurePack, s.packUrl)}`);
       for (const i of s.items) {
-        lines.push(`- ${i.item}${i.copies > 1 ? ` ×${i.copies}` : ""} — ${i.slots.join(", ")}${i.ml != null ? ` (ML ${i.ml})` : ""}`
+        lines.push(`- ${link(i.item, i.wikiUrl)}${i.copies > 1 ? ` ×${i.copies}` : ""} — ${i.slots.join(", ")}${i.ml != null ? ` (ML ${i.ml})` : ""}`
           // The ONE shared wording (projection.js), never a per-surface respelling.
           // It matters more on THIS surface than anywhere else in the app: this is
           // the list that sends a player out to hunt for the thing.
@@ -500,7 +504,7 @@
       lines.push("");
       lines.push("The dataset has no location for these. That is a gap in the data, not a claim that they cannot be found.");
       for (const i of plan.unsourced) {
-        lines.push(`- ${i.item}${i.copies > 1 ? ` ×${i.copies}` : ""} — ${i.slots.join(", ")}`);
+        lines.push(`- ${link(i.item, i.wikiUrl)}${i.copies > 1 ? ` ×${i.copies}` : ""} — ${i.slots.join(", ")}`);
       }
       lines.push("");
     }
