@@ -4982,6 +4982,7 @@ test("craft name: a Dinosaur Bone insert's name is split from its stat", () => {
 
 test("wikiLink: only an http(s) URL becomes a link, and the text is always escaped", () => {
   assert.strictEqual(R.wikiLink("A <b>", null), "A &lt;b&gt;");
-  assert.ok(/href="#"/.test(R.wikiLink("x", "javascript:alert(1)")), "a hostile scheme is inert");
+  assert.strictEqual(R.wikiLink("x", "javascript:alert(1)"), "x",
+    "a hostile scheme is not a link at all — not even an inert one that looks live");
   assert.ok(/rel="noopener"/.test(R.wikiLink("x", "https://ddowiki.com/page/X")));
 });

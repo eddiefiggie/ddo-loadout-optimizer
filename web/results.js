@@ -224,7 +224,9 @@ function safeUrl(u) {
  *  confirmed page. The build stamps a URL only for a title it checked exists
  *  (src/wiki_links.py), so an absent URL is a stated gap, not a link to guess. */
 function wikiLink(text, url, cls) {
-  if (!url) return esc(text);
+  // Anything but an http(s) URL renders as plain text. `safeUrl` would make it an
+  // inert `#` link, which still LOOKS like a link to a page that is not there.
+  if (!/^https?:\/\//i.test(String(url || ""))) return esc(text);
   return `<a class="wiki-link${cls ? " " + cls : ""}" href="${safeUrl(url)}" target="_blank" rel="noopener"`
     + ` title="Open ${esc(text)} on the DDO wiki">${esc(text)}</a>`;
 }
@@ -3810,11 +3812,17 @@ function farmingPanel(plan, acquired, opts) {
   const c = plan.counts;
   const tick = (i) => {
     const on = !!got[i.item];
+    // #867 — the name links to the item's own wiki page, and the link sits OUTSIDE
+    // the checkbox's label. A link inside a label is not supposed to toggle the
+    // box, but a stray tick here is a false "collected" saved against the
+    // character, so the two are kept apart rather than trusting every browser to
+    // get that detail right. The box carries its own accessible name instead.
     return `<li class="farm-item${on ? " is-got" : ""}">
       <label class="farm-check">
-        <input type="checkbox" class="farm-tick" data-item="${esc(i.item)}"${on ? " checked" : ""} />
-        <span class="farm-item-name">${esc(i.item)}${i.copies > 1 ? ` <span class="farm-copies">×${esc(i.copies)}</span>` : ""}</span>
+        <input type="checkbox" class="farm-tick" data-item="${esc(i.item)}"${on ? " checked" : ""}
+          aria-label="Collected: ${esc(i.item)}" />
       </label>
+      <span class="farm-item-name">${wikiLink(i.item, i.wikiUrl)}${i.copies > 1 ? ` <span class="farm-copies">×${esc(i.copies)}</span>` : ""}</span>
       <span class="farm-item-meta">${esc(i.slots.join(", "))}${i.ml != null ? ` · ML ${esc(i.ml)}` : ""}</span>
       ${i.noDropSource ? `<span class="farm-nodrop">${esc(Proj.NO_DROP_SOURCE_WORDING)}</span>` : ""}
     </li>`;

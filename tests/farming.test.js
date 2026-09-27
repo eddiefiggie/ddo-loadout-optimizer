@@ -300,6 +300,41 @@ test("hunt: the render path's augment lookup is hoisted, not in a let's dead zon
     "and the live plan is built WITH the lookup, or every augment reads 'unknown'");
 });
 
+// #867 — the item names themselves link to their own wiki pages.
+test("#867: each item name links to its own wiki page, in the panel and the Markdown", () => {
+  const plan = F.farmingPlan(rec([
+    it("Tor Ring", "Ring", "Gianthold Tor", 30, { wiki_url: "https://ddowiki.com/page/Item:Tor_Ring" }),
+    it("Odd Boots", "Feet", null, 30, { wiki_url: "https://ddowiki.com/page/Item:Odd_Boots" }),
+    it("Bare Belt", "Belt", "Gianthold Tor", 30),
+  ]));
+  const html = R.farmingPanel(plan, {}, {});
+  assert.ok(/<a class="wiki-link"[^>]*href="https:\/\/ddowiki\.com\/page\/Item:Tor_Ring"[^>]*>Tor Ring<\/a>/.test(html));
+  assert.ok(html.includes('href="https://ddowiki.com/page/Item:Odd_Boots"'), "the unsourced group links too");
+  assert.ok(/>Bare Belt</.test(html) && !/<a[^>]*>Bare Belt<\/a>/.test(html), "no URL, no link");
+  const md = F.farmingMarkdown(plan, {});
+  assert.ok(md.includes("- [Tor Ring](https://ddowiki.com/page/Item:Tor_Ring) — Ring"));
+  assert.ok(md.includes("- [Odd Boots](https://ddowiki.com/page/Item:Odd_Boots) — Feet"));
+  assert.ok(md.includes("- Bare Belt — Belt"));
+});
+
+test("#867: the name link is outside the checkbox's label, so a click cannot tick it", () => {
+  const plan = F.farmingPlan(rec([it("Tor Ring", "Ring", "Gianthold Tor", 30,
+    { wiki_url: "https://ddowiki.com/page/Item:Tor_Ring" })]));
+  const html = R.farmingPanel(plan, {}, {});
+  const label = html.match(/<label class="farm-check">[\s\S]*?<\/label>/)[0];
+  assert.ok(!/<a\b/.test(label), "no link inside the label");
+  assert.ok(/aria-label="Collected: Tor Ring"/.test(label), "the box still says what it ticks");
+  assert.ok(/data-item="Tor Ring"/.test(label), "and still keys progress by the item");
+});
+
+// Deliberately NOT proven red: before #867 no name was a link at all, so this
+// passes there vacuously. It guards the new link code against a non-http URL.
+test("#867: a non-http URL is never a link, in either surface", () => {
+  const plan = F.farmingPlan(rec([it("Odd Ring", "Ring", "Gianthold Tor", 30, { wiki_url: "javascript:alert(1)" })]));
+  assert.ok(!/<a[^>]*>Odd Ring<\/a>/.test(R.farmingPanel(plan, {}, {})));
+  assert.ok(F.farmingMarkdown(plan, {}).includes("- Odd Ring — Ring"));
+});
+
 test("links: a Markdown link cannot be broken by the name it carries", () => {
   const plan = F.farmingPlan(rec([it("R", "Ring", "Odd [Name]", 30,
     { location_url: "https://ddowiki.com/page/Odd_(x)" })]));
