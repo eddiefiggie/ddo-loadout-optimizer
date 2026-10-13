@@ -283,7 +283,10 @@ def test_the_shipping_shard_applies_cleanly_to_the_real_roster():
     #       new carriers, the last of them `The Prince of Demons`.
     #   ----
     #   +10 net, 1440 -> 1450.
-    assert cov["affixes_renamed"] == 1450, cov["affixes_renamed"]
+    # c36b45e (#871) — 1454, +4 itemised: +2 `Negative Lore` (92 -> 94) and +2
+    #   `Negative Spell Power` (155 -> 157), new carriers in the U81.4 Night Revels
+    #   gear. No other source name moved.
+    assert cov["affixes_renamed"] == 1454, cov["affixes_renamed"]
     # whatever the count, no source spelling may survive the pass
     for e in shard:
         assert not any(a.get("name") == e["source_name"]

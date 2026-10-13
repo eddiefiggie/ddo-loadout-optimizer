@@ -124,8 +124,10 @@ test("the 161 unstamped boolean-composite components are ineligible", () => {
   // add composite carriers. The in-loop assertion is the one that matters and is
   // unchanged: each generated component is marked and ineligible, so the refresh
   // minted no UNMARKED component.
-  assert.strictEqual(derived.length, 841,
-    "normalizeDataset generates 841 composite components carrying no provenance stamp");
+  // c36b45e (#871) — 847 not 841: +6, three new `Ghostly` carriers (112 -> 115,
+  // two of them the U81.4 Legendary Spectre Deflectors) x its two components.
+  assert.strictEqual(derived.length, 847,
+    "normalizeDataset generates 847 composite components carrying no provenance stamp");
   assert.ok(derived.every((a) => !O.isEligible(a)),
     "and the predicate refuses every one of them, so it cannot be a `via` presence test");
 });
@@ -400,7 +402,12 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // Steel rows, and the ML36 augment tier now arriving natively instead of through
   // our retired shard. A pool SIZE moving on a snapshot refresh is expected; what
   // must not move silently is the eligible count, asserted just below.
-  assert.strictEqual(total, 45671, "post-normalize pool size");
+  // c36b45e (#871) — 45,665 not 45,671: -6 net, reconciled exactly. Raw affixes
+  // 44,691 -> 44,679 (-12): -89 inert `Upgradeable - *` / `Upgradeable Item` marker
+  // affixes upstream moved from the affix list to crafting keys, +77 on the new
+  // Night Revels and Lahar records; `Sneak Attack Bonus` -> `Deception` nets 0
+  // (-36/+36). Then +6 generated `Ghostly` components (see the 847 above).
+  assert.strictEqual(total, 45665, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -494,7 +501,12 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // move by an identical amount as they did for the #792 slot-keyed join — that
   // identity was the signature of THAT change, not an invariant: a snapshot that
   // adds Bool/untyped affixes grows the pool without growing the eligible set.
-  assert.strictEqual(eligible, 20653, "engraved, eligible affixes");
+  // c36b45e (#871) — 20,680 not 20,653: +27, every one a typed affix on the new
+  // U81.4 Night Revels gear (+8 Enhancement Bonus (Weapon), +2 each of Nullification,
+  // Void Lore, Necromancy Focus, False Life, Armor Class, ...). `Sneak Attack Bonus`
+  // -> `Deception` moves 36 affixes between names and nets 0. No existing affix
+  // changed eligibility; measured per name against the pre-refresh build.
+  assert.strictEqual(eligible, 20680, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -563,7 +575,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // refresh's new items are weapons — the ten raid weapons plus the Mindcleaver /
   // Shadowblade / Thorn Blade level families and the Legendary pirate set — and
   // because gap_corrections restored weapon affixes the [Crafted] collapse dropped.
-  assert.deepStrictEqual(byCat, { item: 13418, weapon: 6223, augment: 1012 });
+  // c36b45e (#871) — item +17, weapon +10, augment UNCHANGED: the +27 above splits
+  // across the new Night Revels worn gear and weapons, and the four new Lahar Rubies
+  // carry only Bool presences (ineligible by rule 1), so `augment` cannot move.
+  assert.deepStrictEqual(byCat, { item: 13435, weapon: 6233, augment: 1012 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {
@@ -652,7 +667,8 @@ test("the generator marks composite components, so provenance is read not inferr
   // moves before it the in-loop assertion is the one that matters: each new
   // component is marked and ineligible, so the ruling minted no unmarked component.
   // 397c673 — 841 not 837: +4 from the raid items; see the sibling assertion.
-  assert.strictEqual(marked, 841, "every generated composite component carries the mark");
+  // c36b45e (#871) — 847: +6 `Ghostly` components; see the sibling assertion.
+  assert.strictEqual(marked, 847, "every generated composite component carries the mark");
   const one = pool.items.flatMap((v) => v.affixes || []).find((a) => a._compositeOf);
   assert.ok(!Object.keys(one).includes("_compositeOf"), "and the mark is non-enumerable");
 });

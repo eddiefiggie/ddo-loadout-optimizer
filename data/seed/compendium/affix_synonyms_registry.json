@@ -157,7 +157,7 @@
     {
       "name": "Deception",
       "synonyms": [
-        "Sneak Attacks"
+        "Sneak Attack Bonus"
       ]
     },
     {
@@ -542,5 +542,6 @@
       ]
     }
   ],
-  "_note_397c673": "Re-frozen at the 397c673 (2026-09-23) refresh. Two fold changes, both adjudicated. ADDED 'bonus Imbue Dice' -> 'Imbue Dice': same mechanic, and the data proves it — the previous sets dump carried 11 'Imbue Dice' plus one stray 'bonus Imbue Dice', the refreshed one carries 12 'Imbue Dice' and no variant, so upstream normalised its own phrasing and declared the fold. Inert in the corpus (nothing carries the variant). DROPPED 'Power Store' -> 'Magical Efficiency': accepted into the registry because it records what UPSTREAM does, but REJECTED as behaviour — the two wiki pages define one mechanic (an Enhancement %% spell-point-cost discount), so the fold is restored as our own canon via affix_name_corrections.json ('Power Store' -> 'Magical Efficiency', merge_into_existing). Without that, 8 items and 1 augment would sit in a second bucket that sums with the first, and the eight #619 value corrections would go stale."
+  "_note_397c673": "Re-frozen at the 397c673 (2026-09-23) refresh. Two fold changes, both adjudicated. ADDED 'bonus Imbue Dice' -> 'Imbue Dice': same mechanic, and the data proves it — the previous sets dump carried 11 'Imbue Dice' plus one stray 'bonus Imbue Dice', the refreshed one carries 12 'Imbue Dice' and no variant, so upstream normalised its own phrasing and declared the fold. Inert in the corpus (nothing carries the variant). DROPPED 'Power Store' -> 'Magical Efficiency': accepted into the registry because it records what UPSTREAM does, but REJECTED as behaviour — the two wiki pages define one mechanic (an Enhancement %% spell-point-cost discount), so the fold is restored as our own canon via affix_name_corrections.json ('Power Store' -> 'Magical Efficiency', merge_into_existing). Without that, 8 items and 1 augment would sit in a second bucket that sums with the first, and the eight #619 value corrections would go stale.",
+  "_note_c36b45e": "Re-frozen at the c36b45e (2026-10-13, #871) refresh. One fold changed, adjudicated. Upstream re-pointed Deception's synonym from 'Sneak Attacks' to 'Sneak Attack Bonus' and rewrote every raw 'Sneak Attack Bonus' affix (44 records across items/crafting/sets) to 'Deception'. ACCEPTED as the same mechanic: Template:Sneak Attack Bonus defines its amount as the to-hit bonus with damage 1.5x it on sneak-attack hits, Deception is '+X (type) bonus to hit and +Y to damage for any hit that would qualify as a sneak attack', the template's own note says untyped Sneak Attack Bonus 'does not stack with Deception', and the Backstabbing page lists Category:Sneak Attack Bonus items and Category:Deception items as sources of one effect. Consequence: the two names now share Deception's per-type buckets and take the max instead of summing. DROPPED 'Sneak Attacks' is inert: zero carriers in either snapshot, and zero in the Dino channel too (the Fang `Deception` insert arrives structured, already named `Deception`). Checked by adding it under local_affix_synonyms, where check_local_synonym_staleness rejected it as matching nothing in the corpus."
 }

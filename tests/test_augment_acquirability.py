@@ -102,6 +102,9 @@ def test_shipped_dataset_join_is_complete():
     # #640 — 472: +3, the Solar Gem of Arcana tiers. Unstamped like every other
     # Lunar/Solar gem, so the complement grows with the catalog while `stamped`
     # holds at 675 — which is what tells growth apart from the join shrinking.
-    assert len(augs) - len(stamped) == 472, len(augs) - len(stamped)
+    # c36b45e (#871) — 476: +4 named, the U81.4 Lahar Rubies (Bludgeoning Blows,
+    # Piercing Precision, Slashing Strikes, the Quori). None is in a common/uncommon/rare
+    # augment category, so each is named and carries its own harvested location.
+    assert len(augs) - len(stamped) == 476, len(augs) - len(stamped)
     assert d["metadata"]["augment_acquirable_count"] == 675
     assert d["metadata"]["augment_total_count"] == len(augs)

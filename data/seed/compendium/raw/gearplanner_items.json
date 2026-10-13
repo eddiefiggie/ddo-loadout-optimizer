@@ -4101,12 +4101,10 @@
                 "name": "Armor Class",
                 "type": "Deflection",
                 "value": "4"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Amulet of the Stormreaver",
@@ -6899,7 +6897,7 @@
                 "value": "+4"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "2"
             },
@@ -6935,7 +6933,7 @@
                 "value": "+5"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "2"
             },
@@ -6971,7 +6969,7 @@
                 "value": "+5"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "3"
             },
@@ -9134,7 +9132,7 @@
                 "value": "10"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "3"
             },
@@ -9162,7 +9160,7 @@
                 "value": "11"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "4"
             },
@@ -9190,7 +9188,7 @@
                 "value": "13"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "4"
             },
@@ -9221,12 +9219,12 @@
                 "value": "17"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "5"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "1"
             },
@@ -9257,12 +9255,12 @@
                 "value": "20"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "5"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "2"
             },
@@ -9293,12 +9291,12 @@
                 "value": "20"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "5"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "3"
             },
@@ -18809,16 +18807,13 @@
     {
         "affixes": [
             {
-                "name": "AoE Phantasmal Killer CL10",
+                "name": "AoE Phantasmal Killer",
                 "type": "Bool",
                 "value": 1
             }
         ],
-        "ml": 5,
+        "ml": 1,
         "name": "Bottled Fear",
-        "quests": [
-            "The Night Revels"
-        ],
         "slot": "Weapon",
         "type": "Darts",
         "url": "/page/Item:Bottled_Fear"
@@ -20906,7 +20901,7 @@
                 "value": "+3"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "5"
             }
@@ -21684,12 +21679,10 @@
                 "name": "Slicing Winds",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 14,
         "name": "Breeze",
@@ -31067,12 +31060,10 @@
                 "name": "Incite",
                 "type": "Enhancement",
                 "value": "20"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Circle of Hatred",
@@ -31115,22 +31106,20 @@
                 "name": "Incite",
                 "type": "Enhancement",
                 "value": "120"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 26,
         "name": "Circle of Malevolence",
@@ -32269,11 +32258,8 @@
                 "value": 1
             }
         ],
-        "ml": 12,
+        "ml": 1,
         "name": "Cloak of Night (level 12)",
-        "quests": [
-            "The Night Revels"
-        ],
         "slot": "Cloak",
         "type": "Back items",
         "url": "/page/Item:Cloak_of_Night_(level_12)"
@@ -32306,11 +32292,8 @@
                 "value": "2"
             }
         ],
-        "ml": 16,
+        "ml": 1,
         "name": "Cloak of Night (level 16)",
-        "quests": [
-            "The Night Revels"
-        ],
         "slot": "Cloak",
         "type": "Back items",
         "url": "/page/Item:Cloak_of_Night_(level_16)"
@@ -32323,11 +32306,8 @@
                 "value": 1
             }
         ],
-        "ml": 4,
+        "ml": 1,
         "name": "Cloak of Night (level 4)",
-        "quests": [
-            "The Night Revels"
-        ],
         "slot": "Cloak",
         "type": "Back items",
         "url": "/page/Item:Cloak_of_Night_(level_4)"
@@ -32345,11 +32325,8 @@
                 "value": 1
             }
         ],
-        "ml": 8,
+        "ml": 1,
         "name": "Cloak of Night (level 8)",
-        "quests": [
-            "The Night Revels"
-        ],
         "slot": "Cloak",
         "type": "Back items",
         "url": "/page/Item:Cloak_of_Night_(level_8)"
@@ -34122,12 +34099,10 @@
                 "name": "Cloudburst",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 14,
         "name": "Cloudburst",
@@ -41435,6 +41410,43 @@
             {
                 "name": "Enhancement Bonus (Weapon)",
                 "type": "Enhancement",
+                "value": "+15"
+            },
+            {
+                "name": "Tendon Slice",
+                "type": "Untyped",
+                "value": "12"
+            },
+            {
+                "name": "Electrifying",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Freezing",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Armor-Piercing",
+                "type": "Enhancement",
+                "value": "24"
+            }
+        ],
+        "ml": 36,
+        "name": "Crystallized Eternity (level 36)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Weapon",
+        "type": "Great Clubs",
+        "url": "/page/Item:Crystallized_Eternity_(level_36)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Enhancement Bonus (Weapon)",
+                "type": "Enhancement",
                 "value": "+2"
             },
             {
@@ -47213,12 +47225,10 @@
                 "name": "Intelligence",
                 "type": "Enhancement",
                 "value": "6"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Deific Diadem",
@@ -48774,7 +48784,7 @@
                 "value": "15"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "2"
             },
@@ -52362,12 +52372,12 @@
             {
                 "name": "Sheltering",
                 "type": "Enhancement",
-                "value": "35"
+                "value": "37"
             },
             {
                 "name": "Deception",
                 "type": "Enhancement",
-                "value": "11"
+                "value": "12"
             },
             {
                 "name": "Speed",
@@ -55092,12 +55102,10 @@
                 "name": "Suppressed Power",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 14,
         "name": "Dreamspitter",
@@ -55538,7 +55546,7 @@
                 "value": 1
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "5"
             }
@@ -62440,25 +62448,23 @@
                 "name": "Speed",
                 "type": "Enhancement",
                 "value": "15"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue",
+                "Red"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green",
+                "Orange",
+                "Purple"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Orange Augment Slot",
-            "Purple Augment Slot",
-            "Red Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Emerald Twilight",
@@ -62721,12 +62727,10 @@
                 "name": "Evil Outsider Bane",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 14,
         "name": "Enduring Conviction",
@@ -64122,22 +64126,20 @@
                 "name": "Greater Regeneration",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Belt of Thoughtful Rememberance",
@@ -64954,22 +64956,20 @@
                 "name": "Greater Heroism",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Boots of the Innocent",
@@ -66756,22 +66756,20 @@
                 "name": "Fortitude Save",
                 "type": "Insight",
                 "value": "2"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Chain of Conviction",
@@ -67023,22 +67021,20 @@
                 "name": "Sheltering",
                 "type": "Enhancement",
                 "value": "24"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Chord of Reprisals",
@@ -67131,22 +67127,20 @@
                 "name": "Freezing Ice",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Cloak of Ice",
@@ -67190,11 +67184,8 @@
                 "value": "5"
             }
         ],
-        "ml": 20,
+        "ml": 1,
         "name": "Epic Cloak of Night (level 20)",
-        "quests": [
-            "The Night Revels"
-        ],
         "slot": "Cloak",
         "type": "Back items",
         "url": "/page/Item:Epic_Cloak_of_Night_(level_20)"
@@ -67232,11 +67223,8 @@
                 "value": "10"
             }
         ],
-        "ml": 24,
+        "ml": 1,
         "name": "Epic Cloak of Night (level 24)",
-        "quests": [
-            "The Night Revels"
-        ],
         "slot": "Cloak",
         "type": "Back items",
         "url": "/page/Item:Epic_Cloak_of_Night_(level_24)"
@@ -67274,11 +67262,8 @@
                 "value": "15"
             }
         ],
-        "ml": 28,
+        "ml": 1,
         "name": "Epic Cloak of Night (level 28)",
-        "quests": [
-            "The Night Revels"
-        ],
         "slot": "Cloak",
         "type": "Back items",
         "url": "/page/Item:Epic_Cloak_of_Night_(level_28)"
@@ -68808,22 +68793,20 @@
                 "name": "Fortitude Save",
                 "type": "Insight",
                 "value": "2"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Death's Rampart",
@@ -68863,22 +68846,20 @@
                 "name": "Charisma",
                 "type": "Enhancement",
                 "value": "13"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 26,
         "name": "Epic Deific Diadem",
@@ -69313,7 +69294,7 @@
                 "value": "20"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "6"
             },
@@ -70698,22 +70679,20 @@
                 "name": "Tendon Slice",
                 "type": "Untyped",
                 "value": "6"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Emerald Gaze",
@@ -70768,22 +70747,20 @@
                 "name": "Greater Nimbleness",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Emerald Guard",
@@ -71029,22 +71006,20 @@
                 "name": "Feather Falling",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Ethereal Bracers",
@@ -72790,22 +72765,20 @@
                 "name": "Spell Save",
                 "type": "Enhancement",
                 "value": "1"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Eye of the Beholder",
@@ -72837,22 +72810,20 @@
                 "name": "Magical Efficiency",
                 "type": "Enhancement",
                 "value": "10"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Fanged Gloves",
@@ -73518,22 +73489,20 @@
                 "name": "Wisdom",
                 "type": "Enhancement",
                 "value": "11"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Glimpse of the Soul",
@@ -75064,22 +75033,20 @@
                 "name": "Spellcraft",
                 "type": "Competence",
                 "value": "20"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Inferno Bracers",
@@ -75800,7 +75767,7 @@
                 "value": 1
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "6"
             }
@@ -76010,22 +75977,20 @@
                 "name": "Light of Dawn",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 26,
         "name": "Epic Litany of the Dead",
@@ -76158,22 +76123,20 @@
                 "name": "Intimidate",
                 "type": "Competence",
                 "value": "20"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Locus of Vol",
@@ -76715,22 +76678,20 @@
                 "name": "Dexterity",
                 "type": "Enhancement",
                 "value": "11"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Mentau's Goggles",
@@ -76811,22 +76772,20 @@
                 "name": "Sheltering",
                 "type": "Enhancement",
                 "value": "24"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Minos Legens",
@@ -77200,22 +77159,20 @@
                 "name": "Assassinate",
                 "type": "Enhancement",
                 "value": "2"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Muffled Veneer",
@@ -77373,22 +77330,20 @@
                 "name": "Spell Lore",
                 "type": "Equipment",
                 "value": "12"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 26,
         "name": "Epic Noxious Embers",
@@ -78358,22 +78313,20 @@
                 "name": "Light Absorption",
                 "type": "Enhancement",
                 "value": "10"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 26,
         "name": "Epic Purging the Pantheon",
@@ -78426,7 +78379,7 @@
                 "value": 1
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "4"
             },
@@ -79410,22 +79363,20 @@
                 "name": "Whirlwind Ward",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Ring of Unknown Origins",
@@ -80949,22 +80900,20 @@
                 "name": "Greater Nimbleness",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Scales of Surety",
@@ -81585,22 +81534,20 @@
                 "name": "Deathblock",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Epic Seraphim",
@@ -102159,12 +102106,10 @@
                 "name": "Eternal Faith",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Gauntlets of Eternity",
@@ -106681,7 +106626,7 @@
     {
         "affixes": [
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "2"
             }
@@ -114070,12 +114015,10 @@
                 "name": "Fortification",
                 "type": "Enhancement",
                 "value": "75"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Head of Good Fortune",
@@ -123956,22 +123899,20 @@
                 "name": "Spiked",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 26,
         "name": "Knives Eternal",
@@ -132143,7 +132084,7 @@
                 "value": "151"
             },
             {
-                "name": "Disintegration Guard",
+                "name": "Utter Disintegration Guard",
                 "type": "Bool",
                 "value": 1
             },
@@ -132580,8 +132521,8 @@
             }
         ],
         "crafting": [
-            "Red Augment Slot",
-            "Colorless Augment Slot"
+            "Purple Augment Slot",
+            "Red Augment Slot"
         ],
         "ml": 30,
         "name": "Legendary Bow of the Elements (Air)",
@@ -132634,8 +132575,8 @@
             }
         ],
         "crafting": [
-            "Red Augment Slot",
-            "Colorless Augment Slot"
+            "Purple Augment Slot",
+            "Red Augment Slot"
         ],
         "ml": 30,
         "name": "Legendary Bow of the Elements (Air)",
@@ -138028,6 +137969,7 @@
             }
         ],
         "crafting": [
+            "Purple Augment Slot",
             "Red Augment Slot"
         ],
         "ml": 30,
@@ -138071,7 +138013,8 @@
             }
         ],
         "crafting": [
-            "Yellow Augment Slot"
+            "Yellow Augment Slot",
+            "Colorless Augment Slot"
         ],
         "ml": 30,
         "name": "Legendary Charged Gauntlets",
@@ -138735,6 +138678,48 @@
         "slot": "Cloak",
         "type": "Back items",
         "url": "/page/Item:Legendary_Cloak_of_Night_(level_32)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Invisibility Guard",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Ghostly",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Deathblock",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Nightmare Guard",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Dodge",
+                "type": "Enhancement",
+                "value": "15"
+            },
+            {
+                "name": "DR",
+                "type": "Good",
+                "value": "15"
+            }
+        ],
+        "ml": 36,
+        "name": "Legendary Cloak of Night (level 36)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Cloak",
+        "type": "Back items",
+        "url": "/page/Item:Legendary_Cloak_of_Night_(level_36)"
     },
     {
         "affixes": [
@@ -139596,8 +139581,8 @@
             }
         ],
         "crafting": [
-            "Red Augment Slot",
-            "Colorless Augment Slot"
+            "Purple Augment Slot",
+            "Red Augment Slot"
         ],
         "ml": 30,
         "name": "Legendary Collapsible Shortbow",
@@ -147434,6 +147419,48 @@
     {
         "affixes": [
             {
+                "name": "Nightshield clicky",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Negative Spell Power",
+                "type": "Equipment",
+                "value": "166"
+            },
+            {
+                "name": "Negative Lore",
+                "type": "Equipment",
+                "value": "24"
+            },
+            {
+                "name": "False Life",
+                "type": "Enhancement",
+                "value": "40"
+            },
+            {
+                "name": "Necromancy Focus",
+                "type": "Equipment",
+                "value": "14"
+            },
+            {
+                "name": "Boon of Undeath",
+                "type": "Bool",
+                "value": 1
+            }
+        ],
+        "ml": 36,
+        "name": "Legendary Docent of Shadow (level 36)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Armor",
+        "type": "Docents",
+        "url": "/page/Item:Legendary_Docent_of_Shadow_(level_36)"
+    },
+    {
+        "affixes": [
+            {
                 "name": "Enhancement Bonus (Armor)",
                 "type": "Enhancement",
                 "value": "+15"
@@ -152051,6 +152078,7 @@
             }
         ],
         "crafting": [
+            "Purple Augment Slot",
             "Red Augment Slot"
         ],
         "ml": 30,
@@ -153049,7 +153077,7 @@
     {
         "affixes": [
             {
-                "name": "Greater Poison Guard",
+                "name": "Legendary Virulent Poison Guard",
                 "type": "Bool",
                 "value": 1
             },
@@ -153070,7 +153098,8 @@
             }
         ],
         "crafting": [
-            "Green Augment Slot"
+            "Green Augment Slot",
+            "Colorless Augment Slot"
         ],
         "ml": 30,
         "name": "Legendary Envenomed Cloak",
@@ -166932,7 +166961,8 @@
             }
         ],
         "crafting": [
-            "Yellow Augment Slot"
+            "Yellow Augment Slot",
+            "Colorless Augment Slot"
         ],
         "ml": 30,
         "name": "Legendary Helm of Frost",
@@ -182055,7 +182085,7 @@
             {
                 "name": "Stunning",
                 "type": "Enhancement",
-                "value": "16"
+                "value": "18"
             },
             {
                 "name": "Staggering Blow",
@@ -182076,7 +182106,7 @@
         "crafting": [
             "Red Augment Slot"
         ],
-        "ml": 32,
+        "ml": 36,
         "name": "Legendary Ratkiller (level 36)",
         "quests": [
             "Treasure of Crystal Cove"
@@ -184504,6 +184534,48 @@
         "slot": "Armor",
         "type": "Cloth armor",
         "url": "/page/Item:Legendary_Robe_of_Shadow_(level_32)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Nightshield clicky",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Negative Spell Power",
+                "type": "Equipment",
+                "value": "166"
+            },
+            {
+                "name": "Negative Lore",
+                "type": "Equipment",
+                "value": "24"
+            },
+            {
+                "name": "False Life",
+                "type": "Enhancement",
+                "value": "40"
+            },
+            {
+                "name": "Necromancy Focus",
+                "type": "Equipment",
+                "value": "14"
+            },
+            {
+                "name": "Boon of Undeath",
+                "type": "Bool",
+                "value": 1
+            }
+        ],
+        "ml": 36,
+        "name": "Legendary Robe of Shadow (level 36)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Armor",
+        "type": "Cloth armor",
+        "url": "/page/Item:Legendary_Robe_of_Shadow_(level_36)"
     },
     {
         "affixes": [
@@ -187011,7 +187083,8 @@
             }
         ],
         "crafting": [
-            "Green Augment Slot"
+            "Green Augment Slot",
+            "Colorless Augment Slot"
         ],
         "ml": 30,
         "name": "Legendary Scorched Bracers",
@@ -193676,6 +193749,96 @@
     {
         "affixes": [
             {
+                "name": "Armor Class",
+                "type": "Shield",
+                "value": "15"
+            },
+            {
+                "name": "Enhancement Bonus (Armor)",
+                "type": "Enhancement",
+                "value": "+13"
+            },
+            {
+                "name": "Protection from Evil",
+                "type": "Deflection",
+                "value": "6"
+            },
+            {
+                "name": "Ghostbane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Ghostly",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Lifesealed",
+                "type": "Enhancement",
+                "value": "36"
+            }
+        ],
+        "crafting": [
+            "Blue Augment Slot"
+        ],
+        "ml": 32,
+        "name": "Legendary Spectre Deflector (level 32)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Offhand",
+        "type": "Bucklers",
+        "url": "/page/Item:Legendary_Spectre_Deflector_(level_32)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Armor Class",
+                "type": "Shield",
+                "value": "17"
+            },
+            {
+                "name": "Enhancement Bonus (Armor)",
+                "type": "Enhancement",
+                "value": "+15"
+            },
+            {
+                "name": "Protection from Evil",
+                "type": "Deflection",
+                "value": "7"
+            },
+            {
+                "name": "Ghostbane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Ghostly",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Lifesealed",
+                "type": "Enhancement",
+                "value": "39"
+            }
+        ],
+        "crafting": [
+            "Blue Augment Slot"
+        ],
+        "ml": 36,
+        "name": "Legendary Spectre Deflector (level 36)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Offhand",
+        "type": "Bucklers",
+        "url": "/page/Item:Legendary_Spectre_Deflector_(level_36)"
+    },
+    {
+        "affixes": [
+            {
                 "name": "Enhancement Bonus (Weapon)",
                 "type": "Enhancement",
                 "value": "+15"
@@ -193977,6 +194140,7 @@
             }
         ],
         "crafting": [
+            "Orange Augment Slot",
             "Purple Augment Slot"
         ],
         "ml": 30,
@@ -194024,7 +194188,7 @@
                 "value": "7"
             },
             {
-                "name": "True Seeing",
+                "name": "Eversight",
                 "type": "Bool",
                 "value": 1
             },
@@ -194041,7 +194205,7 @@
         ],
         "crafting": [
             "Purple Augment Slot",
-            "Colorless Augment Slot"
+            "Red Augment Slot"
         ],
         "ml": 30,
         "name": "Legendary Staff of Inner Sight",
@@ -204014,8 +204178,8 @@
             }
         ],
         "crafting": [
-            "Red Augment Slot",
-            "Colorless Augment Slot"
+            "Purple Augment Slot",
+            "Red Augment Slot"
         ],
         "ml": 30,
         "name": "Legendary Whirlwind",
@@ -204993,7 +205157,7 @@
         ],
         "crafting": [
             "Purple Augment Slot",
-            "Colorless Augment Slot"
+            "Red Augment Slot"
         ],
         "ml": 30,
         "name": "Legendary Xuum",
@@ -205036,6 +205200,7 @@
             }
         ],
         "crafting": [
+            "Purple Augment Slot",
             "Red Augment Slot"
         ],
         "ml": 30,
@@ -205123,7 +205288,7 @@
                 "value": "4"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "3"
             },
@@ -205570,7 +205735,7 @@
                 "value": 1
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "2"
             }
@@ -207561,12 +207726,10 @@
                 "name": "Litany of the Dead - Combat Bonus",
                 "type": "Profane",
                 "value": "1"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Litany of the Dead",
@@ -211476,7 +211639,7 @@
                 "value": "20"
             },
             {
-                "name": "Shield Proficiency: Tower Shield",
+                "name": "Proficiency: Tower Shield",
                 "type": "Bool",
                 "value": 1
             },
@@ -211522,12 +211685,10 @@
                 "name": "Madstone Reaction",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Madstone Boots",
@@ -211575,15 +211736,13 @@
                 "value": "+5"
             },
             {
-                "name": "Shield Proficiency: Tower Shield",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable Item",
+                "name": "Proficiency: Tower Shield",
                 "type": "Bool",
                 "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 14,
         "name": "Madstone Shield",
@@ -227596,12 +227755,10 @@
                 "name": "Spell Lore",
                 "type": "Equipment",
                 "value": "3"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Noxious Embers",
@@ -234494,6 +234651,43 @@
             {
                 "name": "Enhancement Bonus (Weapon)",
                 "type": "Enhancement",
+                "value": "+15"
+            },
+            {
+                "name": "Undead Bane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Coruscating",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Light Bringer",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Greater Sunburst",
+                "type": "Bool",
+                "value": 1
+            }
+        ],
+        "ml": 36,
+        "name": "Pick of Endless Light (level 36)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Weapon",
+        "type": "Light Picks",
+        "url": "/page/Item:Pick_of_Endless_Light_(level_36)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Enhancement Bonus (Weapon)",
+                "type": "Enhancement",
                 "value": "+2"
             },
             {
@@ -235893,7 +236087,7 @@
                 "value": 1
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "3"
             },
@@ -237733,12 +237927,10 @@
                 "name": "Armor Class",
                 "type": "Deflection",
                 "value": "5"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Purging the Pantheon",
@@ -238321,12 +238513,10 @@
                 "name": "Ranged Alacrity",
                 "type": "Enhancement",
                 "value": "10"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 1,
         "name": "Quiver of Alacrity",
@@ -240192,7 +240382,7 @@
                 "value": 1
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "5"
             },
@@ -243011,12 +243201,10 @@
                 "name": "Increases spellcasting, melee, and ranged threat by 15%\u2714",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Ring of Lies",
@@ -249876,22 +250064,20 @@
                 "name": "Use Magic Device",
                 "type": "Competence",
                 "value": "5"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 26,
         "name": "Sanctified Gages",
@@ -252697,12 +252883,12 @@
     {
         "affixes": [
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "5"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "3"
             },
@@ -255994,7 +256180,7 @@
     {
         "affixes": [
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "4"
             },
@@ -260574,22 +260760,20 @@
                 "name": "Armor Class",
                 "type": "Armor",
                 "value": "13"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 26,
         "name": "Shroud of Ardent",
@@ -260637,12 +260821,10 @@
                 "name": "Light Resistance",
                 "type": "Enhancement",
                 "value": "20"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 14,
         "name": "Shroud of the Abbot",
@@ -262399,25 +262581,23 @@
                 "name": "Hardened Spikes",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue",
+                "Red"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green",
+                "Orange",
+                "Purple"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Orange Augment Slot",
-            "Purple Augment Slot",
-            "Red Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "Silver Lining",
@@ -264830,7 +265010,7 @@
                 "value": 1
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "3"
             }
@@ -266569,6 +266749,43 @@
             {
                 "name": "Enhancement Bonus (Weapon)",
                 "type": "Enhancement",
+                "value": "+15"
+            },
+            {
+                "name": "Ghostbane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Evil Outsider Bane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Superior Vorpal",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Crushing",
+                "type": "Bool",
+                "value": 1
+            }
+        ],
+        "ml": 36,
+        "name": "Spectral Dagger (level 36)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Weapon",
+        "type": "Daggers",
+        "url": "/page/Item:Spectral_Dagger_(level_36)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Enhancement Bonus (Weapon)",
+                "type": "Enhancement",
                 "value": "+2"
             },
             {
@@ -267552,6 +267769,154 @@
             {
                 "name": "Enhancement Bonus (Weapon)",
                 "type": "Enhancement",
+                "value": "+15"
+            },
+            {
+                "name": "Ghostbane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Evil Outsider Bane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Superior Vorpal",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Crushing",
+                "type": "Bool",
+                "value": 1
+            }
+        ],
+        "ml": 32,
+        "name": "Spectral Longbow (level 32)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Weapon",
+        "type": "Long Bows",
+        "url": "/page/Item:Spectral_Longbow_(level_32)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Enhancement Bonus (Weapon)",
+                "type": "Enhancement",
+                "value": "+15"
+            },
+            {
+                "name": "Ghostbane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Evil Outsider Bane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Superior Vorpal",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Crushing",
+                "type": "Bool",
+                "value": 1
+            }
+        ],
+        "ml": 32,
+        "name": "Spectral Longbow (level 32)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Weapon",
+        "type": "Long Bows",
+        "url": "/page/Item:Spectral_Longbow_(level_32)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Enhancement Bonus (Weapon)",
+                "type": "Enhancement",
+                "value": "+15"
+            },
+            {
+                "name": "Ghostbane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Evil Outsider Bane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Superior Vorpal",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Crushing",
+                "type": "Bool",
+                "value": 1
+            }
+        ],
+        "ml": 36,
+        "name": "Spectral Longbow (level 36)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Weapon",
+        "type": "Long Bows",
+        "url": "/page/Item:Spectral_Longbow_(level_36)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Enhancement Bonus (Weapon)",
+                "type": "Enhancement",
+                "value": "+15"
+            },
+            {
+                "name": "Ghostbane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Evil Outsider Bane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Superior Vorpal",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Crushing",
+                "type": "Bool",
+                "value": 1
+            }
+        ],
+        "ml": 36,
+        "name": "Spectral Longbow (level 36)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Weapon",
+        "type": "Long Bows",
+        "url": "/page/Item:Spectral_Longbow_(level_36)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Enhancement Bonus (Weapon)",
+                "type": "Enhancement",
                 "value": "+2"
             },
             {
@@ -267936,6 +268301,48 @@
         "slot": "Weapon",
         "type": "Throwing Daggers",
         "url": "/page/Item:Spectral_Throwing_Dagger_(level_32)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Enhancement Bonus (Weapon)",
+                "type": "Enhancement",
+                "value": "+15"
+            },
+            {
+                "name": "Returning",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Ghostbane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Evil Outsider Bane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Superior Vorpal",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Crushing",
+                "type": "Bool",
+                "value": 1
+            }
+        ],
+        "ml": 36,
+        "name": "Spectral Throwing Dagger (level 36)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Weapon",
+        "type": "Throwing Daggers",
+        "url": "/page/Item:Spectral_Throwing_Dagger_(level_36)"
     },
     {
         "affixes": [
@@ -270012,12 +270419,10 @@
                 "name": "Spell Penetration",
                 "type": "Equipment",
                 "value": "3"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 14,
         "name": "Staff of the Petitioner",
@@ -270639,6 +271044,43 @@
         "slot": "Weapon",
         "type": "Morningstars",
         "url": "/page/Item:Star_of_Endless_Night_(level_32)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Enhancement Bonus (Weapon)",
+                "type": "Enhancement",
+                "value": "+15"
+            },
+            {
+                "name": "Unholy",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Smashing",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Piercing",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Combat Mastery",
+                "type": "Enhancement",
+                "value": "12"
+            }
+        ],
+        "ml": 36,
+        "name": "Star of Endless Night (level 36)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Weapon",
+        "type": "Morningstars",
+        "url": "/page/Item:Star_of_Endless_Night_(level_36)"
     },
     {
         "affixes": [
@@ -272465,12 +272907,10 @@
                 "name": "Spell Focus",
                 "type": "Equipment",
                 "value": "1"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Stormreaver's Napkin",
@@ -273184,9 +273624,6 @@
         ],
         "ml": 1,
         "name": "Sun Flask",
-        "quests": [
-            "Festivult"
-        ],
         "slot": "Weapon",
         "type": "Darts",
         "url": "/page/Item:Sun_Flask"
@@ -278702,12 +279139,10 @@
                 "name": "Maladroit",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 14,
         "name": "Tenderizer",
@@ -279244,7 +279679,7 @@
     {
         "affixes": [
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "5"
             },
@@ -282466,25 +282901,23 @@
                 "name": "Spearblock",
                 "type": "Untyped",
                 "value": "7"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue",
+                "Red"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green",
+                "Orange",
+                "Purple"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Orange Augment Slot",
-            "Purple Augment Slot",
-            "Red Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "The Falling Darkness",
@@ -286827,25 +287260,23 @@
                 "name": "Armor Class",
                 "type": "Deflection",
                 "value": "10"
-            },
-            {
-                "name": "Upgradeable - Primary Augment",
-                "type": "Bool",
-                "value": 1
-            },
-            {
-                "name": "Upgradeable - Secondary Augment",
-                "type": "Bool",
-                "value": 1
             }
         ],
+        "augmentUpgrades": {
+            "Upgradeable - Primary Augment": [
+                "Yellow",
+                "Blue",
+                "Red"
+            ],
+            "Upgradeable - Secondary Augment": [
+                "Green",
+                "Orange",
+                "Purple"
+            ]
+        },
         "crafting": [
-            "Green Augment Slot",
-            "Orange Augment Slot",
-            "Purple Augment Slot",
-            "Red Augment Slot",
-            "Yellow Augment Slot",
-            "Blue Augment Slot"
+            "Upgradeable - Primary Augment",
+            "Upgradeable - Secondary Augment"
         ],
         "ml": 27,
         "name": "The Rising Light",
@@ -293857,7 +294288,7 @@
                 "value": 1
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "3"
             },
@@ -293870,12 +294301,10 @@
                 "name": "Armor-Piercing",
                 "type": "Enhancement",
                 "value": "10"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 14,
         "name": "Treason",
@@ -296208,12 +296637,10 @@
                 "name": "Smoke Screen",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 14,
         "name": "Unwavering Ardency",
@@ -296246,12 +296673,10 @@
                 "name": "Smoke Screen",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 14,
         "name": "Unwavering Ardency",
@@ -297226,12 +297651,10 @@
                 "name": "Air Guard",
                 "type": "Bool",
                 "value": 1
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Ventilated Bracers",
@@ -297583,12 +298006,10 @@
                 "name": "Use Magic Device",
                 "type": "Competence",
                 "value": "3"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Vile Blasphemy",
@@ -300122,7 +300543,7 @@
                 "value": "20"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "1"
             },
@@ -300170,7 +300591,7 @@
                 "value": "20"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "1"
             },
@@ -300218,7 +300639,7 @@
                 "value": "30"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "2"
             },
@@ -300266,7 +300687,7 @@
                 "value": "40"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "3"
             },
@@ -300314,7 +300735,7 @@
                 "value": "40"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "4"
             },
@@ -300362,7 +300783,7 @@
                 "value": "40"
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Insight",
                 "value": "5"
             },
@@ -301172,12 +301593,12 @@
                 "value": 1
             },
             {
-                "name": "Feat: Longbow",
+                "name": "Proficiency: Longbow",
                 "type": "Bool",
                 "value": 1
             },
             {
-                "name": "Feat: Shortbow",
+                "name": "Proficiency: Shortbow",
                 "type": "Bool",
                 "value": 1
             },
@@ -302341,6 +302762,43 @@
             {
                 "name": "Enhancement Bonus (Weapon)",
                 "type": "Enhancement",
+                "value": "+15"
+            },
+            {
+                "name": "Undead Bane",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Coruscating",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Light Bringer",
+                "type": "Bool",
+                "value": 1
+            },
+            {
+                "name": "Greater Sunburst",
+                "type": "Bool",
+                "value": 1
+            }
+        ],
+        "ml": 36,
+        "name": "Wraps of Endless Light (level 36)",
+        "quests": [
+            "The Night Revels"
+        ],
+        "slot": "Weapon",
+        "type": "Handwraps",
+        "url": "/page/Item:Wraps_of_Endless_Light_(level_36)"
+    },
+    {
+        "affixes": [
+            {
+                "name": "Enhancement Bonus (Weapon)",
+                "type": "Enhancement",
                 "value": "+2"
             },
             {
@@ -302633,15 +303091,13 @@
                 "value": 1
             },
             {
-                "name": "Sneak Attack Bonus",
+                "name": "Deception",
                 "type": "Sneak Attack",
                 "value": "4"
-            },
-            {
-                "name": "Upgradeable Item",
-                "type": "Bool",
-                "value": 1
             }
+        ],
+        "crafting": [
+            "Upgradeable Item"
         ],
         "ml": 13,
         "name": "Wretched Twilight",

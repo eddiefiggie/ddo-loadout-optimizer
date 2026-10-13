@@ -143,242 +143,242 @@
   },
   "Assassin Initiate's Leathers (level 13)": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "2",
       "tooltip": "Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate%27s_Leathers_%28level_13%29",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Assassin Initiate's Leathers (level 14)": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "2",
       "tooltip": "Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate%27s_Leathers_%28level_14%29",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Assassin Initiate's Leathers (level 15)": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "3",
       "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Assassin_Initiate%27s_Leathers_%28level_15%29",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Backstabber's Gloves (level 12)": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "3",
       "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_12%29",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Backstabber's Gloves (level 13)": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "4",
       "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_13%29",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Backstabber's Gloves (level 14)": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "4",
       "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_14%29",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Backstabber's Gloves (level 23)": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "5",
       "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_23%29",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Backstabber's Gloves (level 24)": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "5",
       "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_24%29",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Backstabber's Gloves (level 25)": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "5",
       "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Backstabber%27s_Gloves_%28level_25%29",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Bravo's Sword": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "5",
       "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Bravo%27s_Sword",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Drow Piwafwi": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "5",
       "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Drow_Piwafwi",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Goggles of Intuition": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "2",
       "tooltip": "Provides a +2 Enhancement modifier to your attack bonus and a +3 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Goggles_of_Intuition",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Lenses of Opportunity": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "3",
       "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Lenses_of_Opportunity",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Polycurse Dagger": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "3",
       "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Polycurse_Dagger",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Rebellion": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "5",
       "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Rebellion",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Seal of House Avithoul": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "5",
       "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Seal_of_House_Avithoul",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Shard of the Shadowfell": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "4",
       "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Shard_of_the_Shadowfell",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Tharne's Goggles": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "5",
       "tooltip": "Provides a +5 Enhancement modifier to your attack bonus and a +8 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Tharne%27s_Goggles",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Treason": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "3",
       "tooltip": "Provides a +3 Enhancement modifier to your attack bonus and a +5 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Treason",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "Wretched Twilight": [
     {
-      "name": "Sneak Attack Bonus",
+      "name": "Deception",
       "from": "Sneak Attack",
       "to": "Enhancement",
       "value": "4",
       "tooltip": "Provides a +4 Enhancement modifier to your attack bonus and a +6 Enhancement bonus to damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue.",
       "wiki_url": "https://ddowiki.com/page/Item:Wretched_Twilight",
       "verified": "2026-08-30",
-      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against."
+      "note": "#608. `Sneak Attack` is not a bonus type — it is the stat. Upstream maps the wiki template's SECOND parameter to the type and, when it is absent, falls back to the affix name. Template:Sneak Attack Bonus documents that default: \"bonus (or argument two) = Bonus type. An undefined or empty value will use : Enhancement\". The rendered tooltip states it outright, which is what this entry is verified against. Re-pointed 2026-10-13 (#871): gear-planner c36b45e rewrote this affix's name to `Deception` (the fold is adjudicated in affix_synonyms_registry `_note_c36b45e`); the record, pseudo-type and value are otherwise unchanged, and this tooltip is Deception's own definition."
     }
   ],
   "_note_619": "#619 — the item engraves {{Power Store}}, whose page states 'All spells cast while holding this item receive an enhancement bonus of -10% spell point cost' (https://ddowiki.com/page/Power_Store). gear-planner maps the name to Magical Efficiency correctly and reads it as presence, because the template is called with NO parameters — its magnitude lives in the template body, so a structural read has nothing to read. Tooltip recorded above is the effect's own definition (https://ddowiki.com/page/Magical_Efficiency, 'Magical Efficiency 10%'), which states the type and the magnitude in one line. Harvested 2026-08-30. The `value` recorded below is 10, not the upstream 1, because item_value_corrections.json runs FIRST — by the time this file applies, the magnitude is already corrected.",

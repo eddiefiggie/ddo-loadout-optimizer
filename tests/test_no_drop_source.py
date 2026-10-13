@@ -426,19 +426,24 @@ def test_the_built_dataset_flags_the_seeded_items_and_counts_coverage():
     #   +14  net, 224 -> 238
     # confirmed 36 -> 28 (all eight retirements were confirmed_no_source), and
     # wiki_has_source is UNCHANGED at 180 — none of the eight carried that verdict.
-    assert cov["triage_universe"] == 238
+    # c36b45e (#871) — 239: `Sun Flask` lost its quest upstream. Its page was
+    # re-edited 2026-10-13 and now states no quest at all (turn-in collector
+    # "Event"), so nothing is restored; it enters triage as unverified, which
+    # shows the player nothing.
+    assert cov["triage_universe"] == 239
     assert cov["confirmed_no_source"] == 28
     assert cov["wiki_has_source"] == 180
     # 224-item universe, 216 dispositioned in the shard: the remainder is the
     # single invalid-title item recorded tracker-only, plus the seven new
     # `Flame Blade` tiers awaiting triage. Named, so a NINTH cannot appear silently.
-    assert cov["unverified"] == cov["triage_universe"] - 208 == 30
+    assert cov["unverified"] == cov["triage_universe"] - 208 == 31  # c36b45e: + Sun Flask
     undispositioned = sorted({v["source_item"] for v in universe}
                              - set(no_drop_source.load(SHARD)))
     # Named in full, so a THIRTY-FIRST cannot appear silently. Everything here is
     # awaiting triage, not flagged: an unverified item shows nothing player-facing.
     assert undispositioned == sorted(
-        ["Epic Diabolist's Ring", "Epic Infested Chainmail"]
+        ["Epic Diabolist's Ring", "Epic Infested Chainmail",
+         "Sun Flask"]   # c36b45e (#871): its wiki page no longer states a quest
         + [f"{fam} (level {n})"
            for fam in ("Flame Blade", "Mindcleaver", "Shadowblade", "Thorn Blade")
            for n in (1, 5, 10, 15, 20, 25, 30)]), undispositioned

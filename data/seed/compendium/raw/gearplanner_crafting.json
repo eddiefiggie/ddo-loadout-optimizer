@@ -38893,10 +38893,24 @@
                         "value": 1
                     }
                 ],
-                "ml": 12,
+                "ml": 8,
                 "name": "Ruby of Adamantine Arms",
                 "quests": [
                     "DDO Store"
+                ]
+            },
+            {
+                "affixes": [
+                    {
+                        "name": "Bludgeoning Type Bypass",
+                        "type": "Bool",
+                        "value": 1
+                    }
+                ],
+                "ml": 1,
+                "name": "Ruby of Bludgeoning Blows",
+                "quests": [
+                    "Lahar"
                 ]
             },
             {
@@ -38907,7 +38921,7 @@
                         "value": 1
                     }
                 ],
-                "ml": 8,
+                "ml": 4,
                 "name": "Ruby of Chaos",
                 "quests": [
                     "DDO Store"
@@ -39349,7 +39363,7 @@
                         "value": 1
                     }
                 ],
-                "ml": 8,
+                "ml": 4,
                 "name": "Ruby of Evil",
                 "quests": [
                     "DDO Store"
@@ -39821,7 +39835,7 @@
                         "value": 1
                     }
                 ],
-                "ml": 12,
+                "ml": 4,
                 "name": "Ruby of Good",
                 "quests": [
                     "DDO Store"
@@ -40062,7 +40076,7 @@
                         "value": 1
                     }
                 ],
-                "ml": 16,
+                "ml": 8,
                 "name": "Ruby of Iron Blows",
                 "quests": [
                     "DDO Store"
@@ -40364,10 +40378,24 @@
                         "value": 1
                     }
                 ],
-                "ml": 8,
+                "ml": 4,
                 "name": "Ruby of Order",
                 "quests": [
                     "DDO Store"
+                ]
+            },
+            {
+                "affixes": [
+                    {
+                        "name": "Piercing Type Bypass",
+                        "type": "Bool",
+                        "value": 1
+                    }
+                ],
+                "ml": 1,
+                "name": "Ruby of Piercing Precision",
+                "quests": [
+                    "Lahar"
                 ]
             },
             {
@@ -40943,10 +40971,24 @@
                         "value": 1
                     }
                 ],
-                "ml": 16,
+                "ml": 8,
                 "name": "Ruby of Silvered Strikes",
                 "quests": [
                     "DDO Store"
+                ]
+            },
+            {
+                "affixes": [
+                    {
+                        "name": "Slashing Type Bypass",
+                        "type": "Bool",
+                        "value": 1
+                    }
+                ],
+                "ml": 1,
+                "name": "Ruby of Slashing Strikes",
+                "quests": [
+                    "Lahar"
                 ]
             },
             {
@@ -41017,6 +41059,20 @@
                 "name": "Ruby of the Iron Hand",
                 "quests": [
                     "Flurry (NPC)"
+                ]
+            },
+            {
+                "affixes": [
+                    {
+                        "name": "Crystal",
+                        "type": "Bool",
+                        "value": 1
+                    }
+                ],
+                "ml": 8,
+                "name": "Ruby of the Quori",
+                "quests": [
+                    "Lahar"
                 ]
             },
             {
@@ -47744,6 +47800,358 @@
                 ],
                 "quests": [
                     "Legendary Altar of Devastation"
+                ]
+            }
+        ]
+    },
+    "Upgradeable - Primary Augment": {
+        "*": []
+    },
+    "Upgradeable - Secondary Augment": {
+        "*": []
+    },
+    "Upgradeable Item": {
+        "Amulet of the Stormreaver": [
+            {
+                "affixes": [
+                    {
+                        "name": "Armor Class",
+                        "type": "Deflection",
+                        "value": "5"
+                    },
+                    {
+                        "name": "Electric Resistance",
+                        "type": "Enhancement",
+                        "value": "40"
+                    }
+                ]
+            }
+        ],
+        "Breeze": [
+            {
+                "affixes": [
+                    {
+                        "name": "Greater Sirocco",
+                        "type": "Bool",
+                        "value": 1
+                    },
+                    {
+                        "name": "Greater Telekinetic",
+                        "type": "Bool",
+                        "value": 1
+                    }
+                ]
+            }
+        ],
+        "Circle of Hatred": [
+            {
+                "affixes": [
+                    {
+                        "name": "Incite",
+                        "type": "Enhancement",
+                        "value": "30"
+                    }
+                ]
+            }
+        ],
+        "Cloudburst": [
+            {
+                "affixes": [
+                    {
+                        "name": "Lightning Strike",
+                        "type": "Bool",
+                        "value": 1
+                    }
+                ]
+            }
+        ],
+        "Deific Diadem": [
+            {
+                "affixes": [
+                    {
+                        "name": "Evocation Focus",
+                        "type": "Equipment",
+                        "value": "2"
+                    }
+                ]
+            }
+        ],
+        "Dreamspitter": [
+            {
+                "affixes": [
+                    {
+                        "name": "Force Burst",
+                        "type": "Bool",
+                        "value": 1
+                    }
+                ]
+            }
+        ],
+        "Enduring Conviction": [
+            {
+                "affixes": [
+                    {
+                        "name": "Greater Evil Outsider Bane",
+                        "type": "Bool",
+                        "value": 1
+                    }
+                ]
+            }
+        ],
+        "Gauntlets of Eternity": [
+            {
+                "affixes": [
+                    {
+                        "name": "Heal",
+                        "type": "Competence",
+                        "value": "15"
+                    },
+                    {
+                        "name": "Repair",
+                        "type": "Competence",
+                        "value": "15"
+                    },
+                    {
+                        "name": "Positive Spell Power",
+                        "type": "Equipment",
+                        "value": "72"
+                    }
+                ]
+            }
+        ],
+        "Head of Good Fortune": [
+            {
+                "affixes": [
+                    {
+                        "name": "Fortification",
+                        "type": "Enhancement",
+                        "value": "100"
+                    },
+                    {
+                        "name": "Dodge",
+                        "type": "Enhancement",
+                        "value": "4"
+                    }
+                ]
+            }
+        ],
+        "Madstone Boots": [
+            {
+                "affixes": [
+                    {
+                        "name": "Dexterity",
+                        "type": "Enhancement",
+                        "value": "6"
+                    },
+                    {
+                        "name": "Potency",
+                        "type": "Equipment",
+                        "value": "52"
+                    },
+                    {
+                        "name": "Speed",
+                        "type": "Enhancement",
+                        "value": "30"
+                    }
+                ]
+            }
+        ],
+        "Madstone Shield": [
+            {
+                "affixes": [
+                    {
+                        "name": "Improved Bashing",
+                        "type": "Bool",
+                        "value": 1
+                    },
+                    {
+                        "name": "Shield Bashing",
+                        "type": "Enhancement",
+                        "value": "10"
+                    }
+                ]
+            }
+        ],
+        "Noxious Embers": [
+            {
+                "affixes": [
+                    {
+                        "name": "Spell Lore",
+                        "type": "Equipment",
+                        "value": "6"
+                    }
+                ]
+            }
+        ],
+        "Purging the Pantheon": [
+            {
+                "affixes": [
+                    {
+                        "name": "Fortification",
+                        "type": "Enhancement",
+                        "value": "100"
+                    }
+                ]
+            }
+        ],
+        "Quiver of Alacrity": [
+            {
+                "affixes": [
+                    {
+                        "name": "Speed",
+                        "type": "Enhancement",
+                        "value": "30"
+                    }
+                ]
+            }
+        ],
+        "Ring of Lies": [
+            {
+                "affixes": [
+                    {
+                        "name": "Charisma Skills",
+                        "type": "Exceptional",
+                        "value": "2"
+                    },
+                    {
+                        "name": "Improved Deception",
+                        "type": "Enhancement",
+                        "value": "5"
+                    }
+                ]
+            }
+        ],
+        "Shroud of the Abbot": [
+            {
+                "affixes": [
+                    {
+                        "name": "Light Resistance",
+                        "type": "Enhancement",
+                        "value": "30"
+                    },
+                    {
+                        "name": "Lesser Arcane Augmentation",
+                        "type": "Untyped",
+                        "value": "9"
+                    }
+                ]
+            }
+        ],
+        "Staff of the Petitioner": [
+            {
+                "affixes": [
+                    {
+                        "name": "Potency",
+                        "type": "Equipment",
+                        "value": "48"
+                    },
+                    {
+                        "name": "Universal Spell Power",
+                        "type": "Implement",
+                        "value": "15"
+                    }
+                ]
+            }
+        ],
+        "Stormreaver's Napkin": [
+            {
+                "affixes": [
+                    {
+                        "name": "Spell Penetration",
+                        "type": "Equipment",
+                        "value": "2"
+                    }
+                ]
+            }
+        ],
+        "Tenderizer": [
+            {
+                "affixes": [
+                    {
+                        "name": "Bone Breaking",
+                        "type": "Bool",
+                        "value": 1
+                    },
+                    {
+                        "name": "Spikes",
+                        "type": "Bool",
+                        "value": 1
+                    }
+                ]
+            }
+        ],
+        "Treason": [
+            {
+                "affixes": [
+                    {
+                        "name": "Deception",
+                        "type": "Sneak Attack",
+                        "value": "4"
+                    },
+                    {
+                        "name": "Armor-Piercing",
+                        "type": "Enhancement",
+                        "value": "15"
+                    }
+                ]
+            }
+        ],
+        "Unwavering Ardency": [
+            {
+                "affixes": [
+                    {
+                        "name": "Blinding Embers",
+                        "type": "Bool",
+                        "value": 1
+                    }
+                ]
+            }
+        ],
+        "Ventilated Bracers": [
+            {
+                "affixes": [
+                    {
+                        "name": "Armor Class",
+                        "type": "Armor",
+                        "value": "7"
+                    },
+                    {
+                        "name": "Disable Device",
+                        "type": "Enhancement",
+                        "value": "5"
+                    },
+                    {
+                        "name": "Open Lock",
+                        "type": "Enhancement",
+                        "value": "5"
+                    }
+                ]
+            }
+        ],
+        "Vile Blasphemy": [
+            {
+                "affixes": [
+                    {
+                        "name": "Greater Dispelling Guard",
+                        "type": "Bool",
+                        "value": 1
+                    }
+                ]
+            }
+        ],
+        "Wretched Twilight": [
+            {
+                "affixes": [
+                    {
+                        "name": "Deception",
+                        "type": "Sneak Attack",
+                        "value": "5"
+                    },
+                    {
+                        "name": "Negative Lore",
+                        "type": "Equipment",
+                        "value": "5"
+                    }
                 ]
             }
         ]
