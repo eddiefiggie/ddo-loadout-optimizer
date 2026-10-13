@@ -56,6 +56,12 @@ Nullification, Radiance, Reconstruction, Resonance`.
 
 ## 3. Universal Spell Power is a DIFFERENT mechanic — do NOT expand it
 
+> **Superseded for SET BONUSES on 2026-10-13 (#870).** Update 81.4 states that a
+> set bonus labelled Universal Spell Power is a bonus to each element
+> spellpower, so set-channel USP now expands like Potency. Everything below still
+> holds for item enchantments (Implement, Exceptional), which keep the cross-add.
+> See `set-bonus-universal-per-element.md`.
+
 `Spell_power`, section **Universal Spell Power** (verbatim):
 
 > **Fully stacking. It flat adds to all of your other Spell Powers**; in the

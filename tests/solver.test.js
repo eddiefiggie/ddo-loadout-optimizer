@@ -2816,12 +2816,12 @@ async function withCrossAdd(map, fn) {
       .filter(v => ["Bracers", "Boots", "Gloves", "Belt", "Necklace", "Trinket", "Goggles", "Cloak", "Helmet"].includes(v.slot))
       .slice(0, 5);
     assert.ok(pieces.length === 5, "need 5 enriched Dread Isle members in distinct slots");
-    const mk = vs => ({ targets: ["Universal Spell Power"], mlCap: 34,
+    const mk = vs => ({ targets: ["Combustion"], mlCap: 34,
       worn: vs.map(v => ({ slot: v.slot, cardinality: 1, variants: [v] })) });
     const r5 = await S.solveLexicographic(mk(pieces), highs);
     const r4 = await S.solveLexicographic(mk(pieces.slice(0, 4)), highs);
     assert.ok(r5.setsActive.some(s => s.set === SET), "5 enriched pieces activate the set");
-    assert.ok(r5.effective["Universal Spell Power"] >= 25, "the set's Universal Spell Power reaches the total");
+    assert.ok(r5.effective["Combustion"] >= 25, "the set's per-element USP (#870) reaches Combustion");
     assert.ok(!r4.setsActive.some(s => s.set === SET), "4 pieces do NOT activate the set (threshold honored)");
   });
 
@@ -3131,7 +3131,7 @@ async function withCrossAdd(map, fn) {
     const natives = dreadNatives(data, ["Bracers", "Boots", "Gloves", "Belt"]);
     assert.strictEqual(natives.length, 4, "4 native carriers in distinct worn slots");
     const mk = (vs) => ({
-      targets: ["Universal Spell Power"], mlCap: 34,
+      targets: ["Combustion"], mlCap: 34,
       membershipSetDefs: data.membership_set_defs,
       worn: vs.map((v) => ({ slot: v.slot, cardinality: 1, variants: [v] })),
     });
@@ -3139,8 +3139,8 @@ async function withCrossAdd(map, fn) {
     const r4 = await S.solveLexicographic(mk(natives), highs);
     assert.strictEqual(r5.status, "optimal");
     assert.ok(r5.setsActive.some((s) => s.set === DREAD_SET), "4 natives + the blank activate the 5-piece set");
-    assert.ok((r5.effective["Universal Spell Power"] || 0) >= (r4.effective["Universal Spell Power"] || 0) + 25,
-      "the set's +25 Universal Spell Power credits only with the blank as 5th piece");
+    assert.ok((r5.effective["Combustion"] || 0) >= (r4.effective["Combustion"] || 0) + 25,
+      "the set's +25 per-element USP (#870) credits Combustion only with the blank as 5th piece");
     assert.ok(!r4.setsActive.some((s) => s.set === DREAD_SET), "the 4 natives alone do not activate it");
   });
 
@@ -3165,7 +3165,7 @@ async function withCrossAdd(map, fn) {
     const forced = JSON.parse(JSON.stringify(helm));
     forced.set_membership_slot = { pool: [rival], station: "Dinosaur Bone crafting" };
     const mk = (vs) => ({
-      targets: ["Universal Spell Power"], mlCap: 34,
+      targets: ["Combustion"], mlCap: 34,
       membershipSetDefs: data.membership_set_defs,
       worn: vs.map((v) => ({ slot: v.slot, cardinality: 1, variants: [v] })),
     });
@@ -3216,13 +3216,13 @@ async function withCrossAdd(map, fn) {
     assert.ok(defs[SET], "the real Legendary Vol's Influence def is present");
     const lp = (slotName) => memberHost(`LP-${slotName}`, slotName, [SET]);
     const model = {
-      targets: ["Universal Spell Power"], mlCap: 34,
+      targets: ["Combustion"], mlCap: 34,
       membershipSetDefs: defs,
       worn: [slot("Helmet", [lp("Helmet")]), slot("Cloak", [lp("Cloak")]), slot("Gloves", [lp("Gloves")])],
     };
     const r = await S.solveLexicographic(model, highs);
     assert.ok(r.setsActive.some((s) => s.set === SET), "the real def self-seeds and the set activates from 3 chosen pieces");
-    assert.strictEqual(r.effective["Universal Spell Power"], 25, "the set's real +25 Artifact USP reaches the total");
+    assert.strictEqual(r.effective["Combustion"], 25, "the set's real +25 Artifact USP reaches Combustion, per-element (#870)");
     assert.strictEqual((r.membershipPlaced || []).length, 3, "three membership picks prescribed");
     assert.ok(r.membershipPlaced.every((m) => m.station === "Cannith Repurposing Station"), "prescriptions name the station");
   });

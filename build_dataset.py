@@ -1417,7 +1417,7 @@ def build() -> dict:
     for _dset in dino_sets:
         if _dset.get("affixes"):
             _dset["affixes"] = umbrella_mod.expand_affixes(_dset["affixes"])
-            _dset["affixes"] = spell_focus_mod.expand_affixes(_dset["affixes"])
+            _dset["affixes"] = spell_focus_mod.expand_set_affixes(_dset["affixes"])
     # U4 — per-channel spelling guard: no dino_sets stat may be a fold-away
     # synonym from the frozen registry ("Universal Spellpower" hid here because
     # this hand-carried wiki channel never passed through a synonym fold). Runs
@@ -1429,6 +1429,10 @@ def build() -> dict:
     # unsplit compound from the parse-time split table. Same refuses-zero
     # semantics as the spelling guard.
     dino_parser_mod.check_set_records_expanded(dino_sets)
+    # #870 (U81.4) — no set bonus grants Universal spellpower/lore any more;
+    # every set channel expands them per-element and is guarded on its own.
+    spell_focus_mod.check_set_channel(
+        "dino_sets", (a.get("stat") for _d in dino_sets for a in _d.get("affixes") or []))
     # #169 — the same treatment for the version-bearing affixes inside SET BONUS
     # tiers. The item split above cannot reach this channel: a tier affix is
     # `{"stat": ..., "bonus_type": ...}` while an item affix is
@@ -1538,6 +1542,11 @@ def build() -> dict:
         (a.get("stat")
          for v in variants for t in v.get("parsed_set_bonuses") or []
          for a in t.get("affixes") or []))
+    spell_focus_mod.check_set_channel(
+        "parsed_set_bonuses",
+        (a.get("stat")
+         for v in variants for t in v.get("parsed_set_bonuses") or []
+         for a in t.get("affixes") or []))
     # #694 — target-conditional set clauses ("+5 Artifact bonus to hit and
     # damage vs. Evil creatures") are FLAGGED at the set_parser seam, never
     # emitted as stats. Two things here: the disclosure (how many clauses the
@@ -1584,11 +1593,16 @@ def build() -> dict:
     for _mdef in membership_defs.values():                     # #205, third channel
         for _tier in _mdef.get("tiers") or []:
             if _tier.get("affixes"):
-                _tier["affixes"] = spell_focus_mod.expand_affixes(_tier["affixes"])
+                _tier["affixes"] = spell_focus_mod.expand_set_affixes(_tier["affixes"])
     # #305 — the same guard on the membership-def channel (built from the same
     # set catalog through the same parse seam, but a separate emitted structure
     # a sibling guard cannot vouch for).
     set_tier_folds_mod.check_channel(
+        "membership_set_defs",
+        (a.get("stat")
+         for _d in membership_defs.values() for _t in _d.get("tiers") or []
+         for a in _t.get("affixes") or []))
+    spell_focus_mod.check_set_channel(
         "membership_set_defs",
         (a.get("stat")
          for _d in membership_defs.values() for _t in _d.get("tiers") or []
@@ -1693,7 +1707,7 @@ def build() -> dict:
     for _adef in augment_set_defs.values():
         for _tier in _adef.get("tiers") or []:
             if _tier.get("affixes"):
-                _tier["affixes"] = spell_focus_mod.expand_affixes(_tier["affixes"])
+                _tier["affixes"] = spell_focus_mod.expand_set_affixes(_tier["affixes"])
     # #289 — and the guard that makes the gap impossible to reopen quietly: the
     # def channels get the same expanded-away orphan check the variant set-bonus
     # channel has had since #171. Empty allowlist by design.
@@ -1710,6 +1724,11 @@ def build() -> dict:
     # Helpless`, the channel's established precedent — see the seed's
     # `stat_note`), so this guard is what keeps the spelling from returning.
     set_tier_folds_mod.check_channel(
+        "augment_set_defs",
+        (a.get("stat")
+         for _d in augment_set_defs.values() for _t in _d.get("tiers") or []
+         for a in _t.get("affixes") or []))
+    spell_focus_mod.check_set_channel(
         "augment_set_defs",
         (a.get("stat")
          for _d in augment_set_defs.values() for _t in _d.get("tiers") or []

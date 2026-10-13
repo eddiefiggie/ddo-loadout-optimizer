@@ -106,6 +106,17 @@ expansion entries, every candidate carries a recorded disposition.**
 
 ---
 
+## 2026-10-13: the U81.4 statement (#870, #876)
+
+The new wiki statement the #402 section below asks for has arrived: the
+`Update 81 Patch 4 Release Notes` say every set bonus labelled Universal spell
+power, crit or crit damage is a bonus to each element mod. For **set bonuses**,
+`Universal Spell Power`, `Universal Spell Lore` and `Universal Spell Critical
+Chance` now expand per-element (#870). The crit-damage rows (`Spell Critical
+Damage`, `Universal Spell Critical Damage`) are ruled the same way and ship in
+#876. Item-enchantment rows above are unchanged. Full record:
+`set-bonus-universal-per-element.md`.
+
 ## 2026-08-20 re-verification: `Spell Intensity` (#402)
 
 > **Naming note.** This section is the 2026-08-20 record and uses the name as it

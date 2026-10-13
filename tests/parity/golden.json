@@ -1,6 +1,6 @@
 {
  "schema_note": "U8 forward golden guard — ratified post-overhaul accepted solves (perTarget, effective, chosen slot+variant). Regenerate with: node tests/parity/capture_golden.js",
- "generated": "2026-09-23",
+ "generated": "2026-10-13",
  "dataset": "web/data/items.json (9208 items)",
  "fixture_count": 24,
  "solves": {
@@ -79,13 +79,13 @@
    "status": "optimal",
    "perTarget": {
     "Intelligence": 35,
-    "Universal Spell Power": 94,
-    "Wisdom": 29
+    "Universal Spell Power": 54,
+    "Wisdom": 34
    },
    "effective": {
     "Intelligence": 35,
-    "Universal Spell Power": 94,
-    "Wisdom": 29
+    "Universal Spell Power": 54,
+    "Wisdom": 34
    },
    "chosen": [
     {
@@ -94,11 +94,11 @@
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Vistani Fighter's Sash"
+     "variant": "Legendary Black Satin Waist"
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Flightfoot Greaves"
+     "variant": "Blackfeather Boots"
     },
     {
      "slot": "Bracers",
@@ -106,7 +106,7 @@
     },
     {
      "slot": "Cloak",
-     "variant": "Dread Pirate's Cloak (level 12)"
+     "variant": "Dread Pirate's Cloak (level 4)"
     },
     {
      "slot": "Gloves",
@@ -118,7 +118,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Legendary Crown of Leaves"
+     "variant": "Legendary Helm of the Mroranon"
     },
     {
      "slot": "Main Hand",
@@ -126,7 +126,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Fleetfoot Necklace"
+     "variant": "Memento of Flame"
     },
     {
      "slot": "Off Hand",
@@ -134,11 +134,11 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Duskbone Ring"
+     "variant": "Celestial Topaz Ring"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Ring of Nightfall"
+     "variant": "Legendary Diabolist's Ring"
     },
     {
      "slot": "Trinket",
@@ -342,67 +342,67 @@
   "endgame-caster-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Universal Spell Power": 104,
-    "Combustion": 461,
-    "Corrosion": 416,
-    "Devotion": 349,
-    "Glaciation": 321,
-    "Impulse": 203,
-    "Magnetism": 182,
-    "Nullification": 152,
-    "Radiance": 152,
-    "Reconstruction": 301,
-    "Resonance": 152,
-    "Wisdom": 24,
-    "Charisma": 24
+    "Universal Spell Power": 54,
+    "Combustion": 411,
+    "Corrosion": 387,
+    "Devotion": 377,
+    "Glaciation": 278,
+    "Impulse": 169,
+    "Magnetism": 169,
+    "Nullification": 290,
+    "Radiance": 169,
+    "Reconstruction": 169,
+    "Resonance": 169,
+    "Wisdom": 26,
+    "Charisma": 25
    },
    "effective": {
-    "Universal Spell Power": 104,
-    "Combustion": 461,
-    "Corrosion": 416,
-    "Devotion": 349,
-    "Glaciation": 321,
-    "Impulse": 203,
-    "Magnetism": 182,
-    "Nullification": 152,
-    "Radiance": 152,
-    "Reconstruction": 301,
-    "Resonance": 152,
-    "Wisdom": 24,
-    "Charisma": 24
+    "Universal Spell Power": 54,
+    "Combustion": 411,
+    "Corrosion": 387,
+    "Devotion": 377,
+    "Glaciation": 278,
+    "Impulse": 169,
+    "Magnetism": 169,
+    "Nullification": 290,
+    "Radiance": 169,
+    "Reconstruction": 169,
+    "Resonance": 169,
+    "Wisdom": 26,
+    "Charisma": 25
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
+     "variant": "Dinosaur Bone Docent"
     },
     {
      "slot": "Belt",
-     "variant": "Jetscale Belt"
+     "variant": "Legendary Lion-headed Belt Buckle"
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Windriders"
+     "variant": "Legendary Boots of Corrosion"
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Bronzed Bracers"
+     "variant": "Legendary Bracers of the Hunter"
     },
     {
      "slot": "Cloak",
-     "variant": "Dinosaur Bone Cloak"
+     "variant": "Gravekeeper's Elegant Cloak"
     },
     {
      "slot": "Gloves",
-     "variant": "Legendary Birchlore Gauntlets"
+     "variant": "Darstil's Gloves"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Corroded Iron Lenses"
+     "variant": "Legendary Black Earth Guardian's Lenses"
     },
     {
      "slot": "Helmet",
-     "variant": "Dinosaur Bone Helmet"
+     "variant": "Epic Halcyonia"
     },
     {
      "slot": "Main Hand",
@@ -410,7 +410,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Pendant of the Earth"
+     "variant": "Legendary Pendant of Subtle Pain"
     },
     {
      "slot": "Off Hand",
@@ -418,15 +418,15 @@
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Ring of the Red Abishai"
+     "variant": "Legendary Ring of the Black Abishai"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Shaman's Band"
+     "variant": "Legendary Ring of the Red Abishai"
     },
     {
      "slot": "Trinket",
-     "variant": "Legendary Gem of Many Facets"
+     "variant": "Epic Dragon's Eye"
     }
    ]
   },
@@ -575,43 +575,39 @@
   "trance-credit-additive-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 472,
-    "Wisdom": 31,
-    "Universal Spell Power": 104
+    "Devotion": 422,
+    "Wisdom": 34,
+    "Universal Spell Power": 54
    },
    "effective": {
-    "Devotion": 472,
-    "Wisdom": 31,
-    "Universal Spell Power": 104
+    "Devotion": 422,
+    "Wisdom": 34,
+    "Universal Spell Power": 54
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
+     "variant": "Epic Docent of Grace"
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Belt of the Black Sands"
+     "variant": "Belt of the Burrower"
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Windriders"
-    },
-    {
-     "slot": "Bracers",
-     "variant": "Bracelets of Flourishing Fauna"
+     "variant": "Legendary Sunken Slippers"
     },
     {
      "slot": "Cloak",
-     "variant": "Dread Pirate's Cloak (level 12)"
+     "variant": "Dread Pirate's Cloak (level 4)"
     },
     {
      "slot": "Gloves",
-     "variant": "Alaric's Grim Gauntlets"
+     "variant": "Balorskin Gauntlets"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Goggles of Dusk"
+     "variant": "Legendary Raven's Sight"
     },
     {
      "slot": "Helmet",
@@ -631,58 +627,54 @@
     },
     {
      "slot": "Ring",
-     "variant": "Epic Sacred Band"
+     "variant": "Celestial Topaz Ring"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Signet Ring of the Earth"
+     "variant": "Epic Sacred Band"
     },
     {
      "slot": "Trinket",
-     "variant": "Legendary Red Raptor Feather"
+     "variant": "Epic Dragon's Eye"
     }
    ]
   },
   "trance-credit-additive-ml32-baseline": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 460,
-    "Wisdom": 31,
-    "Universal Spell Power": 104
+    "Devotion": 410,
+    "Wisdom": 34,
+    "Universal Spell Power": 54
    },
    "effective": {
-    "Devotion": 460,
-    "Wisdom": 31,
-    "Universal Spell Power": 104
+    "Devotion": 410,
+    "Wisdom": 34,
+    "Universal Spell Power": 54
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
+     "variant": "Epic Docent of Grace"
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Belt of the Black Sands"
+     "variant": "Belt of the Burrower"
     },
     {
      "slot": "Boots",
-     "variant": "Legendary Windriders"
-    },
-    {
-     "slot": "Bracers",
-     "variant": "Bracelets of Flourishing Fauna"
+     "variant": "Legendary Sunken Slippers"
     },
     {
      "slot": "Cloak",
-     "variant": "Dread Pirate's Cloak (level 12)"
+     "variant": "Dread Pirate's Cloak (level 4)"
     },
     {
      "slot": "Gloves",
-     "variant": "Alaric's Grim Gauntlets"
+     "variant": "Balorskin Gauntlets"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Goggles of Dusk"
+     "variant": "Legendary Raven's Sight"
     },
     {
      "slot": "Helmet",
@@ -702,15 +694,15 @@
     },
     {
      "slot": "Ring",
-     "variant": "Epic Sacred Band"
+     "variant": "Celestial Topaz Ring"
     },
     {
      "slot": "Ring",
-     "variant": "Legendary Signet Ring of the Earth"
+     "variant": "Epic Sacred Band"
     },
     {
      "slot": "Trinket",
-     "variant": "Legendary Red Raptor Feather"
+     "variant": "Epic Dragon's Eye"
     }
    ]
   },
@@ -1205,37 +1197,25 @@
   "cross-add-combustion-usp-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Combustion": 461,
-    "Universal Spell Power": 104
+    "Combustion": 411,
+    "Universal Spell Power": 54
    },
    "effective": {
-    "Combustion": 461,
-    "Universal Spell Power": 104
+    "Combustion": 411,
+    "Universal Spell Power": 54
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
+     "variant": "Epic Vulkoorim Dervish Robe"
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Belt of the Black Sands"
-    },
-    {
-     "slot": "Boots",
-     "variant": "Legendary Windriders"
-    },
-    {
-     "slot": "Bracers",
-     "variant": "Bracelets of Flourishing Fauna"
+     "variant": "Braided Cutcord"
     },
     {
      "slot": "Cloak",
-     "variant": "Cloak of Autumn"
-    },
-    {
-     "slot": "Gloves",
-     "variant": "Alaric's Grim Gauntlets"
+     "variant": "Cloak of Balance"
     },
     {
      "slot": "Goggles",
@@ -1251,7 +1231,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Pendant of the Earth"
+     "variant": "Memento of Flame"
     },
     {
      "slot": "Off Hand",
@@ -1262,62 +1242,46 @@
      "variant": "Legendary Ring of the Red Abishai"
     },
     {
-     "slot": "Ring",
-     "variant": "Legendary Signet Ring of the Earth"
-    },
-    {
      "slot": "Trinket",
-     "variant": "Legendary Red Raptor Feather"
+     "variant": "Symbol of the Slave Lords"
     }
    ]
   },
   "utility-ab-kinetic-ml34-baseline": {
    "status": "optimal",
    "perTarget": {
-    "Kinetic Lore": 46
+    "Kinetic Lore": 40
    },
    "effective": {
-    "Kinetic Lore": 46
+    "Kinetic Lore": 40
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
+     "variant": "Dinosaur Bone Docent"
     },
     {
      "slot": "Goggles",
      "variant": "Red Wizard's Sight"
-    },
-    {
-     "slot": "Helmet",
-     "variant": "Faedark Faerielights"
-    },
-    {
-     "slot": "Necklace",
-     "variant": "Celestial Insignia"
     }
    ]
   },
   "utility-ab-kinetic-ml34": {
    "status": "optimal",
    "perTarget": {
-    "Kinetic Lore": 46
+    "Kinetic Lore": 40
    },
    "effective": {
-    "Kinetic Lore": 46
+    "Kinetic Lore": 40
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Darkmoss"
-    },
-    {
-     "slot": "Belt",
-     "variant": "Braided Cutcord"
+     "variant": "Dinosaur Bone Docent"
     },
     {
      "slot": "Cloak",
-     "variant": "Legendary Cloak of Autumn"
+     "variant": "Cloak of Autumn"
     },
     {
      "slot": "Goggles",
@@ -1325,7 +1289,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Malicia's Crown (level 12)"
+     "variant": "Malicia's Crown (level 20)"
     },
     {
      "slot": "Main Hand",
@@ -1333,11 +1297,11 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Celestial Insignia"
+     "variant": "Hypnotic Pendant"
     },
     {
      "slot": "Trinket",
-     "variant": "Symbol of the Slave Lords"
+     "variant": "Legendary Symbol of the Slave Lords"
     }
    ]
   },
@@ -1383,12 +1347,12 @@
    "perTarget": {
     "Intelligence": 37,
     "Spell Penetration": 31,
-    "Universal Spell Power": 104
+    "Universal Spell Power": 54
    },
    "effective": {
     "Intelligence": 37,
     "Spell Penetration": 31,
-    "Universal Spell Power": 104
+    "Universal Spell Power": 54
    },
    "chosen": [
     {
@@ -1397,23 +1361,11 @@
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Belt of the Black Sands"
-    },
-    {
-     "slot": "Boots",
-     "variant": "Legendary Windriders"
-    },
-    {
-     "slot": "Bracers",
-     "variant": "Legendary Admiral's Wristwatch"
+     "variant": "Belt of Braided Beards"
     },
     {
      "slot": "Cloak",
      "variant": "Legendary Great Forge Shroud"
-    },
-    {
-     "slot": "Gloves",
-     "variant": "Alaric's Grim Gauntlets"
     },
     {
      "slot": "Goggles",
@@ -1421,7 +1373,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Dread Stalker's Skullcap"
+     "variant": "Legendary Cowl of the Drow Devotee"
     },
     {
      "slot": "Main Hand",
@@ -1440,12 +1392,8 @@
      "variant": "Celestial Topaz Ring"
     },
     {
-     "slot": "Ring",
-     "variant": "Legendary Duskbone Ring"
-    },
-    {
      "slot": "Trinket",
-     "variant": "Legendary Red Raptor Feather"
+     "variant": "Symbol of the Slave Lords"
     }
    ]
   },
