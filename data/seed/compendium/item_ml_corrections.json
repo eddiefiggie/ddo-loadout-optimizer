@@ -1,0 +1,14 @@
+{
+  "_source": "DDO Wiki item infoboxes, read 2026-10-13 through the in-app Browser pane (#871).",
+  "_why": "gear-planner c36b45e reads these Night Revels items at ml 1 with no quest. Their pages were reformatted on 2026-10-12: the infobox parameter `minlevel` became `minimum level` and the quest line became `turn in collector :: Joe Candymaker` with a {{Night Revels recipe}}. Upstream's parser reads the old names, so it fell back to ml 1. The wiki still STATES each level outright; this restores it, and restores the quest the previous snapshot (397c673) carried. Each entry names the upstream value it expects to find (`from`), so it fails loudly the moment upstream changes again, and goes stale (also failing the build) once upstream ships the corrected value, at which point it is deleted.",
+  "corrections": {
+    "Cloak of Night (level 4)":       {"from_ml": 1, "ml": 4,  "quests": ["The Night Revels"], "evidence": "minimum level :: 4"},
+    "Cloak of Night (level 8)":       {"from_ml": 1, "ml": 8,  "quests": ["The Night Revels"], "evidence": "minimum level :: 8"},
+    "Cloak of Night (level 12)":      {"from_ml": 1, "ml": 12, "quests": ["The Night Revels"], "evidence": "minimum level :: 12"},
+    "Cloak of Night (level 16)":      {"from_ml": 1, "ml": 16, "quests": ["The Night Revels"], "evidence": "minimum level :: 16"},
+    "Epic Cloak of Night (level 20)": {"from_ml": 1, "ml": 20, "quests": ["The Night Revels"], "evidence": "minimum level :: 20"},
+    "Epic Cloak of Night (level 24)": {"from_ml": 1, "ml": 24, "quests": ["The Night Revels"], "evidence": "minimum level :: 24"},
+    "Epic Cloak of Night (level 28)": {"from_ml": 1, "ml": 28, "quests": ["The Night Revels"], "evidence": "minimum level :: 28"},
+    "Bottled Fear":                   {"from_ml": 1, "ml": 5,  "quests": ["The Night Revels"], "evidence": "minimum level :: 5"}
+  }
+}

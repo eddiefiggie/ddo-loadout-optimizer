@@ -58,7 +58,8 @@ from src import crafting_coverage as cc  # noqa: E402
 # #843 — 4 not 6: `Rune Arm - Suffix` and `Melee - Extra` are served. The pool
 # reads the yourddo catalog now, which types effects in both menus (9 and 7
 # offered), so the "every effect in them is untyped" reason above is history.
-BASELINE_UNSERVED_LABELS = 4   # #766 took Slaver's ten labels off the list; #843 the last two Essence
+BASELINE_UNSERVED_LABELS = 7   # c36b45e (#871): +3, the `Upgradeable` keys (see UNSERVED_ALLOWLIST).
+# #766 took Slaver's ten labels off the list; #843 the last two Essence
 # #764 — 199 not 282: -83. The seven Essence labels that became served carried
 # 83 item-slots between them (Rune Arm Prefix 39 + Extra 39, Ring Prefix/Suffix/
 # Extra 1 each, Melee Prefix/Suffix 1 each). The 39 Rune Arm SUFFIX slots and the
@@ -73,7 +74,8 @@ BASELINE_UNSERVED_LABELS = 4   # #766 took Slaver's ten labels off the list; #84
 # sets, at random` 2 -> 1. `One of the following combinations` is unchanged at 1.
 # The LABEL count is unchanged at 4, which is the point of pinning both halves:
 # this is a population shrinking, not a label becoming served or unserved.
-BASELINE_UNSERVED_ITEM_SLOTS = 8   # was 15; -7 from the 397c673 [Crafted] collapse
+BASELINE_UNSERVED_ITEM_SLOTS = 97  # c36b45e (#871): +89 = 32 + 32 Upgradeable augment hosts + 25 Upgradeable Item hosts.
+# was 15; -7 from the 397c673 [Crafted] collapse
 
 # #371 — the per-item split as measured on the built dataset.
 BASELINE_PER_ITEM_DECLARERS = 65

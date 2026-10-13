@@ -42,26 +42,24 @@ def test_the_level_in_the_name_is_always_the_item_s_ml():
     # Non-vacuity: a rename upstream would empty this and the assertion below would
     # pass by inspecting nothing, which is exactly when the importer would break.
     assert len(rows) > 500, f"only {len(rows)} suffixed names found; the pattern no longer matches"
-    # 397c673 — one KNOWN wiki self-contradiction, allowlisted by name so a SECOND
-    # one cannot hide behind it. `Item:Legendary Ratkiller (level 36)` is the page's
-    # own title, but the infobox on that page states `Minimum Level 32`, and
-    # gear-planner scraped both faithfully — so the disagreement is the wiki's, not
-    # upstream's and not ours. ml=32 is the sourced value (the infobox states it);
-    # the suffix is the page title. Stripping the suffix to match an owned name is
-    # still correct here, because the base name `Legendary Ratkiller` is what the
-    # importer needs; what is lost is only the suffix's claim about the level, which
-    # was already wrong. Verified on the rendered page 2026-09-22.
-    WIKI_TITLE_DISAGREES_WITH_ITS_OWN_INFOBOX = {"Legendary Ratkiller (level 36)": 32}
+    # Wiki self-contradictions, allowlisted by name AND by the disagreeing ml, so a
+    # second one cannot hide behind an entry. EMPTY since c36b45e (#871, closing
+    # #863): `Legendary Ratkiller (level 36)` was here at ml 32 because its infobox
+    # said 32 under a level-36 title; Update 81.4 fixed the item ("The level 36
+    # version of the Ratcatcher Maul is now actually level 36") and upstream now
+    # ships ml 36, so the entry was retired.
+    #
+    # The entry's liveness check used to match the NAME only, so it stayed green
+    # after the fix it was excusing — the exact failure the comment said it guarded.
+    # Each entry must now match an item that still carries the disagreeing ml.
+    WIKI_TITLE_DISAGREES_WITH_ITS_OWN_INFOBOX = {}
     mismatched = [(i["source_item"], i.get("ml")) for i, _, lvl in rows
                   if i.get("ml") != lvl
                   and WIKI_TITLE_DISAGREES_WITH_ITS_OWN_INFOBOX.get(i["source_item"]) != i.get("ml")]
-    # The allowlist must stay live: if upstream or the wiki fixes the page, this
-    # entry stops matching anything and should be retired rather than left standing.
-    _allowlisted = [i for i, _, lvl in rows
-                    if i["source_item"] in WIKI_TITLE_DISAGREES_WITH_ITS_OWN_INFOBOX]
-    assert len(_allowlisted) == 1, (
-        "the Legendary Ratkiller allowlist entry matches nothing — the page was "
-        "probably fixed; retire the entry instead of leaving it asserting a stale claim")
+    for name, ml in WIKI_TITLE_DISAGREES_WITH_ITS_OWN_INFOBOX.items():
+        assert any(i["source_item"] == name and i.get("ml") == ml for i, _, _ in rows), (
+            f"the {name!r} allowlist entry no longer matches an item at ml {ml} — the "
+            "contradiction was fixed; retire the entry instead of leaving it standing")
     assert not mismatched, (
         "a `(level N)` suffix disagrees with the item's `ml`: "
         + ", ".join(f"{n} has ml={m}" for n, m in mismatched[:8])

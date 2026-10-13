@@ -40,6 +40,36 @@ from src import essence_pool
 
 RAW_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "seed",
                         "compendium", "raw", "gearplanner_items.json")
+# #871 — wiki-stated minimum levels (and quests) upstream lost in a parse
+# regression. See the shard's `_why`; every entry asserts the upstream value it
+# replaces, so a correction can neither go stale nor land on a changed record
+# silently.
+ML_CORRECTIONS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "seed",
+                                   "compendium", "item_ml_corrections.json")
+
+
+def load_ml_corrections(path=ML_CORRECTIONS_PATH):
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh).get("corrections") or {}
+
+
+def apply_ml_correction(it, corr):
+    """Return a corrected COPY of raw item `it`, or raise when the correction no
+    longer matches what upstream ships (changed again, or already fixed)."""
+    name = it.get("name")
+    if it.get("ml") == corr["ml"]:
+        raise ValueError(
+            f"item_ml_corrections: {name!r} already ships ml {corr['ml']} upstream — "
+            "the correction is stale; delete it")
+    if it.get("ml") != corr["from_ml"]:
+        raise ValueError(
+            f"item_ml_corrections: {name!r} ships ml {it.get('ml')!r}, not the "
+            f"{corr['from_ml']!r} this correction was written against — re-read the wiki")
+    fixed = dict(it, ml=corr["ml"])
+    if corr.get("quests") and not it.get("quests"):
+        fixed["quests"] = list(corr["quests"])
+    return fixed
+
 
 # Raw-dump slot names -> canonical pipeline slot names (the retired shard applied
 # the same normalization; the rest of the pipeline expects "Helmet" / "Off Hand").
@@ -82,13 +112,32 @@ def _native_affixes(affixes):
             for a in affixes or []]
 
 
-def _augment_slots(crafting):
+# #871 — gear-planner c36b45e encodes an Epic item's upgrade slots as
+# `Upgradeable - Primary Augment` / `Upgradeable - Secondary Augment` crafting
+# keys, with the colors the player may CHOOSE in the record's `augmentUpgrades`
+# map. The wiki states the same thing per item ("Upgradeable - Primary Augment
+# (Yellow Augment Slot or Blue Augment Slot)"). An upgrade becomes ONE slot of
+# the chosen color, so the older dump's flat Blue + Green + Yellow listing
+# over-credited every one of these items.
+UPGRADE_AUGMENT_KEYS = ("Upgradeable - Primary Augment", "Upgradeable - Secondary Augment")
+
+
+def _augment_slots(crafting, upgrades=None):
     """Extract augment-slot colors from the crafting[] list ("Yellow Augment Slot"
-    -> "Yellow"). Non-augment crafting entries are left for their own handlers."""
+    -> "Yellow"). Non-augment crafting entries are left for their own handlers.
+
+    An upgrade slot with ONE permitted color is that color. With several it is
+    one slot the player picks a color for, which the per-color slot model cannot
+    hold yet (#878): it is emitted as "Yellow or Blue", the ambiguous-multi-color
+    shape `colors.normalize_color` quarantines, so it is disclosed rather than
+    counted as a slot of every color."""
     out = []
     for c in crafting or []:
         if isinstance(c, str) and c.endswith(" Augment Slot"):
             out.append(c[: -len(" Augment Slot")].strip())
+        elif c in UPGRADE_AUGMENT_KEYS:
+            choices = list((upgrades or {}).get(c) or [])
+            out.append(choices[0] if len(choices) == 1 else " or ".join(choices) or c)
     return out
 
 
@@ -243,7 +292,7 @@ def _record(it, verified_seal_types, nc_per_item_hosts=None):
         "binding": None,
         "location_quest": "; ".join(q for q in quests if isinstance(q, str)),
         "wiki_url": _WIKI_BASE + it.get("url", "") if it.get("url") else "",
-        "augment_slots": _augment_slots(it.get("crafting")),
+        "augment_slots": _augment_slots(it.get("crafting"), it.get("augmentUpgrades")),
         # set membership -> "(set)" markers; the build resolves them against the
         # gear-planner set catalog (single source of truth).
         "enhancements": [f"{s} (set)" for s in (it.get("sets") or [])],
@@ -287,7 +336,8 @@ def _record(it, verified_seal_types, nc_per_item_hosts=None):
 
 
 def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
-                       exclude_names=None, nc_per_item_hosts=None):
+                       exclude_names=None, nc_per_item_hosts=None,
+                       ml_corrections=None):
     """Load and map the gear-planner raw dump into native pipeline records.
     `verified_seal_types` (seal types with a non-empty pool) gates which "Sealed
     in X" crafting entries become seal-slot hosts; default empty -> none.
@@ -312,8 +362,13 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
     slavers_hosts = {t: 0 for t in slavers_mod.TIERS}
     slavers_set_bonus_hosts = {t: 0 for t in slavers_mod.TIERS}
     nc_per_item_hosts_marked = 0
+    ml_corr = load_ml_corrections() if ml_corrections is None else ml_corrections
+    ml_corrected = set()
     for it in raw:
         name = it.get("name")
+        if name in ml_corr and name not in seen:
+            it = apply_ml_correction(it, ml_corr[name])
+            ml_corrected.add(name)
         if name in excluded:
             host_owned += 1
             continue
@@ -355,5 +410,11 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
         # carriers per tier (the 3 hosts plus 15 named items).
         "planner_slavers_hosts": dict(slavers_hosts),
         "planner_slavers_set_bonus_hosts": dict(slavers_set_bonus_hosts),
+        "planner_ml_corrections_applied": len(ml_corrected),
     }
+    unmatched = sorted(set(ml_corr) - ml_corrected)
+    if unmatched:
+        raise ValueError(
+            f"item_ml_corrections: {unmatched} match no gear-planner record — renamed "
+            "or removed upstream; re-read the wiki before re-pointing")
     return records, stats

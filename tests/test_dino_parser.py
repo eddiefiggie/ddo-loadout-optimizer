@@ -80,11 +80,11 @@ def test_dino_type_is_case_insensitive():
 # --- Multi-affix inserts are now KEPT as one unit (KTD4) ----------------------
 
 def test_multi_affix_insert_parses_to_one_unit_with_two_affixes():
-    # "Fang: Deception" packs two affixes into one insert; the unit model keeps
+    # A multi-affix insert packs two affixes into one unit; the unit model keeps
     # both, gated all-or-nothing by the solver.
     units, quarantined = dino_parser.parse_typed_inserts([
         {"category": "Accessory", "dino_type": "Fang", "name": "Deception",
-         "effect": "+11 Enhancement bonus to Sneak Attacks, "
+         "effect": "+11 Enhancement bonus to Damage, "
                    "+17 Enhancement bonus to Sneak Attack Damage",
          "wiki_url": _WIKI},
     ])
@@ -93,9 +93,13 @@ def test_multi_affix_insert_parses_to_one_unit_with_two_affixes():
     affixes = units[0]["affixes"]
     assert len(affixes) == 2
     # The shared parse seam (_parse_effect) folds reviewed spelling synonyms to
-    # their canonical stat name: "Sneak Attacks" is a registry synonym of
-    # "Deception"; "Sneak Attack Damage" is already canonical.
-    assert (affixes[0]["stat"], affixes[0]["value"]) == ("Deception", 11)
+    # their canonical stat name: "Damage" is a registry synonym of "Deadly";
+    # "Sneak Attack Damage" is already canonical.
+    # c36b45e (#871) — this text used "Sneak Attacks", the registry's synonym of
+    # "Deception" until upstream re-pointed that fold to "Sneak Attack Bonus".
+    # No live channel spells it "Sneak Attacks" (the real Fang insert arrives
+    # structured), so the fold left and the test now exercises one that is live.
+    assert (affixes[0]["stat"], affixes[0]["value"]) == ("Deadly", 11)
     assert (affixes[1]["stat"], affixes[1]["value"]) == ("Sneak Attack Damage", 17)
 
 

@@ -23,7 +23,7 @@ def test_registries_generate_nonempty_and_deterministic():
     assert len(r1["affix_names"]) > 1000, "expected the full affix-name vocabulary"
     assert len(r1["bonus_types"]) > 30, "expected the bonus-type vocabulary"
     # 397c673 — 84 not 83: upstream added the `Active` pool.
-    assert len(r1["crafting_slots"]) == 84, "expected the 84 crafting-slot keys"
+    assert len(r1["crafting_slots"]) == 87, "expected the 87 crafting-slot keys"  # c36b45e: +3 Upgradeable
     # sorted (deterministic) order
     assert r1["affix_names"] == sorted(r1["affix_names"])
 
@@ -151,7 +151,7 @@ def test_freshness_reads_and_detects_drift():
     #
     # 397c673 (2026-09-23), re-vendored for Update 81.3 — the Terror of the Demon
     # Lords raid. All four files re-fetched pinned to this SHA, never from master.
-    assert recorded == "397c673a3561d65974d8e1079c5a0fa781ce1172"
+    assert recorded == "c36b45e13198f4e60979f3766240515894a79c60"
     # a wrong expected commit surfaces drift
     _raises(V.FreshnessError, V.assert_freshness, expected_commit="deadbeef")
 
@@ -164,7 +164,7 @@ def test_crafting_slot_registry_generates_and_matches_frozen():
     assert gen == V.generate_crafting_slot_registry()
     assert gen == sorted(gen)
     # pool keys (83) ∪ item markers (adds the 12 pool-less crafting slots) = 95
-    assert len(gen) == 96, "crafting-slot registry = 84 pool keys ∪ item crafting[] markers"
+    assert len(gen) == 99, "crafting-slot registry = 87 pool keys ∪ item crafting[] markers"
     assert "Sealed in Undeath" in gen and "T1 (Weapon)" in gen
     # #374/U5 — the 12 pool-less markers are unchanged in COUNT and identity; only
     # their prefix moved, 1:1, `Cannith: *` -> `Essence Crafting: *`. Update 79

@@ -19,7 +19,8 @@ def test_catalog_loads_the_84_pools():
     cat = CC.load_catalog()
     assert isinstance(cat, dict)
     # 397c673 — 84 not 83: upstream added the `Active` pool.
-    assert len(cat) == 84, "the native crafting catalog carries 84 pool keys"
+    # c36b45e (#871) — 87: upstream added the three `Upgradeable` keys.
+    assert len(cat) == 87, "the native crafting catalog carries 87 pool keys"
 
 
 def test_menu_pool_shape_parses():

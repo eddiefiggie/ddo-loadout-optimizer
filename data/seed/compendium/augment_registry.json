@@ -1,6 +1,6 @@
 {
   "_source": "generated from the <Color> Augment Slot menu-pool option `name` fields in data/seed/compendium/raw/gearplanner_crafting.json (U2/R14). Closed structural set, integrity-gated, no alias/lint. Regenerate via src.vocabulary.generate_augment_registry.",
-  "count": 1147,
+  "count": 1151,
   "augments": [
     "A History of Draconic Interference",
     "A Legendary History of Draconic Interference",
@@ -460,6 +460,7 @@
     "Ruby of Acid (9d6)",
     "Ruby of Acid Blast",
     "Ruby of Adamantine Arms",
+    "Ruby of Bludgeoning Blows",
     "Ruby of Chaos",
     "Ruby of Combustion 111",
     "Ruby of Combustion 125",
@@ -565,6 +566,7 @@
     "Ruby of Nullification 84",
     "Ruby of Nullification 97",
     "Ruby of Order",
+    "Ruby of Piercing Precision",
     "Ruby of Radiance 111",
     "Ruby of Radiance 125",
     "Ruby of Radiance 139",
@@ -607,11 +609,13 @@
     "Ruby of Shock (9d6)",
     "Ruby of Shocking Blast",
     "Ruby of Silvered Strikes",
+    "Ruby of Slashing Strikes",
     "Ruby of the Adamantine Blessing",
     "Ruby of the Crushing Wave",
     "Ruby of the Endless Night",
     "Ruby of the Gatekeepers",
     "Ruby of the Iron Hand",
+    "Ruby of the Quori",
     "Ruby of the Snowpeaks",
     "Ruby of the Surging Tide",
     "Ruby of the Vampire Slayer",
@@ -1152,5 +1156,6 @@
   ],
   "_note_631": "#631 — regenerated after the augment tier-gap shard added 81 Epic (ML 20) Lunar/Solar gems the upstream crafting dump does not carry. This registry is the frozen referential-integrity gate: an augment in a pool that is not listed here fails the build as a 'new-augment event', which is exactly what fired when the shard first merged. Regenerating it is therefore a DELIBERATE ratification of those names, not a formality.",
   "_note_640": "#640 — ratifies the three `Solar Gem of Arcana` tiers, a family upstream carries at NO tier. The registry is the referential-integrity gate: it fired first as a 'new-augment event', which is the gate working.",
-  "_note_397c673": "#260 RETIRED / refresh 397c673 (2026-09-23) — regenerated after the vendored gear-planner snapshot adopted the ML36 augment tier natively: 63 added, 0 removed (1084 -> 1147). Every added name was previously supplied by our own data/seed/compendium/ml36_augments.json shard, so the SET of augments the solver sees is unchanged by this refresh — only their provenance moved from our wiki harvest to upstream. Ratified rather than blanket-regenerated: all 63 were spot-checked against the wiki's rendered Raw data/Item augments table (ML 36, sold by Randall Lyric in Gravenhollow) and each family's value continues its own existing step (+22 -> +24, +294 -> +327, 153 -> 166). Solar Gem of Arcana (Heroic/Legendary) also moved from our augment_tier_gap.json shard to upstream at our exact values, but were already registry members, so they are not among the 63."
+  "_note_397c673": "#260 RETIRED / refresh 397c673 (2026-09-23) — regenerated after the vendored gear-planner snapshot adopted the ML36 augment tier natively: 63 added, 0 removed (1084 -> 1147). Every added name was previously supplied by our own data/seed/compendium/ml36_augments.json shard, so the SET of augments the solver sees is unchanged by this refresh — only their provenance moved from our wiki harvest to upstream. Ratified rather than blanket-regenerated: all 63 were spot-checked against the wiki's rendered Raw data/Item augments table (ML 36, sold by Randall Lyric in Gravenhollow) and each family's value continues its own existing step (+22 -> +24, +294 -> +327, 153 -> 166). Solar Gem of Arcana (Heroic/Legendary) also moved from our augment_tier_gap.json shard to upstream at our exact values, but were already registry members, so they are not among the 63.",
+  "_note_c36b45e": "Refresh c36b45e (2026-10-13, #871) — 4 added, 0 removed (1147 -> 1151). All four are Update 81.4 Lahar augments named by the wiki's `Update 81 Patch 4 Release Notes` (Itemization): the three level-1 Morphic DR-bypass Rubies (`Ruby of Bludgeoning Blows`, `Ruby of Slashing Strikes`, `Ruby of Piercing Precision`) and the new Crystal-bypass Material augment (`Ruby of the Quori`, ML8). The same release standardized the existing Lahar Rubies to ML4 (alignment) / ML8 (material); those seven names were already registered and only their ml moved."
 }

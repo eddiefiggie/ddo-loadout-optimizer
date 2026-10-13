@@ -135,6 +135,19 @@ UNSERVED_ALLOWLIST = frozenset({
     # but inert. Closing this needs a multi-affix roll option in the solver — whose
     # roll loop is one-stat-per-option today — not a pool.
     "One of the following combinations",
+    # #871 (gear-planner c36b45e) — an Epic item's upgrade slots. Their pools are
+    # EMPTY by design (`{"*": []}`): the colors the player may choose live on the
+    # item's own `augmentUpgrades` map, and `planner_items._augment_slots` turns
+    # them into augment slots directly — a single permitted color becomes a real
+    # slot of that color, several become one quarantined slot until #878 models a
+    # choice. Served through `augment_slots`, never through a crafting pool.
+    "Upgradeable - Primary Augment",
+    "Upgradeable - Secondary Augment",
+    # #879 — per-item upgrade pools on 25 heroic named items (Stormreaver,
+    # Litany of the Dead, Madstone, ...). New in c36b45e; the items keep the base
+    # affixes they always shipped with until the upgrade mechanic is read off the
+    # wiki and modelled. A pool exists, so this is a modelling gap, not a source one.
+    "Upgradeable Item",
     # `Random set 1` / `Random set 2` are absent from the catalog ENTIRELY — no
     # pool, per-item or menu — so there is nothing to read. These are the Gem of
     # Many Facets wildcard rolls.

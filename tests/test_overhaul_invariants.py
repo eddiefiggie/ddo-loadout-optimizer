@@ -82,7 +82,9 @@ def test_no_legacy_affix_keys_at_rest():
     # (20 Terror of the Demon Lords raid + 40 others) and renames 60 more; one
     # upstream placeholder (`Leaves of the Forest`, the family index page) is
     # dropped in build_dataset, hence 9209 - 1.
-    assert len(items) == 9208, f"expected 9208 items, saw {len(items)}"
+    # c36b45e (#871) — 9225: +13 gear-planner records (8050 -> 8063), all U81.4
+    # Night Revels / Lahar arrivals, plus their extra variants.
+    assert len(items) == 9225, f"expected 9225 items, saw {len(items)}"
     gems = [it for it in items
             if "(Epic)" in (it.get("source_item") or "")
             and (it.get("source_item", "").startswith("Lunar Gem")

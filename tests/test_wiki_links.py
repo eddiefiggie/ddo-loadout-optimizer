@@ -102,9 +102,9 @@ def test_check_fails_on_a_pack_with_no_verified_page():
 
 def test_the_real_shards_cover_the_real_catalog():
     links = wl.load()
-    assert len(links["named"]) == 472, len(links["named"])
+    assert len(links["named"]) == 476, len(links["named"])  # c36b45e: +4 Lahar Rubies
     with_page = [n for n, e in links["named"].items() if e.get("page")]
-    assert len(with_page) == 390
+    assert len(with_page) == 394  # c36b45e: +4 Lahar Rubies
     no_page = sorted(set(links["named"]) - set(with_page))
     assert all(n.endswith("(Epic)") and n.split(" ")[0] in ("Solar", "Lunar") for n in no_page), \
         "the recorded no-page set is exactly the Epic Solar/Lunar gems"
@@ -122,8 +122,8 @@ def test_the_built_dataset_carries_the_links():
     with open(DATASET, encoding="utf-8") as fh:
         d = json.load(fh)
     cov = d["metadata"]["wiki_link_coverage"]
-    assert cov["augments_linked"] == 675 + 390, cov
-    assert cov["augments_with_locations"] == 390, cov
+    assert cov["augments_linked"] == 675 + 394, cov  # c36b45e: +4 Lahar Rubies, all paged
+    assert cov["augments_with_locations"] == 394, cov  # c36b45e: +4 Lahar Rubies
     assert len(cov["named_without_page"]) == 82
     assert cov["gear_source_linked"] > 0.9 * cov["gear_sourced"], cov
     rip = next(v for v in d["items"] if v["variant_id"] == "Legendary Sapphire of Riposte")

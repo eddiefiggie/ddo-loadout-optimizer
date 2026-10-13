@@ -477,7 +477,7 @@ def apply_cannith_tiers(records: list, overlay: dict, known_slots=None) -> dict:
                 # was built, before this overlay ran. Re-run the SAME lift rather
                 # than extending the list by hand, so there is one derivation rule
                 # and this path cannot drift from it.
-                rec["augment_slots"] = planner_mod._augment_slots(rec["crafting"])
+                rec["augment_slots"] = planner_mod._augment_slots(rec["crafting"], rec.get("augmentUpgrades"))
                 items_slotted += 1
                 slots_added += len(slots)
     return {

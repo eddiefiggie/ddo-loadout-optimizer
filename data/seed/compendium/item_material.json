@@ -9038,6 +9038,30 @@
       "provenance": "stated",
       "raw": "| material = Leather",
       "harvested": "2026-09-22"
+    },
+    "Item:Legendary Robe of Shadow (level 36)": {
+      "value": {
+        "material": "Cloth"
+      },
+      "provenance": "stated",
+      "raw": "Category:Cloth items",
+      "harvested": "2026-10-13"
+    },
+    "Item:Legendary Spectre Deflector (level 32)": {
+      "value": {
+        "material": "Densewood"
+      },
+      "provenance": "stated",
+      "raw": "Category:Densewood items",
+      "harvested": "2026-10-13"
+    },
+    "Item:Legendary Spectre Deflector (level 36)": {
+      "value": {
+        "material": "Densewood"
+      },
+      "provenance": "stated",
+      "raw": "Category:Densewood items",
+      "harvested": "2026-10-13"
     }
   }
 }

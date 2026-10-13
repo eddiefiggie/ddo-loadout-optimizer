@@ -1,6 +1,6 @@
 {
   "_source": "generated from data/seed/compendium/raw/gearplanner_crafting.json pool keys UNIONED with gearplanner_items.json crafting[] markers (U2/R14/R12): the 83 pool-bearing slots plus 12 pool-less Cannith player-crafting slots that item markers still reference. Closed structural set, integrity-gated, no alias/lint. Regenerate on a reviewed re-import via src.vocabulary.generate_crafting_slot_registry.",
-  "count": 96,
+  "count": 99,
   "crafting_slots": [
     "Active",
     "Almost There",
@@ -95,9 +95,13 @@
     "T2 (Weapon)",
     "T3 (Equipment)",
     "T3 (Weapon)",
+    "Upgradeable - Primary Augment",
+    "Upgradeable - Secondary Augment",
+    "Upgradeable Item",
     "Woeful (Accessory)",
     "Woeful (Weapon)",
     "Yellow Augment Slot"
   ],
-  "_note_397c673": "Regenerated for the U81.3 refresh: 95 -> 96, the single addition being the `Active` pool upstream added at 397c673. No slot was removed."
+  "_note_397c673": "Regenerated for the U81.3 refresh: 95 -> 96, the single addition being the `Active` pool upstream added at 397c673. No slot was removed.",
+  "_note_c36b45e": "Regenerated for the U81.4 refresh (#871): 96 -> 99. Three additions, all upstream's new upgradeable-item encoding: `Upgradeable - Primary Augment` / `Upgradeable - Secondary Augment` (an Epic item's upgrade slot, ONE slot of a chosen color — single-color choices become slots, multi-color choices are quarantined until #878) and `Upgradeable Item` (per-item upgrade pools on 26 heroic items, recognized and unmodelled until #879). No slot was removed."
 }
