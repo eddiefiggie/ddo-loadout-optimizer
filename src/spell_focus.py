@@ -336,6 +336,23 @@ _UNIVERSAL = {
     "good luck": GOOD_LUCK_TARGETS,
 }
 
+# #870 (U81.4) — names that are universal ONLY in a set bonus. The wiki's
+# `Update 81 Patch 4 Release Notes` states that every set bonus labelled
+# Universal Spell Power / crit "grant[s] bonuses to each Spell power/crit/crit
+# damage mod", and that any set bonus truly granting Universal changes to match.
+# A per-element grant of one type is exactly Potency's shape, so the same-type
+# expansion applies — but ONLY in the set channels. Item enchantments (Implement
+# and Exceptional USP, Exceptional USL) keep the Universal mechanic and its
+# cross-add, so these names stay rankable and must never enter `_UNIVERSAL` or
+# `expanded_away()`. `Universal Spell Critical Chance` is the dino-set channel's
+# wording of Universal Spell Lore. The crit-DAMAGE family is ruled the same way
+# and deferred to #876. Evidence: docs/wiki-evidence/set-bonus-universal-per-element.md.
+_SET_UNIVERSAL = {
+    "universal spell power": SPELLPOWERS,
+    "universal spell lore": LORE_TARGETS,
+    "universal spell critical chance": LORE_TARGETS,
+}
+
 # #367/#396 — engraved names that are ALREADY the complete name the item prints,
 # so `source_label` must not prefix a bonus type onto them. The generic family
 # names above are words a type completes ("Potency" + Profane -> "Profane
@@ -401,7 +418,12 @@ def source_label(stat, bonus_type) -> str:
     return f"{prefix} {base}"
 
 
-def _expand_affix(affix: dict) -> list:
+def is_set_universal(stat) -> bool:
+    """True when this stat name is per-element in a set bonus (#870)."""
+    return (stat or "").strip().lower() in _SET_UNIVERSAL
+
+
+def _expand_affix(affix: dict, table=_UNIVERSAL) -> list:
     """One universal affix becomes its family's concrete affixes (seven schools
     for a DC name, ten element spellpowers for Potency); anything else passes
     through.
@@ -409,23 +431,63 @@ def _expand_affix(affix: dict) -> list:
     Every other key — bonus_type, value, unit, raw, eligible — is copied verbatim,
     so the expanded affixes keep the eligibility and unit semantics of the source.
     """
-    targets = _UNIVERSAL.get((affix.get("stat") or "").strip().lower())
+    targets = table.get((affix.get("stat") or "").strip().lower())
     if not targets:
         return [affix]
     label = source_label(affix.get("stat"), affix.get("bonus_type"))
     return [{**affix, "stat": stat, PROVENANCE_KEY: label} for stat in targets]
 
 
-def _expand_list(affixes):
+def _expand_list(affixes, table=_UNIVERSAL):
     out = []
     for a in affixes or []:
-        out.extend(_expand_affix(a))
+        out.extend(_expand_affix(a, table))
     return out
 
 
+# The set channels expand both tables. The keys are disjoint (asserted below), so
+# merging cannot let one family shadow the other.
+_SET_TABLE = {**_UNIVERSAL, **_SET_UNIVERSAL}
+assert not set(_UNIVERSAL) & set(_SET_UNIVERSAL), \
+    "a name cannot be universal everywhere AND set-only universal"
+
+
 def expand_affixes(affixes):
-    """Expand a standalone affix list (e.g. a membership set-def tier), returning a new list."""
+    """Expand a standalone affix list (e.g. a dino insert), returning a new list."""
     return _expand_list(affixes)
+
+
+def expand_set_affixes(affixes):
+    """Expand a SET-BONUS affix list: everything `expand_affixes` does, plus the
+    set-only universal names (#870). Use for every set channel — variant tiers,
+    dino sets, membership defs, augment set defs — and nowhere else."""
+    return _expand_list(affixes, _SET_TABLE)
+
+
+def check_set_channel(label: str, stats) -> int:
+    """Per-channel guard (#870): no set-only universal name survives expansion.
+
+    A survivor is a set bonus credited as Universal — cross-added into every
+    element — which U81.4 says no set bonus grants. Refuses to vouch for an
+    empty channel: zero stats inspected is a failure, never a pass
+    (docs/solutions/conventions/prove-a-guard-fails-before-trusting-it.md).
+    """
+    checked = 0
+    bad = {}
+    for s in stats:
+        checked += 1
+        if is_set_universal(s):
+            bad[s] = bad.get(s, 0) + 1
+    if checked == 0:
+        raise SystemExit(
+            f"set-universal guard ({label}): zero stats inspected — an empty "
+            "channel is a guard failure, not a pass")
+    if bad:
+        raise SystemExit(
+            f"set-universal guard ({label}): set bonus(es) still name a Universal "
+            f"stat after expansion: {sorted(bad.items())} — U81.4 makes every set "
+            "bonus per-element (#870); this channel did not run expand_set_affixes")
+    return checked
 
 
 def expand_variants(variants) -> dict:
@@ -449,7 +511,8 @@ def expand_variants(variants) -> dict:
             stats["items"] += before
         for tier in v.get("parsed_set_bonuses") or []:
             if tier.get("affixes"):
-                before = sum(1 for a in tier["affixes"] if is_universal(a.get("stat")))
-                tier["affixes"] = _expand_list(tier["affixes"])
+                before = sum(1 for a in tier["affixes"]
+                             if is_universal(a.get("stat")) or is_set_universal(a.get("stat")))
+                tier["affixes"] = expand_set_affixes(tier["affixes"])
                 stats["set_bonuses"] += before
     return stats

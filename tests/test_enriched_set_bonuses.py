@@ -8,6 +8,7 @@ sys.path.insert(0, ROOT)
 
 import build_dataset as B
 from src import set_catalog as SC
+from src import spell_focus as SF
 
 
 def _build():
@@ -29,7 +30,12 @@ def test_enriched_member_gets_set_bonus_with_parsed_affixes():
     # Dread Isle's Curse is base-defined (base-def-wins): its 5-piece grants Profane
     # Physical Sheltering + Universal Spell Power (verbatim wiki stats).
     assert ("Physical Sheltering", "Profane") in stats
-    assert ("Universal Spell Power", "Profane") in stats
+    # #870 (U81.4) — a set bonus's "Universal Spell Power" is per-element, so it
+    # arrives as the ten element spellpowers at Profane, provenance kept.
+    assert ("Universal Spell Power", "Profane") not in stats
+    usp = [a for a in tiers[0]["affixes"] if a.get("via") == "Profane Universal Spell Power"]
+    assert sorted(a["stat"] for a in usp) == sorted(SF.SPELLPOWERS)
+    assert all(a["bonus_type"] == "Profane" for a in usp)
 
 
 def test_overlap_set_shares_one_canonical_name():

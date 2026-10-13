@@ -1820,10 +1820,19 @@ test("U4: dino_sets carries canonical Universal Spell Power, raw stays verbatim"
     }
   }
   assert.deepStrictEqual(misspelled, []);
+  // Re-ratified under #870 (U81.4): a set bonus's Universal Spell Power is
+  // per-element, so it lands as the ten element spellpowers and the canonical
+  // spelling survives in the `via` receipt. No set may carry it as a stat.
+  assert.deepStrictEqual(sets.filter((s) =>
+    (s.affixes || []).some((a) => a.stat === "Universal Spell Power")).map((s) => s.set), []);
   const carriers = sets.filter((s) =>
-    (s.affixes || []).some((a) => a.stat === "Universal Spell Power")).map((s) => s.set).sort();
+    (s.affixes || []).some((a) => / Universal Spell Power$/.test(a.via || ""))).map((s) => s.set).sort();
   assert.deepStrictEqual(carriers, ["Deacon of the Auricular Sacrarium",
     "Defender of Tanaroa", "The Legendary Dread Isle's Curse"]);
+  for (const s of sets) {
+    const usp = (s.affixes || []).filter((a) => / Universal Spell Power$/.test(a.via || ""));
+    if (usp.length) assert.strictEqual(new Set(usp.map((a) => a.stat)).size, 10, `${s.set}: ten elements`);
+  }
   const rawCarriers = sets.filter((s) => (s.raw || "").includes("Universal Spellpower"));
   assert.strictEqual(rawCarriers.length, 3, "verbatim wiki raw text untouched");
 });

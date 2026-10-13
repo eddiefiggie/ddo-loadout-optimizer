@@ -661,3 +661,127 @@ def test_all_skills_roster_is_the_wiki_twenty_one():
     assert len(set(spell_focus.ALL_SKILLS)) == 21
     for s in spell_focus.ALL_SKILLS:
         assert not spell_focus.is_universal(s), s
+
+
+# ---- #870 (U81.4): set-bonus "Universal" spellpower/lore is per-element --------
+#
+# `Update 81 Patch 4 Release Notes`: every set bonus labelled Universal Spell
+# Power/crit grants "bonuses to each Spell power/crit/crit damage mod". So in the
+# SET channels only, these expand like Potency — same type, highest-of-type per
+# element. Item enchantments (Implement/Exceptional) keep the Universal mechanic
+# and its cross-add, so the names must stay rankable: never `_UNIVERSAL`, never
+# `expanded_away()`. Evidence: docs/wiki-evidence/set-bonus-universal-per-element.md.
+
+def test_set_only_universal_names_are_recognized_only_as_set_universal():
+    for name in ("Universal Spell Power", "Universal Spell Lore",
+                 "Universal Spell Critical Chance"):
+        assert spell_focus.is_set_universal(name), name
+        assert spell_focus.is_set_universal(f"  {name.lower()} "), name
+        assert not spell_focus.is_universal(name), \
+            f"{name} must not expand on items — Implement/Exceptional are still Universal"
+
+
+def test_set_only_universal_names_stay_in_the_picker():
+    away = spell_focus.expanded_away()
+    for name in ("universal spell power", "universal spell lore",
+                 "universal spell critical chance"):
+        assert name not in away, f"{name} would leave the picker, stranding its item carriers"
+
+
+def test_set_universal_spell_power_expands_to_ten_elements_at_its_own_type():
+    out = spell_focus.expand_set_affixes([_aff("Universal Spell Power", "Artifact", 25)])
+    assert [a["stat"] for a in out] == spell_focus.SPELLPOWERS
+    assert all(a["bonus_type"] == "Artifact" and a["value"] == 25 for a in out)
+    assert {a[VIA] for a in out} == {"Artifact Universal Spell Power"}
+
+
+def test_set_universal_spell_lore_and_crit_chance_expand_to_ten_lores():
+    for name in ("Universal Spell Lore", "Universal Spell Critical Chance"):
+        out = spell_focus.expand_set_affixes([_aff(name, "Artifact", 6)])
+        assert [a["stat"] for a in out] == spell_focus.LORE_TARGETS, name
+        assert all(a["bonus_type"] == "Artifact" and a["value"] == 6 for a in out), name
+
+
+def test_set_expander_still_expands_the_everywhere_family():
+    """The set table is a superset: a set tier carrying Potency still expands."""
+    out = spell_focus.expand_set_affixes([_aff("Potency", "Artifact", 10)])
+    assert [a["stat"] for a in out] == spell_focus.SPELLPOWERS
+
+
+def test_set_universal_crit_damage_is_deferred_not_expanded():
+    """#876 owns the crit-damage family; until it lands these pass through."""
+    for name in ("Universal Spell Critical Damage", "Spell Critical Damage"):
+        out = spell_focus.expand_set_affixes([_aff(name, "Legendary", 15)])
+        assert [a["stat"] for a in out] == [name], name
+
+
+def test_expand_variants_splits_item_and_set_channels():
+    """The load-bearing case: one variant, USP on the item AND in its set tier."""
+    v = {"affixes": [_aff("Universal Spell Power", "Implement", 31)],
+         "parsed_set_bonuses": [{"affixes": [_aff("Universal Spell Power", "Profane", 25)]}]}
+    counts = spell_focus.expand_variants([v])
+    assert [a["stat"] for a in v["affixes"]] == ["Universal Spell Power"], \
+        "the item's Implement USP is still Universal"
+    tier = v["parsed_set_bonuses"][0]["affixes"]
+    assert [a["stat"] for a in tier] == spell_focus.SPELLPOWERS
+    assert all(a["bonus_type"] == "Profane" for a in tier)
+    assert counts["set_bonuses"] == 1 and counts["items"] == 0
+
+
+def test_a_set_universal_now_competes_with_a_same_type_element_set_bonus():
+    """The defect: Artifact USP beside Artifact Combustion used to SUM via cross-add.
+    After expansion both are (Combustion, Artifact) — one bucket, highest wins."""
+    tier = spell_focus.expand_set_affixes([_aff("Universal Spell Power", "Artifact", 25),
+                                           _aff("Combustion", "Artifact", 30)])
+    combustion = [(a["stat"], a["bonus_type"], a["value"]) for a in tier
+                  if a["stat"] == "Combustion"]
+    assert combustion == [("Combustion", "Artifact", 25), ("Combustion", "Artifact", 30)]
+    assert not any(a["stat"] == "Universal Spell Power" for a in tier)
+
+
+def test_check_set_channel_rejects_a_survivor():
+    try:
+        spell_focus.check_set_channel("t", ["Combustion", "Universal Spell Power"])
+    except SystemExit as e:
+        assert "Universal Spell Power" in str(e)
+    else:
+        raise AssertionError("a surviving set-bonus USP must fail the build")
+
+
+def test_check_set_channel_refuses_an_empty_channel():
+    try:
+        spell_focus.check_set_channel("t", [])
+    except SystemExit as e:
+        assert "zero stats" in str(e)
+    else:
+        raise AssertionError("zero stats inspected is a failure, never a pass")
+
+
+def test_check_set_channel_passes_a_clean_channel():
+    assert spell_focus.check_set_channel("t", ["Combustion", "Void Lore"]) == 2
+
+
+def test_built_dataset_set_channels_carry_no_universal_and_items_still_do():
+    """Every set channel, walked in the emitted file; item USP must survive."""
+    import json
+    path = os.path.join(ROOT, "web", "data", "items.json")
+    if not os.path.exists(path):
+        return  # generated artifact; the build job asserts it
+    with open(path, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    set_stats = []
+    for v in data["items"]:
+        for t in v.get("parsed_set_bonuses") or []:
+            set_stats += [a["stat"] for a in t.get("affixes") or []]
+    for d in data.get("dino_sets") or []:
+        set_stats += [a.get("stat") for a in d.get("affixes") or []]
+    for key in ("membership_set_defs", "augment_set_defs"):
+        for d in (data.get(key) or {}).values():
+            for t in d.get("tiers") or []:
+                set_stats += [a.get("stat") or a.get("name") for a in t.get("affixes") or []]
+    assert len(set_stats) > 1000, "walked too few set affixes to vouch for anything"
+    leaked = sorted({s for s in set_stats if spell_focus.is_set_universal(s)})
+    assert not leaked, f"set bonuses still credited as Universal: {leaked}"
+    item_usp = sum(1 for v in data["items"] for a in v.get("affixes") or []
+                   if a.get("name") == "Universal Spell Power")
+    assert item_usp > 500, "Implement/Exceptional USP must survive on items"

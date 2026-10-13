@@ -24,6 +24,11 @@ The contract, and how it differs from ``src/spell_focus.py``'s expansion table:
 Both families are wiki-evidenced; the sweep dispositions live in
 ``docs/wiki-evidence/universal-name-sweep.md``.
 
+**Item enchantments only, since U81.4 (#870).** A SET BONUS labelled Universal
+Spell Power / Lore is per-element and is expanded by ``spell_focus``'s set-only
+table before it reaches this map, so only Implement/Exceptional carriers
+cross-add. ``docs/wiki-evidence/set-bonus-universal-per-element.md``.
+
 **Universal Spell Power -> the ten element spellpowers** (#291; full quotes in
 ``docs/wiki-evidence/spellpower-universal.md`` §3). ``Spell_power``, section
 Universal Spell Power:

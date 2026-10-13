@@ -10,6 +10,32 @@
 //   node tests/parity/capture_golden.js
 //
 // Ratifications:
+//   #870 (2026-10-13) — EIGHT fixtures moved, every one a caster, every move DOWN on
+//   a stat the old model over-credited. U81.4's release notes (wiki `Update 81 Patch
+//   4 Release Notes`) state a set bonus labelled Universal Spell Power / crit is a
+//   bonus to EACH element mod; the build now expands set-channel USP/USL per-element
+//   at its own type instead of cross-adding it. No web/ code changed, and the
+//   dataset diff is exactly that expansion (item affixes byte-identical), so every
+//   move is attributable to it. The deltas are the arithmetic of the two removed
+//   set sources, not a reshuffle:
+//     * `Universal Spell Power` -50 in all five fixtures ranking it (104 -> 54,
+//       mid-caster 94 -> 54): the +25 Profane (Dread Isle's Curse / Forbidden
+//       Knowledge) and +25 Artifact (Draconic Prophecy / Esoteric Initiate / ...)
+//       set bonuses no longer land on the USP stat. 54 is the item-channel
+//       Implement + Exceptional USP, which IS still Universal.
+//     * `Combustion` 461 -> 411 and `Devotion` 472 -> 422 / 460 -> 410, each -50:
+//       the same two sources, now competing inside the Profane/Artifact buckets
+//       with same-type element set bonuses instead of summing beside them.
+//       `cross-add-combustion-usp-ml32` was written to pin the old sum.
+//     * `Kinetic Lore` 46 -> 40 in both utility-ab fixtures, -6: the +6 Artifact
+//       Universal Spell Lore set bonus now competes with Artifact Kinetic Lore.
+//     * Everything else that moved ranks BELOW a stat that dropped (Wisdom +3..+5,
+//       and in endgame-caster-ml32 the lower elements, Nullification up 152 -> 290
+//       and Reconstruction down 301 -> 169) — lexicographic redistribution once the
+//       higher tiers stop being inflated. Intelligence and Spell Penetration,
+//       ranked ABOVE USP where present, are unchanged.
+//     The other 16 fixtures are byte-identical.
+//
 //   #765 (2026-09-18) — ONE fixture moved, `mid-caster`, two slots. A TIE, and the
 //   note that shipped with #790 said the opposite; it is corrected here and the
 //   correction is the part worth reading.
