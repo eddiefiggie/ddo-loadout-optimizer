@@ -2312,3 +2312,12 @@ test("#713 every exporter carries the conditional-effect disclosure, and stays s
         families: [ { category: "augment", base: "Wraithborn Emerald", from: "Wraithborn Emerald", from_ml: 8, to: "Legendary Wraithborn Emerald", to_ml: 30 } ] } ] });
   });
 }
+
+test("#878: an augment in a choice slot exports the colour the slot is set to", () => {
+  const r = JSON.parse(JSON.stringify(rec));
+  r.snapshot.chosen[0].variant.augment_slots_norm = { colors: ["Yellow or Blue"] };
+  r.snapshot.augmentsPlaced = [{ variant_id: "Sapphire of Wisdom", color: "Blue",
+    slot_color: "Yellow or Blue", slot_pick: "Blue", affixes: [] }];
+  const md = toMarkdown(r);
+  assert.ok(/🔵 Blue: Sapphire of Wisdom/.test(md), md);
+});

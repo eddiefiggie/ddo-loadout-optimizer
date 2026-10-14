@@ -139,8 +139,8 @@ UNSERVED_ALLOWLIST = frozenset({
     # EMPTY by design (`{"*": []}`): the colors the player may choose live on the
     # item's own `augmentUpgrades` map, and `planner_items._augment_slots` turns
     # them into augment slots directly — a single permitted color becomes a real
-    # slot of that color, several become one quarantined slot until #878 models a
-    # choice. Served through `augment_slots`, never through a crafting pool.
+    # slot of that color, several become one color-choice slot (#878). Served through
+    # `augment_slots`, never through a crafting pool.
     "Upgradeable - Primary Augment",
     "Upgradeable - Secondary Augment",
     # #879 — per-item upgrade pools on 25 heroic named items (Stormreaver,

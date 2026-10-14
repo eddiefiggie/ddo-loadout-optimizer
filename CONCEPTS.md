@@ -95,6 +95,9 @@ An effect placed into a colored slot on an equipped item. Modeled by **aggregate
 ### Multi-fit
 The wiki's augment color-compatibility matrix, baked onto every augment record as `fits_slots` at build time: a Colorless augment fits the seven standard slot colors, a primary color fits its own slot plus its secondaries, Moon/Sun fit only their own. Moon and Sun are the catalog's colors for the **Lunar and Solar Gem** family (77 and 146 records), so an isolated-fit color and a single named acquisition line coincide there and nowhere else. The single eligibility source for where any augment — including a Set Augment copy — may be placed; no placement path may hold a parallel color rule.
 
+### Color-choice slot
+An Epic item's upgrade augment slot whose color the player picks from a stated list (wiki: "Upgradeable - Primary Augment (Yellow Augment Slot or Blue Augment Slot)"). It is **one** slot, keyed by its members joined with " or " (`Yellow or Blue`), never one slot per listed color. It accepts an augment that fits **any** member under [[Multi-fit]], and the solve names the member to set it to (`slot_pick`). Not a crafting [[Roll group (choice-slot)]]: that picks an *effect*, this picks a *slot color*. (#878)
+
 ### Set bonus
 A tier of stats that activates only when at least a threshold number of pieces of a named set are equipped. Its stats are gated by a piece-count indicator, so a set completes only when doing so advances a ranked target. The "N pieces" a surface reports is this **threshold**, not a count of the player's equipped members.
 

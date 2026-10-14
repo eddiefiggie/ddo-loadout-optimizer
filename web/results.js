@@ -1002,7 +1002,7 @@ function augmentSection(v, idx, maps, augById, contribIdx, ranked) {
     const augAffixes = (meta && meta.affixes) || [];
     const col = String(p.color || "").toLowerCase();
     const where = p.slot_color && p.slot_color !== p.color
-      ? `${p.color} in ${p.slot_color} slot` : `${p.color || ""} slot`;
+      ? `${p.color} in ${Proj.slotWords(p)} slot` : `${p.color || ""} slot`;
     // #469 — the gem row inherits the strongest class its affixes earn, so the
     // one to go slot is findable without reading every nested line.
     return stackLine(grantClass(augAffixes, contribIdx, ranked), p.color || "—",
@@ -1023,11 +1023,16 @@ function augmentSection(v, idx, maps, augById, contribIdx, ranked) {
         markCls: mark(p.color) ? `aug-mark aug-${esc(col)}` : "", title: where });
   });
   const openRows = open.map((c) => {
-    const col = String(c).toLowerCase();
+    // #878 — a color-choice slot's key has spaces, so it is no class name; it reads
+    // as an upgrade slot of any of its colours.
+    const choice = Proj.choiceMembers(c);
+    const col = choice ? "choice" : String(c).toLowerCase();
     return stackLine("empty", c, "empty", {
       cls: `aug-open aug-${esc(col)}`,
       mark: mark(c) || "◇", markCls: `aug-mark aug-${esc(col)}`,
-      title: `open ${c} augment slot — no augment in this colour adds to your ranked stats`,
+      title: choice
+        ? `open ${c} upgrade slot — no augment in any of these colours adds to your ranked stats`
+        : `open ${c} augment slot — no augment in this colour adds to your ranked stats`,
     });
   });
   return `<div class="pd-sec pd-sec-aug"><span class="pd-slabel">Augments</span>`

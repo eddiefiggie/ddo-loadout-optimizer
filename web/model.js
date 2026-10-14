@@ -1124,6 +1124,11 @@ function _typesSupplying(rec, stat) {
   return out;
 }
 
+// #878 — the separator `src/colors.py` joins a choice slot's colours with
+// ("Yellow or Blue"). Named apart from solver.js's CHOICE_SEP because both are
+// classic scripts sharing one global scope.
+const REACH_CHOICE_SEP = " or ";
+
 /** Which slots can supply `stat`, by which route, at which bonus types.
  *
  *  @param stat     the canonical affix name, as the picker vocabulary spells it
@@ -1175,8 +1180,11 @@ function slotReachabilityFor(stat, variants, pools) {
     for (const v of hosts) {
       const declared = ((v.augment_slots_norm || {}).colors) || [];
       for (const c of declared) {
-        const types = colourTypes.get(c);
-        if (types) add(v.slot, "augment", c, types);
+        // #878 — a color-choice slot is a route for each colour the player may pick.
+        for (const m of String(c).split(REACH_CHOICE_SEP)) {
+          const types = colourTypes.get(m);
+          if (types) add(v.slot, "augment", m, types);
+        }
       }
     }
   }
