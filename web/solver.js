@@ -36,6 +36,20 @@ function _overriddenFrom(affix) {
   return from == null ? null : from;
 }
 
+// #878 — a COLOR-CHOICE slot ("Yellow or Blue") is one upgrade slot whose color the
+// player picks. Its key joins the member colors with CHOICE_SEP, exactly as
+// `src/colors.py` writes it (a Python test pins the two). The solver needs no
+// special case to place into one: the build bakes each choice an augment fits
+// into its `fits_slots`, so a choice is just another slot color with its own
+// supply. What the solver adds is the member the player should PICK, read off
+// the same baked matrix, so no surface has to re-derive it.
+const CHOICE_SEP = " or ";
+function choicePick(slotColor, fitsSlots) {
+  if (typeof slotColor !== "string" || !slotColor.includes(CHOICE_SEP)) return null;
+  const fits = new Set(fitsSlots || []);
+  return slotColor.split(CHOICE_SEP).find((m) => fits.has(m)) || null;
+}
+
 /** #611 — the query's ML cap, from whichever field carries it. `buildModel`
  *  stamps BOTH `model.mlCap` and `model.query.mlCap`; hand-built models (the test
  *  suites, and `buildProgram` called directly) carry only the former. Reading one
@@ -592,10 +606,11 @@ function buildProgram(model) {
       // record and silently rendered nothing. It also has to be here rather than
       // re-resolved per surface: `persist.js` keeps `augmentsPlaced` but drops
       // `model`, so a snapshot reloaded later has no catalog to resolve against.
-      augMeta.set(p, {
+      const pick = choicePick(sc, aug.fits_slots);
+      augMeta.set(p, Object.assign({
         variant_id: aug.variant_id, color: (aug.aug_color || {}).color,
         slot_color: sc, affixes: aug.affixes || [], wiki_url: aug.wiki_url,
-      });
+      }, pick ? { slot_pick: pick } : {}));   // #878 — only on a choice slot
       colorVars.push(p);
       if (!placeByColor.has(sc)) placeByColor.set(sc, []);
       placeByColor.get(sc).push(p);

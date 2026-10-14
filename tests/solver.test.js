@@ -1512,6 +1512,62 @@ async function withCrossAdd(map, fn) {
     assert.strictEqual((r.augmentsPlaced || []).length, 0, "no placement without an equipped compatible host");
   });
 
+  // #878 — an Epic upgrade slot is ONE slot whose colour the player picks. The
+  // build bakes each choice an augment fits into its `fits_slots` (mirrored here),
+  // so the solver sees the choice as one more slot colour with a supply of one.
+  const choiceAug = (id, color, affixes, choices) => {
+    const a = augment(id, color, affixes);
+    a.fits_slots = a.fits_slots.concat(choices.filter((c) => c.split(" or ").some((m) => a.fits_slots.includes(m))));
+    return a;
+  };
+
+  await test("#878: a choice slot holds ONE augment, not one per permitted colour", async () => {
+    const choices = ["Yellow or Blue"];
+    const m = {
+      targets: ["Intelligence", "Strength"], mlCap: 34,
+      worn: [slot("Ring", [host("Epic", "Ring", [], ["Yellow or Blue"])])],
+      augments: [choiceAug("BlueInt", "Blue", [["Intelligence", "Enhancement", 5]], choices),
+                 choiceAug("YellowStr", "Yellow", [["Strength", "Enhancement", 7]], choices)],
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Intelligence, 5, "the priority-1 augment takes the one slot");
+    assert.strictEqual(r.effective.Strength, 0, "one slot, so the second colour's augment is not also placed");
+    assert.deepStrictEqual((r.augmentsPlaced || []).map((a) => [a.variant_id, a.slot_color, a.slot_pick]),
+      [["BlueInt", "Yellow or Blue", "Blue"]], "placed in the choice slot, set to Blue");
+  });
+
+  await test("#878: a choice slot refuses an augment that fits none of its colours", async () => {
+    // Guard, not new behaviour: the refusal lives in the baked `fits_slots`
+    // (pinned in tests/test_colors.py); this holds the solver to it.
+    const m = {
+      targets: ["Strength"], mlCap: 34,
+      worn: [slot("Ring", [host("Epic", "Ring", [], ["Yellow or Blue"])])],
+      augments: [choiceAug("RedStr", "Red", [["Strength", "Enhancement", 7]], ["Yellow or Blue"])],
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Strength, 0, "Red fits neither Yellow nor Blue");
+    assert.strictEqual((r.augmentsPlaced || []).length, 0);
+  });
+
+  await test("#878: the pick follows the augment's own colour, and an ordinary slot carries none", async () => {
+    const choices = ["Yellow or Blue or Red"];
+    const m = {
+      targets: ["Strength", "Constitution"], mlCap: 34,
+      worn: [slot("Ring", [host("Epic", "Ring", [], ["Yellow or Blue or Red"])]),
+             slot("Necklace", [host("Plain", "Necklace", [], ["Orange"])])],
+      augments: [choiceAug("RedStr", "Red", [["Strength", "Enhancement", 7]], choices),
+                 choiceAug("YellowCon", "Yellow", [["Constitution", "Enhancement", 6]], choices)],
+    };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Strength, 7);
+    assert.strictEqual(r.effective.Constitution, 6, "both placed: one in the choice slot, one in Orange");
+    const bySlot = Object.fromEntries((r.augmentsPlaced || []).map((a) => [a.slot_color, a]));
+    const inChoice = bySlot["Yellow or Blue or Red"];
+    assert.ok(inChoice, "one augment sits in the choice slot");
+    assert.strictEqual(inChoice.slot_pick, inChoice.color, "set to the augment's own colour");
+    assert.ok(!("slot_pick" in bySlot.Orange), "an ordinary slot carries no pick");
+  });
+
   await test("U5/AE1: set stat counts only at the piece threshold", async () => {
     const tier = [{ n: 2, affixes: [["Strength", "Enhancement", 10]] }];
     const twoPieces = {

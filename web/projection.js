@@ -397,6 +397,32 @@
     return (variant.affixes || []).filter((a) => t.has(a.name != null ? a.name : a.stat));
   }
 
+  // #878 — a COLOR-CHOICE slot ("Yellow or Blue") is one upgrade slot whose colour the
+  // player picks. The key joins its members with CHOICE_SEP, as `src/colors.py`
+  // writes it (a Python test pins the two). Attribution needs no special case —
+  // the key is the slot colour, matched exactly like any other — but every
+  // surface that NAMES a slot has to say which colour to set it to.
+  const CHOICE_SEP = " or ";
+  function choiceMembers(slotColor) {
+    return (typeof slotColor === "string" && slotColor.includes(CHOICE_SEP))
+      ? slotColor.split(CHOICE_SEP) : null;
+  }
+  /** The colour a placement's slot is set to: the solver's `slot_pick` on a
+   *  choice slot, else the slot's own colour. A Set Augment copy carries no pick
+   *  and is Colorless, which fits every member, so it takes the first. */
+  function slotPick(o) {
+    const members = choiceMembers(o && o.slot_color);
+    if (!members) return (o && o.slot_color) || null;
+    return (o.slot_pick && members.includes(o.slot_pick)) ? o.slot_pick : members[0];
+  }
+  /** A consumed slot in words, without the trailing "slot": "Blue", or
+   *  "Yellow or Blue upgrade (set to Blue)" for a choice. */
+  function slotWords(o) {
+    if (!(o && o.slot_color)) return "";
+    return choiceMembers(o.slot_color)
+      ? `${o.slot_color} upgrade (set to ${slotPick(o)})` : o.slot_color;
+  }
+
   /** Reconstruct a concrete augment->item assignment from the solver's aggregate
    *  per-color-capacity placements. Walk equipped items in order and drop each placed
    *  augment into the first item with remaining open capacity of the slot color it
@@ -2394,7 +2420,7 @@
         // its own set without saying so is the misreading U7 shipped to prevent.
         const supp = (o.suppresses && o.suppresses.length)
           ? ` (suppresses ${o.suppresses.join(", ")})` : "";
-        return { where: o.slot_color || "Colorless", what: `${o.set}${supp}`,
+        return { where: slotWords(o) || "Colorless", what: `${o.set}${supp}`,
           system: sys(family),
           title: (o.suppresses && o.suppresses.length)
             ? `Set Augment — overrides this item's own set bonus (${o.suppresses.join(", ")})`
@@ -2497,7 +2523,7 @@
         // so name the suppression inline — carrying it into every text export.
         // #316 — the consumed slot color rides on the label the same way: copies
         // may land in colored slots now, and an unnamed color reads as Colorless.
-        const where = o.slot_color ? ` — in ${o.slot_color} slot` : "";
+        const where = o.slot_color ? ` — in ${slotWords(o)} slot` : "";
         const supp = (o.suppresses && o.suppresses.length) ? ` (suppresses ${o.suppresses.join(", ")})` : "";
         return `Set Augment: ${o.set}${where}${supp}`;
       }
@@ -2714,7 +2740,7 @@
   function augView(aug) {
     return {
       color: aug.color || null,
-      slotColor: aug.slot_color || null,
+      slotColor: slotPick(aug),             // #878 — the colour to set a choice slot to
       lunarSolar: lunarSolar(aug),
       name: aug.variant_id,
       affixes: aug.affixes || [],
@@ -3651,7 +3677,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, utilityPriceLine, utilityUnsecuredLines, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, affixStatCoverage, affixCoverageKey, affixOwnName, craftStepLabel, craftAffixRecords, itemMl, wornMl, craftedMlIndex, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, dinoInsertKey, assignDinoInserts,
+    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, affixStatCoverage, affixCoverageKey, affixOwnName, craftStepLabel, craftAffixRecords, itemMl, wornMl, craftedMlIndex, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, choiceMembers, slotPick, slotWords, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     // #449 (U2) — the achieved/ceiling fraction: numbers, state and wording from
     // one place, plus the once-per-document full statement.

@@ -127,10 +127,9 @@ def _augment_slots(crafting, upgrades=None):
     -> "Yellow"). Non-augment crafting entries are left for their own handlers.
 
     An upgrade slot with ONE permitted color is that color. With several it is
-    one slot the player picks a color for, which the per-color slot model cannot
-    hold yet (#878): it is emitted as "Yellow or Blue", the ambiguous-multi-color
-    shape `colors.normalize_color` quarantines, so it is disclosed rather than
-    counted as a slot of every color."""
+    one slot the player picks a color for, emitted as "Yellow or Blue": the
+    choice-slot shape `colors.normalize_color` keeps as a slot kind of its own
+    (#878), never a slot of every listed color."""
     out = []
     for c in crafting or []:
         if isinstance(c, str) and c.endswith(" Augment Slot"):

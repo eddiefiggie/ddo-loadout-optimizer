@@ -1354,13 +1354,18 @@ def build() -> dict:
     for v in variants:                                  # augment-color normalization
         colors_mod.annotate_variant(v)
         set_mod.annotate_variant(v)                     # U4 set-bonus threshold parsing
-        # Bake each augment's compatible slot colors (the wiki matrix, applied once
-        # here) so the JS solver does plain set-membership per slot — the matrix
-        # never crosses into JS (U3). Colored augments fit multiple slot colors;
-        # Colorless fits every colored slot; Moon/Sun fit only their own.
+    # Bake each augment's compatible slot colors (the wiki matrix, applied once
+    # here) so the JS solver does plain set-membership per slot — the matrix
+    # never crosses into JS (U3). Colored augments fit multiple slot colors;
+    # Colorless fits every colored slot; Moon/Sun fit only their own. #878 — a
+    # choice slot ("Yellow or Blue") is a slot kind of its own that an augment
+    # fits when it fits any member; the choices present are only known once
+    # every variant is annotated, hence the second pass.
+    _choice_slots = colors_mod.choice_slots_present(variants)
+    for v in variants:
         if v.get("category") == "augment":
             ac = (v.get("aug_color") or {}).get("color")
-            v["fits_slots"] = sorted(colors_mod.fits_slots(ac)) if ac else []
+            v["fits_slots"] = sorted(colors_mod.fits_slots(ac, _choice_slots)) if ac else []
     # Expand umbrella ability affixes ("All Ability Scores +15", "Well Rounded")
     # into the six concrete abilities so single-ability targets get credited.
     umbrella_mod.expand_variants(variants)

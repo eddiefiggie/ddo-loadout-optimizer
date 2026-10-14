@@ -37,7 +37,12 @@ def normalize_color(raw):
     m = _LAMORDIA.match(text)
     if m:
         return {"color": f"Lamordia: {m.group(1).capitalize()}", "raw": raw, "reason": None}
-    # anything with a conjunction / qualifier is an ambiguous multi-color hint
+    # #878 — an upgrade slot whose color the player CHOOSES ("Yellow or Blue")
+    # is one slot of its own kind, not a slot of every listed color.
+    choice = _choice_color(text)
+    if choice:
+        return {"color": choice, "raw": raw, "reason": None}
+    # anything else with a conjunction / qualifier is an ambiguous multi-color hint
     if re.search(r"\bor\b|\band\b|\+|/|ideally|,", text, re.I):
         return {"color": None, "raw": raw, "reason": "ambiguous multi-color slot"}
     return {"color": None, "raw": raw, "reason": "unrecognized color"}
@@ -64,21 +69,65 @@ SLOT_ACCEPTS = {
 }
 
 
+# #878 — a COLOR-CHOICE slot: an Epic item's upgrade slot is ONE slot whose color the
+# player picks from a stated list (wiki: "Upgradeable - Primary Augment (Yellow
+# Augment Slot or Blue Augment Slot)"). It is its own slot kind, keyed by the
+# members joined with CHOICE_SEP in the order the source lists them, and it
+# accepts an augment that fits ANY member — the player picks that member. Only
+# the standard colors may be members: Moon/Sun do not cross-fit, and nothing
+# states a choice involving them. Web code splits on the same separator
+# (`choiceMembers` in solver.js / projection.js); tests pin the agreement.
+CHOICE_SEP = " or "
+_CHOICE_MEMBERS = {c for c in SLOT_ACCEPTS if c not in ("Moon", "Sun")}
+
+
+def _choice_color(text):
+    parts = [p.strip() for p in text.split(CHOICE_SEP)] if CHOICE_SEP in text else []
+    canon = [_CASEMAP.get(p.lower()) for p in parts]
+    if len(canon) < 2 or not all(c in _CHOICE_MEMBERS for c in canon):
+        return None
+    if len(set(canon)) != len(canon):
+        return None
+    return CHOICE_SEP.join(canon)
+
+
+def choice_members(slot_color):
+    """The member colors of a choice slot, or None for an ordinary slot."""
+    if not isinstance(slot_color, str) or CHOICE_SEP not in slot_color:
+        return None
+    return slot_color.split(CHOICE_SEP)
+
+
 def accepts(slot_color):
-    """The set of augment colors a slot of this color accepts (empty if unknown)."""
+    """The set of augment colors a slot of this color accepts (empty if unknown).
+    A choice slot accepts the union of its members."""
+    members = choice_members(slot_color)
+    if members:
+        return set().union(*(SLOT_ACCEPTS.get(m, set()) for m in members))
     return set(SLOT_ACCEPTS.get(slot_color, set()))
 
 
 def fits(augment_color, slot_color):
     """True if an augment of `augment_color` can be slotted into `slot_color`."""
-    return augment_color in SLOT_ACCEPTS.get(slot_color, set())
+    return augment_color in accepts(slot_color)
 
 
-def fits_slots(augment_color):
+def fits_slots(augment_color, choice_slots=()):
     """The set of slot colors an augment of this color can fill (the inverse of
     the matrix). Baked onto each augment record at build time so the JS solver
-    does plain set-membership per slot."""
-    return {slot for slot, ok in SLOT_ACCEPTS.items() if augment_color in ok}
+    does plain set-membership per slot. `choice_slots` names the choice slots the
+    dataset's hosts declare (#878); the open set of choices cannot be enumerated
+    from the matrix alone, so the build passes the ones present."""
+    out = {slot for slot, ok in SLOT_ACCEPTS.items() if augment_color in ok}
+    out |= {c for c in choice_slots if fits(augment_color, c)}
+    return out
+
+
+def choice_slots_present(variants):
+    """Every choice slot any variant's normalized slots declare, sorted."""
+    return sorted({c for v in variants
+                   for c in ((v.get("augment_slots_norm") or {}).get("colors") or [])
+                   if choice_members(c)})
 
 
 def normalize_slots(raws):

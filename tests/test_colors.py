@@ -101,3 +101,53 @@ def test_fits_slots_is_the_inverse():
     assert colors.fits_slots("Colorless") == {"Colorless", "Red", "Blue", "Yellow", "Orange", "Green", "Purple"}
     assert "Moon" not in colors.fits_slots("Colorless") and "Sun" not in colors.fits_slots("Colorless")
     assert colors.fits_slots("Moon") == {"Moon"}
+
+
+# ---- #878 choice slots -------------------------------------------------------
+
+def test_a_choice_of_standard_colours_is_one_slot_of_its_own_kind():
+    n = colors.normalize_color("yellow or Blue")
+    assert n["color"] == "Yellow or Blue" and n["reason"] is None
+    assert colors.normalize_slots(["Yellow or Blue", "Green"])["colors"] == ["Yellow or Blue", "Green"]
+
+
+def test_only_a_clean_choice_is_a_choice():
+    # Guard, not new behaviour: these were quarantined before #878 and must stay so.
+    # free-text hints, Moon/Sun members, a repeated member, an unknown member:
+    # all stay quarantined rather than becoming capacity.
+    for raw in ("ideally Green + Blue", "Blue or Moon", "Blue or Blue",
+                "Blue or Chartreuse", "Blue and Green", "Blue or"):
+        assert colors.normalize_color(raw)["color"] is None, raw
+
+
+def test_a_choice_slot_accepts_what_any_member_accepts():
+    assert colors.accepts("Yellow or Blue") == {"Yellow", "Blue", "Colorless"}
+    assert colors.fits("Blue", "Yellow or Blue")
+    assert not colors.fits("Red", "Yellow or Blue")
+    assert not colors.fits("Moon", "Yellow or Blue")
+    assert colors.fits("Red", "Green or Orange or Purple")
+
+
+def test_fits_slots_bakes_only_the_choices_passed():
+    present = ["Yellow or Blue", "Yellow or Blue or Red"]
+    assert "Yellow or Blue" in colors.fits_slots("Blue", present)
+    assert "Yellow or Blue" not in colors.fits_slots("Red", present)
+    assert "Yellow or Blue or Red" in colors.fits_slots("Red", present)
+    assert colors.fits_slots("Sun", present) == {"Sun"}
+    assert not [c for c in colors.fits_slots("Blue") if " or " in c]
+
+
+def test_choice_slots_present_collects_from_normalized_hosts():
+    vs = [{"augment_slots_norm": {"colors": ["Green", "Yellow or Blue"]}},
+          {"augment_slots_norm": {"colors": ["Yellow or Blue"]}}, {}]
+    assert colors.choice_slots_present(vs) == ["Yellow or Blue"]
+
+
+def test_the_web_choice_separator_matches_python():
+    import os
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    import re
+    for f in ("solver.js", "projection.js", "model.js"):
+        with open(os.path.join(root, "web", f), encoding="utf-8") as fh:
+            seps = re.findall(r'const \w*CHOICE_SEP = "([^"]*)";', fh.read())
+        assert seps == [colors.CHOICE_SEP], (f, seps)
