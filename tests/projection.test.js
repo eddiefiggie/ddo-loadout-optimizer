@@ -2619,3 +2619,45 @@ test("#766: an equipped Slaver's host's empty slots reach the shared content mod
   assert.deepStrictEqual(rows.map((r) => r.family), ["slaversEmpty", "slaversEmpty", "slaversEmpty", "slavers"]);
   assert.ok(rows[0].empty && rows[2].empty && !rows[3].empty);
 });
+
+// ---- #878 — choice slots: one upgrade slot whose colour the player picks -------
+
+test("#878: a choice slot names the colour to set it to", () => {
+  assert.deepStrictEqual(P.choiceMembers("Yellow or Blue"), ["Yellow", "Blue"]);
+  assert.strictEqual(P.choiceMembers("Blue"), null, "an ordinary slot is not a choice");
+  assert.strictEqual(P.slotPick({ slot_color: "Yellow or Blue", slot_pick: "Blue" }), "Blue");
+  assert.strictEqual(P.slotPick({ slot_color: "Green" }), "Green", "an ordinary slot is its own colour");
+  // a Set Augment copy is Colorless and carries no pick: any member fits, the first is named
+  assert.strictEqual(P.slotPick({ slot_color: "Yellow or Blue" }), "Yellow");
+  assert.strictEqual(P.slotWords({ slot_color: "Yellow or Blue", slot_pick: "Blue" }),
+    "Yellow or Blue upgrade (set to Blue)");
+  assert.strictEqual(P.slotWords({ slot_color: "Red" }), "Red");
+});
+
+test("#878: attribution matches a choice slot by its key, one augment per slot", () => {
+  // Guard, not new behaviour: attribution already matched slot keys exactly; this
+  // holds it there now that a key can be a choice.
+  const chosen = [{ slot: "Ring", variant: { variant_id: "Epic", augment_slots_norm: { colors: ["Yellow or Blue", "Green"] } } }];
+  const placed = [{ variant_id: "BlueInt", color: "Blue", slot_color: "Yellow or Blue", slot_pick: "Blue" },
+                  { variant_id: "YellowStr", color: "Yellow", slot_color: "Yellow or Blue", slot_pick: "Yellow" }];
+  const r = P.assignAugments(chosen, placed, []);
+  assert.deepStrictEqual(r.byIndex.get(0).map((a) => a.variant_id), ["BlueInt"]);
+  assert.deepStrictEqual(r.unplaced.map((a) => a.variant_id), ["YellowStr"], "the one choice slot is full");
+  assert.deepStrictEqual(r.freeByIndex.get(0), ["Green"]);
+});
+
+test("#878: a Set Augment in a choice slot says which colour the slot is set to", () => {
+  const o = { set: "Quickblade", slot_color: "Yellow or Blue", suppresses: [] };
+  assert.ok(/in Yellow or Blue upgrade \(set to Yellow\) slot/.test(P.craftLabel(o, "augmentset")));
+});
+
+test("#878: an open choice slot renders as one row with a valid class", () => {
+  const html = R.equippedBody({ variant_id: "Epic", affixes: [] }, 0,
+    { augAssign: { byIndex: new Map(), freeByIndex: new Map([[0, ["Yellow or Blue"]]]) },
+      dinoAssign: { byIndex: new Map() }, ncByItem: new Map(), rollByItem: new Map(), vikByItem: new Map(),
+      sealByItem: new Map(), lgsByItem: new Map(), slaversByItem: new Map(), essenceByItem: new Map(),
+      jokerByItem: new Map(), memberByItem: new Map(), setAugByItem: new Map() }, new Map());
+  assert.ok(/<li class="pd-line is-empty aug-open aug-choice"/.test(html), html);
+  assert.ok(/<span class="pd-ln-where">Yellow or Blue<\/span>/.test(html));
+  assert.ok(/title="open Yellow or Blue upgrade slot/.test(html));
+});

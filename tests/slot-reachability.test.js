@@ -532,3 +532,15 @@ test("#766: a Slaver's host's typed slots are a route, keyed by the host's own (
     "Shackles reach a save through the Suffix Resistance umbrella, expanded inside the option");
 });
 
+
+// ---- #878 — a color-choice slot is a route for each colour the player may pick ------
+
+test("#878: an Epic upgrade's choice slot is an augment route for each of its colours", () => {
+  const host = { variant_id: "Epic", slot: "Ring", affixes: [],
+    augment_slots_norm: { colors: ["Yellow or Blue"], quarantined: [] } };
+  const blue = { variant_id: "BlueInt", category: "augment", aug_color: { color: "Blue" }, slot: "Blue",
+    affixes: [{ name: "Intelligence", type: "Enhancement", value: 5 }] };
+  const r = M.slotReachabilityFor("Intelligence", [host, blue], {});
+  assert.deepStrictEqual(r.filter((x) => x.route === "augment").map((x) => [x.slot, x.via]),
+    [["Ring", "Blue"]], "the Blue member reaches it; the choice key itself is not a colour");
+});

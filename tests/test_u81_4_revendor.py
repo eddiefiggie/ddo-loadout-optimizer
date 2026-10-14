@@ -39,7 +39,7 @@ def test_a_single_colour_upgrade_is_that_slot():
         crafting, {"Upgradeable - Secondary Augment": ["Green"]}) == ["Green"]
 
 
-def test_a_multi_colour_upgrade_is_one_ambiguous_slot_not_one_per_colour():
+def test_a_multi_colour_upgrade_is_one_choice_slot_not_one_per_colour():
     crafting = ["Upgradeable - Primary Augment"]
     out = planner_items._augment_slots(
         crafting, {"Upgradeable - Primary Augment": ["Yellow", "Blue"]})
@@ -52,20 +52,22 @@ def test_plain_slots_are_unchanged_and_other_crafting_is_ignored():
 
 
 def test_epic_chain_of_conviction_has_two_slots_not_three():
-    """The over-credit this refresh removes: 397c673 listed Blue + Green + Yellow.
+    """The over-credit #871 removed: 397c673 listed Blue + Green + Yellow.
     Wiki: "Upgradeable - Primary Augment (Yellow Augment Slot or Blue Augment Slot)",
-    "Upgradeable - Secondary Augment (Green Augment Slot)"."""
+    "Upgradeable - Secondary Augment (Green Augment Slot)". #878 — the choice is
+    now a slot of its own kind rather than a quarantined one."""
     data = _built()
     if data is None:
         return
     v = _by_source(data)["Epic Chain of Conviction"][0]
     norm = v["augment_slots_norm"]
-    assert norm["colors"] == ["Green"]
-    assert [q["raw"] for q in norm["quarantined"]] == ["Yellow or Blue"]
-    assert norm["quarantined"][0]["reason"] == "ambiguous multi-color slot"
+    assert sorted(norm["colors"]) == ["Green", "Yellow or Blue"]
+    assert norm["quarantined"] == []
 
 
-def test_no_upgrade_host_counts_a_slot_per_permitted_colour():
+def test_every_upgrade_host_has_one_slot_per_upgrade():
+    """One slot per upgrade key, whatever its permitted colours — never one per
+    colour (the 397c673 over-credit), never zero (the #871 interim)."""
     data = _built()
     if data is None:
         return
@@ -75,11 +77,11 @@ def test_no_upgrade_host_counts_a_slot_per_permitted_colour():
     assert len(hosts) == 32, len(hosts)
     by = _by_source(data)
     for name, upgrades in hosts.items():
+        choices = sorted(" or ".join(c) for c in upgrades.values() if len(c) > 1)
         for v in by[name]:
-            singles = sorted(c[0] for c in upgrades.values() if len(c) == 1)
-            assert sorted(v["augment_slots_norm"]["colors"]) == singles, name
-            assert len(v["augment_slots_norm"]["quarantined"]) == sum(
-                1 for c in upgrades.values() if len(c) > 1), name
+            norm = v["augment_slots_norm"]
+            assert sorted(c for c in norm["colors"] if " or " in c) == choices, name
+            assert norm["quarantined"] == [], name
 
 
 # ---- wiki-stated minimum levels upstream lost --------------------------------------

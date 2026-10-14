@@ -2076,9 +2076,14 @@ test("#316: every built augment_set_def carries the seven-color matrix", () => {
   const defs = realData.augment_set_defs || {};
   const names = Object.keys(defs);
   assert.ok(names.length >= 21, `expected the 21 defs, got ${names.length}`);
+  // #878 — a Set Augment is Colorless, so it also fits every choice slot a host
+  // declares ("Yellow or Blue"): any member is a colored slot it fits.
+  const choices = [...new Set((realData.items || []).flatMap((v) =>
+    ((v.augment_slots_norm || {}).colors || []).filter((c) => c.includes(" or "))))];
+  assert.ok(choices.length, "the dataset declares choice slots (#878)");
   for (const n of names) {
     assert.deepStrictEqual(defs[n].fits_slots,
-      ["Blue", "Colorless", "Green", "Orange", "Purple", "Red", "Yellow"], n);
+      ["Blue", "Colorless", "Green", "Orange", "Purple", "Red", "Yellow", ...choices].sort(), n);
   }
 });
 
