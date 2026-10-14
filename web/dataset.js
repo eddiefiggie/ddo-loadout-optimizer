@@ -106,6 +106,10 @@ var EXPANDED_AWAY_FALLBACK = {
   // src/spell_focus.py's universal family (same-type expansion).
   "resistance": ["Fortitude Save", "Reflex Save", "Will Save"],
   "elemental resonance": ["Corrosion", "Combustion", "Magnetism", "Glaciation"],
+  // #876 (U81.4) — spell critical damage is per-element: both names expand into
+  // the ten element Intensities (src/spell_focus.py). Mirrors its `_UNIVERSAL`.
+  "spell critical damage": ["Fire Intensity", "Acid Intensity", "Healing Intensity", "Ice Intensity", "Kinetic Intensity", "Lightning Intensity", "Void Intensity", "Radiance Intensity", "Repair Intensity", "Sonic Intensity"],
+  "universal spell critical damage": ["Fire Intensity", "Acid Intensity", "Healing Intensity", "Ice Intensity", "Kinetic Intensity", "Lightning Intensity", "Void Intensity", "Radiance Intensity", "Repair Intensity", "Sonic Intensity"],
   "combat mastery": ["Stunning", "Vertigo", "Shatter"],
   "charisma skills": ["Bluff", "Diplomacy", "Haggle", "Intimidate", "Perform", "Use Magic Device"],
   "dexterity skills": ["Balance", "Hide", "Move Silently", "Open Lock", "Tumble"],
@@ -890,23 +894,20 @@ const UTILITY_TIER1_PRESENCE = new Set([
  *  definition, a stat a player can only reach by knowing its name. The guard in
  *  `tests/dataset.test.js` recomputes that population and fails when a name in it
  *  is undeclared here — so the next `Spell Critical Damage` cannot arrive silently. The
- *  current population is exactly one: `Universal Spell Power` and `Universal Spell
- *  Lore` cross-add into their elements, and `Potency` / `Spell Lore` expand away.
+ *  current population is EMPTY (#876): `Universal Spell Power` and `Universal Spell
+ *  Lore` cross-add into their elements, and `Potency` / `Spell Lore` / `Spell Critical
+ *  Damage` expand away.
  *
  *  No Python counterpart, for the same reason UTILITY_CONTAINER_DEFAULT_ORDER has
  *  none: the build derives nothing from it and only the picker reads it.
  */
-const COMPANION_STATS = [
-  {
-    companion: "Spell Critical Damage",
-    members: ["Fire Intensity", "Acid Intensity", "Healing Intensity", "Ice Intensity",
-              "Kinetic Intensity", "Lightning Intensity", "Void Intensity",
-              "Radiance Intensity", "Repair Intensity", "Sonic Intensity"],
-    reason: "a separately-named enchantment that also raises spell critical damage "
-          + "(the Solar Gem of Spell Critical Damage carries it, as do five named sets) "
-          + "— rank it too if you want items that grant it",
-  },
-];
+// #876 (2026-10-13) — EMPTY. Its one entry, `Spell Critical Damage` for the ten
+// element Intensities, is retired: Update 81.4 made that enchantment per-element,
+// so it now expands INTO the Intensities and a player ranking `Void Intensity` is
+// credited the Solar Gem directly. The dead end this hint bridged is closed by the
+// model, which is better than any hint. The mechanism stays, because the guard
+// above still derives the population and will fail if a new companion appears.
+const COMPANION_STATS = [];
 
 /** The advisory sentence for adding `stat`, or null when there is nothing to say.
  *

@@ -643,8 +643,13 @@ def test_the_real_seed_resolves_the_real_vocabulary():
     # retired into `_meta.retired`. 36 - 1 = 35. The four `Inherent <element>
     # Resistance -` names the refresh added are NOT candidates: they fold to the plain
     # resistance stats via affix_name_corrections before the detector runs.
-    assert report["candidates"] == 35
-    assert report["atomic"] == 35
+    #
+    # 35 -> 33 at #876: `Radiance Intensity` and `Repair Intensity` became components
+    # of a registered expansion family (Spell Critical Damage -> the ten Intensities,
+    # U81.4), so the detector skips them as handled, and their atomic rulings were
+    # retired into `_meta.retired` with the reading kept. 35 - 2 = 33.
+    assert report["candidates"] == 33
+    assert report["atomic"] == 33   # #876: the same two retired rulings
     # The detector's first sweep found three live umbrellas; they must stay
     # MODELED (expanded away), never re-enter the rankable vocabulary silently.
     for name in ("Resistance", "Elemental Resonance", "Combat Mastery",

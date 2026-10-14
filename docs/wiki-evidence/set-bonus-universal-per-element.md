@@ -110,12 +110,24 @@ the point:
 A per-channel build guard fails if any set channel still carries one of these
 names after expansion, and it refuses to vouch for an empty channel.
 
-**Crit damage — ruled, implementation deferred (#876).** The same statement puts
-`Universal Spell Critical Damage` (set-only) and `Spell Critical Damage` (the
-Solar Augment, plus set tiers) onto the ten element Intensities at Legendary.
-Doing that removes `Spell Critical Damage` from the picker and retires the #404
-companion hint, which is a vocabulary change with its own web surface. It ships
-separately, so the spellpower fix is not held behind it.
+**Crit damage — applied (#876, 2026-10-13).** The same statement puts `Universal
+Spell Critical Damage` (set-only) and `Spell Critical Damage` (the Solar Gem / Augment
+tiers, plus set tiers) onto the ten element Intensities. Unlike spellpower, the
+second sentence names an ITEM source too ("the Solar Augment of Spell Crit Damage …
+will no longer stack erroneously with other Set Bonuses"), so both names join the
+everywhere table `_UNIVERSAL`, not the set-only one, at their own type (Legendary).
+The targets are the `Intensity` page's "Affected damage types" table verbatim,
+re-read 2026-10-13: Fire, Acid, Healing, Ice, Kinetic, Lightning, Void, Radiance,
+Repair, Sonic.
+
+Consequences, measured: neither name has a carrier left, so both leave the picker
+and redirect to the Intensities; a build that saved either name migrates onto them.
+Void Intensity at ML5 went 0 -> 5 (the Heroic Solar Gem now reaches it) and at ML34
+41 -> 56 — exactly +15, the richest single Legendary source, where a gem and a set
+summing would give 71. The #404 companion hint, which pointed Intensity rankers at
+`Spell Critical Damage` as a second stat, is retired: the model now closes that dead
+end itself. `Radiance Intensity` and `Repair Intensity` left the umbrella-adjudication
+seed for the same reason (they are now components of a registered family).
 
 ## 6. What would overturn this
 

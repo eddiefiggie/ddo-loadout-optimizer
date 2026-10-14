@@ -242,6 +242,14 @@ LORE_TARGETS = [
     "Kinetic Lore", "Radiance Lore", "Repair Lore", "Sonic Lore", "Void Lore",
 ]
 
+# #876 (U81.4) — the ten element spell-critical-DAMAGE stats, verbatim from the
+# `Intensity` page's "Affected damage types" table (re-read 2026-10-13).
+INTENSITY_TARGETS = [
+    "Fire Intensity", "Acid Intensity", "Healing Intensity", "Ice Intensity",
+    "Kinetic Intensity", "Lightning Intensity", "Void Intensity",
+    "Radiance Intensity", "Repair Intensity", "Sonic Intensity",
+]
+
 _UNIVERSAL = {
     "spell focus mastery": SCHOOLS,
     "spell focus": SCHOOLS,
@@ -334,6 +342,20 @@ _UNIVERSAL = {
     # because the wiki engraves `Good Luck +N` and the type is the name's own
     # word — prefixing would print "Luck Good Luck".
     "good luck": GOOD_LUCK_TARGETS,
+    # #876 (U81.4) — spell critical DAMAGE is per-element everywhere it is carried.
+    # `Update 81 Patch 4 Release Notes`: a set bonus labelled Universal crit damage
+    # grants "bonuses to each ... crit damage mod", and "the Solar Augment of Spell
+    # Crit Damage [follows] this pattern, which means it will no longer stack
+    # erroneously with other Set Bonuses providing that modifier". So BOTH names
+    # expand, on items (the Solar Gem tiers, Legendary) and in sets, at their own
+    # type: the Solar Gem and a Legendary set bonus now share one Legendary bucket
+    # per Intensity, which is exactly the stacking the note says was erroneous.
+    # Neither name has a carrier left afterwards, so both leave the picker
+    # (expanded_away) and redirect to the Intensities. This reverses the #402
+    # record-only ruling on the new wiki statement that ruling asked for.
+    # Evidence: docs/wiki-evidence/set-bonus-universal-per-element.md §5.
+    "spell critical damage": INTENSITY_TARGETS,
+    "universal spell critical damage": INTENSITY_TARGETS,
 }
 
 # #870 (U81.4) — names that are universal ONLY in a set bonus. The wiki's
@@ -346,7 +368,7 @@ _UNIVERSAL = {
 # cross-add, so these names stay rankable and must never enter `_UNIVERSAL` or
 # `expanded_away()`. `Universal Spell Critical Chance` is the dino-set channel's
 # wording of Universal Spell Lore. The crit-DAMAGE family is ruled the same way
-# and deferred to #876. Evidence: docs/wiki-evidence/set-bonus-universal-per-element.md.
+# and lives in `_UNIVERSAL` (#876), since it is per-element on items too. Evidence: docs/wiki-evidence/set-bonus-universal-per-element.md.
 _SET_UNIVERSAL = {
     "universal spell power": SPELLPOWERS,
     "universal spell lore": LORE_TARGETS,

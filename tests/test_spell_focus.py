@@ -228,7 +228,12 @@ def test_all_universal_names_map_to_their_family_targets():
                          # #724 — the fifth group, expanded once its tooltip
                          # was read off Item:The_Repulsor_Boots.
                          "mighty skills bonus",
-                         "good luck"}
+                         "good luck",
+                         # #876 (U81.4) — spell critical damage is per-element.
+                         "spell critical damage",
+                         "universal spell critical damage"}
+    assert away["spell critical damage"] == spell_focus.INTENSITY_TARGETS
+    assert away["universal spell critical damage"] == spell_focus.INTENSITY_TARGETS
     assert away["alluring skills bonus"] == spell_focus.SKILLS_ALLURING
     assert away["nimble skills bonus"] == spell_focus.SKILLS_DEX
     assert away["astute skills bonus"] == spell_focus.SKILLS_ASTUTE
@@ -708,11 +713,34 @@ def test_set_expander_still_expands_the_everywhere_family():
     assert [a["stat"] for a in out] == spell_focus.SPELLPOWERS
 
 
-def test_set_universal_crit_damage_is_deferred_not_expanded():
-    """#876 owns the crit-damage family; until it lands these pass through."""
-    for name in ("Universal Spell Critical Damage", "Spell Critical Damage"):
-        out = spell_focus.expand_set_affixes([_aff(name, "Legendary", 15)])
-        assert [a["stat"] for a in out] == [name], name
+def test_crit_damage_expands_to_the_ten_intensities_on_items_and_sets():
+    """#876 — no longer deferred. U81.4 puts the Solar Augment of Spell Crit Damage
+    and the set bonuses on the same per-element pattern, so both names expand
+    everywhere, at their own type."""
+    for name in ("Spell Critical Damage", "Universal Spell Critical Damage"):
+        for expand in (spell_focus.expand_affixes, spell_focus.expand_set_affixes):
+            out = expand([_aff(name, "Legendary", 15)])
+            assert [a["stat"] for a in out] == spell_focus.INTENSITY_TARGETS, name
+            assert all(a["bonus_type"] == "Legendary" and a["value"] == 15 for a in out)
+
+
+def test_the_solar_gem_now_collides_with_a_legendary_set_bonus():
+    """The release note's own example: the Solar Augment "will no longer stack
+    erroneously with other Set Bonuses providing that modifier". Both land in the
+    (Void Intensity, Legendary) bucket, so the higher applies."""
+    gem = spell_focus.expand_affixes([_aff("Spell Critical Damage", "Legendary", 15)])
+    sett = spell_focus.expand_set_affixes([_aff("Universal Spell Critical Damage", "Legendary", 15)])
+    void = [(a["stat"], a["bonus_type"]) for a in gem + sett if a["stat"] == "Void Intensity"]
+    assert void == [("Void Intensity", "Legendary")] * 2
+
+
+def test_intensity_roster_is_the_wiki_table():
+    assert spell_focus.INTENSITY_TARGETS == [
+        "Fire Intensity", "Acid Intensity", "Healing Intensity", "Ice Intensity",
+        "Kinetic Intensity", "Lightning Intensity", "Void Intensity",
+        "Radiance Intensity", "Repair Intensity", "Sonic Intensity"]
+    for name in spell_focus.INTENSITY_TARGETS:
+        assert not spell_focus.is_universal(name), name
 
 
 def test_expand_variants_splits_item_and_set_channels():

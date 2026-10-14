@@ -44,7 +44,12 @@ const CORRECTIONS = JSON.parse(fs.readFileSync(
 // `Legendary <stat>` display names into base stat + `Legendary` bonus type, so
 // its carriers are credited as `Conditioning` and the engraved name survives as
 // the provenance receipt (`via`) that the picker redirects through.
-const CREDITED_AS = { "Legendary Conditioning": "Conditioning" };
+// #876 — `Spell Critical Damage` (the #672 canon for gear-planner's `Spell
+// Intensity`) is now per-element: U81.4 makes it expand into the ten element
+// Intensities, so no carrier names it and it is credited under each Intensity.
+// `Void Intensity` stands in for the ten; the #672 block below checks all of them.
+const CREDITED_AS = { "Legendary Conditioning": "Conditioning",
+                      "Spell Critical Damage": "Void Intensity" };
 const creditedAs = (canon) => CREDITED_AS[canon] || canon;
 
 const { test, fail } = require("./_harness");
@@ -557,52 +562,70 @@ const MIGRATED = new Set([
   // ranked the gem's stat, because that name was not rankable.
 
   const SCD = "Spell Critical Damage";
+  // #876 (U81.4) — re-ratified. #672 folded `Spell Intensity` onto the wiki's
+  // `Spell Critical Damage` so the Solar Gem and the Legendary set tiers shared ONE
+  // bucket. Update 81.4 says that stat is per-element ("the Solar Augment of Spell
+  // Crit Damage ... will no longer stack erroneously with other Set Bonuses providing
+  // that modifier"), so it now expands into the ten element Intensities and the
+  // shared bucket is (<Element> Intensity, Legendary) — the same max-not-sum
+  // property, asserted per element. Measured against the pre-#876 tree: Void
+  // Intensity at ML5 was 0 and is now 5; at ML34 it was 41 and is now 56.
+  const INTENSITIES = ["Fire Intensity", "Acid Intensity", "Healing Intensity", "Ice Intensity",
+                       "Kinetic Intensity", "Lightning Intensity", "Void Intensity",
+                       "Radiance Intensity", "Repair Intensity", "Sonic Intensity"];
+  const fromCritDamage = (a) => / Spell Critical Damage$/.test(a.via || "");
 
-  test("#672: every source of the folded stat shares ONE bucket", () => {
-    // The mechanism, asserted directly rather than inferred from a solve: same stat
-    // name AND same bonus type is what makes the solver take the max. A future
-    // source arriving at a different type would silently restore the summing bug,
-    // and this is the assertion that goes red for it.
+  test("#672/#876: every crit-damage source lands in ONE Legendary bucket per Intensity", () => {
     // Walked directly rather than through CHANNEL_INDEX, which drops the bonus type —
     // and the type is half of the bucket key, so it is the half that matters here.
-    const gems = [];
+    const gems = new Map();
     for (const it of realData.items || []) {
       for (const a of it.affixes || []) {
-        if (a.name === SCD) gems.push([it.source_item, a.type, a.value]);
+        if (a.name === SCD) assert.fail(`${it.source_item} still carries ${SCD}`);
+        if (fromCritDamage(a) && INTENSITIES.includes(a.name)) {
+          if (!gems.has(it.source_item)) gems.set(it.source_item, []);
+          gems.get(it.source_item).push([a.name, a.type]);
+        }
       }
     }
-    assert.strictEqual(gems.length, 3,
-      `the three Solar Gems carry ${SCD}; got ${JSON.stringify(gems)}`);
+    assert.deepStrictEqual([...gems.keys()].sort(), [
+      "Solar Gem of Spell Critical Damage (Epic)", "Solar Gem of Spell Critical Damage (Heroic)",
+      "Solar Gem of Spell Critical Damage (Legendary)"], "the three Solar Gems, and only they");
+    for (const [gem, rows] of gems) {
+      assert.deepStrictEqual(rows.map(([n]) => n).sort(), [...INTENSITIES].sort(), `${gem}: all ten`);
+    }
     // BOTH set containers. `membership_set_defs` is the standalone catalog;
     // `parsed_set_bonuses` is the per-item copy, and the Elder's Knowledge chain
-    // lives ONLY there. Reading one container and calling it the population is the
-    // exact mistake this issue collected three times — including once in the write-up
-    // of this fix, which reported five sets when there are eight.
+    // lives ONLY there.
     const setTiers = [];
     for (const [setName, def] of Object.entries(realData.membership_set_defs || {})) {
       for (const tier of (def.tiers || [])) {
         for (const a of tier.affixes || []) {
-          if (a.stat === SCD) setTiers.push([setName, a.bonus_type, a.value]);
+          if (a.stat === SCD) assert.fail(`${setName} still grants ${SCD}`);
+          if (fromCritDamage(a)) setTiers.push([setName, a.stat, a.bonus_type]);
         }
       }
     }
     for (const it of realData.items || []) {
       for (const tier of (it.parsed_set_bonuses || [])) {
         for (const a of tier.affixes || []) {
-          if (a.stat === SCD) setTiers.push([tier.set, a.bonus_type, a.value]);
+          if (a.stat === SCD) assert.fail(`${tier.set} still grants ${SCD}`);
+          if (fromCritDamage(a)) setTiers.push([tier.set, a.stat, a.bonus_type]);
         }
       }
     }
     const setNames = new Set(setTiers.map(([n]) => n));
-    assert.strictEqual(setNames.size, 8,
-      `eight distinct sets grant ${SCD}; got ${JSON.stringify([...setNames].sort())}`);
-    for (const chain of ["Elder's Knowledge", "Epic Elder's Knowledge",
-                         "Legendary Elder's Knowledge", "Deacon of the Auricular Sacrarium"]) {
-      assert.ok(setNames.has(chain), `${chain} grants ${SCD}`);
+    // Eight as before, plus Eminence of Autumn, whose `Universal Spell Critical
+    // Damage` was record-only until #876 made it per-element too.
+    assert.strictEqual(setNames.size, 9,
+      `nine distinct sets grant spell critical damage; got ${JSON.stringify([...setNames].sort())}`);
+    for (const chain of ["Elder's Knowledge", "Epic Elder's Knowledge", "Legendary Elder's Knowledge",
+                         "Deacon of the Auricular Sacrarium", "Eminence of Autumn"]) {
+      assert.ok(setNames.has(chain), `${chain} grants spell critical damage`);
     }
-    for (const [where, type] of [...gems, ...setTiers]) {
+    for (const [where, , type] of [...setTiers, ...[...gems].flatMap(([g, r]) => r.map(([n, ty]) => [g, n, ty]))]) {
       assert.strictEqual(type, "Legendary",
-        `${where} grants ${SCD} at bonus type ${type}, not Legendary — that is a ` +
+        `${where} grants spell critical damage at bonus type ${type}, not Legendary — that is a ` +
         "second bucket, and two buckets SUM where the game takes the max");
     }
   });
@@ -614,48 +637,41 @@ const MIGRATED = new Set([
       "`Spell Intensity` is renamed in every channel the solver reads");
   });
 
-  test("#672: a build saved before the fold still resolves its priority", () => {
-    // `Spell Intensity` was the RANKABLE canonical until now, so every build saved
-    // before this change ranks it by name. Without the alias those priorities score
-    // zero silently — the build still loads and still solves, which is the failure
-    // mode that makes this worth its own assertion.
+  test("#672/#876: a build saved ranking either old name loads with the ten Intensities", () => {
+    // Builds saved before #672 rank `Spell Intensity`; builds saved between #672 and
+    // #876 rank `Spell Critical Damage`. Both must land on the stats that now carry
+    // the effect, or they score zero silently while still loading and solving.
     assert.strictEqual(vocab.canonical("Spell Intensity"), SCD);
-    assert.deepStrictEqual(migratePriorities(["Spell Intensity", "Constitution"], vocab).priorities,
-      [SCD, "Constitution"]);
+    for (const old of ["Spell Intensity", SCD]) {
+      assert.deepStrictEqual(migratePriorities([old, "Constitution"], vocab).priorities,
+        [...INTENSITIES, "Constitution"], old);
+    }
   });
 
-  // mlCap 5, deliberately. This is the ONE cap that isolates the gem channel: the
-  // Heroic Solar Gem is ML1, and the lowest set granting the stat (Elder's Knowledge)
-  // is out of reach, so the only way to score here is the affix the fold renamed.
-  // A cap of 34 does NOT witness anything — measured against the pre-change tree, it
-  // returns 15 there too, from the Elder's Knowledge set, because the canonical was
-  // already typeable and already scored through the set channel. That version of this
-  // test passed against the base commit; this one goes red on it.
+  // mlCap 5, deliberately: the Heroic Solar Gem is ML1 and no Legendary set granting
+  // the effect is in reach, so the only way to score Legendary crit damage here is
+  // the gem's expansion. Pre-#876 this solve returned 0.
   const scdGem = await solveFixture(
-    { name: "ad-hoc: a player ranks Spell Critical Damage at ML5", query: { mlCap: 5, targets: [SCD] } },
+    { name: "ad-hoc: a player ranks Void Intensity at ML5", query: { mlCap: 5, targets: ["Void Intensity"] } },
     env);
-  test("#672: the wiki name now reaches the Solar Gem, not just the set channel", () => {
+  test("#876: the Solar Gem now credits an element Intensity directly", () => {
     assert.strictEqual(scdGem.solve.status, "optimal", "the solve succeeds");
-    const got = (scdGem.solve.perTarget || {})[SCD];
+    const got = (scdGem.solve.perTarget || {})["Void Intensity"];
     assert.strictEqual(got, 5,
-      `at ML5 only the Heroic Solar Gem can supply ${SCD}; before the fold it carried ` +
-      `the gear-planner name and this solve scored 0 (got ${got})`);
+      `at ML5 the Heroic Solar Gem's +5 Legendary is the only source; before #876 this scored 0 (got ${got})`);
   });
 
   const scdTop = await solveFixture(
-    { name: "ad-hoc: a player ranks Spell Critical Damage", query: { mlCap: 34, targets: [SCD] } },
+    { name: "ad-hoc: a player ranks Void Intensity", query: { mlCap: 34, targets: ["Void Intensity"] } },
     env);
-  // A deliberate NO-REGRESSION guard: it passes against the pre-change tree too, and
-  // is meant to. The top-end number was 15 before the fold (via the set channel) and
-  // must still be 15 after it (now via either channel, one bucket). It is here to go
-  // red if the fold ever double-counts, not to witness the fold.
-  test("#672: gem and set share a bucket — the credit is the max, never the sum", () => {
+  test("#672/#876: gem and set share a bucket — the credit is the max, never the sum", () => {
     assert.strictEqual(scdTop.solve.status, "optimal", "the solve succeeds");
-    const got = (scdTop.solve.perTarget || {})[SCD];
-    // 15 is the ceiling of the richest single Legendary source. 30 is what the two
-    // buckets would have produced had the names stayed apart.
-    assert.strictEqual(got, 15,
-      `${SCD} must credit the max of its Legendary sources, not their sum (got ${got})`);
+    const got = (scdTop.solve.perTarget || {})["Void Intensity"];
+    // 41 is the pre-#876 total from the element-named sources alone; the Legendary
+    // bucket adds the richest single source, 15. 71 is what a gem and a set summing
+    // would produce.
+    assert.strictEqual(got, 56,
+      `Void Intensity must add the max of its Legendary sources (41 + 15), not their sum (got ${got})`);
   });
 
 })().catch((e) => { fail("vocabulary_migration: unexpected error outside a test", e); });

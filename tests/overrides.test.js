@@ -407,7 +407,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // affixes upstream moved from the affix list to crafting keys, +77 on the new
   // Night Revels and Lahar records; `Sneak Attack Bonus` -> `Deception` nets 0
   // (-36/+36). Then +6 generated `Ghostly` components (see the 847 above).
-  assert.strictEqual(total, 45665, "post-normalize pool size");
+  // #876 — 45,692: +27. The three Solar Gem of Spell Critical Damage tiers each
+  // carried one `Spell Critical Damage` affix and now carry the ten element
+  // Intensities it expands into (3 x 9). Nothing else moved.
+  assert.strictEqual(total, 45692, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -506,7 +509,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // Void Lore, Necromancy Focus, False Life, Armor Class, ...). `Sneak Attack Bonus`
   // -> `Deception` moves 36 affixes between names and nets 0. No existing affix
   // changed eligibility; measured per name against the pre-refresh build.
-  assert.strictEqual(eligible, 20680, "engraved, eligible affixes");
+  // #876 — 20,677: -3, all augments (cross-checked by category below). Those three
+  // gem affixes were engraved and override-eligible; their expansion components
+  // carry a `via` provenance stamp and are ineligible by rule, exactly as Potency's are.
+  assert.strictEqual(eligible, 20677, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -578,7 +584,8 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // c36b45e (#871) — item +17, weapon +10, augment UNCHANGED: the +27 above splits
   // across the new Night Revels worn gear and weapons, and the four new Lahar Rubies
   // carry only Bool presences (ineligible by rule 1), so `augment` cannot move.
-  assert.deepStrictEqual(byCat, { item: 13435, weapon: 6233, augment: 1012 });
+  // #876 — augment -3, item and weapon UNCHANGED: the three gems are augments.
+  assert.deepStrictEqual(byCat, { item: 13435, weapon: 6233, augment: 1009 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {

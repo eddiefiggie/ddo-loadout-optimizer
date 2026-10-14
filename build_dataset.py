@@ -158,14 +158,9 @@ CORE_STATS = {
     "Sneak Attack Damage",
     "Missile Deflection",
     "Rune Arm DCs",
-    # #672 — the wiki's name for this enchantment. `Lunar_and_Solar_Gems` states the
-    # Solar Gem grants a "Legendary Bonus to Spell Critical Damage" (+5/+10/+15), and
-    # five set tiers already store that exact name at the same bonus type. gear-planner
-    # engraves the gems' affix `Spell Intensity` instead, so name_corrections mints the
-    # wiki name and both sides land in ONE bucket -- they are the same stat, and same-
-    # typed effects take the max rather than summing. The Fire/Void/Kinetic Intensity
-    # family stays separately rankable (#402 ruling, untouched).
-    "Spell Critical Damage",
+    # `Spell Critical Damage` (#672) left this list at #876: U81.4 makes it
+    # per-element, so it expands into the ten Intensities and has no carrier left
+    # to rank (src/spell_focus.py; docs/wiki-evidence/set-bonus-universal-per-element.md).
     "Damage to helpless enemies",
     "Dodge Cap",
     "Magical Sheltering Cap",
