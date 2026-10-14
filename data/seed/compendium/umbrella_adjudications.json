@@ -4,7 +4,9 @@
     "retired": {
       "Deific Focus": "#214 (2026-09-04): retired, not re-recorded. The name left the rankable set because its three carriers are now quarantined in conditional_affix_quarantine.json — the tooltip states a conditional, ramping, single-school, five-second effect stored as its stack ceiling, and the wiki gives no sustained value. The atomic ruling (it is not a Spell Focus umbrella) was correct and is preserved by the quarantine note; there is no rankable name left for the detector to ask about.",
       "Magical Resistance Rating Cap": "#702 (2026-09-04): retired, not re-recorded. The name left the rankable set because it was an alias VARIANT all along — gear-planner spells the same set bonus Magical Sheltering Cap, and the only carrier of this spelling was the hand-curated augment_sets.json seed (the entry's own claim that gear-planner's Adherent of the Mists tiers carry it was wrong: raw/gearplanner_sets.json has no such spelling). It now resolves through affix_aliases.json; the canonical contains no detector head-word, so it needs no ruling of its own.",
-      "Fortitude Save Vs Disease": "397c673 refresh (2026-09-22): retired, not re-recorded. The name left the rankable set because upstream dropped the Green Steel option that carried it — 'Fortitude Save Vs Disease' is present in the 767a7f7 crafting dump and absent from 397c673, so there is no rankable name left for the detector to ask about. The atomic ruling was correct and is preserved here: its stored effect is self-scoping (an Insight bonus to Fortitude saves versus disease ONLY), a narrower stat than any save family component rather than a bundle of them. Restore the entry if a later snapshot brings the option back. Original evidence: 'A Green Steel option whose stored effect is self-scoping: an Insight bonus to Fortitude saves versus disease ONLY — a narrower stat than any save family component, not a bundle of them.'"
+      "Fortitude Save Vs Disease": "397c673 refresh (2026-09-22): retired, not re-recorded. The name left the rankable set because upstream dropped the Green Steel option that carried it — 'Fortitude Save Vs Disease' is present in the 767a7f7 crafting dump and absent from 397c673, so there is no rankable name left for the detector to ask about. The atomic ruling was correct and is preserved here: its stored effect is self-scoping (an Insight bonus to Fortitude saves versus disease ONLY), a narrower stat than any save family component rather than a bundle of them. Restore the entry if a later snapshot brings the option back. Original evidence: 'A Green Steel option whose stored effect is self-scoping: an Insight bonus to Fortitude saves versus disease ONLY — a narrower stat than any save family component, not a bundle of them.'",
+      "Radiance Intensity": "#876 (2026-10-13): retired, not re-recorded. The name is now a COMPONENT of a registered expansion family — `Spell Critical Damage` / `Universal Spell Critical Damage` expand into the ten element Intensities (src/spell_focus.py, U81.4) — so umbrella_candidates skips it and a mechanism, not a seed entry, resolves it. The atomic reading still holds and is kept here: Radiance Intensity +12%: +12% Enhancement bonus to critical damage with Light and Alignment spells. ({{Intensity|Radiance|12}}, harvested 2026-08-13).",
+      "Repair Intensity": "#876 (2026-10-13): retired, not re-recorded. The name is now a COMPONENT of a registered expansion family — `Spell Critical Damage` / `Universal Spell Critical Damage` expand into the ten element Intensities (src/spell_focus.py, U81.4) — so umbrella_candidates skips it and a mechanism, not a seed entry, resolves it. The atomic reading still holds and is kept here: Repair Intensity +12%: +12% Enhancement bonus to critical damage with Repair and Rust spells. ({{Intensity|Repair|12}}, harvested 2026-08-13)."
     },
     "note": "#211 detector rulings. Each entry settles a flagged candidate as `atomic` — a real distinct stat, not an umbrella — with the rendered-tooltip reading (or the standing wiki-evidence ruling) that proves it. The disposition vocabulary is CLOSED at ['atomic']: a name a mechanism models (an expansion family in src/spell_focus.py/_UNIVERSAL, src/umbrella.py, a split module, or a cross-add source) must NOT carry an entry — its registration resolves it, and the detector rejects a stale entry. An unadjudicated candidate FAILS THE BUILD. See docs/wiki-evidence/umbrella-adjudication-sweep.md."
   },
@@ -176,25 +178,11 @@
       "source_invocation": "https://ddowiki.com/page/Spell_Lore#Combined_Spell_Lore",
       "harvested": "2026-08-18"
     },
-    "Radiance Intensity": {
-      "disposition": "atomic",
-      "evidence": "Radiance Intensity +12%: +12% Enhancement bonus to critical damage with Light and Alignment spells.",
-      "source_invocation": "{{Intensity|Radiance|12}}",
-      "observed_on": "Item:Mad Angels' Manacles",
-      "harvested": "2026-08-13"
-    },
     "Repair Amplification": {
       "disposition": "atomic",
       "evidence": "Repair Amplification: This effect amplifies all incoming repair healing by +27 (Enhancement bonus). Includes spells, potions, and other effects.",
       "source_invocation": "{{HealingAmp|27|Repair}}",
       "observed_on": "Item:Boots of Uncanny Mending",
-      "harvested": "2026-08-13"
-    },
-    "Repair Intensity": {
-      "disposition": "atomic",
-      "evidence": "Repair Intensity +12%: +12% Enhancement bonus to critical damage with Repair and Rust spells.",
-      "source_invocation": "{{Intensity|Repair|12}}",
-      "observed_on": "rendered invocation (carrier family: Mad Angels' Manacles pattern)",
       "harvested": "2026-08-13"
     },
     "Rune Arm Focus": {

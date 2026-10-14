@@ -2377,11 +2377,30 @@ test("#364: the six Dinosaur Bone accessory blanks are flagged Artifacts", () =>
 // half of the reported confusion; the modelling half — two genuinely different
 // stats — is what the hint still exists for.
 
-test("#404: adding an element Intensity suggests its companion by name", () => {
-  const hint = companionHintFor("Void Intensity", ["Void Intensity"]);
-  assert.ok(hint, "a hint is produced");
-  assert.ok(/Spell Critical Damage/.test(hint), "it names the companion");
-  assert.ok(/spell critical damage/i.test(hint), "and says why the two are related");
+// #876 (2026-10-13) — the hint is RETIRED, and these replace its two positive
+// tests. U81.4 made `Spell Critical Damage` per-element, so it now expands INTO the
+// ten Intensities: a player ranking `Void Intensity` is credited the Solar Gem of
+// Spell Critical Damage directly, which is the dead end the hint used to bridge.
+// What must hold now is that there is nothing left to bridge.
+test("#876: ranking an element Intensity needs no companion, for any of the ten", () => {
+  assert.deepStrictEqual(COMPANION_STATS, [], "no companion is declared");
+  for (const m of ["Fire Intensity", "Acid Intensity", "Healing Intensity", "Ice Intensity",
+                   "Kinetic Intensity", "Lightning Intensity", "Void Intensity",
+                   "Radiance Intensity", "Repair Intensity", "Sonic Intensity"]) {
+    assert.strictEqual(companionHintFor(m, [m]), null, `${m} still prompts a hint`);
+  }
+});
+
+test("#876/real data: the Solar Gem of Spell Critical Damage credits every Intensity", () => {
+  const gem = (realData.items || []).find((v) => v.source_item === "Solar Gem of Spell Critical Damage (Legendary)");
+  assert.ok(gem, "the Legendary Solar Gem is in the catalog");
+  const intensities = gem.affixes.filter((a) => / Intensity$/.test(a.name));
+  assert.strictEqual(intensities.length, 10, "one affix per element Intensity");
+  for (const a of intensities) {
+    assert.strictEqual(a.type, "Legendary");
+    assert.strictEqual(a.via, "Legendary Spell Critical Damage", "provenance names the engraving");
+  }
+  assert.ok(!gem.affixes.some((a) => a.name === "Spell Critical Damage"), "the umbrella name is gone");
 });
 
 // ---- #746 — the affix-family hint -----------------------------------------
@@ -2450,16 +2469,6 @@ test("#746/real data: the counts reach the picker through the vocabulary", () =>
   const vocab = buildPickerVocabulary(realData);
   assert.ok(vocab.familyCounts, "the vocabulary carries the counts");
   assert.ok(vocab.familyCounts.Ghostly > 0, "and they are populated");
-});
-
-test("#404: every declared member produces the hint, not just the reported one", () => {
-  // The reported case was Void; a fix that only covered Void would pass a
-  // single-name test and leave nine identical dead ends.
-  const entry = COMPANION_STATS.find((e) => e.companion === "Spell Critical Damage");
-  assert.strictEqual(entry.members.length, 10, "all ten element Intensities are declared");
-  for (const m of entry.members) {
-    assert.ok(companionHintFor(m, [m]), `no hint for ${m}`);
-  }
 });
 
 test("#404: the hint is silent once the companion is ranked, and for unrelated stats", () => {

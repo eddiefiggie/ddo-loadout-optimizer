@@ -3954,24 +3954,27 @@ test("#348 U6/R5: the empty-suggestion copy answers the dead end the player is i
 // must carry it out on a successful plain add, or the sentence exists and no
 // player ever sees it.
 
-test("#404: a successful plain add carries the companion hint", () => {
+// #876 — the #404 companion hint is retired: `Spell Critical Damage` now expands
+// into the ten Intensities (U81.4), so ranking one is credited the Solar Gem
+// directly and there is no second stat to point at. The add path's hint plumbing
+// stays (COMPANION_STATS is empty, not removed); these assert what replaced it.
+test("#876: adding an Intensity succeeds and carries no companion hint", () => {
   const vocab = buildPickerVocabulary(realData);
   const out = resolvePriorityAdd("Void Intensity", vocab, ["Constitution"]);
   assert.strictEqual(out.ok, true);
   assert.deepStrictEqual(out.priorities, ["Constitution", "Void Intensity"], "the add still happens");
-  assert.ok(out.companionHint && /Spell Critical Damage/.test(out.companionHint),
-    "and the hint rides out with it");
+  assert.ok(!("companionHint" in out), "no companion left to suggest");
 });
-
-test("#404: the hint is computed against the POST-add list", () => {
-  // Adding the companion itself must not then suggest it back. Computing against
-  // the pre-add list would do exactly that on the second of the two adds.
+test("#876: typing the retired name is redirected to the ten Intensities", () => {
+  // The name now expands away, so the add path refuses it and names the stats
+  // that carry it — the same treatment as Potency or Spell Focus Mastery.
   const vocab = buildPickerVocabulary(realData);
   const out = resolvePriorityAdd("Spell Critical Damage", vocab, ["Void Intensity"]);
-  assert.strictEqual(out.ok, true);
-  assert.ok(!out.companionHint, "no hint once both are ranked");
+  assert.strictEqual(out.ok, false);
+  assert.deepStrictEqual(out.priorities, ["Void Intensity"], "the list is unchanged");
+  assert.ok(/shorthand for Fire Intensity/.test(out.message) && /Sonic Intensity/.test(out.message),
+    "and the message names the Intensities");
 });
-
 test("#404: an ordinary add carries no hint field at all", () => {
   const vocab = buildPickerVocabulary(realData);
   const out = resolvePriorityAdd("Constitution", vocab, []);
@@ -4018,14 +4021,14 @@ test("#746: an ordinary add carries no family hint field at all", () => {
 
 test("#746: the two advisory channels are independent fields", () => {
   // They answer different questions and the render site joins them. Collapsing
-  // either into the other would hide whichever fired second.
+  // either into the other would hide whichever fired second. #876 retired the only
+  // companion, so the Intensity case now carries NEITHER field.
   const vocab = buildPickerVocabulary(realData);
   const fam = resolvePriorityAdd("Ethereal", vocab, []);
   const comp = resolvePriorityAdd("Void Intensity", vocab, []);
   assert.ok(fam.familyHint && !fam.companionHint, "a family member carries only the family hint");
-  assert.ok(comp.companionHint && !comp.familyHint, "an Intensity carries only the companion hint");
+  assert.ok(!comp.companionHint && !comp.familyHint, "an Intensity carries neither hint");
 });
-
 
 // --- #359: owned-augment mode ----------------------------------------------
 //

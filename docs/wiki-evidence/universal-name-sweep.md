@@ -114,7 +114,8 @@ power, crit or crit damage is a bonus to each element mod. For **set bonuses**,
 `Universal Spell Power`, `Universal Spell Lore` and `Universal Spell Critical
 Chance` now expand per-element (#870). The crit-damage rows (`Spell Critical
 Damage`, `Universal Spell Critical Damage`) are ruled the same way and ship in
-#876. Item-enchantment rows above are unchanged. Full record:
+#876, applied 2026-10-13: both now expand into the ten element Intensities on items
+and in sets, and leave the picker. Item-enchantment rows for USP/USL are unchanged. Full record:
 `set-bonus-universal-per-element.md`.
 
 ## 2026-08-20 re-verification: `Spell Intensity` (#402)
