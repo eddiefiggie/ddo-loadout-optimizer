@@ -397,6 +397,24 @@
     return (variant.affixes || []).filter((a) => t.has(a.name != null ? a.name : a.stat));
   }
 
+  // #879 — an `[Upgraded]` raid item: where the one-time upgrade is done (the
+  // wiki's own words for each upgrader) and the upgrade lines nothing credits —
+  // the Mythic boost the wiki states as two values, a clicky's charges, a
+  // quarantined value. Null for every other record. One spelling, for the card
+  // and any export that names the item.
+  const UPGRADE_SITE = {
+    "Stormreaver": "a Seal of the Stormreaver at the Stormreaver Monument in Gianthold",
+    "Black Abbot": "a Seal of the Black Abbot at the Fountain of Necrotic Might outside the Black Mausoleum",
+  };
+  function upgradeNoteText(v) {
+    const u = v && v.upgraded_from;
+    if (!u || !u.item) return null;
+    const site = UPGRADE_SITE[u.upgrader];
+    const how = site ? `Upgrade ${u.item} with ${site}.` : `The upgraded state of ${u.item}.`;
+    const skipped = (u.not_credited || []).filter(Boolean);
+    return skipped.length ? `${how} Not counted: ${skipped.join("; ")}.` : how;
+  }
+
   // #878 — a COLOR-CHOICE slot ("Yellow or Blue") is one upgrade slot whose colour the
   // player picks. The key joins its members with CHOICE_SEP, as `src/colors.py`
   // writes it (a Python test pins the two). Attribution needs no special case —
@@ -3677,7 +3695,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, utilityPriceLine, utilityUnsecuredLines, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, affixStatCoverage, affixCoverageKey, affixOwnName, craftStepLabel, craftAffixRecords, itemMl, wornMl, craftedMlIndex, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, choiceMembers, slotPick, slotWords, dinoInsertKey, assignDinoInserts,
+    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, affixStatCoverage, affixCoverageKey, affixOwnName, craftStepLabel, craftAffixRecords, itemMl, wornMl, craftedMlIndex, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, choiceMembers, slotPick, slotWords, upgradeNoteText, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     // #449 (U2) — the achieved/ceiling fraction: numbers, state and wording from
     // one place, plus the once-per-document full statement.

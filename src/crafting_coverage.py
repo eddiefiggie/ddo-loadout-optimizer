@@ -144,9 +144,10 @@ UNSERVED_ALLOWLIST = frozenset({
     "Upgradeable - Primary Augment",
     "Upgradeable - Secondary Augment",
     # #879 — per-item upgrade pools on 25 heroic named items (Stormreaver,
-    # Litany of the Dead, Madstone, ...). New in c36b45e; the items keep the base
-    # affixes they always shipped with until the upgrade mechanic is read off the
-    # wiki and modelled. A pool exists, so this is a modelling gap, not a source one.
+    # Litany of the Dead, Madstone, ...). Never served AS A POOL, by design: the
+    # wiki rules each upgrade a fixed upgraded state, not a choice, so it ships
+    # as a second record — `<name> [Upgraded]`, built by src/upgraded_items.py —
+    # and the base keeps this label as the marker of what it can become.
     "Upgradeable Item",
     # `Random set 1` / `Random set 2` are absent from the catalog ENTIRELY — no
     # pool, per-item or menu — so there is nothing to read. These are the Gem of

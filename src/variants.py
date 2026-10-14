@@ -208,6 +208,9 @@ def _make_variant(item, ml, tier_label, parsed):
         # Essence Crafting Trinket menus [{menu:"Prefix"},…] — one single-pick
         # choice slot each, the Gem of Many Facets' three (#193/#599).
         "essence_slots": item.get("essence_slots"),
+        # #879 — an `[Upgraded]` twin's base, upgrader, and the wiki upgrade
+        # lines nothing credits (Mythic boosts, clicky charges, a quarantined value).
+        "upgraded_from": item.get("upgraded_from"),
     }
 
 

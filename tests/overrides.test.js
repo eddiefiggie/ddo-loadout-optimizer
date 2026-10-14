@@ -126,8 +126,10 @@ test("the 161 unstamped boolean-composite components are ineligible", () => {
   // minted no UNMARKED component.
   // c36b45e (#871) — 847 not 841: +6, three new `Ghostly` carriers (112 -> 115,
   // two of them the U81.4 Legendary Spectre Deflectors) x its two components.
-  assert.strictEqual(derived.length, 847,
-    "normalizeDataset generates 847 composite components carrying no provenance stamp");
+  // #879 — 849 not 847: +2, one new `Ghostly` carrier (Wretched Twilight
+  // [Upgraded], the raid cloak's upgraded twin) x its two components. Nothing else.
+  assert.strictEqual(derived.length, 849,
+    "normalizeDataset generates 849 composite components carrying no provenance stamp");
   assert.ok(derived.every((a) => !O.isEligible(a)),
     "and the predicate refuses every one of them, so it cannot be a `via` presence test");
 });
@@ -410,7 +412,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // #876 — 45,692: +27. The three Solar Gem of Spell Critical Damage tiers each
   // carried one `Spell Critical Damage` affix and now carry the ten element
   // Intensities it expands into (3 x 9). Nothing else moved.
-  assert.strictEqual(total, 45692, "post-normalize pool size");
+  // #879 — 45,872: +180, exactly the post-normalize affix count of the 24
+  // `[Upgraded]` raid-item twins (src/upgraded_items.py). Measured on those
+  // records alone, so the delta is theirs and nothing else moved.
+  assert.strictEqual(total, 45872, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -512,7 +517,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // #876 — 20,677: -3, all augments (cross-checked by category below). Those three
   // gem affixes were engraved and override-eligible; their expansion components
   // carry a `via` provenance stamp and are ineligible by rule, exactly as Potency's are.
-  assert.strictEqual(eligible, 20677, "engraved, eligible affixes");
+  // #879 — 20,740: +63, exactly the eligible affixes on the 24 `[Upgraded]`
+  // twins (measured on those records alone). Their engraved affixes are as
+  // overridable as their base's; nothing else moved.
+  assert.strictEqual(eligible, 20740, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -585,7 +593,9 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // across the new Night Revels worn gear and weapons, and the four new Lahar Rubies
   // carry only Bool presences (ineligible by rule 1), so `augment` cannot move.
   // #876 — augment -3, item and weapon UNCHANGED: the three gems are augments.
-  assert.deepStrictEqual(byCat, { item: 13435, weapon: 6233, augment: 1009 });
+  // #879 — item +46, weapon +17, augment UNCHANGED: the +63 above, split exactly as
+  // it splits on the `[Upgraded]` twins alone (none of them is an augment).
+  assert.deepStrictEqual(byCat, { item: 13481, weapon: 6250, augment: 1009 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {
@@ -675,7 +685,8 @@ test("the generator marks composite components, so provenance is read not inferr
   // component is marked and ineligible, so the ruling minted no unmarked component.
   // 397c673 — 841 not 837: +4 from the raid items; see the sibling assertion.
   // c36b45e (#871) — 847: +6 `Ghostly` components; see the sibling assertion.
-  assert.strictEqual(marked, 847, "every generated composite component carries the mark");
+  // #879 — 849: +2, Wretched Twilight [Upgraded]'s `Ghostly`; see the sibling assertion.
+  assert.strictEqual(marked, 849, "every generated composite component carries the mark");
   const one = pool.items.flatMap((v) => v.affixes || []).find((a) => a._compositeOf);
   assert.ok(!Object.keys(one).includes("_compositeOf"), "and the mark is non-enumerable");
 });

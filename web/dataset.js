@@ -659,7 +659,10 @@ function normalizeDataset(dataset) {
   // is derived and asserted in `src/crafted_twins.py`, never inferred from the
   // name here. An item in no pair gets NO field, and the gate falls back to its
   // own key — which is the correct reading for the other 9,020.
-  const twinIdentity = meta.crafted_twin_identity || {};
+  // #879 — the `[Upgraded]` twins (a heroic raid item after its one-time
+  // upgrade) are one game item with their base in exactly the same sense, so
+  // they share the field. Derived and asserted in `src/upgraded_items.py`.
+  const twinIdentity = Object.assign({}, meta.crafted_twin_identity || {}, meta.upgraded_twin_identity || {});
   for (const it of dataset.items) {
     const cls = it.material ? materialClass[it.material] : undefined;
     if (cls) it.material_class = cls;

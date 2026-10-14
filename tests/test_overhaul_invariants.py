@@ -84,7 +84,9 @@ def test_no_legacy_affix_keys_at_rest():
     # dropped in build_dataset, hence 9209 - 1.
     # c36b45e (#871) — 9225: +13 gear-planner records (8050 -> 8063), all U81.4
     # Night Revels / Lahar arrivals, plus their extra variants.
-    assert len(items) == 9225, f"expected 9225 items, saw {len(items)}"
+    # #879 — 9249: +24 `[Upgraded]` twins of the Stormreaver / Black Abbot raid
+    # items (src/upgraded_items.py); Litany of the Dead's upgrade changes no stat.
+    assert len(items) == 9249, f"expected 9249 items, saw {len(items)}"
     gems = [it for it in items
             if "(Epic)" in (it.get("source_item") or "")
             and (it.get("source_item", "").startswith("Lunar Gem")

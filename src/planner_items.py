@@ -331,12 +331,16 @@ def _record(it, verified_seal_types, nc_per_item_hosts=None):
     slv_set = _slavers_set_bonus(it.get("crafting"))
     if slv_set:
         rec["slavers_set_bonus"] = slv_set
+    # #879 — an `[Upgraded]` twin names its base, its upgrader, and what the
+    # wiki lists for the upgrade that nothing credits (the Mythic boosts).
+    if it.get("upgraded_from"):
+        rec["upgraded_from"] = it["upgraded_from"]
     return rec
 
 
 def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
                        exclude_names=None, nc_per_item_hosts=None,
-                       ml_corrections=None):
+                       ml_corrections=None, extra_raw=None):
     """Load and map the gear-planner raw dump into native pipeline records.
     `verified_seal_types` (seal types with a non-empty pool) gates which "Sealed
     in X" crafting entries become seal-slot hosts; default empty -> none.
@@ -344,6 +348,10 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
     `exclude_names` are names owned by a host-pipeline seed that generates its own
     synthetic bodies *after* the build's name-keyed dedup (the Dinosaur Bone
     hosts). Such records are dropped here — the host seed owns the body.
+
+    `extra_raw` are records the build derives in the dump's own shape — the
+    `[Upgraded]` twins (#879) — mapped through the same `_record` so every
+    downstream stage treats them exactly as it treats a native record.
 
     Returns `(records, stats)` where `stats` reports intra-dump name collisions
     collapsed (name-keyed, first wins) and native host-marker counts, for coverage
@@ -353,6 +361,7 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
     nc_hosts = nc_per_item_hosts or {}
     with open(path, encoding="utf-8") as fh:
         raw = json.load(fh)
+    raw = raw + list(extra_raw or [])
 
     records, seen = [], set()
     collapsed = host_owned = 0

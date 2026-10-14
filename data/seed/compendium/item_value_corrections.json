@@ -300,6 +300,19 @@
       "_repointed_2026_09_22": "Was name='Magical Efficiency'. The 397c673 refresh dropped upstream's 'Power Store' -> 'Magical Efficiency' fold, so this item now carries the affix under its engraved name at value-correction time. Our canon is still Magical Efficiency: affix_name_corrections merges it back, but that runs AFTER value corrections in the item channel, so the target here must be the upstream name. Mechanic, type, value and evidence are unchanged."
     }
   ],
+  "Staff of the Petitioner [Upgraded]": [
+    {
+      "name": "Power Store",
+      "type": "Bool",
+      "from": 1,
+      "to": 10,
+      "tooltip": "You take a 10% Enhancement discount to the Spell Point cost of your spells.",
+      "wiki_url": "https://ddowiki.com/page/Item:Staff_of_the_Petitioner",
+      "verified": "2026-10-14",
+      "issue": 879,
+      "note": "#879 — the `[Upgraded]` twin of the record above, built by src/upgraded_items.py. A correction is keyed on the record name, so the twin needs its own entry; the mechanic and evidence are the base entry's. The upgrade does not touch Power Store (the wiki's upgrade block lists only Potency, Spellcasting Implement and a Mythic boost)."
+    }
+  ],
   "Stone Shoes": [
     {
       "name": "Weighty Asset",

@@ -214,7 +214,10 @@ LIVE_639 = {
     "Legendary Lucid Dreams",
     "Lucid Dreams",
 }
-LIVE = LIVE_619 | LIVE_632 | LIVE_615 | LIVE_639
+#: #879 — the `[Upgraded]` twin of a #619 carrier. A correction is keyed on the
+#: record name; the upgrade leaves Power Store alone, so the evidence is #619's.
+LIVE_879 = {"Staff of the Petitioner [Upgraded]"}
+LIVE = LIVE_619 | LIVE_632 | LIVE_615 | LIVE_639 | LIVE_879
 
 
 def test_the_only_live_corrections_are_declared_and_the_retirement_is_on_the_record():
@@ -263,7 +266,8 @@ def test_the_shipped_shard_carries_its_wiki_evidence():
     # #615 — 54: 17 retired (#288) + 8 live (#619) + 3 (#632) + 26 (#615, the
     # cursed-item carriers, one entry per curse per item).
     # #639 — 62: +8, the Mind Drain (4) and Power Drain (4) carriers.
-    assert seen == 62, seen
+    # #879 — 63: +1, the `[Upgraded]` Staff of the Petitioner.
+    assert seen == 63, seen
 
 
 def test_a_retired_correction_is_one_upstream_actually_adopted():

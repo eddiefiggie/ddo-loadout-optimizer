@@ -2661,3 +2661,25 @@ test("#878: an open choice slot renders as one row with a valid class", () => {
   assert.ok(/<span class="pd-ln-where">Yellow or Blue<\/span>/.test(html));
   assert.ok(/title="open Yellow or Blue upgrade slot/.test(html));
 });
+
+// ---- #879 — the `[Upgraded]` raid-item note -------------------------------------
+
+test("#879: an upgraded item says where to upgrade it and what is not counted", () => {
+  const v = { variant_id: "Madstone Boots [Upgraded]", upgraded_from: { item: "Madstone Boots",
+    upgrader: "Stormreaver", not_credited: ["Mythic Boot Boost +1 or +3"] } };
+  assert.strictEqual(P.upgradeNoteText(v),
+    "Upgrade Madstone Boots with a Seal of the Stormreaver at the Stormreaver Monument in Gianthold."
+    + " Not counted: Mythic Boot Boost +1 or +3.");
+  const q = { upgraded_from: { item: "Quiver of Alacrity", upgrader: "Black Abbot", not_credited: [] } };
+  assert.ok(/Fountain of Necrotic Might/.test(P.upgradeNoteText(q)) && !/Not counted/.test(P.upgradeNoteText(q)));
+  assert.strictEqual(P.upgradeNoteText({ variant_id: "Plain Boots", upgraded_from: null }), null);
+});
+
+test("#879: the Loadout card carries the upgrade note for an upgraded item only", () => {
+  const up = { variant_id: "Madstone Boots [Upgraded]", slot: "Boots", affixes: [],
+    upgraded_from: { item: "Madstone Boots", upgrader: "Stormreaver", not_credited: ["Mythic Boot Boost +1 or +3"] } };
+  const html = R.equippedRow("Boots", { idx: 0, variant: up }, null, {});
+  assert.ok(/pd-upgrade/.test(html) && /Stormreaver Monument/.test(html), html.slice(0, 400));
+  const plain = R.equippedRow("Boots", { idx: 0, variant: { variant_id: "Plain Boots", slot: "Boots", affixes: [] } }, null, {});
+  assert.ok(!/pd-upgrade/.test(plain));
+});
