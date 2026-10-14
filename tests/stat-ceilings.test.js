@@ -75,7 +75,11 @@ test("#701 Magical Sheltering is disclosed per armor type, from the one shared t
   const start = proj.indexOf("function mrrCapLine(");
   assert.ok(start > -1, "mrrCapLine is gone from projection.js");
   const body = proj.slice(start, proj.indexOf("\n  }", start));
-  assert.ok(body.includes("MRR_CAP_BY_ARMOR"), "the notice reads the shared table, not its own copy");
+  // #855 — read through its own bridge; tests/browser-bridges.test.js proves the
+  // bridge reaches model.js's table in the browser shape, not just under node.
+  assert.ok(body.includes("_mrrCapByArmor"), "the notice reads the shared table, not its own copy");
+  assert.ok(/const _mrrCapByArmor = \(typeof MRR_CAP_BY_ARMOR !== "undefined"\) \? MRR_CAP_BY_ARMOR/.test(proj),
+    "the bridge reads model.js's MRR_CAP_BY_ARMOR");
 });
 
 test("#677 a stat is never BOTH confirmed and disclosed", () => {

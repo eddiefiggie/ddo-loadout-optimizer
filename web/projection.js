@@ -21,7 +21,13 @@
 
   // #335 U4 — the duplicate-ring id helpers, same bridge as above: browser global
   // when model.js is loaded ahead of this file, require()'d under node.
-  function _modelModule() {
+  // #855 — this returns the two twin-id helpers and NOTHING else in the browser,
+  // while under node it returns all of model.js. Anything else read off it works
+  // in every test and is undefined on the live site, which is how the #713
+  // conditional notice never rendered. Bridge any other model.js name on its
+  // own, in the `_splitMechanicFor` shape below; tests/browser-bridges.test.js
+  // loads these files the way the page does and fails on a lookup hung off this.
+  function _twinIdHelpers() {
     if (typeof isTwinId !== "undefined") return { isTwinId, originalIdOf };
     if (typeof require !== "undefined") { try { return require("./model.js"); } catch (e) { /* absent */ } }
     return null;
@@ -38,6 +44,16 @@
   const _splitMechanicFor = (typeof splitMechanicFor !== "undefined") ? splitMechanicFor
     : (typeof require !== "undefined" ? require("./model.js").splitMechanicFor
       : () => null);
+
+  // #855 — the #713 conditional-disclosure lookup and the MRR ceiling table,
+  // each on its own bridge. Both used to hang off `_twinIdHelpers()`, which in
+  // the browser carries neither: the notice was silent on the live site and the
+  // MRR line ran on its fallback copy of the table.
+  const _conditionalDisclosureFor = (typeof conditionalDisclosureFor !== "undefined") ? conditionalDisclosureFor
+    : (typeof require !== "undefined" ? require("./model.js").conditionalDisclosureFor : null);
+  const _mrrCapByArmor = (typeof MRR_CAP_BY_ARMOR !== "undefined") ? MRR_CAP_BY_ARMOR
+    : (typeof require !== "undefined" ? require("./model.js").MRR_CAP_BY_ARMOR : null)
+      || { cloth: 50, light: 100 };
 
   const _isSolarLunarColor = (typeof isSolarLunarColor !== "undefined") ? isSolarLunarColor
     : (typeof require !== "undefined" ? require("./model.js").isSolarLunarColor
@@ -428,7 +444,7 @@
    *  `indices` lists every chosen index the entry covers, in order, so a caller
    *  can still reach each copy's own augments. */
   function collapseTwins(chosen) {
-    const M = _modelModule();
+    const M = _twinIdHelpers();
     const out = [];
     const byOriginal = new Map();      // original id -> entry in `out`
     (chosen || []).forEach((c, i) => {
@@ -1343,8 +1359,7 @@
   function mrrCapLine(rec) {
     const snap = (rec && rec.snapshot) || rec || {};
     const q = (rec && rec.query) || snap.query || {};
-    const M = _modelModule();
-    const table = (M && M.MRR_CAP_BY_ARMOR) || { cloth: 50, light: 100 };
+    const table = _mrrCapByArmor;
     const armor = q.armorType;
     if (!armor || table[armor] == null) return null;
     const targets = Array.isArray(q.targets) ? q.targets : [];
@@ -1370,7 +1385,7 @@
 
   // #850 — the model bridge for the tier-rename stamp, in the `_splitMechanicFor`
   // shape (browser global when model.js loads ahead of this file, require()'d
-  // under node) and NOT the `_modelModule()` one: in the browser that helper
+  // under node) and NOT the `_twinIdHelpers()` one: in the browser that helper
   // returns only the two twin-id functions, so a lookup hung off it is silent
   // on the live site while every node test passes.
   const _tierRenamesFor = (typeof tierRenamesFor !== "undefined") ? tierRenamesFor
@@ -1444,9 +1459,8 @@
     const snap = (rec && rec.snapshot) || rec || {};
     const q = (rec && rec.query) || snap.query || {};
     const targets = Array.isArray(q.targets) ? q.targets : [];
-    const M = _modelModule();
-    const forStat = (M && M.conditionalDisclosureFor) ? M.conditionalDisclosureFor : null;
-    if (!forStat) return [];
+    const forStat = _conditionalDisclosureFor;
+    if (typeof forStat !== "function") return [];
     const out = [];
     for (const stat of targets) {
       const d = forStat(stat);
