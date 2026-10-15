@@ -1159,6 +1159,13 @@ def build() -> dict:
     # their silent no-op. Runs before the speed classifier and expand_dataset so
     # the corrected type flows into variants, the solver, and browse from one
     # place.
+    # #861 — the augment channel of the VALUE corrections, ahead of the type
+    # corrections exactly as on the item channel (value first, then type), so a
+    # type entry pins the corrected magnitude. The crafting catalog's name
+    # corrections have already run, so entries here use our canon names.
+    _value_coverage_augments = value_corrections_mod.apply(aug_pool, _value_corrections)
+    value_corrections_mod.assert_all_reached(
+        _value_corrections, _value_coverage, _value_coverage_augments)
     _type_coverage_augments = type_corrections_mod.apply(aug_pool, _type_corrections)
     type_corrections_mod.assert_all_reached(
         _type_corrections, _type_coverage_items, _type_coverage_augments)
@@ -2351,6 +2358,7 @@ def build() -> dict:
             # #285 — what the crafted-predecessor backfill reached.
             "crafting_lineage_coverage": _lineage_coverage,
             "value_corrections_coverage": _value_coverage,
+            "value_corrections_coverage_augments": _value_coverage_augments,
             "name_corrections_coverage": _name_coverage,
             # #259 — bonus-type corrections, disclosed per channel: the same
             # entry set is offered to items and augments, and an entry is only
