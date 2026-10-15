@@ -1008,7 +1008,9 @@ const ADVANCED_PANEL_HELP = {
   // wiki-confirmed cap table: Doublestrike is exactly the stat the tool DOES
   // verify, and it applies that ceiling whether or not anything is typed here. The
   // panel now states any known ceiling beside the box, so this text no longer has
-  // to stand in for it.
+  // to stand in for it. (#888 — and the example went stale a second time: Update
+  // 81.4 removed the 100% cap. Doublestrike now carries a 200% soft cap, which the
+  // panel states the same way.)
   max: "<strong>Max is a cap.</strong> Stop valuing a stat past a breakpoint you know is real. Where this tool knows a stat's ceiling it says so below and already applies it — set a Max here to stop somewhere tighter than that, or when you know a breakpoint the tool does not.",
   // R7 — the sources this covers, on screen rather than only in a tooltip. The
   // feature exists because these bonuses are invisible to the tool, so a label

@@ -1339,6 +1339,38 @@
    *  Fires only when the solve actually cleared 40. Below it nothing is wasted and
    *  the sentence is boilerplate; the repeated-notice failure #449 R15 records is
    *  that a line under every card stops being read. */
+  /** #888 — a ranked stat past its SOFT cap (Doublestrike, Doubleshot: half value
+   *  above 200% since Update 81.4). Not a surplus notice: nothing here is wasted,
+   *  and saying "buys nothing" would be the exact error #888 removed. It says what
+   *  the solve credited and why that is below the sum of the parts.
+   *
+   *  Raw is recovered from the credited value (raw = at + (shown - at) / rate), so
+   *  the line needs no new snapshot field beyond the soft caps themselves. Silent
+   *  when the player's own Max is on the stat: the credited value is then the Max,
+   *  raw cannot be recovered from it, and the cap-surplus notice owns that case. */
+  function softCapLines(rec) {
+    const snap = (rec && rec.snapshot) || rec || {};
+    const q = (rec && rec.query) || snap.query || {};
+    const targets = Array.isArray(q.targets) ? q.targets : [];
+    const soft = snap.softCaps || {};
+    const capped = snap.capped || {};
+    const eff = snap.effective || {};
+    const out = [];
+    for (const stat of targets) {
+      const sc = soft[stat];
+      if (!sc || capped[stat] != null) continue;
+      const shown = Number(eff[stat]);
+      if (!(shown > sc.at)) continue;
+      const raw = sc.at + (shown - sc.at) / sc.rate;
+      const r = (n) => Math.round(n * 100) / 100;
+      out.push(`${stat} is credited at ${r(shown)} here: this build supplies ${r(raw)}, and since `
+        + `Update 81.4 the game counts ${stat} above ${sc.at} at ${Math.round(sc.rate * 100)}% — `
+        + `the ${r(raw - sc.at)} past ${sc.at} adds ${r(shown - sc.at)}. It is not wasted, only `
+        + "worth less per point, so the solve keeps valuing it against your other priorities.");
+    }
+    return out;
+  }
+
   function jumpSoftCapLine(rec) {
     const snap = (rec && rec.snapshot) || rec || {};
     const q = (rec && rec.query) || snap.query || {};
@@ -2987,6 +3019,10 @@
         // and the solve cleared 40). Same channel and same reason: a recipient must
         // not read a Jump total as all-useful when part of it buys no height.
         jumpSoftCapNotice: jumpSoftCapLine(rec),
+        // #888 — a ranked stat past its soft cap (Doublestrike/Doubleshot above
+        // 200%). Same channel: a recipient must not read the credited total as the
+        // sum of the parts, nor the excess as wasted.
+        softCapNotice: softCapLines(rec),
         // #701 — the armor-keyed MRR ceiling (null unless cloth or light was
         // declared, Magical Sheltering ranked with no Max, and the solve cleared
         // the cap the app can see). Same channel and same reason as the two above.
@@ -3710,7 +3746,7 @@
     // #245 — craft-carried disclosure + the opt-out notice line
     craftCarried, craftingExcludedLine,
     // #339 — the augment-ceiling scope disclosure line
-    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, mrrCapLine, conditionalNoticeLines, tierRenameNoticeLines, splitMechanicLine, capSurplusLines, capOpportunityLines, CAP_OPPORTUNITY_MIN_PICKS, slotReachabilityLines, slotReachabilitySummary, REACH_SUMMARY_NAME_LIMIT, packFilterNoticeLines, setFilterNoticeLines,
+    augCeilingLine, dodgeMaxDexLine, jumpSoftCapLine, softCapLines, mrrCapLine, conditionalNoticeLines, tierRenameNoticeLines, splitMechanicLine, capSurplusLines, capOpportunityLines, CAP_OPPORTUNITY_MIN_PICKS, slotReachabilityLines, slotReachabilitySummary, REACH_SUMMARY_NAME_LIMIT, packFilterNoticeLines, setFilterNoticeLines,
     essenceNoticeLines, greenSteelNoticeLines,
     // #262 — the one no-drop-source disclosure wording (results/browse/wizard
     // and every exporter read it from here; never respell it)

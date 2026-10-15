@@ -1681,6 +1681,8 @@ function buildProgram(model) {
     // creditBuckets (bucket key -> declared-credit floor) rides out for the
     // #322 visibility guard (visibleGateSet) rather than being re-derived.
     xVars, zByBucket, cappedStats, intrinsicCaps: { ...(model.intrinsicCaps || {}) },
+    // #888 — soft caps (`{stat: {at, rate}}`): past `at` the stat counts at `rate`.
+    softCaps: { ...(model.softCaps || {}) },
     targetList: model.targets, model, creditMeta, creditBuckets, overrideMeta,
     // #539 — the set pins this program actually bound, so a solve can report what
     // it was holding rather than the caller re-deriving it from the query.
@@ -1749,10 +1751,30 @@ function dVar(stat) {
   return "d_" + String(stat).replace(/[^A-Za-z0-9]/g, "_");
 }
 
-/** Objective/lock expression for a stat: the capped var if capped, else raw. */
+/** #888 — the LP variable for a soft-capped stat's excess over its threshold.
+ *  Same token rule as `dVar`. */
+function sVar(stat) {
+  return "s_" + String(stat).replace(/[^A-Za-z0-9]/g, "_");
+}
+
+/** #888 — a soft-capped stat's raw, with the excess past the threshold counted at
+ *  its rate: raw - (1 - rate) * s, where encodeStage holds s >= raw - at, s >= 0.
+ *  The function min(raw, at) + rate * max(0, raw - at) is concave, so under the
+ *  maximizing objective s settles at exactly max(0, raw - at); under a stage lock
+ *  the same terms admit any loadout whose real effective value meets the lock —
+ *  the meaning a hard cap's `d` lock already has. Plain raw when not soft-capped. */
+function softRawExpr(program, stat) {
+  const raw = rawExpr(program, stat);
+  const soft = program.softCaps && program.softCaps[stat];
+  if (!soft || !raw.length) return raw;
+  return [...raw, { coef: -(1 - soft.rate), name: sVar(stat) }];
+}
+
+/** Objective/lock expression for a stat: the capped var if capped, else its
+ *  (soft-capped) raw. */
 function effectiveExpr(program, stat) {
   if (program.cappedStats[stat] != null) return [{ coef: 1, name: dVar(stat) }];
-  return rawExpr(program, stat);
+  return softRawExpr(program, stat);
 }
 
 function fmtExpr(terms, fallbackVar) {
@@ -1853,9 +1875,16 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
   // capped stats: d <= raw (bound d <= cap is in Bounds). With no sources, pin
   // d <= 0 so the cap var cannot float up to its bound under the maximizing objective.
   for (const stat of Object.keys(program.cappedStats)) {
-    const raw = rawExpr(program, stat);
+    // #888 — a stat both soft-capped and capped clamps its SOFT-capped value: the
+    // player's Max limits what the game actually credits.
+    const raw = softRawExpr(program, stat);
     if (raw.length) L.push(` c${c++}: ${dVar(stat)} ${fmtExpr(raw.map((t) => ({ coef: -t.coef, name: t.name })), fb)} <= 0`);
     else L.push(` c${c++}: ${dVar(stat)} <= 0`);
+  }
+  // #888 — soft caps: s >= raw - at, written raw - s <= at (s >= 0 in Bounds).
+  for (const [stat, soft] of Object.entries(program.softCaps || {})) {
+    const raw = rawExpr(program, stat);
+    if (raw.length) L.push(` c${c++}: ${fmtExpr(raw, fb)} - ${sVar(stat)} <= ${soft.at}`);
   }
 
   for (const lock of locks || []) {
@@ -1872,6 +1901,9 @@ function encodeStage(program, { objectiveStat, objTerms, sense, locks, tieBreak,
 
   L.push("Bounds");
   for (const [stat, cap] of Object.entries(program.cappedStats)) L.push(` 0 <= ${dVar(stat)} <= ${cap}`);
+  for (const stat of Object.keys(program.softCaps || {})) {
+    if (rawExpr(program, stat).length) L.push(` 0 <= ${sVar(stat)}`);
+  }
 
   L.push("Binary");
   program.xVars.forEach((xv) => L.push(" " + xv.name));
@@ -2260,8 +2292,15 @@ function bucketMarginalOf(zs, z, gate, prim, floor) {
 }
 function effectiveOf(program, prim, stat) {
   const cap = program.cappedStats ? program.cappedStats[stat] : null;
-  const raw = rawTotalOf(program, prim, stat);
+  const raw = softCapped(rawTotalOf(program, prim, stat), program.softCaps && program.softCaps[stat]);
   return cap != null ? Math.min(cap, raw) : raw;
+}
+
+/** #888 — what the game credits for `raw` under a soft cap `{at, rate}`:
+ *  min(raw, at) + rate * max(0, raw - at). Identity when `soft` is absent. */
+function softCapped(raw, soft) {
+  if (!soft || !(raw > soft.at)) return raw;
+  return soft.at + soft.rate * (raw - soft.at);
 }
 
 // #319/#322 — the shared load-bearing test for every craft/placement family: a
@@ -3253,7 +3292,7 @@ async function solveLexicographic(model, highs, opts = {}) {
     greenSteelReport: greenSteelReportFor(sol),
     membershipPlaced: sol.membershipPlaced, setAugmentsPlaced: sol.setAugmentsPlaced,
     breakdown: breakdownByTarget(program, prim, visible), computeScale: computeScale(program),
-    capped: { ...program.cappedStats }, intrinsicCaps: { ...(program.intrinsicCaps || {}) }, floorReport, program,
+    capped: { ...program.cappedStats }, intrinsicCaps: { ...(program.intrinsicCaps || {}) }, softCaps: { ...(program.softCaps || {}) }, floorReport, program,
     // #539 — every set pin's verdict, including the suppressed and conflicting
     // ones. Plain JSON so persist.js can keep it under RESULT_KEEP: a restored
     // character must still be able to say why a pin did not land, without
@@ -3727,7 +3766,7 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
   if (!tieBreak) {
     const primG = (name) => (rGain.Columns[name] ? rGain.Columns[name].Primal : 0);
     const visibleG = visibleGateSet(program, primG);
-    return { status: "optimal", ...readSolution(rGain, program, visibleG), breakdown: breakdownByTarget(program, primG, visibleG), capped: { ...program.cappedStats }, intrinsicCaps: { ...(program.intrinsicCaps || {}) } };
+    return { status: "optimal", ...readSolution(rGain, program, visibleG), breakdown: breakdownByTarget(program, primG, visibleG), capped: { ...program.cappedStats }, intrinsicCaps: { ...(program.intrinsicCaps || {}) }, softCaps: { ...(program.softCaps || {}) } };
   }
   const prim1 = (name) => (rGain.Columns[name] ? rGain.Columns[name].Primal : 0);
   // Pin the achieved gain, then tie-break so the item set (not just the objective
@@ -3750,7 +3789,7 @@ function solveConstrained(program, highs, { objectiveStat, objTerms, sense = "ma
   const prim = (name) => (res.Columns[name] ? res.Columns[name].Primal : 0);
   const visible = visibleGateSet(program, prim);
   const sol = readSolution(res, program, visible);
-  return { status: "optimal", ...sol, breakdown: breakdownByTarget(program, prim, visible), capped: { ...program.cappedStats }, intrinsicCaps: { ...(program.intrinsicCaps || {}) } };
+  return { status: "optimal", ...sol, breakdown: breakdownByTarget(program, prim, visible), capped: { ...program.cappedStats }, intrinsicCaps: { ...(program.intrinsicCaps || {}) }, softCaps: { ...(program.softCaps || {}) } };
 }
 
 /** #193/#599 — what the Essence Crafting menus offered and what was taken.
@@ -4071,5 +4110,5 @@ function generateAlternatives(optimum, model, highs, opts = {}) {
 if (typeof module !== "undefined" && module.exports) {
   // readSolution is exported for TESTS ONLY — the deterministic guard tests
   // inject a synthetic primal (#319); app code goes through the solve entry points.
-  module.exports = { buildProgram, encodeStage, effectiveExpr, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport, buildOverrideReport, outbidReportFor, attributeOutbid, probeConcession, probeSetPinCost, concessionWindow };
+  module.exports = { buildProgram, encodeStage, effectiveExpr, softCapped, rawExpr, bucketCountsFor, solveLexicographic, solveConstrained, generateAlternatives, alternativeGive, sameChosen, scaleAt, breakdownByTarget, readSolution, DECLARED_LABEL, computeScale, slotConstraintBodies, forcedOffSlotVars, rawTotalOf, effectiveOf, buildCreditReport, buildOverrideReport, outbidReportFor, attributeOutbid, probeConcession, probeSetPinCost, concessionWindow };
 }

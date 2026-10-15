@@ -57,6 +57,10 @@
     // silently degraded to the generic "raw exceeds the cap" wording on a restored or
     // shared build — the specific claim replaced by a vaguer one, with no sign.
     "intrinsicCaps",
+    // #888 — the soft caps (Doublestrike/Doubleshot past 200%). The soft-cap notice
+    // reads `build.softCaps` to explain a credited total below its parts; dropped on
+    // save, a restored build would show the lower number with no reason.
+    "softCaps",
     // #345 (U1/R5) — the outbid disclosure. Its own comment in projection.js says it
     // "reads the solver-stamped set, so a shared build discloses the outbid targets
     // without the recipient re-solving" — which is exactly what omitting it here

@@ -182,11 +182,15 @@ def test_the_shard_is_actually_populated():
     this whole module green while covering nothing.
     """
     shard = _shard()
-    assert len(shard["caps"]) >= 2, (
-        "fewer than the two recorded caps (Doublestrike 100, Strikethrough 400) — "
+    # #888 — one cap now: Doublestrike's 100 was retired by Update 81.4 and moved
+    # to `refused` (no hard ceiling) and `soft_caps` (half value above 200).
+    assert len(shard["caps"]) >= 1, (
+        "fewer than the one recorded cap (Strikethrough 400) — "
         "an emptied list turns every assertion above green while covering nothing")
-    assert len(shard["refused"]) >= 6, (
-        "fewer than the six recorded refusals — the half that prevents a re-guess is being lost")
+    assert len(shard["refused"]) >= 7, (
+        "fewer than the seven recorded refusals — the half that prevents a re-guess is being lost")
+    assert len(shard.get("soft_caps") or []) >= 2, (
+        "fewer than the two recorded soft caps (Doublestrike, Doubleshot)")
 
 
 def test_the_build_emits_exactly_the_shard_caps():
@@ -199,3 +203,38 @@ def test_the_build_emits_exactly_the_shard_caps():
     # The refused stats must NOT reach the solver-facing table.
     assert not (set(built["intrinsic_stat_caps"]) & set(built["intrinsic_stat_caps_refused"])), (
         "a stat is both capped and refused — the two lists have drifted")
+
+
+# ---- #888 — the Update 81.4 soft caps ------------------------------------------------
+
+def test_doublestrike_is_no_longer_hard_capped_and_the_retirement_is_recorded():
+    """Update 81.4 removed the 100% cap. The wiki page was rewritten on release day,
+    and the shard kept quoting the old sentence for eight days. Pin both halves:
+    the cap is gone, and the reason it went is on the record next to the data."""
+    shard = _shard()
+    assert "Doublestrike" not in {c["stat"] for c in shard["caps"]}, (
+        "Doublestrike has no hard ceiling since Update 81.4 — re-capping it at 100 tells a "
+        "player with declared credits that points the game counts in full buy nothing")
+    retired = [r for r in shard.get("retired") or [] if r["entry"]["stat"] == "Doublestrike"]
+    assert retired and retired[0]["entry"]["cap"] == 100 and retired[0].get("why"), (
+        "the retired 100% entry and the reason it went must stay recorded")
+    refusal = next(r for r in shard["refused"] if r["stat"] == "Doublestrike")
+    assert "no longer capped at 100%" in refusal["quote"]
+
+
+def test_both_soft_caps_carry_their_wiki_sentence_and_shape():
+    soft = {e["stat"]: e for e in _shard()["soft_caps"]}
+    assert set(soft) == {"Doublestrike", "Doubleshot"}, sorted(soft)
+    for stat, e in soft.items():
+        assert e["at"] == 200 and e["rate"] == 0.5, (stat, e["at"], e["rate"])
+        assert "200%" in e["quote"] and "50%" in e["quote"], f"{stat}: the quote must state both numbers"
+        assert e["wiki_url"] == f"https://ddowiki.com/page/{stat}"
+        assert "Update 81" in e.get("release_note", ""), f"{stat}: no release-note evidence"
+
+
+def test_the_build_emits_exactly_the_shard_soft_caps():
+    built = build_dataset.build()["metadata"]
+    expected = {e["stat"]: {"at": e["at"], "rate": e["rate"]} for e in _shard()["soft_caps"]}
+    assert built["intrinsic_soft_caps"] == expected
+    assert not (set(built["intrinsic_soft_caps"]) & set(built["intrinsic_stat_caps"])), (
+        "a stat may not be both hard-capped and soft-capped")

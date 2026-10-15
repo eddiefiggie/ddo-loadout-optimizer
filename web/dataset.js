@@ -556,6 +556,14 @@ function installIntrinsicCaps(map) {
   }
 }
 
+// #888 — same two-runtime bridge for the soft caps (Doublestrike, Doubleshot).
+function installIntrinsicSoftCaps(map) {
+  if (typeof setIntrinsicSoftCaps !== "undefined") { setIntrinsicSoftCaps(map); return; }
+  if (typeof require !== "undefined") {
+    try { require("./model.js").setIntrinsicSoftCaps(map); } catch (e) { /* model.js absent: no-op */ }
+  }
+}
+
 // #683 — same two-runtime bridge for the disclosed name splits.
 // #713 — the `disclose` rulings from conditional_adjudications.json, keyed by
 // stat. Same bridge as the split mechanics: a browser global when model.js is
@@ -621,6 +629,7 @@ function normalizeDataset(dataset) {
   // installing `{}` is correct there, because the table's absence means "no stat has
   // a verified ceiling", which is exactly the pre-#199 behavior.
   installIntrinsicCaps(meta.intrinsic_stat_caps || {});
+  installIntrinsicSoftCaps(meta.intrinsic_soft_caps || {});
   installEssenceCoverage(meta.essence_crafting_coverage || null);
   // #683 — an older cached dataset has no such key; installing [] is correct
   // there, because the table's absence means "no family is disclosed as split",

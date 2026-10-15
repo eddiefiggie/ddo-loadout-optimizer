@@ -1568,6 +1568,49 @@ async function withCrossAdd(map, fn) {
     assert.ok(!("slot_pick" in bySlot.Orange), "an ordinary slot carries no pick");
   });
 
+  // #888 — the Update 81.4 soft cap: Doublestrike and Doubleshot count at half
+  // value above 200%. Not a clamp: every point past 200 still earns half.
+  const ds = (id, slotName, v, t = "Enhancement") => item(id, slotName, [["Doublestrike", t, v]]);
+  const dsCredit = (v) => ({ stat: "Doublestrike", bonus_type: "Untyped", value: v });
+  const SOFT = { Doublestrike: { at: 200, rate: 0.5 } };
+
+  await test("#888: below the soft cap the solve is untouched", async () => {
+    // Guard, not new behaviour: passes before #888 too, and must keep passing.
+    const m = { targets: ["Doublestrike"], mlCap: 34, softCaps: SOFT,
+      worn: [slot("Gloves", [ds("G30", "Gloves", 30)]), slot("Ring", [ds("R15", "Ring", 15, "Insight")])] };
+    assert.strictEqual((await S.solveLexicographic(m, highs)).effective.Doublestrike, 45);
+  });
+
+  await test("#888: past 200 the excess counts at half — 225 raw is credited 212.5", async () => {
+    const m = { targets: ["Doublestrike"], mlCap: 34, softCaps: SOFT, credits: [dsCredit(180)],
+      worn: [slot("Gloves", [ds("G30", "Gloves", 30)]), slot("Ring", [ds("R15", "Ring", 15, "Insight")])] };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.effective.Doublestrike, 212.5, "200 + (225 - 200) / 2");
+    assert.deepStrictEqual(r.softCaps, SOFT, "the result carries the soft cap for the notice");
+  });
+
+  await test("#888: a point past 200 still outranks the next priority (the old 100 cap threw it away)", async () => {
+    // One glove slot: +30 Doublestrike or +10 Strength. With 190 declared, the
+    // Doublestrike gloves take the stat from 190 to 210 credited (200 + 20/2), so priority 1
+    // must take them. Under the retired 100% cap Doublestrike was already
+    // saturated by the credit and the slot went to Strength.
+    const m = { targets: ["Doublestrike", "Strength"], mlCap: 34, softCaps: SOFT, credits: [dsCredit(190)],
+      worn: [slot("Gloves", [ds("G30", "Gloves", 30), item("GS", "Gloves", [["Strength", "Enhancement", 10]])])] };
+    const r = await S.solveLexicographic(m, highs);
+    assert.strictEqual(r.chosen.find((c) => c.slot === "Gloves").variant.variant_id, "G30");
+    assert.strictEqual(r.effective.Doublestrike, 210);
+    assert.strictEqual(r.effective.Strength, 0);
+  });
+
+  await test("#888: a player's Max clamps the soft-capped value, not the raw", async () => {
+    const m = { targets: ["Doublestrike"], mlCap: 34, softCaps: SOFT, credits: [dsCredit(180)],
+      userCaps: { Doublestrike: 210 },
+      worn: [slot("Gloves", [ds("G30", "Gloves", 30)]), slot("Ring", [ds("R15", "Ring", 15, "Insight")])] };
+    assert.strictEqual((await S.solveLexicographic(m, highs)).effective.Doublestrike, 210,
+      "212.5 credited, clamped to the Max of 210");
+    assert.strictEqual(S.softCapped(230, SOFT.Doublestrike), 215, "the wiki's own worked example");
+  });
+
   await test("U5/AE1: set stat counts only at the piece threshold", async () => {
     const tier = [{ n: 2, affixes: [["Strength", "Enhancement", 10]] }];
     const twoPieces = {

@@ -1944,6 +1944,11 @@ const NOTICES = [
   // decide FOR them is whether 40 is right for their character — Sneak, armor check
   // penalty and falling damage each move the useful target — so the notice names
   // the ceiling and the three escapes, and leaves the choice on the priorities step.
+  // #888 — INFORMATIONAL: past a soft cap nothing is wasted and there is nothing
+  // to fix; the notice explains why the credited total is below the parts.
+  { name: "softCapNotice", id: "soft-cap", title: "PAST A SOFT CAP",
+    subject: "soft cap", cls: NOTICE_INFORMATIONAL,
+    render: (c) => softCapNotice(c.query, c.result) },
   { name: "jumpSoftCapNotice", id: "jump-soft-cap", title: "JUMP ABOVE 40",
     subject: "jump soft cap", cls: NOTICE_ACTIONABLE,
     jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
@@ -2273,6 +2278,15 @@ function dodgeMaxDexNotice(query, result) {
 /** #663 — the Jump soft-cap disclosure. Same contract as the notice above: reads
  *  the SHARED sentence from projection, never a second wording, so the app and a
  *  shared build cannot come to disagree about the same solve. */
+/** #888 — the soft-cap explanation, from the SHARED projection sentence. */
+function softCapNotice(query, result) {
+  const lines = (Proj && Proj.softCapLines)
+    ? Proj.softCapLines({ snapshot: result, query }) : [];
+  return lines.length
+    ? lines.map((l) => `<p class="scope-note soft-cap-note" role="status">${esc(l)}</p>`).join("")
+    : "";
+}
+
 function jumpSoftCapNotice(query, result) {
   const line = (Proj && Proj.jumpSoftCapLine)
     ? Proj.jumpSoftCapLine({ snapshot: result, query }) : null;
@@ -4035,7 +4049,7 @@ function upgradesList(probed, list) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { concessionOutcome, concessionFailedOutcome, upgradesList,
-    renderResults, buildViews, utilityCard, wikiLink, sourceLine, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, pinnedUnownedNoticeEntries, playerAuthoredNoticeEntries, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, jumpSoftCapNotice, mrrCapNotice, conditionalNotice, tierRenameNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, augPinNotice, pinnedThroughNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
+    renderResults, buildViews, utilityCard, wikiLink, sourceLine, renderAltCards, affixLabel, assignAugments, assignDinoInserts, satisfiedSets, slotSetNames, satisfiedSetDetail, attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor, whyThisNote, activeSetDetail, attributionList, coverageNote, slotPosition, paperdollSlot, equippedRow, equippedBody, artifactNotice, artifactNoticeEntries, artifactsIncludedByPin, pinnedUnownedNoticeEntries, playerAuthoredNoticeEntries, boundNotice, boundNoticeEntries, zeroSourceNotice, zeroSourceNoticeEntries, outbidNotice, outbidTargets, saturationNotice, staleSnapshotNotice, ceilingChip, emptySlotNotice, absorptionQuarantineNotice, craftingExcludedNotice, augCeilingNotice, dodgeMaxDexNotice, softCapNotice, jumpSoftCapNotice, mrrCapNotice, conditionalNotice, tierRenameNotice, blockNotice, packFilterNotice, setFilterNotice, setPinNotice, augPinNotice, pinnedThroughNotice, upgradeNotice, versionsPanel, versionDiffView, farmingPanel, noticeDescriptors, noticePanel, noticeSummaryMarkers, NOTICES, NOTICE_TABLE, NOTICE_ENTRY_JUMPS, NOTICE_ENTRY_SUBJECTS, NOTICE_CLASS_TAG, NOTICE_CLASS_ORDER, incidentalStats, poolStatNames: _resultsPoolStatNames, affixChipClass, rankedStatSet, grantLinkClass, esc, safeUrl,
     // #471 — the card's row language: the three-column row itself, the two
     // in-place slot sections, and the foot-note family.
     stackLine, subLines, augmentSection, craftSection, craftRowsFor, hasAugmentSlots, recNote, LINE_MARK, SUN_MOON_GLYPH,
