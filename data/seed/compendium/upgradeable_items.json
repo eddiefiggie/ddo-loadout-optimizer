@@ -2,7 +2,7 @@
   "_source": "DDO Wiki `Item:` pages, the `Upgradeable Item (...)` enchantment block, read 2026-10-14 through the in-app Browser pane (#879). Every host gear-planner c36b45e marks `Upgradeable Item` was read; Unwavering Ardency is listed twice upstream and is one page.",
   "_why": "gear-planner carries each host's upgrade as a one-option pool of the affixes the upgrade leaves the item with. The wiki states the same upgrade as `X -> Y` replacements and `Adds X` lines, done once with a Seal at the Stormreaver Monument or the Fountain of Necrotic Might, so it is a fixed upgraded STATE of the item, not a choice. `src/upgraded_items.py` builds `<name> [Upgraded]` from the pool and fails the build unless every pool affix is either an `upgrade` entry here or a `quarantined` one. So a pool that drifts from this transcription, or a new upstream host, fails loudly instead of shipping.",
   "_shape": "`upgrade` entries are in UPSTREAM's vocabulary (name, type, value as the pool spells them). `replace` names the base affix (name, type) the upgrade overwrites; an entry without it is added. `wiki` is the block's own line, trimmed to the enchantment names. `quarantined` pool affixes are left off the record, with the reason. `not_credited` are wiki lines no pool carries and nothing credits.",
-  "_emit": "`emit` writes a pool affix under the name the wiki's upgrade block gives it. Only the two Striding lines use it: upstream folds Striding into `Speed`, and src/speed_split.py un-folds `Speed` from a harvest joined by the item's wiki PAGE, which an `[Upgraded]` record shares with its base. That join would rewrite the upgraded 30% back to the base page's 20% (Madstone Boots) or find nothing to rewrite (Quiver of Alacrity). Both blocks read `Striding`, which is movement speed and nothing else (docs/wiki-evidence/speed-and-alacrity.md), so the record carries it already split.",
+  "_emit": "`emit` writes a pool affix as the wiki's upgrade block states it, where the pool's reading is wrong. Wretched Twilight's Void Lore V uses it for the VALUE (the entry carries its own ruling, #884). The two Striding lines use it for the NAME: upstream folds Striding into `Speed`, and src/speed_split.py un-folds `Speed` from a harvest joined by the item's wiki PAGE, which an `[Upgraded]` record shares with its base. That join would rewrite the upgraded 30% back to the base page's 20% (Madstone Boots) or find nothing to rewrite (Quiver of Alacrity). Both blocks read `Striding`, which is movement speed and nothing else (docs/wiki-evidence/speed-and-alacrity.md), so the record carries it already split.",
   "_mythic": "Every host but the quiver lists a `Mythic <Slot> Boost +1 or +3` (weapons, shields, armor: +2 or +4), noted as a rare enchantment not on every drop. Two values and no rule for which applies: quarantined by the standing ruling in src/cannith_tiers.py (`wiki states two values with no rule for which applies`). Upstream carries none of them.",
   "items": {
     "Amulet of the Stormreaver": {
@@ -214,11 +214,9 @@
       "upgrader": "Black Abbot",
       "wiki": ["Sneak Attack Bonus +4 -> Sneak Attack Bonus +5", "Adds Void Lore V (15% Equipment bonus to Negative Energy and Poison spell critical chance)", "Mythic Cloak Boost +1 or +3"],
       "upgrade": [
-        {"replace": ["Deception", "Sneak Attack"], "to": ["Deception", "Sneak Attack", "5"]}
-      ],
-      "quarantined": [
-        {"pool": ["Negative Lore", "Equipment", "5"],
-         "reason": "The wiki states Void Lore V as a 15% Equipment bonus; upstream's pool carries 5. Upstream spells Void Lore V as 15 on other items, so 5 looks like the roman numeral, but that is an inference. Left off the record until the value is ruled (#884)."}
+        {"replace": ["Deception", "Sneak Attack"], "to": ["Deception", "Sneak Attack", "5"]},
+        {"to": ["Negative Lore", "Equipment", "5"], "emit": ["Negative Lore", "Equipment", "15"],
+         "ruling": "#884 — Template:UpgradeableItem invokes {{Spelllore~Void~V}}, and Template:Spelllore states the magnitude outright: a numeric argument is the value; a roman numeral is Roman2Dec(numeral) + 10 for an element lore and + 0 for `spell`. V on Void is 5 + 10 = 15%, which is also the rendered tooltip. Upstream's pool reads V as 5, missing the +10. Read 2026-10-15; see docs/wiki-evidence/spell-lore.md."}
       ],
       "not_credited": ["Mythic Cloak Boost +1 or +3"]
     }

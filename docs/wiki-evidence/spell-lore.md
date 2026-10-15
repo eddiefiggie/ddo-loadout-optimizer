@@ -154,3 +154,27 @@ dataset vocabulary at build time). **Exclusions, recorded deliberately:**
   the universal lores plausibly apply to their underlying spells, but no wiki
   statement ties a universal name to a combined-lore name, so extension is
   deferred until a report warrants it (never infer).
+
+## Roman-numeral magnitudes: element lores are the numeral + 10 (#884)
+
+**Ruled:** 2026-10-15, read same-origin through the in-app Browser pane per `harvest-method.md`.
+
+`Template:Spelllore` takes `{{Spelllore|Element|Magnitude|(Bonus Type)}}`. Its usage section says the magnitude is "A roman numeral: I-XX (old lores)" or "A decimal number: 1, 2, 3, ... (new lores)". Its coding states the conversion outright (`|` shown as `~`):
+
+```
+{{#vardefine:Magnitude~{{Ifnumber~{{{2~0}}}~{{{2~0}}}~{{#expr:{{Roman2Dec~{{{2~I}}}}}+{{#ifeq:{{lc:{{{1~}}}}}~spell~0~10}}}}}}}}
+```
+
+So:
+
+| Invocation | Magnitude | Why |
+|---|---|---|
+| `{{Spelllore\|Void\|V}}` | **15%** | roman, element lore: 5 + 10 |
+| `{{Spelllore\|Spell\|VI}}` | 6% | roman, `spell`: 6 + 0 |
+| `{{Spelllore\|Fire\|21}}` | 21% | numeric: the value as given |
+
+This is a stated formula, not a placeholder, and the rendered tooltip agrees: `Void Lore V` renders "gain a 15% Equipment bonus to their chance to critical hit".
+
+**Where it mattered.** Wretched Twilight's upgrade (`Template:UpgradeableItem`) adds `{{Spelllore|Void|V}}`. gear-planner's `Upgradeable Item` pool reads it as `Negative Lore 5`, which is the numeral without the +10. `data/seed/compendium/upgradeable_items.json` credits 15 through an `emit` carrying this ruling. Noxious Embers' `Spell Lore III -> VI` is the `spell` case (3 -> 6), and upstream reads it correctly.
+
+**Not swept here.** Any other item that engraves a roman-numeral element lore could carry the same misreading upstream. This ruling only covers the one record #884 asked about.
