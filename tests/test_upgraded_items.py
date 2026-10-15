@@ -155,7 +155,7 @@ def test_the_shipped_shard_matches_upstream_with_no_problems():
     out = upgraded_items.expand(raw, upgraded_items.load_pools(), upgraded_items.load_shard())
     assert out["problems"] == [], out["problems"]
     assert out["coverage"] == {"hosts": 25, "upgraded_records": 24, "no_stat_upgrade": 1,
-                               "quarantined_affixes": 1}
+                               "quarantined_affixes": 0}
 
 
 def test_every_transcribed_upgrade_quotes_its_wiki_block():
@@ -206,12 +206,16 @@ def test_the_striding_upgrades_survive_the_page_joined_speed_harvest():
         assert speed == [("Movement Speed", "30")], (name, speed)
 
 
-def test_the_quarantined_void_lore_is_not_credited():
+def test_void_lore_v_is_credited_at_the_templates_stated_15():
+    """#884 — Template:Spelllore: a roman numeral on an element lore is the numeral
+    + 10, so `{{Spelllore|Void|V}}` is 15%. Upstream's pool reads 5."""
     data = _built()
     if data is None:
         return
     v = _by_source(data)["Wretched Twilight [Upgraded]"]
-    assert not [a for a in v["affixes"] if "Lore" in a["name"]]
+    lore = [(a["name"], a["type"], a["value"]) for a in v["affixes"] if "Lore" in a["name"]]
+    assert lore == [("Void Lore", "Equipment", "15")], lore
+    assert all("Lore" not in n for n in v["upgraded_from"]["not_credited"])
 
 
 def test_the_twins_carry_the_base_records_corrections():
