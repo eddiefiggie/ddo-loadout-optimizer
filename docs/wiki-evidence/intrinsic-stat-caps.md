@@ -27,7 +27,7 @@ so the refusals are recorded here as durably as the confirmation.
 
 | Stat | Verdict | Fixed cap? |
 |---|---|---|
-| Doublestrike | **CONFIRMED — 100** | yes |
+| Doublestrike | ~~**CONFIRMED — 100**~~ **SUPERSEDED 2026-10-15 (#888):** no hard cap since Update 81.4; a 200% soft cap. See the section at the end. | ~~yes~~ no |
 | Doubleshot | REFUSED — no ceiling; it wraps | no |
 | Fortification | REFUSED — no ceiling; 300% is a normal build target | no |
 | Dodge | REFUSED — the cap is itself player-built | no |
@@ -510,3 +510,32 @@ for medium and heavy, silent with no armor declared, silent under the visible
 ceiling, and silent once the player sets a Max on Magical Sheltering. The notice
 rides the projection record, so every exporter carries it.
 
+
+
+---
+
+# Update 81.4 — the Doublestrike cap is gone; both siblings gain a soft cap (#888)
+
+**Read:** 2026-10-15, same-origin through the in-app Browser pane. **Supersedes §1.**
+
+Update 81.4 (live 2026-10-07) changed the rule §1 recorded. From the wiki `Update 81 Patch 4 Release Notes`, *Global Weapon Combat Changes*:
+
+> Doublestrike is no longer capped.
+> Both Doublestrike and Doubleshot now scale at half value if your total bonus is over 200%
+
+Both pages were rewritten on release day (revisions 2026-10-07):
+
+> **Doublestrike:** Since Update 81.4, Doublestrike is no longer capped at 100%. However, doublestrike values only scale at 50% past a soft cap of 200% (a Doublestrike value of 230%, for example, would only provide 215% chance to Doublestrike.)
+
+> **Doubleshot:** Doubleshot values only scale at 50% past a soft cap of 200% (a Doubleshot value of 230%, for example, would only provide 215% chance to Doubleshot.)
+
+| Stat | Before | Since 81.4 | Recorded as |
+|---|---|---|---|
+| Doublestrike | hard cap 100 | no cap; half value above 200 | `refused` + `soft_caps`; the 100 entry under `retired` |
+| Doubleshot | no cap (wraps) | no cap; half value above 200 | `refused` (unchanged) + `soft_caps` |
+
+**What it is not.** A soft cap is not a cap. Every point above 200 still counts (half), so nothing is wasted and no cap-surplus surface may describe it as "buys nothing" — which is precisely what the 100% entry was telling a player with declared credits for eight days after the game stopped doing it. Modelled as `effective = min(raw, 200) + 0.5 * max(0, raw - 200)`, a concave term the solver maximises exactly (`web/solver.js` `softRawExpr`).
+
+**The off-hand rule in §1 still stands** on the page (50%, 65% with Perfect Two Weapon Fighting) and is still the Two Weapon Fighting non-goal.
+
+**Why it was missed.** The #875 triage read "no Doublestrike cap is modelled in `src/`" and stopped. True of `src/`; the cap lived in this data shard. A recorded cap is a dated claim about a page that moves, and nothing re-reads it — the shape `docs/solutions/conventions/a-dated-coverage-claim-cannot-notice-its-own-staleness.md` describes.

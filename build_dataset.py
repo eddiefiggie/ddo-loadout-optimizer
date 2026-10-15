@@ -2656,6 +2656,29 @@ def build() -> dict:
     out["metadata"]["intrinsic_stat_caps"] = _intrinsic_caps
     out["metadata"]["intrinsic_stat_caps_refused"] = sorted(
         r["stat"] for r in (_caps_shard.get("refused") or []) if r.get("stat"))
+    # #888 — soft caps, emitted as {stat: {at, rate}}: past `at` the stat keeps
+    # counting at `rate`. Same evidence rule as a cap, plus the shape check a
+    # rate needs (0 < rate < 1; 1 would be no soft cap, 0 a hard one). A stat
+    # may not be both: a hard cap would make the soft threshold unreachable or
+    # meaningless, and that is a ruling, not something to resolve by precedence.
+    _soft_caps = {}
+    for _entry in _caps_shard.get("soft_caps") or []:
+        _stat, _at, _rate = _entry.get("stat"), _entry.get("at"), _entry.get("rate")
+        if (not _stat or not isinstance(_at, (int, float)) or not isinstance(_rate, (int, float))
+                or not 0 < _rate < 1):
+            raise ValueError(
+                f"intrinsic_stat_caps.json: soft cap {_entry!r} needs a stat, a numeric "
+                "`at`, and a `rate` strictly between 0 and 1.")
+        if not _entry.get("quote") or not _entry.get("wiki_url"):
+            raise ValueError(
+                f"intrinsic_stat_caps.json: soft cap {_stat} carries no quote/wiki_url — "
+                "see the evidence_rule.")
+        if _stat in _intrinsic_caps:
+            raise ValueError(
+                f"intrinsic_stat_caps.json: {_stat} is both capped and soft-capped. Rule "
+                "which one the wiki states; precedence would hide the contradiction.")
+        _soft_caps[_stat] = {"at": _at, "rate": _rate}
+    out["metadata"]["intrinsic_soft_caps"] = _soft_caps
 
     # #683 — what the player-facing disclosure needs, and nothing the solver can
     # read: the family, the per-spelling distinct-set counts the sentence quotes,

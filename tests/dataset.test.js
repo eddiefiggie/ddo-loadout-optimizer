@@ -2763,3 +2763,21 @@ test("#879: blocking either half of an upgraded raid item blocks the item", () =
       `blocking ${blocked} must remove both halves`);
   }
 });
+
+// ---------------------------------------------------------------------------
+// #888 — the shipped dataset installs the Update 81.4 soft caps and no longer
+// hard-caps Doublestrike at 100. Read through model.js, the way the page does.
+test("#888: the real dataset soft-caps Doublestrike and Doubleshot and hard-caps neither", () => {
+  const M = require("../web/model.js");
+  // Re-load through normalizeDataset, the page's own install path: the tables are
+  // module state, and fixture-driven tests in this file reinstall them empty.
+  normalizeDataset(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf8")));
+  for (const stat of ["Doublestrike", "Doubleshot"]) {
+    assert.deepStrictEqual(M.softCapFor(stat), { at: 200, rate: 0.5 }, stat);
+    assert.strictEqual(M.intrinsicCapFor(stat), null, `${stat} has no hard cap since Update 81.4`);
+    assert.strictEqual(M.statCeilingHintFor(stat).kind, "soft", stat);
+  }
+  const m = M.buildModel(realData.items, { mlCap: 34, targets: ["Doublestrike"] });
+  assert.deepStrictEqual(m.softCaps, { Doublestrike: { at: 200, rate: 0.5 } }, "narrowed to the ranked stat");
+  assert.ok(!("Doublestrike" in (m.intrinsicCaps || {})));
+});

@@ -1,22 +1,14 @@
 {
   "_meta": {
     "title": "wiki-sourced intrinsic in-game stat caps (#199, #661)",
-    "note": "A stat whose in-game value stops counting past a fixed ceiling. Applied as a SECOND source of truth into the solver's cappedStats, beside the player's own per-stat caps; the tighter of the two wins, per the Stat cap clause in CONCEPTS.md. This said THIRD until #661, counting an armor dodge cap that #573 deleted \u2014 there is no longer a category-keyed armor clamp, and Dodge is disclosed rather than clamped.",
+    "note": "A stat whose in-game value stops counting past a fixed ceiling. Applied as a SECOND source of truth into the solver's cappedStats, beside the player's own per-stat caps; the tighter of the two wins, per the Stat cap clause in CONCEPTS.md. This said THIRD until #661, counting an armor dodge cap that #573 deleted — there is no longer a category-keyed armor clamp, and Dodge is disclosed rather than clamped.",
     "evidence_rule": "Every entry carries the verbatim wiki sentence stating the ceiling, and the page it was read from. A stat whose ceiling the wiki does not state outright gets NO entry — see `refused` below, which exists so the same four stats are not re-guessed.",
     "why_refusals_are_recorded": "Four of the five stats harvested for #199 have no ceiling, and three of those four look like they should. Doubleshot in particular is Doublestrike's documented sibling and behaves in the OPPOSITE way past 100%. Recording only the confirmation would leave the next reader to re-derive the refusals, and the cheap wrong answer is one analogy away.",
-    "sweeps": "Two, both in the evidence file. 2026-08-28 (#199) harvested Doublestrike, Doubleshot, Fortification, Dodge, Concealment. 2026-09-01 (#661, #662) harvested Strikethrough, off-hand strike chance, Jump, Incorporeal, secondary shield bash chance. Eight of the ten are recorded here. The two that are not are both CONFIRMED ceilings deliberately left out, which is the case most likely to be misread as an oversight: off-hand strike chance caps at 100 and is the Two Weapon Fighting non-goal (same reasoning as the Doublestrike note), and Jump caps at 40 for jump HEIGHT only \u2014 fall-damage reduction keeps scaling, Sneak moves the target to 60, and armor check penalty eats into it, so no constant can express it and it is a disclosure question instead (#663).",
-    "evidence": "docs/wiki-evidence/intrinsic-stat-caps.md"
+    "sweeps": "Two, both in the evidence file. 2026-08-28 (#199) harvested Doublestrike, Doubleshot, Fortification, Dodge, Concealment. 2026-09-01 (#661, #662) harvested Strikethrough, off-hand strike chance, Jump, Incorporeal, secondary shield bash chance. Eight of the ten are recorded here. The two that are not are both CONFIRMED ceilings deliberately left out, which is the case most likely to be misread as an oversight: off-hand strike chance caps at 100 and is the Two Weapon Fighting non-goal (same reasoning as the Doublestrike note), and Jump caps at 40 for jump HEIGHT only — fall-damage reduction keeps scaling, Sneak moves the target to 60, and armor check penalty eats into it, so no constant can express it and it is a disclosure question instead (#663).",
+    "evidence": "docs/wiki-evidence/intrinsic-stat-caps.md",
+    "soft_caps": "#888 — a stat that keeps counting past a threshold, at a reduced rate: effective = min(raw, at) + rate * max(0, raw - at). NOT a cap: no contribution is ever dead weight, so the solver models it as its own concave term and every cap-surplus surface leaves it alone. Applied before a player's own Max, which still clamps the result."
   },
   "caps": [
-    {
-      "stat": "Doublestrike",
-      "cap": 100,
-      "unit": "percent",
-      "quote": "Doublestrike above 100% has no effect on main-hand weapons.",
-      "wiki_url": "https://ddowiki.com/page/Doublestrike",
-      "verified": "2026-08-28",
-      "note": "Main-hand reading only. The same page states a separate off-hand ceiling (50%, 65% with Perfect Two Weapon Fighting) which is deliberately NOT modelled: keying a cap on wielding two weapons is the Two Weapon Fighting penalty, an AGENTS.md non-goal that is disclosed to the player rather than modelled numerically."
-    },
     {
       "stat": "Strikethrough",
       "cap": 400,
@@ -24,10 +16,18 @@
       "quote": "If your Strikethrough Chance is 400% or higher, you will always attack a fifth target (if in range). Strikethrough effectively caps at 400%, in that while higher values are possible, they do not provide chances to attack sixth or further targets.",
       "wiki_url": "https://ddowiki.com/page/Strikethrough",
       "verified": "2026-09-01",
-      "note": "NOT a clamp. The page says higher values 'are possible' and the game does not truncate them \u2014 what stops at 400 is the BENEFIT, which is this table's semantics ('value above this buys nothing') and the same reading as Doublestrike. Do not restate it as a hard ceiling: the tiers below it (over 100% guarantees a second target, 200% a third, 300% a fourth, 400% a fifth) are why 400 is the number, and there is no sixth target to buy. Unlike Doublestrike this ceiling is genuinely reachable: gear alone tops out at 15 (Artifact bucket only), but the feat and enhancement lines clear 400 in combination \u2014 base 20, Two Handed Fighting +60, Improved/Greater/Perfect +30 each, Two Handed Specialty +120, Dance of Death +50/100/200 \u2014 so it binds through declared credits on real two-handed builds."
+      "note": "NOT a clamp. The page says higher values 'are possible' and the game does not truncate them — what stops at 400 is the BENEFIT, which is this table's semantics ('value above this buys nothing') and the same reading as Doublestrike. Do not restate it as a hard ceiling: the tiers below it (over 100% guarantees a second target, 200% a third, 300% a fourth, 400% a fifth) are why 400 is the number, and there is no sixth target to buy. Unlike Doublestrike this ceiling is genuinely reachable: gear alone tops out at 15 (Artifact bucket only), but the feat and enhancement lines clear 400 in combination — base 20, Two Handed Fighting +60, Improved/Greater/Perfect +30 each, Two Handed Specialty +120, Dance of Death +50/100/200 — so it binds through declared credits on real two-handed builds."
     }
   ],
   "refused": [
+    {
+      "stat": "Doublestrike",
+      "reason": "No hard ceiling since Update 81.4. The 100% cap recorded on 2026-08-28 (#199) was removed in game; what remains is a SOFT cap, recorded under `soft_caps` (#888).",
+      "quote": "Since Update 81.4, Doublestrike is no longer capped at 100%. However, doublestrike values only scale at 50% past a soft cap of 200% (a Doublestrike value of 230%, for example, would only provide 215% chance to Doublestrike.)",
+      "wiki_url": "https://ddowiki.com/page/Doublestrike",
+      "verified": "2026-10-15",
+      "issue": 888
+    },
     {
       "stat": "Doubleshot",
       "reason": "No ceiling — it wraps past 100% into extra shots.",
@@ -65,7 +65,7 @@
       "quote": "However, note that Incorporeality and Concealment have decreased effect in Reaper difficulty. This reduction begins with 10% Concealment and 5% Incorporeal bypass at Reaper 1, with a further 5% Concealment and Incorporeal bypass per Skull difficulty.",
       "wiki_url": "https://ddowiki.com/page/Incorporeal",
       "verified": "2026-09-01",
-      "note": "The quote is the ONLY number on the page that behaves like a limit, and it is not one: a difficulty-scaled bypass applied on the attacker's side, keyed to content the player selects rather than to the character. Recording it as a ceiling would be wrong twice over. PROPOSED BY ANALOGY with Dodge's 95, which does not transfer \u2014 https://ddowiki.com/page/Miss_chance shows Dodge, Incorporeal and Concealment are rolled SEPARATELY in order and combined multiplicatively (1-(D*C*I)), so there is no shared pool for a shared cap to sit on. NOT CURRENTLY RANKABLE: `Incorporeal` is absent from metadata.rankable_affixes (the app carries Ghostly and Enhanced Ghostly as utility procs, not as a miss-chance magnitude), so this refusal is prospective. That is deliberate and has precedent \u2014 Concealment was checked only once #140 made it credited, and filing the ruling ahead of the vocabulary is what stops the analogy being made in the same commit that makes the stat rankable."
+      "note": "The quote is the ONLY number on the page that behaves like a limit, and it is not one: a difficulty-scaled bypass applied on the attacker's side, keyed to content the player selects rather than to the character. Recording it as a ceiling would be wrong twice over. PROPOSED BY ANALOGY with Dodge's 95, which does not transfer — https://ddowiki.com/page/Miss_chance shows Dodge, Incorporeal and Concealment are rolled SEPARATELY in order and combined multiplicatively (1-(D*C*I)), so there is no shared pool for a shared cap to sit on. NOT CURRENTLY RANKABLE: `Incorporeal` is absent from metadata.rankable_affixes (the app carries Ghostly and Enhanced Ghostly as utility procs, not as a miss-chance magnitude), so this refusal is prospective. That is deliberate and has precedent — Concealment was checked only once #140 made it credited, and filing the ruling ahead of the vocabulary is what stops the analogy being made in the same commit that makes the stat rankable."
     },
     {
       "stat": "Shield Bashing",
@@ -73,7 +73,47 @@
       "quote": "Improved Shield Bash for +20%",
       "wiki_url": "https://ddowiki.com/page/Shield_bashing",
       "verified": "2026-09-01",
-      "note": "The quote is a source line, not a ceiling \u2014 there is no ceiling sentence to quote, which IS the finding. Silence is evidence here because the wiki writes these ceilings down where they exist, and does so on the sibling page: Two Weapon Fighting states 'There is no benefit of having more than a 100% off-hand strike chance' outright. Shield bashing is the closest analogue in the game (a second, automatic attack procced off the main-hand swing) and the page that would carry the same sentence does not. PROPOSED BY ANALOGY with that 100; refused under exclude-until-verified. Two adjacent facts read as caps and are not: 'Doublestrike does not affect shield bashing... the shield will never strike more than once on a single attack' is a rule about doublestrike rather than a ceiling on bash CHANCE, and Divine Crusader's Bring Down Wrath adds a mechanic rather than a limit. This stat IS rankable (metadata.rankable_affixes), gear-only bound 36 \u2014 Enhancement 25, Insight 11."
+      "note": "The quote is a source line, not a ceiling — there is no ceiling sentence to quote, which IS the finding. Silence is evidence here because the wiki writes these ceilings down where they exist, and does so on the sibling page: Two Weapon Fighting states 'There is no benefit of having more than a 100% off-hand strike chance' outright. Shield bashing is the closest analogue in the game (a second, automatic attack procced off the main-hand swing) and the page that would carry the same sentence does not. PROPOSED BY ANALOGY with that 100; refused under exclude-until-verified. Two adjacent facts read as caps and are not: 'Doublestrike does not affect shield bashing... the shield will never strike more than once on a single attack' is a rule about doublestrike rather than a ceiling on bash CHANCE, and Divine Crusader's Bring Down Wrath adds a mechanic rather than a limit. This stat IS rankable (metadata.rankable_affixes), gear-only bound 36 — Enhancement 25, Insight 11."
+    }
+  ],
+  "soft_caps": [
+    {
+      "stat": "Doublestrike",
+      "at": 200,
+      "rate": 0.5,
+      "unit": "percent",
+      "quote": "Since Update 81.4, Doublestrike is no longer capped at 100%. However, doublestrike values only scale at 50% past a soft cap of 200% (a Doublestrike value of 230%, for example, would only provide 215% chance to Doublestrike.)",
+      "wiki_url": "https://ddowiki.com/page/Doublestrike",
+      "release_note": "Update 81 Patch 4 Release Notes, Global Weapon Combat Changes: \"Doublestrike is no longer capped. Both Doublestrike and Doubleshot now scale at half value if your total bonus is over 200%\"",
+      "verified": "2026-10-15",
+      "issue": 888
+    },
+    {
+      "stat": "Doubleshot",
+      "at": 200,
+      "rate": 0.5,
+      "unit": "percent",
+      "quote": "Doubleshot values only scale at 50% past a soft cap of 200% (a Doubleshot value of 230%, for example, would only provide 215% chance to Doubleshot.)",
+      "wiki_url": "https://ddowiki.com/page/Doubleshot",
+      "release_note": "Update 81 Patch 4 Release Notes, Global Weapon Combat Changes: \"Both Doublestrike and Doubleshot now scale at half value if your total bonus is over 200%\"",
+      "verified": "2026-10-15",
+      "issue": 888
+    }
+  ],
+  "retired": [
+    {
+      "entry": {
+        "stat": "Doublestrike",
+        "cap": 100,
+        "unit": "percent",
+        "quote": "Doublestrike above 100% has no effect on main-hand weapons.",
+        "wiki_url": "https://ddowiki.com/page/Doublestrike",
+        "verified": "2026-08-28",
+        "note": "Main-hand reading only. The same page states a separate off-hand ceiling (50%, 65% with Perfect Two Weapon Fighting) which is deliberately NOT modelled: keying a cap on wielding two weapons is the Two Weapon Fighting penalty, an AGENTS.md non-goal that is disclosed to the player rather than modelled numerically."
+      },
+      "retired": "2026-10-15",
+      "issue": 888,
+      "why": "Update 81.4 (live 2026-10-07) removed the 100% Doublestrike cap; the wiki page was rewritten the same day. The entry kept quoting the old sentence for eight days because nothing re-reads a recorded cap against the wiki — see docs/solutions/conventions/a-dated-coverage-claim-cannot-notice-its-own-staleness.md."
     }
   ]
 }

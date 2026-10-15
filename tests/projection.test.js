@@ -2683,3 +2683,25 @@ test("#879: the Loadout card carries the upgrade note for an upgraded item only"
   const plain = R.equippedRow("Boots", { idx: 0, variant: { variant_id: "Plain Boots", slot: "Boots", affixes: [] } }, null, {});
   assert.ok(!/pd-upgrade/.test(plain));
 });
+
+
+// ---- #888 — the soft-cap notice -------------------------------------------------
+
+test("#888: a stat past its soft cap says what was credited and that nothing is wasted", () => {
+  const rec = { query: { targets: ["Doublestrike", "Strength"] },
+    snapshot: { effective: { Doublestrike: 212.5, Strength: 10 }, softCaps: { Doublestrike: { at: 200, rate: 0.5 } } } };
+  const lines = P.softCapLines(rec);
+  assert.strictEqual(lines.length, 1);
+  assert.ok(/credited at 212\.5/.test(lines[0]) && /supplies 225/.test(lines[0]), lines[0]);
+  assert.ok(/at 50%/.test(lines[0]) && /not wasted/.test(lines[0]) && !/buys nothing/.test(lines[0]), lines[0]);
+});
+
+test("#888: the soft-cap notice is silent below the threshold and under a player's Max", () => {
+  const soft = { Doublestrike: { at: 200, rate: 0.5 } };
+  assert.deepStrictEqual(P.softCapLines({ query: { targets: ["Doublestrike"] },
+    snapshot: { effective: { Doublestrike: 150 }, softCaps: soft } }), []);
+  assert.deepStrictEqual(P.softCapLines({ query: { targets: ["Doublestrike"] },
+    snapshot: { effective: { Doublestrike: 210 }, softCaps: soft, capped: { Doublestrike: 210 } } }), []);
+  assert.deepStrictEqual(P.softCapLines({ query: { targets: ["Doublestrike"] },
+    snapshot: { effective: { Doublestrike: 250 } } }), [], "no soft cap recorded, nothing to say");
+});

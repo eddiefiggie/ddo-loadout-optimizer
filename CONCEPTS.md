@@ -18,7 +18,9 @@ An affix name eligible to become a [[Target]] — the set the priority picker of
 ### Stat cap
 An optional user-set maximum on a Target's counted value — the solve stops crediting the stat past the cap, so it clamps rather than forbids.
 
-A cap is a clamp, not an eligibility filter: an item that exceeds the cap is still equippable, its counted value just saturates at the cap. Because a capped Target's contribution stops rising there, surplus slots fall through to the next-ranked Target instead of over-investing. When two caps name the same stat — a user cap and a wiki-sourced intrinsic one such as the Doublestrike ceiling of 100 — the tighter one applies. Note the direction: a player may cap tighter than the game does, never looser, because a preference cannot raise a real ceiling.
+A cap is a clamp, not an eligibility filter: an item that exceeds the cap is still equippable, its counted value just saturates at the cap. Because a capped Target's contribution stops rising there, surplus slots fall through to the next-ranked Target instead of over-investing. When two caps name the same stat — a user cap and a wiki-sourced intrinsic one such as the Strikethrough ceiling of 400 — the tighter one applies. Note the direction: a player may cap tighter than the game does, never looser, because a preference cannot raise a real ceiling.
+
+A **soft cap** is different in kind, not degree: past its threshold the stat keeps counting, at a reduced rate — Doublestrike and Doubleshot count at half value above 200% since Update 81.4 (#888). No point above it is dead weight, so it is modelled as its own concave term rather than a clamp, and no cap-surplus surface treats it as a cap. A user cap still clamps the soft-capped value.
 
 An intrinsic cap is recorded only where the wiki states one outright. Where it does not, the limit is **disclosed, not guessed** — Dodge is the worked example: its in-game reduction is real but belongs to the individual armor, so nothing is clamped and the player is told the total is un-reduced (#573).
 

@@ -260,12 +260,20 @@ function setStackEquiv(map) {
 // EXCLUDE-UNTIL-VERIFIED, and here the ABSENCE half is the load-bearing half: a
 // stat missing from this table has NO ceiling in the game, not an unknown one.
 // Four of the five stats harvested for #199 are absent deliberately — Doubleshot
-// most sharply, which WRAPS past 100% into extra shots where its Doublestrike
-// sibling stops dead, so capping it by analogy deletes real points. Never add a
+// most sharply, which WRAPS past 100% into extra shots, so capping it by analogy
+// deletes real points. (#888 — since Update 81.4 Doublestrike is absent too: its
+// 100% cap was removed in game, and both now carry a SOFT cap in `_SOFT_CAPS`
+// below rather than a ceiling here.) Never add a
 // stat here without the verbatim wiki sentence stating its ceiling; the refusals
 // and their quotes are in data/seed/compendium/intrinsic_stat_caps.json and
 // docs/wiki-evidence/intrinsic-stat-caps.md.
 let _INTRINSIC_CAPS = Object.create(null);
+// #888 — SOFT caps: past `at` the stat keeps counting, at `rate` (Doublestrike
+// and Doubleshot since Update 81.4: half value above 200%). Installed beside the
+// hard caps, from `metadata.intrinsic_soft_caps`. Deliberately a separate table:
+// a soft cap is not a cap — no contribution above it is dead weight — so nothing
+// that reasons about cap surplus may read it as one.
+let _SOFT_CAPS = Object.create(null);
 // #193/#599 — Essence Crafting coverage, same two-runtime bridge. The solver
 // stamps it onto the result so the disclosure survives a restored snapshot: a
 // shared build has to say it was solved over 25 of 170 options WITHOUT re-solving.
@@ -358,6 +366,15 @@ function statCeilingHintFor(stat) {
       line: `Wiki-confirmed ceiling: ${cap}. It is already applied to this solve — `
           + "set a Max only if you want to stop BELOW it." };
   }
+  // #888 — a soft cap is applied like a confirmed cap, but it is not a ceiling
+  // to stop at: points past it still count, at the reduced rate.
+  const soft = softCapFor(stat);
+  if (soft) {
+    return { kind: "soft", ceiling: soft.at,
+      line: `Wiki-confirmed soft cap: above ${soft.at}, each point counts at `
+          + `${Math.round(soft.rate * 100)}% (since Update 81.4). It is already applied to this `
+          + "solve, and points past it are not wasted — set a Max only if you want to stop." };
+  }
   const d = CEILING_DISCLOSURES[stat];
   return d ? { kind: "disclosed", ceiling: d.ceiling, line: d.line } : null;
 }
@@ -434,6 +451,24 @@ function splitMechanicFor(stat) {
     if (Array.isArray(fam.spellings) && fam.spellings.includes(stat)) return fam;
   }
   return null;
+}
+
+function setIntrinsicSoftCaps(map) {
+  _SOFT_CAPS = Object.create(null);
+  if (map && typeof map === "object") {
+    for (const k of Object.keys(map)) {
+      const v = map[k];
+      if (v && typeof v.at === "number" && typeof v.rate === "number" && v.rate > 0 && v.rate < 1) {
+        _SOFT_CAPS[k] = { at: v.at, rate: v.rate };
+      }
+    }
+  }
+}
+/** #888 — `{ at, rate }` for a soft-capped stat, or null. */
+function softCapFor(stat) {
+  if (stat == null) return null;
+  const v = _SOFT_CAPS[stat];
+  return v ? { at: v.at, rate: v.rate } : null;
 }
 
 function setIntrinsicCaps(map) {
@@ -2283,6 +2318,11 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   for (const stat of Object.keys(_INTRINSIC_CAPS)) {
     if (targetSet.has(stat)) intrinsicCaps[stat] = _INTRINSIC_CAPS[stat];
   }
+  // #888 — the soft caps, narrowed the same way.
+  const softCaps = {};
+  for (const stat of Object.keys(_SOFT_CAPS)) {
+    if (targetSet.has(stat)) softCaps[stat] = { ..._SOFT_CAPS[stat] };
+  }
 
   // Dino insert pool: each record is an insert UNIT keyed by (dino_type,
   // category) carrying one or more affixes (KTD4). Keep a unit when ANY of its
@@ -2436,7 +2476,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // the solver's result so the notices and every export can say so.
     pinnedThrough: pinnedThrough || [],
     augPinExcluded,
-    intrinsicCaps, mlCap,
+    intrinsicCaps, softCaps, mlCap,
     // #91 (U3, KTD3) — the counting set rides the MODEL, never the persisted
     // query: buildProgram reads it from here to widen its own targetSet and
     // mint the per-effect indicator binaries. `utilityEnabled` mirrors the
@@ -2622,7 +2662,7 @@ function poolStatNames(model) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { poolStatNames, setIntrinsicCaps, setSplitMechanics, splitMechanicFor, setConditionalDisclosures, conditionalDisclosureFor, setTierRenameFamilies, tierRenamesFor,
+  module.exports = { poolStatNames, setIntrinsicCaps, setIntrinsicSoftCaps, softCapFor, setSplitMechanics, splitMechanicFor, setConditionalDisclosures, conditionalDisclosureFor, setTierRenameFamilies, tierRenamesFor,
     intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, MRR_CAP_BY_ARMOR, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
     buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     slotReachabilityFor, slotReachabilityReport, filterEligiblePool,
