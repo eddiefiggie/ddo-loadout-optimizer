@@ -2739,3 +2739,27 @@ test("#529: composite-minted affixes count as scorable, `eligible` flag or not",
     M.setTierRenameFamilies(null);
   });
 }
+
+// ---------------------------------------------------------------------------
+// #879 — the `[Upgraded]` raid-item twins are one game item with their base, in
+// the same sense as the #547 `[Crafted]` pairs, and reach the block gate by the
+// same field. Driven on the real catalog so the stamp is the one the page loads.
+test("#879: blocking either half of an upgraded raid item blocks the item", () => {
+  const M = require("../web/model.js");
+  const base = realData.items.find((x) => x.source_item === "Madstone Boots");
+  const up = realData.items.find((x) => x.source_item === "Madstone Boots [Upgraded]");
+  assert.ok(base && up, "both records ship");
+  assert.strictEqual(up.block_identity, "Madstone Boots", "the twin is stamped with its base");
+  assert.strictEqual(base.block_identity, "Madstone Boots", "and the base with itself");
+  // Dexterity then Combustion (Potency's fire half): the upgraded boots' Dex 6 +
+  // Potency 52 keep them a candidate at ML14, where Dexterity alone is dominated.
+  const q = { mlCap: 14, targets: ["Dexterity", "Combustion"] };
+  const ids = (blocklist) => new Set(M.buildModel(realData.items, { ...q, blocklist })
+    .worn.find((s) => s.slot === "Boots").variants.map((x) => x.variant_id));
+  assert.ok(ids([]).has(up.variant_id), "unblocked, the upgraded boots are a candidate (else the checks below are vacuous)");
+  for (const blocked of ["Madstone Boots", "Madstone Boots [Upgraded]"]) {
+    const pool = ids([blocked]);
+    assert.ok(!pool.has(base.variant_id) && !pool.has(up.variant_id),
+      `blocking ${blocked} must remove both halves`);
+  }
+});

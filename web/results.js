@@ -444,7 +444,15 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
       + `<span class="pd-note-ico" aria-hidden="true">▽</span>`
       + `<span>${esc(txt)}</span></div>`;
   })();
-  const notes = `${reasonNote}${noDropNote}${penNote}${rec}${prio}`;
+  // #879 — an `[Upgraded]` raid item says where the upgrade is done and what of
+  // it is not counted, in the same muted foot-note family as the penalty note.
+  const upNote = (() => {
+    const txt = (v && !locked) ? Proj.upgradeNoteText(v) : null;
+    if (!txt) return "";
+    return `<div class="pd-note pd-rnote pd-upgrade muted" title="One game item: blocking either name blocks both (#879)">`
+      + `<span class="pd-note-ico" aria-hidden="true">⇧</span><span>${esc(txt)}</span></div>`;
+  })();
+  const notes = `${reasonNote}${noDropNote}${upNote}${penNote}${rec}${prio}`;
   return `<div class="${rowCls}">
     <div class="pd-card-head">
       <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>

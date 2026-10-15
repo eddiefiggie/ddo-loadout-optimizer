@@ -1,0 +1,226 @@
+{
+  "_source": "DDO Wiki `Item:` pages, the `Upgradeable Item (...)` enchantment block, read 2026-10-14 through the in-app Browser pane (#879). Every host gear-planner c36b45e marks `Upgradeable Item` was read; Unwavering Ardency is listed twice upstream and is one page.",
+  "_why": "gear-planner carries each host's upgrade as a one-option pool of the affixes the upgrade leaves the item with. The wiki states the same upgrade as `X -> Y` replacements and `Adds X` lines, done once with a Seal at the Stormreaver Monument or the Fountain of Necrotic Might, so it is a fixed upgraded STATE of the item, not a choice. `src/upgraded_items.py` builds `<name> [Upgraded]` from the pool and fails the build unless every pool affix is either an `upgrade` entry here or a `quarantined` one. So a pool that drifts from this transcription, or a new upstream host, fails loudly instead of shipping.",
+  "_shape": "`upgrade` entries are in UPSTREAM's vocabulary (name, type, value as the pool spells them). `replace` names the base affix (name, type) the upgrade overwrites; an entry without it is added. `wiki` is the block's own line, trimmed to the enchantment names. `quarantined` pool affixes are left off the record, with the reason. `not_credited` are wiki lines no pool carries and nothing credits.",
+  "_emit": "`emit` writes a pool affix under the name the wiki's upgrade block gives it. Only the two Striding lines use it: upstream folds Striding into `Speed`, and src/speed_split.py un-folds `Speed` from a harvest joined by the item's wiki PAGE, which an `[Upgraded]` record shares with its base. That join would rewrite the upgraded 30% back to the base page's 20% (Madstone Boots) or find nothing to rewrite (Quiver of Alacrity). Both blocks read `Striding`, which is movement speed and nothing else (docs/wiki-evidence/speed-and-alacrity.md), so the record carries it already split.",
+  "_mythic": "Every host but the quiver lists a `Mythic <Slot> Boost +1 or +3` (weapons, shields, armor: +2 or +4), noted as a rare enchantment not on every drop. Two values and no rule for which applies: quarantined by the standing ruling in src/cannith_tiers.py (`wiki states two values with no rule for which applies`). Upstream carries none of them.",
+  "items": {
+    "Amulet of the Stormreaver": {
+      "upgrader": "Stormreaver",
+      "wiki": ["Protection +4 -> Protection +5", "Electric Resistance +30 -> Electric Resistance +40", "Mythic Neck Boost +1 or +3"],
+      "upgrade": [
+        {"replace": ["Armor Class", "Deflection"], "to": ["Armor Class", "Deflection", "5"]},
+        {"replace": ["Electric Resistance", "Enhancement"], "to": ["Electric Resistance", "Enhancement", "40"]}
+      ],
+      "not_credited": ["Mythic Neck Boost +1 or +3"]
+    },
+    "Breeze": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Adds Greater Sirocco", "Telekinetic -> Greater Telekinetic", "Mythic Weapon Boost +2 or +4"],
+      "upgrade": [
+        {"to": ["Greater Sirocco", "Bool", "1"]},
+        {"replace": ["Telekinetic", "Bool"], "to": ["Greater Telekinetic", "Bool", "1"]}
+      ],
+      "not_credited": ["Mythic Weapon Boost +2 or +4"]
+    },
+    "Circle of Hatred": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Harm 3 Charges -> Harm 5 Charges", "Incite +20 -> Incite +30", "Mythic Ring Boost +1 or +3"],
+      "upgrade": [
+        {"replace": ["Incite", "Enhancement"], "to": ["Incite", "Enhancement", "30"]}
+      ],
+      "not_credited": ["Harm 3 Charges -> Harm 5 Charges (a clicky's charges, not a passive stat)", "Mythic Ring Boost +1 or +3"]
+    },
+    "Cloudburst": {
+      "upgrader": "Stormreaver",
+      "wiki": ["Adds Lightning Strike", "Mythic Weapon Boost +2 or +4"],
+      "upgrade": [
+        {"to": ["Lightning Strike", "Bool", "1"]}
+      ],
+      "not_credited": ["Mythic Weapon Boost +2 or +4"]
+    },
+    "Deific Diadem": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Lesser Heighten 3 Charges -> Lesser Heighten 5 Charges", "Adds Evocation Focus +2", "Mythic Head Boost +1 or +3"],
+      "upgrade": [
+        {"to": ["Evocation Focus", "Equipment", "2"]}
+      ],
+      "not_credited": ["Lesser Heighten 3 Charges -> Lesser Heighten 5 Charges (a clicky's charges, not a passive stat)", "Mythic Head Boost +1 or +3"]
+    },
+    "Dreamspitter": {
+      "upgrader": "Stormreaver",
+      "wiki": ["Adds Force Burst", "Mythic Weapon Boost +2 or +4"],
+      "upgrade": [
+        {"to": ["Force Burst", "Bool", "1"]}
+      ],
+      "not_credited": ["Mythic Weapon Boost +2 or +4"]
+    },
+    "Enduring Conviction": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Evil Outsider Bane -> Greater Evil Outsider Bane", "Mythic Weapon Boost +2 or +4"],
+      "upgrade": [
+        {"replace": ["Evil Outsider Bane", "Bool"], "to": ["Greater Evil Outsider Bane", "Bool", "1"]}
+      ],
+      "not_credited": ["Mythic Weapon Boost +2 or +4"]
+    },
+    "Gauntlets of Eternity": {
+      "upgrader": "Stormreaver",
+      "wiki": ["Heal +13 -> Heal +15", "Repair +13 -> Repair +15", "Devotion +60 -> Devotion +72", "Mythic Hands Boost +1 or +3"],
+      "upgrade": [
+        {"replace": ["Heal", "Competence"], "to": ["Heal", "Competence", "15"]},
+        {"replace": ["Repair", "Competence"], "to": ["Repair", "Competence", "15"]},
+        {"replace": ["Positive Spell Power", "Equipment"], "to": ["Positive Spell Power", "Equipment", "72"]}
+      ],
+      "not_credited": ["Mythic Hands Boost +1 or +3"]
+    },
+    "Head of Good Fortune": {
+      "upgrader": "Stormreaver",
+      "wiki": ["Fortification +75% -> Fortification +100%", "Adds Dodge +4%", "Mythic Trinket Boost +1 or +3"],
+      "upgrade": [
+        {"replace": ["Fortification", "Enhancement"], "to": ["Fortification", "Enhancement", "100"]},
+        {"to": ["Dodge", "Enhancement", "4"]}
+      ],
+      "not_credited": ["Mythic Trinket Boost +1 or +3"]
+    },
+    "Litany of the Dead": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Removes Taint of Evil", "Mythic Trinket Boost +1 or +3"],
+      "no_stat_upgrade": "The upgrade only removes the Taint of Evil drawback and adds a Mythic boost; upstream carries no pool, and nothing here would change a solve. No [Upgraded] record.",
+      "not_credited": ["Removes Taint of Evil", "Mythic Trinket Boost +1 or +3"]
+    },
+    "Madstone Boots": {
+      "upgrader": "Stormreaver",
+      "wiki": ["Dexterity +4 -> Dexterity +6", "Potency +48 -> Potency +52", "Striding +20% -> Striding +30%", "Mythic Boot Boost +1 or +3"],
+      "upgrade": [
+        {"replace": ["Dexterity", "Enhancement"], "to": ["Dexterity", "Enhancement", "6"]},
+        {"replace": ["Potency", "Equipment"], "to": ["Potency", "Equipment", "52"]},
+        {"replace": ["Speed", "Enhancement"], "to": ["Speed", "Enhancement", "30"], "emit": ["Movement Speed", "Enhancement", "30"]}
+      ],
+      "not_credited": ["Mythic Boot Boost +1 or +3"]
+    },
+    "Madstone Shield": {
+      "upgrader": "Stormreaver",
+      "wiki": ["Adds Improved Bashing", "Adds Shield Bashing +10%", "Mythic Weapon Boost +2 or +4 and/or Mythic Shield Boost +2 or +4"],
+      "upgrade": [
+        {"to": ["Improved Bashing", "Bool", "1"]},
+        {"to": ["Shield Bashing", "Enhancement", "10"]}
+      ],
+      "not_credited": ["Mythic Weapon Boost +2 or +4 and/or Mythic Shield Boost +2 or +4"]
+    },
+    "Noxious Embers": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Lesser Maximize 3 Charges -> Lesser Maximize 5 Charges", "Spell Lore III -> Spell Lore VI", "Mythic Neck Boost +1 or +3"],
+      "upgrade": [
+        {"replace": ["Spell Lore", "Equipment"], "to": ["Spell Lore", "Equipment", "6"]}
+      ],
+      "not_credited": ["Lesser Maximize 3 Charges -> Lesser Maximize 5 Charges (a clicky's charges, not a passive stat)", "Mythic Neck Boost +1 or +3"]
+    },
+    "Purging the Pantheon": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Quell 3 Charges -> Quell 5 Charges", "Fortification +75% -> Fortification +100%", "Mythic Belt Boost +1 or +3"],
+      "upgrade": [
+        {"replace": ["Fortification", "Enhancement"], "to": ["Fortification", "Enhancement", "100"]}
+      ],
+      "not_credited": ["Quell 3 Charges -> Quell 5 Charges (a clicky's charges, not a passive stat)", "Mythic Belt Boost +1 or +3"]
+    },
+    "Quiver of Alacrity": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Adds Striding +30%"],
+      "upgrade": [
+        {"to": ["Speed", "Enhancement", "30"], "emit": ["Movement Speed", "Enhancement", "30"]}
+      ],
+      "not_credited": []
+    },
+    "Ring of Lies": {
+      "upgrader": "Stormreaver",
+      "wiki": ["Adds Charisma Skills - Exceptional Bonus +2", "Deception -> Improved Deception (+5 enhancement bonus to Bluff checks)", "Mythic Ring Boost +1 or +3"],
+      "upgrade": [
+        {"to": ["Charisma Skills", "Exceptional", "2"]},
+        {"replace": ["Deception", "Bool"], "to": ["Improved Deception", "Enhancement", "5"]}
+      ],
+      "not_credited": ["Mythic Ring Boost +1 or +3"]
+    },
+    "Shroud of the Abbot": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Light Resistance +20 -> Light Resistance +30", "Adds Lesser Arcane Augmentation IX", "Mythic Armor Boost +2 or +4"],
+      "upgrade": [
+        {"replace": ["Light Resistance", "Enhancement"], "to": ["Light Resistance", "Enhancement", "30"]},
+        {"to": ["Lesser Arcane Augmentation", "Untyped", "9"]}
+      ],
+      "not_credited": ["Mythic Armor Boost +2 or +4"]
+    },
+    "Staff of the Petitioner": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Adds Potency +48", "Adds Spellcasting Implement +15 (+15 Implement bonus to Universal Spell Power)", "Mythic Weapon Boost +2 or +4"],
+      "upgrade": [
+        {"to": ["Potency", "Equipment", "48"]},
+        {"to": ["Universal Spell Power", "Implement", "15"]}
+      ],
+      "not_credited": ["Mythic Weapon Boost +2 or +4"]
+    },
+    "Stormreaver's Napkin": {
+      "upgrader": "Stormreaver",
+      "wiki": ["Adds Spell Penetration II (+2 Equipment)", "Mythic Cloak Boost +1 or +3"],
+      "upgrade": [
+        {"to": ["Spell Penetration", "Equipment", "2"]}
+      ],
+      "not_credited": ["Mythic Cloak Boost +1 or +3"]
+    },
+    "Tenderizer": {
+      "upgrader": "Stormreaver",
+      "wiki": ["Adds Bone Breaking", "Adds Spikes", "Mythic Weapon Boost +2 or +4"],
+      "upgrade": [
+        {"to": ["Bone Breaking", "Bool", "1"]},
+        {"to": ["Spikes", "Bool", "1"]}
+      ],
+      "not_credited": ["Mythic Weapon Boost +2 or +4"]
+    },
+    "Treason": {
+      "upgrader": "Stormreaver",
+      "wiki": ["Sneak Attack Bonus +3 -> Sneak Attack Bonus +4", "Armor-Piercing 10% -> Armor-Piercing 15%", "Mythic Weapon Boost +2 or +4"],
+      "upgrade": [
+        {"replace": ["Deception", "Sneak Attack"], "to": ["Deception", "Sneak Attack", "4"]},
+        {"replace": ["Armor-Piercing", "Enhancement"], "to": ["Armor-Piercing", "Enhancement", "15"]}
+      ],
+      "not_credited": ["Mythic Weapon Boost +2 or +4"]
+    },
+    "Unwavering Ardency": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Adds Blinding Embers", "Mythic Weapon Boost +2 or +4"],
+      "upgrade": [
+        {"to": ["Blinding Embers", "Bool", "1"]}
+      ],
+      "not_credited": ["Mythic Weapon Boost +2 or +4"]
+    },
+    "Ventilated Bracers": {
+      "upgrader": "Stormreaver",
+      "wiki": ["Armor Bonus +6 -> Armor Bonus +7", "Enhanced Disable Device +3 -> +5", "Enhanced Open Lock +3 -> +5", "Mythic Wrist Boost +1 or +3"],
+      "upgrade": [
+        {"replace": ["Armor Class", "Armor"], "to": ["Armor Class", "Armor", "7"]},
+        {"replace": ["Disable Device", "Enhancement"], "to": ["Disable Device", "Enhancement", "5"]},
+        {"replace": ["Open Lock", "Enhancement"], "to": ["Open Lock", "Enhancement", "5"]}
+      ],
+      "not_credited": ["Mythic Wrist Boost +1 or +3"]
+    },
+    "Vile Blasphemy": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Power Drain 1 Charges -> Power Drain 3 Charges", "Adds Greater Dispelling Guard", "Mythic Hands Boost +1 or +3"],
+      "upgrade": [
+        {"to": ["Greater Dispelling Guard", "Bool", "1"]}
+      ],
+      "not_credited": ["Power Drain 1 Charges -> Power Drain 3 Charges (a clicky's charges, not a passive stat)", "Mythic Hands Boost +1 or +3"]
+    },
+    "Wretched Twilight": {
+      "upgrader": "Black Abbot",
+      "wiki": ["Sneak Attack Bonus +4 -> Sneak Attack Bonus +5", "Adds Void Lore V (15% Equipment bonus to Negative Energy and Poison spell critical chance)", "Mythic Cloak Boost +1 or +3"],
+      "upgrade": [
+        {"replace": ["Deception", "Sneak Attack"], "to": ["Deception", "Sneak Attack", "5"]}
+      ],
+      "quarantined": [
+        {"pool": ["Negative Lore", "Equipment", "5"],
+         "reason": "The wiki states Void Lore V as a 15% Equipment bonus; upstream's pool carries 5. Upstream spells Void Lore V as 15 on other items, so 5 looks like the roman numeral, but that is an inference. Left off the record until the value is ruled (#884)."}
+      ],
+      "not_credited": ["Mythic Cloak Boost +1 or +3"]
+    }
+  }
+}

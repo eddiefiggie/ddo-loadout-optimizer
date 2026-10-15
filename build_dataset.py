@@ -84,6 +84,7 @@ from src import container_registry as container_registry_mod
 from src import craft_identity as craft_identity_mod
 from src import crafting_coverage as crafting_coverage_mod
 from src import crafted_twins as crafted_twins_mod
+from src import upgraded_items as upgraded_items_mod
 from src import ring_exclusivity as ring_exclusivity_mod
 import re as _re
 
@@ -825,10 +826,20 @@ def build() -> dict:
     # dedups intra-dump same-name collisions (first wins) and surfaces every host
     # choice-slot marker (augment/seal/lamordia/nearly-complete/lost-purpose)
     # NATIVELY from crafting[], so no cross-source graft is needed.
+    # #879 — the `[Upgraded]` twins of the Stormreaver / Black Abbot raid items,
+    # built from upstream's one-option pools and refused unless each pool still
+    # matches the wiki transcription in data/seed/compendium/upgradeable_items.json.
+    _upgraded = upgraded_items_mod.expand(
+        _raw_items, upgraded_items_mod.load_pools(), upgraded_items_mod.load_shard())
+    if _upgraded["problems"]:
+        raise SystemExit(
+            "upgraded-item twins failed (#879) — upstream and the wiki transcription "
+            "disagree:\n  " + "\n  ".join(_upgraded["problems"]))
     planner_records, planner_stats = planner_mod.load_planner_items(
         verified_seal_types=_verified_seal_types,
         exclude_names=_host_pipeline_names,
-        nc_per_item_hosts=_nc_per_item_hosts)
+        nc_per_item_hosts=_nc_per_item_hosts,
+        extra_raw=_upgraded["records"])
     # #262 — the "no known live drop source" evidence shard. check() runs HERE,
     # against the planner records pre-variant-expansion, because the staleness
     # guard keys off the raw `quests` array (KTD8: the list, not the derived
@@ -2586,6 +2597,14 @@ def build() -> dict:
         raise SystemExit(
             "crafted-twin identity failed (#547) — a pair stopped being one item:\n  "
             + "\n  ".join(_twins["problems"]))
+    # #879 — the `[Upgraded]` twins join the same identity, so a block on either
+    # name blocks the item and the ring-exclusivity ruling below reaches both.
+    # Only pairs whose two records both shipped are folded in.
+    _shipped = {it.get("source_item") for it in out["items"]}
+    _crafted_identity = dict(_twins["identity"])
+    _upgraded_identity = {n: b for n, b in _upgraded["identity"].items()
+                          if n in _shipped and b in _shipped}
+    _twins["identity"].update(_upgraded_identity)
     # #566 — which rings may be worn twice, stamped per item. A ring is
     # duplicable unless the wiki records it as Exclusive or a Minor Artifact;
     # both are maintained categories, so this is a read, not an inference.
@@ -2673,7 +2692,10 @@ def build() -> dict:
     out["metadata"]["split_mechanic_disclosures"] = split_mechanics_mod.stamp(
         _split_mechanics, _split_measured)
 
-    out["metadata"]["crafted_twin_identity"] = _twins["identity"]
+    out["metadata"]["crafted_twin_identity"] = _crafted_identity
+    # #879 — published apart from the `[Crafted]` map so each key says what it is;
+    # web/dataset.js reads both into the one `block_identity` field.
+    out["metadata"]["upgraded_twin_identity"] = _upgraded_identity
     out["metadata"]["crafted_twin_coverage"] = {
         "inspected": _twins["inspected"], "pairs": len(_twins["pairs"]),
         "capacity_divergent": len(_twins["capacity_divergent"])}
@@ -2682,6 +2704,7 @@ def build() -> dict:
     # absorbed: this is the property #547 originally asserted could not happen, and
     # a reader deserves to see which pairs it stopped holding for.
     out["metadata"]["crafted_twin_identity_divergent"] = _twins["capacity_divergent"]
+    out["metadata"]["upgraded_item_coverage"] = _upgraded["coverage"]
 
     # build_id hashes the full assembled dataset (everything except metadata) so
     # drift in sets, augments, or crafting inputs — not just base variants —
