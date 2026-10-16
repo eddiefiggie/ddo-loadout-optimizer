@@ -47,14 +47,16 @@ def apply(records: list, corrections: dict) -> dict:
     rather than reapplied on faith.
 
     An entry naming an item absent from the roster is a silent no-op — the roster
-    varies with the harvest, and a correction waiting for an item to reappear is
-    not an error.
+    varies with the harvest, and an augment is absent from the item channel by
+    design (#861 applies this to both). `assert_all_reached` is the guard that an
+    entry reached SOME channel; `hit_names` in the coverage feeds it.
     """
     by_name = {}
     for r in records:
         by_name.setdefault(r.get("name"), r)   # first wins, matching loader dedup
 
     problems = []
+    hit_names = set()
     items_corrected = 0
     values_changed = 0
 
@@ -62,6 +64,7 @@ def apply(records: list, corrections: dict) -> dict:
         rec = by_name.get(item_name)
         if rec is None:
             continue
+        hit_names.add(item_name)
         affixes = rec.get("affixes") or []
         touched = False
         for corr in corrections[item_name]:
@@ -94,4 +97,24 @@ def apply(records: list, corrections: dict) -> dict:
             "item value corrections are stale — the upstream data moved:\n  "
             + "\n  ".join(problems))
 
-    return {"items_corrected": items_corrected, "values_changed": values_changed}
+    return {"items_corrected": items_corrected, "values_changed": values_changed,
+            "hit_names": sorted(hit_names)}
+
+
+def assert_all_reached(corrections: dict, *coverages) -> None:
+    """#861 — fail the build when an entry reached no record in ANY channel.
+
+    The per-channel no-op is correct, but an entry absent from every channel was
+    renamed or dropped upstream, and would otherwise pin nothing in silence. The
+    same guard `type_corrections` has carried since #259 found its augment entries
+    were a silent no-op on the item channel. Called once, after every channel.
+    """
+    reached = set()
+    for cov in coverages:
+        reached.update((cov or {}).get("hit_names") or [])
+    missing = set(corrections) - reached
+    if missing:
+        raise SystemExit(
+            "item value correction(s) reached no record in any channel: "
+            + ", ".join(sorted(repr(m) for m in missing))
+            + " — renamed or dropped upstream; re-verify against the wiki")

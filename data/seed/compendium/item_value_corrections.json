@@ -742,5 +742,18 @@
       "verified": "2026-08-30",
       "issue": 639
     }
+  ],
+  "Facet of Condensed Power": [
+    {
+      "name": "Magical Efficiency",
+      "type": "Bool",
+      "from": 1,
+      "to": 10,
+      "tooltip": "Slotted Effect: Power Store: -10% Enhancement bonus to Spell Points cost reduction.",
+      "wiki_url": "https://ddowiki.com/page/Item:Facet_of_Condensed_Power",
+      "verified": "2026-10-15",
+      "issue": 861,
+      "note": "#861 — the #619 pattern on the augment channel. The augment engraves {{Power Store}} with no parameters, and Template:Power Store keeps its magnitude in the template body ('receive an enhancement bonus of -10% to their spell point costs'), so a structural read has nothing to read and upstream falls back to 1, as it has at 767a7f7, 397c673 and c36b45e. The augment's own description states the value outright (the tooltip above). Keyed by our canon name: the crafting catalog's name corrections fold upstream's 'Power Store' into 'Magical Efficiency' before the augment pool is built, and this runs on that pool before affix_type_corrections, which then pins value 10."
+    }
   ]
 }
