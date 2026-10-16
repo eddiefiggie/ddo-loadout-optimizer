@@ -146,6 +146,9 @@ def check(shard: dict, adjudications: dict, roster, quarantine_names=()) -> dict
         if not why:
             problems.append(f"{n}: unharvested with no reason")
 
+    # 1b. #858 — a tooltip is evidence only for the enchantment it names.
+    problems.extend(label_problems(shard))
+
     # 2. Every candidate has a ruling whose evidence is the tooltip verbatim.
     cands = candidates(shard)
     names = {c["name"] for c in cands}
@@ -306,6 +309,42 @@ def _aff_name(a):
 def _aff_type(a):
     t = a.get("type") if a.get("type") is not None else a.get("bonus_type")
     return "Bool" if t == "boolean" else t
+
+
+_ROMAN_TIER = re.compile(r"\s+(?=[IVX]+$)X{0,3}(?:IX|IV|V?I{0,3})$")
+_LEADING_MAGNITUDE = re.compile(r"^[+-]?\d+%?\s+")
+
+
+def label_key(label: str) -> str:
+    """#858 — an engraved label reduced to the stat it names: the magnitude
+    (`+5 Enhancement Bonus`, `Repair +13`), a roman tier (`Dazing IV`), and a
+    type prefix (`Exceptional ...`) are spelling, not identity."""
+    lab = _LEADING_MAGNITUDE.sub("", str(label or "").strip())
+    lab = _ROMAN_TIER.sub("", lab)
+    return _strip_label(lab)
+
+
+def label_problems(shard: dict) -> list:
+    """#858 — every `stated` tooltip whose label does not name its key must say
+    why in a `note`.
+
+    The 2026-09-04 harvest took the first tooltip on a carrier page whose text
+    CONTAINED the key, and so filed `Repair` under 'Repair Amplification' and
+    `Armor Class` under an armor's '+1 Enhancement Bonus'. A tooltip is evidence
+    only for the enchantment it names; a label that differs for a real reason
+    (`Turn Undead` engraved as 'Hallowed') says so, and one that differs by
+    accident cannot reach the shard again."""
+    out = []
+    for name, e in sorted(((shard or {}).get("harvested") or {}).items()):
+        e = e or {}
+        if e.get("provenance") != "stated" or e.get("note"):
+            continue
+        if label_key(e.get("label")) != name.lower():
+            out.append(
+                f"{name}: harvested under label {e.get('label')!r}, which names a different "
+                "enchantment — re-harvest from an exact-label carrier, or add a `note` saying "
+                "why this label speaks for this name")
+    return out
 
 
 def _strip_label(label: str) -> str:
