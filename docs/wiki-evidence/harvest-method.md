@@ -211,3 +211,18 @@ one page per request, and read `span.tooltip` out of the returned HTML with a
 
 Shard: `data/seed/compendium/affix_tooltip.json`, one entry per rankable name.
 
+
+## Match a tooltip's label EXACTLY, never by substring (#858)
+
+The #713 tooltip loop took the first `span.tooltip` on a carrier page whose text **contained** the affix name. A name that prefixes a longer enchantment then captures the wrong sentence: `Repair` matched *Repair Amplification*, and `Armor Class` matched an armor's *+1 Enhancement Bonus*. `Sneak Attack` / `Sneak Attack Dice` is the same trap, waiting.
+
+Match the tooltip's label (the text before its first `:`) after stripping only spelling: a leading or trailing magnitude (`+5 …`, `… +13`), a roman tier (`… IV`), and a bonus-type prefix (`Exceptional …`). In JS:
+
+```js
+const labelOf = (t) => t.split(":")[0].trim();
+const key = (l) => l.replace(/^[+-]?\d+%?\s+/, "").replace(/\s+[+-]?\d+%?$/, "")
+  .replace(/\s+(?=[IVX]+$)X{0,3}(?:IX|IV|V?I{0,3})$/, "").toLowerCase();
+const hit = tips.find((t) => key(labelOf(t)) === name.toLowerCase());
+```
+
+When the wiki genuinely engraves a stat under another name (`Turn Undead` as *Hallowed*, Implement Universal Spell Power as *Spellcasting Implement*), record it with a `note` saying so. `src/affix_tooltip.label_problems` fails the build on any `stated` entry whose label does not reduce to its key and carries no note.
