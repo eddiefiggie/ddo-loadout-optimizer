@@ -1231,11 +1231,11 @@
       "name": "Magical Efficiency",
       "from": "Bool",
       "to": "Enhancement",
-      "value": "1",
+      "value": "10",
       "tooltip": "Slotted Effect: Power Store: -10% Enhancement bonus to Spell Points cost reduction.",
       "wiki_url": "https://ddowiki.com/page/Item:Facet_of_Condensed_Power",
       "verified": "2026-09-22",
-      "note": "397c673 regression repair. Upstream carried this augment as ('Magical Efficiency', 'Enhancement', 1) at 767a7f7 and degraded it to ('Power Store', 'Bool', 1) at 397c673 — both the name and the type. Our canon rename ('Power Store' -> 'Magical Efficiency', affix_name_corrections) restores the name and runs on the crafting catalog before this shard reaches the augment pool; this entry restores the type, returning the record to exactly what upstream itself shipped before the refresh. A Bool here is an unread template magnitude, not a real on/off, which is what tests/test_magical_efficiency.py guards. SEPARATE, PRE-EXISTING: the wiki states the magnitude as 10 ('-10% Enhancement bonus'), while upstream has said 1 both before and after the refresh. This shard corrects the TYPE only by design, and the crafting channel has no value-correction path, so the magnitude is filed as follow-up rather than changed here."
+      "note": "397c673 regression repair. Upstream carried this augment as ('Magical Efficiency', 'Enhancement', 1) at 767a7f7 and degraded it to ('Power Store', 'Bool', 1) at 397c673 — both the name and the type. Our canon rename ('Power Store' -> 'Magical Efficiency', affix_name_corrections) restores the name and runs on the crafting catalog before this shard reaches the augment pool; this entry restores the type, returning the record to exactly what upstream itself shipped before the refresh. A Bool here is an unread template magnitude, not a real on/off, which is what tests/test_magical_efficiency.py guards. SEPARATE, PRE-EXISTING: the wiki states the magnitude as 10 ('-10% Enhancement bonus'), while upstream has said 1 both before and after the refresh. This shard corrects the TYPE only by design. #861 (2026-10-15) gave the crafting channel a value-correction path: item_value_corrections.json now raises the magnitude to 10 on the augment pool BEFORE this entry runs, so `value` here pins the corrected 10."
     }
   ]
 }

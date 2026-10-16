@@ -108,17 +108,17 @@ def test_the_power_store_eight_carry_the_full_ten():
 
 
 def test_values_outside_the_documented_variants_are_declared():
-    """`Facet of Condensed Power` carries 1, which matches neither variant.
+    """No carrier sits outside the wiki's documented magnitudes.
 
-    Recorded rather than silently tolerated: the augment does not resolve on the
-    wiki under that name (a 2026-08-30 search returned nothing, and it is absent
-    from Augment Slot), so this is an open question, not a ruling. The assertion
-    is that it stays the ONLY such record — a second one means a new defect
-    rather than a known one.
+    `Facet of Condensed Power` was the one exception, at 1, recorded here as an
+    open question because the augment did not resolve on the wiki on 2026-08-30.
+    It resolves now (`Item:Facet_of_Condensed_Power`), engraves {{Power Store}},
+    and states -10%; #861 corrected it on the augment channel. A carrier appearing
+    here again is a new defect.
     """
     if not os.path.exists(DATASET):
         return
     odd = sorted({n for n, _, v in _records() if v not in WIKI_VARIANTS})
-    assert odd == ["Facet of Condensed Power"], (
+    assert odd == [], (
         f"unexpected {AFFIX} magnitudes on: {odd}. The wiki documents 5% and 10% "
         "only; anything else needs its own wiki reading before it ships.")

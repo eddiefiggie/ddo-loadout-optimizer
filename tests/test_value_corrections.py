@@ -15,6 +15,7 @@ from src import value_corrections  # noqa: E402
 
 SHARD = os.path.join(ROOT, "data", "seed", "compendium", "item_value_corrections.json")
 
+DATASET = os.path.join(ROOT, "web", "data", "items.json")
 
 def _rec(name, affixes):
     return {"name": name, "affixes": affixes}
@@ -28,7 +29,7 @@ def test_a_matching_correction_overwrites_the_value():
     records = [_rec("Ring", [{"name": "Spell Focus Mastery", "type": "Equipment", "value": "5"}])]
     cov = value_corrections.apply(records, {"Ring": [_corr()]})
     assert records[0]["affixes"][0]["value"] == "8"
-    assert cov == {"items_corrected": 1, "values_changed": 1}
+    assert cov == {"items_corrected": 1, "values_changed": 1, "hit_names": ["Ring"]}
 
 
 def test_other_affixes_on_the_item_are_untouched():
@@ -77,7 +78,7 @@ def test_an_item_absent_from_the_roster_is_a_silent_no_op():
     # reappear is not an error.
     records = [_rec("Other", [{"name": "Wizardry", "type": "Insight", "value": "10"}])]
     cov = value_corrections.apply(records, {"Ring": [_corr()]})
-    assert cov == {"items_corrected": 0, "values_changed": 0}
+    assert cov == {"items_corrected": 0, "values_changed": 0, "hit_names": []}
 
 
 def test_missing_shard_file_yields_no_corrections():
@@ -217,7 +218,10 @@ LIVE_639 = {
 #: #879 — the `[Upgraded]` twin of a #619 carrier. A correction is keyed on the
 #: record name; the upgrade leaves Power Store alone, so the evidence is #619's.
 LIVE_879 = {"Staff of the Petitioner [Upgraded]"}
-LIVE = LIVE_619 | LIVE_632 | LIVE_615 | LIVE_639 | LIVE_879
+#: #861 — the first AUGMENT-channel correction: the #619 Power Store pattern on
+#: a Green augment (the template body states -10%; upstream reads 1).
+LIVE_861 = {"Facet of Condensed Power"}
+LIVE = LIVE_619 | LIVE_632 | LIVE_615 | LIVE_639 | LIVE_879 | LIVE_861
 
 
 def test_the_only_live_corrections_are_declared_and_the_retirement_is_on_the_record():
@@ -267,7 +271,8 @@ def test_the_shipped_shard_carries_its_wiki_evidence():
     # cursed-item carriers, one entry per curse per item).
     # #639 — 62: +8, the Mind Drain (4) and Power Drain (4) carriers.
     # #879 — 63: +1, the `[Upgraded]` Staff of the Petitioner.
-    assert seen == 63, seen
+    # #861 — 64: +1, Facet of Condensed Power on the augment channel.
+    assert seen == 64, seen
 
 
 def test_a_retired_correction_is_one_upstream_actually_adopted():
@@ -379,3 +384,35 @@ def test_the_built_reigns_score_the_wiki_values():
     # The verified-unchanged control pair really is unchanged.
     assert aff("Baphomet's Reign", "Sheltering", "Quality")["value"] == "11"
     assert aff("Yeenoghu's Reign", "Deadly", "Quality")["value"] == "4"
+
+
+# ---- #861 — the augment channel, and the any-channel guard --------------------------
+
+def test_an_entry_reaching_no_channel_fails_the_build():
+    """Per-channel absence is a no-op by design; absence from EVERY channel is a
+    renamed or dropped record, and must not pin nothing in silence."""
+    items = value_corrections.apply([_rec("Other", [])], {"Ring": [_corr()]})
+    augs = value_corrections.apply([_rec("Gem", [])], {"Ring": [_corr()]})
+    try:
+        value_corrections.assert_all_reached({"Ring": [_corr()]}, items, augs)
+    except SystemExit as e:
+        assert "'Ring'" in str(e)
+    else:
+        raise AssertionError("an entry no channel reached must fail the build")
+    reached = value_corrections.apply(
+        [_rec("Ring", [{"name": "Spell Focus Mastery", "type": "Equipment", "value": "5"}])],
+        {"Ring": [_corr()]})
+    value_corrections.assert_all_reached({"Ring": [_corr()]}, items, reached)  # one channel suffices
+
+
+def test_the_built_augment_carries_the_wiki_magnitude():
+    """#861 — Facet of Condensed Power credits the 10% its page states, not 1."""
+    if not os.path.exists(DATASET):
+        return
+    with open(DATASET, encoding="utf-8") as fh:
+        data = json.load(fh)
+    got = [(a["name"], a["type"], a["value"]) for v in data["items"]
+           if v["source_item"] == "Facet of Condensed Power" for a in v["affixes"]]
+    assert got == [("Magical Efficiency", "Enhancement", "10")], got
+    assert data["metadata"]["value_corrections_coverage_augments"]["hit_names"] == [
+        "Facet of Condensed Power"], "the augment channel reaches exactly the one entry it exists for"
