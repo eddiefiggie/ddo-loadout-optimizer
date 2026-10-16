@@ -64,7 +64,9 @@ def test_the_shipped_shard_covers_the_roster_and_every_candidate_is_ruled():
     # 214/213 since 397c673: +1, `Power of the Frozen Thunderstorm`, read off
     # Item:The_Volley's_Aria (Terror of the Demon Lords). `Minor Spell Penetration`
     # remains the one unmatched roster name, unchanged from before the refresh.
-    assert cov["names"] == 214 and cov["stated"] == 213, cov
+    # #858 — 213/212: Armor Class left `harvested` for `_meta.unharvested` (no single
+    # tooltip speaks for a stat stored under nine types).
+    assert cov["names"] == 213 and cov["stated"] == 212, cov
     assert cov["unmatched"] == ["Minor Spell Penetration"]
     # 19 not 25 since #715: the six above left the register. The remaining 19 are
     # 12 set-tier-only stats (the Named_item_sets half, still to harvest), the six
@@ -73,7 +75,8 @@ def test_the_shipped_shard_covers_the_roster_and_every_candidate_is_ruled():
     # 12 not 19: the seven above left. The remaining 12 are the 5 augment-SET
     # names (not on Named_item_sets — checked), the 6 pointer names, and
     # Max Dex Bonus.
-    assert len(cov["unharvested"]) == 11
+    # 12 since #858: + Armor Class, whose nine stored types have no one tooltip.
+    assert len(cov["unharvested"]) == 12
     assert [c["name"] for c in cov["candidates"]] == ["Dazing", "Dragon's Edge", "Improved Deception", "Orb Bonus", "Sundering"]
     assert cov["by_disposition"] == {"constant": ["Dazing", "Dragon's Edge", "Improved Deception", "Sundering"],
                                      "quarantine": [], "disclose": ["Orb Bonus"]}
@@ -159,7 +162,7 @@ def test_built_dataset_stamps_coverage_and_the_disclose_map():
         return
     data = json.load(open(ITEMS, encoding="utf-8"))
     cov = data["metadata"]["affix_tooltip_coverage"]
-    assert cov["names"] == 214 and cov["by_disposition"]["disclose"] == ["Orb Bonus"]  # #724, #715
+    assert cov["names"] == 213 and cov["by_disposition"]["disclose"] == ["Orb Bonus"]  # #724, #715, #858
     assert set(data["metadata"]["conditional_disclosures"]) == {"Orb Bonus"}
     assert "actively blocking" in data["metadata"]["conditional_disclosures"]["Orb Bonus"]["sentence"]
     # The roster the build computed is covered: no rankable numeric item stat is
@@ -312,8 +315,10 @@ def test_the_shipped_adjudications_cover_the_built_dataset_and_the_stamp_matches
     # captured for the key), one deliberate model divergence (#614 types a
     # cursed -1 as Penalty). None is a type defect in the catalog.
     by = {d["name"]: d["disposition"] for d in st["disagree_ruled"]}
-    assert by == {"Armor Class": "mismatched-harvest", "Repair": "mismatched-harvest",
-                  "Enhancement Bonus (Weapon)": "modelled-differently"}, by
+    # #858 — the two `mismatched-harvest` rulings retired with the sentences they
+    # ruled on: Repair re-harvested from an exact-label carrier (and now agrees),
+    # Armor Class moved to `_meta.unharvested`.
+    assert by == {"Enhancement Bonus (Weapon)": "modelled-differently"}, by
     # #697, as a field: the label says Exceptional, the tooltip says Insight, and
     # no carrier stores Seeker at Exceptional any more.
     assert {"name": "Seeker", "stated": "Insight", "label_type": "Exceptional"} in st["label_disagrees_with_tooltip"]
@@ -336,3 +341,37 @@ def test_the_guard_fails_on_a_corrupted_type_in_the_real_data():
     assert flipped, "the harvested Strength carrier is in the dataset"
     msg = _xraises(T.cross_check, sh, items, T.load_crosscheck_adjudications())
     assert "Strength: the tooltip states Enhancement" in msg
+
+
+# ---- #858 — a tooltip is evidence only for the enchantment it names -------------------
+
+def test_label_key_reduces_spelling_but_not_identity():
+    k = T.label_key
+    assert k("Repair +13") == "repair"
+    assert k("+5 Enhancement Bonus") == "enhancement bonus"
+    assert k("Dazing IV") == "dazing" and k("Power I") == "power"
+    assert k("Exceptional Alluring Skills Bonus") == "alluring skills bonus"
+    assert k("Repair Amplification") != "repair", "a longer name is a different enchantment"
+
+
+def test_a_substring_capture_is_refused_and_a_noted_one_is_not():
+    shard = {"harvested": {
+        "Repair": {"provenance": "stated", "label": "Repair Amplification", "tooltip": "x"},
+        "Turn Undead": {"provenance": "stated", "label": "Hallowed", "tooltip": "y",
+                        "note": "the enchantment that grants it"},
+        "Dazing": {"provenance": "stated", "label": "Dazing IV", "tooltip": "z"},
+    }}
+    probs = T.label_problems(shard)
+    assert len(probs) == 1 and probs[0].startswith("Repair:"), probs
+
+
+def test_the_shipped_shard_has_no_unexplained_label():
+    assert T.label_problems(T.load_shard()) == []
+
+
+def test_repair_is_the_skill_tooltip_and_armor_class_is_explained():
+    shard = T.load_shard()
+    rep = shard["harvested"]["Repair"]
+    assert rep["label"] == "Repair +13" and "Competence bonus to the Repair skill" in rep["tooltip"]
+    assert "Armor Class" not in shard["harvested"]
+    assert "nine bonus types" in shard["_meta"]["unharvested"]["Armor Class"]

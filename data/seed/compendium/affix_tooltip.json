@@ -14,7 +14,8 @@
       "PRR": "alias spelling of `Physical Sheltering` (affix_aliases.json); that name's tooltip covers it. No carrier of its own. (#715: pointer recorded.)",
       "Ranged Diversion": "augment/set-only. Checked 2026-09-06 (#715) against BOTH Named_item_sets and the Lunar_and_Solar_Gems table using the bare word `Diversion`, not just our canonical name -- absent from both. Shipped carriers are item-attached set bonuses (parsed_set_bonuses) on sets including Assassin and Crypt Raider, so the grant is real; the wiki source for its wording has not been found.",
       "Turn Undead Charge": "CORRECTION (2026-09-06, #715): as with Bard Song Charge, the earlier not-on-the-page note was a false negative. Named_item_sets carries \"+1 additional Turn Undead attempt\" and \"3 additional Turn Undead attempts after resting\"; `Charge` is our word. Same blocker: no reliable set attribution for those lines yet.",
-      "Unconsciousness Range": "expansion-minted by the #649 `Undying` rename; the pre-rename name carries the evidence. No engraved carrier under this name. (#715: pointer recorded.)"
+      "Unconsciousness Range": "expansion-minted by the #649 `Undying` rename; the pre-rename name carries the evidence. No engraved carrier under this name. (#715: pointer recorded.)",
+      "Armor Class": "#858 — no single tooltip speaks for this name: items store Armor Class under nine bonus types (Armor, Shield, Deflection, Insight, Natural, ...), each engraved by a different enchantment (Protection, Natural Armor, Armor Bonus, ...). The 2026-09-04 pass captured '+1 Enhancement Bonus' from Item:+1_Starter_Breastplate, which is that armor's Enhancement Bonus (Armor) affix, not an Armor Class enchantment. Recorded as unharvested rather than re-filed under one arbitrary type."
     },
     "unharvested_note": "Rankable names with a numeric carrier but no ITEM page to read a tooltip from (augment-, set- or expansion-only). Recorded with the reason so the coverage guard can tell 'not harvested yet' from 'cannot be harvested this way'; the augment half's next source is the Lunar_and_Solar_Gems table (#713 follow-up).",
     "false_negative_note": "#715 -- TWICE a source was searched for OUR canonical name and returned a false negative while carrying the grant under different wording: `Eldritch Blast Dice` is the table row `Blast Dice`, and `Bard Song Charge` / `Turn Undead Charge` are prose about additional songs/attempts per rest. Search a source for the bare distinguishing WORD, then read outward -- a canonical-name search proves nothing about a page that words it differently."
@@ -93,14 +94,6 @@
       "harvested": "2026-09-04",
       "label": "Exceptional Alluring Skills Bonus",
       "tooltip": "Exceptional Alluring Skills Bonus: +8 Exceptional bonus to Bluff, Diplomacy, Haggle, Intimidate, and Perform."
-    },
-    "Armor Class": {
-      "carrier": "Item:+1_Starter_Breastplate",
-      "wiki_url": "https://ddowiki.com/page/Item:+1_Starter_Breastplate",
-      "provenance": "stated",
-      "harvested": "2026-09-04",
-      "label": "+1 Enhancement Bonus",
-      "tooltip": "+1 Enhancement Bonus: +1 enhancement bonus to Armor Class."
     },
     "Armor Mastery": {
       "carrier": "Item:Boots_of_Blessed_Travels",
@@ -1348,12 +1341,13 @@
       "tooltip": "Reflex Save +1: This item gives a +1 Resistance bonus to your Reflex saves."
     },
     "Repair": {
-      "carrier": "Item:Boots_of_Uncanny_Mending",
-      "wiki_url": "https://ddowiki.com/page/Item:Boots_of_Uncanny_Mending",
+      "carrier": "Item:Gauntlets_of_Eternity",
+      "wiki_url": "https://ddowiki.com/page/Item:Gauntlets_of_Eternity",
       "provenance": "stated",
-      "harvested": "2026-09-04",
-      "label": "Repair Amplification",
-      "tooltip": "Repair Amplification: This effect amplifies all incoming repair healing by +27 (Enhancement bonus). Includes spells, potions, and other effects."
+      "harvested": "2026-10-15",
+      "label": "Repair +13",
+      "tooltip": "Repair +13: Passive: +13 Competence bonus to the Repair skill.",
+      "note": "#858 re-harvest. The 2026-09-04 pass took the first tooltip whose text CONTAINED 'Repair' and captured Boots of Uncanny Mending's 'Repair Amplification' (a different enchantment). This carrier's label is the Repair skill itself, matched exactly."
     },
     "Repair Amplification": {
       "carrier": "Item:Adamantine_Bracers",
@@ -1655,7 +1649,8 @@
       "provenance": "stated",
       "harvested": "2026-09-04",
       "label": "Hallowed",
-      "tooltip": "Hallowed: An item with this quality assists only wearers who have the ability to turn undead. Hallowed items provide an +14 Enhancement bonus to the maximum Hit Dice of undead turned."
+      "tooltip": "Hallowed: An item with this quality assists only wearers who have the ability to turn undead. Hallowed items provide an +14 Enhancement bonus to the maximum Hit Dice of undead turned.",
+      "note": "The wiki engraves this under 'Hallowed', the enchantment that grants the Turn Undead bonus ('Hallowed items provide an +N Enhancement bonus to ... turn undead'); the label differs from the stat name by design, not by capture."
     },
     "Turning": {
       "carrier": "Item:Chainmail_Coif",
@@ -1687,7 +1682,8 @@
       "provenance": "stated",
       "harvested": "2026-09-04",
       "label": "Spellcasting Implement +3",
-      "tooltip": "Spellcasting Implement +3: Passive: +3 Implement bonus to Universal Spell Power."
+      "tooltip": "Spellcasting Implement +3: Passive: +3 Implement bonus to Universal Spell Power.",
+      "note": "The wiki engraves Implement-typed Universal Spell Power as 'Spellcasting Implement +N' ('+N Implement bonus to Universal Spell Power'); the label differs from the stat name by design, not by capture."
     },
     "Upgradeable - Tier": {
       "carrier": "Item:Bold_Trinket",
