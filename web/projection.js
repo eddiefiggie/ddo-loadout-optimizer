@@ -415,6 +415,44 @@
     return skipped.length ? `${how} Not counted: ${skipped.join("; ")}.` : how;
   }
 
+  // #866 — where an item comes from, as ONE model the Loadout card and every
+  // export read, so the two cannot word it differently. Mirrors the card's
+  // precedence exactly: a player-described item says so; otherwise the quest or
+  // raid, then its adventure pack (only when it differs), with a kind note when
+  // there is no pack — a vendor has no pack because a vendor is not pack
+  // content, which is a different fact from "the wiki records no pack"; then an
+  // Epic/Legendary crafting lineage; otherwise the gap, stated.
+  //
+  // A URL is carried only when it is a DDO wiki page. The build stamps nothing
+  // else, but an imported record could carry anything, and an export turns the
+  // URL into a link a recipient clicks.
+  const SOURCE_KIND_NOTE = { vendor: "vendor", crafting: "crafting", event: "event" };
+  const SOURCE_NOT_RECORDED = "Source not recorded";
+  const PLAYER_SOURCE = "Your described item";
+  const _wikiUrl = (u) => (/^https:\/\/ddowiki\.com\//.test(String(u || "")) ? String(u) : null);
+  function itemSource(v) {
+    if (!v) return null;
+    if (v.player_authored === true) return { text: PLAYER_SOURCE, recorded: false };
+    const quest = v.location_quest;
+    if (quest) {
+      const pack = (v.location_pack && v.location_pack !== quest) ? v.location_pack : null;
+      const note = (!v.location_pack && SOURCE_KIND_NOTE[v.location_kind]) || null;
+      return {
+        quest, questUrl: _wikiUrl(v.location_url),
+        ...(pack ? { pack, packUrl: _wikiUrl(v.location_pack_url) } : {}),
+        ...(note ? { note } : {}),
+        text: quest + (pack ? ` · ${pack}` : "") + (note ? ` (${note})` : ""),
+        recorded: true,
+      };
+    }
+    const lin = v.location_lineage;
+    if (lin && lin.from) {
+      return { text: `${lin.kind === "legendary-crafted" ? "Legendary" : "Epic"}-crafted from ${lin.from}`,
+        recorded: true };
+    }
+    return { text: SOURCE_NOT_RECORDED, recorded: false };
+  }
+
   // #878 — a COLOR-CHOICE slot ("Yellow or Blue") is one upgrade slot whose colour the
   // player picks. The key joins its members with CHOICE_SEP, as `src/colors.py`
   // writes it (a Python test pins the two). Attribution needs no special case —
@@ -2883,6 +2921,8 @@
         // the collapsed one. `results.js` calls the same primitive on its own
         // live-result render paths (it has no `rec` to project).
         affixes: collapseExpansions(v.affixes || []),
+        // #866 — where the item comes from, the same model the Loadout card reads.
+        source: itemSource(v),
         augments: (augAssign.byIndex.get(idx) || []).map(augView),
         crafting: craftingForItem(v, idx, maps),
         // The item's own named set(s) suppressed because it hosts a placed Set Augment
@@ -3731,7 +3771,7 @@
     // model.js; re-exported so exporters can recognize the sentinel row)
     utilityLine, utilityPriceLine, utilityUnsecuredLines, UTILITY_SENTINEL: UTILITY_NAME,
     // pure primitives (results.js binds these; single definition, no drift)
-    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, affixStatCoverage, affixCoverageKey, affixOwnName, craftStepLabel, craftAffixRecords, itemMl, wornMl, craftedMlIndex, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, choiceMembers, slotPick, slotWords, upgradeNoteText, dinoInsertKey, assignDinoInserts,
+    affixLabel, isPresence, isPresenceType, utilityExcludedLine, utilityExcludedFor, outbidNoticeLines, collapseExpansions, affixStatCoverage, affixCoverageKey, affixOwnName, craftStepLabel, craftAffixRecords, itemMl, wornMl, craftedMlIndex, displayItemName, contributingAffixes, assignAugments, canonicalSetAugments, choiceMembers, slotPick, slotWords, upgradeNoteText, itemSource, dinoInsertKey, assignDinoInserts,
     attributionByTarget, whyThis, itemContributions, saturatedStats, saturationLineFor,
     // #449 (U2) — the achieved/ceiling fraction: numbers, state and wording from
     // one place, plus the once-per-document full statement.

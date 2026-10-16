@@ -2323,3 +2323,60 @@ test("#878: an augment in a choice slot exports the colour the slot is set to", 
   const md = toMarkdown(r);
   assert.ok(/🔵 Blue: Sapphire of Wisdom/.test(md), md);
 });
+
+// ---- #866 — every share format says where each item comes from ---------------------
+
+const SRC_REC = { name: "Sources", inputs: { ml: 34, priorities: ["Strength"] }, query: { targets: ["Strength"] },
+  snapshot: { status: "optimal", setsActive: [], effective: { Strength: 6 }, chosen: [
+    { slot: "Boots", variant: { variant_id: "Madstone Boots", ml: 13, affixes: [], augment_slots_norm: { colors: [] },
+      location_quest: "The Reaver's Fate", location_url: "https://ddowiki.com/page/The_Reaver%27s_Fate",
+      location_pack: "Ruins of Gianthold", location_pack_url: "https://ddowiki.com/page/Ruins_of_Gianthold",
+      location_kind: "pack-quest" } },
+    { slot: "Ring", variant: { variant_id: "Vendor Ring", ml: 5, affixes: [], augment_slots_norm: { colors: [] },
+      location_quest: "House Deneith vendor", location_kind: "vendor" } },
+    { slot: "Belt", variant: { variant_id: "Mystery Belt", ml: 5, affixes: [], augment_slots_norm: { colors: [] } } },
+    { slot: "Gloves", variant: { variant_id: "Evil Gloves", ml: 5, affixes: [], augment_slots_norm: { colors: [] },
+      location_quest: "Pit [url=https://evil.example]x[/url]", location_url: "https://evil.example/page" } },
+  ] } };
+
+test("#866: Markdown links the quest and pack, and states the vendor note and the gap", () => {
+  const md = toMarkdown(SRC_REC);
+  assert.ok(md.includes("From: [The Reaver's Fate](https://ddowiki.com/page/The_Reaver%27s_Fate) · [Ruins of Gianthold](https://ddowiki.com/page/Ruins_of_Gianthold)"), md);
+  assert.ok(md.includes("From: House Deneith vendor (vendor)"));
+  assert.ok(md.includes("From: Source not recorded"));
+  assert.ok(!/\]\(https?:\/\/evil/.test(md), "a non-wiki URL is never a Markdown link target");
+});
+
+test("#866: CSV appends a Source column without moving the existing ones", () => {
+  const lines = toCsv(SRC_REC).split("\n");
+  assert.ok(lines.includes("Slot,Item,ML,Affixes,Augments,Crafting,Source"), "header");
+  assert.ok(lines.some((l) => l === "Boots,Madstone Boots,13,,,,The Reaver's Fate · Ruins of Gianthold"), "plain names, no link syntax");
+});
+
+test("#866: BBCode links wiki pages only, and strips tags smuggled in a source name", () => {
+  const bb = toBBCode(SRC_REC);
+  assert.ok(bb.includes("[url=https://ddowiki.com/page/Ruins_of_Gianthold]Ruins of Gianthold[/url]"));
+  assert.ok(!/\[url=https:\/\/evil/.test(bb), "neither the stamped non-wiki URL nor an injected tag becomes a link");
+});
+
+test("#866: the print view and the gearset commentary both carry the source", () => {
+  const html = toPrintHtml(SRC_REC);
+  assert.ok(/<small class="src">From: <a href="https:\/\/ddowiki\.com\/page\/The_Reaver%27s_Fate">/.test(html), html);
+  const gs = toGearset(SRC_REC);
+  const split = gs.indexOf("ignored by DDOBuilderV2");
+  const at = gs.indexOf("Where each item comes from");
+  assert.ok(split > -1 && at > split, "below the import split, so the importable half stays a gear list");
+  assert.ok(gs.includes("#   Boots (Madstone Boots) — The Reaver's Fate · Ruins of Gianthold"));
+});
+
+test("#866: the portable JSON inherits the source model from the view", () => {
+  const out = toPortableJSON(SRC_REC, "2026-10-15T00:00:00Z");
+  const j = typeof out === "string" ? JSON.parse(out) : out;
+  // Look for the projected MODEL, not the name: the bundle also embeds the raw
+  // snapshot, where the pack's name appears whether or not the view carries it.
+  const found = [];
+  JSON.stringify(j, (k, v) => { if (k === "source" && v && v.quest) found.push(v); return v; });
+  assert.ok(found.some((s) => s.quest === "The Reaver's Fate" && s.pack === "Ruins of Gianthold"
+    && s.packUrl === "https://ddowiki.com/page/Ruins_of_Gianthold"),
+    "the resolved view's source model rides into the bundle");
+});
