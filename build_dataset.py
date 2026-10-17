@@ -86,6 +86,7 @@ from src import crafting_coverage as crafting_coverage_mod
 from src import crafted_twins as crafted_twins_mod
 from src import upgraded_items as upgraded_items_mod
 from src import roman_lore as roman_lore_mod
+from src import wiki_supplement as wiki_supplement_mod
 from src import ring_exclusivity as ring_exclusivity_mod
 import re as _re
 
@@ -830,6 +831,12 @@ def build() -> dict:
     # #879 — the `[Upgraded]` twins of the Stormreaver / Black Abbot raid items,
     # built from upstream's one-option pools and refused unless each pool still
     # matches the wiki transcription in data/seed/compendium/upgradeable_items.json.
+    # #874 — interim wiki-harvested items (gear-planner's updater is down, #223),
+    # built in upstream's own shape from an existing sibling. Fails the build the
+    # moment upstream carries one of them, so it can never shadow the real parse.
+    _supplement = wiki_supplement_mod.expand(_raw_items, wiki_supplement_mod.load())
+    if _supplement["problems"]:
+        raise SystemExit("wiki supplement failed (#874):\n  " + "\n  ".join(_supplement["problems"]))
     _upgraded = upgraded_items_mod.expand(
         _raw_items, upgraded_items_mod.load_pools(), upgraded_items_mod.load_shard())
     if _upgraded["problems"]:
@@ -840,7 +847,7 @@ def build() -> dict:
         verified_seal_types=_verified_seal_types,
         exclude_names=_host_pipeline_names,
         nc_per_item_hosts=_nc_per_item_hosts,
-        extra_raw=_upgraded["records"])
+        extra_raw=_upgraded["records"] + _supplement["records"])
     # #262 — the "no known live drop source" evidence shard. check() runs HERE,
     # against the planner records pre-variant-expansion, because the staleness
     # guard keys off the raw `quests` array (KTD8: the list, not the derived
@@ -2742,6 +2749,7 @@ def build() -> dict:
     # a reader deserves to see which pairs it stopped holding for.
     out["metadata"]["crafted_twin_identity_divergent"] = _twins["capacity_divergent"]
     out["metadata"]["upgraded_item_coverage"] = _upgraded["coverage"]
+    out["metadata"]["wiki_supplement_coverage"] = _supplement["coverage"]
 
     # build_id hashes the full assembled dataset (everything except metadata) so
     # drift in sets, augments, or crafting inputs — not just base variants —

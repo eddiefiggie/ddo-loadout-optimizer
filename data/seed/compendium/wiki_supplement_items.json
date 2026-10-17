@@ -1,0 +1,253 @@
+{
+  "_meta": {
+    "title": "wiki-harvested item supplement (#874)",
+    "why": "gear-planner's Data Auto Updater has failed on every run since 2026-10-14 (illusionistpm/ddo-gear-planner#223; fix offered as #224), so no item created on the wiki since c36b45e (2026-10-13) reaches the catalog. This shard carries the stat-bearing ones, read from the DDO wiki 2026-10-17 through the in-app Browser pane, as an INTERIM supplement.",
+    "method": "Each record is built in gear-planner's OWN raw shape from its nearest existing sibling (same weapon type, the level-28 tier upstream already parses): name, ml and url from the wiki page; slot, type and quests from the sibling; affixes in the sibling's own vocabulary, with the magnitude upstream stores taken from the wiki tooltip (`evidence`). Nothing here is a new parse of free text.",
+    "retirement": "src/wiki_supplement.py FAILS THE BUILD the moment upstream carries a record of the same name, so an entry cannot shadow or duplicate upstream data. Delete each entry when that happens.",
+    "scope": "Of the 22 Item: pages created on the wiki since 2026-10-13, only these six carry stats: the ML32/36 Spectral Great Axe, Great Crossbow and Warhammer (Night Revels). The other 16 are Court of Strahd cosmetics: ten lanterns and skull lanterns (an event mechanic, 'sense the Dark Power's intrusions', plus a clicky), four Order cloaks (Cosmetic Cloak) and two Hexblood crowns (Cosmetic Headwear). The optimizer models no cosmetic slot, so none is added.",
+    "harvested": "2026-10-17"
+  },
+  "items": {
+    "Spectral Great Axe (level 32)": {
+      "sibling": "Spectral Great Axe (level 28)",
+      "ml": 32,
+      "url": "/page/Item:Spectral_Great_Axe_(level_32)",
+      "affixes": [
+        [
+          "Enhancement Bonus (Weapon)",
+          "Enhancement",
+          "+15"
+        ],
+        [
+          "Ghostbane",
+          "Bool",
+          1
+        ],
+        [
+          "Evil Outsider Bane",
+          "Bool",
+          1
+        ],
+        [
+          "Superior Vorpal",
+          "Bool",
+          1
+        ],
+        [
+          "Crushing",
+          "Bool",
+          1
+        ]
+      ],
+      "evidence": [
+        "+15 Enhancement Bonus: +15 enhancement bonus to attack and damage rolls.",
+        "Ghostbane 6: This weapon is attuned specifically to hunt the risen dead, dealing an additional 6d10 bane damage vs. Undead monsters.",
+        "Evil Outsider Bane 6: This weapon is attuned specifically to hunt monsters that bring ill intent from other planes, dealing an additional 6d10 bane damage vs. Evil Outsiders.",
+        "Superior Vorpal: Passive: +0.5[W] damage dice.",
+        "Crushing 15: This effect causes the edges of this weapon to ripple with force, dealing 15d6 force damage on each critical hit."
+      ],
+      "harvested": "2026-10-17"
+    },
+    "Spectral Great Axe (level 36)": {
+      "sibling": "Spectral Great Axe (level 28)",
+      "ml": 36,
+      "url": "/page/Item:Spectral_Great_Axe_(level_36)",
+      "affixes": [
+        [
+          "Enhancement Bonus (Weapon)",
+          "Enhancement",
+          "+15"
+        ],
+        [
+          "Ghostbane",
+          "Bool",
+          1
+        ],
+        [
+          "Evil Outsider Bane",
+          "Bool",
+          1
+        ],
+        [
+          "Superior Vorpal",
+          "Bool",
+          1
+        ],
+        [
+          "Crushing",
+          "Bool",
+          1
+        ]
+      ],
+      "evidence": [
+        "+15 Enhancement Bonus: +15 enhancement bonus to attack and damage rolls.",
+        "Ghostbane 6: This weapon is attuned specifically to hunt the risen dead, dealing an additional 6d10 bane damage vs. Undead monsters.",
+        "Evil Outsider Bane 6: This weapon is attuned specifically to hunt monsters that bring ill intent from other planes, dealing an additional 6d10 bane damage vs. Evil Outsiders.",
+        "Superior Vorpal: Passive: +0.5[W] damage dice.",
+        "Crushing 15: This effect causes the edges of this weapon to ripple with force, dealing 15d6 force damage on each critical hit."
+      ],
+      "harvested": "2026-10-17",
+      "note": "The page states Ghostbane 6 / Evil Outsider Bane 6 / Crushing 15, identical to the level-32 page, where the level-36 Warhammer and Great Crossbow state 7/7/16. Likely a copy on the wiki, but no stored value depends on it: like every Spectral sibling upstream parses, these four procs are stored as Bool presences."
+    },
+    "Spectral Great Crossbow (level 32)": {
+      "sibling": "Spectral Great Crossbow (level 28)",
+      "ml": 32,
+      "url": "/page/Item:Spectral_Great_Crossbow_(level_32)",
+      "affixes": [
+        [
+          "Enhancement Bonus (Weapon)",
+          "Enhancement",
+          "+15"
+        ],
+        [
+          "Ghostbane",
+          "Bool",
+          1
+        ],
+        [
+          "Evil Outsider Bane",
+          "Bool",
+          1
+        ],
+        [
+          "Superior Vorpal",
+          "Bool",
+          1
+        ],
+        [
+          "Crushing",
+          "Bool",
+          1
+        ]
+      ],
+      "evidence": [
+        "+15 Enhancement Bonus: +15 enhancement bonus to attack and damage rolls.",
+        "Ghostbane 6: This weapon is attuned specifically to hunt the risen dead, dealing an additional 6d10 bane damage vs. Undead monsters.",
+        "Evil Outsider Bane 6: This weapon is attuned specifically to hunt monsters that bring ill intent from other planes, dealing an additional 6d10 bane damage vs. Evil Outsiders.",
+        "Superior Vorpal: Passive: +0.5[W] damage dice.",
+        "Crushing 15: This effect causes the edges of this weapon to ripple with force, dealing 15d6 force damage on each critical hit."
+      ],
+      "harvested": "2026-10-17"
+    },
+    "Spectral Great Crossbow (level 36)": {
+      "sibling": "Spectral Great Crossbow (level 28)",
+      "ml": 36,
+      "url": "/page/Item:Spectral_Great_Crossbow_(level_36)",
+      "affixes": [
+        [
+          "Enhancement Bonus (Weapon)",
+          "Enhancement",
+          "+15"
+        ],
+        [
+          "Ghostbane",
+          "Bool",
+          1
+        ],
+        [
+          "Evil Outsider Bane",
+          "Bool",
+          1
+        ],
+        [
+          "Superior Vorpal",
+          "Bool",
+          1
+        ],
+        [
+          "Crushing",
+          "Bool",
+          1
+        ]
+      ],
+      "evidence": [
+        "+15 Enhancement Bonus: +15 enhancement bonus to attack and damage rolls.",
+        "Ghostbane 7: This weapon is attuned specifically to hunt the risen dead, dealing an additional 7d10 bane damage vs. Undead monsters.",
+        "Evil Outsider Bane 7: This weapon is attuned specifically to hunt monsters that bring ill intent from other planes, dealing an additional 7d10 bane damage vs. Evil Outsiders.",
+        "Superior Vorpal: Passive: +0.5[W] damage dice.",
+        "Crushing 16: This effect causes the edges of this weapon to ripple with force, dealing 16d6 force damage on each critical hit."
+      ],
+      "harvested": "2026-10-17"
+    },
+    "Spectral Warhammer (level 32)": {
+      "sibling": "Spectral Warhammer (level 28)",
+      "ml": 32,
+      "url": "/page/Item:Spectral_Warhammer_(level_32)",
+      "affixes": [
+        [
+          "Enhancement Bonus (Weapon)",
+          "Enhancement",
+          "+15"
+        ],
+        [
+          "Ghostbane",
+          "Bool",
+          1
+        ],
+        [
+          "Evil Outsider Bane",
+          "Bool",
+          1
+        ],
+        [
+          "Superior Vorpal",
+          "Bool",
+          1
+        ],
+        [
+          "Crushing",
+          "Bool",
+          1
+        ]
+      ],
+      "evidence": [
+        "+15 Enhancement Bonus: +15 enhancement bonus to attack and damage rolls.",
+        "Ghostbane 6: This weapon is attuned specifically to hunt the risen dead, dealing an additional 6d10 bane damage vs. Undead monsters.",
+        "Evil Outsider Bane 6: This weapon is attuned specifically to hunt monsters that bring ill intent from other planes, dealing an additional 6d10 bane damage vs. Evil Outsiders.",
+        "Superior Vorpal: Passive: +0.5[W] damage dice.",
+        "Crushing 15: This effect causes the edges of this weapon to ripple with force, dealing 15d6 force damage on each critical hit."
+      ],
+      "harvested": "2026-10-17"
+    },
+    "Spectral Warhammer (level 36)": {
+      "sibling": "Spectral Warhammer (level 28)",
+      "ml": 36,
+      "url": "/page/Item:Spectral_Warhammer_(level_36)",
+      "affixes": [
+        [
+          "Enhancement Bonus (Weapon)",
+          "Enhancement",
+          "+15"
+        ],
+        [
+          "Ghostbane",
+          "Bool",
+          1
+        ],
+        [
+          "Evil Outsider Bane",
+          "Bool",
+          1
+        ],
+        [
+          "Superior Vorpal",
+          "Bool",
+          1
+        ],
+        [
+          "Crushing",
+          "Bool",
+          1
+        ]
+      ],
+      "evidence": [
+        "+15 Enhancement Bonus: +15 enhancement bonus to attack and damage rolls.",
+        "Ghostbane 7: This weapon is attuned specifically to hunt the risen dead, dealing an additional 7d10 bane damage vs. Undead monsters.",
+        "Evil Outsider Bane 7: This weapon is attuned specifically to hunt monsters that bring ill intent from other planes, dealing an additional 7d10 bane damage vs. Evil Outsiders.",
+        "Superior Vorpal: Passive: +0.5[W] damage dice.",
+        "Crushing 16: This effect causes the edges of this weapon to ripple with force, dealing 16d6 force damage on each critical hit."
+      ],
+      "harvested": "2026-10-17"
+    }
+  }
+}

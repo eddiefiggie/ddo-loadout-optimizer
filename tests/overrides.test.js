@@ -418,7 +418,8 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // #884 — 45,873: +1, the Void Lore 15 Wretched Twilight [Upgraded] now carries
   // (it was quarantined in #879). Nothing else moved.
   // #895 — 45,876: +3, the Finesse carriers' Dexterity (gap corrections). Nothing else.
-  assert.strictEqual(total, 45876, "post-normalize pool size");
+  // #874 — 45,906: +30, the six supplement Spectral weapons x their five affixes.
+  assert.strictEqual(total, 45906, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -525,7 +526,9 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // overridable as their base's; nothing else moved.
   // #884 — 20,741: +1, that same engraved Void Lore affix.
   // #895 — 20,744: +3, those three Dexterity affixes, overridable like any native one.
-  assert.strictEqual(eligible, 20744, "engraved, eligible affixes");
+  // #874 — 20,750: +6, each supplement weapon's Enhancement Bonus (its four Bool
+  // procs are ineligible by rule).
+  assert.strictEqual(eligible, 20750, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -602,7 +605,8 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // it splits on the `[Upgraded]` twins alone (none of them is an augment).
   // #884 — item +1: the affix is on a cloak.
   // #895 — weapon +3, item and augment UNCHANGED: all three Finesse carriers are weapons.
-  assert.deepStrictEqual(byCat, { item: 13482, weapon: 6253, augment: 1009 });
+  // #874 — weapon +6, item and augment UNCHANGED: all six supplement records are weapons.
+  assert.deepStrictEqual(byCat, { item: 13482, weapon: 6259, augment: 1009 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {
