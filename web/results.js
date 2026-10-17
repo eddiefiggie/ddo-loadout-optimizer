@@ -478,26 +478,20 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
  *  The wordings follow the Farming List's, for the same reason it gives: a
  *  vendor has no pack because a vendor is not pack content, which is a different
  *  fact from "the wiki records no pack". */
-const SOURCE_KIND_NOTE = { vendor: "vendor", crafting: "crafting", event: "event" };
+// #866 — the wording lives in projection (`Proj.itemSource`), which every share
+// export reads too, so the card and a shared build cannot describe the same
+// item's source two ways. This renders that one model.
 function sourceLine(v) {
   if (!v) return `<div class="pd-rsrc" aria-hidden="true"></div>`;
-  let html = "", text = "";
-  const src = v.location_quest;
-  const lin = v.location_lineage;
-  if (v.player_authored === true) {
-    html = `<span class="muted">Your described item</span>`; text = "Your described item";
-  } else if (src) {
-    const pack = v.location_pack;
-    const note = !pack && SOURCE_KIND_NOTE[v.location_kind];
-    html = wikiLink(src, v.location_url, "pd-rsrc-quest")
-      + (pack && pack !== src ? ` <span class="pd-rsrc-sep" aria-hidden="true">·</span> ${wikiLink(pack, v.location_pack_url, "pd-rsrc-pack")}` : "")
-      + (note ? ` <span class="muted">(${esc(note)})</span>` : "");
-    text = src + (pack && pack !== src ? ` · ${pack}` : "") + (note ? ` (${note})` : "");
-  } else if (lin && lin.from) {
-    text = `${lin.kind === "legendary-crafted" ? "Legendary" : "Epic"}-crafted from ${lin.from}`;
-    html = esc(text);
+  const s = Proj.itemSource(v);
+  const text = s.text;
+  let html;
+  if (s.quest) {
+    html = wikiLink(s.quest, s.questUrl, "pd-rsrc-quest")
+      + (s.pack ? ` <span class="pd-rsrc-sep" aria-hidden="true">·</span> ${wikiLink(s.pack, s.packUrl, "pd-rsrc-pack")}` : "")
+      + (s.note ? ` <span class="muted">(${esc(s.note)})</span>` : "");
   } else {
-    html = `<span class="muted">Source not recorded</span>`; text = "Source not recorded";
+    html = s.recorded ? esc(text) : `<span class="muted">${esc(text)}</span>`;
   }
   return `<div class="pd-rsrc" title="From: ${esc(text)}"><span class="pd-rsrc-lbl">From</span> ${html}</div>`;
 }

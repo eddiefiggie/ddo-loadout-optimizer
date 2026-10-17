@@ -2705,3 +2705,26 @@ test("#888: the soft-cap notice is silent below the threshold and under a player
   assert.deepStrictEqual(P.softCapLines({ query: { targets: ["Doublestrike"] },
     snapshot: { effective: { Doublestrike: 250 } } }), [], "no soft cap recorded, nothing to say");
 });
+
+// ---- #866 — the one item-source model ------------------------------------------------
+
+test("#866: itemSource follows the card's precedence and wording", () => {
+  const src = P.itemSource;
+  assert.deepStrictEqual(src({ location_quest: "Q", location_url: "https://ddowiki.com/page/Q",
+    location_pack: "P", location_pack_url: "https://ddowiki.com/page/P", location_kind: "pack-quest" }),
+    { quest: "Q", questUrl: "https://ddowiki.com/page/Q", pack: "P", packUrl: "https://ddowiki.com/page/P", text: "Q · P", recorded: true });
+  assert.strictEqual(src({ location_quest: "V", location_kind: "vendor" }).text, "V (vendor)");
+  assert.strictEqual(src({ location_quest: "Raid", location_pack: "Raid" }).text, "Raid", "a pack equal to the quest is not repeated");
+  assert.strictEqual(src({ location_lineage: { kind: "legendary-crafted", from: "X" } }).text, "Legendary-crafted from X");
+  assert.strictEqual(src({ player_authored: true, location_quest: "Q" }).text, "Your described item");
+  assert.deepStrictEqual(src({}), { text: "Source not recorded", recorded: false });
+  assert.strictEqual(src({ location_quest: "Q", location_url: "javascript:alert(1)" }).questUrl, null, "only ddowiki URLs");
+});
+
+test("#866: the Loadout card and the exports read the same sentence", () => {
+  for (const v of [{ location_quest: "Q", location_pack: "P", location_kind: "pack-quest" },
+    { location_quest: "V", location_kind: "vendor" }, {}, { player_authored: true }]) {
+    const card = R.sourceLine(v);
+    assert.ok(card.includes(`title="From: ${P.itemSource(v).text}"`), card);
+  }
+});
