@@ -9,6 +9,7 @@ over-counting (a chosen seal grants ONE ability score, not all six). These tests
 assert the corrected state, plus the additive-apply mechanism (still used should a
 genuine gap ever appear).
 """
+import json
 import os
 import sys
 
@@ -81,6 +82,9 @@ def test_overlay_carries_exactly_the_sanctioned_entries():
         "Strinati's Hand Cannon", "The Devourer's Hunger", "The Disciplinator",
         "The Pea Shooter", "Thought Spike", "Thought Spike (starter)",
         "Tira's Splendor", "Titan's Fist", "Toven's Hammer", "Trial by Fire",
+        # #895 — the Dexterity half of Finesse, which gear-planner stores only as a
+        # bare `Finesse` presence. Each value is read off the item's own tooltip.
+        "Axe of the Unseen Blow", "Epic Midnight Greetings", "Legendary Midnight Greetings",
     ]), sorted(corrections)
     # Every restored affix cites the page it was re-read on, and the 2026-09-22 batch
     # says which snapshot it is repairing — an overlay entry with no provenance is how
@@ -119,3 +123,24 @@ def test_apply_never_double_counts_existing_name_type():
     assert cov["items_corrected"] == 1
     assert cov["affixes_added"] == 1
     assert cov["affixes_skipped_already_present"] == 1
+
+
+
+def test_finesse_carriers_credit_their_dexterity_and_the_random_roll_does_not():
+    """#895 — Finesse grants +X Enhancement Dexterity with Weapon Finesse. The three
+    records that carry it as a guaranteed enchantment credit the Dexterity; Dream
+    Edge's Finesse is one of ~40 'Random effect' options and gets none."""
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "data", "items.json")
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as fh:
+        items = json.load(fh)["items"]
+    dex = {}
+    for v in items:
+        for a in v.get("affixes") or []:
+            if a.get("name") == "Dexterity":
+                dex.setdefault(v["source_item"], []).append((a.get("type"), str(a.get("value"))))
+    assert dex.get("Axe of the Unseen Blow") == [("Enhancement", "2")]
+    assert dex.get("Epic Midnight Greetings") == [("Enhancement", "9")]
+    assert dex.get("Legendary Midnight Greetings") == [("Enhancement", "13")]
+    assert "Dream Edge" not in dex, "a random-effect roll is not a guaranteed enchantment"
