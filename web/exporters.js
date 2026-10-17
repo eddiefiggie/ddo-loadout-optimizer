@@ -312,6 +312,26 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
   // export reads "Legendary Gem of Many Facets (ML 25)", which is the exact
   // contradiction the app card now explains and the export would not.
   function craftedStr(it) { return it.craftedNote || ""; }
+  // #866 — where the item comes from, from the ONE model the Loadout card reads
+  // (`Proj.itemSource`). Links only where the build stamped a wiki URL and the
+  // format has link syntax; CSV and the gearset print the plain names. The URL
+  // was vetted to a ddowiki page in projection, and is still escaped for the
+  // characters each format's link syntax gives meaning to.
+  function itemSourceStr(it, fmt, esc) {
+    const s = it && it.source;
+    if (!s) return "";
+    if (!s.quest || fmt === "plain") return esc(s.text);
+    const link = (name, url) => {
+      if (!url) return esc(name);
+      if (fmt === "md") return `[${esc(name)}](${url.replace(/[()\s]/g, encodeURIComponent)})`;
+      if (fmt === "bb") return `[url=${url.replace(/[\[\]\s]/g, encodeURIComponent)}]${esc(name)}[/url]`;
+      if (fmt === "html") return `<a href="${htmlEsc(url)}">${esc(name)}</a>`;
+      return esc(name);
+    };
+    return link(s.quest, s.questUrl)
+      + (s.pack ? ` · ${link(s.pack, s.packUrl)}` : "")
+      + (s.note ? ` (${esc(s.note)})` : "");
+  }
 
   // ---- Markdown ----
 
@@ -333,6 +353,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     out += `## Loadout\n\n`;
     for (const it of view.loadout) {
       out += `- **${mdEsc(it.slot)}** — ${mdEsc(it.item)} (ML ${mdEsc(it.ml == null ? "?" : it.ml)})\n`;
+      const src = itemSourceStr(it, "md", mdEsc);
+      if (src) out += `  - From: ${src}\n`;
       const aff = affixList(it.affixes, mdEsc);
       if (aff) out += `  - ${aff}\n`;
       for (const aug of it.augments) out += `  - ${augStr(aug, mdEsc, "md")}\n`;
@@ -422,6 +444,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       if (pa) out += `\n  [*]✎ ${pa}`;
       const cd = craftedStr(it);
       if (cd) out += `\n  [*]⚒ ${bbEsc(cd)}`;
+      const src = itemSourceStr(it, "bb", bbEsc);
+      if (src) out += `\n  [*]From: ${src}`;
       out += `\n`;
     }
     out += `[/list]\n`;
@@ -484,7 +508,8 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     rows.push("");
     rows.push(csvRow(["Legend", legendText("csv")]));
     rows.push("");
-    rows.push(csvRow(["Slot", "Item", "ML", "Affixes", "Augments", "Crafting"]));
+    // #866 — `Source` is appended LAST so every existing column keeps its index.
+    rows.push(csvRow(["Slot", "Item", "ML", "Affixes", "Augments", "Crafting", "Source"]));
     for (const it of view.loadout) {
       // #245 — the craft-carried note joins the Crafting cell: it is a fact
       // about why the crafts matter, and a new column would break header pins.
@@ -500,6 +525,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         affixListCsv(it.affixes),
         it.augments.map((aug) => augStr(aug, (s) => s, "csv")).join(" | "),
         craftCell,
+        itemSourceStr(it, "plain", (s) => s),
       ]));
     }
     if (view.sets.length) {
@@ -580,7 +606,10 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
         .concat(authoredStr(it) ? [`✎ ${htmlEsc(authoredStr(it))}`] : [])
         .concat(craftedStr(it) ? [`⚒ ${htmlEsc(craftedStr(it))}`] : [])
         .join("<br>");
-      h += `<tr><td>${htmlEsc(it.slot)}</td><td>${htmlEsc(it.item)}</td><td>${htmlEsc(it.ml)}</td>`
+      const src = itemSourceStr(it, "html", htmlEsc);
+      h += `<tr><td>${htmlEsc(it.slot)}</td><td>${htmlEsc(it.item)}`
+        + (src ? `<br><small class="src">From: ${src}</small>` : "")
+        + `</td><td>${htmlEsc(it.ml)}</td>`
         + `<td>${affixList(it.affixes, htmlEsc)}</td>`
         + `<td>${it.augments.map((aug) => augStr(aug, htmlEsc, "md")).join("<br>")}</td>`
         + `<td>${craftCell}</td></tr>`;
@@ -852,6 +881,7 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
     const augLines = [];
     const craftLines = [];
     const noDropLines = [];
+    const sourceLines = [];
     for (const it of view.loadout) {
       for (const aug of it.augments || []) {
         const eff = affixList(aug.affixes, (s) => s);
@@ -867,6 +897,9 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       // say it at all, and it must: the recipient is importing numbers that never
       // came from the wiki.
       if (it.playerAuthored) noDropLines.push(`  ${it.slot} (${it.item}) — ${it.playerAuthored}`);
+      // #866 — the commentary half is where a gearset can name a source at all.
+      const src = itemSourceStr(it, "plain", (s) => s);
+      if (src) sourceLines.push(`  ${it.slot} (${it.item}) — ${src}`);
     }
     // Augments are listed here as well as on the gear lines: DDOBuilder matches an
     // augment by scanning its own description text, and our affix vocabulary does
@@ -892,6 +925,12 @@ const _expIsPresenceType = (typeof Projection !== "undefined" && Projection.isPr
       rl.push("#");
       say("Drop-source disclosure (per the DDO wiki)");
       noDropLines.forEach(say);
+    }
+    // #866 — where each item comes from, as the Loadout card words it.
+    if (sourceLines.length) {
+      rl.push("#");
+      say("Where each item comes from (per the DDO wiki)");
+      sourceLines.forEach(say);
     }
     if (unmapped.length) {
       rl.push("#");
