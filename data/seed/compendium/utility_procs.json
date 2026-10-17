@@ -1,131 +1,210 @@
 {
   "_README": "Adjudication of UNTYPED weapon/off-hand proc names for the Utility tier (#91). The candidate rule in src/utility_procs.py is 'untyped + numeric + well-formed + every carrying slot is Weapon/Off Hand' - the deliberate complement of src/untyped_rankable.py's worn-slot rule, so the two gates' populations are disjoint. A candidate in NEITHER list fails the build, so a new untyped weapon proc is a reviewed event rather than a silent zero-count. SINCE #343: 'allow' names enter metadata.utility_untyped_admitted ONLY - the presence-path picker entry that makes them individually rankable. They are NO LONGER unioned into metadata.utility_counting_set, so admitting a name here makes it available to rank, not counted by the Utility tier. Two reasons: a proc is a damage-type decision belonging to the weapon choice rather than a distinct win a player feels, and the 24 admitted procs were 86% of the counting set's measured solve cost - keeping them counted put the tier over its 2.0x perf budget once the worn defensive toggles were added. They NEVER enter metadata.rankable_affixes - a declared-credit control on Holy/Vampirism is the documented defect web/dataset.js warns against.",
   "_discipline": "exclude-until-verified. Add to 'allow' ONLY with wiki evidence (wiki_url + evidence + verified date) that the name is a player-felt utility effect worth counting. 'unreviewed' is an honest reason and marks the filed backlog; it is not a judgement that the name is noise. An empty 'allow' list counts zero untyped procs - the Bool presence half of the counting set is unaffected.",
-  "allow": [],
-  "quarantined": [
+  "allow": [
     {
       "name": "Corroding",
       "items": 4,
-      "reason": "unreviewed"
+      "wiki_url": "https://ddowiki.com/page/Corroding",
+      "evidence": "Corroding Effect: This effect causes the edges of this weapon to drip with acid, dealing (x)d6 Acid damage on each critical hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-crit acid damage. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
     },
     {
       "name": "Critical Bewildering",
       "items": 1,
-      "reason": "unreviewed"
+      "wiki_url": "https://ddowiki.com/page/Item:The_Legendary_Willbreaker",
+      "evidence": "Critical Bewildering 3: This deadly weapon saps the willpower and sense from your enemies, dealing 3 Wisdom damage on each critical hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-crit Wisdom damage. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
     },
     {
       "name": "Eldritch",
       "items": 2,
-      "reason": "unreviewed"
+      "wiki_url": "https://ddowiki.com/page/Item:Divine_Artillery",
+      "evidence": "Eldritch III: On Hit: 3d43 to 12 Force Damage. (verbatim as rendered; the dice text is garbled on the page, the effect is not)",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit force damage (the Eldritch elemental-weapon prefix; ddowiki Eldritch redirects to Elemental (weapon)). Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
     },
     {
       "name": "Finesse",
       "items": 2,
-      "reason": "unreviewed"
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_Midnight_Greetings",
+      "evidence": "Finesse +13: This weapon has a Small air elemental bound to it. The wielder can use a finesse weapon as if he had the Weapon Finesse feat. In addition, the weapon grants a +13 enhancement bonus to the wielder's Dexterity score.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: grants Weapon Finesse with the weapon. Admitted as a presence effect only: its Dexterity half is a separate stat the catalog does not yet credit (#895). Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
     },
     {
       "name": "Improved Bashing",
       "items": 2,
-      "reason": "unreviewed"
+      "wiki_url": "https://ddowiki.com/page/Bashing",
+      "evidence": "Improved Bashing Effect: This shield does an additional 2 to 12 damage when used to shield bash.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: extra shield-bash damage. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
     },
     {
       "name": "Improved Cold Augmentation",
       "items": 1,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Maximum Charge Tier",
-      "items": 165,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Acid",
-      "items": 25,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Bludgeon",
-      "items": 2,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Bludgeon IV, Fire",
-      "items": 1,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Bludgeon V, Fire",
-      "items": 2,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Cold",
-      "items": 19,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Electrical",
-      "items": 27,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Evil Shot",
-      "items": 5,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Fire",
-      "items": 32,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Fire V, Bludgeon",
-      "items": 3,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Force",
-      "items": 23,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Knife Shot",
-      "items": 2,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Light",
-      "items": 18,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Sonic",
-      "items": 4,
-      "reason": "unreviewed"
-    },
-    {
-      "name": "Rune Arm Imbue: Tidal Shot",
-      "items": 4,
-      "reason": "unreviewed"
+      "wiki_url": "https://ddowiki.com/page/Item:Legendary_The_Cold_of_Night",
+      "evidence": "Improved Cold Augmentation IX: Increases the wearer's caster level when casting ninth level or lower Cold spells by three.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: +3 caster level to Cold spells. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
     },
     {
       "name": "Sunburst",
       "items": 2,
-      "reason": "unreviewed"
+      "wiki_url": "https://ddowiki.com/page/Item:The_Iron_Tabernacle",
+      "evidence": "Sunburst 45: This weapon blazes with the eternal fury at the heart of a sun. Occasionally, this power comes to the surface, unleashing a nova of light which will blind the struck enemy for 6 seconds unless it succeeds on a DC 45 Reflex saving throw.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit blinding CC (the value is the save DC). Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
     },
     {
-      "name": "Increases all threat generated by",
-      "items": 1,
-      "reason": "unreviewed — and the name is a tooltip SENTENCE FRAGMENT, not an enchantment name (`Rahl's Might` carries it as {name: 'Increases all threat generated by', value: '15'} with no type key). Threat generation is a real mechanic, so this may be a genuine utility effect hiding behind an upstream parse gap, but admitting a fragment into the counting set would be wrong either way. Surfaced by the #374 refresh; quarantined pending a wiki read of https://ddowiki.com/page/Item:Rahl's_Might"
+      "name": "Rune Arm Imbue: Acid",
+      "items": 25,
+      "wiki_url": "https://ddowiki.com/page/Item:Acid_Rune_Arm",
+      "evidence": "Rune Arm Imbue: Acid II: Wearing this Rune Arm will imbue any weapon you wield, dealing 2d4 points of Acid damage per hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit damage the rune arm adds to the main-hand weapon. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
+    },
+    {
+      "name": "Rune Arm Imbue: Bludgeon",
+      "items": 2,
+      "wiki_url": "https://ddowiki.com/page/Item:Whirling_Words",
+      "evidence": "Rune Arm Imbue: Bludgeon IV: Wearing this Rune Arm will imbue any weapon you wield, dealing 2d6 points of bludgeon damage per hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit damage the rune arm adds to the main-hand weapon. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
+    },
+    {
+      "name": "Rune Arm Imbue: Cold",
+      "items": 19,
+      "wiki_url": "https://ddowiki.com/page/Item:Chill_of_Winter_(level_13)",
+      "evidence": "Rune Arm Imbue: Cold III: Wearing this Rune Arm will imbue any weapon you wield, dealing 2d6 points of cold damage per hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit damage the rune arm adds to the main-hand weapon. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
+    },
+    {
+      "name": "Rune Arm Imbue: Electrical",
+      "items": 27,
+      "wiki_url": "https://ddowiki.com/page/Item:Arcing_Sky_(level_13)",
+      "evidence": "Rune Arm Imbue: Electrical III: Wearing this Rune Arm will imbue any weapon you wield, dealing 2d6 points of electrical damage per hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit damage the rune arm adds to the main-hand weapon. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
+    },
+    {
+      "name": "Rune Arm Imbue: Evil Shot",
+      "items": 5,
+      "wiki_url": "https://ddowiki.com/page/Item:Necronomicannon",
+      "evidence": "Rune Arm Imbue: Evil Shot I: Wearing this Rune Arm will imbue any weapon you wield, dealing 1d2 points of Evil damage per hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit damage the rune arm adds to the main-hand weapon. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
+    },
+    {
+      "name": "Rune Arm Imbue: Fire",
+      "items": 32,
+      "wiki_url": "https://ddowiki.com/page/Item:Animus",
+      "evidence": "Rune Arm Imbue: Fire IV: Wearing this Rune Arm will imbue any weapon you wield, dealing 2d8 points of Fire damage per hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit damage the rune arm adds to the main-hand weapon. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
+    },
+    {
+      "name": "Rune Arm Imbue: Force",
+      "items": 23,
+      "wiki_url": "https://ddowiki.com/page/Item:Archaic_Device",
+      "evidence": "Rune Arm Imbue: Force IV: Wearing this Rune Arm will imbue any weapon you wield, dealing 2d6 points of force damage per hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit damage the rune arm adds to the main-hand weapon. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
+    },
+    {
+      "name": "Rune Arm Imbue: Knife Shot",
+      "items": 2,
+      "wiki_url": "https://ddowiki.com/page/Item:Knives_Eternal",
+      "evidence": "Rune Arm Imbue: Knife Shot VI: Wearing this Rune Arm will imbue any weapon you wield, dealing 2d10 points of Pierce damage per hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit damage the rune arm adds to the main-hand weapon. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
+    },
+    {
+      "name": "Rune Arm Imbue: Light",
+      "items": 18,
+      "wiki_url": "https://ddowiki.com/page/Item:Candlelight",
+      "evidence": "Rune Arm Imbue: Light I: Wearing this Rune Arm will imbue any weapon you wield, dealing 1d2 points of light damage per hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit damage the rune arm adds to the main-hand weapon. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
+    },
+    {
+      "name": "Rune Arm Imbue: Sonic",
+      "items": 4,
+      "wiki_url": "https://ddowiki.com/page/Item:Echoes_of_Night",
+      "evidence": "Rune Arm Imbue: Sonic I: Wearing this Rune Arm will imbue any weapon you wield, dealing 1d2 points of sonic damage per hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit damage the rune arm adds to the main-hand weapon. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
+    },
+    {
+      "name": "Rune Arm Imbue: Tidal Shot",
+      "items": 4,
+      "wiki_url": "https://ddowiki.com/page/Item:Driftwood",
+      "evidence": "Rune Arm Imbue: Tidal Shot VI: Wearing this Rune Arm will imbue any weapon you wield, dealing 2d10 points of untyped damage per hit.",
+      "verified": "2026-10-17",
+      "issue": 864,
+      "reason": "#864 — a player-felt combat effect: on-hit damage the rune arm adds to the main-hand weapon. Admitted to be individually rankable, like the Bool procs (the Bane family, Holy) that #374 moved to the presence path; NOT counted by the Utility tier (#343)."
     },
     {
       "name": "Wild Frenzy",
       "items": 2,
-      "reason": "REVIEWED, not unreviewed — and quarantined on scope rather than on merit. The effect is real and player-felt: ddowiki.com/page/Wild_Frenzy states 'On vorpal strikes the target will go wild and attack its own allies for 15 seconds if it fails a DC 25 Will save', i.e. a vorpal-triggered confusion CC. It is quarantined because `allow` is empty and all peers sit here, so admitting this one name would make it the only individually rankable proc — a product decision about the proc backlog, not something a data refresh should settle on its own.",
       "wiki_url": "https://ddowiki.com/page/Wild_Frenzy",
       "evidence": "Rendered page, 2026-09-22: 'Wild Frenzy Effect: This weapon has a tendency to drive those it strikes insane. On vorpal strikes the target will go wild and attack its own allies for 15 seconds if it fails a DC 25 Will save. Enemies driven wild this way, however, have a chance of coming to their senses if damaged.'",
       "verified": "2026-09-22",
+      "issue": 864,
+      "reason": "#864 — a vorpal-triggered confusion CC (reviewed 2026-09-22). Quarantined then only to avoid being the ONLY admitted proc; #864 works the whole backlog, so it is admitted with its peers.",
       "upstream_rename": "NOT a new effect: the 397c673 refresh RENAMED upstream's `Wind Frenzy` to `Wild Frenzy`, adopting the wiki's own spelling (the page is titled Wild Frenzy and lists I:Insanity as a carrier). Same three carriers as before — Insanity, Madness of the Demon Lords, Legendary Madness of the Demon Lords. `Wind Frenzy` sits in this shard's _retired_2026_08_18 block, retired when upstream typed every instance Bool. It re-enters the untyped-proc population because the refresh ALSO moved the two Madness tiers from `Bool 1` to untyped numerics (50 / 122) while Insanity stayed Bool; the numeric pair is what trips the candidate rule."
+    }
+  ],
+  "quarantined": [
+    {
+      "name": "Maximum Charge Tier",
+      "items": 165,
+      "reason": "#864 REVIEWED 2026-10-17 — not an effect. ddowiki Rune Arm: 'The weapon uses Charges with five tiers, and these charges increase in damage the higher the tier (Rune Arms have a max tier level).' It is the rune arm's own blast mechanic, carried by 129 of them; ranking it would rank 'wears a rune arm'. Stays quarantined by ruling.",
+      "reviewed": "2026-10-17"
+    },
+    {
+      "name": "Rune Arm Imbue: Bludgeon IV, Fire",
+      "items": 1,
+      "reason": "#864 REVIEWED 2026-10-17 — a real DUAL imbue (Glass Cannon: 'Rune Arm Imbue: Bludgeon V, Fire V: ... 2d8 + 2d10 points of bludgeon/fire damage per hit'), but upstream's name is a mangled compound that is neither type: a player ranking Fire or Bludgeon would not reach it, and admitting it would offer a third, meaningless name. Stays quarantined until the compound is split.",
+      "reviewed": "2026-10-17"
+    },
+    {
+      "name": "Rune Arm Imbue: Bludgeon V, Fire",
+      "items": 2,
+      "reason": "#864 REVIEWED 2026-10-17 — see `Rune Arm Imbue: Bludgeon IV, Fire`: a real dual imbue under a mangled compound name. Stays quarantined until the compound is split.",
+      "reviewed": "2026-10-17"
+    },
+    {
+      "name": "Rune Arm Imbue: Fire V, Bludgeon",
+      "items": 3,
+      "reason": "#864 REVIEWED 2026-10-17 — see `Rune Arm Imbue: Bludgeon IV, Fire`: a real dual imbue under a mangled compound name. Stays quarantined until the compound is split.",
+      "reviewed": "2026-10-17"
+    },
+    {
+      "name": "Increases all threat generated by",
+      "items": 1,
+      "reason": "#864 REVIEWED 2026-10-17 — no wiki backing. Item:Rahl's_Might renders 24 tooltips (Impact, Force, Shock, Axiomatic, Bleed, Puncturing, Maiming, Deception, +5 Enhancement Bonus, Strength +6, ...) and none states a threat effect. The name is a sentence fragment upstream parsed from somewhere; never admitted.",
+      "reviewed": "2026-10-17"
     }
   ],
   "_retired_2026_08_18": {
