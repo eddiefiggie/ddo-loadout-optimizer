@@ -13,6 +13,12 @@ sibling's vocabulary, with the magnitude upstream stores taken from the page's
 rendered tooltip. So the record has exactly the shape and vocabulary every
 downstream stage already handles, and no free text is re-parsed.
 
+#899 — an item with NO sibling (a new family) names an explicit `base` instead:
+`{"slot", "type", "quests"?, "pack"?}`. Its slot/type pair must be one upstream
+already uses, and in either form every affix `(name, type)` must already appear
+somewhere upstream — the supplement borrows upstream's vocabulary, never adds to
+it. Exactly one of `sibling` and `base`.
+
 THE RETIREMENT GUARD IS THE POINT. The moment upstream carries a record of the
 same name, `expand` fails the build: the supplement must be deleted, never left
 to shadow or duplicate the real parse.
@@ -41,16 +47,40 @@ def expand(raw_items, shard: dict) -> dict:
     by_name = {}
     for it in raw_items or []:
         by_name.setdefault(it.get("name"), it)
+    pairs = {(it.get("slot"), it.get("type")) for it in raw_items or []}
+    vocab = {(a.get("name"), a.get("type")) for it in raw_items or [] for a in it.get("affixes") or []}
     problems, records = [], []
     for name, e in sorted(items.items()):
         if name in by_name:
             problems.append(f"{name!r}: upstream now carries this item — delete its supplement "
                             "entry; the real parse supersedes it")
             continue
-        sib = by_name.get(e.get("sibling"))
-        if sib is None:
-            problems.append(f"{name!r}: its sibling {e.get('sibling')!r} is no longer upstream — "
-                            "the shape it was built from moved")
+        if e.get("review"):
+            problems.append(f"{name!r}: still carries the triage draft's `review` note — check each "
+                            "magnitude against `evidence`, then delete the note")
+            continue
+        if ("sibling" in e) == ("base" in e):
+            problems.append(f"{name!r}: name exactly one of `sibling` and `base`")
+            continue
+        if "base" in e:
+            b = e["base"] or {}
+            if (b.get("slot"), b.get("type")) not in pairs:
+                problems.append(f"{name!r}: base slot/type {(b.get('slot'), b.get('type'))!r} is not "
+                                "one upstream uses — the record would carry vocabulary nothing parses")
+                continue
+            sib = {"slot": b["slot"], "type": b["type"], "quests": list(b.get("quests") or [])}
+            if b.get("pack"):
+                sib["pack"] = b["pack"]
+        else:
+            sib = by_name.get(e.get("sibling"))
+            if sib is None:
+                problems.append(f"{name!r}: its sibling {e.get('sibling')!r} is no longer upstream — "
+                                "the shape it was built from moved")
+                continue
+        unknown = [(n, t) for n, t, _ in e.get("affixes") or [] if (n, t) not in vocab]
+        if unknown:
+            problems.append(f"{name!r}: affixes {unknown!r} appear nowhere upstream — the supplement "
+                            "borrows upstream's vocabulary, never adds to it")
             continue
         if not e.get("evidence") or not e.get("harvested"):
             problems.append(f"{name!r}: a supplement record needs its wiki evidence and harvest date")

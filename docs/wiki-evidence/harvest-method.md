@@ -226,3 +226,15 @@ const hit = tips.find((t) => key(labelOf(t)) === name.toLowerCase());
 ```
 
 When the wiki genuinely engraves a stat under another name (`Turn Undead` as *Hallowed*, Implement Universal Spell Power as *Spellcasting Implement*), record it with a `note` saying so. `src/affix_tooltip.label_problems` fails the build on any `stated` entry whose label does not reduce to its key and carries no note.
+
+
+## When upstream is stale: the wiki-delta loop (#899)
+
+gear-planner is the catalog's baseline, and when its daily updater stops (it failed 2026-10-14..17, illusionistpm/ddo-gear-planner#223) every item the wiki gains is blocked until someone notices. This loop is how we notice and how we carry the gap ourselves, without forking or re-parsing upstream.
+
+1. **The alarm.** `.github/workflows/upstream-freshness.yml` runs `scripts/check_upstream_freshness.py` daily. It keeps ONE issue labelled `upstream-stale` open while upstream's `Data Auto Updater` has failed two runs in a row (`broken`) or our pin trails a healthy upstream by more than a week (`behind`), and closes it on recovery. `behind` means re-vendor per `raw/SOURCE.json`. `broken` means run this loop.
+2. **The delta.** Open any ddowiki page in the Browser pane, set `window.__deltaSince` to SOURCE.json's `upstream_commit_date`, and run `scripts/browser/harvest_wiki_delta.js`. It reads RecentChanges for the `Item:` namespace and, for each page, the infobox, the enchantment lines and the rendered tooltips. Through the Browser pane, return `window.__delta.summaryText` (`|` encoded as `~`); from a real DevTools console, `copy(JSON.stringify(window.__delta))`.
+3. **Triage.** `python3 scripts/triage_wiki_delta.py DUMP.json --drafts drafts.json` sorts every page into one bucket: already upstream, cosmetic, unreadable, sibling-buildable (`X (level N)` with a tier upstream parses), or manual. Sibling-buildable pages get a DRAFT supplement entry: the nearest lower sibling's affixes, the page's own weapon enhancement where its template states it, and the tooltips as evidence.
+4. **Review, then supplement.** Check every magnitude in a draft against its `evidence` (the sibling's numbers are a starting point, not a value), delete the draft's `review` note, and copy it into `data/seed/compendium/wiki_supplement_items.json`. A manual page with no sibling names an explicit `base` (`slot`, `type`, `quests`, `pack`) instead.
+
+`src/wiki_supplement.py` refuses an entry that still carries a `review` note, names both or neither of `sibling` and `base`, uses a slot/type pair or an affix `(name, type)` upstream has never used, or lacks evidence and a harvest date. It fails the build outright the moment upstream carries the same name, so a supplement entry retires itself on the first re-vendor that catches up.

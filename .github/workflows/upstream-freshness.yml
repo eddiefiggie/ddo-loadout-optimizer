@@ -1,0 +1,29 @@
+name: Upstream freshness
+
+# #899 — the alarm the 2026-10-14 outage lacked. gear-planner's daily updater
+# failed for four days and nothing here noticed. Runs daily after upstream's own
+# 05:18 UTC job; keeps ONE `upstream-stale` issue in step with the verdict
+# (opened or updated while upstream is broken or our pin lags; closed on
+# recovery). The verdict logic is tested in tests/test_upstream_freshness.py.
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check upstream and sync the alarm issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/check_upstream_freshness.py --open-issue

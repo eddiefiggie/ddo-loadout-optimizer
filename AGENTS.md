@@ -78,7 +78,7 @@ cross-added into every element spellpower. See
 
 **`web/data/items.json` is generated and gitignored.** Edit `build_dataset.py`, `src/`, or the seed data under `data/seed/` — never the JSON.
 
-**gear-planner is the single source of truth for item affixes**, read structurally. Do not re-parse its free text, and do not re-harvest set definitions into a parallel file.
+**gear-planner is the single source of truth for item affixes**, read structurally. Do not re-parse its free text, and do not re-harvest set definitions into a parallel file. The one sanctioned exception is the **wiki supplement** (`data/seed/compendium/wiki_supplement_items.json`, #874/#899): items the wiki gained while upstream was stale, built in upstream's own shape and vocabulary, each with wiki evidence, and retired by a build failure the moment upstream carries the name. The loop that feeds it is *When upstream is stale* in `docs/wiki-evidence/harvest-method.md`.
 
 **ddowiki has no server-side transport.** `curl` and WebFetch return empty behind Cloudflare. Harvest only same-origin from a ddowiki tab, pace requests (~1.5s; it throttles persistently after bursts), and strip `| = & ?` from anything returned or the privacy guard blocks the whole result. Full loop in `docs/wiki-evidence/harvest-method.md`.
 
