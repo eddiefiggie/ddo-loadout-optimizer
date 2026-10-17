@@ -86,7 +86,9 @@ def test_no_legacy_affix_keys_at_rest():
     # Night Revels / Lahar arrivals, plus their extra variants.
     # #879 — 9249: +24 `[Upgraded]` twins of the Stormreaver / Black Abbot raid
     # items (src/upgraded_items.py); Litany of the Dead's upgrade changes no stat.
-    assert len(items) == 9249, f"expected 9249 items, saw {len(items)}"
+    # #874 — 9255: +6, the ML32/36 Spectral Great Axe / Great Crossbow / Warhammer
+    # from the interim wiki supplement (src/wiki_supplement.py) while upstream is down.
+    assert len(items) == 9255, f"expected 9255 items, saw {len(items)}"
     gems = [it for it in items
             if "(Epic)" in (it.get("source_item") or "")
             and (it.get("source_item", "").startswith("Lunar Gem")
