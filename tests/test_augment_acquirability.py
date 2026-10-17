@@ -105,6 +105,8 @@ def test_shipped_dataset_join_is_complete():
     # c36b45e (#871) — 476: +4 named, the U81.4 Lahar Rubies (Bludgeoning Blows,
     # Piercing Precision, Slashing Strikes, the Quori). None is in a common/uncommon/rare
     # augment category, so each is named and carries its own harvested location.
-    assert len(augs) - len(stamped) == 476, len(augs) - len(stamped)
+    # #901 — 394: -82, the tier-gap shard's Epic Lunar/Solar gems retired as
+    # unreleased (red links on the wiki). `stamped` holds at 675.
+    assert len(augs) - len(stamped) == 394, len(augs) - len(stamped)
     assert d["metadata"]["augment_acquirable_count"] == 675
     assert d["metadata"]["augment_total_count"] == len(augs)

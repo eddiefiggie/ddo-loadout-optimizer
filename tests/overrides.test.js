@@ -419,7 +419,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // (it was quarantined in #879). Nothing else moved.
   // #895 — 45,876: +3, the Finesse carriers' Dexterity (gap corrections). Nothing else.
   // #874 — 45,906: +30, the six supplement Spectral weapons x their five affixes.
-  assert.strictEqual(total, 45906, "post-normalize pool size");
+  // #901 — 45,775: -131, exactly the post-normalize affix count of the 82 retired
+  // Epic Lunar/Solar gems (every one unreleased: a red link on the wiki), measured
+  // on those records alone in the pre-#901 build. Nothing else moved.
+  assert.strictEqual(total, 45775, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -528,7 +531,9 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // #895 — 20,744: +3, those three Dexterity affixes, overridable like any native one.
   // #874 — 20,750: +6, each supplement weapon's Enhancement Bonus (its four Bool
   // procs are ineligible by rule).
-  assert.strictEqual(eligible, 20750, "engraved, eligible affixes");
+  // 20,646 since #901: MINUS 104, the eligible share of those 131 affixes,
+  // measured on the 82 records alone in the pre-#901 build.
+  assert.strictEqual(eligible, 20646, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -606,7 +611,9 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // #884 — item +1: the affix is on a cloak.
   // #895 — weapon +3, item and augment UNCHANGED: all three Finesse carriers are weapons.
   // #874 — weapon +6, item and augment UNCHANGED: all six supplement records are weapons.
-  assert.deepStrictEqual(byCat, { item: 13482, weapon: 6259, augment: 1009 });
+  // augment 905 since #901: -104, item and weapon UNCHANGED — every retired record
+  // is an augment, so the whole loss must land in one category, and it does.
+  assert.deepStrictEqual(byCat, { item: 13482, weapon: 6259, augment: 905 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {

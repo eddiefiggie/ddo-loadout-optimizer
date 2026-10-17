@@ -148,6 +148,18 @@ def check(records: list, links: dict, pack_mapping: dict) -> dict:
             f"{len(orphaned)} match nothing {orphaned[:5]}. Re-harvest the `locations` "
             "field for these per docs/wiki-evidence/augment-locations.md.")
 
+    # #901 — a named augment the wiki has no `Item:` page for is not in the game. The
+    # 82 this once recorded as `page: null` were every Epic Lunar/Solar gem whose
+    # ML20 cell on Lunar_and_Solar_Gems is a red link, which that page defines as
+    # "not yet released"; #631 shipped them anyway and the solver recommended them.
+    # So silence is no longer a recordable state: harvest the page, or drop the item.
+    pageless = sorted(n for n in catalog_named if not (named.get(n) or {}).get("page"))
+    if pageless:
+        raise AssertionError(
+            f"wiki links: {len(pageless)} named augment(s) have no wiki page {pageless[:5]} — "
+            "an augment with no Item: page is unreleased (#901). Remove it from the "
+            "catalog, or re-harvest if the page has since been written.")
+
     packs_needed = {e.get("pack") for e in pack_mapping.values()
                     if e.get("pack") and e.get("pack") != "Free to Play"}
     unverified_packs = sorted(packs_needed - (links.get("packs") or set()))
@@ -161,7 +173,6 @@ def check(records: list, links: dict, pack_mapping: dict) -> dict:
         "augments": len(augments),
         "augments_linked": sum(1 for r in augments if r.get("augment_page_url")),
         "augments_with_locations": sum(1 for r in augments if r.get("augment_locations")),
-        "named_without_page": sorted(n for n, e in named.items() if not e.get("page")),
         "gear_sourced": sum(1 for r in gear if r.get("location_quest")),
         "gear_source_linked": sum(1 for r in gear if r.get("location_url")),
         "gear_pack_linked": sum(1 for r in gear if r.get("location_pack_url")),

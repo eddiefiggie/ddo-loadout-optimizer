@@ -10,6 +10,10 @@
 //   node tests/parity/capture_golden.js
 //
 // Ratifications:
+//   #901 (2026-10-17) — ONE fixture moved: absorption-sonic-flag-ml26, Fire Absorption
+//   41 -> 38, loadout unchanged. The retired `Solar Gem of Elemental Absorption (Epic)`
+//   (+6 Artifact, a red link on the wiki: never released) was the ML26 augment; the
+//   best released one at ML26 is the Heroic tier, +3. Exactly the -3.
 //   #870 (2026-10-13) — EIGHT fixtures moved, every one a caster, every move DOWN on
 //   a stat the old model over-credited. U81.4's release notes (wiki `Update 81 Patch
 //   4 Release Notes`) state a set bonus labelled Universal Spell Power / crit is a

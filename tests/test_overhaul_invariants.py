@@ -88,15 +88,19 @@ def test_no_legacy_affix_keys_at_rest():
     # items (src/upgraded_items.py); Litany of the Dead's upgrade changes no stat.
     # #874 — 9255: +6, the ML32/36 Spectral Great Axe / Great Crossbow / Warhammer
     # from the interim wiki supplement (src/wiki_supplement.py) while upstream is down.
-    assert len(items) == 9255, f"expected 9255 items, saw {len(items)}"
+    # #901 — 9173: -82, the whole #631/#640 tier-gap shard retired. Every one of its
+    # Epic (ML 20) Lunar/Solar gems is a red link in the ML20 column of the wiki's
+    # Lunar_and_Solar_Gems tables, which the page defines as "not yet released".
+    assert len(items) == 9173, f"expected 9173 items, saw {len(items)}"
     gems = [it for it in items
             if "(Epic)" in (it.get("source_item") or "")
             and (it.get("source_item", "").startswith("Lunar Gem")
                  or it.get("source_item", "").startswith("Solar Gem"))]
-    assert len(gems) == 99, (
-        f"expected 99 Epic Lunar/Solar gems (17 upstream + 81 from #631 + 1 from #640) "
-        f"shard), saw {len(gems)} — a coincidental count from an unrelated cause "
-        "would satisfy the total alone.")
+    # #901 — 17: exactly the released Epic gems (the wiki's blue links), all upstream.
+    assert len(gems) == 17, (
+        f"expected 17 Epic Lunar/Solar gems (upstream's, the released set), saw "
+        f"{len(gems)} — a coincidental count from an unrelated cause would satisfy "
+        "the total alone.")
     # the +2 is those 26 items and nothing else — a coincidental +2 from an
     # unrelated cause would satisfy the count alone.
     by_name = {it.get("source_item") for it in items}

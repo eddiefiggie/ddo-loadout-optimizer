@@ -185,7 +185,7 @@ def generate_augment_registry(crafting=None):
 
     #631 — the default reads the MERGED catalog (`crafting_catalog.load_catalog`),
     not the raw dump. The registry is the referential-integrity gate for the pools
-    the build actually walks, and since the tier-gap shard merges inside
+    the build actually walks, and since catalog corrections merge inside
     `load_catalog`, generating from the raw file would compare the frozen registry
     against a catalog no consumer sees — the gate would then fail on every shard
     entry while claiming the registry was out of date. Same catalog on both sides

@@ -44,13 +44,17 @@ wiki's sorted, prefix-stripped category members equals the sha256 of the catalog
 acquirable set. So an acquirable augment's page link is built from that ruling, and it
 needs no per-augment entry.
 
-## The 82 with no page
+## The 82 with no page — RETIRED by #901 (2026-10-17)
 
-All 82 named augments without a wiki page are `(Epic)` Solar or Lunar Gems. They are
-recorded as `page: null` and the hunting list says "The DDO wiki has no page for this
-augment", which is different from "common" and different from "not loaded". Nothing is
-guessed for them. In particular, the Heroic and Legendary siblings' locations are not
-reused, because the tiers drop in different places.
+All 82 named augments that had no wiki page were `(Epic)` Solar or Lunar Gems. This
+document recorded them as `page: null` and treated the missing page as a gap in the wiki.
+**That reading was wrong.** They had no page because they are not in the game: each one is
+a red link in the ML20 column of `Lunar_and_Solar_Gems`, which that page defines as an Epic
+version not yet released. See [unreleased-epic-lunar-solar-gems.md](unreleased-epic-lunar-solar-gems.md).
+
+All 82 were removed from the catalog and from this shard. `src/wiki_links.check` now fails
+the build on any named augment without a page, so "no page" is no longer a state that can
+be recorded.
 
 ## Method
 
