@@ -177,4 +177,15 @@ This is a stated formula, not a placeholder, and the rendered tooltip agrees: `V
 
 **Where it mattered.** Wretched Twilight's upgrade (`Template:UpgradeableItem`) adds `{{Spelllore|Void|V}}`. gear-planner's `Upgradeable Item` pool reads it as `Negative Lore 5`, which is the numeral without the +10. `data/seed/compendium/upgradeable_items.json` credits 15 through an `emit` carrying this ruling. Noxious Embers' `Spell Lore III -> VI` is the `spell` case (3 -> 6), and upstream reads it correctly.
 
-**Not swept here.** Any other item that engraves a roman-numeral element lore could carry the same misreading upstream. This ruling only covers the one record #884 asked about.
+**Swept 2026-10-16 (#887): the misreading is systemic.** Every member of the 45 `Category:<Element> Lore <roman> items` categories was compared with the catalog. 104 of 127 pages carried the bare numeral, every one exactly 10 low; one matched (Wretched Twilight, fixed above); 9 had no affix on the record to correct and 14 pages had no catalog record. All of it is in `data/seed/compendium/roman_element_lore.json`, applied by `src/roman_lore.py` with a stale guard that fails the build the day upstream applies the +10 itself.
+
+**Independent corroboration**, beyond the template's coding — the `Spell Lore` article's own table:
+
+| Level | <Type> Lore | Spell Lore |
+|---|---|---|
+| I | 11% | 1% |
+| V | 15% | 5% |
+| X | 20% | 10% |
+| XII | 22% | 12% (Epic Elite equipment at level 28) |
+
+and rendered tooltips: Pale Rod "Void Lore VI: … 16%", Epic Halcyonia "Healing Lore X: … 20%", Brine Shaman's Staff "Ice Lore I: … 11%".
