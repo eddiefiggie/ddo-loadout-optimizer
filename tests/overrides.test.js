@@ -417,7 +417,8 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // records alone, so the delta is theirs and nothing else moved.
   // #884 — 45,873: +1, the Void Lore 15 Wretched Twilight [Upgraded] now carries
   // (it was quarantined in #879). Nothing else moved.
-  assert.strictEqual(total, 45873, "post-normalize pool size");
+  // #895 — 45,876: +3, the Finesse carriers' Dexterity (gap corrections). Nothing else.
+  assert.strictEqual(total, 45876, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -523,7 +524,8 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // twins (measured on those records alone). Their engraved affixes are as
   // overridable as their base's; nothing else moved.
   // #884 — 20,741: +1, that same engraved Void Lore affix.
-  assert.strictEqual(eligible, 20741, "engraved, eligible affixes");
+  // #895 — 20,744: +3, those three Dexterity affixes, overridable like any native one.
+  assert.strictEqual(eligible, 20744, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -599,7 +601,8 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // #879 — item +46, weapon +17, augment UNCHANGED: the +63 above, split exactly as
   // it splits on the `[Upgraded]` twins alone (none of them is an augment).
   // #884 — item +1: the affix is on a cloak.
-  assert.deepStrictEqual(byCat, { item: 13482, weapon: 6250, augment: 1009 });
+  // #895 — weapon +3, item and augment UNCHANGED: all three Finesse carriers are weapons.
+  assert.deepStrictEqual(byCat, { item: 13482, weapon: 6253, augment: 1009 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {
