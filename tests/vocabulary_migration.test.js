@@ -451,10 +451,14 @@ test("#380: the retired untyped-proc adjudications still reach the presence path
      "Wind Frenzy"],
     "every retired proc but the two word-cap casualties and the renamed `Wind Frenzy` " +
     "is still a presence effect");
-  const live = (shard.quarantined || []).map((e) => e.name);
-  assert.ok(live.includes("Wild Frenzy"),
+  // #864 — and since the backlog was worked, the successor is ADMITTED, so the
+  // build-around effect reaches the picker again under its wiki name.
+  const admitted = (shard.allow || []).map((e) => e.name);
+  assert.ok(admitted.includes("Wild Frenzy"),
     "`Wind Frenzy` reaches nothing because upstream renamed it; its successor must be " +
     "adjudicated, or the rename silently drops a build-around effect");
+  assert.ok(vocab.presence.has("Wild Frenzy") || vocab.suggestions.includes("Wild Frenzy"),
+    "and, admitted, it is rankable in the picker");
 });
 
 test("#380: `utilityNotCounted` is the build stamp, both halves of it", () => {
@@ -471,10 +475,11 @@ test("#380: `utilityNotCounted` is the build stamp, both halves of it", () => {
     `the derived half is the population that replaced the retired adjudications (${derived.length})`);
   assert.strictEqual(vocab.utilityNotCounted.size, new Set([...derived, ...untyped]).size,
     "the vocabulary's not-counted set is exactly the union of the two stamps");
-  // The retirement emptied the untyped half and that is still true — the fix was
-  // to stop depending on it, not to refill it.
-  assert.strictEqual(untyped.length, 0,
-    "the untyped-proc allow list is still empty; upstream types them all Bool");
+  // #864 — the untyped half is populated again: the backlog was worked and 19
+  // procs admitted on their own wiki evidence. Admission makes them rankable; it
+  // does not make them counted (#343), which the assertion below still pins.
+  assert.strictEqual(untyped.length, 19,
+    "the 19 untyped procs #864 admitted, each on its own wiki evidence");
   assert.ok(vocab.utilityCounting.size > 0,
     "and the COUNTING set — the scoring half — is untouched by the retirement");
 });
