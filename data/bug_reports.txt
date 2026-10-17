@@ -1011,3 +1011,13 @@ human-readable ("Hydra's Heart (Tier 3)") — so the opaque form rendered the
 player's dagger as the literal string `custom:1` on the paperdoll and in all six
 exports. The id is the name plus " (yours)" instead, which also makes the
 disclosure structural.
+
+================================================================================
+2026-10-17 — two reports from one player (verbatim) — #901, #902
+================================================================================
+"yer solver wants me to use solar/lunar epic gems that dont exist yet. also, it wont let me equp the same weapon in each hand."
+
+(1) CONFIRMED -> #901. 82 Epic Lunar/Solar gems were red links (unreleased) on
+    Lunar_and_Solar_Gems; #631/#640 had added them. Retired, with a page-exists guard.
+(2) CONFIRMED -> #902. The TWF cap forbids two copies of one weapon across both
+    hands; the game allows it for weapons that are not Exclusive or Minor Artifacts.

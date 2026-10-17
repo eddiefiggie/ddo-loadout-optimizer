@@ -106,3 +106,8 @@ exact values, and upstream additionally supplies the acquisition quest we never 
 `augment_tier_gap.json` survives with 82 entries. Upstream still carries only 17 Epic
 (ML 20) Lunar/Solar gems out of 103 families, so that gap is real and unchanged — including
 `Solar Gem of Arcana (Epic)`, now the only tier of its family upstream does not carry.
+
+> **Corrected by #901 (2026-10-17).** That gap was not real. Upstream's 17 are exactly the
+> released Epic gems; the other 86 are red links (unreleased) on `Lunar_and_Solar_Gems`.
+> `augment_tier_gap.json` and its 82 entries, `Solar Gem of Arcana (Epic)` included, are
+> retired. See [unreleased-epic-lunar-solar-gems.md](unreleased-epic-lunar-solar-gems.md).

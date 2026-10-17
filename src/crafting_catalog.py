@@ -41,13 +41,14 @@ class CraftingCatalogError(KeyError):
 def load_catalog(path: str = CRAFTING_PATH) -> dict:
     """Load the native crafting catalog (the 83-key dict).
 
-    #631 — the augment tier-gap shard is merged HERE rather than at a call site,
-    because there are two: the main build and the referential-integrity check that
-    validates every augment name against the frozen registry. Applying it at one
-    would have left the other inspecting a different catalog, which is the shape of
-    bug that takes a day to find. One seam, so no consumer can see a partial view.
+    Corrections to the catalog merge HERE rather than at a call site, because there
+    are two: the main build and the referential-integrity check that validates every
+    augment name against the frozen registry. Applying one at a single site would
+    leave the other inspecting a different catalog. One seam, so no consumer can see
+    a partial view. (#631's augment tier-gap shard used this seam until #901 retired
+    it: all 82 of its Epic Lunar/Solar gems were unreleased red links on the wiki.)
 
-    #769 — the crafting set-name corrections merge here for the same reason. A
+    #769 — the crafting set-name corrections merge here. A
     `set`-bearing option names the set a host may JOIN, and when that spelling
     disagrees with the set catalog's, `membership` drops the name and the set
     becomes unreachable at every tier that carries it. Correcting it at the load
@@ -59,9 +60,7 @@ def load_catalog(path: str = CRAFTING_PATH) -> dict:
     if not isinstance(data, dict):
         raise CraftingCatalogError(
             f"crafting catalog at {path!r} is {type(data).__name__}, expected a dict of pools")
-    from src import augment_tier_gap
     from src import crafting_set_names
-    augment_tier_gap.apply(data, augment_tier_gap.load())
     crafting_set_names.apply(data, crafting_set_names.load())
     return data
 

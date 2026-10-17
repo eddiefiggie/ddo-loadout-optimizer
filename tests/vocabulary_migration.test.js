@@ -593,9 +593,11 @@ const MIGRATED = new Set([
         }
       }
     }
+    // #901 — two, not three: the Epic tier is a red link on the wiki (unreleased) and
+    // was retired with the rest of the #631 tier-gap shard.
     assert.deepStrictEqual([...gems.keys()].sort(), [
-      "Solar Gem of Spell Critical Damage (Epic)", "Solar Gem of Spell Critical Damage (Heroic)",
-      "Solar Gem of Spell Critical Damage (Legendary)"], "the three Solar Gems, and only they");
+      "Solar Gem of Spell Critical Damage (Heroic)",
+      "Solar Gem of Spell Critical Damage (Legendary)"], "the two released Solar Gems, and only they");
     for (const [gem, rows] of gems) {
       assert.deepStrictEqual(rows.map(([n]) => n).sort(), [...INTENSITIES].sort(), `${gem}: all ten`);
     }

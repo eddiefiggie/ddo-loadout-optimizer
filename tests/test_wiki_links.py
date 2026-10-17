@@ -95,19 +95,25 @@ def test_check_fails_on_a_pack_with_no_verified_page():
     recs = [_aug("A")]
     mapping = {"Q": {"kind": "pack-quest", "pack": "Brand New Pack", "via": "x"},
                "F": {"kind": "pack-quest", "pack": "Free to Play", "via": "x"}}
-    msg = _raises(lambda: wl.check(recs, _links({"A": {"page": None}}), mapping), "no verified page")
+    msg = _raises(lambda: wl.check(recs, _links({"A": {"page": "Item:A"}}), mapping), "no verified page")
     assert "Brand New Pack" in msg and "Free to Play" not in msg, \
         "Free to Play is the wiki saying 'no pack', so there is nothing to verify"
 
 
+def test_901_check_fails_on_a_named_augment_with_no_wiki_page():
+    """A named augment the wiki has no page for is unreleased: 82 Epic Lunar/Solar
+    gems once shipped this way and the solver recommended them."""
+    recs = [_aug("Released"), _aug("Solar Gem of Attack (Epic)")]
+    links = _links({"Released": {"page": "Item:Released"}, "Solar Gem of Attack (Epic)": {"page": None}})
+    msg = _raises(lambda: wl.check(recs, links, {}), "no wiki page")
+    assert "Solar Gem of Attack (Epic)" in msg and "Released" not in msg.split("[")[1].split("]")[0]
+
+
 def test_the_real_shards_cover_the_real_catalog():
     links = wl.load()
-    assert len(links["named"]) == 476, len(links["named"])  # c36b45e: +4 Lahar Rubies
-    with_page = [n for n, e in links["named"].items() if e.get("page")]
-    assert len(with_page) == 394  # c36b45e: +4 Lahar Rubies
-    no_page = sorted(set(links["named"]) - set(with_page))
-    assert all(n.endswith("(Epic)") and n.split(" ")[0] in ("Solar", "Lunar") for n in no_page), \
-        "the recorded no-page set is exactly the Epic Solar/Lunar gems"
+    # #901: the 82 page-less Epic Lunar/Solar gems were unreleased and are gone.
+    assert len(links["named"]) == 394, len(links["named"])
+    assert all(e.get("page") for e in links["named"].values()), "every named augment has a wiki page"
     assert links["common_prefix"] == "Item:"
     mapping = packs.load()
     wanted = {e["pack"] for e in mapping.values() if e.get("pack") and e["pack"] != "Free to Play"}
@@ -124,7 +130,7 @@ def test_the_built_dataset_carries_the_links():
     cov = d["metadata"]["wiki_link_coverage"]
     assert cov["augments_linked"] == 675 + 394, cov  # c36b45e: +4 Lahar Rubies, all paged
     assert cov["augments_with_locations"] == 394, cov  # c36b45e: +4 Lahar Rubies
-    assert len(cov["named_without_page"]) == 82
+    assert "named_without_page" not in cov, "#901: a page-less named augment fails the build instead"
     assert cov["gear_source_linked"] > 0.9 * cov["gear_sourced"], cov
     rip = next(v for v in d["items"] if v["variant_id"] == "Legendary Sapphire of Riposte")
     assert {l["place"] for l in rip["augment_locations"]} == {
