@@ -18,7 +18,8 @@ DATASET = os.path.join(ROOT, "web", "data", "items.json")
 
 SIB = {"name": "Spectral Axe (level 28)", "ml": 28, "slot": "Weapon", "type": "Great Axes",
        "quests": ["The Night Revels"], "url": "/page/Item:Spectral_Axe_(level_28)",
-       "affixes": [{"name": "Enhancement Bonus (Weapon)", "type": "Enhancement", "value": "+12"}]}
+       "affixes": [{"name": "Enhancement Bonus (Weapon)", "type": "Enhancement", "value": "+12"},
+                   {"name": "Crushing", "type": "Bool", "value": 1}]}
 ENTRY = {"sibling": "Spectral Axe (level 28)", "ml": 32, "url": "/page/Item:Spectral_Axe_(level_32)",
          "affixes": [["Enhancement Bonus (Weapon)", "Enhancement", "+15"], ["Crushing", "Bool", 1]],
          "evidence": ["+15 Enhancement Bonus: +15 enhancement bonus to attack and damage rolls."],
@@ -52,6 +53,45 @@ def test_a_missing_sibling_or_missing_evidence_fails():
     assert any("sibling" in p for p in W.expand([], _shard(**{"Spectral Axe (level 32)": ENTRY}))["problems"])
     bare = dict(ENTRY, evidence=[])
     assert any("evidence" in p for p in W.expand([SIB], _shard(**{"Spectral Axe (level 32)": bare}))["problems"])
+
+
+NEW_FAMILY = {"base": {"slot": "Weapon", "type": "Great Axes", "quests": ["A New Quest"]}, "ml": 34,
+              "url": "/page/Item:Brand_New_Axe", "affixes": [["Crushing", "Bool", 1]],
+              "evidence": ["Crushing 15: ..."], "harvested": "2026-10-17"}
+
+
+def test_899_an_item_with_no_sibling_is_built_from_an_explicit_base():
+    out = W.expand([SIB], _shard(**{"Brand New Axe": NEW_FAMILY}))
+    assert out["problems"] == []
+    (rec,) = out["records"]
+    assert rec == {"name": "Brand New Axe", "ml": 34, "slot": "Weapon", "type": "Great Axes",
+                   "quests": ["A New Quest"], "url": "/page/Item:Brand_New_Axe",
+                   "affixes": [{"name": "Crushing", "type": "Bool", "value": 1}]}
+
+
+def test_899_a_base_must_use_a_slot_and_type_upstream_already_uses():
+    bad = dict(NEW_FAMILY, base={"slot": "Weapon", "type": "Great Spoons"})
+    assert any("not one upstream uses" in p for p in W.expand([SIB], _shard(**{"X": bad}))["problems"])
+
+
+def test_899_exactly_one_of_sibling_and_base():
+    both = dict(NEW_FAMILY, sibling=SIB["name"])
+    neither = {k: v for k, v in NEW_FAMILY.items() if k != "base"}
+    for e in (both, neither):
+        assert any("exactly one" in p for p in W.expand([SIB], _shard(**{"X": e}))["problems"])
+
+
+def test_899_an_affix_upstream_has_never_used_fails_in_either_form():
+    novel = [["Crushing", "Bool", 1], ["Spectral Wrath", "Bool", 1]]
+    for e in (dict(NEW_FAMILY, affixes=novel), dict(ENTRY, affixes=novel)):
+        out = W.expand([SIB], _shard(**{"X": e}))
+        assert out["records"] == [] and any("appear nowhere upstream" in p for p in out["problems"])
+
+
+def test_899_an_unreviewed_triage_draft_cannot_ship():
+    draft = dict(ENTRY, review=["every magnitude below is the SIBLING's"])
+    out = W.expand([SIB], _shard(**{"Spectral Axe (level 32)": draft}))
+    assert out["records"] == [] and any("review" in p for p in out["problems"])
 
 
 def test_the_shipped_shard_builds_cleanly_against_upstream():
