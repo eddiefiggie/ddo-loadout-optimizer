@@ -85,6 +85,7 @@ from src import craft_identity as craft_identity_mod
 from src import crafting_coverage as crafting_coverage_mod
 from src import crafted_twins as crafted_twins_mod
 from src import upgraded_items as upgraded_items_mod
+from src import roman_lore as roman_lore_mod
 from src import ring_exclusivity as ring_exclusivity_mod
 import re as _re
 
@@ -880,6 +881,10 @@ def build() -> dict:
     # name no item carries is a priority that scores zero. `_name_corrections` was
     # loaded once above, with the crafting and sets channels; this is the item one.
     _name_coverage = name_corrections_mod.apply(planner_records, _name_corrections)
+    # #887 — roman-numeral ELEMENT lores: the template grants numeral + 10 and
+    # upstream reads the bare numeral. After the name corrections, so entries use
+    # our canon stat names; fails the build on any stale entry.
+    _roman_lore_coverage = roman_lore_mod.apply(planner_records, roman_lore_mod.load())
     # #259 — wiki-sourced BONUS TYPE corrections, the fourth corrections
     # mechanism (gap=additive, value, name, type — each changes one field and
     # nothing else does). A wrong type is a stacking defect, not a magnitude
@@ -2359,6 +2364,7 @@ def build() -> dict:
             "crafting_lineage_coverage": _lineage_coverage,
             "value_corrections_coverage": _value_coverage,
             "value_corrections_coverage_augments": _value_coverage_augments,
+            "roman_element_lore_coverage": _roman_lore_coverage,
             "name_corrections_coverage": _name_coverage,
             # #259 — bonus-type corrections, disclosed per channel: the same
             # entry set is offered to items and augments, and an entry is only
