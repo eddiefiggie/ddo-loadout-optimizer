@@ -10,3 +10,4 @@ data/samples/
 
 # Local-only project metadata (category, local path) — never ship machine details to a public repo.
 GARAGE.md
+data/harvest/
