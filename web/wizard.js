@@ -1222,6 +1222,11 @@ function buildQuery(state, vocab, items) {
 // U3 — the shared pin-normalize path, resolved once across runtimes (browser
 // global from model.js; Node require). So the wizard reads a list-shaped Ring pin
 // exactly as the solver does.
+// #902 — a results row may be a weapon's second copy; pins name the item itself.
+var _originalIdOf = (typeof originalIdOf !== "undefined")
+  ? originalIdOf
+  // eslint-disable-next-line global-require
+  : require("./model.js").originalIdOf;
 var _pinnedVariantIds = (typeof pinnedVariantIds !== "undefined")
   ? pinnedVariantIds
   // eslint-disable-next-line global-require
@@ -1456,6 +1461,8 @@ function noDropNote(v) {
 // via applyPin, and by the results Deep-Dive per-row pin action). A full single
 // slot replaces; a full Ring keeps the newest two; a duplicate is ignored.
 function applyPinId(slotConstraints, slot, id, cardOf) {
+  // #902 — a results row may be a second copy (`X::twin`); a pin names the item.
+  id = _originalIdOf(id);
   const card = (cardOf && cardOf(slot)) || 1;
   const c = slotConstraints[slot];
   const existing = (c && c.type === "pin") ? _pinnedVariantIds(c) : [];

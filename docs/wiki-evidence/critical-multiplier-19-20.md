@@ -115,7 +115,11 @@ editing it: the shard exists to hold an unsettled question, not to carry a numbe
 - **The free solve does not discover the 2-piece weapon pair on its own** —
   `Critical Multiplier on a roll of 19-20` scores 0 unless the pair is pinned into
   both hands. That is a separate, undiagnosed question and is **not** evidence about
-  stacking. #683's first write-up read a malformed query (`style: "one-handed"`,
+  stacking. **Diagnosed and fixed by #902 (2026-10-17):** the solver capped one weapon
+  at one hand, so the second Kindling was never a candidate. Duplicable one-handed
+  weapons now get an off-hand second copy (`weapon-exclusivity.md`), and a free
+  Scimitars TWF solve on the live dataset returns Kindling in both hands with the
+  set active. #683's first write-up read a malformed query (`style: "one-handed"`,
   where the taxonomy's token is `"one-hand"`) as proof the affix was unreachable;
   it is reachable.
 

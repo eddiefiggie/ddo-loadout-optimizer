@@ -1021,3 +1021,5 @@ disclosure structural.
     Lunar_and_Solar_Gems; #631/#640 had added them. Retired, with a page-exists guard.
 (2) CONFIRMED -> #902. The TWF cap forbids two copies of one weapon across both
     hands; the game allows it for weapons that are not Exclusive or Minor Artifacts.
+    Fixed: 2,509 of 2,528 one-handed weapon pages are duplicable per the wiki
+    (17 Exclusive, 2 with no binding recorded); see weapon-exclusivity.md.

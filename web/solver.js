@@ -80,6 +80,10 @@ const _isTwinEligible = (typeof isTwinEligible !== "undefined")
   ? isTwinEligible
   // eslint-disable-next-line global-require
   : require("./model.js").isTwinEligible;
+const _isWeaponTwinEligible = (typeof isWeaponTwinEligible !== "undefined")
+  ? isWeaponTwinEligible
+  // eslint-disable-next-line global-require
+  : require("./model.js").isWeaponTwinEligible;
 const _twinIdOf = (typeof twinIdOf !== "undefined")
   ? twinIdOf
   // eslint-disable-next-line global-require
@@ -235,10 +239,16 @@ function slotConstraintBodies(xVars, slotConstraints) {
       // One `x = 1` per pinned variant present in the slot group. Single-cardinality
       // slots have one; the Ring slot may pin two different rings (B5). A pinned id
       // absent from the pool is a silent no-op (stale pin; R17 reconciles it).
+      // #902 — an off-hand pin of a duplicable weapon means "this weapon in the off
+      // hand", by either copy: `x_off + x_twin = 1`. With the same weapon also pinned
+      // in the main hand the hand cap rules out x_off, so the second copy carries it
+      // — rather than both pins forcing one x-var pair to `2 <= 1`.
+      const idOf = (x) => x.variant.variant_id || x.variant.source_item;
       for (const vid of _pinnedVariantIds(c)) {
-        const xv = group.find(
-          (x) => (x.variant.variant_id || x.variant.source_item) === vid);
-        if (xv) bodies.push(`${xv.name} = 1`);
+        const xv = group.find((x) => !x.twinOf && idOf(x) === vid);
+        const twin = group.find((x) => x.twinOf && idOf(x) === _twinIdOf(vid));
+        if (xv && twin) bodies.push(`${xv.name} + ${twin.name} = 1`);
+        else if (xv || twin) bodies.push(`${(xv || twin).name} = 1`);
       }
     }
   }
@@ -332,6 +342,26 @@ function buildProgram(model) {
     const copy = Object.assign({}, xv.variant,
       { variant_id: _twinIdOf(xv.variant.variant_id || xv.variant.source_item) });
     const tw = { name: "x" + xVars.length, variant: copy, slot: xv.slot, cardinality: xv.cardinality, twinOf: xv.name };
+    xVars.push(tw);
+    twinOf.set(tw.name, xv.name);
+  }
+
+  // #902 — the off-hand second copy of a duplicable one-handed weapon. The hand cap
+  // below still forbids ONE weapon x-var filling both hands (that would double one
+  // physical item's augment and set supply); a second copy is a second item, so it
+  // is its own x-var, with its own id, appended here for the same tie-break reason
+  // as the ring twins. It exists only where the off hand already offers the same
+  // weapon — so the TWF declaration and the off-hand type picks still decide
+  // legality — and `twin <= original` ties it to that weapon in the MAIN hand.
+  const offHandIds = new Set(xVars.filter((x) => x.slot === "Off Hand" && !x.twinOf)
+    .map((x) => x.variant.variant_id || x.variant.source_item));
+  const offHandCard = (xVars.find((x) => x.slot === "Off Hand") || {}).cardinality;
+  for (const xv of xVars.slice()) {
+    if (xv.slot !== "Main Hand" || xv.twinOf || !_isWeaponTwinEligible(xv.variant)) continue;
+    const id = xv.variant.variant_id || xv.variant.source_item;
+    if (!offHandIds.has(id)) continue;
+    const copy = Object.assign({}, xv.variant, { variant_id: _twinIdOf(id) });
+    const tw = { name: "x" + xVars.length, variant: copy, slot: "Off Hand", cardinality: offHandCard, twinOf: xv.name };
     xVars.push(tw);
     twinOf.set(tw.name, xv.name);
   }
@@ -2515,8 +2545,10 @@ function readSolution(res, program, precomputedVisible) {
   // minimizing solve, and a twin can then float to 1 for free while consuming the
   // second Ring slot. Report a doubled pick only when one of its ring's sets is
   // actually active; otherwise the second copy buys nothing.
+  // #902 — ring twins only. A weapon twin also pays through its own augment and
+  // crafting slots, so "no active set" does not make it free; it stays.
   chosen = chosen.filter((c) => {
-    if (!c._twinOf) return true;
+    if (!c._twinOf || c.slot !== "Ring") return true;
     return ((c.variant.set_bonus || []).some((sb) => sb && activeSetNames.has(sb.set)));
   }).map((c) => ({ slot: c.slot, variant: c.variant }));
   // U3 — placed Set Augment copies (each {set, host, slot_color, wiki_url}).
