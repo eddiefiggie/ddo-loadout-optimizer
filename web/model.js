@@ -77,6 +77,18 @@ function isTwinEligible(variant) {
   return DUPLICABLE_RINGS.has(variantKey(variant));
 }
 
+/** #902 — may this one-handed weapon be wielded as a second copy in the off hand?
+ *  The build stamps `duplicable_weapon` from the wiki's Exclusive / Minor Artifact
+ *  categories (src/weapon_exclusivity.py); absence is the fail-closed default, so
+ *  an unstamped weapon — an older snapshot, a hand-built fixture — keeps the old
+ *  one-copy rule. Unlike a ring twin, no set membership is required: a second
+ *  weapon carries its own augment and crafting slots, which pay for themselves. */
+function isWeaponTwinEligible(variant) {
+  if (!variant || variant.category !== "weapon") return false;
+  if (variant.duplicable_weapon !== true) return false;
+  return !isBothHandsWeapon(variant);
+}
+
 // #573 — `ARMOR_DODGE_CAP = { cloth: 25, light: 25, medium: 11, heavy: 4 }` used to
 // live here and clamp a ranked Dodge stat by armor category. It is GONE, and it must
 // not come back in that shape. Three findings retired it, all recorded in
@@ -2663,7 +2675,7 @@ function poolStatNames(model) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { poolStatNames, setIntrinsicCaps, setIntrinsicSoftCaps, softCapFor, setSplitMechanics, splitMechanicFor, setConditionalDisclosures, conditionalDisclosureFor, setTierRenameFamilies, tierRenamesFor,
-    intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, MRR_CAP_BY_ARMOR, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible,
+    intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, MRR_CAP_BY_ARMOR, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible, isWeaponTwinEligible,
     buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     slotReachabilityFor, slotReachabilityReport, filterEligiblePool,
     classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, pinnedAugmentIds, dominanceFilter, dominates,

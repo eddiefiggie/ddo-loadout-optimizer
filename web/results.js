@@ -309,7 +309,7 @@ function paperdollSlot(label, pos, pick, satisfied, contributors, craftedIdx) {
   const setLine = contribs.length ? `<div class="pd-setname" title="part of a set bonus">${esc(contribSetLabel(contribs))}</div>` : "";
   return `<div class="pd-slot occupied pos-${pos}${glow ? " is-set" : ""}">
     <div class="pd-label">${esc(label)}</div>
-    <div class="pd-item" title="${esc(v.variant_id)}">${esc(v.variant_id)}</div>
+    <div class="pd-item" title="${esc(Proj.itemIdOf(v))}">${esc(Proj.itemIdOf(v))}</div>
     <div class="pd-foot">${mlChipHtml(v, craftedIdx)}${setLine}</div>
   </div>`;
 }
@@ -456,7 +456,7 @@ function equippedRow(label, pick, slotConstraints, satisfied, maps, augById, own
   return `<div class="${rowCls}">
     <div class="pd-card-head">
       <div class="pd-rtop"><div class="pd-rlabel">${esc(label)}</div>${ctl}</div>
-      <div class="${nameCls}"${v ? ` title="${esc(v.variant_id)}"` : ""}>${name}</div>
+      <div class="${nameCls}"${v ? ` title="${esc(Proj.itemIdOf(v))}"` : ""}>${name}</div>
       ${meta}
       ${sourceLine(v && !locked ? v : null)}
     </div>

@@ -383,8 +383,16 @@
    *  rather than being silently rewritten. Every OTHER parenthetical the catalog
    *  carries is meaningful (`(Heroic)`, `(Legendary)`, `(legacy)`, `(2d6)`,
    *  `(round)`) and is left alone; this is not a general suffix stripper. */
+  /** #902 — the item's own id: a weapon's second copy carries `X::twin` so the
+   *  solver and the per-host maps can tell the copies apart, but it is still X. */
+  function itemIdOf(v) {
+    const M = _twinIdHelpers();
+    const raw = String((v && (v.variant_id || v.source_item)) || "");
+    return (M && M.originalIdOf) ? M.originalIdOf(raw) : raw;
+  }
+
   function displayItemName(v) {
-    const id = String((v && (v.variant_id || v.source_item)) || "");
+    const id = itemIdOf(v);
     const ml = itemMl(v);
     if (ml == null || !id) return id;
     return id.replace(/\s*\([Ll]evel\s+(\d+)\)/g,
@@ -2126,7 +2134,7 @@
         counts.set(sb.set, (counts.get(sb.set) || 0) + 1);
       }
       for (const e of contributorsFor(contributors, c.slot, c.variant.variant_id)) {
-        addMember(e.set, { slot: c.slot, item: c.variant.variant_id, kind: e.kind });
+        addMember(e.set, { slot: c.slot, item: itemIdOf(c.variant), kind: e.kind });
         // A runtime pick counts toward the threshold exactly as an intrinsic piece
         // does — the solver already counted it. Leaving `counts` static-only made
         // the tier disagree with the member list it sits beside: a set completed BY
@@ -2906,7 +2914,8 @@
       const v = c.variant || {};
       return {
         slot: c.slot,
-        item: v.variant_id,
+        // #902 — the item's own name; a weapon's second copy is still that weapon.
+        item: itemIdOf(v),
         // #681 — the level this item is WORN at. For an essence host crafted below
         // its native ML that is the crafted level, and every export inherits it
         // because they all read this one field.
@@ -3762,7 +3771,7 @@
 
   const api = {
     // #335 U4 — the render-layer ×2 collapse and its derived receipt line.
-    collapseTwins, secondCopyContribution,
+    collapseTwins, secondCopyContribution, itemIdOf,
     // resolved-view assembler
     project, creditNoticeLines, saturationNoticeLines, emptySlotNoticeLines,
     absorptionQuarantineNoticeLines, declaredCreditsLine, overridesLine, overrideNoticeLines,

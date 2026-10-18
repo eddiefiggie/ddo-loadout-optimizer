@@ -88,6 +88,7 @@ from src import upgraded_items as upgraded_items_mod
 from src import roman_lore as roman_lore_mod
 from src import wiki_supplement as wiki_supplement_mod
 from src import ring_exclusivity as ring_exclusivity_mod
+from src import weapon_exclusivity as weapon_exclusivity_mod
 import re as _re
 
 import collections
@@ -2657,6 +2658,19 @@ def build() -> dict:
     _ring_excl_cov = ring_exclusivity_mod.apply(
         out["items"], _ring_excl_shard, identity=_twins["identity"])
     out["metadata"]["duplicable_ring_coverage"] = {**_ring_excl_cov, **_ring_excl_check}
+
+    # #902 — the same rule for one-handed weapons: two copies, one per hand, unless
+    # the wiki records the weapon as Exclusive or a Minor Artifact. Stamps
+    # `duplicable_weapon`; the solver mints the off-hand second copy from it.
+    _weap_excl_shard = weapon_exclusivity_mod.load()
+    _weap_excl_check = weapon_exclusivity_mod.check(_weap_excl_shard, out["items"])
+    if _weap_excl_check["problems"]:
+        raise SystemExit(
+            "weapon-exclusivity shard failed (#902) — the harvest no longer describes "
+            "the catalog:\n  " + "\n  ".join(_weap_excl_check["problems"]))
+    weapon_exclusivity_mod.apply(out["items"], _weap_excl_shard)
+    _weap_excl_check.pop("problems")
+    out["metadata"]["duplicable_weapon_coverage"] = _weap_excl_check
 
     # #199 — intrinsic caps, emitted as {stat: cap}. Exclude-until-verified: only
     # the `caps` list ships; a stat in `refused` deliberately gets NO cap, so a
