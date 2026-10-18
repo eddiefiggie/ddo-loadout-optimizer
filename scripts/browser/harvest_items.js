@@ -58,6 +58,20 @@
     H.seed = C.seed;
   }
 
+  // A throttled ddowiki answers the API with HTTP 202 and an empty body. Loading a
+  // real page refreshes the browser's clearance, which `harvest-method.md` already
+  // does by navigating; a hidden same-origin iframe does the same page load without
+  // discarding this tab's in-memory harvest.
+  async function refreshClearance() {
+    const f = document.createElement("iframe");
+    f.style.display = "none";
+    f.src = "/page/Main_Page?harvest=" + Date.now();
+    document.body.appendChild(f);
+    await new Promise((r) => { f.onload = r; setTimeout(r, 15000); });
+    await sleep(4000);
+    f.remove();
+  }
+
   async function query(titles) {
     const res = await fetch("/api.php", { method: "POST", body: new URLSearchParams({
       format: "json", action: "query", titles: titles.join("|"), redirects: "1",
@@ -91,16 +105,23 @@
     if (H.running) return "already running";
     await loadSeed();
     H.running = true; H.state = "running";
+    // Each start owns a generation; a loop from an earlier start (still asleep in a
+    // backoff when the snippet is re-pasted or restarted) sees it is stale and exits,
+    // so two loops never advance one cursor.
+    const gen = H.gen = (H.gen || 0) + 1;
     let fails = 0;
     (async () => {
-      while (H.running && H.cursor < H.titles.length) {
+      while (H.running && H.gen === gen && H.cursor < H.titles.length) {
         let ok = false;
         try { ok = await runBatch(H.cursor); } catch (e) { H.errors.push(H.cursor + ": " + e.message); }
         if (ok) { H.cursor += C.batch; fails = 0; await sleep(C.paceMs); continue; }
         H.throttles++; fails++;
+        if (H.gen !== gen) return;
         if (fails >= C.maxThrottles) { H.running = false; H.state = "paused (throttled)"; return; }
-        await sleep(Math.min(120000, 10000 * 2 ** (fails - 1)));
+        await refreshClearance();
+        await sleep(Math.min(120000, 5000 * 2 ** (fails - 1)));
       }
+      if (H.gen !== gen) return;
       if (H.cursor >= H.titles.length) H.cursor = H.titles.length;
       H.running = false; H.state = H.cursor >= H.titles.length ? "done" : H.state === "running" ? "stopped" : H.state;
     })();
