@@ -140,7 +140,10 @@
     return JSON.stringify({ kind: "item-harvest-chunk", v: 1, id: H.id, seed: H.seed, digest: H.digest,
       total: H.titles.length, chunk: n, from, to, count: pages.length,
       complete: pages.length === to - from, sha256: await sha256(body), harvested: new Date().toISOString(),
-      gz: b64url(await gzip(body)) });
+      gz: b64url(await gzip(body)),
+      // A small chunk would come back inline instead of being saved to a file by the
+      // harness; padding past the inline cap keeps every chunk on the same path.
+      pad: "x".repeat(Math.max(0, 100000 - body.length)) });
   };
   return "harvest snippet loaded: harvestStart(), harvestStatus(), harvestChunk(n), harvestStop()";
 })();

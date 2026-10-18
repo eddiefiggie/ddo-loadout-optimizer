@@ -84,6 +84,14 @@ def test_a_count_mismatch_is_refused():
     _refused(_chunk(_pages(), count=5), "the chunk says")
 
 
+def test_padding_that_forces_a_small_chunk_to_a_file_is_dropped():
+    with tempfile.TemporaryDirectory() as d:
+        chunk = dict(_chunk(_pages()), pad="x" * 1000)
+        out = L.ingest(chunk, TITLES, root=d)
+        with gzip.open(out["path"], "rt", encoding="utf-8") as fh:
+            assert "pad" not in json.load(fh)["meta"]
+
+
 def test_unwrap_reads_the_saved_tool_result_shape():
     chunk = _chunk(_pages())
     saved = json.dumps([{"type": "text", "text": json.dumps(json.dumps(chunk))

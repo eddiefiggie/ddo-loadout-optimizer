@@ -99,7 +99,7 @@ def ingest(chunk: dict, titles: list, root: str = OUT) -> dict:
     d = os.path.join(root, chunk["id"])
     os.makedirs(d, exist_ok=True)
     path = os.path.join(d, f"chunk-{chunk['from']:05d}.json.gz")
-    meta = {k: v for k, v in chunk.items() if k != "gz"}
+    meta = {k: v for k, v in chunk.items() if k not in ("gz", "pad")}
     with gzip.open(path, "wt", encoding="utf-8") as fh:
         json.dump({"meta": meta, "pages": pages}, fh, ensure_ascii=False)
     return {"chunk": chunk["chunk"], "pages": len(pages), "complete": chunk.get("complete"), "path": path}
