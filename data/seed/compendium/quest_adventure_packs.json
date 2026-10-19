@@ -1486,11 +1486,6 @@
       "pack": "Shadowfell Conspiracy",
       "via": "Quest infobox `adpack` parameter"
     },
-    "Sharn quests": {
-      "kind": "unknown",
-      "pack": null,
-      "via": "no wiki page"
-    },
     "Shield of Legend": {
       "kind": "pack-quest",
       "pack": "The Necropolis, Part 4",
@@ -2718,6 +2713,11 @@
       "via": "no classifying category",
       "harvested": "2026-09-22",
       "note": "Upstream renamed the value from `House Deneith` at 397c673. Same verdict as the entry it supersedes: the page is the public Dragonmarked-House enclave and carries no `Adpack` template and no classifying category, so it stays `unknown` and renders under 'Source unknown' rather than being guessed from the name."
+    },
+    "Cannith Crafting Tutorial": {
+      "kind": "unknown",
+      "pack": null,
+      "via": "wiki redirect to Essence Crafting Tutorial (read 2026-10-19), which carries no classifying category — the same verdict that page's own entry carries"
     }
   },
   "_retired": {
@@ -2735,6 +2735,17 @@
           "pack": "Ruins of Gianthold",
           "via": "`Adpack` template on the page (the page IS in that pack)",
           "superseded_by": "Ruins of Gianthold (heroic)"
+        }
+      }
+    },
+    "2026-10-19-own-item-harvest": {
+      "why": "#906 — the own-item-harvest metadata overlay replaced gear-planner's grouping label 'Sharn quests' with the quest each item page names (Project Nemesis, Too Hot to Handle — both already mapped to Masterminds of Sharn), and Fire Touch Heavy Mace's page names 'Cannith Crafting Tutorial', a redirect to Essence Crafting Tutorial.",
+      "entries": {
+        "Sharn quests": {
+          "kind": "unknown",
+          "pack": null,
+          "via": "no wiki page",
+          "superseded_by": "Project Nemesis / Too Hot to Handle"
         }
       }
     }

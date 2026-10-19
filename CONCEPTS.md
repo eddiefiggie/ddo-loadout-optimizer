@@ -221,6 +221,9 @@ The trust label carried by every value sourced directly from the wiki, recording
 
 The **defaulted** state is the one that earns this concept its slot, and it is not the same as [[Quarantined]]. Quarantining answers "we could not parse a value"; defaulted answers "we parsed a value perfectly well, and it is still not evidence" — a source that renders a fallback is indistinguishable, at the character level, from one that renders a real measurement. Treating a displayed number as a sourced number is how a confident wrong value enters the dataset, which is worse than a visible gap. A defaulted value keeps whatever components *are* sourced and contributes nothing for the rest.
 
+### Harvested metadata
+An item's minimum level, slot, type and quests as its own wiki page states them, read by this project's harvest (#906, part of the own item harvest #911) rather than taken from gear-planner. Laid over each vendored record before any correction runs. A field the page does not state keeps gear-planner's value and is counted as a **fallback**. A field a ruling assigns to gear-planner keeps it as **ruled-gp**. Nothing is inferred to fill a gap. Every harvested value records the page revision it was read from.
+
 ### Wiki supplement
 An item record the catalog carries because the wiki has it and upstream gear-planner does not yet — the one sanctioned exception to gear-planner being the single source of item affixes (#874, #899). It is **built, not parsed**: from an existing sibling tier, or from an explicit `base` for a new family, always in upstream's own slot/type and affix vocabulary, with the magnitude taken from the page's rendered tooltip and the tooltip kept as evidence. It is interim by construction: the build fails the moment upstream carries the same name, so a supplement entry cannot outlive the gap it filled. Fed by the wiki-delta loop when the `upstream-stale` alarm reads broken.
 
