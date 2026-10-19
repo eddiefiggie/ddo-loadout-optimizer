@@ -46,10 +46,9 @@ def corrected_names():
     if os.path.exists(p):
         with open(p, encoding="utf-8") as fh:
             d = json.load(fh)
-        for name, e in d.items():
-            if name.startswith("_") or not isinstance(e, dict):
-                continue
-            out["ml"].add(name)
+        for name, e in (d.get("corrections") or {}).items():
+            if "ml" in e:
+                out["ml"].add(name)
             if "quests" in e:
                 out["quests"].add(name)
     return out

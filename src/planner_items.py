@@ -57,6 +57,16 @@ def apply_ml_correction(it, corr):
     """Return a corrected COPY of raw item `it`, or raise when the correction no
     longer matches what upstream ships (changed again, or already fixed)."""
     name = it.get("name")
+    # #906 — a QUEST-ONLY entry: the level half retired once our own wiki harvest
+    # read the same level (it is overlaid before this runs), but the quest the
+    # entry carries is one no current source states any more. Stale the moment the
+    # record ships a quest of its own.
+    if "ml" not in corr:
+        if it.get("quests"):
+            raise ValueError(
+                f"item_ml_corrections: {name!r} now ships quests {it['quests']!r} — the "
+                "quest-only correction is stale; delete it")
+        return dict(it, quests=list(corr["quests"]))
     if it.get("ml") == corr["ml"]:
         raise ValueError(
             f"item_ml_corrections: {name!r} already ships ml {corr['ml']} upstream — "
@@ -340,7 +350,7 @@ def _record(it, verified_seal_types, nc_per_item_hosts=None):
 
 def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
                        exclude_names=None, nc_per_item_hosts=None,
-                       ml_corrections=None, extra_raw=None):
+                       ml_corrections=None, extra_raw=None, harvest_meta=None):
     """Load and map the gear-planner raw dump into native pipeline records.
     `verified_seal_types` (seal types with a non-empty pool) gates which "Sealed
     in X" crafting entries become seal-slot hosts; default empty -> none.
@@ -353,6 +363,12 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
     `[Upgraded]` twins (#879) — mapped through the same `_record` so every
     downstream stage treats them exactly as it treats a native record.
 
+    `harvest_meta` is `(shard, rulings)` from `src/harvest_meta.py` (#906): the
+    item metadata our own wiki harvest read — minimum level, slot, type, quests —
+    laid over the vendored records BEFORE the ML corrections run, so a correction
+    the harvest has made redundant fails its own stale guard instead of applying
+    twice. Its per-field coverage lands in `stats["harvest_meta"]`.
+
     Returns `(records, stats)` where `stats` reports intra-dump name collisions
     collapsed (name-keyed, first wins) and native host-marker counts, for coverage
     disclosure."""
@@ -361,6 +377,13 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
     nc_hosts = nc_per_item_hosts or {}
     with open(path, encoding="utf-8") as fh:
         raw = json.load(fh)
+    harvest_stats = None
+    if harvest_meta is not None:
+        from src import harvest_meta as harvest_meta_mod
+        raw, harvest_stats = harvest_meta_mod.apply(raw, harvest_meta[0], harvest_meta[1])
+        if harvest_stats["problems"]:
+            raise SystemExit("harvested item metadata no longer describes the vendored dump (#906):\n  "
+                             + "\n  ".join(harvest_stats["problems"]))
     raw = raw + list(extra_raw or [])
 
     records, seen = [], set()
@@ -420,6 +443,8 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
         "planner_slavers_set_bonus_hosts": dict(slavers_set_bonus_hosts),
         "planner_ml_corrections_applied": len(ml_corrected),
     }
+    if harvest_stats is not None:
+        stats["harvest_meta"] = {k: v for k, v in harvest_stats.items() if k != "problems"}
     unmatched = sorted(set(ml_corr) - ml_corrected)
     if unmatched:
         raise ValueError(

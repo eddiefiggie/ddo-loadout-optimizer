@@ -2,13 +2,62 @@
   "_source": "DDO Wiki item infoboxes, read 2026-10-13 through the in-app Browser pane (#871).",
   "_why": "gear-planner c36b45e reads these Night Revels items at ml 1 with no quest. Their pages were reformatted on 2026-10-12: the infobox parameter `minlevel` became `minimum level` and the quest line became `turn in collector :: Joe Candymaker` with a {{Night Revels recipe}}. Upstream's parser reads the old names, so it fell back to ml 1. The wiki still STATES each level outright; this restores it, and restores the quest the previous snapshot (397c673) carried. Each entry names the upstream value it expects to find (`from`), so it fails loudly the moment upstream changes again, and goes stale (also failing the build) once upstream ships the corrected value, at which point it is deleted.",
   "corrections": {
-    "Cloak of Night (level 4)":       {"from_ml": 1, "ml": 4,  "quests": ["The Night Revels"], "evidence": "minimum level :: 4"},
-    "Cloak of Night (level 8)":       {"from_ml": 1, "ml": 8,  "quests": ["The Night Revels"], "evidence": "minimum level :: 8"},
-    "Cloak of Night (level 12)":      {"from_ml": 1, "ml": 12, "quests": ["The Night Revels"], "evidence": "minimum level :: 12"},
-    "Cloak of Night (level 16)":      {"from_ml": 1, "ml": 16, "quests": ["The Night Revels"], "evidence": "minimum level :: 16"},
-    "Epic Cloak of Night (level 20)": {"from_ml": 1, "ml": 20, "quests": ["The Night Revels"], "evidence": "minimum level :: 20"},
-    "Epic Cloak of Night (level 24)": {"from_ml": 1, "ml": 24, "quests": ["The Night Revels"], "evidence": "minimum level :: 24"},
-    "Epic Cloak of Night (level 28)": {"from_ml": 1, "ml": 28, "quests": ["The Night Revels"], "evidence": "minimum level :: 28"},
-    "Bottled Fear":                   {"from_ml": 1, "ml": 5,  "quests": ["The Night Revels"], "evidence": "minimum level :: 5"}
-  }
+    "Cloak of Night (level 4)": {
+      "quests": [
+        "The Night Revels"
+      ],
+      "evidence": "minimum level :: 4",
+      "retired_ml": "#906: our wiki harvest reads minimum level 4 (revision 722184), matching this entry; only the quest half remains"
+    },
+    "Cloak of Night (level 8)": {
+      "quests": [
+        "The Night Revels"
+      ],
+      "evidence": "minimum level :: 8",
+      "retired_ml": "#906: our wiki harvest reads minimum level 8 (revision 722704), matching this entry; only the quest half remains"
+    },
+    "Cloak of Night (level 12)": {
+      "quests": [
+        "The Night Revels"
+      ],
+      "evidence": "minimum level :: 12",
+      "retired_ml": "#906: our wiki harvest reads minimum level 12 (revision 722705), matching this entry; only the quest half remains"
+    },
+    "Cloak of Night (level 16)": {
+      "quests": [
+        "The Night Revels"
+      ],
+      "evidence": "minimum level :: 16",
+      "retired_ml": "#906: our wiki harvest reads minimum level 16 (revision 722706), matching this entry; only the quest half remains"
+    },
+    "Epic Cloak of Night (level 20)": {
+      "quests": [
+        "The Night Revels"
+      ],
+      "evidence": "minimum level :: 20",
+      "retired_ml": "#906: our wiki harvest reads minimum level 20 (revision 722703), matching this entry; only the quest half remains"
+    },
+    "Epic Cloak of Night (level 24)": {
+      "quests": [
+        "The Night Revels"
+      ],
+      "evidence": "minimum level :: 24",
+      "retired_ml": "#906: our wiki harvest reads minimum level 24 (revision 722702), matching this entry; only the quest half remains"
+    },
+    "Epic Cloak of Night (level 28)": {
+      "quests": [
+        "The Night Revels"
+      ],
+      "evidence": "minimum level :: 28",
+      "retired_ml": "#906: our wiki harvest reads minimum level 28 (revision 722701), matching this entry; only the quest half remains"
+    },
+    "Bottled Fear": {
+      "quests": [
+        "The Night Revels"
+      ],
+      "evidence": "minimum level :: 5",
+      "retired_ml": "#906: our wiki harvest reads minimum level 5 (revision 720460), matching this entry; only the quest half remains"
+    }
+  },
+  "_why_906": "#906 — every entry's level half retired: the own-item harvest overlay supplies the same wiki-stated level. Each entry now supplies only its quest, which the migrated pages (2026-10-17 template migration) no longer state."
 }
