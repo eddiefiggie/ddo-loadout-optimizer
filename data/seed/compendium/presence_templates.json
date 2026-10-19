@@ -1,0 +1,432 @@
+{
+ "_meta": {
+  "why": "#907 — enchantment templates that render a NAMED EFFECT with no bonus-type parameter (checked in each template's code: no {{Insightful|..}}, no `[[X bonus]]`, no typed default). Each maps to the catalog's presence affix (name, Bool, 1). Selected where every harvested call (5+) on 2026-10-18 matched a same-named Bool in gear-planner; a template whose code takes a type (Ghostly, Temperance of Belief, Crown of Summer, Shadow Striker) is excluded and needs a real mapper.",
+  "harvest": "items-20261018",
+  "templates_harvest": "templates-20261019"
+ },
+ "templates": {
+  "Returning": {
+   "revid": 253397
+  },
+  "Holy": {
+   "revid": 659871
+  },
+  "Chilling": {
+   "revid": 410943
+  },
+  "Keen": {
+   "revid": 644196
+  },
+  "Impactful": {
+   "revid": 462039
+  },
+  "Ghostbane": {
+   "revid": 644214
+  },
+  "Coruscating": {
+   "revid": 480191
+  },
+  "Fiery": {
+   "revid": 706089
+  },
+  "Anarchic": {
+   "revid": 512511
+  },
+  "Aligned": {
+   "revid": 591670
+  },
+  "Unholy": {
+   "revid": 512527
+  },
+  "Electrifying": {
+   "revid": 479550
+  },
+  "Entropic": {
+   "revid": 408351
+  },
+  "Acidic": {
+   "revid": 479143
+  },
+  "Impact": {
+   "revid": 644219
+  },
+  "Blazing": {
+   "revid": 480415
+  },
+  "Taint of Evil": {
+   "revid": 479741
+  },
+  "Destructive Acid": {
+   "revid": 700346
+  },
+  "Mother Night's Embrace": {
+   "revid": 510113
+  },
+  "Bludgeoning": {
+   "revid": 406920
+  },
+  "Ghost Touch": {
+   "revid": 253569
+  },
+  "Crushing": {
+   "revid": 402531
+  },
+  "Guardbreaking": {
+   "revid": 479290
+  },
+  "Freedom of Movement": {
+   "revid": 391417
+  },
+  "Crippling": {
+   "revid": 479900
+  },
+  "Dripping with Magma": {
+   "revid": 624462
+  },
+  "Gashing": {
+   "revid": 458685
+  },
+  "Piercing": {
+   "revid": 402584
+  },
+  "Weaken Undead": {
+   "revid": 479370
+  },
+  "Righteous": {
+   "revid": 479448
+  },
+  "Lingering Acidic Burn": {
+   "revid": 623395
+  },
+  "Slashing": {
+   "revid": 408333
+  },
+  "Attuned to Heroism": {
+   "revid": 646006
+  },
+  "Feather Falling": {
+   "revid": 253519
+  },
+  "Smashing": {
+   "revid": 402583
+  },
+  "Flaming": {
+   "revid": 644212
+  },
+  "Limb Chopper": {
+   "revid": 478705
+  },
+  "Reverberating": {
+   "revid": 410430
+  },
+  "Stabbing": {
+   "revid": 520443
+  },
+  "Poisonous": {
+   "revid": 406516
+  },
+  "True Seeing": {
+   "revid": 441943
+  },
+  "Freezing": {
+   "revid": 525932
+  },
+  "Axiomatic": {
+   "revid": 512512
+  },
+  "Blunt Trauma": {
+   "revid": 666019
+  },
+  "Ethereal": {
+   "revid": 480456
+  },
+  "Vengeful": {
+   "revid": 479077
+  },
+  "Bloodletter": {
+   "revid": 644204
+  },
+  "Hemorrhaging": {
+   "revid": 478935
+  },
+  "Jolting": {
+   "revid": 410426
+  },
+  "Felling the Oak": {
+   "revid": 479417
+  },
+  "Shrieking": {
+   "revid": 639469
+  },
+  "Heartseeker": {
+   "revid": 644217
+  },
+  "Medusa Fury": {
+   "revid": 253590
+  },
+  "Shield Spikes": {
+   "revid": 527908
+  },
+  "Frost": {
+   "revid": 644213
+  },
+  "Shock": {
+   "revid": 644225
+  },
+  "Bleed": {
+   "revid": 478933
+  },
+  "Corrosive Salt": {
+   "revid": 459158
+  },
+  "Bonesplitter": {
+   "revid": 479328
+  },
+  "Fetters of Unreality": {
+   "revid": 397025
+  },
+  "Eversight": {
+   "revid": 482337
+  },
+  "Elasticity": {
+   "revid": 479646
+  },
+  "Life Stealing": {
+   "revid": 479201
+  },
+  "Rippling Energy": {
+   "revid": 619101
+  },
+  "Sight Beyond Sight": {
+   "revid": 517572
+  },
+  "Frostbite": {
+   "revid": 479320
+  },
+  "Toxic": {
+   "revid": 480580
+  },
+  "Blunted Ammunition": {
+   "revid": 479463
+  },
+  "Spiked": {
+   "revid": 479753
+  },
+  "Tidal": {
+   "revid": 480734
+  },
+  "Staggering Blow": {
+   "revid": 480081
+  },
+  "Feeding": {
+   "revid": 644211
+  },
+  "Light Bringer": {
+   "revid": 479483
+  },
+  "Disintegrate": {
+   "revid": 699184
+  },
+  "Stealth Strike": {
+   "revid": 479640
+  },
+  "Soundproof": {
+   "revid": 480463
+  },
+  "Demon Fever": {
+   "revid": 253560
+  },
+  "Bodyfeeder": {
+   "revid": 479070
+  },
+  "Fracturing": {
+   "revid": 479393
+  },
+  "Solar": {
+   "revid": 659872
+  },
+  "Anthem": {
+   "revid": 436907
+  },
+  "Screeching": {
+   "revid": 527857
+  },
+  "Energy Siphon": {
+   "revid": 644210
+  },
+  "Legendary Demon Fever": {
+   "revid": 542357
+  },
+  "Favored Weapon": {
+   "revid": 459157
+  },
+  "Kick 'Em While They're Down": {
+   "revid": 471844
+  },
+  "Legendary Paralysis": {
+   "revid": 403344
+  },
+  "Acid": {
+   "revid": 644202
+  },
+  "Glass Jaw Strike": {
+   "revid": 479669
+  },
+  "Strength of Purpose": {
+   "revid": 471845
+  },
+  "Angelic Grace": {
+   "revid": 641312
+  },
+  "Cursed Maelstrom": {
+   "revid": 413349
+  },
+  "Planar Searing": {
+   "revid": 551800
+  },
+  "Path of the Guarding Stone": {
+   "revid": 482596
+  },
+  "Nightshade Venom": {
+   "revid": 698043
+  },
+  "Temperance of Spirit": {
+   "revid": 468708
+  },
+  "Shadowblade": {
+   "revid": 706015
+  },
+  "Fire Touch": {
+   "revid": 481648
+  },
+  "Ram's Might": {
+   "revid": 482687
+  },
+  "Bewildering": {
+   "revid": 479165
+  },
+  "Ribcracker": {
+   "revid": 644223
+  },
+  "Spike-Studded": {
+   "revid": 479678
+  },
+  "Roar": {
+   "revid": 480453
+  },
+  "Earthgrab": {
+   "revid": 482139
+  },
+  "Flameblade": {
+   "revid": 706013
+  },
+  "Unbalancing": {
+   "revid": 479173
+  },
+  "Slicing": {
+   "revid": 478934
+  },
+  "Screaming": {
+   "revid": 479496
+  },
+  "Healers Bounty": {
+   "revid": 479893
+  },
+  "Power Store": {
+   "revid": 480503
+  },
+  "Manslayer": {
+   "revid": 482623
+  },
+  "Fearsome": {
+   "revid": 479740
+  },
+  "Brilliance": {
+   "revid": 479398
+  },
+  "Echoes of Angdrelve": {
+   "revid": 404612
+  },
+  "Cannith Combat Infusion": {
+   "revid": 482364
+  },
+  "Lesser Boneshatter": {
+   "revid": 411806
+  },
+  "Magma Surge": {
+   "revid": 699176
+  },
+  "Mindcleaver": {
+   "revid": 706749
+  },
+  "Thornblade": {
+   "revid": 543632
+  },
+  "Swim like a Fish": {
+   "revid": 482738
+  },
+  "Mortal Strike": {
+   "revid": 479167
+  },
+  "Identity Crisis": {
+   "revid": 403343
+  },
+  "Heroic Inspiration": {
+   "revid": 479420
+  },
+  "Negativity": {
+   "revid": 404613
+  },
+  "Godly Wrath": {
+   "revid": 480660
+  },
+  "Transform Kinetic Energy": {
+   "revid": 479557
+  },
+  "Phlebotomizing": {
+   "revid": 478936
+  },
+  "The Dragging of the Depths": {
+   "revid": 527960
+  },
+  "Wondrous Craftsmanship": {
+   "revid": 482378
+  },
+  "From The Shadows": {
+   "revid": 482718
+  },
+  "Rupturing Echo": {
+   "revid": 619100
+  },
+  "Cloudburst": {
+   "revid": 480494
+  },
+  "Tira's Splendor": {
+   "revid": 468727
+  },
+  "Jet Propulsion": {
+   "revid": 482620
+  },
+  "Cacophony": {
+   "revid": 479591
+  },
+  "Flamebitten": {
+   "revid": 479321
+  },
+  "Eternal Fire": {
+   "revid": 480697
+  },
+  "The Golden Curse": {
+   "revid": 468699
+  },
+  "Crushing Wave": {
+   "revid": 479335
+  },
+  "Flamescale": {
+   "revid": 601119
+  },
+  "Concentrated Corrosive Salt": {
+   "revid": 501959
+  }
+ }
+}
