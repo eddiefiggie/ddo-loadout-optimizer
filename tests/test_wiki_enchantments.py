@@ -71,9 +71,9 @@ def test_an_unreadable_call_is_unmapped_never_guessed():
 
 
 def test_only_the_items_own_lines_count_nested_lines_are_sub_options():
-    mapped, unmapped = E.affixes("* {{Stat|STR|6}}\n** {{Stat|STR|8}}\n* {{Holy|4|1}}\n* plain text")
+    mapped, unmapped = E.affixes("* {{Stat|STR|6}}\n** {{Stat|STR|8}}\n* {{Bane|Halfling|lesser}}\n* plain text")
     assert mapped == [("Strength", "Enhancement", 6)]
-    assert unmapped == [("Holy", "no mapper")]
+    assert unmapped == [("Bane", "no mapper")]
 
 
 # --- tier 2 (#907) ---
@@ -146,6 +146,30 @@ def test_implement_and_orb_kinds_follow_the_templates_two_switches():
 
 
 def test_a_call_followed_by_qualifying_text_is_conditional_and_not_read():
-    mapped, unmapped = E.affixes("* {{hp|Vitality|20}} (only from chain end reward)\n* {{Stat|STR|6}}")
+    mapped, unmapped = E.affixes("* {{hp|Vitality|20}} (only from chain end reward)\n* {{Stat|STR|6}}\n"
+                                 "* {{Augment|Colorless}} (only from chain end reward)")
     assert mapped == [("Strength", "Enhancement", 6)]
-    assert unmapped == [("<qualified>", "a call followed by qualifying text (conditional)")]
+    assert unmapped == [("<qualified>", "a call followed by qualifying text (conditional)")], \
+        "a qualified augment slot produces no affix, so it does not count"
+
+
+def test_a_presence_template_is_a_flag_stated_once():
+    assert "Holy" in E.PRESENCE and "Ghostly" not in E.PRESENCE, "typed templates are not presence"
+    mapped, _ = E.affixes("* {{Holy|4|1}}\n* {{Bewildering}}\n* {{Bewildering|3|critical}}")
+    assert mapped == [("Holy", "Bool", 1), ("Bewildering", "Bool", 1)]
+
+
+def test_no_presence_template_is_ever_a_typed_stat_in_the_catalog():
+    """A presence flag drops any magnitude, so a template on the presence list must
+    never appear in the vendored dump with a real bonus type — that would flatten a
+    stacking stat into a flag."""
+    with open(os.path.join(ROOT, "data", "seed", "compendium", "raw", "gearplanner_items.json"),
+              encoding="utf-8") as fh:
+        raw = json.load(fh)
+    types = {}
+    for r in raw:
+        for a in r.get("affixes") or []:
+            types.setdefault(a.get("name"), set()).add(a.get("type"))
+    assert len(E.PRESENCE) > 100, "a guard over a near-empty list asserts little"
+    typed = sorted(t for t in E.PRESENCE if types.get(t, {"Bool"}) - {"Bool"})
+    assert typed == [], typed

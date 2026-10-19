@@ -47,11 +47,16 @@ def known_type_corrections():
         d = json.load(fh)
     known = {(item, e["name"], e["to"]) for item, es in d.items() if not item.startswith("_") and isinstance(es, list)
              for e in es}
+    # Corrections the harvest retired (#907) still record an upstream mistake.
+    for k, v in d.items():
+        if k.startswith("_retired") and isinstance(v, dict) and isinstance(v.get("entries"), dict):
+            known |= {(item, e["name"], e["to"]) for item, es in v["entries"].items() for e in es}
     # #887 — roman-numeral element lores: upstream reads I..X raw, the template adds 10.
     p = os.path.join(ROOT, "data", "seed", "compendium", "roman_element_lore.json")
     with open(p, encoding="utf-8") as fh:
         lore = json.load(fh)
-    for item, es in (lore.get("items") or {}).items():
+    retired = [v.get("entries") or {} for k, v in (lore.get("_retired") or {}).items() if isinstance(v, dict)]
+    for item, es in [kv for src in [lore.get("items") or {}] + retired for kv in src.items()]:
         for e in es if isinstance(es, list) else [es]:
             if isinstance(e, dict) and e.get("stat"):
                 known.add((item, "LORE", e["stat"]))
@@ -81,7 +86,7 @@ def compare(raw_items, pages_by_title, known=frozenset()):
             if E.depth(line) > 1:
                 continue
             call = E.parse_call(line)
-            if not call or call is E._QUALIFIED or call[0] not in E.MAPPERS:
+            if not call or call[0] == E._QUALIFIED[0] or call[0] not in E.MAPPERS:
                 continue
             try:
                 ours = E.MAPPERS[call[0]](call[1], call[2])

@@ -37,8 +37,11 @@ def load(path: str = SHARD_PATH) -> dict:
     return shard
 
 
-def fmt(name, value):
-    """gear-planner's value spelling: `+N` for the enhancement and orb bonuses, else the number."""
+def fmt(name, value, btype=None):
+    """gear-planner's value spelling: `+N` for the enhancement and orb bonuses, the
+    integer 1 for a presence (`Bool`), else the number as a string."""
+    if btype == "Bool":
+        return value
     if (name.startswith("Enhancement Bonus (") or name == "Orb Bonus") and value >= 0:
         return f"+{value}"
     return str(value)
@@ -106,6 +109,6 @@ def apply(raw_items, shard: dict, switched=SWITCHED):
             out.append(it)
             continue
         affixes, ours = _merge([dict(a) for a in it.get("affixes") or []],
-                               [(n, t, fmt(n, v)) for n, t, v in h.get("affixes") or []], stats)
+                               [(n, t, fmt(n, v, t)) for n, t, v in h.get("affixes") or []], stats)
         out.append(dict(it, affixes=affixes))
     return out, stats

@@ -90,5 +90,9 @@ def test_the_build_stamps_the_switch():
     # armor, offhand, jewelry, clothing and quivers. `added` is the wiki-stated affixes
     # gear-planner never parsed (mostly rune arms, already supplied downstream).
     assert set(ha["families"]) >= {"Weapon", "Armor", "Offhand", "Ring", "Helm", "Boots"}
-    assert ha["replaced"] == 129 and ha["added"] == 31 and ha["kept_whole"] == 415
+    # 129/31/415 when every family first switched; then the qualified-text rule was
+    # narrowed to mapped calls (a qualified augment slot produces no affix) and 141
+    # presence templates gained a mapper, so far fewer items are kept whole.
+    assert ha["replaced"] == 124 and ha["added"] == 31 and ha["kept_whole"] == 201
+    assert ha["unchanged"] == 20566
     assert ha["weapon_kind_on_non_weapon"] == 7

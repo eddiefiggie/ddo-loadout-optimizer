@@ -20,6 +20,8 @@ none of its parser is ported (plan constraint 1).
 """
 from __future__ import annotations
 
+import json
+import os
 import re
 
 from src.wiki_item_meta import _split_top
@@ -156,11 +158,14 @@ def parse_call(line: str):
                 break
             continue
         i += 1
+    parts = _split_top(line[2:i - 2])
     if line[i:].strip():
         # Text after the call qualifies it — "(only from chest)", "(only from chain end
         # reward)": the effect is conditional, not the item's own. Never read as plain.
-        return _QUALIFIED
-    parts = _split_top(line[2:i - 2])
+        # The template is named so a caller can tell a qualified STAT (which keeps the
+        # item whole) from a qualified augment slot or set (which produces no affix).
+        q = parts[0].strip().replace("_", " ")
+        return (_QUALIFIED[0], [q[:1].upper() + q[1:]], {})
     name = parts[0].strip().replace("_", " ")
     name = name[:1].upper() + name[1:]
     positional, named = [], {}
@@ -430,6 +435,31 @@ MAPPERS = {
 }
 
 
+PRESENCE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "seed", "compendium",
+                             "presence_templates.json")
+
+
+def _load_presence():
+    with open(PRESENCE_PATH, encoding="utf-8") as fh:
+        return set(json.load(fh)["templates"])
+
+
+#: Named-effect templates with no bonus type (presence_templates.json): the call
+#: states the effect is present, which is the catalog's (name, Bool, 1). Its
+#: parameters (dice tiers, procs) are not a stacking magnitude and are not read.
+PRESENCE = _load_presence()
+
+
+def m_presence(name):
+    def m(pos, named):
+        return [(name, "Bool", 1)]
+    return m
+
+
+for _t in PRESENCE:
+    MAPPERS.setdefault(_t, m_presence(_t))
+
+
 def affixes(enhancements: str):
     """`(mapped, unmapped)` for an item's OWN enchantments (top-level lines; nested
     lines are sub-options): mapped affixes as `(name, type, value)`, and the calls no
@@ -441,8 +471,9 @@ def affixes(enhancements: str):
         call = parse_call(line)
         if call is None:
             continue
-        if call is _QUALIFIED:
-            unmapped.append((call[0], "a call followed by qualifying text (conditional)"))
+        if call[0] == _QUALIFIED[0]:
+            if call[1][0] in MAPPERS:
+                unmapped.append((call[0], "a call followed by qualifying text (conditional)"))
             continue
         name, pos, named = call
         fn = MAPPERS.get(name)
@@ -450,7 +481,12 @@ def affixes(enhancements: str):
             unmapped.append((name, "no mapper"))
             continue
         try:
-            mapped.extend(fn(pos, named))
+            for a in fn(pos, named):
+                # A presence is a flag: two calls of one effect (Bewildering and its
+                # critical variant) still state ONE presence, never two.
+                if a[1] == "Bool" and a in mapped:
+                    continue
+                mapped.append(a)
         except Unmapped as e:
             unmapped.append((name, str(e)))
     return mapped, unmapped
