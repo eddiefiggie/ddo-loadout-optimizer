@@ -81,7 +81,7 @@ def compare(raw_items, pages_by_title, known=frozenset()):
             if E.depth(line) > 1:
                 continue
             call = E.parse_call(line)
-            if not call or call[0] not in E.MAPPERS:
+            if not call or call is E._QUALIFIED or call[0] not in E.MAPPERS:
                 continue
             try:
                 ours = E.MAPPERS[call[0]](call[1], call[2])

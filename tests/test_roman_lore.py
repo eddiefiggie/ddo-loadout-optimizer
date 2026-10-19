@@ -76,10 +76,11 @@ def test_an_entry_whose_numbers_break_the_template_rule_fails():
 def test_the_shipped_shard_is_internally_consistent_and_populated():
     shard = L.load()
     assert L.check_shard(shard) == []
-    # #907 — 90/103 before: the 48 weapons (55 entries) now take their lores from our own
-    # wiki harvest, whose Spelllore mapper applies the template's +10 itself; each
+    # #907 — 90/103 before: every switched family (all of them) now takes its lores from
+    # our own wiki harvest; one entry remains, on an item kept whole by the overlay.
+    # (Was: the 48 weapons, 55 entries, now take their lores from our own wiki harvest, whose Spelllore mapper applies the template's +10 itself; each
     # entry fired its stale guard and moved to `_retired`.
-    assert len(shard["items"]) == 42 and sum(len(v) for v in shard["items"].values()) == 48
+    assert len(shard["items"]) == 1 and sum(len(v) for v in shard["items"].values()) == 1
     assert all(e["stat"].endswith(" Lore") and e["stat"] != "Spell Lore"
                for v in shard["items"].values() for e in v), "element lores only; Spell Lore is the +0 case"
 
@@ -121,4 +122,4 @@ def test_the_built_catalog_credits_the_template_value():
     assert sorted(mu, key=str) == sorted([("17", None), ("8", "Spell Lore")], key=str), mu
     # #907 — the weapon entries retired (see the shard test); their values are now the
     # harvest's, which the per-item assertions above still pin.
-    assert data["metadata"]["roman_element_lore_coverage"] == {"items": 42, "values_changed": 51, "entries": 48}
+    assert data["metadata"]["roman_element_lore_coverage"] == {"items": 1, "values_changed": 1, "entries": 1}

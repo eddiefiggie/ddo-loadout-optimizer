@@ -788,6 +788,13 @@ def build() -> dict:
     # build_dino derives each blank's intrinsic set membership from the native
     # records it shadows, and the artifact carry-over reads the same list.
     _raw_items = _raw_planner_items()
+    # #906/#907 — the harvested metadata and enchantments are part of what a raw record
+    # IS from here on: the [Upgraded] twins and the wiki supplement are derived from
+    # these records below, and must inherit the harvest exactly as they used to inherit
+    # the corrections it retired. (load_planner_items applies the same overlays to its
+    # own read; both are idempotent.)
+    _raw_items, _ = harvest_meta_mod.apply(_raw_items, harvest_meta_mod.load(), harvest_meta_mod.load_rulings())
+    _raw_items, _ = harvest_affixes_mod.apply(_raw_items, harvest_affixes_mod.load())
     dino_blanks, dino_inserts, dino_sets, dino_cov = dino_mod.build_dino(
         dino_seed, crafting, sets_catalog=_set_catalog, planner_items=_raw_items)
     _host_pipeline_names = {b.get("source_item") for b in dino_blanks}

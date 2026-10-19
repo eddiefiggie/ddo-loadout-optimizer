@@ -7,31 +7,6 @@
     "shape": "`items`: record name -> entries {stat (canonical, post name-correction), numeral, from, to, category}. Also applied to the record's `[Upgraded]` twin (#879), which copies the base's affixes. `no_catalog_affix`: page lores with no affix on the record to correct — recorded, never added. `not_in_catalog`: member pages with no catalog record. `handled_elsewhere`: lores already corrected by another mechanism."
   },
   "items": {
-    "Rattle Charm": [
-      {
-        "stat": "Acid Lore",
-        "numeral": "IV",
-        "from": "4",
-        "to": "14",
-        "category": "Category:Acid Lore IV items"
-      },
-      {
-        "stat": "Sonic Lore",
-        "numeral": "IV",
-        "from": "4",
-        "to": "14",
-        "category": "Category:Sonic Lore IV items"
-      }
-    ],
-    "Flame's Gift": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "III",
-        "from": "3",
-        "to": "13",
-        "category": "Category:Fire Lore III items"
-      }
-    ],
     "Regalia of the Phoenix": [
       {
         "stat": "Fire Lore",
@@ -39,392 +14,6 @@
         "from": "3",
         "to": "13",
         "category": "Category:Fire Lore III items"
-      }
-    ],
-    "Tattered Gloves": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "II",
-        "from": "2",
-        "to": "12",
-        "category": "Category:Fire Lore II items"
-      }
-    ],
-    "Sage's Spectacles (level 27)": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "VIII",
-        "from": "8",
-        "to": "18",
-        "category": "Category:Fire Lore VIII items"
-      }
-    ],
-    "Gleaming Plate": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Fire Lore V items"
-      },
-      {
-        "stat": "Radiance Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Radiance Lore V items"
-      }
-    ],
-    "Molb's Fist": [
-      {
-        "stat": "Ice Lore",
-        "numeral": "III",
-        "from": "3",
-        "to": "13",
-        "category": "Category:Ice Lore III items"
-      }
-    ],
-    "Visor of Concentration": [
-      {
-        "stat": "Ice Lore",
-        "numeral": "III",
-        "from": "3",
-        "to": "13",
-        "category": "Category:Ice Lore III items"
-      },
-      {
-        "stat": "Repair Lore",
-        "numeral": "III",
-        "from": "3",
-        "to": "13",
-        "category": "Category:Repair Lore III items"
-      }
-    ],
-    "Iron Beads (level 12)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "III",
-        "from": "3",
-        "to": "13",
-        "category": "Category:Lightning Lore III items"
-      }
-    ],
-    "Iron Beads (level 13)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "III",
-        "from": "3",
-        "to": "13",
-        "category": "Category:Lightning Lore III items"
-      }
-    ],
-    "Iron Beads (level 14)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "IV",
-        "from": "4",
-        "to": "14",
-        "category": "Category:Lightning Lore IV items"
-      }
-    ],
-    "St. Mu'Ray's Fire": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "VII",
-        "from": "7",
-        "to": "17",
-        "category": "Category:Lightning Lore VII items"
-      }
-    ],
-    "Iron Beads (level 23)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Lightning Lore VI items"
-      }
-    ],
-    "Iron Beads (level 24)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Lightning Lore VI items"
-      }
-    ],
-    "Iron Beads (level 25)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Lightning Lore VI items"
-      }
-    ],
-    "Shroud of the Abbot": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Lightning Lore V items"
-      },
-      {
-        "stat": "Void Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Void Lore V items"
-      }
-    ],
-    "Girdle of Faith": [
-      {
-        "stat": "Healing Lore",
-        "numeral": "III",
-        "from": "3",
-        "to": "13",
-        "category": "Category:Healing Lore III items"
-      }
-    ],
-    "Halcyonia": [
-      {
-        "stat": "Healing Lore",
-        "numeral": "IV",
-        "from": "4",
-        "to": "14",
-        "category": "Category:Healing Lore IV items"
-      }
-    ],
-    "Sage's Gloves (level 26)": [
-      {
-        "stat": "Healing Lore",
-        "numeral": "IX",
-        "from": "9",
-        "to": "19",
-        "category": "Category:Healing Lore IX items"
-      },
-      {
-        "stat": "Repair Lore",
-        "numeral": "VIII",
-        "from": "8",
-        "to": "18",
-        "category": "Category:Repair Lore VIII items"
-      }
-    ],
-    "Gauntlets of Immortality": [
-      {
-        "stat": "Healing Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Healing Lore VI items"
-      }
-    ],
-    "Signet of the Shining Sun": [
-      {
-        "stat": "Healing Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Healing Lore VI items"
-      }
-    ],
-    "Gauntlets of Eternity": [
-      {
-        "stat": "Healing Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Healing Lore V items"
-      }
-    ],
-    "Sage's Gloves (level 17)": [
-      {
-        "stat": "Healing Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Healing Lore V items"
-      },
-      {
-        "stat": "Repair Lore",
-        "numeral": "IV",
-        "from": "4",
-        "to": "14",
-        "category": "Category:Repair Lore IV items"
-      }
-    ],
-    "Epic Halcyonia": [
-      {
-        "stat": "Healing Lore",
-        "numeral": "X",
-        "from": "10",
-        "to": "20",
-        "category": "Category:Healing Lore X items"
-      }
-    ],
-    "Sage's Cuffs (level 15)": [
-      {
-        "stat": "Kinetic Lore",
-        "numeral": "VIII",
-        "from": "8",
-        "to": "18",
-        "category": "Category:Kinetic Lore VIII items"
-      }
-    ],
-    "Titan's Fist": [
-      {
-        "stat": "Kinetic Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Kinetic Lore V items"
-      }
-    ],
-    "Sage's Cuffs (level 26)": [
-      {
-        "stat": "Kinetic Lore",
-        "numeral": "X",
-        "from": "10",
-        "to": "20",
-        "category": "Category:Kinetic Lore X items"
-      }
-    ],
-    "Sage's Skullcap (level 27)": [
-      {
-        "stat": "Radiance Lore",
-        "numeral": "IX",
-        "from": "9",
-        "to": "19",
-        "category": "Category:Radiance Lore IX items"
-      }
-    ],
-    "Sage's Skullcap (level 19)": [
-      {
-        "stat": "Radiance Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Radiance Lore V items"
-      }
-    ],
-    "Docent of Shadow (level 8)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "III",
-        "from": "3",
-        "to": "13",
-        "category": "Category:Void Lore III items"
-      }
-    ],
-    "Robe of Shadow (level 8)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "III",
-        "from": "3",
-        "to": "13",
-        "category": "Category:Void Lore III items"
-      }
-    ],
-    "Skull Fetish Mask": [
-      {
-        "stat": "Void Lore",
-        "numeral": "III",
-        "from": "3",
-        "to": "13",
-        "category": "Category:Void Lore III items"
-      }
-    ],
-    "Docent of Shadow (level 4)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "II",
-        "from": "2",
-        "to": "12",
-        "category": "Category:Void Lore II items"
-      }
-    ],
-    "Robe of Shadow (level 4)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "II",
-        "from": "2",
-        "to": "12",
-        "category": "Category:Void Lore II items"
-      }
-    ],
-    "Docent of Shadow (level 12)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "IV",
-        "from": "4",
-        "to": "14",
-        "category": "Category:Void Lore IV items"
-      }
-    ],
-    "Robe of Shadow (level 12)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "IV",
-        "from": "4",
-        "to": "14",
-        "category": "Category:Void Lore IV items"
-      }
-    ],
-    "Epic Docent of Shadow (level 20)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Void Lore VI items"
-      }
-    ],
-    "Epic Docent of Shadow (level 24)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Void Lore VI items"
-      }
-    ],
-    "Epic Robe of Shadow (level 20)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Void Lore VI items"
-      }
-    ],
-    "Epic Robe of Shadow (level 24)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Void Lore VI items"
-      }
-    ],
-    "Docent of Shadow (level 16)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Void Lore V items"
-      }
-    ],
-    "Robe of Shadow (level 16)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Void Lore V items"
       }
     ]
   },
@@ -508,7 +97,7 @@
   ],
   "_retired": {
     "2026-10-19-own-item-harvest": {
-      "why": "#907 — weapons now take their enchantments from our own wiki harvest, whose Spelllore mapper applies the template's +10 itself; each entry below fired its own stale guard ('already reads N') and is retired with the value the harvest reads.",
+      "why": "#907 — switched families now take their enchantments from our own wiki harvest, whose Spelllore mapper applies the template's +10 itself; each entry below fired its own stale guard ('already reads N') and is retired with the value the harvest reads.",
       "entries": {
         "Bronze Ingot Arcanum (level 23)": [
           {
@@ -989,6 +578,417 @@
             "from": "6",
             "to": "16",
             "category": "Category:Void Lore VI items"
+          }
+        ],
+        "Rattle Charm": [
+          {
+            "stat": "Acid Lore",
+            "numeral": "IV",
+            "from": "4",
+            "to": "14",
+            "category": "Category:Acid Lore IV items"
+          },
+          {
+            "stat": "Sonic Lore",
+            "numeral": "IV",
+            "from": "4",
+            "to": "14",
+            "category": "Category:Sonic Lore IV items"
+          }
+        ],
+        "Flame's Gift": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "III",
+            "from": "3",
+            "to": "13",
+            "category": "Category:Fire Lore III items"
+          }
+        ],
+        "Tattered Gloves": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "II",
+            "from": "2",
+            "to": "12",
+            "category": "Category:Fire Lore II items"
+          }
+        ],
+        "Sage's Spectacles (level 27)": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "VIII",
+            "from": "8",
+            "to": "18",
+            "category": "Category:Fire Lore VIII items"
+          }
+        ],
+        "Gleaming Plate": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Fire Lore V items"
+          },
+          {
+            "stat": "Radiance Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Radiance Lore V items"
+          }
+        ],
+        "Molb's Fist": [
+          {
+            "stat": "Ice Lore",
+            "numeral": "III",
+            "from": "3",
+            "to": "13",
+            "category": "Category:Ice Lore III items"
+          }
+        ],
+        "Visor of Concentration": [
+          {
+            "stat": "Ice Lore",
+            "numeral": "III",
+            "from": "3",
+            "to": "13",
+            "category": "Category:Ice Lore III items"
+          },
+          {
+            "stat": "Repair Lore",
+            "numeral": "III",
+            "from": "3",
+            "to": "13",
+            "category": "Category:Repair Lore III items"
+          }
+        ],
+        "Iron Beads (level 12)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "III",
+            "from": "3",
+            "to": "13",
+            "category": "Category:Lightning Lore III items"
+          }
+        ],
+        "Iron Beads (level 13)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "III",
+            "from": "3",
+            "to": "13",
+            "category": "Category:Lightning Lore III items"
+          }
+        ],
+        "Iron Beads (level 14)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "IV",
+            "from": "4",
+            "to": "14",
+            "category": "Category:Lightning Lore IV items"
+          }
+        ],
+        "St. Mu'Ray's Fire": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "VII",
+            "from": "7",
+            "to": "17",
+            "category": "Category:Lightning Lore VII items"
+          }
+        ],
+        "Iron Beads (level 23)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Lightning Lore VI items"
+          }
+        ],
+        "Iron Beads (level 24)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Lightning Lore VI items"
+          }
+        ],
+        "Iron Beads (level 25)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Lightning Lore VI items"
+          }
+        ],
+        "Shroud of the Abbot": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Lightning Lore V items"
+          },
+          {
+            "stat": "Void Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Void Lore V items"
+          }
+        ],
+        "Girdle of Faith": [
+          {
+            "stat": "Healing Lore",
+            "numeral": "III",
+            "from": "3",
+            "to": "13",
+            "category": "Category:Healing Lore III items"
+          }
+        ],
+        "Halcyonia": [
+          {
+            "stat": "Healing Lore",
+            "numeral": "IV",
+            "from": "4",
+            "to": "14",
+            "category": "Category:Healing Lore IV items"
+          }
+        ],
+        "Sage's Gloves (level 26)": [
+          {
+            "stat": "Healing Lore",
+            "numeral": "IX",
+            "from": "9",
+            "to": "19",
+            "category": "Category:Healing Lore IX items"
+          },
+          {
+            "stat": "Repair Lore",
+            "numeral": "VIII",
+            "from": "8",
+            "to": "18",
+            "category": "Category:Repair Lore VIII items"
+          }
+        ],
+        "Gauntlets of Immortality": [
+          {
+            "stat": "Healing Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Healing Lore VI items"
+          }
+        ],
+        "Signet of the Shining Sun": [
+          {
+            "stat": "Healing Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Healing Lore VI items"
+          }
+        ],
+        "Gauntlets of Eternity": [
+          {
+            "stat": "Healing Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Healing Lore V items"
+          }
+        ],
+        "Sage's Gloves (level 17)": [
+          {
+            "stat": "Healing Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Healing Lore V items"
+          },
+          {
+            "stat": "Repair Lore",
+            "numeral": "IV",
+            "from": "4",
+            "to": "14",
+            "category": "Category:Repair Lore IV items"
+          }
+        ],
+        "Epic Halcyonia": [
+          {
+            "stat": "Healing Lore",
+            "numeral": "X",
+            "from": "10",
+            "to": "20",
+            "category": "Category:Healing Lore X items"
+          }
+        ],
+        "Sage's Cuffs (level 15)": [
+          {
+            "stat": "Kinetic Lore",
+            "numeral": "VIII",
+            "from": "8",
+            "to": "18",
+            "category": "Category:Kinetic Lore VIII items"
+          }
+        ],
+        "Titan's Fist": [
+          {
+            "stat": "Kinetic Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Kinetic Lore V items"
+          }
+        ],
+        "Sage's Cuffs (level 26)": [
+          {
+            "stat": "Kinetic Lore",
+            "numeral": "X",
+            "from": "10",
+            "to": "20",
+            "category": "Category:Kinetic Lore X items"
+          }
+        ],
+        "Sage's Skullcap (level 27)": [
+          {
+            "stat": "Radiance Lore",
+            "numeral": "IX",
+            "from": "9",
+            "to": "19",
+            "category": "Category:Radiance Lore IX items"
+          }
+        ],
+        "Sage's Skullcap (level 19)": [
+          {
+            "stat": "Radiance Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Radiance Lore V items"
+          }
+        ],
+        "Docent of Shadow (level 8)": [
+          {
+            "stat": "Void Lore",
+            "numeral": "III",
+            "from": "3",
+            "to": "13",
+            "category": "Category:Void Lore III items"
+          }
+        ],
+        "Robe of Shadow (level 8)": [
+          {
+            "stat": "Void Lore",
+            "numeral": "III",
+            "from": "3",
+            "to": "13",
+            "category": "Category:Void Lore III items"
+          }
+        ],
+        "Skull Fetish Mask": [
+          {
+            "stat": "Void Lore",
+            "numeral": "III",
+            "from": "3",
+            "to": "13",
+            "category": "Category:Void Lore III items"
+          }
+        ],
+        "Docent of Shadow (level 4)": [
+          {
+            "stat": "Void Lore",
+            "numeral": "II",
+            "from": "2",
+            "to": "12",
+            "category": "Category:Void Lore II items"
+          }
+        ],
+        "Robe of Shadow (level 4)": [
+          {
+            "stat": "Void Lore",
+            "numeral": "II",
+            "from": "2",
+            "to": "12",
+            "category": "Category:Void Lore II items"
+          }
+        ],
+        "Docent of Shadow (level 12)": [
+          {
+            "stat": "Void Lore",
+            "numeral": "IV",
+            "from": "4",
+            "to": "14",
+            "category": "Category:Void Lore IV items"
+          }
+        ],
+        "Robe of Shadow (level 12)": [
+          {
+            "stat": "Void Lore",
+            "numeral": "IV",
+            "from": "4",
+            "to": "14",
+            "category": "Category:Void Lore IV items"
+          }
+        ],
+        "Epic Docent of Shadow (level 20)": [
+          {
+            "stat": "Void Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Void Lore VI items"
+          }
+        ],
+        "Epic Docent of Shadow (level 24)": [
+          {
+            "stat": "Void Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Void Lore VI items"
+          }
+        ],
+        "Epic Robe of Shadow (level 20)": [
+          {
+            "stat": "Void Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Void Lore VI items"
+          }
+        ],
+        "Epic Robe of Shadow (level 24)": [
+          {
+            "stat": "Void Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Void Lore VI items"
+          }
+        ],
+        "Docent of Shadow (level 16)": [
+          {
+            "stat": "Void Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Void Lore V items"
+          }
+        ],
+        "Robe of Shadow (level 16)": [
+          {
+            "stat": "Void Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Void Lore V items"
           }
         ]
       }

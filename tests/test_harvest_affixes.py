@@ -53,8 +53,8 @@ def test_an_item_with_an_unreadable_mapped_call_keeps_its_affixes_whole():
 
 
 def test_other_families_are_not_touched():
-    gp = _rec("Ring", [("Strength", "Enhancement", "5")], slot="Ring")
-    out, _ = _apply([gp], {"Ring": {"affixes": [["Strength", "Enhancement", 6]]}})
+    gp = _rec("Costume", [("Strength", "Enhancement", "5")], slot="Cosmetic")
+    out, _ = _apply([gp], {"Costume": {"affixes": [["Strength", "Enhancement", 6]]}})
     assert out[0] is gp
 
 
@@ -63,12 +63,18 @@ def test_a_switched_record_the_harvest_never_saw_is_refused():
     assert any("New Blade" in p for p in st["problems"])
 
 
+def test_a_weapon_kind_on_a_non_weapon_keeps_the_item_whole():
+    gp = _rec("Shield of Tireless Aid", [("Enhancement Bonus (Armor)", "Enhancement", "+5")], slot="Offhand")
+    out, st = _apply([gp], {"Shield of Tireless Aid": {"affixes": [["Enhancement Bonus (Weapon)", "Enhancement", 5]]}})
+    assert out[0] is gp and st["weapon_kind_on_non_weapon"] == 1
+
+
 def test_values_use_gear_planners_spelling():
     assert HA.fmt("Enhancement Bonus (Weapon)", 5) == "+5" and HA.fmt("Orb Bonus", 4) == "+4"
     assert HA.fmt("Enhancement Bonus (Weapon)", -1) == "-1" and HA.fmt("Strength", 6) == "6"
 
 
-def test_the_committed_shard_covers_the_vendored_weapons():
+def test_the_committed_shard_covers_the_vendored_dump():
     with open(planner_items.RAW_PATH, encoding="utf-8") as fh:
         raw = json.load(fh)
     _, st = HA.apply(raw, HA.load())
@@ -80,5 +86,9 @@ def test_the_build_stamps_the_switch():
         raise AssertionError("web/data/items.json is missing — build it first")
     with open(DATASET, encoding="utf-8") as fh:
         ha = json.load(fh)["metadata"]["planner_coverage"]["harvest_affixes"]
-    assert ha["families"] == ["Weapon"] and ha["records"] > 3000
-    assert ha["replaced"] == 56 and ha["added"] == 0 and ha["kept_whole"] == 39
+    # #907 — every family switched: weapons first (56 replaced, 39 kept whole), then
+    # armor, offhand, jewelry, clothing and quivers. `added` is the wiki-stated affixes
+    # gear-planner never parsed (mostly rune arms, already supplied downstream).
+    assert set(ha["families"]) >= {"Weapon", "Armor", "Offhand", "Ring", "Helm", "Boots"}
+    assert ha["replaced"] == 129 and ha["added"] == 31 and ha["kept_whole"] == 415
+    assert ha["weapon_kind_on_non_weapon"] == 7

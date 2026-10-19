@@ -128,6 +128,10 @@ def _roman(v):
     return total
 
 
+#: Returned by `parse_call` for a call followed by qualifying text.
+_QUALIFIED = ("<qualified>", [], {})
+
+
 def depth(line: str) -> int:
     """List depth of an enchantment line: `*` is 1, `**` is 2. A nested line is a
     sub-option (an upgrade tier, a choice, a set's grant) — not the item's own."""
@@ -152,6 +156,10 @@ def parse_call(line: str):
                 break
             continue
         i += 1
+    if line[i:].strip():
+        # Text after the call qualifies it — "(only from chest)", "(only from chain end
+        # reward)": the effect is conditional, not the item's own. Never read as plain.
+        return _QUALIFIED
     parts = _split_top(line[2:i - 2])
     name = parts[0].strip().replace("_", " ")
     name = name[:1].upper() + name[1:]
@@ -432,6 +440,9 @@ def affixes(enhancements: str):
             continue
         call = parse_call(line)
         if call is None:
+            continue
+        if call is _QUALIFIED:
+            unmapped.append((call[0], "a call followed by qualifying text (conditional)"))
             continue
         name, pos, named = call
         fn = MAPPERS.get(name)

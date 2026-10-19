@@ -143,3 +143,9 @@ def test_implement_and_orb_kinds_follow_the_templates_two_switches():
     assert _map("{{Enhancement bonus|si|6|20}}") == [("Universal Spell Power", "Implement", 20),
                                                       ("Enhancement Bonus (Armor)", "Enhancement", 6)]
     assert _map("{{Enhancement bonus|o|4}}") == [("Orb Bonus", "Orb", 4)]
+
+
+def test_a_call_followed_by_qualifying_text_is_conditional_and_not_read():
+    mapped, unmapped = E.affixes("* {{hp|Vitality|20}} (only from chain end reward)\n* {{Stat|STR|6}}")
+    assert mapped == [("Strength", "Enhancement", 6)]
+    assert unmapped == [("<qualified>", "a call followed by qualifying text (conditional)")]
