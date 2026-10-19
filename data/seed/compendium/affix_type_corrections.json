@@ -1200,19 +1200,6 @@
       "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
     }
   ],
-  "Slice": [
-    {
-      "name": "Seeker",
-      "from": "Exceptional",
-      "to": "Insight",
-      "value": "3",
-      "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
-      "template": "{{Seeker|3|exc}}",
-      "wiki_url": "https://ddowiki.com/page/Item:Slice",
-      "verified": "2026-09-04",
-      "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
-    }
-  ],
   "Horseshoe Crab Shield (level 26)": [
     {
       "name": "Seeker",
@@ -1237,5 +1224,23 @@
       "verified": "2026-09-22",
       "note": "397c673 regression repair. Upstream carried this augment as ('Magical Efficiency', 'Enhancement', 1) at 767a7f7 and degraded it to ('Power Store', 'Bool', 1) at 397c673 — both the name and the type. Our canon rename ('Power Store' -> 'Magical Efficiency', affix_name_corrections) restores the name and runs on the crafting catalog before this shard reaches the augment pool; this entry restores the type, returning the record to exactly what upstream itself shipped before the refresh. A Bool here is an unread template magnitude, not a real on/off, which is what tests/test_magical_efficiency.py guards. SEPARATE, PRE-EXISTING: the wiki states the magnitude as 10 ('-10% Enhancement bonus'), while upstream has said 1 both before and after the refresh. This shard corrects the TYPE only by design. #861 (2026-10-15) gave the crafting channel a value-correction path: item_value_corrections.json now raises the magnitude to 10 on the augment pool BEFORE this entry runs, so `value` here pins the corrected 10."
     }
-  ]
+  ],
+  "_retired_2026_10_19_own_item_harvest": {
+    "why": "#907 — weapons now take their enchantments from our own wiki harvest, whose template mappers read the same bonus type from the template code; each entry fired its own stale guard and is kept here with its original evidence.",
+    "entries": {
+      "Slice": [
+        {
+          "name": "Seeker",
+          "from": "Exceptional",
+          "to": "Insight",
+          "value": "3",
+          "tooltip": "Exceptional Seeker +3: Provides a +3 Insight bonus to confirm critical hits, and a +3 Insight bonus to critical hit damage (before multipliers are applied).",
+          "template": "{{Seeker|3|exc}}",
+          "wiki_url": "https://ddowiki.com/page/Item:Slice",
+          "verified": "2026-09-04",
+          "note": "#697 — see _meta.seeker_exceptional_class. The label says Exceptional; the rendered tooltip and the Seeker page say the applied bonus is Insight, so this stacks with nothing else Insight-typed and the #392 Exceptional bucket over-stacked it."
+        }
+      ]
+    }
+  }
 }

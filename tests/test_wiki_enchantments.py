@@ -126,10 +126,20 @@ def test_enhancement_wizardry_and_hit_points():
 
 
 def test_tier_two_calls_we_do_not_read_yet_are_unmapped():
-    for line in ("{{Wizardry|M}}", "{{Enhancement bonus|i|1}}", "{{Tactics|Tendon Slice|6}}",
+    for line in ("{{Wizardry|M}}", "{{Enhancement bonus|q|1}}", "{{Tactics|Tendon Slice|6}}",
                  "{{Spell Focus|Deific Focus|3}}", "{{Fortification|4}}", "{{Skills|Bluffing|3|enh}}"):
         try:
             _map(line)
         except E.Unmapped:
             continue
         raise AssertionError(f"{line} must be Unmapped")
+
+
+def test_implement_and_orb_kinds_follow_the_templates_two_switches():
+    assert _map("{{Enhancement bonus|i|1}}") == [("Universal Spell Power", "Implement", 3),
+                                                  ("Enhancement Bonus (Weapon)", "Enhancement", 1)]
+    assert _map("{{Enhancement bonus|io|6}}") == [("Universal Spell Power", "Implement", 18)]
+    assert _map("{{Enhancement bonus|oi|4|10}}") == [("Universal Spell Power", "Implement", 10), ("Orb Bonus", "Orb", 4)]
+    assert _map("{{Enhancement bonus|si|6|20}}") == [("Universal Spell Power", "Implement", 20),
+                                                      ("Enhancement Bonus (Armor)", "Enhancement", 6)]
+    assert _map("{{Enhancement bonus|o|4}}") == [("Orb Bonus", "Orb", 4)]

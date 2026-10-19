@@ -351,17 +351,28 @@ def m_spellpen(pos, named):
 
 
 def m_enhancement_bonus(pos, named):
+    """Template:Enhancement bonus (rev 548191), two switches on the kind:
+    `i|ii|io|oi|si` grant an Implement bonus to Universal Spell Power of `{{{3}}}`,
+    else 3 x `{{{2}}}`; then `w|i|ii` the weapon's enhancement, `a` the armor's,
+    `s|si` the shield's (the catalog's Armor stat), `o|oi` an Orb Bonus. `io` is
+    implement-only."""
     kind = (_arg(pos, 0) or "").strip().lower()
-    # A shield's enhancement is the catalog's `Enhancement Bonus (Armor)`, as the
-    # template's `s` branch renders the same "Enhancement Bonus" as armor.
-    stat = {"w": "Enhancement Bonus (Weapon)", "a": "Enhancement Bonus (Armor)",
-            "s": "Enhancement Bonus (Armor)"}.get(kind)
-    if stat is None:
-        raise Unmapped(f"Enhancement bonus kind {kind!r} (implement/orb not mapped yet)")
+    known = ("w", "a", "s", "i", "ii", "io", "oi", "si", "o")
+    if kind not in known:
+        raise Unmapped(f"Enhancement bonus kind {kind!r}")
     v = _int(_arg(pos, 1) or "0")
-    if v == 0:
-        raise Unmapped("Masterwork (enhancement 0)")
-    return [_penalty(stat, "Enhancement", v)]
+    out = []
+    if kind in ("i", "ii", "io", "oi", "si"):
+        impl = _arg(pos, 2)
+        out.append(("Universal Spell Power", "Implement", _int(impl) if impl and impl.strip() else 3 * v))
+    stat = {"w": "Enhancement Bonus (Weapon)", "i": "Enhancement Bonus (Weapon)", "ii": "Enhancement Bonus (Weapon)",
+            "a": "Enhancement Bonus (Armor)", "s": "Enhancement Bonus (Armor)", "si": "Enhancement Bonus (Armor)",
+            "o": "Orb Bonus", "oi": "Orb Bonus"}.get(kind)
+    if stat:
+        if v == 0 and kind in ("w", "a", "s"):
+            raise Unmapped("Masterwork (enhancement 0)")
+        out.append(_penalty(stat, "Orb" if stat == "Orb Bonus" else "Enhancement", v))
+    return out
 
 
 def m_wizardry(pos, named):
