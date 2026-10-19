@@ -1,0 +1,68 @@
+{
+ "_meta": {
+  "why": "#907 — each mapped enchantment template's default bonus type, with the template CODE that renders it (not its usage notes) and the revision read.",
+  "helpers": {
+   "Template:Insightful": 678297,
+   "Template:Roman2Dec": 639664
+  },
+  "regenerate": "python3 scripts/build_template_evidence.py <templates harvest>"
+ },
+ "templates": {
+  "Accuracy": {
+   "default": "Competence",
+   "quote": "{{Insightful|{{{2|Competence}}}}} bonus",
+   "revid": 644332,
+   "ts": "2025-06-03T22:17:41Z",
+   "excerpt": "|{{{1|I}}}|ifFalse={{Int|{{uc:{{{1|1}}}}}}}|ifTrue=+{{{1|I}}}}}]]:''' Passive: {{Int|{{Roman2Dec|{{uc:{{{1|I}}}}}}}}} [[{{Insightful|{{{2|Competence}}}}} bonus]] to [[attack roll]]s|long=y}}{{#ifeq:{{NAMESPACE}}|Item|[["
+  },
+  "Deadly": {
+   "default": "Competence",
+   "quote": "{{Insightful|{{{2|Competence}}}}} bonus",
+   "revid": 402602,
+   "ts": "2018-12-13T13:40:36Z",
+   "excerpt": "opup|1=[[Deadly|{{{2|}}} Deadly {{Int|{{{1}}}}}]]|2='''[[Deadly|{{{2|}}} Deadly {{Int|{{{1}}}}}]]:''' {{Int|{{{1}}}}} [[{{Insightful|{{{2|Competence}}}}} bonus]] to weapon damage.|long=y}}|{{Popup|1=[[Deadly|{{{2|}}} De"
+  },
+  "Dodge": {
+   "default": "Enhancement",
+   "quote": "{{{2|Enhancement}}}",
+   "revid": 537055,
+   "ts": "2023-03-11T20:06:04Z",
+   "excerpt": "lc:{{{prefix|}}}}}}} Dodge {{Int|{{{1|0}}}}}%]]:''' {{Int|{{{1|0}}}}}% {{#ifeq:{{{1}}}|{{Abs|{{{1}}}}}|[[{{ucfirst:{{lc:{{{2|Enhancement}}}}}}} bonus]]|penalty}} to Dodge.}}{{#ifeq:{{lc:{{NAMESPACE}}"
+  },
+  "Doublestrike": {
+   "default": "Enhancement",
+   "quote": "{{{2|Enhancement}}}",
+   "revid": 693319,
+   "ts": "2026-07-08T21:24:54Z",
+   "excerpt": "ke {{ConvertValueToPercent|{{{1|0}}}}}]]:''' Passive: {{ConvertValueToPercent|{{{1|0}}}}} [[{{ucfirst:{{lc:{{Insightful|{{{2|Enhancement}}}}}}}}} bonus]] to Doublestrike. (Doublestrike is a chance to"
+  },
+  "Resistance": {
+   "default": "Resistance",
+   "quote": "{{Insightful|{{{2|Resistance}}}}} bonus",
+   "revid": 627562,
+   "ts": "2025-04-21T15:25:51Z",
+   "excerpt": "|{{{1|0}}}}}]]|2='''[[Resistance (enchantment)|{{{2|}}} Resistance {{Int|{{{1|0}}}}}]]:''' Passive: {{Int|{{{1|0}}}}} [[{{Insightful|{{{2|Resistance}}}}} bonus]] to Fortitude, Reflex, and Will Saving Throws.}}{{#ifeq:{{"
+  },
+  "Seeker": {
+   "default": "Enhancement",
+   "quote": "{{{2|enhancement}}}",
+   "revid": 496174,
+   "ts": "2021-08-08T16:33:07Z",
+   "excerpt": "{{#vardefine:Type|{{#switch:{{lc:{{{2|enhancement}}}}}\n\t|exc|exceptional|ins|insightful = Insight\n\t|#default    "
+  },
+  "Sheltering": {
+   "default": "Enhancement",
+   "quote": "{{ucfirst:{{lc:{{{2|enhancement}}}}}}}}} bonus",
+   "revid": 696462,
+   "ts": "2026-07-20T08:08:05Z",
+   "excerpt": "}} Magical Sheltering {{Int|{{{1|0}}}}}]]:''' {{Int|{{{1|0}}}}} [[{{#ifeq:{{lc:{{{2|enhancement}}}}}|insightful|Insight|{{ucfirst:{{lc:{{{2|enhancement}}}}}}}}} bonus]] to [[Magical Resistance Rating]]}}{{#ifeq:{{NAMESPACE}}|I"
+  },
+  "Stat": {
+   "default": "Enhancement",
+   "quote": "{{Insightful|{{{3|Enhancement}}}}} bonus",
+   "revid": 678248,
+   "ts": "2026-03-10T23:30:19Z",
+   "excerpt": "S) or [[charisma]] (CHA).\n\t}}\n\t|{{#switch:{{lc:{{{1|0}}}}}\n\t\t|body             = This item grants a {{Int|{{{2|0}}}}} [[{{Insightful|{{{3|Enhancement}}}}} bonus]] to any one of the 3 body related ability statistics: [[st"
+  }
+ }
+}
