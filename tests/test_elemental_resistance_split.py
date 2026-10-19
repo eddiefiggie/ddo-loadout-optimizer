@@ -445,14 +445,20 @@ def test_no_carrier_is_quarantined_and_the_retyped_six_are_restored():
     # ...and the correction that makes that join work is present and pointed the
     # right way. Without this the test would pass on a build that simply dropped
     # the carriers.
+    # #907 — the `Insight` reading now reaches most carriers from our own wiki
+    # harvest (the Elemental Resistance mapper reads the call's own `insight`), and
+    # the correction for those retired through its stale guard. Either source must
+    # supply it; neither is a broken join.
     with open(TYPE_CORRECTIONS_PATH, "r", encoding="utf-8") as fh:
         corrections = json.load(fh)
+    with open(os.path.join(ROOT, "data", "seed", "compendium", "wiki_item_affixes.json"), encoding="utf-8") as fh:
+        harvest = json.load(fh)["records"]
     for item in _RETYPED:
-        entry = corrections.get(item)
-        assert entry, f"{item} has no type correction — the join would break again"
-        assert any(c["name"] == "Elemental Resistance"
-                   and c["from"] == "Competence" and c["to"] == "Insight"
-                   for c in entry), entry
+        corrected = any(c["name"] == "Elemental Resistance" and c["from"] == "Competence" and c["to"] == "Insight"
+                        for c in corrections.get(item) or [])
+        harvested_insight = not harvest[item].get("unread") and any(
+            a[0] == "Elemental Resistance" and a[1] == "Insight" for a in harvest[item]["affixes"])
+        assert corrected or harvested_insight, f"{item}: nothing supplies the Insight reading — the join would break"
 
     # 60 readings across both channels: 59 item-channel affixes + 1 augment.
     assert cov["expanded"] + cov["augments"]["expanded"] == 60

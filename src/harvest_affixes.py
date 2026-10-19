@@ -25,7 +25,8 @@ SHARD_PATH = os.path.join(ROOT, "data", "seed", "compendium", "wiki_item_affixes
 
 #: Item slots whose enchantments now come from the harvest. Widened family by family
 #: as each reaches parity (plan #911, Phase 2).
-SWITCHED = ("Weapon",)
+SWITCHED = ("Weapon", "Armor", "Offhand", "Ring", "Necklace", "Trinket", "Bracers", "Goggles",
+            "Helm", "Cloak", "Belt", "Gloves", "Boots", "Quiver")
 
 
 def load(path: str = SHARD_PATH) -> dict:
@@ -94,6 +95,14 @@ def apply(raw_items, shard: dict, switched=SWITCHED):
         stats["records"] += 1
         if h.get("unread"):
             stats["kept_whole"] += 1
+            out.append(it)
+            continue
+        if it.get("slot") != "Weapon" and any(a[0] == "Enhancement Bonus (Weapon)" for a in h.get("affixes") or []):
+            # A non-weapon page written with a weapon kind (`{{Enhancement bonus|i|N}}`
+            # on a shield, where `si` was meant): the template renders a weapon
+            # enhancement, which a shield cannot carry. Not guessed — kept whole.
+            stats["kept_whole"] += 1
+            stats["weapon_kind_on_non_weapon"] = stats.get("weapon_kind_on_non_weapon", 0) + 1
             out.append(it)
             continue
         affixes, ours = _merge([dict(a) for a in it.get("affixes") or []],

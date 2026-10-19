@@ -35,7 +35,7 @@ def build(raw_items, pages_by_title):
             continue
         mapped, unmapped = E.affixes(box[1].get("enhancements") or "")
         rec = {"affixes": [list(a) for a in mapped], "revid": page.get("revid")}
-        unread = sorted({t for t, why in unmapped if t in E.MAPPERS})
+        unread = sorted({t for t, why in unmapped if t in E.MAPPERS or t == E._QUALIFIED[0]})
         if unread:
             rec["unread"] = unread
         records[r["name"]] = rec
