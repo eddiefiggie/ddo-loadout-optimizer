@@ -1,0 +1,164 @@
+{
+ "_meta": {
+  "why": "#906 — field-level rulings on disagreements between our harvested item metadata and pinned gear-planner, each with its evidence. scripts/diff_harvest_meta.py classifies a ruled difference as ruled-wiki (our harvest is right) or ruled-gp (keep gear-planner's value); a phase switches only when no unruled 'review' difference remains.",
+  "harvest": "items-20261018"
+ },
+ "rulings": [
+  {
+   "name": "Band of Diani ir'Wynarn",
+   "field": "quests",
+   "ruling": "wiki",
+   "why": "The item page's `quest` names the quest outright; gear-planner's 'Sharn quests' is a grouping label, not a quest."
+  },
+  {
+   "name": "Brand of Kalok Shash",
+   "field": "quests",
+   "ruling": "wiki",
+   "why": "The item page's `quest` names the quest outright; gear-planner's 'Sharn quests' is a grouping label, not a quest."
+  },
+  {
+   "name": "Gauntlet of the Iron Council",
+   "field": "quests",
+   "ruling": "wiki",
+   "why": "The item page's `quest` names the quest outright; gear-planner's 'Sharn quests' is a grouping label, not a quest."
+  },
+  {
+   "name": "Ir'Kesslan's Most Prescient Lens",
+   "field": "quests",
+   "ruling": "wiki",
+   "why": "The item page's `quest` names the quest outright; gear-planner's 'Sharn quests' is a grouping label, not a quest."
+  },
+  {
+   "name": "Key of Rhukaan Draal",
+   "field": "quests",
+   "ruling": "wiki",
+   "why": "The item page's `quest` names the quest outright; gear-planner's 'Sharn quests' is a grouping label, not a quest."
+  },
+  {
+   "name": "Radiant Ring of Taer Valaestas",
+   "field": "quests",
+   "ruling": "wiki",
+   "why": "The item page's `quest` names the quest outright; gear-planner's 'Sharn quests' is a grouping label, not a quest."
+  },
+  {
+   "name": "Sigil of Regalport",
+   "field": "quests",
+   "ruling": "wiki",
+   "why": "The item page's `quest` names the quest outright; gear-planner's 'Sharn quests' is a grouping label, not a quest."
+  },
+  {
+   "name": "Sigil of the Triumvirate",
+   "field": "quests",
+   "ruling": "wiki",
+   "why": "The item page's `quest` names the quest outright; gear-planner's 'Sharn quests' is a grouping label, not a quest."
+  },
+  {
+   "name": "Stolen Signet of ir'Wynarn",
+   "field": "quests",
+   "ruling": "wiki",
+   "why": "The item page's `quest` names the quest outright; gear-planner's 'Sharn quests' is a grouping label, not a quest."
+  },
+  {
+   "name": "The Zarash'ak Ward",
+   "field": "quests",
+   "ruling": "wiki",
+   "why": "The item page's `quest` names the quest outright; gear-planner's 'Sharn quests' is a grouping label, not a quest."
+  },
+  {
+   "name": "Fire Touch Heavy Mace",
+   "field": "quests",
+   "ruling": "wiki",
+   "why": "The page's `quest` is 'Cannith Crafting Tutorial'; gear-planner's 'Essence Crafting Tutorial' is not what the page states."
+  },
+  {
+   "name": "Epic Cavalry Plate (legacy) (level 24)",
+   "field": "type",
+   "ruling": "wiki",
+   "why": "`type = Heavy Armor` on the page revision of 2026-08-27, which predates the gear-planner pin; gear-planner's 'Medium armor' contradicts the page it read."
+  },
+  {
+   "name": "Restored Elfcraft Breastplate",
+   "field": "type",
+   "ruling": "wiki",
+   "why": "`type = Medium Armor` on the page revision of 2026-08-27, which predates the gear-planner pin; gear-planner's 'Light armor' contradicts it."
+  },
+  {
+   "name": "Chains",
+   "field": "slot",
+   "ruling": "gp",
+   "why": "Dual-slot Slave Lords item: the page's tips state it can be worn in either of two slots, and the infobox records the default one. Gear-planner records the other. The catalog models one slot per item, so the existing choice stays until dual-slot items are modelled (#915)."
+  },
+  {
+   "name": "Chains",
+   "field": "type",
+   "ruling": "gp",
+   "why": "Dual-slot Slave Lords item: the page's tips state it can be worn in either of two slots, and the infobox records the default one. Gear-planner records the other. The catalog models one slot per item, so the existing choice stays until dual-slot items are modelled (#915)."
+  },
+  {
+   "name": "Legendary Chains",
+   "field": "slot",
+   "ruling": "gp",
+   "why": "Dual-slot Slave Lords item: the page's tips state it can be worn in either of two slots, and the infobox records the default one. Gear-planner records the other. The catalog models one slot per item, so the existing choice stays until dual-slot items are modelled (#915)."
+  },
+  {
+   "name": "Legendary Chains",
+   "field": "type",
+   "ruling": "gp",
+   "why": "Dual-slot Slave Lords item: the page's tips state it can be worn in either of two slots, and the infobox records the default one. Gear-planner records the other. The catalog models one slot per item, so the existing choice stays until dual-slot items are modelled (#915)."
+  },
+  {
+   "name": "Five Rings",
+   "field": "slot",
+   "ruling": "gp",
+   "why": "Dual-slot Slave Lords item: the page's tips state it can be worn in either of two slots, and the infobox records the default one. Gear-planner records the other. The catalog models one slot per item, so the existing choice stays until dual-slot items are modelled (#915)."
+  },
+  {
+   "name": "Five Rings",
+   "field": "type",
+   "ruling": "gp",
+   "why": "Dual-slot Slave Lords item: the page's tips state it can be worn in either of two slots, and the infobox records the default one. Gear-planner records the other. The catalog models one slot per item, so the existing choice stays until dual-slot items are modelled (#915)."
+  },
+  {
+   "name": "Legendary Five Rings",
+   "field": "slot",
+   "ruling": "gp",
+   "why": "Dual-slot Slave Lords item: the page's tips state it can be worn in either of two slots, and the infobox records the default one. Gear-planner records the other. The catalog models one slot per item, so the existing choice stays until dual-slot items are modelled (#915)."
+  },
+  {
+   "name": "Legendary Five Rings",
+   "field": "type",
+   "ruling": "gp",
+   "why": "Dual-slot Slave Lords item: the page's tips state it can be worn in either of two slots, and the infobox records the default one. Gear-planner records the other. The catalog models one slot per item, so the existing choice stays until dual-slot items are modelled (#915)."
+  },
+  {
+   "name": "Shackles",
+   "field": "slot",
+   "ruling": "gp",
+   "why": "Dual-slot Slave Lords item: the page's tips state it can be worn in either of two slots, and the infobox records the default one. Gear-planner records the other. The catalog models one slot per item, so the existing choice stays until dual-slot items are modelled (#915)."
+  },
+  {
+   "name": "Shackles",
+   "field": "type",
+   "ruling": "gp",
+   "why": "Dual-slot Slave Lords item: the page's tips state it can be worn in either of two slots, and the infobox records the default one. Gear-planner records the other. The catalog models one slot per item, so the existing choice stays until dual-slot items are modelled (#915)."
+  },
+  {
+   "name": "Legendary Shackles",
+   "field": "slot",
+   "ruling": "gp",
+   "why": "Dual-slot Slave Lords item: the page's tips state it can be worn in either of two slots, and the infobox records the default one. Gear-planner records the other. The catalog models one slot per item, so the existing choice stays until dual-slot items are modelled (#915)."
+  },
+  {
+   "name": "Legendary Shackles",
+   "field": "type",
+   "ruling": "gp",
+   "why": "Dual-slot Slave Lords item: the page's tips state it can be worn in either of two slots, and the infobox records the default one. Gear-planner records the other. The catalog models one slot per item, so the existing choice stays until dual-slot items are modelled (#915)."
+  },
+  {
+   "name": "Bottled Fear",
+   "field": "ml",
+   "ruling": "wiki",
+   "why": "`minlevel = 5` on the page revision of 2026-10-12T22:26Z, edited hours before the gear-planner pin's commit; gear-planner's scrape read the earlier revision. The page states 5."
+  }
+ ]
+}
