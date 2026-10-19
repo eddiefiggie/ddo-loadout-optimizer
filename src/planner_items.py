@@ -350,7 +350,7 @@ def _record(it, verified_seal_types, nc_per_item_hosts=None):
 
 def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
                        exclude_names=None, nc_per_item_hosts=None,
-                       ml_corrections=None, extra_raw=None, harvest_meta=None):
+                       ml_corrections=None, extra_raw=None, harvest_meta=None, harvest_affixes=None):
     """Load and map the gear-planner raw dump into native pipeline records.
     `verified_seal_types` (seal types with a non-empty pool) gates which "Sealed
     in X" crafting entries become seal-slot hosts; default empty -> none.
@@ -362,6 +362,10 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
     `extra_raw` are records the build derives in the dump's own shape — the
     `[Upgraded]` twins (#879) — mapped through the same `_record` so every
     downstream stage treats them exactly as it treats a native record.
+
+    `harvest_affixes` is the enchantment shard from `src/harvest_affixes.py` (#907):
+    the switched families' affixes as their own wiki pages state them, overlaid
+    after the metadata so a correction they make redundant fails its stale guard.
 
     `harvest_meta` is `(shard, rulings)` from `src/harvest_meta.py` (#906): the
     item metadata our own wiki harvest read — minimum level, slot, type, quests —
@@ -384,6 +388,13 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
         if harvest_stats["problems"]:
             raise SystemExit("harvested item metadata no longer describes the vendored dump (#906):\n  "
                              + "\n  ".join(harvest_stats["problems"]))
+    affix_stats = None
+    if harvest_affixes is not None:
+        from src import harvest_affixes as harvest_affixes_mod
+        raw, affix_stats = harvest_affixes_mod.apply(raw, harvest_affixes)
+        if affix_stats["problems"]:
+            raise SystemExit("harvested enchantments no longer describe the vendored dump (#907):\n  "
+                             + "\n  ".join(affix_stats["problems"][:10]))
     raw = raw + list(extra_raw or [])
 
     records, seen = [], set()
@@ -445,6 +456,8 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
     }
     if harvest_stats is not None:
         stats["harvest_meta"] = {k: v for k, v in harvest_stats.items() if k != "problems"}
+    if affix_stats is not None:
+        stats["harvest_affixes"] = {k: v for k, v in affix_stats.items() if k != "problems"}
     unmatched = sorted(set(ml_corr) - ml_corrected)
     if unmatched:
         raise ValueError(

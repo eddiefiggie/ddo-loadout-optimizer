@@ -23,96 +23,6 @@
         "category": "Category:Sonic Lore IV items"
       }
     ],
-    "Bronze Ingot Arcanum (level 23)": [
-      {
-        "stat": "Acid Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Acid Lore VI items"
-      }
-    ],
-    "Bronze Ingot Arcanum (level 24)": [
-      {
-        "stat": "Acid Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Acid Lore VI items"
-      }
-    ],
-    "Bronze Ingot Arcanum (level 25)": [
-      {
-        "stat": "Acid Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Acid Lore VI items"
-      }
-    ],
-    "Bronze Ingot Arcanum (historic)": [
-      {
-        "stat": "Acid Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Acid Lore V items"
-      }
-    ],
-    "Bronze Ingot Arcanum (level 12)": [
-      {
-        "stat": "Acid Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Acid Lore V items"
-      }
-    ],
-    "Bronze Ingot Arcanum (level 13)": [
-      {
-        "stat": "Acid Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Acid Lore V items"
-      }
-    ],
-    "Bronze Ingot Arcanum (level 14)": [
-      {
-        "stat": "Acid Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Acid Lore V items"
-      }
-    ],
-    "Implement of Stone Magic": [
-      {
-        "stat": "Acid Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Acid Lore V items"
-      }
-    ],
-    "Crystalline Scepter (level 12)": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "III",
-        "from": "3",
-        "to": "13",
-        "category": "Category:Fire Lore III items"
-      }
-    ],
-    "Crystalline Scepter (level 13)": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "III",
-        "from": "3",
-        "to": "13",
-        "category": "Category:Fire Lore III items"
-      }
-    ],
     "Flame's Gift": [
       {
         "stat": "Fire Lore",
@@ -140,38 +50,6 @@
         "category": "Category:Fire Lore II items"
       }
     ],
-    "Crystalline Scepter (level 14)": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "IV",
-        "from": "4",
-        "to": "14",
-        "category": "Category:Fire Lore IV items"
-      }
-    ],
-    "Epic Locked and Loaded": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "VIII",
-        "from": "8",
-        "to": "18",
-        "category": "Category:Fire Lore VIII items"
-      },
-      {
-        "stat": "Kinetic Lore",
-        "numeral": "VIII",
-        "from": "8",
-        "to": "18",
-        "category": "Category:Kinetic Lore VIII items"
-      },
-      {
-        "stat": "Sonic Lore",
-        "numeral": "VIII",
-        "from": "8",
-        "to": "18",
-        "category": "Category:Sonic Lore VIII items"
-      }
-    ],
     "Sage's Spectacles (level 27)": [
       {
         "stat": "Fire Lore",
@@ -179,49 +57,6 @@
         "from": "8",
         "to": "18",
         "category": "Category:Fire Lore VIII items"
-      }
-    ],
-    "Crystalline Scepter (level 23)": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Fire Lore VI items"
-      }
-    ],
-    "Crystalline Scepter (level 24)": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Fire Lore VI items"
-      }
-    ],
-    "Crystalline Scepter (level 25)": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Fire Lore VI items"
-      }
-    ],
-    "Implement of the Deep Woods": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Fire Lore VI items"
-      },
-      {
-        "stat": "Lightning Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Lightning Lore VI items"
       }
     ],
     "Gleaming Plate": [
@@ -238,38 +73,6 @@
         "from": "5",
         "to": "15",
         "category": "Category:Radiance Lore V items"
-      }
-    ],
-    "Locked and Loaded": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Fire Lore V items"
-      },
-      {
-        "stat": "Kinetic Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Kinetic Lore V items"
-      },
-      {
-        "stat": "Sonic Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Sonic Lore V items"
-      }
-    ],
-    "Ornamented Dagger (legacy) (level 16)": [
-      {
-        "stat": "Fire Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Fire Lore V items"
       }
     ],
     "Molb's Fist": [
@@ -295,94 +98,6 @@
         "from": "3",
         "to": "13",
         "category": "Category:Repair Lore III items"
-      }
-    ],
-    "Brine Shaman's Staff": [
-      {
-        "stat": "Ice Lore",
-        "numeral": "I",
-        "from": "1",
-        "to": "11",
-        "category": "Category:Ice Lore I items"
-      },
-      {
-        "stat": "Lightning Lore",
-        "numeral": "I",
-        "from": "1",
-        "to": "11",
-        "category": "Category:Lightning Lore I items"
-      }
-    ],
-    "Silver Ingot Arcanum (level 23)": [
-      {
-        "stat": "Ice Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Ice Lore VI items"
-      }
-    ],
-    "Silver Ingot Arcanum (level 24)": [
-      {
-        "stat": "Ice Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Ice Lore VI items"
-      }
-    ],
-    "Silver Ingot Arcanum (level 25)": [
-      {
-        "stat": "Ice Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Ice Lore VI items"
-      }
-    ],
-    "Icerazor": [
-      {
-        "stat": "Ice Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Ice Lore V items"
-      }
-    ],
-    "Silver Ingot Arcanum (historic)": [
-      {
-        "stat": "Ice Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Ice Lore V items"
-      }
-    ],
-    "Silver Ingot Arcanum (level 12)": [
-      {
-        "stat": "Ice Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Ice Lore V items"
-      }
-    ],
-    "Silver Ingot Arcanum (level 13)": [
-      {
-        "stat": "Ice Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Ice Lore V items"
-      }
-    ],
-    "Silver Ingot Arcanum (level 14)": [
-      {
-        "stat": "Ice Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Ice Lore V items"
       }
     ],
     "Iron Beads (level 12)": [
@@ -421,33 +136,6 @@
         "category": "Category:Lightning Lore VII items"
       }
     ],
-    "Copper Ingot Arcanum (level 23)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Lightning Lore VI items"
-      }
-    ],
-    "Copper Ingot Arcanum (level 24)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Lightning Lore VI items"
-      }
-    ],
-    "Copper Ingot Arcanum (level 25)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Lightning Lore VI items"
-      }
-    ],
     "Iron Beads (level 23)": [
       {
         "stat": "Lightning Lore",
@@ -473,42 +161,6 @@
         "from": "6",
         "to": "16",
         "category": "Category:Lightning Lore VI items"
-      }
-    ],
-    "Copper Ingot Arcanum (historic)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Lightning Lore V items"
-      }
-    ],
-    "Copper Ingot Arcanum (level 12)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Lightning Lore V items"
-      }
-    ],
-    "Copper Ingot Arcanum (level 13)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Lightning Lore V items"
-      }
-    ],
-    "Copper Ingot Arcanum (level 14)": [
-      {
-        "stat": "Lightning Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Lightning Lore V items"
       }
     ],
     "Shroud of the Abbot": [
@@ -537,15 +189,6 @@
       }
     ],
     "Halcyonia": [
-      {
-        "stat": "Healing Lore",
-        "numeral": "IV",
-        "from": "4",
-        "to": "14",
-        "category": "Category:Healing Lore IV items"
-      }
-    ],
-    "Scepter of Healing": [
       {
         "stat": "Healing Lore",
         "numeral": "IV",
@@ -613,22 +256,6 @@
         "category": "Category:Repair Lore IV items"
       }
     ],
-    "Staff of Fleshshaping": [
-      {
-        "stat": "Healing Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Healing Lore V items"
-      },
-      {
-        "stat": "Void Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Void Lore V items"
-      }
-    ],
     "Epic Halcyonia": [
       {
         "stat": "Healing Lore",
@@ -636,15 +263,6 @@
         "from": "10",
         "to": "20",
         "category": "Category:Healing Lore X items"
-      }
-    ],
-    "Rod of Mythant": [
-      {
-        "stat": "Kinetic Lore",
-        "numeral": "IV",
-        "from": "4",
-        "to": "14",
-        "category": "Category:Kinetic Lore IV items"
       }
     ],
     "Sage's Cuffs (level 15)": [
@@ -663,15 +281,6 @@
         "from": "5",
         "to": "15",
         "category": "Category:Kinetic Lore V items"
-      }
-    ],
-    "Epic Rod of Mythant": [
-      {
-        "stat": "Kinetic Lore",
-        "numeral": "X",
-        "from": "10",
-        "to": "20",
-        "category": "Category:Kinetic Lore X items"
       }
     ],
     "Sage's Cuffs (level 26)": [
@@ -699,78 +308,6 @@
         "from": "5",
         "to": "15",
         "category": "Category:Radiance Lore V items"
-      }
-    ],
-    "Hammer of the Leaden Clouds (level 23)": [
-      {
-        "stat": "Sonic Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Sonic Lore VI items"
-      }
-    ],
-    "Hammer of the Leaden Clouds (level 24)": [
-      {
-        "stat": "Sonic Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Sonic Lore VI items"
-      }
-    ],
-    "Hammer of the Leaden Clouds (level 25)": [
-      {
-        "stat": "Sonic Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Sonic Lore VI items"
-      }
-    ],
-    "Hammer of the Leaden Clouds (historic)": [
-      {
-        "stat": "Sonic Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Sonic Lore V items"
-      }
-    ],
-    "Hammer of the Leaden Clouds (level 12)": [
-      {
-        "stat": "Sonic Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Sonic Lore V items"
-      }
-    ],
-    "Hammer of the Leaden Clouds (level 13)": [
-      {
-        "stat": "Sonic Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Sonic Lore V items"
-      }
-    ],
-    "Hammer of the Leaden Clouds (level 14)": [
-      {
-        "stat": "Sonic Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Sonic Lore V items"
-      }
-    ],
-    "The Mad Lute": [
-      {
-        "stat": "Sonic Lore",
-        "numeral": "V",
-        "from": "5",
-        "to": "15",
-        "category": "Category:Sonic Lore V items"
       }
     ],
     "Docent of Shadow (level 8)": [
@@ -818,15 +355,6 @@
         "category": "Category:Void Lore II items"
       }
     ],
-    "Death's Touch": [
-      {
-        "stat": "Void Lore",
-        "numeral": "IV",
-        "from": "4",
-        "to": "14",
-        "category": "Category:Void Lore IV items"
-      }
-    ],
     "Docent of Shadow (level 12)": [
       {
         "stat": "Void Lore",
@@ -855,15 +383,6 @@
       }
     ],
     "Epic Docent of Shadow (level 24)": [
-      {
-        "stat": "Void Lore",
-        "numeral": "VI",
-        "from": "6",
-        "to": "16",
-        "category": "Category:Void Lore VI items"
-      }
-    ],
-    "Pale Rod": [
       {
         "stat": "Void Lore",
         "numeral": "VI",
@@ -986,5 +505,493 @@
       "lore": "Void Lore V",
       "why": "The lore is added by the item's upgrade, not its base; data/seed/compendium/upgradeable_items.json credits 15 on the [Upgraded] twin through an `emit` (#884)."
     }
-  ]
+  ],
+  "_retired": {
+    "2026-10-19-own-item-harvest": {
+      "why": "#907 — weapons now take their enchantments from our own wiki harvest, whose Spelllore mapper applies the template's +10 itself; each entry below fired its own stale guard ('already reads N') and is retired with the value the harvest reads.",
+      "entries": {
+        "Bronze Ingot Arcanum (level 23)": [
+          {
+            "stat": "Acid Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Acid Lore VI items"
+          }
+        ],
+        "Bronze Ingot Arcanum (level 24)": [
+          {
+            "stat": "Acid Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Acid Lore VI items"
+          }
+        ],
+        "Bronze Ingot Arcanum (level 25)": [
+          {
+            "stat": "Acid Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Acid Lore VI items"
+          }
+        ],
+        "Bronze Ingot Arcanum (historic)": [
+          {
+            "stat": "Acid Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Acid Lore V items"
+          }
+        ],
+        "Bronze Ingot Arcanum (level 12)": [
+          {
+            "stat": "Acid Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Acid Lore V items"
+          }
+        ],
+        "Bronze Ingot Arcanum (level 13)": [
+          {
+            "stat": "Acid Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Acid Lore V items"
+          }
+        ],
+        "Bronze Ingot Arcanum (level 14)": [
+          {
+            "stat": "Acid Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Acid Lore V items"
+          }
+        ],
+        "Implement of Stone Magic": [
+          {
+            "stat": "Acid Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Acid Lore V items"
+          }
+        ],
+        "Crystalline Scepter (level 12)": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "III",
+            "from": "3",
+            "to": "13",
+            "category": "Category:Fire Lore III items"
+          }
+        ],
+        "Crystalline Scepter (level 13)": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "III",
+            "from": "3",
+            "to": "13",
+            "category": "Category:Fire Lore III items"
+          }
+        ],
+        "Crystalline Scepter (level 14)": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "IV",
+            "from": "4",
+            "to": "14",
+            "category": "Category:Fire Lore IV items"
+          }
+        ],
+        "Epic Locked and Loaded": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "VIII",
+            "from": "8",
+            "to": "18",
+            "category": "Category:Fire Lore VIII items"
+          },
+          {
+            "stat": "Kinetic Lore",
+            "numeral": "VIII",
+            "from": "8",
+            "to": "18",
+            "category": "Category:Kinetic Lore VIII items"
+          },
+          {
+            "stat": "Sonic Lore",
+            "numeral": "VIII",
+            "from": "8",
+            "to": "18",
+            "category": "Category:Sonic Lore VIII items"
+          }
+        ],
+        "Crystalline Scepter (level 23)": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Fire Lore VI items"
+          }
+        ],
+        "Crystalline Scepter (level 24)": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Fire Lore VI items"
+          }
+        ],
+        "Crystalline Scepter (level 25)": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Fire Lore VI items"
+          }
+        ],
+        "Implement of the Deep Woods": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Fire Lore VI items"
+          },
+          {
+            "stat": "Lightning Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Lightning Lore VI items"
+          }
+        ],
+        "Locked and Loaded": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Fire Lore V items"
+          },
+          {
+            "stat": "Kinetic Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Kinetic Lore V items"
+          },
+          {
+            "stat": "Sonic Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Sonic Lore V items"
+          }
+        ],
+        "Ornamented Dagger (legacy) (level 16)": [
+          {
+            "stat": "Fire Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Fire Lore V items"
+          }
+        ],
+        "Brine Shaman's Staff": [
+          {
+            "stat": "Ice Lore",
+            "numeral": "I",
+            "from": "1",
+            "to": "11",
+            "category": "Category:Ice Lore I items"
+          },
+          {
+            "stat": "Lightning Lore",
+            "numeral": "I",
+            "from": "1",
+            "to": "11",
+            "category": "Category:Lightning Lore I items"
+          }
+        ],
+        "Silver Ingot Arcanum (level 23)": [
+          {
+            "stat": "Ice Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Ice Lore VI items"
+          }
+        ],
+        "Silver Ingot Arcanum (level 24)": [
+          {
+            "stat": "Ice Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Ice Lore VI items"
+          }
+        ],
+        "Silver Ingot Arcanum (level 25)": [
+          {
+            "stat": "Ice Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Ice Lore VI items"
+          }
+        ],
+        "Icerazor": [
+          {
+            "stat": "Ice Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Ice Lore V items"
+          }
+        ],
+        "Silver Ingot Arcanum (historic)": [
+          {
+            "stat": "Ice Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Ice Lore V items"
+          }
+        ],
+        "Silver Ingot Arcanum (level 12)": [
+          {
+            "stat": "Ice Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Ice Lore V items"
+          }
+        ],
+        "Silver Ingot Arcanum (level 13)": [
+          {
+            "stat": "Ice Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Ice Lore V items"
+          }
+        ],
+        "Silver Ingot Arcanum (level 14)": [
+          {
+            "stat": "Ice Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Ice Lore V items"
+          }
+        ],
+        "Copper Ingot Arcanum (level 23)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Lightning Lore VI items"
+          }
+        ],
+        "Copper Ingot Arcanum (level 24)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Lightning Lore VI items"
+          }
+        ],
+        "Copper Ingot Arcanum (level 25)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Lightning Lore VI items"
+          }
+        ],
+        "Copper Ingot Arcanum (historic)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Lightning Lore V items"
+          }
+        ],
+        "Copper Ingot Arcanum (level 12)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Lightning Lore V items"
+          }
+        ],
+        "Copper Ingot Arcanum (level 13)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Lightning Lore V items"
+          }
+        ],
+        "Copper Ingot Arcanum (level 14)": [
+          {
+            "stat": "Lightning Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Lightning Lore V items"
+          }
+        ],
+        "Scepter of Healing": [
+          {
+            "stat": "Healing Lore",
+            "numeral": "IV",
+            "from": "4",
+            "to": "14",
+            "category": "Category:Healing Lore IV items"
+          }
+        ],
+        "Staff of Fleshshaping": [
+          {
+            "stat": "Healing Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Healing Lore V items"
+          },
+          {
+            "stat": "Void Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Void Lore V items"
+          }
+        ],
+        "Rod of Mythant": [
+          {
+            "stat": "Kinetic Lore",
+            "numeral": "IV",
+            "from": "4",
+            "to": "14",
+            "category": "Category:Kinetic Lore IV items"
+          }
+        ],
+        "Epic Rod of Mythant": [
+          {
+            "stat": "Kinetic Lore",
+            "numeral": "X",
+            "from": "10",
+            "to": "20",
+            "category": "Category:Kinetic Lore X items"
+          }
+        ],
+        "Hammer of the Leaden Clouds (level 23)": [
+          {
+            "stat": "Sonic Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Sonic Lore VI items"
+          }
+        ],
+        "Hammer of the Leaden Clouds (level 24)": [
+          {
+            "stat": "Sonic Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Sonic Lore VI items"
+          }
+        ],
+        "Hammer of the Leaden Clouds (level 25)": [
+          {
+            "stat": "Sonic Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Sonic Lore VI items"
+          }
+        ],
+        "Hammer of the Leaden Clouds (historic)": [
+          {
+            "stat": "Sonic Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Sonic Lore V items"
+          }
+        ],
+        "Hammer of the Leaden Clouds (level 12)": [
+          {
+            "stat": "Sonic Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Sonic Lore V items"
+          }
+        ],
+        "Hammer of the Leaden Clouds (level 13)": [
+          {
+            "stat": "Sonic Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Sonic Lore V items"
+          }
+        ],
+        "Hammer of the Leaden Clouds (level 14)": [
+          {
+            "stat": "Sonic Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Sonic Lore V items"
+          }
+        ],
+        "The Mad Lute": [
+          {
+            "stat": "Sonic Lore",
+            "numeral": "V",
+            "from": "5",
+            "to": "15",
+            "category": "Category:Sonic Lore V items"
+          }
+        ],
+        "Death's Touch": [
+          {
+            "stat": "Void Lore",
+            "numeral": "IV",
+            "from": "4",
+            "to": "14",
+            "category": "Category:Void Lore IV items"
+          }
+        ],
+        "Pale Rod": [
+          {
+            "stat": "Void Lore",
+            "numeral": "VI",
+            "from": "6",
+            "to": "16",
+            "category": "Category:Void Lore VI items"
+          }
+        ]
+      }
+    }
+  }
 }
