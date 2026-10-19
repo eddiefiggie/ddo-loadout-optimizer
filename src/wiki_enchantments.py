@@ -45,7 +45,55 @@ TEMPLATE_DEFAULTS = {
     "Deadly": ("Competence", "{{Insightful|{{{2|Competence}}}}} bonus"),
     "Dodge": ("Enhancement", "{{{2|Enhancement}}}"),
     "Seeker": ("Enhancement", "{{{2|enhancement}}}"),
+    # --- tier 2 (#907) ---
+    "Skills": ("Competence", "[[{{{3|competence}}} bonus]]"),
+    "Spelllore": ("Equipment", "{{lc:{{{3|equipment}}}}}"),
+    "SpellPower": ("Equipment", "|equipment}}}}"),
+    "Spell Focus": ("Equipment", "{{Insightful|{{{3|Equipment}}}|notful}} bonus"),
+    "Elemental Resistance": ("Enhancement", "{{#switch: {{lc:{{{3|Enhancement}}}}}"),
+    "HealingAmp": ("Enhancement", "{{{3|Enhancement}}}"),
+    "Tactics": ("Enhancement", "{{Insightful|{{{3|Enhancement}}}}} bonus"),
+    "Spellpen": ("Equipment", "{{ucfirst:{{lc:{{{2|Equipment}}}}}}} bonus"),
 }
+#: Save's default differs by branch, each quoted from Template:Save (rev 560806).
+SAVE = {"e": ("Enchantment Save", "Resistance"), "enchantment": ("Enchantment Save", "Resistance"),
+        "i": ("Illusion Save", "Enhancement"), "illusion": ("Illusion Save", "Enhancement"),
+        "s": ("Sleep Save", "Enhancement"), "sleep": ("Sleep Save", "Enhancement"),
+        "spell": ("Spell Save", "Resistance"),
+        "f": ("Fortitude Save", "Resistance"), "fort": ("Fortitude Save", "Resistance"),
+        "fortitude": ("Fortitude Save", "Resistance"),
+        "r": ("Reflex Save", "Resistance"), "ref": ("Reflex Save", "Resistance"), "reflex": ("Reflex Save", "Resistance"),
+        "w": ("Will Save", "Resistance"), "will": ("Will Save", "Resistance"),
+        "curse": ("Curse Resistance", "Enhancement")}
+#: Skills' accepted spellings (Template:Skills usage + its switch) -> the catalog's skill name.
+SKILL = {"bal": "Balance", "balance": "Balance", "bluff": "Bluff", "concentration": "Concentration",
+         "diplo": "Diplomacy", "diplomacy": "Diplomacy", "dd": "Disable Device", "disable device": "Disable Device",
+         "haggle": "Haggle", "heal": "Heal", "hide": "Hide", "intim": "Intimidate", "intimidate": "Intimidate",
+         "jump": "Jump", "listen": "Listen", "ms": "Move Silently", "move silently": "Move Silently",
+         "ol": "Open Lock", "open lock": "Open Lock", "perform": "Perform", "repair": "Repair", "search": "Search",
+         "spellcraft": "Spellcraft", "spot": "Spot", "swim": "Swim", "tumble": "Tumble",
+         "umd": "Use Magic Device", "use magic device": "Use Magic Device", "command": "Command",
+         "sc": "Spellcraft", "disabledevice": "Disable Device", "movesilently": "Move Silently",
+         "openlock": "Open Lock", "usemagicdevice": "Use Magic Device", "usemagicaldevice": "Use Magic Device"}
+#: Template:Skills' grouped bonuses, each `{{Insightful|{{{3|Exceptional}}}}} bonus` in its code.
+SKILL_GROUP = {"alluring", "astute", "mighty", "nimble", "prudent"}
+#: Template:SpellPower's continuous types (its own switch) -> the catalog's stat. The
+#: element a type powers is stated by the template's popup text; `potency`,
+#: `reconstruction` keep their own names as the catalog does (umbrella / repair).
+SPELLPOWER = {"combustion": "Fire Spell Power", "corrosion": "Acid Spell Power", "devotion": "Positive Spell Power",
+              "glaciation": "Cold Spell Power", "magnetism": "Electric Spell Power",
+              "nullification": "Negative Spell Power", "resonance": "Sonic Spell Power",
+              "potency": "Potency", "reconstruction": "Reconstruction", "impulse": "Force Spell Power",
+              "radiance": "Radiance", "universal": "Universal Spell Power"}
+#: Template:Spelllore element words -> the catalog's lore name (the template's own
+#: LoreType switch names the element; `ice` is Cold, `healing` keeps its name).
+LORE = {"acid": "Acid Lore", "fire": "Fire Lore", "ice": "Cold Lore", "lightning": "Lightning Lore",
+        "sonic": "Sonic Lore", "healing": "Healing Lore", "repair": "Repair Lore", "void": "Negative Lore",
+        "radiance": "Radiance Lore", "kinetic": "Kinetic Lore", "laceration": "Laceration Lore",
+        "spell": "Spell Lore", "universal spell": "Universal Spell Lore"}
+SCHOOLS = ("Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy",
+           "Transmutation")
+ELEMENTS = ("Acid", "Cold", "Electric", "Fire", "Sonic", "Light", "Negative", "Poison")
 
 ABILITY = {"str": "Strength", "strength": "Strength", "dex": "Dexterity", "dexterity": "Dexterity",
            "con": "Constitution", "constitution": "Constitution", "int": "Intelligence",
@@ -177,6 +225,175 @@ def m_sheltering(pos, named):
     return [(stat, _type(_arg(pos, 1), "Sheltering"), _int(_arg(pos, 0)))]
 
 
+def m_skills(pos, named):
+    which = (_arg(pos, 0) or "").strip().lower()
+    t = _arg(pos, 2)
+    if t and t.strip().lower() == "enh":
+        # `enh` is not a spelling the template normalizes (it would render "enh
+        # bonus"); the same call's `prefix=Enhanced` states the type.
+        if (named.get("prefix") or "").strip().lower() != "enhanced":
+            raise Unmapped("`enh` without prefix=Enhanced")
+        t = "Enhancement"
+    if which in SKILL_GROUP:
+        return [_penalty(which.title() + " Skills Bonus", _insightful(t) if t and t.strip() else "Exceptional",
+                         _int(_arg(pos, 1)))]
+    if which.replace(" ", "") not in SKILL and which not in SKILL:
+        raise Unmapped(f"Skills {which!r} is not a single skill")
+    return [_penalty(SKILL.get(which) or SKILL[which.replace(" ", "")], _type(t, "Skills"), _int(_arg(pos, 1)))]
+
+
+def m_save(pos, named):
+    which = (_arg(pos, 0) or "").strip().lower().replace(" ", "")
+    if which not in SAVE:
+        raise Unmapped(f"Save type {which!r}")
+    stat, default = SAVE[which]
+    t = _arg(pos, 2)
+    if t and t.strip().lower() == "determination":
+        # Template:Save's Prefix switch: `determination=Determined`, its own stat.
+        return [_penalty("Determined " + stat, "Determination", _int(_arg(pos, 1)))]
+    return [_penalty(stat, _insightful(t) if t and t.strip() else default, _int(_arg(pos, 1)))]
+
+
+def m_spelllore(pos, named):
+    which = (_arg(pos, 0) or "").strip().lower()
+    stat = LORE.get(which)
+    if stat is None:
+        stat = (_arg(pos, 0).strip().title() + " Lore") if which and which.replace(" ", "").isalpha() else None
+    if stat is None:
+        raise Unmapped(f"Spelllore element {which!r}")
+    raw = (_arg(pos, 1) or "").strip().lstrip("+")
+    # Template:Spelllore's Magnitude: a number as-is; a roman numeral is Roman2Dec
+    # PLUS 10 for every element lore and +0 for `spell` (the old universal tier).
+    value = int(raw) if re.fullmatch(r"\d+", raw) else _roman(raw) + (0 if which == "spell" else 10)
+    return [(stat, _type(_arg(pos, 2), "Spelllore"), value)]
+
+
+def m_spellpower(pos, named):
+    which = (_arg(pos, 0) or "").strip()
+    stat = SPELLPOWER.get(which.lower())
+    if stat is None:
+        if which.lower().startswith("power of the ") or which.lower() == "universal spell power":
+            stat = which  # a named power the catalog carries under its own name
+        else:
+            raise Unmapped(f"SpellPower type {which!r}")
+    return [(stat, _type(_arg(pos, 2), "SpellPower"), _int(_arg(pos, 1)))]
+
+
+def m_spellfocus(pos, named):
+    which = (_arg(pos, 0) or "spell focus mastery").strip().lower()
+    if which in ("mastery", "spell focus mastery"):
+        stat = "Spell Focus Mastery"
+    elif which == "spell":
+        stat = "Spell Focus"
+    elif which in ("deific focus", "deific"):
+        raise Unmapped("Deific Focus is a stacking on-cast effect, not a flat DC bonus")
+    else:
+        # The template's #default branch: "{{{1}}} Focus" — schools, Rune Arm, Breath Weapon.
+        stat = _arg(pos, 0).strip().title() + " Focus"
+    return [(stat, _type(_arg(pos, 2), "Spell Focus"), _roman(_arg(pos, 1) or "1"))]
+
+
+def m_fortification(pos, named):
+    amount = (_arg(pos, 0) or "100").strip()
+    if amount.lower() in ("0", "exceptional"):
+        # Ruled #862: Exceptional Fortification "is considered an Insight bonus".
+        return [("Fortification", "Insight", _int(_arg(pos, 1) or "10"))]
+    legacy = {"1": 25, "light": 25, "2": 75, "moderate": 75, "3": 100, "heavy": 100}
+    if amount.lower() in legacy:
+        return [("Fortification", "Enhancement", legacy[amount.lower()])]
+    v = _int(amount)
+    if 0 < v <= 4:
+        raise Unmapped("legacy Construct Fortification")
+    t = _arg(pos, 1)
+    return [_penalty("Fortification", _insightful(t) if t and t.strip() else "Enhancement", v)]
+
+
+def m_elemental_resistance(pos, named):
+    which = (_arg(pos, 0) or "").strip().lower()
+    if which == "elemental":
+        stat = "Elemental Resistance"
+    elif which.title() in ELEMENTS:
+        stat = which.title() + " Resistance"
+    else:
+        raise Unmapped(f"Elemental Resistance type {which!r}")
+    return [_penalty(stat, _type(_arg(pos, 2), "Elemental Resistance"), _int(_arg(pos, 1)))]
+
+
+def m_healingamp(pos, named):
+    kind = (_arg(pos, 1) or "healing").strip().lower()
+    # Template:HealingAmp's Type switch: h/r/n, and `#default = Healing`.
+    stat = {"r": "Repair Amplification", "repair": "Repair Amplification", "n": "Negative Amplification",
+            "negative": "Negative Amplification"}.get(kind, "Healing Amplification")
+    t = _arg(pos, 2)
+    t = "Equipment" if t and t.strip().lower() == "equipped" else t
+    return [_penalty(stat, _type(t, "HealingAmp"), _int(_arg(pos, 0)))]
+
+
+def m_tactics(pos, named):
+    which = (_arg(pos, 0) or "combat mastery").strip().lower()
+    if which in ("combat mastery", "shatter"):
+        return [(which.title(), _type(_arg(pos, 2), "Tactics"), _int(_arg(pos, 1) or "1"))]
+    raise Unmapped(f"Tactics {which!r} is not a plain DC bonus")
+
+
+def m_naturalarmor(pos, named):
+    prefix = (named.get("prefix") or "").strip().lower()
+    if prefix == "insightful":
+        # Its own branch: "Insightful Natural Armor Bonus"; the catalog's `Insight Natural`.
+        return [("Armor Class", "Insight Natural", _int(_arg(pos, 0)))]
+    if prefix:
+        raise Unmapped(f"Natural Armor prefix {prefix!r}")
+    return [_penalty("Armor Class", "Natural", _int(_arg(pos, 0)))]
+
+
+def m_spellpen(pos, named):
+    return [(("Spell Penetration"), _type(_arg(pos, 1), "Spellpen"), _roman(_arg(pos, 0) or "I"))]
+
+
+def m_enhancement_bonus(pos, named):
+    kind = (_arg(pos, 0) or "").strip().lower()
+    # A shield's enhancement is the catalog's `Enhancement Bonus (Armor)`, as the
+    # template's `s` branch renders the same "Enhancement Bonus" as armor.
+    stat = {"w": "Enhancement Bonus (Weapon)", "a": "Enhancement Bonus (Armor)",
+            "s": "Enhancement Bonus (Armor)"}.get(kind)
+    if stat is None:
+        raise Unmapped(f"Enhancement bonus kind {kind!r} (implement/orb not mapped yet)")
+    v = _int(_arg(pos, 1) or "0")
+    if v == 0:
+        raise Unmapped("Masterwork (enhancement 0)")
+    return [_penalty(stat, "Enhancement", v)]
+
+
+def m_wizardry(pos, named):
+    raw = (_arg(pos, 0) or "").strip()
+    t = _arg(pos, 1)
+    if re.fullmatch(r"\d+", raw):
+        return [("Wizardry", _insightful(t) if t and t.strip() else "Enhancement", int(raw))]
+    if raw.upper() in ("I", "II", "III", "V", "VI", "VII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI",
+                       "XVII", "XVIII", "XIX", "XX"):
+        return [("Wizardry", _insightful(t) if t and t.strip() else "Enhancement", _roman(raw))]
+    raise Unmapped(f"Wizardry {raw!r} (Magi/Archmagi/named)")
+
+
+def m_hp(pos, named):
+    which = (_arg(pos, 0) or "").strip().lower()
+    v = _arg(pos, 1)
+    if which == "vitality" and v:
+        return [("False Life", "Vitality", _int(v))]
+    if which == "profane lifeforce" and v:
+        return [("False Life", "Profane", _int(v))]
+    if which in ("hp", "hitpoints", "hit points") and v:
+        # "Enhancement Bonus to Hit Points" — the catalog's False Life.
+        return [("False Life", "Enhancement", _int(v))]
+    if which.replace(" ", "") in ("elementalenergy", "improvedelementalenergy", "greaterelementalenergy",
+                                  "legendaryelementalenergy"):
+        return [(_arg(pos, 0).strip().title(), "Bool", 1)]
+    if which == "false life" and v:
+        t = _arg(pos, 2)
+        return [("False Life", _insightful(t) if t and t.strip() else "Enhancement", _int(v))]
+    raise Unmapped(f"Hp {which!r}")
+
+
 MAPPERS = {
     "Stat": m_stat,
     "Sheltering": m_sheltering,
@@ -186,6 +403,11 @@ MAPPERS = {
     "Deadly": _simple("Deadly", "Deadly", _roman),
     "Dodge": _simple("Dodge", "Dodge"),
     "Seeker": _simple("Seeker", "Seeker", _roman),
+    "Skills": m_skills, "Save": m_save, "Spelllore": m_spelllore, "SpellPower": m_spellpower,
+    "Spell Power": m_spellpower, "Spell Focus": m_spellfocus, "Fortification": m_fortification,
+    "Elemental Resistance": m_elemental_resistance, "HealingAmp": m_healingamp, "Tactics": m_tactics,
+    "NaturalArmor": m_naturalarmor, "Spellpen": m_spellpen, "Enhancement bonus": m_enhancement_bonus,
+    "Wizardry": m_wizardry, "Hp": m_hp,
 }
 
 

@@ -36,6 +36,20 @@
    "ts": "2026-07-08T21:24:54Z",
    "excerpt": "ke {{ConvertValueToPercent|{{{1|0}}}}}]]:''' Passive: {{ConvertValueToPercent|{{{1|0}}}}} [[{{ucfirst:{{lc:{{Insightful|{{{2|Enhancement}}}}}}}}} bonus]] to Doublestrike. (Doublestrike is a chance to"
   },
+  "Elemental Resistance": {
+   "default": "Enhancement",
+   "quote": "{{#switch: {{lc:{{{3|Enhancement}}}}}",
+   "revid": 530909,
+   "ts": "2022-11-29T00:16:45Z",
+   "excerpt": "{{#switch: {{lc:{{{3|Enhancement}}}}}\n|competence|insight = {{#switch: {{lc:{{{1|unknown}}}}}\n\t|a"
+  },
+  "HealingAmp": {
+   "default": "Enhancement",
+   "quote": "{{{3|Enhancement}}}",
+   "revid": 384075,
+   "ts": "2018-05-01T06:18:22Z",
+   "excerpt": "ergy}} healing by {{Int|{{{1|0}}}}} ([[{{#switch:{{lc:{{{3}}}}}|equipped=Equipment|#default={{Insightful|{{ucfirst:{{lc:{{{3|Enhancement}}}}}}}}}}} bonus]]). Includes spells, potions, and other effec"
+  },
   "Resistance": {
    "default": "Resistance",
    "quote": "{{Insightful|{{{2|Resistance}}}}} bonus",
@@ -57,12 +71,54 @@
    "ts": "2026-07-20T08:08:05Z",
    "excerpt": "}} Magical Sheltering {{Int|{{{1|0}}}}}]]:''' {{Int|{{{1|0}}}}} [[{{#ifeq:{{lc:{{{2|enhancement}}}}}|insightful|Insight|{{ucfirst:{{lc:{{{2|enhancement}}}}}}}}} bonus]] to [[Magical Resistance Rating]]}}{{#ifeq:{{NAMESPACE}}|I"
   },
+  "Skills": {
+   "default": "Competence",
+   "quote": "[[{{{3|competence}}} bonus]]",
+   "revid": 703569,
+   "ts": "2026-08-05T21:54:18Z",
+   "excerpt": " (enchantment)|{{#switch:{{{3|}}}\n|insight|Insight = Insightful\n|#default = }} Command]]:''' Passive: {{Int|{{{2|2}}}}} [[{{{3|competence}}} bonus]] on [[Charisma]] based [[skill check]]s. Command armor and c"
+  },
+  "Spell Focus": {
+   "default": "Equipment",
+   "quote": "{{Insightful|{{{3|Equipment}}}|notful}} bonus",
+   "revid": 372986,
+   "ts": "2017-12-10T19:53:06Z",
+   "excerpt": "|}}}|ful}} Spell Focus {{#ifeq:{{lc:{{{1|}}}}}|spell||Mastery}} {{Int|{{{2|1}}}}}]]:''' {{Int|{{Roman2Dec|{{{2|1}}}}}}} {{Insightful|{{{3|Equipment}}}|notful}} bonus to the DC of all spells.|1=[[Spell Focus Mastery|{{Insightf"
+  },
+  "SpellPower": {
+   "default": "Equipment",
+   "quote": "|equipment}}}}",
+   "revid": 686190,
+   "ts": "2026-05-11T06:29:27Z",
+   "excerpt": "pulse|magnetism|nullification|potency|radiance|reconstruction|resonance={{#vardefine:bonus|{{#if:{{{3|}}}|{{lc:{{{3}}}}}|equipment}}}}<!--\n\tPrefix-->{{#switch:{{#var:bonus}}\n\t|equipment=<!--blan"
+  },
+  "Spelllore": {
+   "default": "Equipment",
+   "quote": "{{lc:{{{3|equipment}}}}}",
+   "revid": 644199,
+   "ts": "2025-06-03T16:00:14Z",
+   "excerpt": "<!--\n-->{{#vardefine:Prefix|{{#switch:{{lc:{{{3|equipment}}}}}| |equipment=<!--No Prefix-->|ins|insight|insightful=Insight"
+  },
+  "Spellpen": {
+   "default": "Equipment",
+   "quote": "{{ucfirst:{{lc:{{{2|Equipment}}}}}}} bonus",
+   "revid": 662948,
+   "ts": "2025-10-11T13:23:15Z",
+   "excerpt": "on|{{ucfirst:{{lc:{{{prefix|}}}}}}} Spell Penetration {{uc:{{{1|I}}}}}]]:''' Passive: {{Int|{{Roman2Dec|{{{1|I}}}}}}} [[{{ucfirst:{{lc:{{{2|Equipment}}}}}}} bonus]] to Spell Penetration checks.|long=yes}}\n|{{#expr:{{{1|0}}"
+  },
   "Stat": {
    "default": "Enhancement",
    "quote": "{{Insightful|{{{3|Enhancement}}}}} bonus",
    "revid": 678248,
    "ts": "2026-03-10T23:30:19Z",
    "excerpt": "S) or [[charisma]] (CHA).\n\t}}\n\t|{{#switch:{{lc:{{{1|0}}}}}\n\t\t|body             = This item grants a {{Int|{{{2|0}}}}} [[{{Insightful|{{{3|Enhancement}}}}} bonus]] to any one of the 3 body related ability statistics: [[st"
+  },
+  "Tactics": {
+   "default": "Enhancement",
+   "quote": "{{Insightful|{{{3|Enhancement}}}}} bonus",
+   "revid": 481712,
+   "ts": "2021-03-24T18:23:07Z",
+   "excerpt": "{{2|1}}}}}]]|2='''[[Combat Mastery|{{Insightful|{{{3|}}}|ful}} Combat Mastery {{Int|{{{2|1}}}}}]]:''' {{Int|{{{2|1}}}}} {{Insightful|{{{3|Enhancement}}}}} bonus to the DC to resist the character's Trip, Improved Trip, Su"
   }
  }
 }

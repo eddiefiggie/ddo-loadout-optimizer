@@ -45,8 +45,22 @@ def known_type_corrections():
     p = os.path.join(ROOT, "data", "seed", "compendium", "affix_type_corrections.json")
     with open(p, encoding="utf-8") as fh:
         d = json.load(fh)
-    return {(item, e["name"], e["to"]) for item, es in d.items() if not item.startswith("_") and isinstance(es, list)
-            for e in es}
+    known = {(item, e["name"], e["to"]) for item, es in d.items() if not item.startswith("_") and isinstance(es, list)
+             for e in es}
+    # #887 — roman-numeral element lores: upstream reads I..X raw, the template adds 10.
+    p = os.path.join(ROOT, "data", "seed", "compendium", "roman_element_lore.json")
+    with open(p, encoding="utf-8") as fh:
+        lore = json.load(fh)
+    for item, es in (lore.get("items") or {}).items():
+        for e in es if isinstance(es, list) else [es]:
+            if isinstance(e, dict) and e.get("stat"):
+                known.add((item, "LORE", e["stat"]))
+                # The shard names the catalog's stat after the build's renames;
+                # gear-planner's raw records still carry the pre-rename names.
+                raw_name = {"Void Lore": "Negative Lore", "Ice Lore": "Cold Lore"}.get(e["stat"])
+                if raw_name:
+                    known.add((item, "LORE", raw_name))
+    return known
 
 
 def compare(raw_items, pages_by_title, known=frozenset()):
@@ -82,6 +96,8 @@ def compare(raw_items, pages_by_title, known=frozenset()):
                     cls = "absent"
                 elif any(g[0] == o[0] and g[2] == o[2] for g in gp):
                     cls = "upstream-known" if (r["name"], o[0], o[1]) in known else "type-differs"
+                elif call[0] == "Spelllore" and (r["name"], "LORE", o[0]) in known:
+                    cls = "upstream-known"
                 else:
                     cls = "value-differs"
                 by_tpl[call[0]][cls] += 1

@@ -74,3 +74,62 @@ def test_only_the_items_own_lines_count_nested_lines_are_sub_options():
     mapped, unmapped = E.affixes("* {{Stat|STR|6}}\n** {{Stat|STR|8}}\n* {{Holy|4|1}}\n* plain text")
     assert mapped == [("Strength", "Enhancement", 6)]
     assert unmapped == [("Holy", "no mapper")]
+
+
+# --- tier 2 (#907) ---
+
+def test_save_defaults_follow_each_branch_of_the_template():
+    assert _map("{{Save|Fortitude|4}}") == [("Fortitude Save", "Resistance", 4)]
+    assert _map("{{Save|e|6}}") == [("Enchantment Save", "Resistance", 6)]
+    assert _map("{{Save|i|2}}") == [("Illusion Save", "Enhancement", 2)]
+    assert _map("{{Save|Fortitude|3|Insightful}}") == [("Fortitude Save", "Insight", 3)]
+    assert _map("{{Save|Reflex|2|Determination}}") == [("Determined Reflex Save", "Determination", 2)]
+    assert _map("{{Save|w|-2}}") == [("Will Save", "Penalty", -2)]
+
+
+def test_skills_default_to_competence_and_groups_to_exceptional():
+    assert _map("{{Skills|intim|3}}") == [("Intimidate", "Competence", 3)]
+    assert _map("{{Skills|Nimble|7|Insightful}}") == [("Nimble Skills Bonus", "Insight", 7)]
+    assert _map("{{Skills|Alluring|8}}") == [("Alluring Skills Bonus", "Exceptional", 8)]
+    assert _map("{{Skills|Haggle|3|enh|prefix=Enhanced}}") == [("Haggle", "Enhancement", 3)]
+
+
+def test_spelllore_adds_ten_to_roman_element_lores_and_not_to_spell_lore():
+    assert _map("{{Spelllore|Void|iv}}") == [("Negative Lore", "Equipment", 14)]
+    assert _map("{{Spelllore|Spell|VI}}") == [("Spell Lore", "Equipment", 6)]
+    assert _map("{{Spelllore|Acid|21}}") == [("Acid Lore", "Equipment", 21)]
+    assert _map("{{Spelllore|Frozen Depths|+8}}") == [("Frozen Depths Lore", "Equipment", 8)]
+
+
+def test_spell_power_types_and_equipment_default():
+    assert _map("{{SpellPower|Devotion|30}}") == [("Positive Spell Power", "Equipment", 30)]
+    assert _map("{{Spell Power|Impulse|48}}") == [("Force Spell Power", "Equipment", 48)]
+    assert _map("{{SpellPower|Corrosion|38|Insightful}}") == [("Acid Spell Power", "Insight", 38)]
+
+
+def test_focus_fortification_amplification_and_natural_armor():
+    assert _map("{{Spell Focus|Spell|II}}") == [("Spell Focus", "Equipment", 2)]
+    assert _map("{{Spell Focus|Rune Arm|4}}") == [("Rune Arm Focus", "Equipment", 4)]
+    assert _map("{{Fortification|0|10}}") == [("Fortification", "Insight", 10)]
+    assert _map("{{Fortification|2}}") == [("Fortification", "Enhancement", 75)]
+    assert _map("{{HealingAmp|14|Positive|Competence}}") == [("Healing Amplification", "Competence", 14)]
+    assert _map("{{HealingAmp|53|R}}") == [("Repair Amplification", "Enhancement", 53)]
+    assert _map("{{NaturalArmor|2|prefix=Insightful}}") == [("Armor Class", "Insight Natural", 2)]
+
+
+def test_enhancement_wizardry_and_hit_points():
+    assert _map("{{Enhancement bonus|s|5}}") == [("Enhancement Bonus (Armor)", "Enhancement", 5)]
+    assert _map("{{Enhancement bonus|w|-1}}") == [("Enhancement Bonus (Weapon)", "Penalty", -1)]
+    assert _map("{{Wizardry|V|Insightful}}") == [("Wizardry", "Insight", 5)]
+    assert _map("{{Hp|Vitality|20}}") == [("False Life", "Vitality", 20)]
+    assert _map("{{Hp|Greater Elemental Energy}}") == [("Greater Elemental Energy", "Bool", 1)]
+
+
+def test_tier_two_calls_we_do_not_read_yet_are_unmapped():
+    for line in ("{{Wizardry|M}}", "{{Enhancement bonus|i|1}}", "{{Tactics|Tendon Slice|6}}",
+                 "{{Spell Focus|Deific Focus|3}}", "{{Fortification|4}}", "{{Skills|Bluffing|3|enh}}"):
+        try:
+            _map(line)
+        except E.Unmapped:
+            continue
+        raise AssertionError(f"{line} must be Unmapped")
