@@ -93,6 +93,10 @@ def test_the_build_stamps_the_switch():
     # 129/31/415 when every family first switched; then the qualified-text rule was
     # narrowed to mapped calls (a qualified augment slot produces no affix) and 141
     # presence templates gained a mapper, so far fewer items are kept whole.
-    assert ha["replaced"] == 124 and ha["added"] == 31 and ha["kept_whole"] == 201
-    assert ha["unchanged"] == 20566
+    # Tier 3 (typed effects) then read 3,167 more affixes exactly as gear-planner has
+    # them, typed Distant Incite on both Crownblade cloaks, and added Chulchannad's
+    # Claw's Cold Absorption; a declined form (charge absorption, Enhanced Ghostly)
+    # keeps an item whole only beside a read call of its own template (3 items).
+    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 204
+    assert ha["unchanged"] == 23733
     assert ha["weapon_kind_on_non_weapon"] == 7

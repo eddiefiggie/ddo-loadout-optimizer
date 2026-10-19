@@ -533,7 +533,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // procs are ineligible by rule).
   // 20,646 since #901: MINUS 104, the eligible share of those 131 affixes,
   // measured on the 82 records alone in the pre-#901 build.
-  assert.strictEqual(eligible, 20646, "engraved, eligible affixes");
+  // 20,648 since #907 tier 3: +2, the Distant Incite on both Cloaks of the
+  // Crownblade, which gear-planner left untyped and our own wiki harvest types as
+  // the Enhancement bonus the template renders. Nothing else changed eligibility.
+  assert.strictEqual(eligible, 20648, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -613,7 +616,9 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // #874 — weapon +6, item and augment UNCHANGED: all six supplement records are weapons.
   // augment 905 since #901: -104, item and weapon UNCHANGED — every retired record
   // is an augment, so the whole loss must land in one category, and it does.
-  assert.deepStrictEqual(byCat, { item: 13482, weapon: 6259, augment: 905 });
+  // item 13,484 since #907 tier 3: +2, weapon and augment UNCHANGED — both Cloaks
+  // of the Crownblade are worn, so the whole +2 above must land in `item`, and it does.
+  assert.deepStrictEqual(byCat, { item: 13484, weapon: 6259, augment: 905 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {

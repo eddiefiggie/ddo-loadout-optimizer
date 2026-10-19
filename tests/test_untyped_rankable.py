@@ -19,6 +19,7 @@ import build_dataset  # noqa: E402
 from src import untyped_rankable  # noqa: E402
 from src import vocabulary  # noqa: E402
 from src import name_corrections  # noqa: E402
+from src import harvest_affixes  # noqa: E402
 
 SHARD = os.path.join(ROOT, "data", "seed", "compendium", "untyped_rankable.json")
 NAME_SHARD = os.path.join(ROOT, "data", "seed", "compendium", "affix_name_corrections.json")
@@ -46,7 +47,9 @@ def _raises(exc, fn, *args, **kwargs):
 
 
 def _real_records():
-    recs = vocabulary._load(vocabulary.ITEMS_PATH)
+    # As the build does: our own harvested enchantments (#907) lie over the dump
+    # before anything adjudicates it, so a type the harvest supplies is not untyped.
+    recs, _ = harvest_affixes.apply(vocabulary._load(vocabulary.ITEMS_PATH), harvest_affixes.load())
     name_corrections.apply(recs, name_corrections.load(NAME_SHARD))
     return recs
 

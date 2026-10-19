@@ -142,14 +142,6 @@
       "verified": "2026-08-29"
     },
     {
-      "name": "Distant Incite",
-      "items": 2,
-      "category": "parse-gap",
-      "reason": "wiki: '+X% Enhancement bonus to increased threat generation from ranged damage' — stated as an Enhancement bonus, so the untyped instances are an upstream parse gap.",
-      "wiki_url": "https://ddowiki.com/page/Distant_Incite",
-      "verified": "2026-08-29"
-    },
-    {
       "name": "Ice Guard",
       "items": 2,
       "category": "proc",
@@ -337,11 +329,25 @@
       "conditional": 5,
       "no-wiki-page": 5,
       "not-a-stat": 2,
-      "parse-gap": 2,
+      "parse-gap": 1,
       "proc": 5,
       "unrankable-concept": 4
     },
     "revisit_when": "A proc verdict changes if #331 ships proc valuation. A conditional verdict changes if #214 gives the pipeline a way to tell a conditional from a constant. A parse-gap verdict changes on a gear-planner refresh that types the remaining instances — which is exactly how the 21 names retired on 2026-08-18 resolved.",
-    "_note_397c673": "397c673 — `Max Filigree Slots` joined `unrankable-concept`: a slot COUNT on 95 items, and filigrees are a declared non-goal (#196). Tally re-derived from the list."
+    "_note_397c673": "397c673 — `Max Filigree Slots` joined `unrankable-concept`: a slot COUNT on 95 items, and filigrees are a declared non-goal (#196). Tally re-derived from the list.",
+    "_note_2026_10_19": "#907 — `Distant Incite` left `parse-gap` (2 -> 1) exactly as revisit_when foresaw: our own wiki harvest types both remaining instances (Cloaks of the Crownblade) as Enhancement. Entry kept under _retired_2026_10_19_own_item_harvest."
+  },
+  "_retired_2026_10_19_own_item_harvest": {
+    "why": "#907 — our own wiki harvest reads {{Incite|N||Distant}} on both Cloaks of the Crownblade as the Enhancement bonus the template renders, so the untyped instances this entry quarantined as an upstream parse gap no longer exist. The stale guard in src/untyped_rankable.py retired it.",
+    "entries": [
+      {
+        "name": "Distant Incite",
+        "items": 2,
+        "category": "parse-gap",
+        "reason": "wiki: '+X% Enhancement bonus to increased threat generation from ranged damage' — stated as an Enhancement bonus, so the untyped instances are an upstream parse gap.",
+        "wiki_url": "https://ddowiki.com/page/Distant_Incite",
+        "verified": "2026-08-29"
+      }
+    ]
   }
 }

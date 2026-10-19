@@ -33,6 +33,13 @@ class Unmapped(ValueError):
     pass
 
 
+class Declined(Unmapped):
+    """A form the mapper deliberately does not read — a charge-based clicky, a
+    legacy or authoring-slip spelling, a variant one catalog stat cannot express.
+    Unlike a plain `Unmapped`, it does not keep the item whole: no affix is
+    produced for it, so gear-planner's own affix for that call stands untouched."""
+
+
 #: template -> (default bonus type, the template CODE that renders it). Read from
 #: the code, not the usage notes: `Template:Resistance`'s notes say "Default=
 #: Enhancement" while its code renders `{{Insightful|{{{2|Resistance}}}}} bonus`,
@@ -56,6 +63,14 @@ TEMPLATE_DEFAULTS = {
     "HealingAmp": ("Enhancement", "{{{3|Enhancement}}}"),
     "Tactics": ("Enhancement", "{{Insightful|{{{3|Enhancement}}}}} bonus"),
     "Spellpen": ("Equipment", "{{ucfirst:{{lc:{{{2|Equipment}}}}}}} bonus"),
+    # --- tier 3 (#907) ---
+    "Absorption": ("Enhancement", "{{{5|Enhancement}}} Bonus"),
+    "Deception": ("Enhancement", "enhancement bonus to Bluff checks"),
+    "Diversion": ("Enhancement", "{{Insightful|{{{3|Enhancement}}}}} bonus"),
+    "Spell Resistance": ("Enhancement", "{{Insightful|{{{2|Enhancement}}}}} bonus"),
+    "Incite": ("Enhancement", "{{lc:{{{2|enhancement}}}}}"),
+    "Armor-Piercing": ("Enhancement", "{{Insightful|{{{2|Enhancement}}}}} bonus"),
+    "Speed": ("Enhancement", "[[enhancement bonus]]"),
 }
 #: Save's default differs by branch, each quoted from Template:Save (rev 560806).
 SAVE = {"e": ("Enchantment Save", "Resistance"), "enchantment": ("Enchantment Save", "Resistance"),
@@ -418,6 +433,138 @@ def m_hp(pos, named):
     raise Unmapped(f"Hp {which!r}")
 
 
+def _words(v):
+    """`Scase2`-style casing the effect templates use for names: each word capitalised."""
+    return " ".join(w[:1].upper() + w[1:].lower() for w in (v or "").strip().split())
+
+
+def m_bane(pos, named):
+    """Template:Bane: `fey` is Feybane, else `<Creature> Bane`; a word tier
+    (lesser, greater, ...) prefixes the name, a number does not. A presence."""
+    who = (_arg(pos, 0) or "").strip()
+    if not who:
+        raise Unmapped("Bane with no creature")
+    name = "Feybane" if who.lower() == "fey" else _words(who) + " Bane"
+    tier = (_arg(pos, 1) or "").strip()
+    if tier and not re.fullmatch(r"\d+", tier):
+        name = _words(tier) + " " + name
+    return [(name, "Bool", 1)]
+
+
+BLAST = {"acid", "anarchic", "axiomatic", "evil", "unholy", "flaming", "force", "good", "holy", "icy",
+         "negative", "poison", "radiant", "shocking", "sonic"}
+
+
+def m_blast(pos, named):
+    which = (_arg(pos, 0) or "").strip().lower()
+    if which not in BLAST:
+        raise Unmapped(f"Blast type {which!r}")
+    # A numeric p2 is the scaled tier (`Flaming Blast 6`); a word is the old
+    # non-scaled name prefix (`{{Blast|Flaming|Greater}}` -> Greater Flaming Blast).
+    tier = (_arg(pos, 1) or "").strip()
+    prefix = "" if not tier or re.fullmatch(r"\d+", tier) else _words(tier) + " "
+    return [(prefix + _words(which) + " Blast", "Bool", 1)]
+
+
+#: Template:Absorption's percentage branches that name a bonus type (`{{{5|Enhancement}}}
+#: Bonus to X Absorption`), keyed as the template keys them: lower case, spaces
+#: removed. `negative`/`negativeenergy` is NOT here — its percentage branch renders
+#: "absorbs N% of all negative damage" and states no bonus type, so it is not read.
+ABSORB = {k: k.title() for k in ("acid", "cold", "evil", "fire", "force", "good", "light", "poison", "sonic",
+                                 "law", "chaos", "alignment")}
+ABSORB.update({"electric": "Electric", "electrical": "Electric", "electricity": "Electric",
+               "lightning": "Electric", "electricityandacid": "Electricity and Acid",
+               "fireandcold": "Fire and Cold"})
+
+
+def m_absorption(pos, named):
+    key = (_arg(pos, 0) or "").strip().lower().replace(" ", "")
+    v = _int(_arg(pos, 1) or "0")
+    if key == "elemental":
+        # Always "Enhancement Bonus"; whether sonic is covered is per item (p3) and
+        # src/absorption_split.py expands it, so the call is read only without sonic.
+        if (_arg(pos, 2) or "no").strip().lower() not in ("no", "n", "0", "false"):
+            raise Declined("Elemental Absorption including sonic")
+        if v <= 0:
+            raise Unmapped("Elemental Absorption with no percentage")
+        return [("Elemental Absorption", "Enhancement", v)]
+    if key not in ABSORB:
+        raise Declined(f"Absorption kind {key!r} (charge, named or untyped form)")
+    if v == 0:
+        raise Declined("Absorption +0% (charge form)")
+    return [(ABSORB[key] + " Absorption", _type(_arg(pos, 4), "Absorption"), v)]
+
+
+def m_deception(pos, named):
+    bluff = (named.get("bluff") or "").strip().lower()
+    if bluff == "improved":
+        n = _arg(pos, 0)
+        return [("Improved Deception", "Enhancement", _int(n) if n and n.strip() else 5)]
+    if bluff == "yes":
+        return [("Deception", "Bool", 1)]
+    if bluff:
+        raise Unmapped(f"Deception bluff={bluff!r}")
+    raw = (_arg(pos, 0) or "").strip()
+    if not re.fullmatch(r"\d+", raw):
+        raise Declined(f"Deception {raw!r} (tiered on-hit form)")
+    return [("Deception", _type(_arg(pos, 1), "Deception"), int(raw))]
+
+
+def m_concealment(pos, named):
+    which = (_arg(pos, 0) or "").strip()
+    if not which:
+        raise Unmapped("Concealment with no kind")
+    return [(_words(which), "Bool", 1)]
+
+
+def m_diversion(pos, named):
+    if (_arg(pos, 2) or "").strip().lower() == "old":
+        raise Declined("legacy Diversion (old)")
+    kind = (_arg(pos, 1) or "").strip()
+    if kind.lower() not in ("", "distant", "mystic"):
+        # p2 is the KIND; a bonus type written there (`{{Diversion|4|Insightful}}`)
+        # renders an "Insightful Diversion" enhancement bonus — an authoring slip,
+        # not read either way.
+        raise Declined(f"Diversion kind {kind!r}")
+    return [((_words(kind) + " Diversion").strip(), _type(_arg(pos, 2), "Diversion"), _int(_arg(pos, 0) or "20"))]
+
+
+def m_incite(pos, named):
+    kind = (_arg(pos, 2) or "").strip().lower()
+    if kind not in ("", "distant", "mystic"):
+        raise Unmapped(f"Incite kind {kind!r}")
+    return [((kind.title() + " Incite").strip(), _type(_arg(pos, 1), "Incite"), _int(_arg(pos, 0)))]
+
+
+def m_speed(pos, named):
+    """Template:Speed: an integer is an N% enhancement bonus to movement; a roman
+    numeral (the code's `{{Roman2Dec}}` test) is an N% enhancement bonus to attack
+    speed. Both are the catalog's `Speed` N. A kind (melee, ranged, movement) narrows
+    what the bonus applies to, which one `Speed` stat cannot say — not read."""
+    if (_arg(pos, 1) or "").strip():
+        raise Declined("Speed with a kind")
+    raw = (_arg(pos, 0) or "15").strip()
+    if re.fullmatch(r"-?\d+", raw):
+        return [_penalty("Speed", "Enhancement", int(raw))]
+    return [("Speed", "Enhancement", _roman(raw))]
+
+
+def m_parrying(pos, named):
+    # Template:Parrying: always an Insight bonus; I..XX or a number.
+    return [("Parrying", "Insight", _roman(_arg(pos, 0) or "I"))]
+
+
+def m_ghostly(pos, named):
+    if (_arg(pos, 0) or "").strip():
+        raise Declined("Enhanced Ghostly")
+    return [("Ghostly", "Bool", 1)]
+
+
+def m_protection(pos, named):
+    # Template:ProtectionBonus: "[[Deflection bonus]] to [[Armor Class]]".
+    return [("Armor Class", "Deflection", _int(_arg(pos, 0)))]
+
+
 MAPPERS = {
     "Stat": m_stat,
     "Sheltering": m_sheltering,
@@ -432,6 +579,11 @@ MAPPERS = {
     "Elemental Resistance": m_elemental_resistance, "HealingAmp": m_healingamp, "Tactics": m_tactics,
     "NaturalArmor": m_naturalarmor, "Spellpen": m_spellpen, "Enhancement bonus": m_enhancement_bonus,
     "Wizardry": m_wizardry, "Hp": m_hp,
+    "Bane": m_bane, "Blast": m_blast, "Absorption": m_absorption, "Deception": m_deception,
+    "Concealment": m_concealment, "Diversion": m_diversion, "Incite": m_incite, "Speed": m_speed,
+    "Spell Resistance": _simple("Spell Resistance", "Spell Resistance"),
+    "Armor-Piercing": _simple("Armor-Piercing", "Armor-Piercing", _percent),
+    "Parrying": m_parrying, "Ghostly": m_ghostly, "ProtectionBonus": m_protection,
 }
 
 
@@ -460,11 +612,16 @@ for _t in PRESENCE:
     MAPPERS.setdefault(_t, m_presence(_t))
 
 
+#: Reason prefix of a `Declined` call that does not keep its item whole.
+DECLINED = "declined: "
+
+
 def affixes(enhancements: str):
     """`(mapped, unmapped)` for an item's OWN enchantments (top-level lines; nested
     lines are sub-options): mapped affixes as `(name, type, value)`, and the calls no
-    mapper could read, as `(template, reason)`."""
-    mapped, unmapped = [], []
+    mapper could read, as `(template, reason)` — a reason starting `DECLINED` is a
+    form deliberately not read that leaves the item's other values readable."""
+    mapped, unmapped, declined, read = [], [], [], set()
     for line in (enhancements or "").split("\n"):
         if depth(line) > 1:
             continue
@@ -487,6 +644,13 @@ def affixes(enhancements: str):
                 if a[1] == "Bool" and a in mapped:
                     continue
                 mapped.append(a)
+            read.add(name)
+        except Declined as e:
+            declined.append((name, str(e)))
         except Unmapped as e:
             unmapped.append((name, str(e)))
+    for name, why in declined:
+        # Beside a READ call of the same template the merge could pair gear-planner's
+        # affix for the declined call with ours — so that item is kept whole after all.
+        unmapped.append((name, why if name in read else DECLINED + why))
     return mapped, unmapped
