@@ -1362,16 +1362,19 @@ function _weaponTaxonomy() {
 // is honored only for weapons; a shield or a ring keeps its own worn slot whatever
 // is passed. Absent `hand` => Main Hand, so every existing call site is unchanged.
 function pinWornSlotOf(v, hand) {
-  if (v.category !== "weapon") return v.slot;
+  // #915 — a dual-slot item honors a target among its own worn slots; any other
+  // target (a hand, a stale label) keeps it in its own slot.
+  if (v.category !== "weapon") return (v.alt_slots || []).includes(hand) ? hand : v.slot;
   return hand === "Off Hand" ? "Off Hand" : "Main Hand";
 }
-/** The worn slots a pinnable item can be pinned to, in offer order. Only a
- *  ONE-HANDED weapon offers a choice; everything else has exactly one home.
+/** The worn slots a pinnable item can be pinned to, in offer order. A ONE-HANDED
+ *  weapon offers both hands and a dual-slot item (#915) both of its slots;
+ *  everything else has exactly one home.
  *  An untyped weapon host has unknown handedness — it could be crafted two-handed,
  *  which cannot be dual-wielded — so it is not offered as an off-hand pin, matching
  *  offHandWeaponOk's "concrete type match required" rule in model.js. */
 function pinHandsFor(v) {
-  if (!v || v.category !== "weapon") return [v ? v.slot : null];
+  if (!v || v.category !== "weapon") return v ? [v.slot, ...(v.alt_slots || [])] : [null];
   const T = _weaponTaxonomy();
   const oneHanded = !!T && v.type != null && T.styleOfType(v.type) === T.ONE_HAND;
   return oneHanded ? ["Main Hand", "Off Hand"] : ["Main Hand"];
@@ -6536,7 +6539,7 @@ ${(() => {
         query.ownedSlotsCovered = query.ownedMode
           ? [...new Set(dataset.items
               .filter((v) => v.category !== "augment" && state.ownedNames.has(v.source_item || v.variant_id))
-              .flatMap((v) => v.category === "weapon" ? ["Main Hand", "Off Hand"] : [v.slot]))]
+              .flatMap((v) => v.category === "weapon" ? ["Main Hand", "Off Hand"] : [v.slot, ...(v.alt_slots || [])]))]
           : [];
         // #91 (U3, KTD3) — the utility counting set rides as a buildModel
         // ARGUMENT from the in-scope vocabulary, never on the persisted query.

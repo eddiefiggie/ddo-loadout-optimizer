@@ -178,4 +178,46 @@ def meta(page: dict) -> dict:
     out["raw"]["quest"] = params.get("quest")
     out["quests"] = [q] if q else None
     out["rare"] = (params.get("rare") or "").strip().lower() in ("yes", "true", "1")
+
+    worn, problem = worn_slots(params.get("tips"))
+    if problem:
+        out["problems"].append(problem)
+    elif worn:
+        if out.get("slot") not in worn:
+            out["problems"].append(f"tips name the slots {worn!r} but the infobox slot is {out.get('slot')!r}")
+        else:
+            out["worn_slots"] = worn
     return out
+
+
+#: #915 — the Slave Lords items' tips state a second body slot. Verbatim shapes on
+#: the 2026-10-18 harvest: "can be worn in the Neck slot ''or'' the Waist slot",
+#: "can be worn in either Finger slot ''or'' the Trinket slot".
+WORN_IN_RE = re.compile(r"can be worn in (?:the|either) (\w+) slot ''or'' the (\w+) slot")
+#: Anything that reads like a second slot and is NOT the shape above. Refused rather
+#: than skipped: a reworded tip must not silently drop an item back to one slot.
+WORN_IN_LOOSE_RE = re.compile(r"\bslot\s*(?:'')?or(?:'')?\s+(?:the|either|any)\b|\bcan be (?:worn|equipped) in\b", re.I)
+
+
+def worn_slots(tips):
+    """`(slots, problem)` — the gear-planner slots a page's tips say the item can be
+    worn in, infobox order first, or `(None, None)` when the tips state no second
+    slot. A tip that looks like one but does not match the stated shape is a
+    problem, never a guess."""
+    if not tips:
+        return None, None
+    text = COMMENT_RE.sub("", tips)
+    m = WORN_IN_RE.search(text)
+    if not m:
+        if WORN_IN_LOOSE_RE.search(text):
+            return None, f"tips look like a second worn slot but match no known shape: {text[:160]!r}"
+        return None, None
+    slots = []
+    for body in m.groups():
+        mapped = BODY_SLOT.get(body)
+        if mapped is None:
+            return None, f"tips name the body slot {body!r}, which is not in the vocabulary"
+        slots.append(mapped[0])
+    if len(set(slots)) != 2:
+        return None, f"tips name the same slot twice: {m.group(0)!r}"
+    return slots, None

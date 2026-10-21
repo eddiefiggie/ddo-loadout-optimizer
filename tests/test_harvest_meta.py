@@ -73,5 +73,8 @@ def test_the_build_stamps_where_each_field_came_from():
     with open(DATASET, encoding="utf-8") as fh:
         hm = json.load(fh)["metadata"]["planner_coverage"]["harvest_meta"]
     assert hm["ml"]["wiki"] > 8000 and hm["ml"]["fallback"] == 8
-    assert hm["slot"]["ruled_gp"] == 12 and hm["type"]["changed"] == 2
+    # #915 — the dual-slot items take the wiki's infobox slot; the other one is
+    # `worn_slots`, so no slot or type is ruled for gear-planner any more.
+    assert hm["slot"]["ruled_gp"] == 0 and hm["slot"]["changed"] == 6 and hm["type"]["changed"] == 8
+    assert hm["worn_slots"]["wiki"] == 12, "both gear-planner records of each of the six dual-slot items"
     assert hm["quests"]["changed"] == 11

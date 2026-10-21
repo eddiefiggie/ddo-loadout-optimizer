@@ -11,6 +11,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src import planner_items as P  # noqa: E402
+from src import harvest_meta as HM  # noqa: E402
 
 HERE = os.path.dirname(__file__)
 RAW = os.path.join(HERE, "..", "data", "seed", "compendium", "raw", "gearplanner_items.json")
@@ -225,3 +226,41 @@ def test_per_item_host_count_reported_and_matches_the_live_pool():
     # And the gate is what produced that: with no pool threaded, zero hosts.
     _, off = P.load_planner_items()
     assert off["planner_nc_per_item_hosts"] == 0
+
+
+def test_915_a_dual_slot_item_carries_its_other_slot():
+    r = _by_name(P.load_planner_items(harvest_meta=(HM.load(), HM.load_rulings()))[0], "Chains")
+    assert (r["slot"], r["alt_slots"]) == ("Necklace", ["Belt"])
+    plain = _by_name(_records()[0], "Chains")
+    assert "alt_slots" not in plain, "without the harvest there is no tips read, so no second slot"
+
+
+def _dual_raw(tmp, slots):
+    rec = {"name": "Chains", "ml": 8, "type": "x", "url": "/page/Item:Chains", "affixes": [], "crafting": []}
+    path = os.path.join(tmp, "raw.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump([dict(rec, slot=s) for s in slots], fh)
+    return path
+
+
+def test_915_the_wiki_tips_and_gear_planners_per_slot_pair_must_agree():
+    import tempfile
+    tmp = tempfile.mkdtemp()
+    shard = {"records": {"Chains": {"slot": "Necklace", "worn_slots": ["Necklace", "Belt"]}}}
+    ok = P.load_planner_items(_dual_raw(tmp, ["Belt", "Necklace"]), harvest_meta=(shard, {}), ml_corrections={})[0]
+    assert ok[0]["alt_slots"] == ["Belt"]
+    try:
+        P.load_planner_items(_dual_raw(tmp, ["Boots", "Necklace"]), harvest_meta=(shard, {}), ml_corrections={})
+    except SystemExit as e:
+        assert "disagree" in str(e) and "Chains" in str(e)
+    else:
+        raise AssertionError("a gear-planner pair the tips do not state must fail the build")
+    try:
+        P.load_planner_items(_dual_raw(tmp, ["Belt", "Necklace"]),
+                             harvest_meta=({"records": {"Chains": {"slot": "Necklace"}}}, {}), ml_corrections={})
+    except SystemExit as e:
+        assert "disagree" in str(e)
+    else:
+        raise AssertionError("a gear-planner pair with no tips read must fail the build")
+    one = P.load_planner_items(_dual_raw(tmp, ["Necklace"]), harvest_meta=(shard, {}), ml_corrections={})[0]
+    assert one[0]["alt_slots"] == ["Belt"], "once gear-planner ships one record, the tips alone decide"

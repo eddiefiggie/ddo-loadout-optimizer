@@ -116,7 +116,8 @@ function filterVariants(items, c) {
   c = c || {};
   const q = (c.query || "").trim().toLowerCase();
   return items.filter((v) => {
-    if (c.slot && v.slot !== c.slot) return false;
+    // #915 — a dual-slot item (Chains) is listed under both of its slots.
+    if (c.slot && v.slot !== c.slot && !(v.alt_slots || []).includes(c.slot)) return false;
     if (c.verification && c.verification !== "all" && v.verification !== c.verification) return false;
     if (c.maxMl != null && c.maxMl !== "" && Number(itemMl(v)) > Number(c.maxMl)) return false;
     // U4 — two SEPARATE match modes. `stat` means "the item carries this affix"
@@ -715,7 +716,7 @@ function initBrowse(dataset, vocab, hooks) {
         ? `<button type="button" class="browse-correct" data-correct="${esc(v.variant_id)}">Correct a bonus type…</button>` : "";
       return `<tr>
         <td data-label="Item">${esc(v.variant_id)}${tier}</td>
-        <td data-label="Slot">${esc(v.slot)}</td>
+        <td data-label="Slot">${esc([v.slot, ...(v.alt_slots || [])].join(" or "))}</td>
         <td class="num" data-label="ML">${esc(itemMl(v) ?? "—")}</td>
         <td data-label="Status">${badge}</td>
         <td data-label="Affixes &amp; set bonuses">${affixes}</td>

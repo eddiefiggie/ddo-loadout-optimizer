@@ -9,8 +9,10 @@ Three rules:
 
   * A field the page does not state keeps gear-planner's value, counted as a
     fallback in the coverage stamp. Nothing is inferred to fill it.
-  * A field `harvest_meta_rulings.json` rules for gear-planner keeps it (the
-    dual-slot items, #915).
+  * A field `harvest_meta_rulings.json` rules for gear-planner keeps it.
+  * `worn_slots` (#915) has no gear-planner counterpart: it is the pair of body
+    slots a dual-slot item's tips state, and `planner_items` turns it into the
+    record's `alt_slots`.
   * Every vendored record must be in the shard, or the build fails: a re-vendor
     that brings records the harvest never saw needs a re-harvest, not a silent
     fallback to upstream for everything new.
@@ -23,7 +25,7 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHARD_PATH = os.path.join(ROOT, "data", "seed", "compendium", "wiki_item_meta.json")
 RULINGS_PATH = os.path.join(ROOT, "data", "seed", "compendium", "harvest_meta_rulings.json")
-FIELDS = ("ml", "slot", "type", "quests")
+FIELDS = ("ml", "slot", "type", "quests", "worn_slots")
 
 
 def load(path: str = SHARD_PATH) -> dict:

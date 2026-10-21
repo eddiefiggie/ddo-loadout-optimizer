@@ -79,6 +79,10 @@ def diff(raw_items, pages_by_title, pin_date, corrected, ruled=None):
                 continue
             if (r["name"], f) in ruled:
                 cls = "ruled-" + ruled[(r["name"], f)]
+            elif f in ("slot", "type") and r.get("slot") in (m.get("worn_slots") or ()):
+                # #915 — gear-planner ships a dual-slot item once per slot; the record
+                # for the slot that is not the infobox's is the tips' second slot.
+                cls = "dual-slot"
             elif ours is None:
                 cls = "ours-unread"
             elif (page.get("ts") or "") > pin_date:

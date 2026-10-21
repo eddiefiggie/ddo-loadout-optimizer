@@ -211,6 +211,9 @@ def _make_variant(item, ml, tier_label, parsed):
         # #879 — an `[Upgraded]` twin's base, upgrader, and the wiki upgrade
         # lines nothing credits (Mythic boosts, clicky charges, a quarantined value).
         "upgraded_from": item.get("upgraded_from"),
+        # #915 — the second body slot a dual-slot item's tips state (Chains: Belt
+        # beside its Necklace). The solver offers the item in both.
+        "alt_slots": item.get("alt_slots"),
     }
 
 
