@@ -107,3 +107,43 @@ def test_every_committed_ruling_names_a_record_and_a_compared_field():
     for r in rul:
         assert r["name"] in names, f"ruling for {r['name']!r} names no record — stale"
         assert r["field"] in D.FIELDS and r["ruling"] in ("wiki", "gp") and r["why"]
+
+
+DUAL = """{{Named item|Jewelry
+  | type = Necklace
+  | slot = Neck
+  | minlevel = 8
+  | tips = This unusual item can be worn in the Neck slot ''or'' the Waist slot - it will default to the Neck if both slots are empty when you equip it.
+}}"""
+
+
+def test_915_the_tips_state_a_second_worn_slot_in_catalog_vocabulary():
+    m = W.meta(_page(DUAL))
+    assert m["worn_slots"] == ["Necklace", "Belt"] and m["problems"] == []
+    ring = DUAL.replace("Necklace", "Ring").replace("= Neck", "= Finger").replace(
+        "in the Neck slot ''or'' the Waist slot", "in either Finger slot ''or'' the Trinket slot")
+    assert W.meta(_page(ring))["worn_slots"] == ["Ring", "Trinket"]
+
+
+def test_915_a_page_without_the_tip_states_one_slot():
+    m = W.meta(_page(DUAL.replace("can be worn in the Neck slot ''or'' the Waist slot", "is damaged when found")))
+    assert "worn_slots" not in m and m["problems"] == []
+
+
+def test_915_a_reworded_second_slot_tip_is_refused_not_skipped():
+    m = W.meta(_page(DUAL.replace("can be worn in the Neck slot ''or'' the Waist slot",
+                                   "can be equipped in your Neck or Waist")))
+    assert "worn_slots" not in m and any("second worn slot" in p for p in m["problems"])
+
+
+def test_915_tips_that_do_not_include_the_infobox_slot_are_refused():
+    m = W.meta(_page(DUAL.replace("= Neck", "= Wrist").replace("= Necklace", "= Bracers")))
+    assert "worn_slots" not in m and any("infobox slot" in p for p in m["problems"])
+
+
+def test_915_the_diff_classifies_the_other_slots_record_as_dual_slot():
+    raw = [{"name": "Chains", "url": "/page/Item:Chains", "ml": 8, "slot": s, "type": t, "quests": None}
+           for s, t in (("Belt", "Waist items"), ("Necklace", "Neck items"))]
+    rows, counts = D.diff(raw, {"Item:Chains": _page(DUAL, "Item:Chains")}, "2026-10-13T23:59:59Z", {}, {})
+    assert counts["slot:dual-slot"] == 1 and counts["type:dual-slot"] == 1 and counts["slot:equal"] == 1
+    assert not any(r["class"] == "review" for r in rows)

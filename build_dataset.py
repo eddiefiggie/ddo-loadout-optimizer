@@ -85,6 +85,7 @@ from src import craft_identity as craft_identity_mod
 from src import crafting_coverage as crafting_coverage_mod
 from src import crafted_twins as crafted_twins_mod
 from src import upgraded_items as upgraded_items_mod
+from src import dual_slot as dual_slot_mod
 from src import roman_lore as roman_lore_mod
 from src import wiki_supplement as wiki_supplement_mod
 from src import ring_exclusivity as ring_exclusivity_mod
@@ -2685,6 +2686,19 @@ def build() -> dict:
     weapon_exclusivity_mod.apply(out["items"], _weap_excl_shard)
     _weap_excl_check.pop("problems")
     out["metadata"]["duplicable_weapon_coverage"] = _weap_excl_check
+
+    # #915 — the same rule for the dual-slot items: a second copy may fill the
+    # other slot unless the wiki records the item as Exclusive or a Minor Artifact.
+    # Stamps `duplicable_worn`; the solver mints that second copy from it.
+    _dual_shard = dual_slot_mod.load()
+    _dual_check = dual_slot_mod.check(_dual_shard, out["items"])
+    if _dual_check["problems"]:
+        raise SystemExit(
+            "dual-slot exclusivity shard failed (#915) — the read no longer describes "
+            "the catalog:\n  " + "\n  ".join(_dual_check["problems"]))
+    dual_slot_mod.apply(out["items"], _dual_shard)
+    _dual_check.pop("problems")
+    out["metadata"]["dual_slot_coverage"] = _dual_check
 
     # #199 — intrinsic caps, emitted as {stat: cap}. Exclude-until-verified: only
     # the `caps` list ships; a stat in `refused` deliberately gets NO cap, so a

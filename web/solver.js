@@ -366,6 +366,27 @@ function buildProgram(model) {
     twinOf.set(tw.name, xv.name);
   }
 
+  // #915 — the second copy of a dual-slot item (Chains: Necklace or Belt). The
+  // model offers the item in both slots under its own id, and the one-copy cap
+  // below stops that ONE item filling both. A second copy is a second item with its
+  // own Slaver's crafting, so it is its own x-var in the other slot, minted only
+  // where the build stamped `duplicable_worn` (not Exclusive, not a Minor Artifact)
+  // and where that slot already offers the item; `twin <= original` ties it to the
+  // copy in the item's own slot. Appended for the same tie-break reason as above.
+  for (const xv of xVars.slice()) {
+    const v = xv.variant;
+    if (xv.twinOf || v.duplicable_worn !== true || xv.slot !== v.slot) continue;
+    const id = v.variant_id || v.source_item;
+    for (const alt of v.alt_slots || []) {
+      const there = xVars.find((x) => !x.twinOf && x.slot === alt && (x.variant.variant_id || x.variant.source_item) === id);
+      if (!there) continue;
+      const copy = Object.assign({}, v, { variant_id: _twinIdOf(id) });
+      const tw = { name: "x" + xVars.length, variant: copy, slot: alt, cardinality: there.cardinality, twinOf: xv.name };
+      xVars.push(tw);
+      twinOf.set(tw.name, xv.name);
+    }
+  }
+
   // "stat||type" -> [{gates, value}]. A worn affix is a contribution gated by
   // exactly one binary: its item's pick var. Later units push additional
   // contributions (augments, sets, crafting) into zByBucket with more gates,
@@ -808,6 +829,19 @@ function buildProgram(model) {
     handVars.get(id).push(xv.name);
   }
   for (const [, names] of handVars) if (names.length > 1) extraConstraints.push(`${names.join(" + ")} <= 1`);
+
+  // #915 — the same cap for a dual-slot item: one physical item fills one of its
+  // two slots. Load-bearing for the same reason as the hand cap — Slaver's crafting,
+  // set pieces and augment supply accumulate per x-var. A second copy is the twin
+  // minted above, which carries its own id and so is not in this sum.
+  const altVars = new Map(); // variant id -> its pick vars across its worn slots
+  for (const xv of xVars) {
+    if (xv.twinOf || !(xv.variant.alt_slots || []).length) continue;
+    const id = xv.variant.variant_id || xv.variant.source_item;
+    if (!altVars.has(id)) altVars.set(id, []);
+    altVars.get(id).push(xv.name);
+  }
+  for (const [, names] of altVars) if (names.length > 1) extraConstraints.push(`${names.join(" + ")} <= 1`);
 
   // R1/R3 — HAND MUTEX: a both-hands main-hand weapon (two-handed melee, a bow, or an
   // unclassifiable host like the untyped Dino weapon) and any off-hand item are

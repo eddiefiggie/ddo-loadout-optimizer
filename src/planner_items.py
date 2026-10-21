@@ -345,7 +345,30 @@ def _record(it, verified_seal_types, nc_per_item_hosts=None):
     # wiki lists for the upgrade that nothing credits (the Mythic boosts).
     if it.get("upgraded_from"):
         rec["upgraded_from"] = it["upgraded_from"]
+    # #915 — a dual-slot item (Chains, Five Rings, Shackles) is worn in either of
+    # the two slots its wiki tips state; `slot` is the infobox one, `alt_slots` the
+    # other. Read from the harvest (src/wiki_item_meta.py), never derived.
+    worn = it.get("worn_slots")
+    if worn:
+        worn = [_slot(s) for s in worn]
+        if slot not in worn:
+            raise SystemExit(f"{it.get('name')!r}: worn_slots {worn!r} does not include its slot "
+                             f"{slot!r} (#915) — the metadata overlay and the tips disagree")
+        rec["alt_slots"] = [s for s in worn if s != slot]
     return rec
+
+
+def _gp_dual_slot_pairs(raw):
+    """#915 — names gear-planner ships as one record PER SLOT: two same-name,
+    non-weapon records that differ in slot. The name dedup keeps one of them, so
+    this is the other source's account of which items are dual-slot."""
+    by = {}
+    for it in raw:
+        s = _slot(it.get("slot"))
+        if s == "Weapon":
+            continue
+        by.setdefault(it.get("name"), set()).add(s)
+    return {n: ss for n, ss in by.items() if len(ss) > 1}
 
 
 def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
@@ -381,6 +404,8 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
     nc_hosts = nc_per_item_hosts or {}
     with open(path, encoding="utf-8") as fh:
         raw = json.load(fh)
+    # Read BEFORE the overlay, which rewrites both records of a pair to the wiki slot.
+    gp_dual = _gp_dual_slot_pairs(raw)
     harvest_stats = None
     if harvest_meta is not None:
         from src import harvest_meta as harvest_meta_mod
@@ -437,8 +462,23 @@ def load_planner_items(path: str = RAW_PATH, verified_seal_types=None,
             slavers_set_bonus_hosts[rec["slavers_set_bonus"]] += 1
         records.append(rec)
 
+    # #915 — the two sources must agree on every dual-slot item: the wiki tips the
+    # harvest read, and gear-planner's one-record-per-slot pairs. A pair the tips do
+    # not state (or tips naming a different slot) fails the build rather than
+    # shipping an item in one slot, or in a slot only one source claims.
+    dual = {r["name"]: {r["slot"], *r["alt_slots"]} for r in records if r.get("alt_slots")}
+    if harvest_meta is not None:
+        # A wiki pair gear-planner ships as one record is not a disagreement: it is
+        # what every item looks like once gear-planner's file is retired (#910).
+        bad = sorted(n for n in gp_dual if dual.get(n) != gp_dual[n])
+        if bad:
+            raise SystemExit("dual-slot items disagree between the wiki tips and gear-planner (#915): "
+                             + "; ".join(f"{n!r} wiki {sorted(dual.get(n) or [])} gp {sorted(gp_dual[n])}"
+                                         for n in bad))
+
     stats = {
         "planner_records": len(records),
+        "planner_dual_slot_items": len(dual),
         "planner_name_collisions_collapsed": collapsed,
         "planner_host_pipeline_names_excluded": host_owned,
         "planner_seal_hosts": seal_hosts,

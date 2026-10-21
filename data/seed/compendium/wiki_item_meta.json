@@ -9,7 +9,8 @@
    "ml",
    "slot",
    "type",
-   "quests"
+   "quests",
+   "worn_slots"
   ],
   "records": 8071
  },
@@ -7531,6 +7532,10 @@
    "type": "Neck items",
    "quests": [
     "Slave Pits of the Undercity"
+   ],
+   "worn_slots": [
+    "Necklace",
+    "Belt"
    ],
    "revid": 628933
   },
@@ -22566,6 +22571,10 @@
    "quests": [
     "Secret of the Slavers' Stockade"
    ],
+   "worn_slots": [
+    "Ring",
+    "Trinket"
+   ],
    "revid": 630873
   },
   "Flame Blade (level 1)": {
@@ -33387,6 +33396,10 @@
    "quests": [
     "Slave Pits of the Undercity"
    ],
+   "worn_slots": [
+    "Necklace",
+    "Belt"
+   ],
    "revid": 631926
   },
   "Legendary Chains of Yeenoghu": {
@@ -37235,6 +37248,10 @@
    "type": "Finger items",
    "quests": [
     "Secret of the Slavers' Stockade"
+   ],
+   "worn_slots": [
+    "Ring",
+    "Trinket"
    ],
    "revid": 632250
   },
@@ -43763,6 +43780,10 @@
    "type": "Wrist items",
    "quests": [
     "Assault on the Aerie of the Slave Lords"
+   ],
+   "worn_slots": [
+    "Bracers",
+    "Boots"
    ],
    "revid": 632838
   },
@@ -59758,6 +59779,10 @@
    "type": "Wrist items",
    "quests": [
     "Assault on the Aerie of the Slave Lords"
+   ],
+   "worn_slots": [
+    "Bracers",
+    "Boots"
    ],
    "revid": 634571
   },

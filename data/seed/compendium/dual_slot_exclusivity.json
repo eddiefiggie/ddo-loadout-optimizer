@@ -1,0 +1,94 @@
+{
+ "_meta": {
+  "why": "#915 — whether a dual-slot item may be worn as two copies, one in each of its slots. The ring and weapon rule (docs/wiki-evidence/ring-exclusivity.md, #566/#902): an item may be worn twice unless it is Exclusive or a Minor Artifact, both per-item wiki categories. A page that records a binding and is in neither states it is not Exclusive (Template:Bind publishes exclusive, default false). `slot_categories` are the page's own body-slot categories, which must name both slots the tips state.",
+  "source": "ddowiki api.php prop=categories|revisions, same-origin from a ddowiki tab",
+  "harvested": "2026-10-21",
+  "evidence": "docs/wiki-evidence/dual-slot-items.md"
+ },
+ "items": {
+  "Chains": {
+   "value": {
+    "exclusive": false,
+    "minor_artifact": false,
+    "duplicable": true
+   },
+   "provenance": "stated",
+   "raw": "Binds to account / Binds on acquire recorded; not in Category:Exclusive; no Minor Artifact category",
+   "slot_categories": [
+    "Neck items",
+    "Waist items"
+   ],
+   "revid": 628933
+  },
+  "Five Rings": {
+   "value": {
+    "exclusive": false,
+    "minor_artifact": false,
+    "duplicable": true
+   },
+   "provenance": "stated",
+   "raw": "Binds to account / Binds on acquire recorded; not in Category:Exclusive; no Minor Artifact category",
+   "slot_categories": [
+    "Finger items",
+    "Trinket items"
+   ],
+   "revid": 630873
+  },
+  "Legendary Chains": {
+   "value": {
+    "exclusive": false,
+    "minor_artifact": false,
+    "duplicable": true
+   },
+   "provenance": "stated",
+   "raw": "Binds to account / Binds on acquire recorded; not in Category:Exclusive; no Minor Artifact category",
+   "slot_categories": [
+    "Neck items",
+    "Waist items"
+   ],
+   "revid": 631926
+  },
+  "Legendary Five Rings": {
+   "value": {
+    "exclusive": false,
+    "minor_artifact": false,
+    "duplicable": true
+   },
+   "provenance": "stated",
+   "raw": "Binds to account / Binds on acquire recorded; not in Category:Exclusive; no Minor Artifact category",
+   "slot_categories": [
+    "Finger items",
+    "Trinket items"
+   ],
+   "revid": 632250
+  },
+  "Legendary Shackles": {
+   "value": {
+    "exclusive": false,
+    "minor_artifact": false,
+    "duplicable": true
+   },
+   "provenance": "stated",
+   "raw": "Binds to account / Binds on acquire recorded; not in Category:Exclusive; no Minor Artifact category",
+   "slot_categories": [
+    "Feet items",
+    "Wrist items"
+   ],
+   "revid": 632838
+  },
+  "Shackles": {
+   "value": {
+    "exclusive": false,
+    "minor_artifact": false,
+    "duplicable": true
+   },
+   "provenance": "stated",
+   "raw": "Binds to account / Binds on acquire recorded; not in Category:Exclusive; no Minor Artifact category",
+   "slot_categories": [
+    "Feet items",
+    "Wrist items"
+   ],
+   "revid": 634571
+  }
+ }
+}

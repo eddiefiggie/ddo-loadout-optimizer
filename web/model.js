@@ -11,6 +11,15 @@ const WORN_SLOTS = [
 ];
 const SLOT_CARDINALITY = { Ring: 2 }; // one of every other worn slot
 
+/** #915 — every worn slot an item may fill: its own, plus the second slot a
+ *  dual-slot item's wiki tips state (Chains: Necklace or Belt). One physical item
+ *  fills one of them; the solver caps that and mints a second copy only where the
+ *  build stamped `duplicable_worn`. */
+function wornSlotsOf(v) {
+  if (!v) return [];
+  return [v.slot, ...(v.alt_slots || [])];
+}
+
 /** #335 (KD2) — rings a player may WEAR TWO OF, each confirmed on the item's own
  *  wiki page. This is an allowlist and not a set-membership test on purpose.
  *
@@ -1196,12 +1205,14 @@ function slotReachabilityFor(stat, variants, pools) {
     if (!prev) { out.set(key, { slot, route, via: via || null, bonusTypes: [...types] }); return; }
     for (const t of types) if (!prev.bonusTypes.includes(t)) prev.bonusTypes.push(t);
   };
+  // #915 — a dual-slot item (Chains: Necklace or Belt) is a route into both slots.
+  const addHost = (v, route, via, types) => { for (const sl of wornSlotsOf(v)) add(sl, route, via, types); };
 
   // --- native affixes on equippable items ---------------------------------
   const hosts = [];
   const augments = [];
   for (const v of variants) (_isAugment(v) ? augments : hosts).push(v);
-  for (const v of hosts) add(v.slot, "native", null, _typesSupplying(v, stat));
+  for (const v of hosts) addHost(v, "native", null, _typesSupplying(v, stat));
 
   // --- augments, joined to hosts by the host's DECLARED colour -------------
   // A host declaring a colour is not the same as that slot being FREE in a given
@@ -1230,7 +1241,7 @@ function slotReachabilityFor(stat, variants, pools) {
         // #878 — a color-choice slot is a route for each colour the player may pick.
         for (const m of String(c).split(REACH_CHOICE_SEP)) {
           const types = colourTypes.get(m);
-          if (types) add(v.slot, "augment", m, types);
+          if (types) addHost(v, "augment", m, types);
         }
       }
     }
@@ -1248,7 +1259,7 @@ function slotReachabilityFor(stat, variants, pools) {
       for (const k of hostKeys(v)) {
         for (const o of supplying) {
           if (!fits(o, k, v)) continue;
-          add(v.slot, route, null, _typesSupplying(o, stat));
+          addHost(v, route, null, _typesSupplying(o, stat));
         }
       }
     }
@@ -1786,6 +1797,11 @@ function dominanceFilter(slotVariants, targetSet, mlCap, cardinality = 1, pinned
       // best-available main hand. Mirrors the Artifact exemption above. Only fires for
       // the Main Hand slot (handMutex passed true there).
       if (handMutex && isBothHandsWeapon(B) && !isBothHandsWeapon(A)) continue;
+      // #915 — the same soundness for a dual-slot item with no second copy: the
+      // solver's one-copy cap forces B off this slot whenever it fills its other
+      // one, so B must not prune a peer it may be unable to stand in for. With a
+      // second copy (`duplicable_worn`) B can always fill this slot too.
+      if ((B.alt_slots || []).length && B.duplicable_worn !== true) continue;
       // B dominates A, and to break exact ties keep the lower index
       if (dominates(B, A, targetSet, mlCap, ncPerItemLiveHosts, essencePool)
           && !(dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts, essencePool) && i < j)) {
@@ -2232,8 +2248,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   };
   for (const slotName of WORN_SLOTS) {
     const card = SLOT_CARDINALITY[slotName] || 1;
-    let cands = elig.filter((v) => v.slot === slotName);
-    if (!cands.length && !lockedEmpty(slotName) && blocked.some((b) => b.slot === slotName)) {
+    let cands = elig.filter((v) => wornSlotsOf(v).includes(slotName));
+    if (!cands.length && !lockedEmpty(slotName) && blocked.some((b) => wornSlotsOf(b).includes(slotName))) {
       blockEmptiedSlots.push(slotName);
     }
     cands = dominanceFilter(cands, targetSet, mlCap, card, pinnedIds, withArt, false, ncPerItemLive, essencePool);
@@ -2440,7 +2456,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
             && ((s.aug_color || {}).color || null) === ((b.aug_color || {}).color || null))
         : b.category === "weapon"
           ? elig.filter((s) => s.category === "weapon")
-          : elig.filter((s) => s.slot === b.slot && s.category !== "augment");
+          : elig.filter((s) => s.category !== "augment"
+              && wornSlotsOf(s).some((x) => wornSlotsOf(b).includes(x)));
       return {
         id: variantKey(b),
         name: b.source_item || b.variant_id,
@@ -2690,6 +2707,6 @@ if (typeof module !== "undefined" && module.exports) {
     rungExcludesNicheCrafting, rungExcludesSolarLunar, rungExcludesAllAugments,
     setCrossAdd: _crossAddApi.setCrossAdd, crossAddSourcesFor: _crossAddApi.crossAddSourcesFor,
     widenWithCrossAddSources: _crossAddApi.widenWithCrossAddSources,
-    WORN_SLOTS, SLOT_CARDINALITY,
+    WORN_SLOTS, SLOT_CARDINALITY, wornSlotsOf,
   };
 }

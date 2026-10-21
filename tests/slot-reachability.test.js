@@ -532,6 +532,13 @@ test("#766: a Slaver's host's typed slots are a route, keyed by the host's own (
     "Shackles reach a save through the Suffix Resistance umbrella, expanded inside the option");
 });
 
+test("#915: a dual-slot host is a route into BOTH of its slots", () => {
+  assert.strictEqual(at(routes("Charisma"), "Necklace", "slavers").length, 1, "Chains, worn as a necklace");
+  assert.strictEqual(at(routes("Charisma"), "Belt", "slavers").length, 1, "Chains, worn as a belt");
+  assert.strictEqual(at(routes("Will Save"), "Bracers", "slavers").length, 1, "Shackles, worn as bracers");
+  assert.strictEqual(at(routes("Will Save"), "Boots", "slavers").length, 1, "Shackles, worn as boots");
+});
+
 
 // ---- #878 — a color-choice slot is a route for each colour the player may pick ------
 
