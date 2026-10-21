@@ -95,3 +95,52 @@ These templates were added in tier 2: Skills, Save, Spelllore, SpellPower / Spel
   - Magi/Archmagi Wizardry, which gear-planner does not carry either
   - Deific Focus
   - legacy Construct Fortification
+
+## Tier 3: typed effects (2026-10-19)
+
+Thirteen more templates, each read from its code:
+
+- **Bane:** `fey` is Feybane; a word tier prefixes the name (`{{Bane|Halfling|lesser}}` is Lesser Halfling Bane), a number does not. A presence.
+- **Blast:** a numeric p2 is the scaled tier; a word is the old non-scaled prefix (`{{Blast|Flaming|Greater}}` is Greater Flaming Blast). A presence.
+- **Absorption:** only the percentage branches that render `{{{5|Enhancement}}} Bonus to X Absorption` are read. Electric/Electrical/Electricity/Lightning are one branch, Electric Absorption. Elemental is always Enhancement and is read only without sonic (`src/absorption_split.py` expands it per item).
+- **Deception:** a number is an enhancement bonus to Bluff; `bluff=improved` and `bluff=yes` are the named forms.
+- **Diversion:** p2 is the kind (Distant, Mystic) and p3 the bonus type.
+- **Speed:** an integer and a roman numeral are both the catalog's `Speed` N. The code's `{{Roman2Dec}}` test sends a numeral to the attack-speed branch, whose bonus is Roman2Dec(N)%.
+- **Parrying:** always Insight. **ProtectionBonus:** a Deflection bonus to Armor Class.
+- **Incite, Spell Resistance, Armor-Piercing:** Enhancement by default. **Concealment, Ghostly:** presences.
+
+| Template | Lines | Exact | gear-planner lacks it | Declined |
+|---|---:|---:|---:|---:|
+| Bane | 842 | 842 | 0 | 0 |
+| Blast | 465 | 465 | 0 | 0 |
+| Absorption | 447 | 369 | 1 | 77 |
+| Deception | 260 | 257 | 0 | 3 |
+| Concealment | 171 | 171 | 0 | 0 |
+| Diversion | 164 | 151 | 0 | 13 |
+| Speed | 153 | 152 | 0 | 1 |
+| Spell Resistance | 146 | 146 | 0 | 0 |
+| Parrying | 140 | 140 | 0 | 0 |
+| ProtectionBonus | 123 | 123 | 0 | 0 |
+| Incite | 115 | 113 | 0 | 0 |
+| Ghostly | 113 | 95 | 0 | 18 |
+| Armor-Piercing | 108 | 108 | 0 | 0 |
+
+**Zero value differences.** The only type differences are the two Cloaks of the Crownblade, where gear-planner carries Distant Incite with **no** type. The template renders an Enhancement bonus, so the harvest types them, and the `Distant Incite` parse-gap quarantine in `untyped_rankable.json` retired. Chulchannad's Claw's Cold Absorption is the one value gear-planner lacks.
+
+### Declined forms
+
+A **declined** call (`Declined` in `src/wiki_enchantments.py`) is a form deliberately not read. It yields no affix, so gear-planner's own affix for that call stands, and unlike an unreadable call it does not keep the item whole. The declined forms:
+
+- **Absorption:**
+  - charge forms (`0` percent; clickies such as Spell or Curse Absorption)
+  - named branches (Devil's Bones, Block Elements)
+  - **negative energy**: its percentage branch reads "absorbs N% of all negative damage" and states no bonus type, so its type is not inferred
+  - Elemental with sonic
+- **Ghostly:** the Enhanced form.
+- **Diversion:**
+  - legacy `old`
+  - a bonus type written as the kind. `{{Diversion|4|Insightful}}` renders an "Insightful Diversion" enhancement bonus, an authoring slip.
+- **Deception:** the tiered roman on-hit forms.
+- **Speed:** with a kind (melee, ranged, movement), which one `Speed` stat cannot express.
+
+The exception: beside a **read** call of the same template on the same item, a declined call keeps the item whole after all, because the merge could pair gear-planner's affix for the declined call with ours. 3 items.

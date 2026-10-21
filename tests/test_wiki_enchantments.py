@@ -71,9 +71,9 @@ def test_an_unreadable_call_is_unmapped_never_guessed():
 
 
 def test_only_the_items_own_lines_count_nested_lines_are_sub_options():
-    mapped, unmapped = E.affixes("* {{Stat|STR|6}}\n** {{Stat|STR|8}}\n* {{Bane|Halfling|lesser}}\n* plain text")
+    mapped, unmapped = E.affixes("* {{Stat|STR|6}}\n** {{Stat|STR|8}}\n* {{Augment|Colorless}}\n* plain text")
     assert mapped == [("Strength", "Enhancement", 6)]
-    assert unmapped == [("Bane", "no mapper")]
+    assert unmapped == [("Augment", "no mapper")]
 
 
 # --- tier 2 (#907) ---
@@ -173,3 +173,70 @@ def test_no_presence_template_is_ever_a_typed_stat_in_the_catalog():
     assert len(E.PRESENCE) > 100, "a guard over a near-empty list asserts little"
     typed = sorted(t for t in E.PRESENCE if types.get(t, {"Bool"}) - {"Bool"})
     assert typed == [], typed
+
+
+# --- tier 3: typed effects (#907) ---
+
+def test_bane_and_blast_names_follow_the_template_switches():
+    assert _map("{{Bane|Halfling|lesser}}") == [("Lesser Halfling Bane", "Bool", 1)]
+    assert _map("{{Bane|fey|3}}") == [("Feybane", "Bool", 1)]
+    assert _map("{{Blast|Flaming|6}}") == [("Flaming Blast", "Bool", 1)]
+    assert _map("{{Blast|Flaming|Greater}}") == [("Greater Flaming Blast", "Bool", 1)]
+
+
+def test_absorption_reads_the_branches_that_name_a_bonus_type():
+    assert _map("{{Absorption|Fire|10}}") == [("Fire Absorption", "Enhancement", 10)]
+    assert _map("{{Absorption|Electricity|5}}") == [("Electric Absorption", "Enhancement", 5)]
+    assert _map("{{Absorption|lightning|5|||Insight}}") == [("Electric Absorption", "Insight", 5)]
+    assert _map("{{Absorption|Fire and Cold|8}}") == [("Fire and Cold Absorption", "Enhancement", 8)]
+    assert _map("{{Absorption|Elemental|10}}") == [("Elemental Absorption", "Enhancement", 10)]
+
+
+def test_absorption_forms_with_no_stated_bonus_type_are_declined():
+    # The negative-energy branch renders "absorbs N% of all negative damage" with
+    # no bonus type; the charge forms are clickies. Neither is a typed magnitude.
+    for line in ("{{Absorption|Negative|20}}", "{{Absorption|Negative Energy|0|10}}",
+                 "{{Absorption|Spell|0|20|no}}", "{{Absorption|Elemental|15|yes}}"):
+        try:
+            _map(line)
+        except E.Declined:
+            continue
+        raise AssertionError(f"{line} must be Declined")
+
+
+def test_speed_reads_an_integer_and_a_roman_numeral_alike():
+    assert _map("{{Speed|15}}") == [("Speed", "Enhancement", 15)]
+    assert _map("{{Speed|XV}}") == [("Speed", "Enhancement", 15)]
+    assert _map("{{Speed|-10}}") == [("Speed", "Penalty", -10)]
+
+
+def test_diversion_reads_the_kind_from_p2_and_the_bonus_type_from_p3():
+    assert _map("{{Diversion|18|Mystic|Insightful}}") == [("Mystic Diversion", "Insight", 18)]
+    assert _map("{{Diversion|8}}") == [("Diversion", "Enhancement", 8)]
+    for line in ("{{Diversion|4|Insightful}}", "{{Diversion|10||Old}}"):
+        try:
+            _map(line)
+        except E.Declined:
+            continue
+        raise AssertionError(f"{line} must be Declined")
+
+
+def test_the_remaining_typed_effects():
+    assert _map("{{Parrying|IV}}") == [("Parrying", "Insight", 4)]
+    assert _map("{{ProtectionBonus|5}}") == [("Armor Class", "Deflection", 5)]
+    assert _map("{{Incite|23||Distant}}") == [("Distant Incite", "Enhancement", 23)]
+    assert _map("{{Spell Resistance|20}}") == [("Spell Resistance", "Enhancement", 20)]
+    assert _map("{{Armor-Piercing|10%}}") == [("Armor-Piercing", "Enhancement", 10)]
+    assert _map("{{Deception|5}}") == [("Deception", "Enhancement", 5)]
+
+
+def test_a_declined_call_leaves_the_items_other_values_readable():
+    mapped, unmapped = E.affixes("* {{Stat|STR|6}}\n* {{Ghostly|Enhanced}}")
+    assert mapped == [("Strength", "Enhancement", 6)]
+    assert unmapped == [("Ghostly", E.DECLINED + "Enhanced Ghostly")]
+
+
+def test_a_declined_call_beside_a_read_call_of_its_template_is_not_declined():
+    # The merge could pair gear-planner's affix for the declined call with ours.
+    _, unmapped = E.affixes("* {{Diversion|8}}\n* {{Diversion|10||Old}}")
+    assert unmapped == [("Diversion", "legacy Diversion (old)")]

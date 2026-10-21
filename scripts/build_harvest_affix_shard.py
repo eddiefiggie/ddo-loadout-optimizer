@@ -3,7 +3,9 @@
 
 For every gear-planner record: the affixes the template mappers read from the item's
 own page (top-level lines only), and the names of MAPPED templates whose calls the
-mapper refused. A record with any such refusal is kept whole by the overlay.
+mapper could not read. A record with any such call is kept whole by the overlay; a
+call the mapper deliberately DECLINED (E.Declined) is not one — it yields no affix,
+so gear-planner's own affix for it stands while the item's other values are read.
 
 Usage: python3 scripts/build_harvest_affix_shard.py [HARVEST_ID]
 """
@@ -35,7 +37,8 @@ def build(raw_items, pages_by_title):
             continue
         mapped, unmapped = E.affixes(box[1].get("enhancements") or "")
         rec = {"affixes": [list(a) for a in mapped], "revid": page.get("revid")}
-        unread = sorted({t for t, why in unmapped if t in E.MAPPERS or t == E._QUALIFIED[0]})
+        unread = sorted({t for t, why in unmapped
+                         if (t in E.MAPPERS or t == E._QUALIFIED[0]) and not why.startswith(E.DECLINED)})
         if unread:
             rec["unread"] = unread
         records[r["name"]] = rec

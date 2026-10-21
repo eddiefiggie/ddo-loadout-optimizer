@@ -8,6 +8,13 @@
   "regenerate": "python3 scripts/build_template_evidence.py <templates harvest>"
  },
  "templates": {
+  "Absorption": {
+   "default": "Enhancement",
+   "quote": "{{{5|Enhancement}}} Bonus",
+   "revid": 694567,
+   "ts": "2026-07-10T12:33:05Z",
+   "excerpt": "=Quality|Artifact=Artifact|#default=}} {{ucfirst:{{#var:Absorption}}}} Absorption +{{{2|0}}}%]]:''' Passive: {{{2|0}}}% {{{5|Enhancement}}} Bonus to {{ucfirst:{{#var:Absorption}}}} Absorption. (Absorption "
+  },
   "Accuracy": {
    "default": "Competence",
    "quote": "{{Insightful|{{{2|Competence}}}}} bonus",
@@ -15,12 +22,33 @@
    "ts": "2025-06-03T22:17:41Z",
    "excerpt": "|{{{1|I}}}|ifFalse={{Int|{{uc:{{{1|1}}}}}}}|ifTrue=+{{{1|I}}}}}]]:''' Passive: {{Int|{{Roman2Dec|{{uc:{{{1|I}}}}}}}}} [[{{Insightful|{{{2|Competence}}}}} bonus]] to [[attack roll]]s|long=y}}{{#ifeq:{{NAMESPACE}}|Item|[["
   },
+  "Armor-Piercing": {
+   "default": "Enhancement",
+   "quote": "{{Insightful|{{{2|Enhancement}}}}} bonus",
+   "revid": 678284,
+   "ts": "2026-03-11T02:30:07Z",
+   "excerpt": "{{2|}}} Armor-Piercing {{{1|0}}}%]]|'''[[Armor-Piercing|{{{2|}}} Armor-Piercing {{{1|0}}}%]]:''' Passive: +{{{1|0}}}% [[{{Insightful|{{{2|Enhancement}}}}} bonus]] to [[Fortification]] Bypass. (Fortification Bypass makes "
+  },
   "Deadly": {
    "default": "Competence",
    "quote": "{{Insightful|{{{2|Competence}}}}} bonus",
    "revid": 402602,
    "ts": "2018-12-13T13:40:36Z",
    "excerpt": "opup|1=[[Deadly|{{{2|}}} Deadly {{Int|{{{1}}}}}]]|2='''[[Deadly|{{{2|}}} Deadly {{Int|{{{1}}}}}]]:''' {{Int|{{{1}}}}} [[{{Insightful|{{{2|Competence}}}}} bonus]] to weapon damage.|long=y}}|{{Popup|1=[[Deadly|{{{2|}}} De"
+  },
+  "Deception": {
+   "default": "Enhancement",
+   "quote": "enhancement bonus to Bluff checks",
+   "revid": 644206,
+   "ts": "2025-06-03T16:00:54Z",
+   "excerpt": "tch:{{lc:{{{Bluff|}}}}}\n| yes = {{Popup|2='''[[Deception]]:''' This weapon is hard to focus upon and thus provides a +3 enhancement bonus to Bluff checks. In addition, Deception weapons have a small chance to enve"
+  },
+  "Diversion": {
+   "default": "Enhancement",
+   "quote": "{{Insightful|{{{3|Enhancement}}}}} bonus",
+   "revid": 482645,
+   "ts": "2021-03-28T19:07:20Z",
+   "excerpt": "Int|{{{1|20}}}}}%]]|2='''[[Diversion|{{#var:Prefix}} {{{2|}}} Diversion {{Int|{{{1|20}}}}}%]]:''' {{Int|{{{1|20}}}}}% [[{{Insightful|{{{3|Enhancement}}}}} bonus]] to decreased threat generated from {{#switch:{{lc:{{{2}}}"
   },
   "Dodge": {
    "default": "Enhancement",
@@ -50,6 +78,13 @@
    "ts": "2018-05-01T06:18:22Z",
    "excerpt": "ergy}} healing by {{Int|{{{1|0}}}}} ([[{{#switch:{{lc:{{{3}}}}}|equipped=Equipment|#default={{Insightful|{{ucfirst:{{lc:{{{3|Enhancement}}}}}}}}}}} bonus]]). Includes spells, potions, and other effec"
   },
+  "Incite": {
+   "default": "Enhancement",
+   "quote": "{{lc:{{{2|enhancement}}}}}",
+   "revid": 594645,
+   "ts": "2024-08-19T22:49:10Z",
+   "excerpt": "{{#vardefine:Prefix|{{#switch:{{lc:{{{2|enhancement}}}}}\n  |insight|insightful=Insightful\n  |quality=Quality\n  |fest"
+  },
   "Resistance": {
    "default": "Resistance",
    "quote": "{{Insightful|{{{2|Resistance}}}}} bonus",
@@ -78,12 +113,26 @@
    "ts": "2026-08-05T21:54:18Z",
    "excerpt": " (enchantment)|{{#switch:{{{3|}}}\n|insight|Insight = Insightful\n|#default = }} Command]]:''' Passive: {{Int|{{{2|2}}}}} [[{{{3|competence}}} bonus]] on [[Charisma]] based [[skill check]]s. Command armor and c"
   },
+  "Speed": {
+   "default": "Enhancement",
+   "quote": "[[enhancement bonus]]",
+   "revid": 663192,
+   "ts": "2025-10-15T19:27:39Z",
+   "excerpt": "'[[Speed|{{ucfirst:{{{2|}}}}} Speed {{Int|{{{1|15}}}}}%]]:''' {{Int|{{{1|15}}}}}% {{#ifeq:{{{1|15}}}|{{Abs|{{{1|15}}}}}|[[enhancement bonus]]|penalty}} to [[movement speed]]{{#ifeq:{{lc:{{{2|}}}}}|move"
+  },
   "Spell Focus": {
    "default": "Equipment",
    "quote": "{{Insightful|{{{3|Equipment}}}|notful}} bonus",
    "revid": 372986,
    "ts": "2017-12-10T19:53:06Z",
    "excerpt": "|}}}|ful}} Spell Focus {{#ifeq:{{lc:{{{1|}}}}}|spell||Mastery}} {{Int|{{{2|1}}}}}]]:''' {{Int|{{Roman2Dec|{{{2|1}}}}}}} {{Insightful|{{{3|Equipment}}}|notful}} bonus to the DC of all spells.|1=[[Spell Focus Mastery|{{Insightf"
+  },
+  "Spell Resistance": {
+   "default": "Enhancement",
+   "quote": "{{Insightful|{{{2|Enhancement}}}}} bonus",
+   "revid": 335132,
+   "ts": "2016-10-17T14:34:34Z",
+   "excerpt": "{{Popup|long=yes|2='''{{{2|}}} Spell Resistance {{Int|{{{1|0}}}}}:''' {{Int|{{{1|0}}}}} {{Insightful|{{{2|Enhancement}}}}} bonus to [[Spell Resistance]].|1=[[Spell Resistance|{{{2|}}} Spel"
   },
   "SpellPower": {
    "default": "Equipment",
