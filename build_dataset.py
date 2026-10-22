@@ -55,6 +55,7 @@ from src import heightened_awareness as heightened_awareness_mod
 from src import command_split as command_split_mod
 from src import affix_tooltip as affix_tooltip_mod
 from src import tier_rename as tier_rename_mod
+from src import junk_affixes as junk_affixes_mod
 from src import absorption_split as absorption_split_mod
 from src import elemental_resistance_split as er_split_mod
 from src import enchantment_split as enchantment_split_mod
@@ -2792,6 +2793,10 @@ def build() -> dict:
     out["metadata"]["crafted_twin_identity_divergent"] = _twins["capacity_divergent"]
     out["metadata"]["upgraded_item_coverage"] = _upgraded["coverage"]
     out["metadata"]["wiki_supplement_coverage"] = _supplement["coverage"]
+    # #933 — junk affix names from an upstream parse regression: a bare dice
+    # expression (`7d6`) or editor text ending `??`, shipped `eligible: true`.
+    # Swept over every section of the assembled dataset, both affix shapes.
+    out["metadata"]["junk_affix_coverage"] = junk_affixes_mod.check(out)
 
     # build_id hashes the full assembled dataset (everything except metadata) so
     # drift in sets, augments, or crafting inputs — not just base variants —
