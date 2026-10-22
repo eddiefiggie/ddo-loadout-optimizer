@@ -1042,7 +1042,8 @@ function augmentSection(v, idx, maps, augById, contribIdx, ranked) {
 }
 
 /** #471 — the craft rows for one item: every assigned craft across every family,
- *  plus the Viktranium slots the item declares that the solve left empty.
+ *  plus the Viktranium and Nearly Complete slots the item declares that the
+ *  solve left empty.
  *
  *  Split out from `craftSection` because `equippedRow` needs to know whether the
  *  section exists before it renders the foot (the owned-mode note only fires
@@ -1053,7 +1054,13 @@ function craftRowsFor(v, idx, maps) {
   const rows = [];
   const push = (arr, family) => { for (const o of arr || []) rows.push({ family, o }); };
   push(maps.dinoAssign && maps.dinoAssign.byIndex && maps.dinoAssign.byIndex.get(idx), "dino");
-  push(maps.ncByItem && maps.ncByItem.get(v.variant_id), "nc");
+  // #930 — a Nearly Complete slot the item declares but the solve left empty keeps
+  // its row, for the #370 reason: otherwise the slot reads as ignored.
+  for (const r of Proj.ncSlotRows(v, (maps.ncByItem && maps.ncByItem.get(v.variant_id)) || [])) {
+    rows.push(r.placement
+      ? { family: "nc", o: r.placement }
+      : { family: "ncEmpty", o: { category: r.category, pool: r.pool }, empty: true });
+  }
   push(maps.rollByItem && maps.rollByItem.get(v.variant_id), "roll");
   // #370 — a Lamordia slot the item DECLARES but the solve left empty keeps its
   // row. The slot is part of the item's identity: an item that ships with four
