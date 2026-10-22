@@ -837,11 +837,30 @@ function queryGates(query) {
  *  gear below 29 asked to hide it. That can only change the answer when
  *  `cap < v.ml`, which is the case this function exists to create, so no existing
  *  build moves.
+ *
+ *  #927 — ONLY for the host families a source lets the crafter lower. #788 served
+ *  the Rune Arm, Ring and Melee menus after #611 was written for the Gem, and every
+ *  rune arm silently inherited this rule: at cap 3, 34 rune arms up to ML 19 were
+ *  admitted, Titan's Fist (ML 11) among them. The wiki rules that out in so many
+ *  words (Essence_Crafting, rune arm section):
+ *
+ *    "Disjunction does not change the Minimum Level, charge tier, spell, imbue,
+ *     and unique enchantments of a rune arm"
+ *    "BUG: ... the description shows that the 'Minimum Level' has become much
+ *     lower, but in fact it remains the same."
+ *
+ *  Trinket is the Gem (above). Ring is the Mysterious Ring: "it can be Essence
+ *  Crafted to any ML desired" (Item:Mysterious_Ring). Melee has no sourced
+ *  statement either way, so it stays off — every Melee host is ML 1 today, which
+ *  is why leaving it off moves nothing.
  */
+const CRAFT_DOWN_FAMILIES = new Set(["Trinket", "Ring"]);
 function craftedMlOf(v, g) {
   if (v == null || v.ml == null) return v == null ? null : v.ml;
   if (!g || !g.essenceLive || g.cap == null) return v.ml;
-  if (!((v.essence_slots || []).length)) return v.ml;
+  const menus = v.essence_slots || [];
+  if (!menus.length) return v.ml;
+  if (!menus.every((m) => CRAFT_DOWN_FAMILIES.has(m && m.family))) return v.ml;
   return Math.min(v.ml, g.cap);
 }
 
@@ -1392,7 +1411,42 @@ function intrinsicPieceSlots(setName, elig) {
  *  question about the whole program, and the solver answers it (see the
  *  drop-the-pins retry in solveLexicographic).
  */
-function classifySetPins(query, elig, augmentSetDefs, membershipSetDefs) {
+/** #926 — Set Augment names whose variant a `variantConflict` gate other than
+ *  ownership excludes (the ML cap, the #339 ceiling, the crafting rung), mapped to
+ *  `{ ml, reason }`. The solver's set-augment family reads `augment_set_defs`, not
+ *  the variant, so this is how the variant's gates reach it. Ownership is left to
+ *  the callers, which already report it as its own verdict. A def with neither a
+ *  variant in `variants` nor a forwarded `ml` keeps the ownership-only behaviour;
+ *  the build fails on a def without its `ml` (`src/augment_sets.py`). */
+function setAugmentGateReasons(variants, query, augmentSetDefs) {
+  const out = new Map();
+  const names = new Set(Object.keys(augmentSetDefs || {}));
+  if (!names.size) return out;
+  // Ownership is asked as if granted, so the reason left is one of the others.
+  const asOwned = Object.assign({}, query, { ownedSetAugments: names });
+  const g = queryGates(asOwned);
+  const seen = new Set();
+  for (const v of variants || []) {
+    if (!v || !v.set_augment || !names.has(v.set)) continue;
+    seen.add(v.set);
+    const reason = variantConflict(v, asOwned, g);
+    if (reason != null) out.set(v.set, { ml: v.ml, reason });
+  }
+  // The owned-augments filter can drop the variant from `variants` while its def
+  // still reaches the solver. The build forwards the variant's ML onto the def, so
+  // judge the def as the variant it was joined from.
+  for (const name of names) {
+    const def = augmentSetDefs[name];
+    if (seen.has(name) || !def || typeof def.ml !== "number") continue;
+    const standIn = { variant_id: `Set Augment: ${name}`, category: "augment", set_augment: true,
+      set: name, ml: def.ml, verification: "verified", aug_color: { color: "Colorless" } };
+    const reason = variantConflict(standIn, asOwned, g);
+    if (reason != null) out.set(name, { ml: def.ml, reason });
+  }
+  return out;
+}
+
+function classifySetPins(query, elig, augmentSetDefs, membershipSetDefs, setAugGated = new Map()) {
   const want = Array.isArray(query.pinnedSets) ? query.pinnedSets : [];
   if (!want.length) return { pinned: [], report: [] };
 
@@ -1422,6 +1476,14 @@ function classifySetPins(query, elig, augmentSetDefs, membershipSetDefs) {
     if (isAugmentSet && !isOwned(set)) {
       report.push({ set, verdict: "not-owned", pieces_required: tier,
         why: "this is a Set Augment you have not marked as owned" });
+      continue;
+    }
+    // #926 — a Set Augment the cap, the ceiling or the rung excludes. Without this
+    // the pin passed as "pinned" and reached a solver that has no def to mint.
+    const gated = isAugmentSet && setAugGated.get(set);
+    if (gated) {
+      report.push({ set, verdict: "unreachable", pieces_required: tier, available: 0,
+        why: `its Set Augment (ML ${gated.ml}) is ${gated.reason}` });
       continue;
     }
     // Membership and augment sets are supplied by crafting slots rather than by
@@ -2414,7 +2476,8 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // #539 — classify the set pins against the ELIGIBLE pool. Done here, with the
   // pool and both def dicts in scope, so a pin the query cannot satisfy is named
   // as such instead of reaching the solver and coming back as a bare INFEASIBLE.
-  const _setPins = classifySetPins(query, elig, augmentSetDefs, membershipSetDefs);
+  const _setAugGated = setAugmentGateReasons(variants, query, augmentSetDefs);
+  const _setPins = classifySetPins(query, elig, augmentSetDefs, membershipSetDefs, _setAugGated);
 
   return {
     query, targets: query.targets, worn, augments,
@@ -2484,12 +2547,19 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     // be gated, or the solver would place & score set augments the player never marked
     // owned. Mirror the variantConflict ownership key (`set` name); empty/undefined
     // ownedSetAugments => no defs => family inert (default off).
+    //
+    // #926 — and ownership is not the only gate. The Set Augment VARIANT also
+    // carries the cap, the #339 ceiling and the rung, and the def dict used to
+    // skip all three: ML 30 Set Augments were placed under a cap of 8. A def now
+    // survives only when its variant passes every `variantConflict` gate.
     augment_set_defs: (() => {
       const owned = query.ownedSetAugments;
       const has = (k) => owned && (typeof owned.has === "function" ? owned.has(k)
         : Array.isArray(owned) ? owned.includes(k) : false);
       const out = {};
-      for (const [name, def] of Object.entries(augmentSetDefs || {})) if (has(name)) out[name] = def;
+      for (const [name, def] of Object.entries(augmentSetDefs || {})) {
+        if (has(name) && !_setAugGated.has(name)) out[name] = def;
+      }
       return out;
     })(),
     // #539 — the set pins that SURVIVED classification, and the full verdict
@@ -2695,7 +2765,7 @@ if (typeof module !== "undefined" && module.exports) {
     intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, MRR_CAP_BY_ARMOR, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible, isWeaponTwinEligible,
     buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     slotReachabilityFor, slotReachabilityReport, filterEligiblePool,
-    classifySetPins, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, pinnedAugmentIds, dominanceFilter, dominates,
+    classifySetPins, setAugmentGateReasons, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, pinnedAugmentIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
     variantBuckets, variantSets, scaledValue, ncTier, NC_HEROIC_ML, NC_LEGENDARY_ML,
     NICHE_CRAFTING_POOLS, nicheCraftingClause,

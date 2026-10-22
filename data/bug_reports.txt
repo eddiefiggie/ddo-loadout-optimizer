@@ -1023,3 +1023,22 @@ disclosure structural.
     hands; the game allows it for weapons that are not Exclusive or Minor Artifacts.
     Fixed: 2,509 of 2,528 one-handed weapon pages are duplicable per the wiki
     (17 Exclusive, 2 with no binding recorded); see weapon-exclusivity.md.
+
+================================================================================
+2026-10-21 — one report, three claims (verbatim) — #926, #927, #928
+================================================================================
+"Builder is not respecting max level on augments. When setting everything to work between level 1 to 8 it still tries to use set augment bonuses and sun and moon augments that are main level 30. Almost all special item effects are not recognized when they give to stats. Also it is not respecting max level on items. It said essence crafting on a runearm I can't use at level 3 and its note was essence crafting below it max level. Can't use a runearm titans fist at level 3."
+
+(1) SET AUGMENTS: CONFIRMED -> #926. Under cap 8, ML 30 Set Augments were placed.
+    The solver's set-augment family reads model.augment_set_defs, which was gated on
+    ownership only, never on the cap or the #339 augment ceiling.
+    SUN/MOON: WORKING AS INTENDED. The gems placed at cap 8 are the Heroic Lunar Gems,
+    which are ML 1 per Lunar_and_Solar_Gems ("heroic (ML:1) and legendary (ML:30)").
+(2) CONFIRMED -> #927. At cap 3, 34 rune arms above the cap (Titan's Fist is ML 11)
+    were admitted as "crafted down". The #611 rule reached every essence host when
+    #788 added the Rune Arm menus. Essence_Crafting rules it out: "Disjunction does
+    not change the Minimum Level [...] of a rune arm". Crafting down now applies only
+    to the families a source allows (Gem of Many Facets, Mysterious Ring).
+(3) UNCLEAR -> #928. "Special item effects not recognized" names no item or effect.
+    Every affix that maps to a stat reaches the cap-8 pool. Conditional effects, procs
+    and clickies are left out by standing rulings. Asked which effects are meant.

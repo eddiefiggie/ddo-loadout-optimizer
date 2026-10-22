@@ -295,6 +295,26 @@ That is stated of rune arms, but it is the same direction as the maintainer's pl
 observation on the Gem (an ML 30 Gem refuses an ML 36 shard) and the same direction
 the implementation already refused. Nothing found states or implies a floor.
 
+**Correction, 2026-10-21 (#927): that rune-arm sentence is a prohibition, not only
+a direction.** The ellipsis above hid most of it. In full, from the rune arm section
+of `Essence_Crafting`:
+
+> Disjunction does not change the Minimum Level, charge tier, spell, imbue, and
+> unique enchantments of a rune arm, but its other benefits are removed. Note that
+> the Minimum Level cannot be raised after disjunction.
+
+> BUG: It seems that when you deconstruct a rune arm, the description shows that
+> the "Minimum Level" has become much lower, but in fact it remains the same.
+
+So a disjuncted rune arm keeps its printed ML, and the lower number a player may see
+is recorded there as a display bug. #788 served the Rune Arm menus, and every rune arm
+silently inherited #611's crafting down. A player report found it: at cap 3, Titan's
+Fist (ML 11) was offered with a "craft it at minimum level 3" note. `craftedMlOf` now
+lowers only the families a source allows: **Trinket** (the Gem, this section) and
+**Ring** (`Item:Mysterious_Ring`: *"it can be Essence Crafted to any ML desired"*).
+**Melee** has no sourced statement and stays off. Every Melee host is ML 1 today, so
+this changes no result.
+
 **What remains an inference, and is disclosed as one.** No sentence says *this named
 item* may take a shard below its native level; that follows from the general rule
 plus the Gem's stated exemption. The app therefore does not do it silently — a build

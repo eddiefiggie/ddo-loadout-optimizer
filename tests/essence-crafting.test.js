@@ -269,6 +269,47 @@ async function solve(model) {
     assert.deepStrictEqual(elig, ["G"], "the Gem is admitted; the plain ML 30 trinket is not");
   });
 
+  // ---- #927: crafting down is for the families a source allows -----------
+  //
+  // Essence_Crafting, rune arm section: "Disjunction does not change the Minimum
+  // Level [...] of a rune arm", and the displayed lower ML after disjunction is
+  // recorded there as a BUG — "in fact it remains the same". #788 served the Rune
+  // Arm menus and every rune arm inherited #611's rule anyway.
+
+  await test("#927: a rune arm above the cap is NOT crafted down, and stays out of the pool", async () => {
+    const q = { targets: ["Constitution"], mlCap: 3, craftingRung: "everything" };
+    const R = Object.assign(runeArm("Titan-shaped", 11), { verification: "verified", slot: "Off Hand", type: "Rune Arms" });
+    assert.strictEqual(M.craftedMlOf(R, M_gates(q)), 11, "a rune arm keeps its printed ML");
+    assert.deepStrictEqual(M.eligible([R], q), [], "so ML 11 is above a cap of 3");
+    assert.strictEqual(M.eligible([R], { targets: ["Constitution"], mlCap: 11 }).length, 1,
+      "premise: the same rune arm is eligible once the cap clears it");
+  });
+
+  await test("#927: the Mysterious Ring (Ring family) is still crafted down", async () => {
+    // Item:Mysterious_Ring — "it can be Essence Crafted to any ML desired."
+    const q = { targets: ["Constitution"], mlCap: 3, craftingRung: "everything" };
+    const ring = item("Ring-shaped", "Ring", [], { ml: 11, minimum_level: 11, verification: "verified",
+      essence_slots: [{ menu: "Prefix", family: "Ring" }, { menu: "Suffix", family: "Ring" }] });
+    assert.strictEqual(M.craftedMlOf(ring, M_gates(q)), 3);
+  });
+
+  await test("#927: real dataset — at cap 3 Titan's Fist is out, and only Trinket/Ring hosts are crafted down", async () => {
+    const fs = require("fs");
+    const { normalizeDataset } = require("../web/dataset.js");
+    const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+    const items = normalizeDataset(raw).items;
+    const tf = items.find((v) => v.variant_id === "Titan's Fist");
+    assert.ok(tf && tf.ml === 11 && (tf.essence_slots || []).length, "premise: Titan's Fist is an ML 11 essence host");
+    const q = { targets: ["Strength"], mlCap: 3 };
+    assert.match(M.pinConflict(tf, q) || "", /above your ML 3 cap/);
+    const over = items.filter((v) => v.ml > 3 && M.pinConflict(v, q) === null);
+    assert.ok(over.length >= 1, "premise: the Gems still cross the cap, or this proves nothing");
+    for (const v of over) {
+      assert.ok((v.essence_slots || []).every((m) => m.family === "Trinket" || m.family === "Ring"),
+        `${v.variant_id} (ML ${v.ml}) crossed the cap with menus ${JSON.stringify(v.essence_slots)}`);
+    }
+  });
+
   await test("#611: the niche-crafting rung takes the host back OUT of the pool", async () => {
     // buildModel empties the essence pool on this rung. Admitting an over-cap Gem
     // anyway would hand the player a blank: the [Crafted] record has no affixes of

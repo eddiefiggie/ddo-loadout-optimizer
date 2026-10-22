@@ -453,3 +453,28 @@ def test_shipped_defs_have_no_orphans_after_expansion():
                 tier["affixes"] = spell_focus.expand_affixes(tier["affixes"])
     away = {**umbrella.umbrella_expansion(), **spell_focus.expanded_away()}
     assert enchantment_split.set_def_orphans({"augment": defs}, away) == []
+
+
+def test_attach_forwards_ml_onto_defs():
+    # #926 — the solver mints copies from the def, so the def must carry the ML the
+    # cap gates on. Every Set Augment is level 30 (Augment_Slot, Set augments).
+    variants = _matrix_stamped_variants()
+    defs = membership.build_augment_set_defs()
+    augment_sets.attach_augment_set_slots(variants, defs)
+    by_set = {augment_sets.set_name_of(v): v for v in variants if augment_sets.is_set_augment(v)}
+    assert len(defs) == 21
+    for name, d in defs.items():
+        assert d.get("ml") == by_set[name]["ml"] == 30, f"{name}: def ml {d.get('ml')!r}"
+
+
+def test_def_join_guard_red_when_a_def_lacks_its_ml():
+    variants = _matrix_stamped_variants()
+    defs = membership.build_augment_set_defs()
+    augment_sets.attach_augment_set_slots(variants, defs)
+    del defs["Esoterica"]["ml"]
+    try:
+        augment_sets.assert_def_matrix_join(defs)
+    except SystemExit as e:
+        assert "Esoterica" in str(e) and "minimum level" in str(e)
+    else:
+        raise AssertionError("guard passed a def with no ML")
