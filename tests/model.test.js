@@ -336,6 +336,58 @@ test("U6 (P1 regression): buildModel gates augment_set_defs on the VALUE path by
   assert.deepStrictEqual(Object.keys(call({ mlCap: 34, targets: ["Charisma"], ownedSetAugments: new Set(["Arcane Barrier"]) })), ["Arcane Barrier"], "only the owned set's def reaches the value path");
 });
 
+// #926 — ownership was the ONLY gate on the def dict, so the variant's cap, ceiling
+// and rung never reached the solver: a player capped at 8 was handed ML 30 Set
+// Augments. The variant is ML 30 (Augment_Slot: "These level 30 Set augments").
+test("#926: buildModel drops a Set Augment def its variant's ML cap excludes", () => {
+  const defs = { "Arcane Barrier": { tiers: [], tier: "augment", ml: 30 } };
+  const owned = new Set(["Arcane Barrier"]);
+  const call = (q) => M.buildModel([setAug("Arcane Barrier")], q, [], [], [], [], {}, [], defs).augment_set_defs;
+  assert.deepStrictEqual(Object.keys(call({ mlCap: 34, targets: ["Charisma"], ownedSetAugments: owned })),
+    ["Arcane Barrier"], "premise: owned and under the cap, the def reaches the solver");
+  assert.deepStrictEqual(Object.keys(call({ mlCap: 8, targets: ["Charisma"], ownedSetAugments: owned })), [],
+    "ML 30 against a cap of 8: no def, so the solver mints no copies");
+  assert.deepStrictEqual(Object.keys(call({ mlCap: 36, augCeiling: 20, targets: ["Charisma"], ownedSetAugments: owned })), [],
+    "the #339 augment ceiling holds it out too");
+});
+
+test("#926: with the variant filtered out of the pool, the def's forwarded ML still gates it", () => {
+  // The owned-augments filter (wizard candidateItems) can drop the variant while the
+  // def still reaches buildModel from the dataset.
+  const defs = { "Arcane Barrier": { tiers: [], tier: "augment", ml: 30 } };
+  const owned = new Set(["Arcane Barrier"]);
+  const call = (q) => M.buildModel([], q, [], [], [], [], {}, [], defs).augment_set_defs;
+  assert.deepStrictEqual(Object.keys(call({ mlCap: 34, targets: ["Charisma"], ownedSetAugments: owned })), ["Arcane Barrier"]);
+  assert.deepStrictEqual(Object.keys(call({ mlCap: 8, targets: ["Charisma"], ownedSetAugments: owned })), []);
+});
+
+test("#926: a pinned Set Augment above the cap is reported unreachable, naming its ML", () => {
+  const defs = { "Arcane Barrier": { tiers: [{ pieces_required: 3, affixes: [{ stat: "Charisma", bonus_type: "Artifact", value: 3 }] }], tier: "augment", ml: 30 } };
+  const q = { mlCap: 8, targets: ["Charisma"], ownedSetAugments: new Set(["Arcane Barrier"]), pinnedSets: ["Arcane Barrier"] };
+  const m = M.buildModel([setAug("Arcane Barrier")], q, [], [], [], [], {}, [], defs);
+  assert.deepStrictEqual(m.pinnedSets, [], "never reaches the solver as a pin it has no def for");
+  const e = m.setPinReport.find((r) => r.set === "Arcane Barrier");
+  assert.strictEqual(e.verdict, "unreachable");
+  assert.match(e.why, /ML 30/);
+  assert.match(e.why, /above your ML 8 cap/);
+});
+
+test("#926: real dataset — every Set Augment def carries its variant's ML, and none survives cap 8", () => {
+  const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "web", "data", "items.json"), "utf8"));
+  const ds = normalizeDataset(raw);
+  const names = Object.keys(ds.augment_set_defs || {});
+  assert.ok(names.length >= 21, `only ${names.length} Set Augment defs — refusing to inspect a near-empty channel`);
+  for (const n of names) {
+    const vv = ds.items.find((x) => x.set_augment && x.set === n);
+    assert.ok(vv, `${n}: no Set Augment variant`);
+    assert.strictEqual(ds.augment_set_defs[n].ml, vv.ml, `${n}: the def's ML is the variant's`);
+  }
+  const q = (cap) => ({ mlCap: cap, targets: ["Charisma"], ownedSetAugments: new Set(names) });
+  const at = (cap) => Object.keys(M.buildModel(ds.items, q(cap), [], [], [], [], {}, [], ds.augment_set_defs).augment_set_defs);
+  assert.strictEqual(at(36).length, names.length, "premise: at cap 36 every owned def reaches the solver");
+  assert.deepStrictEqual(at(8), [], "at cap 8 none does");
+});
+
 test("U6: marking a set makes only that set's augment eligible", () => {
   const a = setAug("Alluring Elocution");
   const b = setAug("Arcane Barrier");

@@ -91,6 +91,14 @@ def attach_augment_set_slots(variants, defs: dict = None) -> int:
         fits = v.get(FITS_SLOTS_KEY) or []
         if fits:
             d[FITS_SLOTS_KEY] = sorted(fits)
+        # #926 — forward the variant's minimum level the same way. The solver mints
+        # copies from the def, never the variant, so a def without its ML cannot be
+        # held to the cap when the variant itself is not in the solve's pool (the
+        # owned-augments filter drops it). Every Set Augment is ML 30 (Augment_Slot:
+        # "These level 30 Set augments"); this carries the variant's value, it does
+        # not restate the wiki's.
+        if isinstance(v.get("ml"), int):
+            d["ml"] = v["ml"]
         n += 1
     return n
 
@@ -113,6 +121,12 @@ def assert_def_matrix_join(defs: dict, variants=None) -> int:
         raise SystemExit(
             "augment-set def/matrix join guard walked ZERO defs — the channel "
             "is empty or was not built (vacuous pass refused)")
+    # #926 — the ML rides the same join, so a def missing it fails the same way.
+    no_ml = sorted(n for n, d in defs.items() if not isinstance(d.get("ml"), int))
+    if no_ml:
+        raise SystemExit(
+            "augment-set defs missing the forwarded minimum level (the cap cannot "
+            "gate them):\n  " + "\n  ".join(no_ml))
     missing = sorted(n for n, d in defs.items() if not d.get(FITS_SLOTS_KEY))
     if missing:
         joined = None
