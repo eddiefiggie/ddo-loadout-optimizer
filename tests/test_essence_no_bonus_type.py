@@ -238,3 +238,59 @@ def test_835_the_pools_the_app_walks_are_the_pools_we_walk():
     assert '"essence_crafting"' not in src, (
         "the solver's own essence pool is back in the walk — the app's vocabulary "
         "does not read it, so the guard would answer over a different population")
+
+
+def _pipeline_shaped_out():
+    """An in-memory `out` the way `build()` holds it when the #835 guard runs:
+    item affixes in the pipeline's `{stat, bonus_type, value, unit, raw,
+    eligible}`, not the `{name, type, value}` that `_native_affix` writes."""
+    return {"items": [
+        {"name": "Probe Ring", "affixes": [
+            {"stat": "Shatter", "bonus_type": "Enhancement", "value": 7,
+             "unit": None, "raw": "Shatter +7", "eligible": True},
+            {"stat": "Ghost Touch", "bonus_type": "boolean", "value": 1,
+             "unit": None, "raw": "Ghost Touch", "eligible": True},
+        ]},
+    ]}
+
+
+def test_the_walk_reads_the_item_roster_in_the_pipeline_shape():
+    """The build calls the walk BEFORE `_native_affix` renames the keys, so a
+    walk that reads only `name`/`type` saw `(None, None)` for all 44,787 roster
+    affixes and the guard covered the crafting pools alone. The tests above
+    read the written items.json, which is native-shaped, and so never saw it."""
+    import build_dataset
+    pairs = list(build_dataset._every_carrier_affix(_pipeline_shaped_out()))
+    assert ("Shatter", "Enhancement") in pairs, pairs
+    # `boolean` is the pipeline's spelling of the native `Bool`.
+    assert ("Ghost Touch", "Bool") in pairs, pairs
+    assert all(n for n, _ in pairs), pairs
+
+
+def test_the_walk_still_reads_the_native_shape():
+    import build_dataset
+    out = {"items": [{"name": "Probe Ring", "affixes": [
+        {"name": "Shatter", "type": "Enhancement", "value": "7"}]}]}
+    assert list(build_dataset._every_carrier_affix(out)) == [("Shatter", "Enhancement")]
+
+
+def test_a_typed_item_roster_carrier_fails_the_guard_at_build_time():
+    """End to end over the build's own call path: an `untyped` entry whose only
+    typed carrier is an item-roster affix in the pipeline shape must go red."""
+    import build_dataset
+    probe = dict(essence_placements.NO_BONUS_TYPE)
+    probe["Shatter"] = "untyped"
+    saved = essence_placements.NO_BONUS_TYPE
+    essence_placements.NO_BONUS_TYPE = probe
+    try:
+        rows = [{"effect": e, "stat": e, "values_by_ml": ["6d6"]} for e in probe]
+        essence_placements.assert_no_bonus_type_still_holds(
+            rows, build_dataset._every_carrier_affix(_pipeline_shaped_out()))
+    except SystemExit as e:
+        assert "listed `untyped`" in str(e) and "Shatter" in str(e), str(e)
+    else:
+        raise AssertionError(
+            "a typed item-roster carrier passed — the walk is not reading the "
+            "pipeline-shaped roster")
+    finally:
+        essence_placements.NO_BONUS_TYPE = saved
