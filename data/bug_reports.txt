@@ -1042,3 +1042,18 @@ disclosure structural.
 (3) UNCLEAR -> #928. "Special item effects not recognized" names no item or effect.
     Every affix that maps to a stat reaches the cap-8 pool. Conditional effects, procs
     and clickies are left out by standing rulings. Asked which effects are meant.
+
+================================================================================
+2026-10-22 — Nearly Complete vs Viktranium (verbatim) — #930
+================================================================================
+"I'm looking and the Legendary Bracers of the Spider Queen, which come with the "Nearly Complete: Ability Score". The optimizer isn't using it and instead is attempting to use the +15 (enhancement bonus) from the "Legendary Baron Aubrecker's Monogrammed Belt" via
+Viktranium Melancholic crafting. Which if I'm being honest here, makes no sense why it would choose to select the crafted Enhancement over the Nearly-Complete. Can you please elaborate on what's going on here ?"
+
+THE CHOICE IS CORRECT. Both are +15 Enhancement to one ability (Nearly_Complete;
+Viktranium, Melancholic Accessories), and Enhancement does not stack, so either is
+the whole bonus. With every ranked ability already at 37, the bracers' pick adds
+nothing and is left unused. With Charisma > Necromancy Focus ranked, the solver does
+put +15 Charisma on the bracers.
+THE DEFECT -> #930: an unused Nearly Complete slot had no row on the item, unlike
+Viktranium, LGS and Slaver's ("left empty — no option adds to your ranked stats"),
+so the card read as if the optimizer ignored it.

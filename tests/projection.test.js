@@ -2620,6 +2620,69 @@ test("#766: an equipped Slaver's host's empty slots reach the shared content mod
   assert.ok(rows[0].empty && rows[2].empty && !rows[3].empty);
 });
 
+// ---- #930 — a declared Nearly Complete slot the solve left empty ---------------
+
+test("#930: ncSlotRows — a category host has one slot; per-item pools one each; placements pair, leftovers kept", () => {
+  const cat = { nearly_complete: "Ability Score" };
+  assert.deepStrictEqual(P.ncSlotRows(cat, []).map((r) => [r.category, r.pool, r.placement]),
+    [["Ability Score", null, null]], "one declared slot, empty");
+  const filled = P.ncSlotRows(cat, [{ item: "B", category: "Ability Score", stat: "Charisma" }]);
+  assert.strictEqual(filled.length, 1);
+  assert.strictEqual(filled[0].placement.stat, "Charisma");
+  const two = { nc_per_item_slots: [{ pool: "Nearly Finished" }, { pool: "Almost There" }] };
+  const rows = P.ncSlotRows(two, [{ item: "C", category: "Almost There", pool: "Almost There", stat: "Wisdom" }]);
+  assert.deepStrictEqual(rows.map((r) => [r.pool, !!r.placement]), [["Nearly Finished", false], ["Almost There", true]],
+    "matched on pool, so the filled one is the second");
+  assert.strictEqual(P.ncSlotRows({}, [{ item: "X", category: "Ability Score" }]).length, 1,
+    "no declaration: placements pass through");
+  assert.strictEqual(P.ncSlotRows(cat, [{ item: "X", category: "Skills" }]).length, 2,
+    "a placement matching no declared slot is kept rather than dropped");
+});
+
+test("#930: an empty Nearly Complete slot labels with why, and is cueless like vikEmpty", () => {
+  const o = { category: "Ability Score", pool: null };
+  assert.strictEqual(P.craftLabel(o, "ncEmpty"),
+    "Nearly Completed (Ability Score): left empty — no option adds to your ranked stats");
+  assert.strictEqual(P.craftLabel({ category: "Almost There", pool: "Almost There" }, "ncEmpty"),
+    "Almost There: left empty — no option adds to your ranked stats");
+  const row = P.craftRowLabel(o, "ncEmpty");
+  assert.strictEqual(row.what, "left empty");
+  assert.strictEqual(row.where, "", "blank like a filled Nearly Complete row");
+  assert.strictEqual(row.note, "Ability Score", "the category rides as the note, untruncated");
+  assert.strictEqual(P.craftRowLabel({ category: "Almost There", pool: "Almost There" }, "ncEmpty").note, null);
+  assert.strictEqual(row.system, "Nearly Completed");
+  assert.strictEqual(P.CRAFT_SECTION_LABEL.ncEmpty, "Nearly Completed");
+});
+
+test("#930: the reported build — worn Spider Queen bracers with their pick unused show the empty slot", () => {
+  // The 2026-10-22 report: the bracers are worn, another item supplies the same
+  // +15 Enhancement Charisma, and the bracers' slot went unused with no row at all.
+  const bracers = { variant_id: "Legendary Bracers of the Spider Queen", source_item: "Legendary Bracers of the Spider Queen",
+    minimum_level: 35, affixes: [], nearly_complete: "Ability Score" };
+  const aria = { variant_id: "The Volley's Aria", source_item: "The Volley's Aria",
+    minimum_level: 34, affixes: [], nearly_complete: "Ability Score" };
+  const rec = {
+    name: "NC", inputs: { ml: 36, priorities: ["Charisma"], pool: "all" },
+    snapshot: {
+      status: "optimal", perTarget: { Charisma: 15 },
+      chosen: [{ slot: "Bracers", variant: bracers }, { slot: "Necklace", variant: aria }],
+      ncPlaced: [{ item: "The Volley's Aria", category: "Ability Score", stat: "Charisma",
+        bonus_type: "Enhancement", value: 15, unit: "flat", tier: "legendary",
+        affixes: [{ stat: "Charisma", bonus_type: "Enhancement", value: 15, unit: "flat" }] }],
+    },
+  };
+  const view = P.project(rec);
+  const b = view.loadout.find((it) => it.item === "Legendary Bracers of the Spider Queen");
+  assert.deepStrictEqual(b.crafting.map((c) => c.family), ["ncEmpty"], "the bracers' slot is shown, empty");
+  assert.match(b.crafting[0].label, /left empty — no option adds to your ranked stats/);
+  const a = view.loadout.find((it) => it.item === "The Volley's Aria");
+  assert.deepStrictEqual(a.crafting.map((c) => c.family), ["nc"], "the filled slot is unchanged");
+  const maps = P.buildCraftMaps(rec.snapshot);
+  const rows = R.craftRowsFor(bracers, 0, maps);
+  assert.deepStrictEqual(rows.map((r) => r.family), ["ncEmpty"], "the app's item card shows it too");
+  assert.ok(rows[0].empty);
+});
+
 // ---- #878 — choice slots: one upgrade slot whose colour the player picks -------
 
 test("#878: a choice slot names the colour to set it to", () => {

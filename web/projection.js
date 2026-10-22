@@ -2322,6 +2322,35 @@
     return rows;
   }
 
+  /** #930 — one row per DECLARED Nearly Complete slot, filled or empty: the
+   *  `slaversSlotRows` rule for the two ways a host declares one. A category host
+   *  (`nearly_complete: "Ability Score"`) has one slot, and its placements carry no
+   *  `pool`. A per-item host (#371) has one slot per `nc_per_item_slots` entry,
+   *  matched on `pool`. Before this an unused slot had no row at all, so a worn
+   *  Legendary Bracers of the Spider Queen read as if the optimizer had ignored its
+   *  Nearly Complete. A placement matching no declared slot is still reported, for
+   *  the reason `vikSlotRows` gives. */
+  function ncSlotRows(variant, placed) {
+    const list = (placed || []).slice();
+    const asRow = (p) => ({ category: p.category || null, pool: p.pool || null, placement: p });
+    const slots = [];
+    if (variant && variant.nearly_complete) slots.push({ category: variant.nearly_complete, pool: null });
+    for (const s of (variant && variant.nc_per_item_slots) || []) {
+      if (s && s.pool) slots.push({ category: s.pool, pool: s.pool });
+    }
+    if (!slots.length) return list.map(asRow);
+    const used = new Set();
+    const rows = slots.map((s) => ({ category: s.category, pool: s.pool, placement: null }));
+    const fits = (r, p) => (r.pool ? p.pool === r.pool : !p.pool && p.category === r.category);
+    for (const r of rows) {
+      for (let k = 0; k < list.length; k++) {
+        if (!used.has(k) && fits(r, list[k])) { used.add(k); r.placement = list[k]; break; }
+      }
+    }
+    for (let k = 0; k < list.length; k++) if (!used.has(k)) rows.push(asRow(list[k]));
+    return rows;
+  }
+
   /** #194 — one row per DECLARED Legendary Green Steel tier, filled or empty, in
    *  tier order: the `vikSlotRows` rule applied to the per-slot marker
    *  (`legendary_green_steel_tiers`, one list for both blank classes since #687).
@@ -2441,6 +2470,12 @@
       case "nc": return { where: o.name || sys(family), what: craftAffixes(o),
         system: sys(family),
         title: o.pool ? `${o.pool} — per-item upgrade slot` : "Terror of Demogorgon — Nearly Completed" };
+      // #930 — a declared Nearly Complete slot the solve left empty (the `vikEmpty`
+      // rule). The where-column stays blank like a filled `nc` row, and the
+      // category rides as the note: "Ability Score" truncates in that 6.7em
+      // column. A per-item pool needs no note; it already captions the section.
+      case "ncEmpty": return { where: "", what: "left empty", note: o.pool ? null : (o.category || null),
+        system: sys(family), title: craftLabel(o, family) };
       case "roll": return { where: "Choice", what: craftValue(o), system: sys(family),
         title: "choice slot, best option selected" };
       // #484 — the slot CATEGORY rides as a note rather than joining the where
@@ -2538,7 +2573,7 @@
    *  (#257), so it is never craft-CARRIED, but it is still a thing you go and
    *  pick, so it earns a caption. */
   const CRAFT_SECTION_LABEL = {
-    vik: "Viktranium", vikEmpty: "Viktranium", nc: "Nearly Completed",
+    vik: "Viktranium", vikEmpty: "Viktranium", nc: "Nearly Completed", ncEmpty: "Nearly Completed",
     dino: "Dino crafting", seal: "Seal crafting", lgs: "Legendary Green Steel",
     lgsEmpty: "Legendary Green Steel", slavers: "Slaver's crafting", slaversEmpty: "Slaver's crafting",
     roll: "Choice slots", essence: "Essence Crafting",
@@ -2578,6 +2613,11 @@
       // in-game name. `pool` carries it; the category path has none and keeps
       // "Nearly Completed" byte-identically.
       case "nc": return `${o.pool || "Nearly Completed"}: ${o.name ? o.name + ", " : ""}${craftAffixes(o)}`;
+      // #930 — a declared slot the solve left empty, disclosed like `vikEmpty`:
+      // usually because another item already supplies the same bonus, which does
+      // not stack. Cueless in exports for the `vikEmpty` reason.
+      case "ncEmpty": return `${o.pool || `Nearly Completed (${o.category})`}: `
+        + "left empty — no option adds to your ranked stats";
       case "roll": return `Choice: ${craftValue(o)}`;
       case "vik": return `Slot ${vikSlotName(o)} Viktranium augment: ${craftAffixes(o)}`;
       // #370 — a declared slot the solve left empty. Says why, so the player can
@@ -2847,7 +2887,12 @@
   function craftingForItem(v, idx, maps) {
     const out = [];
     for (const d of maps.dinoAssign.byIndex.get(idx) || []) out.push({ family: "dino", label: craftLabel(d, "dino") });
-    for (const n of maps.ncByItem.get(v.variant_id) || []) out.push({ family: "nc", label: craftLabel(n, "nc") });
+    // #930 — declared Nearly Complete slots, filled and empty (the #370 rule).
+    for (const r of ncSlotRows(v, maps.ncByItem.get(v.variant_id) || [])) {
+      out.push(r.placement
+        ? { family: "nc", label: craftLabel(r.placement, "nc") }
+        : { family: "ncEmpty", label: craftLabel(r, "ncEmpty"), category: r.category, pool: r.pool });
+    }
     for (const r of maps.rollByItem.get(v.variant_id) || []) out.push({ family: "roll", label: craftLabel(r, "roll") });
     // #370 — the declared-but-empty Lamordia slots ride the same resolved view,
     // so every export states the item's real slot count (R6: never app-visible
@@ -3788,7 +3833,7 @@
     satisfiedSets, suppressedHostIds, slotSetNames,
     setContributors, contributorsFor, setMemberLabel, activeSetDetail, satisfiedSetDetail,
     // craft + cue helpers
-    buildCraftMaps, craftLabel, craftValue, unfilledVikSlots, vikSlotRows, tierSlotRows, slaversSlotRows, lunarSolar, setAugmentSlotRule,
+    buildCraftMaps, craftLabel, craftValue, unfilledVikSlots, vikSlotRows, tierSlotRows, slaversSlotRows, ncSlotRows, lunarSolar, setAugmentSlotRule,
     // #471 — the split craft label + section caption for the Loadout card's row
     // language. Generated from the same fields as craftLabel, beside it (KTD6).
     craftRowLabel, CRAFT_SECTION_LABEL,
