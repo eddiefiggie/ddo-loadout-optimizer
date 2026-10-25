@@ -2863,10 +2863,18 @@ def _every_carrier_triple(out):
     gave 33 placements where the app reports 196, and the difference was not
     run down — which is why #838 decides in the bench, with the app's own
     predicate, rather than here.
+
+    Item affixes are read in EITHER shape via `tier_rename._name_type`: the
+    build calls this on the in-memory pipeline's `{stat, bonus_type}`, and
+    `_native_affix` only renames them to `{name, type}` at write time. Read with
+    the native keys alone, every one of the roster's ~44,800 affixes yielded
+    `(None, None)` at build time — the guard covered the crafting pools only,
+    while its test (reading the written items.json) saw the roster and passed.
     """
     for it in out.get("items") or []:
         for a in it.get("affixes") or []:
-            yield (a.get("name"), a.get("type"), a.get("value"))
+            name, t = tier_rename_mod._name_type(a)
+            yield (name or None, t, a.get("value"))
     for o in out.get("seal") or []:
         yield (o.get("stat"), o.get("bonus_type"), o.get("value"))
     for arr in (out.get("nearly_complete_per_item") or {}).values():
