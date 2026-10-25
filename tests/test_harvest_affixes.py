@@ -97,6 +97,9 @@ def test_the_build_stamps_the_switch():
     # them, typed Distant Incite on both Crownblade cloaks, and added Chulchannad's
     # Claw's Cold Absorption; a declined form (charge absorption, Enhanced Ghostly)
     # keeps an item whole only beside a read call of its own template (3 items).
-    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 204
-    assert ha["unchanged"] == 23733
+    # Skills' Stat Skills, Linguistics and Persuasion branches (2026-10-25) freed 57
+    # items (57 variants) and confirmed 200 affixes, all exactly as gear-planner has
+    # them, so replaced/added did not move.
+    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 147
+    assert ha["unchanged"] == 23933
     assert ha["weapon_kind_on_non_weapon"] == 7

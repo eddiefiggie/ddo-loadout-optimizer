@@ -94,6 +94,12 @@ SKILL = {"bal": "Balance", "balance": "Balance", "bluff": "Bluff", "concentratio
          "openlock": "Open Lock", "usemagicdevice": "Use Magic Device", "usemagicaldevice": "Use Magic Device"}
 #: Template:Skills' grouped bonuses, each `{{Insightful|{{{3|Exceptional}}}}} bonus` in its code.
 SKILL_GROUP = {"alluring", "astute", "mighty", "nimble", "prudent"}
+#: Template:Skills' Stat Skills branch (rev 703569): `<Stat> Skills - Exceptional Bonus
+#: {{Int|{{{2|0}}}}}`, rendered "Passive +N [[Exceptional bonus]] to the <Stat> based
+#: skills". The type is fixed: that branch never reads {{{3}}}.
+STAT_SKILL = {"cha": "Charisma", "charisma": "Charisma", "con": "Constitution", "constitution": "Constitution",
+              "dex": "Dexterity", "dexterity": "Dexterity", "int": "Intelligence", "intelligence": "Intelligence",
+              "str": "Strength", "strength": "Strength", "wis": "Wisdom", "wisdom": "Wisdom"}
 #: Template:SpellPower's continuous types (its own switch) -> the catalog's stat. The
 #: element a type powers is stated by the template's popup text; `potency`,
 #: `reconstruction` keep their own names as the catalog does (umbrella / repair).
@@ -262,6 +268,16 @@ def m_skills(pos, named):
         if (named.get("prefix") or "").strip().lower() != "enhanced":
             raise Unmapped("`enh` without prefix=Enhanced")
         t = "Enhancement"
+    if which in STAT_SKILL:
+        return [_penalty(STAT_SKILL[which] + " Skills", "Exceptional", _int(_arg(pos, 1) or "0"))]
+    if which == "linguistics":
+        # `Linguistics {{{2|10}}}%`, a cooldown cut on social skills. The code names
+        # no bonus type, so the catalog's Untyped.
+        return [("Linguistics", "Untyped", _int(_arg(pos, 1) or "10"))]
+    if which == "persuasion":
+        # No parameters: the code renders one fixed effect (+3 competence to all
+        # Charisma based skills), so the call states a presence.
+        return [("Persuasion", "Bool", 1)]
     if which in SKILL_GROUP:
         return [_penalty(which.title() + " Skills Bonus", _insightful(t) if t and t.strip() else "Exceptional",
                          _int(_arg(pos, 1)))]
