@@ -18,3 +18,16 @@ Lahar's DR-bypass augments, the third row #872 opened with, arrived through upst
 - **Retirement:** `src/wiki_supplement.py` fails the build the moment upstream carries any of those six names. The next normal re-vendor therefore forces the supplement out, and nothing has to be remembered.
 
 The Court of Strahd runs to 2027-02-17. If later wiki pages add stat-bearing event gear, the next re-vendor carries it.
+
+## Two search-summary leads, ruled not real (#934)
+
+**Checked:** 2026-10-24, against ddowiki's own copies of the release notes, read in the Browser pane. ddo.com is not reachable from there. Both leads came only from search-engine summaries of DDO Compendium's copy of the notes, and the two summaries did not agree with each other.
+
+| Lead | Wiki evidence, 2026-10-24 | Ruling |
+|---|---|---|
+| 82.0.1: "values of certain loot affixes have been adjusted to boost how much items contribute to Spell DCs, including named loot" | `Update 82 Hotfix Release Notes` (rev 721720; `Update 82.0.1` redirects there) opens "released on Friday, October 16th, 2026" and covers Escher, Lantern durability, Divine Punishment and Horizon Walker. Nothing in it matches "Spell DC", "DC", "spell focus", "affix" or "named loot". | Not real. No stored value changes. |
+| U82: Insightful Spell Power Shard as a Ring Extra slot, and a new Insightful Spell Focus Mastery Shard for Headgear and Trinkets | `Update 82 Release Notes` has no "Insightful", "Essence" or "Extra slot" text. Its only shard line is the DDO Bonus Days crafting bonus for high-level Magic Item Shards, which is not an Essence placement. `Essence Crafting` (rev 719281) lists no Insightful Spell Focus Mastery shard. Its Spell Focus Mastery row is still `Spellmaster's`, on Necklace and Ring. | Not real. `src/essence_pool.py` is unchanged. |
+
+**Item edits since the harvest:** no `Item:` page has been created since 2026-10-17. The edits from 2026-10-19 on are a forum-link bot pass, the lantern description rewrite, Reaper's Steed icons and update tags, and a zero-byte reshuffle on the Dreadcursed Defender pages. None of them touches a Spell Focus value. The 157 edits made on 2026-10-18 were not read here. The #933 wiki delta covers them.
+
+**Reopen** if the official ddo.com text of either note carries the line. The wiki's copy is a transcription, and the official text is the authority.
