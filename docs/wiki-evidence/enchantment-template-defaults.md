@@ -142,6 +142,23 @@ A **declined** call (`Declined` in `src/wiki_enchantments.py`) is a form deliber
   - a bonus type written as the kind. `{{Diversion|4|Insightful}}` renders an "Insightful Diversion" enhancement bonus, an authoring slip.
 - **Deception:** the tiered roman on-hit forms.
 - **Speed:** with a kind (melee, ranged, movement), which one `Speed` stat cannot express.
+- **The tier-2 ruling's named forms (2026-10-25).** These are listed explicitly in `src/wiki_enchantments.py`, not inferred from "not a known type", so a misspelt real type still fails loudly:
+  - **Tactics:** Tendon Slice (30 items).
+  - **Doublestrike:** Calamitous Blows (3).
+  - **Spell Focus:** Deific Focus (3).
+  - **Fortification:** legacy Construct `4` (11).
+  - **Wizardry:** Magi and Archmagi (`M`, `Magi`, `AM`, `Archmagi`) and Pirate Cleverness.
+  - **Hp:** Pirate Vitality.
+  - **SpellPower:** the named powers. These are Spell Turmoil, Spell Resonance, Elemental Resonance, Elemental Manipulation, Path of the Fire Dragon, Power of Creeping Dust, the two Frozen Storm powers, and the augment powers Ardor, Efficacy, Erosion, Freeze, Inferno, Nihil and Spark.
+
+  80 items stop being kept whole (126 → 46; 134 → 54 variants). The built `items.json` is affix-identical on all 9,173 variants: `replaced` and `added` did not move, and `unchanged` rose by 168, so every freed item's own reads agree with gear-planner. 10 items stay whole under the same-template exception below: Belt of Whirling Blades, Chaos in a Bottle, Robe of Dissonance, and others.
+
+**Ruled "deliberate", but actually readable.** The tier-2 table counts every unread Wizardry and Hp call as deliberate. The 2026-10-25 inventory found three readable forms among them. They stay plain `Unmapped`, keeping their items whole, and are **not** declined (#941), because declining would leave a value the template states on gear-planner for good:
+- Wizardry `+19` / `+195` (7 calls): the `+` defeats the integer match.
+- Wizardry `IV` / `VIII` (5 calls): those two numerals are missing from the mapper's list.
+- Hp `Profane Life Force|N` (3 calls): the mapper accepts only the spelling `profane lifeforce`.
+
+`tests/test_wiki_enchantments.py` pins all three as Unmapped and not Declined.
 
 The exception: beside a **read** call of the same template on the same item, a declined call keeps the item whole after all, because the merge could pair gear-planner's affix for the declined call with ours. 3 items.
 
