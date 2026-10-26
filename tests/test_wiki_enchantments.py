@@ -108,6 +108,20 @@ def test_skills_stat_groups_linguistics_and_persuasion_follow_the_template_code(
     assert _map("{{Skills|Persuasion}}") == [("Persuasion", "Bool", 1)]
 
 
+def test_skills_command_defaults_and_parameterless_effects_are_presences():
+    """Template:Skills rev 703569. Command renders `{{Int|{{{2|2}}}}}
+    [[{{{3|competence}}} bonus]]`, so a bare call is 2 Competence. Shadow, Silent
+    Moves, Songblade and Voice of Deceit take no parameters: each a presence, as
+    gear-planner records them. The code matches names with spaces removed."""
+    assert _map("{{Skills|Command}}") == [("Command", "Competence", 2)]
+    assert _map("{{Skills|Command|7|Insight}}") == [("Command", "Insight", 7)]
+    assert _map("{{skills|Command|8}}") == [("Command", "Competence", 8)]
+    assert _map("{{Skills|Shadow}}") == [("Shadow", "Bool", 1)]
+    assert _map("{{Skills|Silent Moves}}") == [("Silent Moves", "Bool", 1)]
+    assert _map("{{Skills|Songblade}}") == [("Songblade", "Bool", 1)]
+    assert _map("{{Skills|Voice of Deceit}}") == [("Voice of Deceit", "Bool", 1)]
+
+
 def test_spelllore_adds_ten_to_roman_element_lores_and_not_to_spell_lore():
     assert _map("{{Spelllore|Void|iv}}") == [("Negative Lore", "Equipment", 14)]
     assert _map("{{Spelllore|Spell|VI}}") == [("Spell Lore", "Equipment", 6)]
