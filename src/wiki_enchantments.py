@@ -256,6 +256,12 @@ def _percent(v):
     return _int((v or "").strip().rstrip("%"))
 
 
+def m_doublestrike(pos, named):
+    if (_arg(pos, 0) or "").strip().lower() == "calamitous blows":
+        raise Declined("Calamitous Blows is a named effect, not a Doublestrike percentage")
+    return _simple("Doublestrike", "Doublestrike", _percent)(pos, named)
+
+
 def m_sheltering(pos, named):
     kind = (_arg(pos, 2) or "").strip().lower()
     stat = {"magical": "Magical Sheltering", "physical": "Physical Sheltering", "": "Sheltering"}.get(kind)
@@ -320,12 +326,23 @@ def m_spelllore(pos, named):
     return [(stat, _type(_arg(pos, 2), "Spelllore"), value)]
 
 
+#: Named SpellPower effects the tier-2 ruling does not read (Spell Turmoil, the augment
+#: powers, set and artifact powers). Listed, not inferred from "not a known type", so a
+#: misspelt element type still fails loudly instead of being declined.
+SPELLPOWER_NAMED = {"ardor", "efficacy", "erosion", "freeze", "inferno", "nihil", "spark", "spell turmoil",
+                    "spell resonance", "elemental resonance", "elemental manipulation",
+                    "path of the fire dragon", "power of creeping dust",
+                    "insightful power of the frozen storm", "quality power of the frozen storm"}
+
+
 def m_spellpower(pos, named):
     which = (_arg(pos, 0) or "").strip()
     stat = SPELLPOWER.get(which.lower())
     if stat is None:
         if which.lower().startswith("power of the ") or which.lower() == "universal spell power":
             stat = which  # a named power the catalog carries under its own name
+        elif which.lower() in SPELLPOWER_NAMED:
+            raise Declined(f"named SpellPower effect {which!r}")
         else:
             raise Unmapped(f"SpellPower type {which!r}")
     return [(stat, _type(_arg(pos, 2), "SpellPower"), _int(_arg(pos, 1)))]
@@ -338,7 +355,7 @@ def m_spellfocus(pos, named):
     elif which == "spell":
         stat = "Spell Focus"
     elif which in ("deific focus", "deific"):
-        raise Unmapped("Deific Focus is a stacking on-cast effect, not a flat DC bonus")
+        raise Declined("Deific Focus is a stacking on-cast effect, not a flat DC bonus")
     else:
         # The template's #default branch: "{{{1}}} Focus" — schools, Rune Arm, Breath Weapon.
         stat = _arg(pos, 0).strip().title() + " Focus"
@@ -355,7 +372,7 @@ def m_fortification(pos, named):
         return [("Fortification", "Enhancement", legacy[amount.lower()])]
     v = _int(amount)
     if 0 < v <= 4:
-        raise Unmapped("legacy Construct Fortification")
+        raise Declined("legacy Construct Fortification")
     t = _arg(pos, 1)
     return [_penalty("Fortification", _insightful(t) if t and t.strip() else "Enhancement", v)]
 
@@ -385,6 +402,8 @@ def m_tactics(pos, named):
     which = (_arg(pos, 0) or "combat mastery").strip().lower()
     if which in ("combat mastery", "shatter"):
         return [(which.title(), _type(_arg(pos, 2), "Tactics"), _int(_arg(pos, 1) or "1"))]
+    if which == "tendon slice":
+        raise Declined("Tendon Slice is a named effect, not a plain DC bonus")
     raise Unmapped(f"Tactics {which!r} is not a plain DC bonus")
 
 
@@ -435,6 +454,10 @@ def m_wizardry(pos, named):
     if raw.upper() in ("I", "II", "III", "V", "VI", "VII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI",
                        "XVII", "XVIII", "XIX", "XX"):
         return [("Wizardry", _insightful(t) if t and t.strip() else "Enhancement", _roman(raw))]
+    if raw.lower() in ("m", "magi", "am", "archmagi", "pirate cleverness"):
+        # Magi/Archmagi are tiers gear-planner does not express as Wizardry, and
+        # Pirate Cleverness is a named effect: ruled not read (tier 2).
+        raise Declined(f"Wizardry {raw!r} is a named tier or effect")
     raise Unmapped(f"Wizardry {raw!r} (Magi/Archmagi/named)")
 
 
@@ -454,6 +477,8 @@ def m_hp(pos, named):
     if which == "false life" and v:
         t = _arg(pos, 2)
         return [("False Life", _insightful(t) if t and t.strip() else "Enhancement", _int(v))]
+    if which == "pirate vitality":
+        raise Declined("Pirate Vitality is a named effect")
     raise Unmapped(f"Hp {which!r}")
 
 
@@ -593,7 +618,7 @@ MAPPERS = {
     "Stat": m_stat,
     "Sheltering": m_sheltering,
     "Resistance": _simple("Resistance", "Resistance"),
-    "Doublestrike": _simple("Doublestrike", "Doublestrike", _percent),
+    "Doublestrike": lambda pos, named: m_doublestrike(pos, named),
     "Accuracy": _simple("Accuracy", "Accuracy", _roman),
     "Deadly": _simple("Deadly", "Deadly", _roman),
     "Dodge": _simple("Dodge", "Dodge"),

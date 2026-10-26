@@ -101,6 +101,8 @@ def test_the_build_stamps_the_switch():
     # items (57 variants) and confirmed 200 affixes, all exactly as gear-planner has
     # them, so replaced/added did not move. Command's default amount and the four
     # parameterless Special Skills then freed 13 more and confirmed 35 affixes.
-    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 134
-    assert ha["unchanged"] == 23968
+    # The tier-2 ruling's named forms becoming Declined freed 80 items (80 variants)
+    # and confirmed 168 affixes, all exactly as gear-planner has them.
+    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 54
+    assert ha["unchanged"] == 24136
     assert ha["weapon_kind_on_non_weapon"] == 7

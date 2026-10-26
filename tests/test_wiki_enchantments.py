@@ -153,14 +153,36 @@ def test_enhancement_wizardry_and_hit_points():
     assert _map("{{Hp|Greater Elemental Energy}}") == [("Greater Elemental Energy", "Bool", 1)]
 
 
-def test_tier_two_calls_we_do_not_read_yet_are_unmapped():
-    for line in ("{{Wizardry|M}}", "{{Enhancement bonus|q|1}}", "{{Tactics|Tendon Slice|6}}",
-                 "{{Spell Focus|Deific Focus|3}}", "{{Fortification|4}}", "{{Skills|Bluffing|3|enh}}"):
+def test_tier_two_calls_we_do_not_read_yet_are_unmapped_not_declined():
+    # Plain Unmapped keeps the item whole. These are unknown kinds or values the
+    # template states that the mapper does not read yet, so they must NOT be
+    # declined: a declined call leaves its value on gear-planner for good.
+    for line in ("{{Enhancement bonus|q|1}}", "{{Skills|Bluffing|3|enh}}", "{{Wizardry|VIII}}",
+                 "{{Wizardry|+195}}", "{{Hp|Profane Life Force|12}}", "{{SpellPower|Combustoin|20}}"):
         try:
             _map(line)
+        except E.Declined:
+            raise AssertionError(f"{line} must not be Declined")
         except E.Unmapped:
             continue
         raise AssertionError(f"{line} must be Unmapped")
+
+
+def test_the_tier_two_rulings_named_forms_are_declined():
+    """The tier-2 ruling's deliberate forms: named effects (Tendon Slice, Calamitous
+    Blows, Pirate Vitality and Cleverness, the named SpellPower powers), Magi and
+    Archmagi Wizardry, Deific Focus and legacy Construct Fortification."""
+    for line in ("{{Tactics|Tendon Slice|6}}", "{{Tactics|Tendon Slice|10%}}", "{{Doublestrike|Calamitous Blows}}",
+                 "{{Spell Focus|Deific Focus|3}}", "{{Spell Focus|Deific|III}}", "{{Fortification|4}}",
+                 "{{Fortification|4|10}}", "{{Wizardry|M}}", "{{Wizardry|am}}", "{{Wizardry|Archmagi}}",
+                 "{{Wizardry|Pirate Cleverness}}", "{{Hp|Pirate Vitality}}", "{{SpellPower|Spell Turmoil}}",
+                 "{{SpellPower|Efficacy|20||0}}", "{{SpellPower|Power of Creeping Dust|142}}"):
+        try:
+            _map(line)
+        except E.Declined:
+            continue
+        raise AssertionError(f"{line} must be Declined")
+    assert _map("{{Doublestrike|5}}") == [("Doublestrike", "Enhancement", 5)]
 
 
 def test_implement_and_orb_kinds_follow_the_templates_two_switches():
