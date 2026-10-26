@@ -209,6 +209,18 @@ def test_magi_archmagi_and_the_pirate_effects_are_presences():
     assert _map("{{Wizardry|V}}") == [("Wizardry", "Enhancement", 5)]
 
 
+def test_an_enhancement_of_zero_is_the_masterwork_presence():
+    """Template:Enhancement bonus rev 548191: the w|i|ii, a and s|si branches render
+    `[[Masterwork]]` at 0 instead of an Enhancement Bonus, a fixed named effect, as
+    gear-planner records it. An implement kind keeps its implement bonus."""
+    assert _map("{{Enhancement bonus|w|0}}") == [("Masterwork", "Bool", 1)]
+    assert _map("{{Enhancement bonus|a|0}}") == [("Masterwork", "Bool", 1)]
+    assert _map("{{Enhancement bonus|s|0}}") == [("Masterwork", "Bool", 1)]
+    assert _map("{{Enhancement bonus|i|0|6}}") == [("Universal Spell Power", "Implement", 6), ("Masterwork", "Bool", 1)]
+    assert _map("{{Enhancement bonus|o|0}}") == [("Orb Bonus", "Orb", 0)]
+    assert _map("{{Enhancement bonus|w|1}}") == [("Enhancement Bonus (Weapon)", "Enhancement", 1)]
+
+
 def test_implement_and_orb_kinds_follow_the_templates_two_switches():
     assert _map("{{Enhancement bonus|i|1}}") == [("Universal Spell Power", "Implement", 3),
                                                   ("Enhancement Bonus (Weapon)", "Enhancement", 1)]

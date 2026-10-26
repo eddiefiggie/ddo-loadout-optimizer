@@ -440,8 +440,12 @@ def m_enhancement_bonus(pos, named):
             "a": "Enhancement Bonus (Armor)", "s": "Enhancement Bonus (Armor)", "si": "Enhancement Bonus (Armor)",
             "o": "Orb Bonus", "oi": "Orb Bonus"}.get(kind)
     if stat:
-        if v == 0 and kind in ("w", "a", "s"):
-            raise Unmapped("Masterwork (enhancement 0)")
+        if v == 0 and stat != "Orb Bonus":
+            # The weapon, armor and shield branches render `{{#ifeq:{{{2|0}}}|0|[[Masterwork]]
+            # |... Enhancement Bonus}}`: at 0 there is no enhancement bonus, only the
+            # named Masterwork effect, fixed and amount-free, so a presence.
+            out.append(("Masterwork", "Bool", 1))
+            return out
         out.append(_penalty(stat, "Orb" if stat == "Orb Bonus" else "Enhancement", v))
     return out
 
