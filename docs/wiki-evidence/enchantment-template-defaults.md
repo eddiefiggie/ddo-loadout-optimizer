@@ -208,3 +208,18 @@ That is the named **Masterwork** effect, fixed and taking no amount. On a weapon
 
 The old mapper refused this as `Unmapped("Masterwork (enhancement 0)")`, which kept all 12 items whole. They are now freed (32 → 20 kept whole; 40 → 27 variants). The built `items.json` is affix-identical on all 9,173 variants, and `unchanged` rose by 23. Enhancement bonus parity is 5,146 of 5,155 exact. Its one unread call is `{{Enhancement bonus|i|15|29<u></u>}}` on Eidolon of the Shadow, a markup slip in the page.
 
+## Phase 2 close-out: the 18 items still kept whole are accepted (2026-10-26, #907)
+
+Phase 2 took the items whose enchantments came wholly from gear-planner from **196 to 18**. No solve changed at any step: every freed item's own reads matched gear-planner. The last pass read or declined what the template code supports:
+- **Eidolon of the Shadow:** `{{Enhancement bonus|i|15|29<u></u>}}`. An empty HTML element renders nothing, so the amount is 29 (`_int` strips empty element pairs; visible markup still refuses). gear-planner: Implement 29, Enhancement +15.
+- **Omniscience:** `{{Save|Exceptional Resistance (Reflex)|2}}`. `Template:Save` rev 560806 renders "+N bonus to Reflex saves that stacks with all other bonuses except Exceptional Resistance N (Reflex)" and names **no bonus type**. It is declined rather than typed by inference, and gear-planner's `Resistance +2 (Reflex)` presence stands.
+
+The 18 that remain are kept whole **on purpose**:
+
+| Why | Items | Rule |
+|---|---:|---|
+| A declined call beside a read call of its own template | 12 | The same-template exception (*Declined forms*): the merge could pair gear-planner's affix for the declined call with one of ours. Belt of Whirling Blades ×2 and The Brass Admiral (Tendon Slice + Combat Mastery); Chaos in a Bottle ×2, Dethek Runestone, Epic Ironweave Robe, Robe of Dissonance ×2 and Regalia of the Phoenix (named SpellPower + an element); Battered Phiarlan Shield ×2 (the charge `Enchantment Spells|0|5` + Acid 15). |
+| A call followed by qualifying text | 6 | Conditional quarantine (`conditional-affixes.md`): "(only from chain end reward)", "(only from chest)", "(if Paladin 20)", and Epic Golden Guile's `{{Bug}}` note that the game grants +5, not the listed +17. |
+
+Reopen any of these only on a new ruling: a narrower exception that checks gear-planner's names, or a change to the conditional quarantine.
+

@@ -109,6 +109,8 @@ def test_the_build_stamps_the_switch():
     # confirmed, kept_whole unchanged (the decline had already freed those items).
     # An enhancement of 0 then became the Masterwork presence the template renders:
     # 12 items (13 variants) freed, 23 affixes confirmed.
-    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 27
-    assert ha["unchanged"] == 24219
+    # The #907 close-out read Eidolon's `29<u></u>` and declined Exceptional Resistance
+    # (Reflex): 2 freed, 6 confirmed. The 18 still whole are accepted (evidence doc).
+    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 25
+    assert ha["unchanged"] == 24225
     assert ha["weapon_kind_on_non_weapon"] == 7
