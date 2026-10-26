@@ -446,6 +446,11 @@ def m_enhancement_bonus(pos, named):
     return out
 
 
+#: Template:Wizardry's named Power branches -> the presence the catalog carries.
+WIZARDRY_PRESENCE = {"m": "Magi", "magi": "Magi", "iv": "Magi", "am": "Archmagi", "archmagi": "Archmagi",
+                     "viii": "Archmagi", "pirate cleverness": "Pirate Cleverness"}
+
+
 def m_wizardry(pos, named):
     raw = (_arg(pos, 0) or "").strip()
     t = _arg(pos, 1)
@@ -456,12 +461,14 @@ def m_wizardry(pos, named):
     if raw.upper() in ("I", "II", "III", "V", "VI", "VII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI",
                        "XVII", "XVIII", "XIX", "XX"):
         return [("Wizardry", _insightful(t) if t and t.strip() else "Enhancement", _roman(raw))]
-    if raw.lower() in ("m", "magi", "iv", "am", "archmagi", "viii", "pirate cleverness"):
-        # Magi/Archmagi are tiers gear-planner does not express as Wizardry, and
-        # Pirate Cleverness is a named effect: ruled not read (tier 2). The code's
-        # Power switch sends `IV` to MAGI and `VIII` to ARCHMAGI (`|IV|M|MAGI = MAGI`),
-        # which is why neither is in the numeral list above.
-        raise Declined(f"Wizardry {raw!r} is a named tier or effect")
+    named = WIZARDRY_PRESENCE.get(raw.lower())
+    if named:
+        # Template:Wizardry rev 700755's Power switch: `|IV|M|MAGI = MAGI`,
+        # `|VIII|AM|ARCHMAGI = ARCHMAGI`, `|PIRATE CLEVERNESS`. Each renders one fixed
+        # named effect (+100 / +200 / +50 spell points) and reads no amount, so the
+        # call states a presence, as gear-planner records it. `IV` and `VIII` are
+        # why neither numeral is in the list above.
+        return [(named, "Bool", 1)]
     raise Unmapped(f"Wizardry {raw!r} (Magi/Archmagi/named)")
 
 
@@ -483,8 +490,10 @@ def m_hp(pos, named):
     if which == "false life" and v:
         t = _arg(pos, 2)
         return [("False Life", _insightful(t) if t and t.strip() else "Enhancement", _int(v))]
-    if which == "pirate vitality":
-        raise Declined("Pirate Vitality is a named effect")
+    if which.replace(" ", "") in ("piratevitality", "pv"):
+        # Template:Hp rev 538996, `|piratevitality|pv`: one fixed effect (+10 hit
+        # points, "stacks with all bonuses except itself"), no amount: a presence.
+        return [("Pirate Vitality", "Bool", 1)]
     raise Unmapped(f"Hp {which!r}")
 
 

@@ -105,6 +105,8 @@ def test_the_build_stamps_the_switch():
     # and confirmed 168 affixes, all exactly as gear-planner has them. #941's signed
     # Wizardry numbers, Profane Life Force spelling and Wizardry IV/VIII (the code's
     # Magi/Archmagi) freed 14 more and confirmed 39.
+    # Magi/Archmagi and the two Pirate effects then became presences: 21 affixes
+    # confirmed, kept_whole unchanged (the decline had already freed those items).
     assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 40
-    assert ha["unchanged"] == 24175
+    assert ha["unchanged"] == 24196
     assert ha["weapon_kind_on_non_weapon"] == 7

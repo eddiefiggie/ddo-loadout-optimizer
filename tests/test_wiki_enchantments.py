@@ -169,13 +169,11 @@ def test_tier_two_calls_we_do_not_read_yet_are_unmapped_not_declined():
 
 def test_the_tier_two_rulings_named_forms_are_declined():
     """The tier-2 ruling's deliberate forms: named effects (Tendon Slice, Calamitous
-    Blows, Pirate Vitality and Cleverness, the named SpellPower powers), Magi and
-    Archmagi Wizardry, Deific Focus and legacy Construct Fortification."""
+    Blows, the named SpellPower powers), Deific Focus and legacy Construct
+    Fortification. Magi/Archmagi and the Pirate effects are read as presences."""
     for line in ("{{Tactics|Tendon Slice|6}}", "{{Tactics|Tendon Slice|10%}}", "{{Doublestrike|Calamitous Blows}}",
                  "{{Spell Focus|Deific Focus|3}}", "{{Spell Focus|Deific|III}}", "{{Fortification|4}}",
-                 "{{Fortification|4|10}}", "{{Wizardry|M}}", "{{Wizardry|am}}", "{{Wizardry|Archmagi}}",
-                 "{{Wizardry|IV}}", "{{Wizardry|VIII}}",
-                 "{{Wizardry|Pirate Cleverness}}", "{{Hp|Pirate Vitality}}", "{{SpellPower|Spell Turmoil}}",
+                 "{{Fortification|4|10}}", "{{SpellPower|Spell Turmoil}}",
                  "{{SpellPower|Efficacy|20||0}}", "{{SpellPower|Power of Creeping Dust|142}}"):
         try:
             _map(line)
@@ -194,6 +192,21 @@ def test_wizardry_signed_numbers_and_profane_life_force_follow_the_template_code
     assert _map("{{Wizardry|195}}") == [("Wizardry", "Enhancement", 195)]
     assert _map("{{Hp|Profane Life Force|44}}") == [("False Life", "Profane", 44)]
     assert _map("{{Hp|Profane Lifeforce|12}}") == [("False Life", "Profane", 12)]
+
+
+def test_magi_archmagi_and_the_pirate_effects_are_presences():
+    """Template:Wizardry rev 700755 sends `M|MAGI|IV` to Magi and `AM|ARCHMAGI|VIII`
+    to Archmagi; with Pirate Cleverness (Wizardry) and Pirate Vitality (Hp, rev
+    538996) each renders one fixed named effect and reads no amount: a presence,
+    as gear-planner records all four."""
+    for raw in ("M", "Magi", "IV", "iv"):
+        assert _map("{{Wizardry|%s}}" % raw) == [("Magi", "Bool", 1)], raw
+    for raw in ("AM", "am", "Archmagi", "VIII"):
+        assert _map("{{Wizardry|%s}}" % raw) == [("Archmagi", "Bool", 1)], raw
+    assert _map("{{wizardry|Pirate Cleverness}}") == [("Pirate Cleverness", "Bool", 1)]
+    assert _map("{{hp|Pirate Vitality}}") == [("Pirate Vitality", "Bool", 1)]
+    assert _map("{{Hp|pv}}") == [("Pirate Vitality", "Bool", 1)]
+    assert _map("{{Wizardry|V}}") == [("Wizardry", "Enhancement", 5)]
 
 
 def test_implement_and_orb_kinds_follow_the_templates_two_switches():

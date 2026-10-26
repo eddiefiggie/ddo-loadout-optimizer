@@ -92,7 +92,7 @@ These templates were added in tier 2: Skills, Save, Spelllore, SpellPower / Spel
 - "Not read" is deliberate:
   - named effects (`Calamitous Blows`, `Tendon Slice`)
   - implement and orb kinds of `Enhancement bonus`
-  - Magi/Archmagi Wizardry, which gear-planner does not carry either
+  - Magi/Archmagi Wizardry, which gear-planner does not carry either. *(Superseded 2026-10-25: gear-planner does carry them, as presences, and they are now read as presences. See* Magi, Archmagi and the Pirate effects *below.)*
   - Deific Focus
   - legacy Construct Fortification
 
@@ -147,8 +147,7 @@ A **declined** call (`Declined` in `src/wiki_enchantments.py`) is a form deliber
   - **Doublestrike:** Calamitous Blows (3).
   - **Spell Focus:** Deific Focus (3).
   - **Fortification:** legacy Construct `4` (11).
-  - **Wizardry:** Magi and Archmagi (`M`, `Magi`, `AM`, `Archmagi`) and Pirate Cleverness.
-  - **Hp:** Pirate Vitality.
+  - ~~**Wizardry:** Magi, Archmagi and Pirate Cleverness. **Hp:** Pirate Vitality.~~ Declined on 2026-10-25, then read as presences the same day. See below.
   - **SpellPower:** the named powers. These are Spell Turmoil, Spell Resonance, Elemental Resonance, Elemental Manipulation, Path of the Fire Dragon, Power of Creeping Dust, the two Frozen Storm powers, and the augment powers Ardor, Efficacy, Erosion, Freeze, Inferno, Nihil and Spark.
 
   80 items stop being kept whole (126 → 46; 134 → 54 variants). The built `items.json` is affix-identical on all 9,173 variants: `replaced` and `added` did not move, and `unchanged` rose by 168, so every freed item's own reads agree with gear-planner. 10 items stay whole under the same-template exception below: Belt of Whirling Blades, Chaos in a Bottle, Robe of Dissonance, and others.
@@ -158,12 +157,21 @@ A **declined** call (`Declined` in `src/wiki_enchantments.py`) is a form deliber
 | Form | Code | Read as | gear-planner |
 |---|---|---|---|
 | Wizardry `+19` / `+195` (7) | `Template:Wizardry` rev 700755: `#default = {{Ifnumber\|{{{1}}}\|{{{1}}}\|N}}`, so a number is the spell points as written | `(Wizardry, Enhancement, 19 / 195)` | identical |
-| Wizardry `IV` / `VIII` (5) | the same template's Power switch: `\|IV\|M\|MAGI = MAGI`, `\|VIII\|AM\|ARCHMAGI = ARCHMAGI`. These are **not** missing numerals. | Declined with Magi/Archmagi | `(Magi \| Archmagi, Bool, 1)` |
+| Wizardry `IV` / `VIII` (5) | the same template's Power switch: `\|IV\|M\|MAGI = MAGI`, `\|VIII\|AM\|ARCHMAGI = ARCHMAGI`. These are **not** missing numerals. | Magi / Archmagi (now presences, below) | `(Magi \| Archmagi, Bool, 1)` |
 | Hp `Profane Life Force\|N` (3) | `Template:Hp` rev 538996 switches on `{{lc:{{#replace:{{{1}}}\| \|}}}}`, so this is the `profanelifeforce` branch: `[[Profane bonus]] to Hit Points` | `(False Life, Profane, N)` | identical |
 
 14 items stop being kept whole (46 → 32; 54 → 40 variants). The built `items.json` is affix-identical on all 9,173 variants, and `unchanged` rose by 39.
 
-**One premise of the ruling does not hold.** The tier-2 bullet says Magi/Archmagi Wizardry is something "gear-planner does not carry either". It does: gear-planner carries `(Magi, Bool, 1)` and `(Archmagi, Bool, 1)` as presences, and the template renders each as a fixed named effect (+100 / +200 spell points). That is the same shape as the parameterless Special Skills read as presences in #940. Whether Magi/Archmagi should be read as presences rather than declined is left to the owner. Both outcomes leave the catalog's value identical, because gear-planner's presence stands under a decline.
+**Magi, Archmagi and the Pirate effects are presences (2026-10-25, ruling revised).** The tier-2 bullet declined Magi/Archmagi as something "gear-planner does not carry either". That premise was false. gear-planner carries all four as presences, and each template branch renders one fixed named effect with no amount:
+
+| Call | Code | Read as | gear-planner |
+|---|---|---|---|
+| `{{Wizardry\|M\|Magi\|IV}}` (4) | `Template:Wizardry` rev 700755, `\|IV\|M\|MAGI = MAGI`: "+100 maximum spell points" | `(Magi, Bool, 1)` | identical |
+| `{{Wizardry\|AM\|Archmagi\|VIII}}` (11) | `\|VIII\|AM\|ARCHMAGI = ARCHMAGI`: "+200 maximum spell points" | `(Archmagi, Bool, 1)` | identical |
+| `{{Wizardry\|Pirate Cleverness}}` (3) | `\|PIRATE CLEVERNESS`: "+50 bonus to your maximum spell points" | `(Pirate Cleverness, Bool, 1)` | identical |
+| `{{Hp\|Pirate Vitality}}` (3) | `Template:Hp` rev 538996, `\|piratevitality\|pv`: "+10 bonus to your maximum hit points" | `(Pirate Vitality, Bool, 1)` | identical |
+
+This is the same rule #940 applied to the parameterless Special Skills: a call that reads no amount and renders one fixed effect states a presence. Wizardry parity is now 315 of 316 exact and Hp 450 of 451, with neither carrying an unread call. 21 shard records gain the presence. Kept-whole is unchanged at 32, because the decline had already freed these items. The built `items.json` is affix-identical on all 9,173 variants, and `unchanged` rose by 21, because each presence now confirms gear-planner's instead of leaving it to stand.
 
 The exception: beside a **read** call of the same template on the same item, a declined call keeps the item whole after all, because the merge could pair gear-planner's affix for the declined call with ours. 3 items.
 
