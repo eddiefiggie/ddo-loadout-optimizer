@@ -144,3 +144,23 @@ A **declined** call (`Declined` in `src/wiki_enchantments.py`) is a form deliber
 - **Speed:** with a kind (melee, ranged, movement), which one `Speed` stat cannot express.
 
 The exception: beside a **read** call of the same template on the same item, a declined call keeps the item whole after all, because the merge could pair gear-planner's affix for the declined call with ours. 3 items.
+
+## Skills: Stat Skills, Linguistics and Persuasion (2026-10-25)
+
+`Template:Skills` was re-read fresh from ddowiki on 2026-10-25. It is still **rev 703569** (2026-08-05), the revision in the 2026-10-19 template harvest, so the evidence shard's quote stands. Three branches of its code that the tier-2 mapper refused (`"is not a single skill"`) are now read:
+
+| Branch | Code | Read as | gear-planner |
+|---|---|---|---|
+| Stat Skills (`cha`, `con`, `dex`, `int`, `str`, `wis` and the full names) | `<Stat> Skills - Exceptional Bonus {{Int\|{{{2\|0}}}}}`, rendered as a `[[Exceptional bonus]]` (or `penalty` when negative) to the stat's skills. The branch never reads `{{{3}}}`. | `(<Stat> Skills, Exceptional, N)`. A negative amount is `Penalty` (#614). | Same, on every record |
+| Linguistics | `[[Linguistics]] {{{2\|10}}}%`, a cooldown cut on social skills. No bonus type is named. | `(Linguistics, Untyped, N)`, default 10 | `(Linguistics, Untyped, 10 or 15)` |
+| Persuasion | No parameters. One fixed effect, +3 competence to all Charisma based skills. | `(Persuasion, Bool, 1)`, a presence | `(Persuasion, Bool, 1)` |
+
+**Parity on `items-20261018`:** Skills exact rose from 1,092 to **1,156**. That is 33 Linguistics, 27 Stat Skills and 4 Persuasion calls, with **zero** type or value differences. Unread calls fell from 78 to 14.
+
+**Effect on the shard:** 57 items stop being kept whole (196 → 139; 204 → 147 variants), so every mapped affix on them is now read from their own page. The built `items.json` has the same affixes on all 9,173 variants as before. Every one of those reads agrees with gear-planner, so no solve changes. `planner_coverage.harvest_affixes.unchanged` rises by 200.
+
+**Still not read, and still keeping their items whole:**
+- `{{Skills|Command}}` with no amount (9). The code's default is `{{{2|2}}}`.
+- The named effects Silent Moves (2), Shadow, Songblade and Voice of Deceit. Silent Moves states no number at all.
+
+These stay out of scope here. Command and the three effects that state a number are code-backed and readable later.

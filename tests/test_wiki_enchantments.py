@@ -94,6 +94,20 @@ def test_skills_default_to_competence_and_groups_to_exceptional():
     assert _map("{{Skills|Haggle|3|enh|prefix=Enhanced}}") == [("Haggle", "Enhancement", 3)]
 
 
+def test_skills_stat_groups_linguistics_and_persuasion_follow_the_template_code():
+    """Template:Skills rev 703569. The Stat Skills branch fixes the type to
+    Exceptional and never reads {{{3}}}; Linguistics defaults to 10 and names no
+    type; Persuasion takes no parameters. Each matches gear-planner's record."""
+    assert _map("{{Skills|Dex|4}}") == [("Dexterity Skills", "Exceptional", 4)]
+    assert _map("{{Skills|INT|6}}") == [("Intelligence Skills", "Exceptional", 6)]
+    assert _map("{{Skills|Charisma|2}}") == [("Charisma Skills", "Exceptional", 2)]
+    assert _map("{{Skills|WIS|2|Insightful}}") == [("Wisdom Skills", "Exceptional", 2)]
+    assert _map("{{Skills|str|-2}}") == [("Strength Skills", "Penalty", -2)]
+    assert _map("{{Skills|Linguistics|15}}") == [("Linguistics", "Untyped", 15)]
+    assert _map("{{Skills|Linguistics}}") == [("Linguistics", "Untyped", 10)]
+    assert _map("{{Skills|Persuasion}}") == [("Persuasion", "Bool", 1)]
+
+
 def test_spelllore_adds_ten_to_roman_element_lores_and_not_to_spell_lore():
     assert _map("{{Spelllore|Void|iv}}") == [("Negative Lore", "Equipment", 14)]
     assert _map("{{Spelllore|Spell|VI}}") == [("Spell Lore", "Equipment", 6)]
