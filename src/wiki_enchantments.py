@@ -100,6 +100,11 @@ SKILL_GROUP = {"alluring", "astute", "mighty", "nimble", "prudent"}
 STAT_SKILL = {"cha": "Charisma", "charisma": "Charisma", "con": "Constitution", "constitution": "Constitution",
               "dex": "Dexterity", "dexterity": "Dexterity", "int": "Intelligence", "intelligence": "Intelligence",
               "str": "Strength", "strength": "Strength", "wis": "Wisdom", "wisdom": "Wisdom"}
+#: Template:Skills' Special Skills with no parameters (rev 703569): each renders one
+#: fixed effect, so the call states a presence. Keys as the code matches them,
+#: lowercased with spaces removed (`{{lc:{{#replace:{{{1}}}| |}}}}`).
+SKILL_PRESENCE = {"persuasion": "Persuasion", "shadow": "Shadow", "silentmoves": "Silent Moves",
+                  "songblade": "Songblade", "voiceofdeceit": "Voice of Deceit"}
 #: Template:SpellPower's continuous types (its own switch) -> the catalog's stat. The
 #: element a type powers is stated by the template's popup text; `potency`,
 #: `reconstruction` keep their own names as the catalog does (umbrella / repair).
@@ -274,10 +279,13 @@ def m_skills(pos, named):
         # `Linguistics {{{2|10}}}%`, a cooldown cut on social skills. The code names
         # no bonus type, so the catalog's Untyped.
         return [("Linguistics", "Untyped", _int(_arg(pos, 1) or "10"))]
-    if which == "persuasion":
-        # No parameters: the code renders one fixed effect (+3 competence to all
-        # Charisma based skills), so the call states a presence.
-        return [("Persuasion", "Bool", 1)]
+    if which.replace(" ", "") in SKILL_PRESENCE:
+        # No parameters: the code renders one fixed effect (Persuasion's +3 competence
+        # to Charisma skills, Shadow's +5 to Hide, ...), so the call states a presence.
+        return [(SKILL_PRESENCE[which.replace(" ", "")], "Bool", 1)]
+    if which == "command":
+        # `{{Int|{{{2|2}}}}} [[{{{3|competence}}} bonus]]`: a bare call is 2 Competence.
+        return [_penalty("Command", _type(t, "Skills"), _int(_arg(pos, 1) or "2"))]
     if which in SKILL_GROUP:
         return [_penalty(which.title() + " Skills Bonus", _insightful(t) if t and t.strip() else "Exceptional",
                          _int(_arg(pos, 1)))]

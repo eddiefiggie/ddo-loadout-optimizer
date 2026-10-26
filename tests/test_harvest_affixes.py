@@ -99,7 +99,8 @@ def test_the_build_stamps_the_switch():
     # keeps an item whole only beside a read call of its own template (3 items).
     # Skills' Stat Skills, Linguistics and Persuasion branches (2026-10-25) freed 57
     # items (57 variants) and confirmed 200 affixes, all exactly as gear-planner has
-    # them, so replaced/added did not move.
-    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 147
-    assert ha["unchanged"] == 23933
+    # them, so replaced/added did not move. Command's default amount and the four
+    # parameterless Special Skills then freed 13 more and confirmed 35 affixes.
+    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 134
+    assert ha["unchanged"] == 23968
     assert ha["weapon_kind_on_non_weapon"] == 7

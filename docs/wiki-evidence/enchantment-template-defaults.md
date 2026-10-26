@@ -159,8 +159,9 @@ The exception: beside a **read** call of the same template on the same item, a d
 
 **Effect on the shard:** 57 items stop being kept whole (196 → 139; 204 → 147 variants), so every mapped affix on them is now read from their own page. The built `items.json` has the same affixes on all 9,173 variants as before. Every one of those reads agrees with gear-planner, so no solve changes. `planner_coverage.harvest_affixes.unchanged` rises by 200.
 
-**Still not read, and still keeping their items whole:**
-- `{{Skills|Command}}` with no amount (9). The code's default is `{{{2|2}}}`.
-- The named effects Silent Moves (2), Shadow, Songblade and Voice of Deceit. Silent Moves states no number at all.
+**Command and the parameterless Special Skills (2026-10-25, second pass).** The template is now read in full:
+- `Command` renders `{{Int|{{{2|2}}}}} [[{{{3|competence}}} bonus]]`, so a bare `{{Skills|Command}}` is `(Command, Competence, 2)`. That covers 9 calls, and gear-planner agrees on all 9.
+- Shadow, Silent Moves, Songblade and Voice of Deceit take no parameters. Each branch renders one fixed effect, so the call states a presence, `(<Name>, Bool, 1)`, as with Persuasion and as gear-planner records them. Silent Moves states no number, but a presence needs none.
+- Names are matched the way the code matches them: lowercased, spaces removed.
 
-These stay out of scope here. Command and the three effects that state a number are code-backed and readable later.
+Skills exact is now **1,170 of 1,171**, with none unread. The one `absent` is Glorious Obscenity's Enhanced Spot, which gear-planner never parsed. 13 more items stop being kept whole (139 → 126; 147 → 134 variants). The built `items.json` is again affix-identical on all 9,173 variants.
