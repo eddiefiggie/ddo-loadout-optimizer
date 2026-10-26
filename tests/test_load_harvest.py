@@ -105,3 +105,63 @@ def test_the_real_seed_yields_a_stable_title_list():
         titles = L.seed_titles(json.load(fh))
     assert len(titles) > 8000 and titles == sorted(titles) and len(set(titles)) == len(titles)
     assert all(t.startswith("Item:") for t in titles), [t for t in titles if not t.startswith("Item:")][:5]
+
+
+# #908 — an explicit title list (set pages, `Named item sets`) instead of the item seed.
+
+def test_explicit_titles_dedupe_and_sort_like_the_snippet():
+    assert L.explicit_titles(["Named item sets", "Abishai Set", "Named item sets"]) == ["Abishai Set", "Named item sets"]
+
+
+def test_an_empty_or_non_list_title_file_is_refused():
+    for bad in ([], {"titles": ["x"]}):
+        try:
+            L.explicit_titles(bad)
+        except L.HarvestError:
+            continue
+        raise AssertionError(f"accepted a title file it must refuse: {bad!r}")
+
+
+def test_a_seed_chunk_is_refused_under_an_explicit_title_list():
+    explicit = L.explicit_titles(["Named item sets"])
+    with tempfile.TemporaryDirectory() as d:
+        try:
+            L.ingest(_chunk(_pages()), explicit, root=d)
+        except L.HarvestError as e:
+            assert "seed digest" in str(e)
+            return
+    raise AssertionError("an item-seed chunk was ingested against an explicit title list")
+
+
+def test_main_ingests_and_reports_an_explicit_title_harvest():
+    with tempfile.TemporaryDirectory() as d:
+        tfile = os.path.join(d, "titles.json")
+        with open(tfile, "w") as fh:
+            json.dump(["Named item sets"], fh)
+        titles = L.explicit_titles(["Named item sets"])
+        pages = [{"i": 0, "title": "Named item sets", "missing": False, "redirect": None, "revid": 1,
+                  "wikitext": "==Sets==", "html": "<div></div>", "html_revid": 1}]
+        body = json.dumps(pages).encode()
+        chunk = {"kind": L.KIND, "v": 1, "id": "pages-test", "digest": L.digest(titles), "total": 1, "chunk": 0,
+                 "from": 0, "to": 1, "count": 1, "complete": True, "titles": True, "parse": True,
+                 "sha256": hashlib.sha256(body).hexdigest(),
+                 "gz": base64.urlsafe_b64encode(gzip.compress(body)).decode().rstrip("=")}
+        cfile = os.path.join(d, "chunk.json")
+        with open(cfile, "w") as fh:
+            json.dump(chunk, fh)
+        out, L.OUT = L.OUT, os.path.join(d, "harvest")
+        try:
+            assert L.main(["--titles", tfile, "ingest", cfile]) == 0
+            assert L.main(["ingest", cfile]) == 1           # against the item seed: refused
+            assert L.load_pages("pages-test")[0]["html"] == "<div></div>"
+        finally:
+            L.OUT = out
+
+
+def test_every_committed_title_file_is_a_readable_list():
+    d = os.path.join(ROOT, "data", "harvest_titles")
+    files = [f for f in os.listdir(d) if f.endswith(".json")]
+    assert files, "no title files under data/harvest_titles/ — the guard inspected nothing"
+    for f in files:
+        with open(os.path.join(d, f), encoding="utf-8") as fh:
+            assert L.explicit_titles(json.load(fh)), f

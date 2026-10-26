@@ -250,3 +250,21 @@ For harvesting every item page, not a work order of a few hundred. First run: 20
 - **Resume.** After a reload, set `window.__harvestConfig = { startAt: <resume_at>, id: <id> }` and load the snippet again. Each start owns a generation, so a stale loop retires itself.
 
 The first run took about 25 minutes, including one long throttle at index 2,320.
+
+
+## Explicit-title harvest: set pages (#908)
+
+Phase 3 reads `Named item sets` (pageid 9371) and possibly per-set pages, which are not in the item seed. `harvest_items.js` takes an explicit title list instead:
+
+- **Titles.** A JSON array under `data/harvest_titles/` (`named-item-sets.json` is the first). The snippet fetches it from `raw.githubusercontent.com` at a pinned commit, exactly as it fetches the seed, and the loader reads the same file locally. Both sides de-duplicate and sort by code point, so the digest check holds unchanged. An empty list is refused on both sides.
+- **Rendered HTML.** `parse: true` adds one paced `action=parse` request per page and stores `html` and `html_revid` next to the wikitext. Compare the two revids: an edit landing between the two reads shows up there. This is the tooltip layer that bundled templates hide (#912).
+- **Run** (any ddowiki page, Browser pane):
+
+  ```js
+  window.__harvestConfig = { titles: "https://raw.githubusercontent.com/eddiefiggie/ddo-loadout-optimizer/<SHA>/data/harvest_titles/named-item-sets.json", parse: true, chunkPages: 1 };
+  // paste scripts/browser/harvest_items.js, then:
+  harvestStart(); harvestStatus(); harvestChunk(0)
+  ```
+
+  The id defaults to `pages-YYYYMMDD`. `chunkPages: 1` keeps a large rendered page in a chunk of its own.
+- **Load:** `python3 scripts/load_harvest.py --titles data/harvest_titles/named-item-sets.json ingest <saved file>`. If you omit `--titles`, the chunk is refused on its seed digest, because it indexes a different list.
