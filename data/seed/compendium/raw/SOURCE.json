@@ -26,5 +26,13 @@
     "final_item_count": 9045,
     "sole_authority": "illusionistpm/ddo-gear-planner (legacy base seed + wiki shards purged in U7)",
     "sanctioned_exception": "gap_corrections.json (Ophael's Cincture only, KTD4)"
+  },
+  "_held_upstream": {
+    "_why": "#932 — the last upstream commit evaluated for a re-vendor and HELD. scripts/check_upstream_freshness.py stays quiet while upstream's latest commit is this one, and for RETEST_AFTER_DAYS after `held_on` while upstream's daily [auto-update] commits move past it; then it asks for a re-test, not a re-vendor. Update `commit`, `commit_date` and `held_on` on every held re-test; delete the key when a re-vendor lands. Underscored so it stays out of metadata.provenance.",
+    "commit": "0412da1eee3e7b1235273375fd1747307befa8fe",
+    "commit_date": "2026-10-25",
+    "held_on": "2026-10-26",
+    "issue": 933,
+    "reason": "ddowiki template-migration parse damage: 2,974 junk affix names reach the catalog, 125 variants lose location_quest, vocabulary gate red"
   }
 }
