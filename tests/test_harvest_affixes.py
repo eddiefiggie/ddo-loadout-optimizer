@@ -107,6 +107,8 @@ def test_the_build_stamps_the_switch():
     # Magi/Archmagi) freed 14 more and confirmed 39.
     # Magi/Archmagi and the two Pirate effects then became presences: 21 affixes
     # confirmed, kept_whole unchanged (the decline had already freed those items).
-    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 40
-    assert ha["unchanged"] == 24196
+    # An enhancement of 0 then became the Masterwork presence the template renders:
+    # 12 items (13 variants) freed, 23 affixes confirmed.
+    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 27
+    assert ha["unchanged"] == 24219
     assert ha["weapon_kind_on_non_weapon"] == 7

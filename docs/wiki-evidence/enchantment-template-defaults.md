@@ -195,3 +195,16 @@ The exception: beside a **read** call of the same template on the same item, a d
 - Names are matched the way the code matches them: lowercased, spaces removed.
 
 Skills exact is now **1,170 of 1,171**, with none unread. The one `absent` is Glorious Obscenity's Enhanced Spot, which gear-planner never parsed. 13 more items stop being kept whole (139 → 126; 147 → 134 variants). The built `items.json` is again affix-identical on all 9,173 variants.
+
+## Enhancement bonus at 0 is Masterwork (2026-10-25)
+
+`Template:Enhancement bonus` is still **rev 548191** (2023-08-21), checked live on 2026-10-25. At an amount of 0, its weapon (`w|i|ii`), armor (`a`) and shield (`s|si`) branches render no enhancement bonus at all:
+
+```
+{{#ifeq:{{{2|0}}}|0|[[Masterwork]]|[[Enhancement bonus|+N Enhancement Bonus]]}}
+```
+
+That is the named **Masterwork** effect, fixed and taking no amount. On a weapon it is "+1 enhancement bonus on attack rolls"; on armor it reduces the Armor Check Penalty by 1. So it is read as the presence `(Masterwork, Bool, 1)`, the same rule as the parameterless Special Skills (#940) and Magi/Archmagi (#944). gear-planner carries exactly that on all 12 items, the Battleworn starter armor and the Ember starter weapons among them. An implement kind keeps its implement bonus beside it, and the orb branch, which renders `+0 Orb Bonus`, is unchanged.
+
+The old mapper refused this as `Unmapped("Masterwork (enhancement 0)")`, which kept all 12 items whole. They are now freed (32 → 20 kept whole; 40 → 27 variants). The built `items.json` is affix-identical on all 9,173 variants, and `unchanged` rose by 23. Enhancement bonus parity is 5,146 of 5,155 exact. Its one unread call is `{{Enhancement bonus|i|15|29<u></u>}}` on Eidolon of the Shadow, a markup slip in the page.
+
