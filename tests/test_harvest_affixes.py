@@ -102,7 +102,9 @@ def test_the_build_stamps_the_switch():
     # them, so replaced/added did not move. Command's default amount and the four
     # parameterless Special Skills then freed 13 more and confirmed 35 affixes.
     # The tier-2 ruling's named forms becoming Declined freed 80 items (80 variants)
-    # and confirmed 168 affixes, all exactly as gear-planner has them.
-    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 54
-    assert ha["unchanged"] == 24136
+    # and confirmed 168 affixes, all exactly as gear-planner has them. #941's signed
+    # Wizardry numbers, Profane Life Force spelling and Wizardry IV/VIII (the code's
+    # Magi/Archmagi) freed 14 more and confirmed 39.
+    assert ha["replaced"] == 126 and ha["added"] == 32 and ha["kept_whole"] == 40
+    assert ha["unchanged"] == 24175
     assert ha["weapon_kind_on_non_weapon"] == 7

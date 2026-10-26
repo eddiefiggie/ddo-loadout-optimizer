@@ -449,14 +449,18 @@ def m_enhancement_bonus(pos, named):
 def m_wizardry(pos, named):
     raw = (_arg(pos, 0) or "").strip()
     t = _arg(pos, 1)
-    if re.fullmatch(r"\d+", raw):
-        return [("Wizardry", _insightful(t) if t and t.strip() else "Enhancement", int(raw))]
+    if re.fullmatch(r"\+?\d+", raw):
+        # Template:Wizardry rev 700755, `#default = {{Ifnumber|{{{1}}}|{{{1}}}|N}}`: a
+        # number, signed or not, is the spell points as written (`+195` is 195).
+        return [("Wizardry", _insightful(t) if t and t.strip() else "Enhancement", int(raw.lstrip("+")))]
     if raw.upper() in ("I", "II", "III", "V", "VI", "VII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI",
                        "XVII", "XVIII", "XIX", "XX"):
         return [("Wizardry", _insightful(t) if t and t.strip() else "Enhancement", _roman(raw))]
-    if raw.lower() in ("m", "magi", "am", "archmagi", "pirate cleverness"):
+    if raw.lower() in ("m", "magi", "iv", "am", "archmagi", "viii", "pirate cleverness"):
         # Magi/Archmagi are tiers gear-planner does not express as Wizardry, and
-        # Pirate Cleverness is a named effect: ruled not read (tier 2).
+        # Pirate Cleverness is a named effect: ruled not read (tier 2). The code's
+        # Power switch sends `IV` to MAGI and `VIII` to ARCHMAGI (`|IV|M|MAGI = MAGI`),
+        # which is why neither is in the numeral list above.
         raise Declined(f"Wizardry {raw!r} is a named tier or effect")
     raise Unmapped(f"Wizardry {raw!r} (Magi/Archmagi/named)")
 
@@ -466,7 +470,9 @@ def m_hp(pos, named):
     v = _arg(pos, 1)
     if which == "vitality" and v:
         return [("False Life", "Vitality", _int(v))]
-    if which == "profane lifeforce" and v:
+    if which.replace(" ", "") == "profanelifeforce" and v:
+        # Template:Hp matches `{{lc:{{#replace:{{{1}}}| |}}}}`, so `Profane Life Force`
+        # is this branch: "{{Int|{{{2|0}}}}} [[Profane bonus]] to Hit Points".
         return [("False Life", "Profane", _int(v))]
     if which in ("hp", "hitpoints", "hit points") and v:
         # "Enhancement Bonus to Hit Points" — the catalog's False Life.

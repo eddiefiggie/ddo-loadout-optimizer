@@ -157,8 +157,7 @@ def test_tier_two_calls_we_do_not_read_yet_are_unmapped_not_declined():
     # Plain Unmapped keeps the item whole. These are unknown kinds or values the
     # template states that the mapper does not read yet, so they must NOT be
     # declined: a declined call leaves its value on gear-planner for good.
-    for line in ("{{Enhancement bonus|q|1}}", "{{Skills|Bluffing|3|enh}}", "{{Wizardry|VIII}}",
-                 "{{Wizardry|+195}}", "{{Hp|Profane Life Force|12}}", "{{SpellPower|Combustoin|20}}"):
+    for line in ("{{Enhancement bonus|q|1}}", "{{Skills|Bluffing|3|enh}}", "{{SpellPower|Combustoin|20}}"):
         try:
             _map(line)
         except E.Declined:
@@ -175,6 +174,7 @@ def test_the_tier_two_rulings_named_forms_are_declined():
     for line in ("{{Tactics|Tendon Slice|6}}", "{{Tactics|Tendon Slice|10%}}", "{{Doublestrike|Calamitous Blows}}",
                  "{{Spell Focus|Deific Focus|3}}", "{{Spell Focus|Deific|III}}", "{{Fortification|4}}",
                  "{{Fortification|4|10}}", "{{Wizardry|M}}", "{{Wizardry|am}}", "{{Wizardry|Archmagi}}",
+                 "{{Wizardry|IV}}", "{{Wizardry|VIII}}",
                  "{{Wizardry|Pirate Cleverness}}", "{{Hp|Pirate Vitality}}", "{{SpellPower|Spell Turmoil}}",
                  "{{SpellPower|Efficacy|20||0}}", "{{SpellPower|Power of Creeping Dust|142}}"):
         try:
@@ -183,6 +183,17 @@ def test_the_tier_two_rulings_named_forms_are_declined():
             continue
         raise AssertionError(f"{line} must be Declined")
     assert _map("{{Doublestrike|5}}") == [("Doublestrike", "Enhancement", 5)]
+
+
+def test_wizardry_signed_numbers_and_profane_life_force_follow_the_template_code():
+    """#941. Template:Wizardry rev 700755 reads any number as is (`Ifnumber`), so
+    `+195` is 195 spell points. Template:Hp rev 538996 strips spaces before its
+    switch, so `Profane Life Force` is the `profanelifeforce` branch."""
+    assert _map("{{Wizardry|+195}}") == [("Wizardry", "Enhancement", 195)]
+    assert _map("{{wizardry|+19}}") == [("Wizardry", "Enhancement", 19)]
+    assert _map("{{Wizardry|195}}") == [("Wizardry", "Enhancement", 195)]
+    assert _map("{{Hp|Profane Life Force|44}}") == [("False Life", "Profane", 44)]
+    assert _map("{{Hp|Profane Lifeforce|12}}") == [("False Life", "Profane", 12)]
 
 
 def test_implement_and_orb_kinds_follow_the_templates_two_switches():

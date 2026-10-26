@@ -153,12 +153,17 @@ A **declined** call (`Declined` in `src/wiki_enchantments.py`) is a form deliber
 
   80 items stop being kept whole (126 → 46; 134 → 54 variants). The built `items.json` is affix-identical on all 9,173 variants: `replaced` and `added` did not move, and `unchanged` rose by 168, so every freed item's own reads agree with gear-planner. 10 items stay whole under the same-template exception below: Belt of Whirling Blades, Chaos in a Bottle, Robe of Dissonance, and others.
 
-**Ruled "deliberate", but actually readable.** The tier-2 table counts every unread Wizardry and Hp call as deliberate. The 2026-10-25 inventory found three readable forms among them. They stay plain `Unmapped`, keeping their items whole, and are **not** declined (#941), because declining would leave a value the template states on gear-planner for good:
-- Wizardry `+19` / `+195` (7 calls): the `+` defeats the integer match.
-- Wizardry `IV` / `VIII` (5 calls): those two numerals are missing from the mapper's list.
-- Hp `Profane Life Force|N` (3 calls): the mapper accepts only the spelling `profane lifeforce`.
+**Ruled "deliberate", but three forms were not (#941, resolved 2026-10-25).** The tier-2 table counts every unread Wizardry and Hp call as deliberate. The inventory found three forms among them that looked readable. Each was then read from its template's code, fetched fresh:
 
-`tests/test_wiki_enchantments.py` pins all three as Unmapped and not Declined.
+| Form | Code | Read as | gear-planner |
+|---|---|---|---|
+| Wizardry `+19` / `+195` (7) | `Template:Wizardry` rev 700755: `#default = {{Ifnumber\|{{{1}}}\|{{{1}}}\|N}}`, so a number is the spell points as written | `(Wizardry, Enhancement, 19 / 195)` | identical |
+| Wizardry `IV` / `VIII` (5) | the same template's Power switch: `\|IV\|M\|MAGI = MAGI`, `\|VIII\|AM\|ARCHMAGI = ARCHMAGI`. These are **not** missing numerals. | Declined with Magi/Archmagi | `(Magi \| Archmagi, Bool, 1)` |
+| Hp `Profane Life Force\|N` (3) | `Template:Hp` rev 538996 switches on `{{lc:{{#replace:{{{1}}}\| \|}}}}`, so this is the `profanelifeforce` branch: `[[Profane bonus]] to Hit Points` | `(False Life, Profane, N)` | identical |
+
+14 items stop being kept whole (46 → 32; 54 → 40 variants). The built `items.json` is affix-identical on all 9,173 variants, and `unchanged` rose by 39.
+
+**One premise of the ruling does not hold.** The tier-2 bullet says Magi/Archmagi Wizardry is something "gear-planner does not carry either". It does: gear-planner carries `(Magi, Bool, 1)` and `(Archmagi, Bool, 1)` as presences, and the template renders each as a fixed named effect (+100 / +200 spell points). That is the same shape as the parameterless Special Skills read as presences in #940. Whether Magi/Archmagi should be read as presences rather than declined is left to the owner. Both outcomes leave the catalog's value identical, because gear-planner's presence stands under a decline.
 
 The exception: beside a **read** call of the same template on the same item, a declined call keeps the item whole after all, because the merge could pair gear-planner's affix for the declined call with ours. 3 items.
 
