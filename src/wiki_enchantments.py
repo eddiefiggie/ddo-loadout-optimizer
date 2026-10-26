@@ -209,7 +209,10 @@ def parse_call(line: str):
 
 
 def _int(v):
-    v = (v or "").strip().lstrip("+")
+    # An empty HTML element (`29<u></u>`, an authoring slip on Eidolon of the Shadow)
+    # renders nothing, so the rendered amount is the number around it.
+    v = re.sub(r"<(\w+)[^>]*>\s*</\1>", "", v or "")
+    v = v.strip().lstrip("+")
     if re.fullmatch(r"-?\d+", v):
         return int(v)
     raise Unmapped(f"not an integer amount: {v!r}")
@@ -302,6 +305,11 @@ def m_skills(pos, named):
 
 def m_save(pos, named):
     which = (_arg(pos, 0) or "").strip().lower().replace(" ", "")
+    if which == "exceptionalresistance(reflex)":
+        # Template:Save rev 560806: "+N bonus to Reflex saves that stacks with all other
+        # bonuses except Exceptional Resistance N (Reflex)". No bonus type is named, so
+        # none is inferred; gear-planner's own record of it stands.
+        raise Declined("Exceptional Resistance (Reflex) names no bonus type")
     if which not in SAVE:
         raise Unmapped(f"Save type {which!r}")
     stat, default = SAVE[which]

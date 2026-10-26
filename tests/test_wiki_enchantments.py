@@ -221,6 +221,29 @@ def test_an_enhancement_of_zero_is_the_masterwork_presence():
     assert _map("{{Enhancement bonus|w|1}}") == [("Enhancement Bonus (Weapon)", "Enhancement", 1)]
 
 
+def test_an_empty_html_element_renders_nothing_in_an_amount():
+    """Eidolon of the Shadow's page writes `{{Enhancement bonus|i|15|29<u></u>}}`; the
+    empty `<u></u>` renders nothing, so the implement bonus shown is 29."""
+    assert _map("{{Enhancement bonus|i|15|29<u></u>}}") == [("Universal Spell Power", "Implement", 29),
+                                                            ("Enhancement Bonus (Weapon)", "Enhancement", 15)]
+    for bad in ("{{Enhancement bonus|i|15|29<u>x</u>}}", "{{Enhancement bonus|i|15|2<br>9}}"):
+        try:
+            _map(bad)
+        except E.Unmapped:
+            continue
+        raise AssertionError(f"{bad} has visible markup and must stay Unmapped")
+
+
+def test_exceptional_resistance_reflex_names_no_bonus_type_and_is_declined():
+    try:
+        _map("{{Save|Exceptional Resistance (Reflex)|2}}")
+    except E.Declined:
+        pass
+    else:
+        raise AssertionError("must be Declined")
+    assert _map("{{Save|Reflex|3}}") == [("Reflex Save", "Resistance", 3)]
+
+
 def test_implement_and_orb_kinds_follow_the_templates_two_switches():
     assert _map("{{Enhancement bonus|i|1}}") == [("Universal Spell Power", "Implement", 3),
                                                   ("Enhancement Bonus (Weapon)", "Enhancement", 1)]
