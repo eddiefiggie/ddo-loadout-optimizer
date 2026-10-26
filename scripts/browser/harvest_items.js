@@ -8,6 +8,15 @@
 // sorted — `scripts/load_harvest.py` derives the identical list locally and the two
 // sides compare a SHA-256 digest, so an index means the same page on both.
 //
+// IN, explicit (#908): `window.__harvestConfig.titles` names a JSON array of page
+// titles fetched the same way — a file under data/harvest_titles/ at a pinned
+// commit — for a harvest that is not the item seed (set pages, `Named item sets`).
+// `load_harvest.py --titles <the same file>` derives the identical sorted,
+// de-duplicated list, so the digest check holds on both sides exactly as it does
+// for the seed. `parse: true` also stores each page's rendered HTML (`html`), one
+// paced `action=parse` request per page, because a bundled template hides its
+// numbers in the tooltip rather than the wikitext.
+//
 // OUT: `harvestChunk(n)` returns one chunk as a JSON string. Its page records are
 // gzip-compressed and base64url-encoded, which keeps every chunk under the tool
 // result cap AND free of `| = & ?` (the Browser pane's privacy guard strips them).
@@ -29,8 +38,13 @@
     seed: "https://raw.githubusercontent.com/eddiefiggie/ddo-loadout-optimizer/"
       + "d4706dd76aa041136d3e2fa117e2c5c453f45c46/data/seed/compendium/raw/gearplanner_items.json",
     id: "items-" + new Date().toISOString().slice(0, 10).replace(/-/g, ""),
+    titles: null, parse: false,
     batch: 20, paceMs: 1700, chunkPages: 400, startAt: 0, maxThrottles: 8,
   }, window.__harvestConfig || {});
+  if (C.titles) {
+    C.seed = C.titles;
+    if (!(window.__harvestConfig || {}).id) C.id = C.id.replace(/^items-/, "pages-");
+  }
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
   const sha256 = async (s) => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
@@ -49,10 +63,15 @@
     if (H.titles) return;
     const raw = await (await fetch(C.seed)).json();
     const set = new Set();
-    for (const r of raw) {
-      const m = String(r.url || "").match(/\/page\/(.+)$/);
-      if (m) set.add(decodeURIComponent(m[1]).replace(/_/g, " "));
+    if (C.titles) {
+      for (const t of raw) set.add(String(t));
+    } else {
+      for (const r of raw) {
+        const m = String(r.url || "").match(/\/page\/(.+)$/);
+        if (m) set.add(decodeURIComponent(m[1]).replace(/_/g, " "));
+      }
     }
+    if (!set.size) throw new Error("the title list is empty — a harvest of nothing is a broken read");
     H.titles = [...set].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     H.digest = await sha256(H.titles.join("\n"));
     H.seed = C.seed;
@@ -80,6 +99,15 @@
     try { return JSON.parse(text); } catch (e) { return null; }   // empty body = throttled
   }
 
+  async function parseHtml(title) {
+    const res = await fetch("/api.php", { method: "POST", body: new URLSearchParams({
+      format: "json", action: "parse", page: title, prop: "text|revid", redirects: "1" }) });
+    const text = await res.text();
+    let j;
+    try { j = JSON.parse(text); } catch (e) { return undefined; }   // throttled
+    return j.parse ? { html: j.parse.text["*"], revid: j.parse.revid } : null;
+  }
+
   async function runBatch(from) {
     const want = H.titles.slice(from, from + C.batch);
     const r = await query(want);
@@ -98,6 +126,18 @@
         missing: !rev, redirect, revid: rev ? rev.revid : null, ts: rev ? rev.timestamp : null,
         wikitext: rev ? rev.slots.main["*"] : null };
     });
+    if (C.parse) {
+      for (let k = 0; k < want.length; k++) {
+        const p = H.pages[from + k];
+        if (p.missing) continue;
+        await sleep(C.paceMs);
+        const r2 = await parseHtml(p.page || p.title);
+        if (r2 === undefined) return false;   // retry the whole batch after backoff
+        p.html = r2 ? r2.html : null;
+        // The two reads are separate requests; an edit between them is visible here.
+        p.html_revid = r2 ? r2.revid : null;
+      }
+    }
     return true;
   }
 
@@ -138,6 +178,7 @@
     for (let i = from; i < to; i++) if (H.pages[i]) pages.push(H.pages[i]);
     const body = JSON.stringify(pages);
     return JSON.stringify({ kind: "item-harvest-chunk", v: 1, id: H.id, seed: H.seed, digest: H.digest,
+      titles: !!C.titles, parse: !!C.parse,
       total: H.titles.length, chunk: n, from, to, count: pages.length,
       complete: pages.length === to - from, sha256: await sha256(body), harvested: new Date().toISOString(),
       gz: b64url(await gzip(body)),
