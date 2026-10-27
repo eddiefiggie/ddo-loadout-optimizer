@@ -14,7 +14,8 @@ _spec = importlib.util.spec_from_file_location("diff_harvest_sets", os.path.join
 D = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(D)
 
-NAMES = {"Spell Power", "Spell Focus Mastery", "Universal Spell Power", "Maximum Spellpoints", "Armor Class (%)"}
+NAMES = {"Spell Power", "Spell Focus Mastery", "Universal Spell Power", "Maximum Spellpoints", "Armor Class (%)",
+         "Melee Power", "Ranged Power", "Intelligence", "Wisdom", "Charisma", "Fire Spell Power", "Cold Spell Power"}
 
 
 # --- HELstats follows Template:HELstats rev 673386 -----------------------------
@@ -116,9 +117,9 @@ def test_a_row_with_no_header_has_no_threshold():
 
 def test_read_clause_reads_an_exact_vocabulary_clause():
     r = S.read_clause("* +4 [[artifact bonus]] to Spell Power", BONUS_TYPES, NAMES)
-    assert r == {"affix": {"name": "Spell Power", "type": "Artifact", "value": 4}}
+    assert r == {"affixes": [{"name": "Spell Power", "type": "Artifact", "value": 4}]}
     r = S.read_clause("+10% Legendary bonus to Maximum Spellpoints", BONUS_TYPES, NAMES | {"Maximum Spellpoints (%)"})
-    assert r["affix"]["name"] == "Maximum Spellpoints (%)"
+    assert r["affixes"][0]["name"] == "Maximum Spellpoints (%)"
 
 
 def test_read_clause_quarantines_a_phrase_it_would_have_to_translate():
@@ -127,7 +128,7 @@ def test_read_clause_quarantines_a_phrase_it_would_have_to_translate():
                       ("To-Hit Bonus +2 (untyped, fully stacks)", "typed"),
                       ("+2 Mystery bonus to Spell Power", "bonus type")]:
         r = S.read_clause(line, BONUS_TYPES, NAMES)
-        assert "affix" not in r and why in r["quarantine"], (line, r)
+        assert "affixes" not in r and why in r["quarantine"], (line, r)
 
 
 # --- the parity classes -----------------------------------------------------------
@@ -140,3 +141,40 @@ def test_classify_exact_partial_differs_and_threshold_questions():
     assert D.classify({3: ["+3 Artifact bonus to Spell Power"]}, gp, NAMES)[0] == "ours-differs"
     assert D.classify({None: ok[3]}, gp, NAMES)[0] == "threshold-unstated"
     assert D.classify({5: ok[3]}, gp, NAMES)[0] == "threshold-differs"
+
+
+# --- #951: coordinated lists expand only into exact catalog names -----------------
+
+def _names(line):
+    r = S.read_clause(line, BONUS_TYPES, NAMES)
+    return [a["name"] for a in r["affixes"]] if "affixes" in r else r["quarantine"]
+
+
+def test_a_list_with_a_shared_head_expands_into_each_member():
+    assert _names("+15 Profane bonus to Melee and Ranged Power") == ["Melee Power", "Ranged Power"]
+    assert _names("+2 Artifact bonus to Fire and Cold Spell Power") == ["Fire Spell Power", "Cold Spell Power"]
+
+
+def test_a_list_of_whole_names_expands_with_no_head():
+    assert _names("+3 Artifact bonus to Intelligence, Wisdom, and Charisma") == ["Intelligence", "Wisdom", "Charisma"]
+
+
+def test_every_member_carries_the_lines_type_and_value():
+    r = S.read_clause("+15 Profane bonus to Melee and Ranged Power", BONUS_TYPES, NAMES)
+    assert {(a["type"], a["value"]) for a in r["affixes"]} == {("Profane", 15)}
+
+
+def test_a_list_with_one_member_in_other_words_stays_quarantined():
+    assert "vocabulary" in _names("+6% Artifact bonus to Fire and Cold Spellcrit Chance")
+    assert "vocabulary" in _names("+10 Profane bonus to PRR and MRR")
+
+
+def test_two_readings_of_one_list_is_ambiguous_and_quarantined():
+    names = {"A Power", "B Power", "A", "B Power"}  # "A and B Power" reads with and without the head
+    assert S.expand_list("A and B Power", "", names | {"A"}) is None
+
+
+def test_a_head_that_makes_two_members_one_name_is_not_a_reading():
+    # Legendary Raven's Eye (Template:Named item sets rev 723530):
+    # "+3 Artifact bonus to Sneak Attack and Sneak Attack Damage".
+    assert S.expand_list("Sneak Attack and Sneak Attack Damage", "", {"Sneak Attack Damage"}) is None
