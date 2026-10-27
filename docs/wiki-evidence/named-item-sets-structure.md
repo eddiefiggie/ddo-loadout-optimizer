@@ -103,3 +103,40 @@ All names are compared lower-cased.
 2. **Expand each `HELstats` row into one set per tier**, using the rendered tooltip labels for the mapping.
 3. **Spelling drift is a recorded alias**, each one citing the wiki text on both sides. A name is never fuzzy-matched.
 4. **Prose a reader cannot map is quarantined and disclosed**, as for item affixes.
+
+## First parity measurement (#908, 2026-10-27)
+
+`scripts/diff_harvest_sets.py pages-20261027`, reading through `src/wiki_sets.py`. Two template rulings were read before any code was written:
+
+- **`Template:HELstats` rev 673386:**
+  - Heroic is `{{{1}}}`, else `{{{H}}}`. Epic is `{{{2}}}`, else `{{{E}}}`. Legendary is `{{{3}}}`, else `{{{L}}}`.
+  - A positional argument wins over its named one, and a tier with no value renders nothing.
+  - So the 6 two-positional calls are **Heroic and Epic**.
+- **`Template:Artifact` rev 674392** is cell styling only (`class="bg-color-1" style="background-color:#ebe0a4;" |`). It opens 122 bonus cells and is not a bonus line.
+
+The clause reader is closed. It reads `+N <Type> bonus to <stat>` only when the type is a known bonus type and the stat is **exactly** a name gear-planner's set catalog uses. Everything else is quarantined with a reason.
+
+| Class | Template | Page |
+|---|---:|---:|
+| exact | 12 | 10 |
+| partial (every line read agrees; the rest quarantined) | 170 | 49 |
+| threshold-unstated | 90 | 51 |
+| no-wiki-name | 9 | 172 |
+| **ours-differs** | **1** | 0 |
+
+- **Page `no-wiki-name` is mostly by design.** 173 page records come from `HELstats` rows, and those are never matched by name: their anchor names at most one tier.
+- **The template quarantined 451 lines**, across 120 distinct reasons:
+  - **424 are a stat phrase in other words**, for example:
+    - `Melee and Ranged Power` (48)
+    - `Physical Resistance Rating` (25)
+    - `all Ability Scores` (18)
+    - `Spell DCs` (17)
+    - `Doublestrike and Doubleshot` (15)
+  - **25 are not the typed shape** (prose, `To-Hit Bonus +2 (untyped …)`).
+  - **2 are unexpanded templates.**
+- **Threshold-unstated:** the piece count appears only in prose ("When both items are equipped", "While wearing two pieces"). It is not read as a number.
+- **The one `ours-differs` is a vocabulary question, not a value error.**
+  - Legendary Vulkoor's Might's template entry states both `+3 Artifact bonus to Sneak Attack` and `+3 Artifact bonus to Sneak Attack Damage`.
+  - gear-planner carries a single `Deception` +3 in their place.
+  - Whether these are the same stat needs a ruling. Do not resolve it by renaming.
+- **Sources disagree (both fully read): 0 today.** Arcane Mind's disagreement (the template says Universal Spell Power; the page says Potency and that the set gives no Universal Spell Power) is not counted yet, because neither side's line is readable. It surfaces once those phrases are mapped.
