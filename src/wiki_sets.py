@@ -168,6 +168,33 @@ _CLAUSE_RE = re.compile(r"^([+-]?\d+)(%?) ([A-Za-z]+) [Bb]onus to (?:your )?(.+?
 
 _LIST_SPLIT_RE = re.compile(r",\s*(?:and\s+)?|\s+and\s+")
 
+#: #951 — wiki stat phrases that name a catalog stat in other words. Each entry is
+#: one reviewed mapping, and the comment above its family cites the evidence. A
+#: phrase reaches its catalog name only through this table; nothing is fuzzy-matched.
+STAT_PHRASES = {
+    # Resistance ratings. ddowiki `Physical Resistance Rating` rev 673201: "Physical
+    # Resistance Rating (abbreviated PRR)", and `PRR` redirects there.
+    # `Magical Resistance Rating` rev 708082: "(abbreviated MRR)", `MRR` redirects
+    # there, and its "MRR cap" section is the cap. The catalog's names for them are
+    # docs/wiki-evidence/sheltering.md (Physical / Magical Sheltering) and
+    # intrinsic-stat-caps.md (Magical Sheltering Cap, "the wiki's MRR Cap").
+    "Physical Resistance Rating": "Physical Sheltering",
+    "PRR": "Physical Sheltering",
+    "Magical Resistance Rating": "Magical Sheltering",
+    "MRR": "Magical Sheltering",
+    "Magical Resistance Rating Cap": "Magical Sheltering Cap",
+    "MRR Cap": "Magical Sheltering Cap",
+}
+
+
+def resolve(phrase: str, stat_names, suffix: str = ""):
+    """A stat phrase (+ its " (%)" suffix) -> its catalog name, or None: exactly a
+    catalog name, or a `STAT_PHRASES` entry whose target the catalog carries."""
+    if phrase + suffix in stat_names:
+        return phrase + suffix
+    target = STAT_PHRASES.get(phrase)
+    return target + suffix if target and target + suffix in stat_names else None
+
 
 def expand_list(stat: str, suffix: str, stat_names):
     """#951 — a coordinated list of stats -> its members, or None.
@@ -177,8 +204,9 @@ def expand_list(stat: str, suffix: str, stat_names):
     "Spell Power", or none); every earlier member takes that head. A reading is
     accepted only when EVERY member is exactly a name in `stat_names`, and only when
     exactly one head length does that — two readings means the text is ambiguous,
-    and it stays quarantined. Nothing is translated: a member in other words
-    ("Spellcrit Chance", "PRR", "Amp") makes the whole line unreadable.
+    and it stays quarantined. A member resolves only as `resolve` allows: exactly a
+    catalog name, or a reviewed `STAT_PHRASES` entry ("PRR and MRR"). Any other
+    member ("Spellcrit Chance", "Amp") makes the whole line unreadable.
     """
     parts = [p.strip() for p in _LIST_SPLIT_RE.split(stat) if p.strip()]
     if len(parts) < 2:
@@ -188,10 +216,10 @@ def expand_list(stat: str, suffix: str, stat_names):
     for k in range(len(words)):
         head = " ".join(words[len(words) - k:]) if k else ""
         members = [f"{p} {head}".strip() for p in parts[:-1]] + [parts[-1]]
-        members = [m + suffix for m in members]
+        members = [resolve(m, stat_names, suffix) for m in members]
         # A head that turns two members into one name is not a shared head: "Sneak
         # Attack and Sneak Attack Damage" is two stats, never Sneak Attack Damage twice.
-        if len(set(members)) == len(members) and all(m in stat_names for m in members):
+        if all(m in stat_names for m in members) and len(set(members)) == len(members):
             readings.add(tuple(members))
     return list(readings.pop()) if len(readings) == 1 else None
 
@@ -200,11 +228,10 @@ def read_clause(line: str, bonus_types, stat_names) -> dict:
     """One bonus line -> {"affixes": [{name, type, value}, ...]} or {"quarantine": reason}.
 
     A closed grammar. The bonus type must be one the build knows, and the stat must
-    be EXACTLY a name in `stat_names` (the set catalog's vocabulary), or a
-    coordinated list whose every member is (`expand_list`). A wiki phrase for the
-    same stat in other words ("Physical Resistance Rating") is quarantined here,
-    not translated: each such phrase is a reviewed mapping with its own evidence,
-    added family by family.
+    be EXACTLY a name in `stat_names` (the set catalog's vocabulary), a reviewed
+    `STAT_PHRASES` entry, or a coordinated list whose every member is one of those
+    (`expand_list`). Any other wording is quarantined, not translated: each phrase
+    is a reviewed mapping with its own evidence, added family by family.
     """
     text = plain(line)
     if "{{" in text:
@@ -216,7 +243,8 @@ def read_clause(line: str, bonus_types, stat_names) -> dict:
     if ty not in bonus_types:
         return {"quarantine": f"unknown bonus type {m.group(3)!r}"}
     suffix = " (%)" if pct else ""
-    names = [stat + suffix] if stat + suffix in stat_names else expand_list(stat, suffix, stat_names)
+    one = resolve(stat, stat_names, suffix)
+    names = [one] if one else expand_list(stat, suffix, stat_names)
     if not names:
         return {"quarantine": f"stat phrase not in the vocabulary: {stat + suffix!r}"}
     return {"affixes": [{"name": n, "type": ty, "value": value} for n in names]}

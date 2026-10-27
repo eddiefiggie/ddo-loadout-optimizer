@@ -178,3 +178,43 @@ def test_a_head_that_makes_two_members_one_name_is_not_a_reading():
     # Legendary Raven's Eye (Template:Named item sets rev 723530):
     # "+3 Artifact bonus to Sneak Attack and Sneak Attack Damage".
     assert S.expand_list("Sneak Attack and Sneak Attack Damage", "", {"Sneak Attack Damage"}) is None
+
+
+# --- #951: resistance-rating phrases (PRR / MRR / MRR cap) -------------------------
+
+SHELTER = NAMES | {"Physical Sheltering", "Magical Sheltering", "Magical Sheltering Cap"}
+
+
+def test_resistance_rating_phrases_resolve_to_the_catalogs_sheltering_names():
+    for phrase, name in [("Physical Resistance Rating", "Physical Sheltering"), ("PRR", "Physical Sheltering"),
+                         ("Magical Resistance Rating", "Magical Sheltering"), ("MRR", "Magical Sheltering"),
+                         ("Magical Resistance Rating Cap", "Magical Sheltering Cap")]:
+        r = S.read_clause(f"+10 Artifact bonus to {phrase}", BONUS_TYPES, SHELTER)
+        assert r == {"affixes": [{"name": name, "type": "Artifact", "value": 10}]}, (phrase, r)
+
+
+def test_a_list_of_mapped_phrases_expands_through_the_table():
+    r = S.read_clause("+10 Profane bonus to PRR and MRR", BONUS_TYPES, SHELTER)
+    assert [a["name"] for a in r["affixes"]] == ["Physical Sheltering", "Magical Sheltering"]
+    r = S.read_clause("+5 Artifact bonus to Physical and Magical Resistance Rating", BONUS_TYPES, SHELTER)
+    assert [a["name"] for a in r["affixes"]] == ["Physical Sheltering", "Magical Sheltering"]
+
+
+def test_a_mapping_applies_only_when_the_catalog_carries_its_target():
+    assert "vocabulary" in S.read_clause("+10 Artifact bonus to PRR", BONUS_TYPES, NAMES)["quarantine"]
+
+
+def test_gear_planners_sheltering_compares_as_both_ratings():
+    gp = D.gp_tiers([{"threshold": 3, "affixes": [{"name": "Sheltering", "type": "Artifact", "value": "10"}]}])
+    wiki = {3: ["+10 Artifact Bonus to Physical Resistance Rating", "+10 Artifact Bonus to Magical Resistance Rating"]}
+    assert D.classify(wiki, gp, SHELTER)[0] == "exact"
+
+
+def test_a_recorded_wiki_disagreement_is_not_ours_differs_and_a_new_one_still_is():
+    gp = D.gp_tiers([{"threshold": 3, "affixes": [{"name": "Physical Sheltering", "type": "Artifact", "value": "20"}]}])
+    rec = [{"set": "Legendary Dreadkeeper", "threshold": 3, "name": "Physical Sheltering", "template": 40, "page": 20}]
+    wiki40 = {3: ["+40 Artifact bonus to Physical Resistance Rating"]}
+    assert D.classify(wiki40, gp, SHELTER, "Legendary Dreadkeeper", rec)[0] == "wiki-disagrees"
+    assert D.classify({3: ["+50 Artifact bonus to Physical Resistance Rating"]}, gp, SHELTER,
+                      "Legendary Dreadkeeper", rec)[0] == "ours-differs"
+    assert D.classify(wiki40, gp, SHELTER, "Some Other Set", rec)[0] == "ours-differs"

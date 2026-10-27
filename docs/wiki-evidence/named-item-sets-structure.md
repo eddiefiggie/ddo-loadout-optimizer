@@ -157,3 +157,38 @@ The clause reader is closed. It reads `+N <Type> bonus to <stat>` only when the 
 - **`ours-differs` stays at 1** (Legendary Vulkoor's Might's Sneak Attack Damage, #951's open ruling).
 
 Lists whose members are in other words stay quarantined: `Doublestrike and Doubleshot`, `PRR and MRR`, `… Spellcrit Chance`, `… Spellpower`, `… Amp`. Each is its own family.
+
+## Resistance ratings: PRR, MRR and the MRR cap (#951, 2026-10-27)
+
+`STAT_PHRASES` in `src/wiki_sets.py` is the reviewed phrase table. Its first family:
+
+| Wiki phrase | Catalog name | Evidence |
+|---|---|---|
+| `Physical Resistance Rating`, `PRR` | Physical Sheltering | ddowiki `Physical Resistance Rating` rev 673201 ("abbreviated PRR"; `PRR` redirects there). `sheltering.md` names it Physical Sheltering |
+| `Magical Resistance Rating`, `MRR` | Magical Sheltering | `Magical Resistance Rating` rev 708082 ("abbreviated MRR"; `MRR` redirects there). `sheltering.md` |
+| `Magical Resistance Rating Cap`, `MRR Cap` | Magical Sheltering Cap | the same page's "MRR cap" section. `intrinsic-stat-caps.md` ("the wiki's MRR Cap") |
+
+- A phrase maps only when the catalog carries its target.
+- List members resolve through the same table, so `PRR and MRR` and `Physical and Magical Resistance Rating` each read as both ratings.
+- On the gear-planner side, the diff compares its `Sheltering` affix as Physical + Magical Sheltering. `sheltering.md` quotes the wiki: Sheltering is "a +X bonus to both".
+
+**Measured on `pages-20261027`:**
+- Exact sets rise from 18 to 29 (template) and from 12 to 17 (page).
+- Template quarantined lines fall from 384 to 319.
+- `ours-differs` stays at 1.
+
+### The wiki contradicts itself on three PRR values
+
+| Set | Template (rev 723530) | Page (rev 720202, same tier) | gear-planner |
+|---|---:|---:|---:|
+| Legendary Dreadkeeper | +40 | +20 | 20 |
+| The Desert's Burning Sun | +5 | +10 | 10 |
+| The Legendary Desert's Burning Sun | +15 | +30 | 30 |
+
+**The template's history does not settle it:**
+- All three template values arrived in Cru121's bulk rewrite of 2021-09-02 (rev 499661, "code replaced + added a bunch of new sets").
+- Legendary Dreadkeeper read +20 before that rewrite (rev 438208, 2020-03-19), when it was first added.
+
+Under *never infer a value*, neither side is adopted. The three are recorded in `scripts/diff_harvest_sets.py` `WIKI_DISAGREEMENTS` and classed `wiki-disagrees`, not `ours-differs`. The diff reports any record that no longer reproduces. This was proven by corrupting one record's value: it reported stale, and the line fell back to `ours-differs`.
+
+Resolving them needs an in-game reading or a wiki edit with a source, not a parser change.
