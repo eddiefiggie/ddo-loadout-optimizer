@@ -192,3 +192,17 @@ Lists whose members are in other words stay quarantined: `Doublestrike and Doubl
 Under *never infer a value*, neither side is adopted. The three are recorded in `scripts/diff_harvest_sets.py` `WIKI_DISAGREEMENTS` and classed `wiki-disagrees`, not `ours-differs`. The diff reports any record that no longer reproduces. This was proven by corrupting one record's value: it reported stale, and the line fell back to `ours-differs`.
 
 Resolving them needs an in-game reading or a wiki edit with a source, not a parser change.
+
+## Spell DCs (#951, 2026-10-27)
+
+| Wiki phrase | Catalog name | Evidence |
+|---|---|---|
+| `Spell DCs`, `all Spell DCs` | Spell Focus Mastery | ddowiki `Spell Focus Mastery` rev 612763: "adds ... to the DC of all your spells". `Spell DC` redirects to `Increasing spell DCs` rev 719694, whose Items section lists "Set effects: artifact bonus, profane bonus" for it (`spell-focus-universal.md`) |
+
+**Bare `DCs` is not mapped.** It does not say "spell", and tactical DCs are DCs too.
+
+**Measured on `pages-20261027`:**
+- All 28 template lines now read. All 21 of them under a stated threshold match gear-planner's Spell Focus Mastery.
+- **Exact sets:** 29 to 32 (template), 17 to 18 (page).
+- **Quarantined:** 319 to 298.
+- **`ours-differs`:** stays at 1.

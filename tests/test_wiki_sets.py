@@ -218,3 +218,15 @@ def test_a_recorded_wiki_disagreement_is_not_ours_differs_and_a_new_one_still_is
     assert D.classify({3: ["+50 Artifact bonus to Physical Resistance Rating"]}, gp, SHELTER,
                       "Legendary Dreadkeeper", rec)[0] == "ours-differs"
     assert D.classify(wiki40, gp, SHELTER, "Some Other Set", rec)[0] == "ours-differs"
+
+
+# --- #951: spell DCs ------------------------------------------------------------
+
+def test_spell_dc_phrases_resolve_to_spell_focus_mastery():
+    for phrase in ("Spell DCs", "all Spell DCs"):
+        r = S.read_clause(f"+3 Artifact bonus to {phrase}", BONUS_TYPES, NAMES)
+        assert r == {"affixes": [{"name": "Spell Focus Mastery", "type": "Artifact", "value": 3}]}, (phrase, r)
+
+
+def test_bare_dcs_does_not_say_spell_and_stays_quarantined():
+    assert "vocabulary" in S.read_clause("+2 Profane bonus to DCs", BONUS_TYPES, NAMES)["quarantine"]
