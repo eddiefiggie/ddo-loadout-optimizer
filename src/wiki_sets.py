@@ -184,6 +184,13 @@ STAT_PHRASES = {
     "MRR": "Magical Sheltering",
     "Magical Resistance Rating Cap": "Magical Sheltering Cap",
     "MRR Cap": "Magical Sheltering Cap",
+    # Spell DCs. ddowiki `Spell Focus Mastery` rev 612763: "adds ... to the DC of all
+    # your spells"; `Spell DC` redirects to `Increasing spell DCs` rev 719694, whose
+    # Items section lists "Set effects: artifact bonus, profane bonus" for it
+    # (docs/wiki-evidence/spell-focus-universal.md). Bare "DCs" is NOT here: it does
+    # not say spell, and tactical DCs are DCs too.
+    "Spell DCs": "Spell Focus Mastery",
+    "all Spell DCs": "Spell Focus Mastery",
 }
 
 
