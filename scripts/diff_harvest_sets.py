@@ -72,9 +72,9 @@ def classify(wiki_tiers: dict, gp: dict, stat_names) -> tuple[str, dict]:
         read = collections.Counter()
         for line in lines:
             r = S.read_clause(line, BONUS_TYPES, stat_names)
-            if "affix" in r:
-                a = r["affix"]
-                read[(a["name"], a["type"], a["value"])] += 1
+            if "affixes" in r:
+                for a in r["affixes"]:
+                    read[(a["name"], a["type"], a["value"])] += 1
             else:
                 quarantined.append({"threshold": th, "line": S.plain(line), "reason": r["quarantine"]})
         extra += [{"threshold": th, "affix": list(k)} for k in (read - gp.get(th, collections.Counter()))]
@@ -112,7 +112,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
             rs = [S.read_clause(x, BONUS_TYPES, stat_names) for x in lines]
             if any("quarantine" in r for r in rs):
                 return None
-            out[th] = sorted((r["affix"]["name"], r["affix"]["type"], r["affix"]["value"]) for r in rs)
+            out[th] = sorted((a["name"], a["type"], a["value"]) for r in rs for a in r["affixes"])
         return out
 
     disagree = []

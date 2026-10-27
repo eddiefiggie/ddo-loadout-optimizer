@@ -166,14 +166,45 @@ def _row_cells(row: str) -> list:
 _CLAUSE_RE = re.compile(r"^([+-]?\d+)(%?) ([A-Za-z]+) [Bb]onus to (?:your )?(.+?)\.?$")
 
 
+_LIST_SPLIT_RE = re.compile(r",\s*(?:and\s+)?|\s+and\s+")
+
+
+def expand_list(stat: str, suffix: str, stat_names):
+    """#951 — a coordinated list of stats -> its members, or None.
+
+    "Melee and Ranged Power", "Intelligence, Wisdom, and Charisma",
+    "Fire and Cold Spell Power". The last member carries a shared head ("Power",
+    "Spell Power", or none); every earlier member takes that head. A reading is
+    accepted only when EVERY member is exactly a name in `stat_names`, and only when
+    exactly one head length does that — two readings means the text is ambiguous,
+    and it stays quarantined. Nothing is translated: a member in other words
+    ("Spellcrit Chance", "PRR", "Amp") makes the whole line unreadable.
+    """
+    parts = [p.strip() for p in _LIST_SPLIT_RE.split(stat) if p.strip()]
+    if len(parts) < 2:
+        return None
+    words = parts[-1].split()
+    readings = set()
+    for k in range(len(words)):
+        head = " ".join(words[len(words) - k:]) if k else ""
+        members = [f"{p} {head}".strip() for p in parts[:-1]] + [parts[-1]]
+        members = [m + suffix for m in members]
+        # A head that turns two members into one name is not a shared head: "Sneak
+        # Attack and Sneak Attack Damage" is two stats, never Sneak Attack Damage twice.
+        if len(set(members)) == len(members) and all(m in stat_names for m in members):
+            readings.add(tuple(members))
+    return list(readings.pop()) if len(readings) == 1 else None
+
+
 def read_clause(line: str, bonus_types, stat_names) -> dict:
-    """One bonus line -> {"affix": {name, type, value}} or {"quarantine": reason}.
+    """One bonus line -> {"affixes": [{name, type, value}, ...]} or {"quarantine": reason}.
 
     A closed grammar. The bonus type must be one the build knows, and the stat must
-    be EXACTLY a name in `stat_names` (the set catalog's vocabulary). A wiki phrase
-    for the same stat in other words ("Physical Resistance Rating", "Melee and
-    Ranged Power") is quarantined here, not translated: each such phrase is a
-    reviewed mapping with its own evidence, added family by family.
+    be EXACTLY a name in `stat_names` (the set catalog's vocabulary), or a
+    coordinated list whose every member is (`expand_list`). A wiki phrase for the
+    same stat in other words ("Physical Resistance Rating") is quarantined here,
+    not translated: each such phrase is a reviewed mapping with its own evidence,
+    added family by family.
     """
     text = plain(line)
     if "{{" in text:
@@ -184,10 +215,11 @@ def read_clause(line: str, bonus_types, stat_names) -> dict:
     value, pct, ty, stat = int(m.group(1)), m.group(2), m.group(3).capitalize(), m.group(4).strip()
     if ty not in bonus_types:
         return {"quarantine": f"unknown bonus type {m.group(3)!r}"}
-    name = f"{stat} (%)" if pct else stat
-    if name not in stat_names:
-        return {"quarantine": f"stat phrase not in the vocabulary: {name!r}"}
-    return {"affix": {"name": name, "type": ty, "value": value}}
+    suffix = " (%)" if pct else ""
+    names = [stat + suffix] if stat + suffix in stat_names else expand_list(stat, suffix, stat_names)
+    if not names:
+        return {"quarantine": f"stat phrase not in the vocabulary: {stat + suffix!r}"}
+    return {"affixes": [{"name": n, "type": ty, "value": value} for n in names]}
 
 
 def page_sets(wikitext: str) -> list:

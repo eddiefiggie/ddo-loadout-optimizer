@@ -140,3 +140,20 @@ The clause reader is closed. It reads `+N <Type> bonus to <stat>` only when the 
   - gear-planner carries a single `Deception` +3 in their place.
   - Whether these are the same stat needs a ruling. Do not resolve it by renaming.
 - **Sources disagree (both fully read): 0 today.** Arcane Mind's disagreement (the template says Universal Spell Power; the page says Potency and that the set gives no Universal Spell Power) is not counted yet, because neither side's line is readable. It surfaces once those phrases are mapped.
+
+## Coordinated lists (#951, 2026-10-27)
+
+`read_clause` now expands a coordinated list of stats ("Melee and Ranged Power", "Intelligence, Wisdom, and Charisma", "Fire and Cold Spell Power") into its members.
+
+**This is a reading of the sentence, not a translation:**
+- Every member must be exactly a catalog name.
+- Exactly one shared-head length may do that. Two readings mean the text is ambiguous, and the line stays quarantined.
+- A reading that turns two members into the same name is rejected. "Sneak Attack and Sneak Attack Damage" (Legendary Raven's Eye) is two stats. Its first member is not a catalog name, so the line stays quarantined.
+
+**Measured on `pages-20261027`:**
+- **The template reads 78 more lines (166 affixes)**, including all 49 `Melee and Ranged Power` lines. Quarantined lines fall from 451 to 384.
+- **Every expanded affix under a stated threshold matches gear-planner's** for that set and threshold.
+- **Exact sets rise from 12 to 18 (template) and from 10 to 12 (page).**
+- **`ours-differs` stays at 1** (Legendary Vulkoor's Might's Sneak Attack Damage, #951's open ruling).
+
+Lists whose members are in other words stay quarantined: `Doublestrike and Doubleshot`, `PRR and MRR`, `… Spellcrit Chance`, `… Spellpower`, `… Amp`. Each is its own family.
