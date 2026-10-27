@@ -254,7 +254,7 @@ The first run took about 25 minutes, including one long throttle at index 2,320.
 
 ## Explicit-title harvest: set pages (#908)
 
-Phase 3 reads `Named item sets` (pageid 9371) and possibly per-set pages, which are not in the item seed. `harvest_items.js` takes an explicit title list instead:
+Phase 3 reads `Named item sets` (pageid 9371) and `Template:Named item sets` (pageid 15874), which are not in the item seed. There are no per-set pages; the template is the second source (`named-item-sets-structure.md`). `harvest_items.js` takes an explicit title list instead:
 
 - **Titles.** A JSON array under `data/harvest_titles/` (`named-item-sets.json` is the first). The snippet fetches it from `raw.githubusercontent.com` at a pinned commit, exactly as it fetches the seed, and the loader reads the same file locally. Both sides de-duplicate and sort by code point, so the digest check holds unchanged. An empty list is refused on both sides.
 - **Rendered HTML.** `parse: true` adds one paced `action=parse` request per page and stores `html` and `html_revid` next to the wikitext. Compare the two revids: an edit landing between the two reads shows up there. This is the tooltip layer that bundled templates hide (#912).
