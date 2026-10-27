@@ -16,6 +16,7 @@ Each (set, source) lands in one class:
   threshold-differs  — the stated thresholds are not gear-planner's
   exact              — every line read, and the affixes equal gear-planner's
   partial            — some lines quarantined; every line read agrees with gear-planner
+  wiki-disagrees     — the only difference is a recorded WIKI_DISAGREEMENTS line
   ours-differs       — a line read to an affix gear-planner does not carry   <- review
 
 `ours-differs` is the switch gate: Phase 3 switches once it is 0 and every
@@ -51,18 +52,49 @@ def _num(v):
         return v
 
 
+#: gear-planner folds a set's equal PRR and MRR lines into one `Sheltering` affix.
+#: docs/wiki-evidence/sheltering.md: Sheltering is "a +X bonus to both your
+#: Physical Resistance Rating and Magical Resistance Rating", so it compares as
+#: the two affixes the wiki states.
+GP_EXPANSIONS = {"Sheltering": ("Physical Sheltering", "Magical Sheltering")}
+
+
 def gp_tiers(tiers) -> dict:
     """gear-planner's `[{threshold, affixes}]` -> {threshold: Counter((name, type, value))}."""
     out = {}
     for t in tiers or []:
         c = out.setdefault(t.get("threshold"), collections.Counter())
         for a in t.get("affixes") or []:
-            c[(a.get("name"), a.get("type"), _num(a.get("value")))] += 1
+            for name in GP_EXPANSIONS.get(a.get("name"), (a.get("name"),)):
+                c[(name, a.get("type"), _num(a.get("value")))] += 1
     return out
 
 
-def classify(wiki_tiers: dict, gp: dict, stat_names) -> tuple[str, dict]:
-    """One source's {threshold: [lines]} against gear-planner's tiers -> (class, detail)."""
+#: Lines where the wiki's two sources state different values, so neither is adopted.
+#: gear-planner follows the page in every case. Recorded from harvest
+#: pages-20261027 (template rev 723530, page rev 720202). The template's values
+#: arrived in Cru121's bulk rewrite of 2021-09-02 (rev 499661, "code replaced +
+#: added a bunch of new sets"); Legendary Dreadkeeper read +20 before it
+#: (rev 438208, 2020-03-19). Nothing on the wiki says which source is right.
+#: `diff` reports any entry here that no longer reproduces, so a fix on either
+#: side retires it instead of hiding a new difference.
+WIKI_DISAGREEMENTS = [
+    {"set": "Legendary Dreadkeeper", "threshold": 3, "name": "Physical Sheltering", "template": 40, "page": 20},
+    {"set": "The Desert's Burning Sun", "threshold": 2, "name": "Physical Sheltering", "template": 5, "page": 10},
+    {"set": "The Legendary Desert's Burning Sun", "threshold": 2, "name": "Physical Sheltering", "template": 15, "page": 30},
+]
+
+
+def _disagreement(set_name, th, affix, records):
+    name, _, value = affix
+    return next((d for d in records if (d["set"], d["threshold"], d["name"], d["template"]) == (set_name, th, name, value)), None)
+
+
+def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreements=()) -> tuple[str, dict]:
+    """One source's {threshold: [lines]} against gear-planner's tiers -> (class, detail).
+
+    An extra affix that matches a recorded `WIKI_DISAGREEMENTS` entry is a wiki
+    question, not ours-differs: the set lands in `wiki-disagrees` instead."""
     if None in wiki_tiers:
         return "threshold-unstated", {"lines": [S.plain(x) for x in wiki_tiers[None]]}
     if set(wiki_tiers) != set(gp):
@@ -78,8 +110,12 @@ def classify(wiki_tiers: dict, gp: dict, stat_names) -> tuple[str, dict]:
             else:
                 quarantined.append({"threshold": th, "line": S.plain(line), "reason": r["quarantine"]})
         extra += [{"threshold": th, "affix": list(k)} for k in (read - gp.get(th, collections.Counter()))]
+    known = [e for e in extra if _disagreement(set_name, e["threshold"], e["affix"], disagreements)]
+    extra = [e for e in extra if e not in known]
     if extra:
-        return "ours-differs", {"extra": extra, "quarantined": quarantined}
+        return "ours-differs", {"extra": extra, "quarantined": quarantined, "wiki_disagrees": known}
+    if known:
+        return "wiki-disagrees", {"wiki_disagrees": known, "quarantined": quarantined}
     return ("partial", {"quarantined": quarantined}) if quarantined else ("exact", {})
 
 
@@ -99,10 +135,14 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         gp = gp_tiers(tiers)
         rec = {}
         for src, entry in (("template", T.get(name.lower())), ("page", by_anchor.get(name.lower()))):
-            cls, detail = ("no-wiki-name", {}) if entry is None else classify(entry["tiers"], gp, stat_names)
+            cls, detail = ("no-wiki-name", {}) if entry is None else classify(
+                entry["tiers"], gp, stat_names, name, WIKI_DISAGREEMENTS if src == "template" else ())
             counts[src][cls] += 1
             rec[src] = {"class": cls, **detail}
         per_set[name] = rec
+    seen = {(name, e["threshold"], e["affix"][0]) for name, rec in per_set.items()
+            for e in rec["template"].get("wiki_disagrees", [])}
+    stale = [d for d in WIKI_DISAGREEMENTS if (d["set"], d["threshold"], d["name"]) not in seen]
 
     def readable(entry):
         if entry is None or None in entry["tiers"]:
@@ -129,6 +169,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
                       "helstats_tier_records": sum(1 for r in rows if r["tier"] is not None)},
         "counts": {k: dict(v) for k, v in counts.items()},
         "sources_disagree": disagree,
+        "stale_disagreement_records": stale,
         "sets": per_set,
     }
 
@@ -165,6 +206,9 @@ def main(argv) -> int:
             for k in ex:
                 d = {x: y for x, y in report["sets"][k][src].items() if x != "class"}
                 print(f"      {k}: {json.dumps(d, ensure_ascii=False)[:220]}")
+    if report["stale_disagreement_records"]:
+        print(f"\nSTALE WIKI_DISAGREEMENTS (no longer reproduce — retire or re-record): "
+              f"{json.dumps(report['stale_disagreement_records'], ensure_ascii=False)}")
     print(f"\nsources disagree (both fully read): {len(report['sources_disagree'])}")
     for d in report["sources_disagree"][:n_ex]:
         print(f"  {json.dumps(d, ensure_ascii=False)[:300]}")
