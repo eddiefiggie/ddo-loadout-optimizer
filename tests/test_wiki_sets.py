@@ -230,3 +230,23 @@ def test_spell_dc_phrases_resolve_to_spell_focus_mastery():
 
 def test_bare_dcs_does_not_say_spell_and_stays_quarantined():
     assert "vocabulary" in S.read_clause("+2 Profane bonus to DCs", BONUS_TYPES, NAMES)["quarantine"]
+
+
+# --- #951: Doublestrike and Doubleshot ------------------------------------------
+
+DOUBLE = NAMES | {"Doublestrike", "Doubleshot"}
+
+
+def test_a_percent_line_to_doublestrike_and_doubleshot_reads_both_bare_names():
+    r = S.read_clause("+5% Artifact Bonus to Doublestrike and Doubleshot", BONUS_TYPES, DOUBLE)
+    assert r == {"affixes": [{"name": "Doublestrike", "type": "Artifact", "value": 5},
+                             {"name": "Doubleshot", "type": "Artifact", "value": 5}]}, r
+    r = S.read_clause("+15% Artifact bonus to Doublestrike", BONUS_TYPES, DOUBLE)
+    assert r == {"affixes": [{"name": "Doublestrike", "type": "Artifact", "value": 15}]}, r
+
+
+def test_a_percent_line_to_a_bare_name_not_reviewed_as_a_percentage_stays_quarantined():
+    # Melee Power is a catalog name, but a "+5%" bonus to it is not a +5 bonus to it.
+    assert "vocabulary" in S.read_clause("+5% Artifact bonus to Melee Power", BONUS_TYPES, DOUBLE)["quarantine"]
+    # And a percentage stat the catalog does not carry is not minted.
+    assert "vocabulary" in S.read_clause("+5% Artifact bonus to Doubleshot", BONUS_TYPES, NAMES)["quarantine"]

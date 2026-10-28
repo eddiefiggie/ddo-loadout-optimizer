@@ -193,14 +193,35 @@ STAT_PHRASES = {
     "all Spell DCs": "Spell Focus Mastery",
 }
 
+#: #951 — stats the catalog names WITHOUT " (%)" because the stat is itself a
+#: percentage. A "+N%" line to one of these is a bonus of N to the bare name. The
+#: catalog writes " (%)" only where a stat has a flat form too (`Armor Class (%)`),
+#: so dropping the "%" is right ONLY for a stat reviewed here; any other "+N%" line
+#: to a bare catalog name stays quarantined. Each entry cites the wiki stating the
+#: stat in percent.
+PERCENT_STATS = frozenset({
+    # ddowiki `Doublestrike` and `Doubleshot` (revisions of 2026-10-07): "a
+    # Doublestrike value of 230% ... would only provide 215% chance", and the same
+    # for Doubleshot (docs/wiki-evidence/intrinsic-stat-caps.md, #888).
+    # `Template:Doublestrike` takes "String value (1% - 100%)", which the item
+    # mapper already reads as Doublestrike N (src/wiki_enchantments.py `_percent`).
+    "Doublestrike",
+    "Doubleshot",
+})
+
 
 def resolve(phrase: str, stat_names, suffix: str = ""):
     """A stat phrase (+ its " (%)" suffix) -> its catalog name, or None: exactly a
-    catalog name, or a `STAT_PHRASES` entry whose target the catalog carries."""
+    catalog name, a `STAT_PHRASES` entry whose target the catalog carries, or a
+    `PERCENT_STATS` name stated with "%"."""
     if phrase + suffix in stat_names:
         return phrase + suffix
     target = STAT_PHRASES.get(phrase)
-    return target + suffix if target and target + suffix in stat_names else None
+    if target and target + suffix in stat_names:
+        return target + suffix
+    if suffix and phrase in PERCENT_STATS and phrase in stat_names:
+        return phrase
+    return None
 
 
 def expand_list(stat: str, suffix: str, stat_names):

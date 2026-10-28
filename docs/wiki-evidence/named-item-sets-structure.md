@@ -206,3 +206,32 @@ Resolving them needs an in-game reading or a wiki edit with a source, not a pars
 - **Exact sets:** 29 to 32 (template), 17 to 18 (page).
 - **Quarantined:** 319 to 298.
 - **`ours-differs`:** stays at 1.
+
+## Doublestrike and Doubleshot (#951, 2026-10-28)
+
+The catalog names these two stats without ` (%)`. It writes ` (%)` only where a stat also has a flat form (`Armor Class (%)`, `False Life (%)`). So a `+N%` line to them was quarantined as `Doublestrike (%)`, a name the catalog never uses.
+
+`PERCENT_STATS` in `src/wiki_sets.py` lists the stats that are themselves a percentage. A `+N%` line to one of them reads as a bonus of N to the bare name.
+
+| Stat | Evidence |
+|---|---|
+| Doublestrike, Doubleshot | ddowiki `Doublestrike` and `Doubleshot` (revisions of 2026-10-07) state both in percent: "a Doublestrike value of 230% ... would only provide 215% chance" (`intrinsic-stat-caps.md`, #888). `Template:Doublestrike` takes "String value (1% - 100%)", and the item mapper already reads it as Doublestrike N |
+
+- **The rule is per stat, not general.** A `+N%` line to any other bare catalog name stays quarantined. `+5%` Melee Power is not `+5` Melee Power.
+- A stat in `PERCENT_STATS` still has to be a catalog name. Nothing is minted.
+- The coordinated-list reader resolves members the same way, so `Doublestrike and Doubleshot` reads as both.
+
+**Measured on `pages-20261027`:**
+- **Exact sets:** 32 to 38 (template), 18 to 21 (page).
+- **Quarantined:** 298 to 280 (template), 77 to 70 (page).
+- **`ours-differs`:** stays at 1 (Legendary Vulkoor's Might).
+
+### A fourth wiki contradiction: Eminence of Spring
+
+Reading these lines surfaced one more case of the two wiki sources disagreeing, in the same shape as the three PRR values above.
+
+| Set, tier | Template (rev 723530) | Page (rev 720202) | gear-planner |
+|---|---:|---:|---:|
+| Eminence of Spring, 6 pieces | +10% Doublestrike and Doubleshot | +15% | 15 |
+
+Eminence of Summer's template entry states +15% for the same tier. The template's history for this entry has not been read. Both affixes are recorded in `WIKI_DISAGREEMENTS` and tracked on #956. Corrupting one record's value made it report stale and sent the set back to `ours-differs`.
