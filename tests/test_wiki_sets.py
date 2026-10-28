@@ -266,3 +266,28 @@ def test_a_summons_all_ability_scores_line_is_not_the_wearers_well_rounded():
     r = S.read_clause("Your Summons, Charmed Monsters, and Hirelings gain +4 to all Ability Scores.",
                       BONUS_TYPES, names)
     assert "quarantine" in r, r
+
+
+# --- #951: Fortification Bypass -------------------------------------------------
+
+def test_a_percent_fortification_bypass_line_reads_as_armor_piercing():
+    names = NAMES | {"Armor-Piercing"}
+    for line in ("+30% Artifact bonus to Fortification Bypass", "+10% Artifact Bonus to Fortification Bypass"):
+        r = S.read_clause(line, BONUS_TYPES, names)
+        assert r["affixes"][0]["name"] == "Armor-Piercing" and r["affixes"][0]["type"] == "Artifact", r
+    assert S.read_clause("+30% Artifact bonus to Fortification Bypass", BONUS_TYPES, names)["affixes"][0]["value"] == 30
+
+
+def test_a_recorded_upstream_stale_value_is_not_ours_differs_and_an_unrecorded_one_still_is():
+    names = NAMES | {"Armor-Piercing"}
+    gp = D.gp_tiers([{"threshold": 3, "affixes": [{"name": "Armor-Piercing", "type": "Artifact", "value": "15"}]}])
+    wiki = {3: ["+30% Artifact bonus to Fortification Bypass"]}
+    rec = [{"set": "Truthful Blow", "threshold": 3, "name": "Armor-Piercing", "type": "Artifact",
+            "wiki": 30, "gear_planner": 15}]
+    assert D.classify(wiki, gp, names, "Truthful Blow", (), rec)[0] == "upstream-stale"
+    # A different wiki value, another set, or gear-planner moving off 15 is not covered.
+    assert D.classify({3: ["+40% Artifact bonus to Fortification Bypass"]}, gp, names,
+                      "Truthful Blow", (), rec)[0] == "ours-differs"
+    assert D.classify(wiki, gp, names, "Some Other Set", (), rec)[0] == "ours-differs"
+    gp20 = D.gp_tiers([{"threshold": 3, "affixes": [{"name": "Armor-Piercing", "type": "Artifact", "value": "20"}]}])
+    assert D.classify(wiki, gp20, names, "Truthful Blow", (), rec)[0] == "ours-differs"

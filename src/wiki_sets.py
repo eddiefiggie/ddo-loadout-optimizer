@@ -200,6 +200,11 @@ STAT_PHRASES = {
     "all Ability Scores": "Well Rounded",
     "all ability scores": "Well Rounded",
     "all of your Ability Scores": "Well Rounded",
+    # Fortification Bypass. ddowiki `Template:Armor-Piercing` rev 678284 renders
+    # "Armor-Piercing N%" as "+N% ... bonus to Fortification Bypass", so the
+    # catalog's Armor-Piercing IS the Fortification Bypass stat (a percentage; see
+    # PERCENT_STATS).
+    "Fortification Bypass": "Armor-Piercing",
 }
 
 #: #951 — stats the catalog names WITHOUT " (%)" because the stat is itself a
@@ -216,20 +221,24 @@ PERCENT_STATS = frozenset({
     # mapper already reads as Doublestrike N (src/wiki_enchantments.py `_percent`).
     "Doublestrike",
     "Doubleshot",
+    # `Template:Armor-Piercing` rev 678284: "Armor-Piercing {{{1}}}%" grants
+    # "+{{{1}}}% ... bonus to Fortification Bypass".
+    "Armor-Piercing",
 })
 
 
 def resolve(phrase: str, stat_names, suffix: str = ""):
     """A stat phrase (+ its " (%)" suffix) -> its catalog name, or None: exactly a
     catalog name, a `STAT_PHRASES` entry whose target the catalog carries, or a
-    `PERCENT_STATS` name stated with "%"."""
+    `PERCENT_STATS` name (directly or through `STAT_PHRASES`) stated with "%"."""
     if phrase + suffix in stat_names:
         return phrase + suffix
     target = STAT_PHRASES.get(phrase)
     if target and target + suffix in stat_names:
         return target + suffix
-    if suffix and phrase in PERCENT_STATS and phrase in stat_names:
-        return phrase
+    bare = target or phrase
+    if suffix and bare in PERCENT_STATS and bare in stat_names:
+        return bare
     return None
 
 
