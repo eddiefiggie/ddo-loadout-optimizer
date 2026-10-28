@@ -250,3 +250,34 @@ Eminence of Summer's template entry states +15% for the same tier. The template'
 - **Exact sets:** 38 to 41 (template). The page stays at 21.
 - **Quarantined:** 280 to 258 (template), 70 to 67 (page).
 - **`ours-differs`:** stays at 1. No new wiki disagreement.
+
+## Fortification Bypass (#951, 2026-10-28)
+
+| Wiki phrase | Catalog name | Evidence |
+|---|---|---|
+| `Fortification Bypass` (stated with `%`) | Armor-Piercing | ddowiki `Template:Armor-Piercing` rev 678284 renders "Armor-Piercing N%" as "+N% ... bonus to Fortification Bypass" |
+
+- Armor-Piercing joins `PERCENT_STATS`. The template states it in percent.
+- A phrase that maps through `STAT_PHRASES` now reaches a percentage stat's bare name too.
+- **Left quarantined (other sentence shapes):**
+  - Eminence of Summer's template line reads "bonus **do** Fortification Bypass", a wiki typo.
+  - Silent Avenger's two lines read "You gain a N% ...".
+
+**Measured on `pages-20261027`:**
+- **Exact sets:** 41 to 47 (template), 21 to 22 (page).
+- **Quarantined:** 258 to 245 (template), 67 to 64 (page).
+- **`ours-differs`:** stays at 1.
+
+### gear-planner is stale on Truthful Blow
+
+Both wiki sources agree here, and gear-planner is the odd one out.
+
+| Set, tier | Template (rev 723530) | Page (rev 720202) | gear-planner | Our seed |
+|---|---:|---:|---:|---:|
+| Truthful Blow, 3 pieces | +30% | +30% | 15 | 30 |
+
+`augment_sets.json` already carries 30, verified from the Set Augment pages (`augment-sets.md`). The built dataset's `augment_set_defs` credits 30. So players already get the wiki's value, and this is not a parser error.
+
+- **Recorded in `UPSTREAM_STALE`** in `scripts/diff_harvest_sets.py`, as a new class, `upstream-stale`. That keeps it off the `ours-differs` gate without hiding a real difference.
+- **A record matches only when all of these hold:** the wiki states the recorded value, under the recorded set, threshold, name and type, and gear-planner still carries the recorded older value.
+- **A record that no longer reproduces is reported stale.** Changing the record's gear-planner value made it report stale, and Truthful Blow went back to `ours-differs` on both sources.

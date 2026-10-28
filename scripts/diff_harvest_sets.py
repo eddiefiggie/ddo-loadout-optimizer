@@ -17,6 +17,7 @@ Each (set, source) lands in one class:
   exact              — every line read, and the affixes equal gear-planner's
   partial            — some lines quarantined; every line read agrees with gear-planner
   wiki-disagrees     — the only difference is a recorded WIKI_DISAGREEMENTS line
+  upstream-stale     — the only difference is a recorded UPSTREAM_STALE line
   ours-differs       — a line read to an affix gear-planner does not carry   <- review
 
 `ours-differs` is the switch gate: Phase 3 switches once it is 0 and every
@@ -91,16 +92,42 @@ WIKI_DISAGREEMENTS = [
 ]
 
 
+#: Lines where BOTH wiki sources agree and gear-planner carries an older value. The
+#: wiki is the source of truth, so these are not parser errors; each is already
+#: corrected in our own seed, and the build credits the wiki's value. A record that
+#: no longer reproduces (the wiki or gear-planner changed) is reported stale.
+#:
+#: Truthful Blow (#951): template rev 723530 and page rev 720202 both state "+30%
+#: Artifact bonus to Fortification Bypass" at 3 pieces; gear-planner carries
+#: Armor-Piercing 15. data/seed/compendium/augment_sets.json already carries 30,
+#: verified from the Set Augment pages (docs/wiki-evidence/augment-sets.md), and
+#: that is the value the built dataset's augment_set_defs credits.
+UPSTREAM_STALE = [
+    {"set": "Truthful Blow", "threshold": 3, "name": "Armor-Piercing", "type": "Artifact",
+     "wiki": 30, "gear_planner": 15},
+]
+
+
+def _upstream_stale(set_name, th, affix, gp, records):
+    name, ty, value = affix
+    return next((u for u in records if (u["set"], u["threshold"], u["name"], u["type"], u["wiki"])
+                 == (set_name, th, name, ty, value)
+                 and gp.get(th, {}).get((name, ty, u["gear_planner"]))), None)
+
+
 def _disagreement(set_name, th, affix, records):
     name, _, value = affix
     return next((d for d in records if (d["set"], d["threshold"], d["name"], d["template"]) == (set_name, th, name, value)), None)
 
 
-def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreements=()) -> tuple[str, dict]:
+def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreements=(),
+             upstream=()) -> tuple[str, dict]:
     """One source's {threshold: [lines]} against gear-planner's tiers -> (class, detail).
 
     An extra affix that matches a recorded `WIKI_DISAGREEMENTS` entry is a wiki
-    question, not ours-differs: the set lands in `wiki-disagrees` instead."""
+    question, not ours-differs: the set lands in `wiki-disagrees` instead. One that
+    matches a recorded `UPSTREAM_STALE` entry (and gear-planner still carries the
+    recorded older value) lands in `upstream-stale`."""
     if None in wiki_tiers:
         return "threshold-unstated", {"lines": [S.plain(x) for x in wiki_tiers[None]]}
     if set(wiki_tiers) != set(gp):
@@ -118,10 +145,15 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
         extra += [{"threshold": th, "affix": list(k)} for k in (read - gp.get(th, collections.Counter()))]
     known = [e for e in extra if _disagreement(set_name, e["threshold"], e["affix"], disagreements)]
     extra = [e for e in extra if e not in known]
+    stale_gp = [e for e in extra if _upstream_stale(set_name, e["threshold"], e["affix"], gp, upstream)]
+    extra = [e for e in extra if e not in stale_gp]
     if extra:
-        return "ours-differs", {"extra": extra, "quarantined": quarantined, "wiki_disagrees": known}
+        return "ours-differs", {"extra": extra, "quarantined": quarantined, "wiki_disagrees": known,
+                                "upstream_stale": stale_gp}
     if known:
-        return "wiki-disagrees", {"wiki_disagrees": known, "quarantined": quarantined}
+        return "wiki-disagrees", {"wiki_disagrees": known, "quarantined": quarantined, "upstream_stale": stale_gp}
+    if stale_gp:
+        return "upstream-stale", {"upstream_stale": stale_gp, "quarantined": quarantined}
     return ("partial", {"quarantined": quarantined}) if quarantined else ("exact", {})
 
 
@@ -142,13 +174,17 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         rec = {}
         for src, entry in (("template", T.get(name.lower())), ("page", by_anchor.get(name.lower()))):
             cls, detail = ("no-wiki-name", {}) if entry is None else classify(
-                entry["tiers"], gp, stat_names, name, WIKI_DISAGREEMENTS if src == "template" else ())
+                entry["tiers"], gp, stat_names, name, WIKI_DISAGREEMENTS if src == "template" else (),
+                UPSTREAM_STALE)
             counts[src][cls] += 1
             rec[src] = {"class": cls, **detail}
         per_set[name] = rec
     seen = {(name, e["threshold"], e["affix"][0]) for name, rec in per_set.items()
             for e in rec["template"].get("wiki_disagrees", [])}
     stale = [d for d in WIKI_DISAGREEMENTS if (d["set"], d["threshold"], d["name"]) not in seen]
+    seen_up = {(name, e["threshold"], e["affix"][0]) for name, rec in per_set.items()
+               for src in rec.values() for e in src.get("upstream_stale", [])}
+    stale_up = [u for u in UPSTREAM_STALE if (u["set"], u["threshold"], u["name"]) not in seen_up]
 
     def readable(entry):
         if entry is None or None in entry["tiers"]:
@@ -176,6 +212,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         "counts": {k: dict(v) for k, v in counts.items()},
         "sources_disagree": disagree,
         "stale_disagreement_records": stale,
+        "stale_upstream_records": stale_up,
         "sets": per_set,
     }
 
@@ -215,6 +252,9 @@ def main(argv) -> int:
     if report["stale_disagreement_records"]:
         print(f"\nSTALE WIKI_DISAGREEMENTS (no longer reproduce — retire or re-record): "
               f"{json.dumps(report['stale_disagreement_records'], ensure_ascii=False)}")
+    if report["stale_upstream_records"]:
+        print(f"\nSTALE UPSTREAM_STALE (no longer reproduce — retire or re-record): "
+              f"{json.dumps(report['stale_upstream_records'], ensure_ascii=False)}")
     print(f"\nsources disagree (both fully read): {len(report['sources_disagree'])}")
     for d in report["sources_disagree"][:n_ex]:
         print(f"  {json.dumps(d, ensure_ascii=False)[:300]}")
