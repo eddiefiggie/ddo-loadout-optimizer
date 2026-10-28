@@ -205,6 +205,22 @@ STAT_PHRASES = {
     # catalog's Armor-Piercing IS the Fortification Bypass stat (a percentage; see
     # PERCENT_STATS).
     "Fortification Bypass": "Armor-Piercing",
+    # Damage against helpless enemies. ddowiki `Helpless` ("Increasing extra damage
+    # vs helpless opponents") lists every one of these sets in ONE table as a
+    # percent bonus (docs/wiki-evidence/helpless-damage.md, #305). Each spelling
+    # below is a recorded wiki wording in the reviewed synonym registry
+    # (affix_synonyms_registry.json, `Damage to helpless enemies`). The target is
+    # gear-planner's set-catalog name for the stat.
+    "damage vs the Helpless": "Damage vs. the Helpless",
+    "Damage vs the Helpless": "Damage vs. the Helpless",
+    "damage vs. the helpless": "Damage vs. the Helpless",
+    "damage vs. helpless": "Damage vs. the Helpless",
+    "Damage vs. Helpless": "Damage vs. the Helpless",
+    "damage versus the Helpless": "Damage vs. the Helpless",
+    "Damage vs. Helpless opponents": "Damage vs. the Helpless",
+    "Damage vs. Helpless Opponents": "Damage vs. the Helpless",
+    "Helplessness Damage": "Damage vs. the Helpless",
+    "Additional Damage to Helpless Targets": "Damage vs. the Helpless",
 }
 
 #: #951 — stats the catalog names WITHOUT " (%)" because the stat is itself a
@@ -224,6 +240,9 @@ PERCENT_STATS = frozenset({
     # `Template:Armor-Piercing` rev 678284: "Armor-Piercing {{{1}}}%" grants
     # "+{{{1}}}% ... bonus to Fortification Bypass".
     "Armor-Piercing",
+    # ddowiki `Helpless`: "5% / 15%" per set, a percent extra damage
+    # (docs/wiki-evidence/helpless-damage.md).
+    "Damage vs. the Helpless",
 })
 
 
