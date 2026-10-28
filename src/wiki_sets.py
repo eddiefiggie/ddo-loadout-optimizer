@@ -191,6 +191,15 @@ STAT_PHRASES = {
     # not say spell, and tactical DCs are DCs too.
     "Spell DCs": "Spell Focus Mastery",
     "all Spell DCs": "Spell Focus Mastery",
+    # All ability scores. ddowiki `Template:Stat` rev 678248: its `well rounded`
+    # case renders "... bonus to all abilities", and gear-planner's catalog carries
+    # each of these set lines as `Well Rounded` at the same type and value. The
+    # local synonym registry already folds `all Ability Scores` into Well Rounded
+    # (affix_synonyms_registry.json, #374). Only these spellings: the summon lines
+    # ("Your Summons ... gain +4 to all Ability Scores") buff someone else.
+    "all Ability Scores": "Well Rounded",
+    "all ability scores": "Well Rounded",
+    "all of your Ability Scores": "Well Rounded",
 }
 
 #: #951 — stats the catalog names WITHOUT " (%)" because the stat is itself a

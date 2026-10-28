@@ -235,3 +235,18 @@ Reading these lines surfaced one more case of the two wiki sources disagreeing, 
 | Eminence of Spring, 6 pieces | +10% Doublestrike and Doubleshot | +15% | 15 |
 
 Eminence of Summer's template entry states +15% for the same tier. The template's history for this entry has not been read. Both affixes are recorded in `WIKI_DISAGREEMENTS` and tracked on #956. Corrupting one record's value made it report stale and sent the set back to `ours-differs`.
+
+## All ability scores (#951, 2026-10-28)
+
+| Wiki phrase | Catalog name | Evidence |
+|---|---|---|
+| `all Ability Scores`, `all ability scores`, `all of your Ability Scores` | Well Rounded | ddowiki `Template:Stat` rev 678248: its `well rounded` case renders "... bonus to all abilities". The local synonym registry already folds `all Ability Scores` into Well Rounded (`affix_synonyms_registry.json`, #374) |
+
+- gear-planner carries every one of these set lines as `Well Rounded`, at the same type and value.
+- **The summon lines are not mapped.** "Your Summons, Charmed Monsters, and Hirelings gain +4 to all Ability Scores" (Deadly Diabolist, three tiers) buffs someone else. It is not a typed clause, so it stays quarantined, and a test pins that.
+
+**Measured on `pages-20261027`:**
+- All 25 wearer lines now read, and every one matches gear-planner.
+- **Exact sets:** 38 to 41 (template). The page stays at 21.
+- **Quarantined:** 280 to 258 (template), 70 to 67 (page).
+- **`ours-differs`:** stays at 1. No new wiki disagreement.

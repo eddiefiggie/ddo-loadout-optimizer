@@ -250,3 +250,19 @@ def test_a_percent_line_to_a_bare_name_not_reviewed_as_a_percentage_stays_quaran
     assert "vocabulary" in S.read_clause("+5% Artifact bonus to Melee Power", BONUS_TYPES, DOUBLE)["quarantine"]
     # And a percentage stat the catalog does not carry is not minted.
     assert "vocabulary" in S.read_clause("+5% Artifact bonus to Doubleshot", BONUS_TYPES, NAMES)["quarantine"]
+
+
+# --- #951: all ability scores ---------------------------------------------------
+
+def test_all_ability_score_phrases_resolve_to_well_rounded():
+    names = NAMES | {"Well Rounded"}
+    for phrase in ("all Ability Scores", "all ability scores", "all of your Ability Scores"):
+        r = S.read_clause(f"+2 Profane bonus to {phrase}", BONUS_TYPES, names)
+        assert r == {"affixes": [{"name": "Well Rounded", "type": "Profane", "value": 2}]}, (phrase, r)
+
+
+def test_a_summons_all_ability_scores_line_is_not_the_wearers_well_rounded():
+    names = NAMES | {"Well Rounded"}
+    r = S.read_clause("Your Summons, Charmed Monsters, and Hirelings gain +4 to all Ability Scores.",
+                      BONUS_TYPES, names)
+    assert "quarantine" in r, r
