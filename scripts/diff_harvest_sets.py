@@ -78,10 +78,16 @@ def gp_tiers(tiers) -> dict:
 #: (rev 438208, 2020-03-19). Nothing on the wiki says which source is right.
 #: `diff` reports any entry here that no longer reproduces, so a fix on either
 #: side retires it instead of hiding a new difference.
+#: Eminence of Spring surfaced once Doublestrike and Doubleshot became readable
+#: (#951): the template states +10% at 6 pieces, the page +15%, and Eminence of
+#: Summer's template entry states +15% for the same tier. Its template history
+#: has not been read.
 WIKI_DISAGREEMENTS = [
     {"set": "Legendary Dreadkeeper", "threshold": 3, "name": "Physical Sheltering", "template": 40, "page": 20},
     {"set": "The Desert's Burning Sun", "threshold": 2, "name": "Physical Sheltering", "template": 5, "page": 10},
     {"set": "The Legendary Desert's Burning Sun", "threshold": 2, "name": "Physical Sheltering", "template": 15, "page": 30},
+    {"set": "Eminence of Spring", "threshold": 6, "name": "Doublestrike", "template": 10, "page": 15},
+    {"set": "Eminence of Spring", "threshold": 6, "name": "Doubleshot", "template": 10, "page": 15},
 ]
 
 
