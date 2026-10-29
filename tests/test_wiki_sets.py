@@ -329,3 +329,50 @@ def _registry_entries(o):
     elif isinstance(o, list):
         for v in o:
             yield from _registry_entries(v)
+
+
+# --- #951: spell power spellings ------------------------------------------------
+
+ELEMENT_SP = {f"{e} Spell Power" for e in ("Acid", "Cold", "Electric", "Fire", "Force",
+                                           "Negative", "Positive", "Sonic")}
+
+
+def test_one_word_spellpower_reads_as_the_catalog_spell_power():
+    names = NAMES | ELEMENT_SP
+    for phrase, stat in (("Fire Spellpower", "Fire Spell Power"),
+                         ("Negative Spellpower", "Negative Spell Power"),
+                         ("Universal Spellpower", "Universal Spell Power")):
+        r = S.read_clause(f"+30 Artifact bonus to {phrase}.", BONUS_TYPES, names)
+        assert r == {"affixes": [{"name": stat, "type": "Artifact", "value": 30}]}, (phrase, r)
+
+
+def test_a_spellpower_list_reads_each_element():
+    names = NAMES | ELEMENT_SP
+    r = S.read_clause("+10 Artifact bonus to Fire, Cold, Electric, and Acid Spellpower", BONUS_TYPES, names)
+    assert r == {"affixes": [{"name": f"{e} Spell Power", "type": "Artifact", "value": 10}
+                             for e in ("Fire", "Cold", "Electric", "Acid")]}, r
+
+
+def test_a_spellpower_list_naming_an_uncatalogued_element_stays_quarantined():
+    names = NAMES | ELEMENT_SP
+    for line in ("+10 Artifact bonus to Light, Alignment, and Positive Spellpower",
+                 "+10 Artifact bonus to Negative and Poison Spellpower"):
+        assert "quarantine" in S.read_clause(line, BONUS_TYPES, names), line
+
+
+def test_each_spell_power_reads_as_universal_spell_power():
+    for phrase in ("each Spell Power", "each Spellpower"):
+        r = S.read_clause(f"+25 Artifact bonus to {phrase}", BONUS_TYPES, NAMES)
+        assert r == {"affixes": [{"name": "Universal Spell Power", "type": "Artifact", "value": 25}]}, (phrase, r)
+
+
+def test_every_spellpower_phrase_is_a_fold_the_synonym_registry_records():
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "data", "seed", "compendium", "affix_synonyms_registry.json")
+    with open(path, encoding="utf-8") as fh:
+        registry = json.load(fh)
+    folds = {s: e["name"] for e in _registry_entries(registry) for s in e["synonyms"]}
+    phrases = {p: t for p, t in S.STAT_PHRASES.items() if p.endswith("Spellpower") and not p.startswith("each")}
+    assert len(phrases) >= 9, phrases          # refuses to inspect an empty table
+    wrong = {p: t for p, t in phrases.items() if folds.get(p) != t}
+    assert not wrong, wrong

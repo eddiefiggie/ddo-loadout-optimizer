@@ -301,3 +301,19 @@ Both wiki sources agree here, and gear-planner is the odd one out.
 - **Exact sets:** 47 to 56 (template), 22 to 26 (page).
 - **Quarantined:** 245 to 225 (template), 64 to 57 (page).
 - **`ours-differs`:** stays at 1.
+
+## Spell power spellings (#951, 2026-10-29)
+
+| Wiki phrases | Catalog name | Evidence |
+|---|---|---|
+| `Acid Spellpower`, `Cold Spellpower`, `Electric Spellpower`, `Fire Spellpower`, `Force Spellpower`, `Negative Spellpower`, `Positive Spellpower`, `Sonic Spellpower`, `Universal Spellpower` | the same stat as `<Element> Spell Power` | Each is a fold the reviewed synonym registry records under that catalog name (`affix_synonyms_registry.json`) |
+| `each Spell Power`, `each Spellpower` | Universal Spell Power | `Update 81 Patch 4 Release Notes`: set bonuses labelled Universal Spell Power "will now instead say ... each Spell power" (`set-bonus-universal-per-element.md`, #870). The catalog still names the stat Universal Spell Power |
+
+- **Only elements the set catalog carries.** `Light Spellpower` and `Poison Spellpower` have no catalog spellpower, so a list naming them (Divine Blessing, The Desert's Starless Nights) stays quarantined whole. A test pins that.
+- **A test keeps the phrase table inside the registry.** Every `<X> Spellpower` phrase must be a registry synonym of its target. Pointing `Force Spellpower` at Fire Spell Power failed the test.
+- **Left quarantined:** the matching `Spellcrit Chance` lines. The catalog names crit chance by lore (`Fire Lore`, `Lightning Lore`, `Healing Lore`), and that mapping needs its own evidence per element.
+
+**Measured on `pages-20261027`:**
+- **Exact sets:** 56 to 61 (template), 26 to 27 (page).
+- **Quarantined:** 225 to 198 (template), 57 to 53 (page).
+- **`ours-differs`:** stays at 1.
