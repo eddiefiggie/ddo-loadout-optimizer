@@ -4,6 +4,7 @@ The fixtures are the wiki's own shapes, copied from `Named item sets` (rev 72020
 and `Template:Named item sets` (rev 723530): see
 docs/wiki-evidence/named-item-sets-structure.md."""
 import importlib.util
+import json
 import os
 
 from src import wiki_sets as S
@@ -291,3 +292,40 @@ def test_a_recorded_upstream_stale_value_is_not_ours_differs_and_an_unrecorded_o
     assert D.classify(wiki, gp, names, "Some Other Set", (), rec)[0] == "ours-differs"
     gp20 = D.gp_tiers([{"threshold": 3, "affixes": [{"name": "Armor-Piercing", "type": "Artifact", "value": "20"}]}])
     assert D.classify(wiki, gp20, names, "Truthful Blow", (), rec)[0] == "ours-differs"
+
+
+# --- #951: damage against helpless enemies --------------------------------------
+
+def test_every_recorded_helpless_spelling_reads_as_one_stat():
+    names = NAMES | {"Damage vs. the Helpless"}
+    for phrase in ("damage vs the Helpless", "Damage vs the Helpless", "damage vs. the helpless",
+                   "damage vs. helpless", "Damage vs. Helpless", "damage versus the Helpless",
+                   "Damage vs. Helpless opponents", "Damage vs. Helpless Opponents",
+                   "Helplessness Damage", "Additional Damage to Helpless Targets", "Damage vs. the Helpless"):
+        r = S.read_clause(f"+15% Artifact bonus to {phrase}", BONUS_TYPES, names)
+        assert r == {"affixes": [{"name": "Damage vs. the Helpless", "type": "Artifact", "value": 15}]}, (phrase, r)
+
+
+def test_every_helpless_phrase_is_a_spelling_the_synonym_registry_records():
+    # The phrase table may not outgrow the reviewed registry: a new spelling needs
+    # its evidence recorded there first.
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "data", "seed", "compendium", "affix_synonyms_registry.json")
+    with open(path, encoding="utf-8") as fh:
+        registry = json.load(fh)
+    entry = next(e for e in _registry_entries(registry) if e.get("name") == "Damage to helpless enemies")
+    phrases = [p for p, t in S.STAT_PHRASES.items() if t == "Damage vs. the Helpless"]
+    assert len(phrases) >= 10, phrases          # refuses to inspect an empty table
+    missing = [p for p in phrases if p not in entry["synonyms"]]
+    assert not missing, missing
+
+
+def _registry_entries(o):
+    if isinstance(o, dict):
+        if "name" in o and "synonyms" in o:
+            yield o
+        for v in o.values():
+            yield from _registry_entries(v)
+    elif isinstance(o, list):
+        for v in o:
+            yield from _registry_entries(v)

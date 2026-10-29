@@ -281,3 +281,23 @@ Both wiki sources agree here, and gear-planner is the odd one out.
 - **Recorded in `UPSTREAM_STALE`** in `scripts/diff_harvest_sets.py`, as a new class, `upstream-stale`. That keeps it off the `ours-differs` gate without hiding a real difference.
 - **A record matches only when all of these hold:** the wiki states the recorded value, under the recorded set, threshold, name and type, and gear-planner still carries the recorded older value.
 - **A record that no longer reproduces is reported stale.** Changing the record's gear-planner value made it report stale, and Truthful Blow went back to `ours-differs` on both sources.
+
+## Damage against helpless enemies (#951, 2026-10-28)
+
+| Wiki phrases | Catalog name | Evidence |
+|---|---|---|
+| `damage vs the Helpless`, `Damage vs the Helpless`, `damage vs. the helpless`, `damage vs. helpless`, `Damage vs. Helpless`, `damage versus the Helpless`, `Damage vs. Helpless opponents`, `Damage vs. Helpless Opponents`, `Helplessness Damage`, `Additional Damage to Helpless Targets` | Damage vs. the Helpless | ddowiki `Helpless` lists every one of these sets in one table as a percent bonus (`helpless-damage.md`, #305). Each spelling is recorded in the reviewed synonym registry under `Damage to helpless enemies` |
+
+- `Damage vs. the Helpless` joins `PERCENT_STATS`.
+- **A test keeps the phrase table inside the registry.** Every helpless phrase must be a registry synonym. A spelling the registry does not record fails the test, and that was proven by adding one.
+- The target is gear-planner's set-catalog name. The build's own canonical, `Damage to helpless enemies`, is applied later by `src/helpless_fold.py`, and this reader does not change it.
+- **Left quarantined (other sentence shapes):**
+  - Eminence of Spring's template line has the "bonus **do**" typo.
+  - Kundarak Delving Equipment (three tiers) puts two clauses on one line.
+  - Silent Avenger's two lines read "You gain +N% ...".
+
+**Measured on `pages-20261027`:**
+- 27 of 33 lines now read, and every one matches gear-planner.
+- **Exact sets:** 47 to 56 (template), 22 to 26 (page).
+- **Quarantined:** 245 to 225 (template), 64 to 57 (page).
+- **`ours-differs`:** stays at 1.
