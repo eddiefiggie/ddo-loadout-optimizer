@@ -317,3 +317,35 @@ Both wiki sources agree here, and gear-planner is the odd one out.
 - **Exact sets:** 56 to 61 (template), 26 to 27 (page).
 - **Quarantined:** 225 to 198 (template), 57 to 53 (page).
 - **`ours-differs`:** stays at 1.
+
+## Spell critical chance and damage (#951, 2026-10-30)
+
+Read same-origin in the Browser pane: `Spell Lore` rev 682774 and `Spell critical` rev 725105.
+
+| Wiki phrases | Catalog name | Evidence |
+|---|---|---|
+| `<Type> Spell Critical Chance`, `<Type> Spell Crit Chance`, `<Type> Spellcrit Chance` | that type's lore | `Spell Lore`, "Types of spell lore": "For each type of damage, there is a specific lore type" |
+| Acid, Fire, Cold, Electric / Lightning | Acid, Fire, Cold, Lightning Lore | "Acid Lore, Fire Lore, Ice Lore, Lightning Lore, - matching elemental spells". The registry folds Ice Lore into Cold Lore and Electric Lore into Lightning Lore |
+| Positive | Healing Lore | "Healing Lore, - positive energy spells" |
+| Force | Kinetic Lore | "Kinetic - force, physical and untyped" |
+| Light, Alignment, Light/Alignment | Radiance Lore | "Radiance Lore ... - light and alignment spells" |
+| Negative, Poison | Negative Lore | "Void Lore - negative energy and poison spells". The registry folds Void Lore into Negative Lore |
+| Repair, Sonic | Repair Lore, Sonic Lore | "Repair Lore - repair and rust spells", "Sonic Lore - sonic damage spells" |
+| `Universal Spell Critical Chance`, `each Spell Critical Chance` | Universal Spell Lore | `Spell Lore`'s "Artifact Universal lore" section lists exactly these sets: Eminence of Autumn, Defender of Tanaroa, Deacon of the Auricular Sacrarium, each +6%. "each" is the U81.4 relabelling (`set-bonus-universal-per-element.md`) |
+| `Spell Critical Damage`, `Universal Spell Critical Damage` with "%" | the same names | `Spell critical`: "Spell criticals usually deal double damage, or +100% extra damage" |
+
+- **One lore, several damage types.** A list naming two types one lore covers is one bonus to that lore: `Negative and Poison Spellcrit Chance` reads as Negative Lore once. Only Radiance, Negative (Void) and Kinetic Lore collapse this way (`SHARED_STATS`), because only those are stated to cover several types. Any other repeated member stays ambiguous.
+- **Every target is a percentage stat the set catalog carries.** A test pins both, and refuses an empty table. Pointing `Force` at Fire Spell Power failed it.
+
+### Open: bare `Spell Critical Chance` is not mapped
+
+`Spell Lore` lists the sets that print bare `Spell Critical Chance` under **"Artifact lore"**, next to the Solar Gem of Spell Critical Chance. It does **not** list them under "Artifact Universal lore". Those sets are Elder's Knowledge (+2/+4/+6%), Vol's Influence, Delight of the Devourer and Cooking by the Book.
+
+gear-planner carries each of these as `Universal Spell Lore`. The page's own split says they are a different bonus from the three universal sets. Whether they stack with those sets in game is not stated. The lines stay quarantined until a source settles which catalog stat they are.
+
+Heroic **Cooking by the Book**'s 4-piece line reads `+5% Legendary Bonus to Spell Critical Chance` in the template. gear-planner has `Spell Critical Damage` Legendary 5 there, and Legendary Cooking by the Book's same tier says Spell Critical Damage. This looks like a wiki typo, but that is a guess. The bare-phrase quarantine keeps it out either way.
+
+**Measured on `pages-20261027`:**
+- **Exact sets:** 61 to 75 (template), 27 to 30 (page).
+- **Quarantined lines:** 198 to 158 (template), 53 to 44 (page).
+- **`ours-differs`:** stays at 1.

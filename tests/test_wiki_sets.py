@@ -376,3 +376,80 @@ def test_every_spellpower_phrase_is_a_fold_the_synonym_registry_records():
     assert len(phrases) >= 9, phrases          # refuses to inspect an empty table
     wrong = {p: t for p, t in phrases.items() if folds.get(p) != t}
     assert not wrong, wrong
+
+
+# --- #951: spell critical chance and damage ---------------------------------------
+
+LORES = {"Acid Lore", "Fire Lore", "Cold Lore", "Lightning Lore", "Healing Lore", "Kinetic Lore",
+         "Radiance Lore", "Repair Lore", "Sonic Lore", "Negative Lore", "Universal Spell Lore"}
+CRIT = NAMES | LORES | {"Spell Critical Damage", "Universal Spell Critical Damage"}
+
+
+def _read(line):
+    return S.read_clause(line, BONUS_TYPES, CRIT)
+
+
+def _crit_names(r):
+    return [a["name"] for a in r["affixes"]]
+
+
+def test_one_damage_types_crit_chance_reads_as_its_lore():
+    for line, lore, value in (("+2% Artifact bonus to Fire Spellcrit Chance", "Fire Lore", 2),
+                              ("+6 Artifact Bonus to Negative Spell Crit Chance.", "Negative Lore", 6),
+                              ("+4% Artifact bonus to Positive Spellcrit Chance", "Healing Lore", 4),
+                              ("+2% Artifact bonus to Electric Spellcrit Chance", "Lightning Lore", 2),
+                              ("+2% Artifact bonus to Force Spellcrit Chance", "Kinetic Lore", 2)):
+        assert _read(line) == {"affixes": [{"name": lore, "type": "Artifact", "value": value}]}, (line, _read(line))
+
+
+def test_a_crit_chance_list_reads_each_damage_types_lore():
+    r = _read("+6% Artifact bonus to Electric, Repair, and Force Spell Critical Chance")
+    assert _crit_names(r) == ["Lightning Lore", "Repair Lore", "Kinetic Lore"], r
+    r = _read("+6% Artifact bonus to Sonic, Force, Light/Alignment, and Acid Spell Critical Chance")
+    assert _crit_names(r) == ["Sonic Lore", "Kinetic Lore", "Radiance Lore", "Acid Lore"], r
+
+
+def test_damage_types_one_lore_covers_collapse_into_one_bonus():
+    # Spell Lore: "Void Lore - negative energy and poison spells", "Radiance Lore ...
+    # - light and alignment spells". One bonus to that lore, never two.
+    assert _crit_names(_read("+2% Artifact bonus to Negative and Poison Spellcrit Chance")) == ["Negative Lore"]
+    assert _crit_names(_read("+6% Artifact bonus to Light, Alignment, and Positive Spellcrit Chance")) \
+        == ["Radiance Lore", "Healing Lore"]
+    assert _crit_names(_read("+6% Artifact bonus to Negative, Poison, and Force Spell Critical Chance")) \
+        == ["Negative Lore", "Kinetic Lore"]
+
+
+def test_a_repeated_member_outside_the_shared_lores_stays_quarantined():
+    # Deliberately NOT proven red: it passes on the pre-change tree too. It pins that
+    # the SHARED_STATS exception does not widen the duplicate-member rule.
+    # Electric and Lightning are both Lightning Lore, but the wiki states no lore
+    # covering two of them, so a list naming both is ambiguous text, not one bonus.
+    assert "quarantine" in _read("+6% Artifact bonus to Electric and Lightning Spell Crit Chance")
+
+
+def test_universal_crit_chance_reads_as_universal_spell_lore_and_bare_does_not():
+    for line in ("+6% Artifact bonus to Universal Spell Critical Chance",
+                 "+6% Artifact bonus to each Spell Critical Chance"):
+        assert _read(line) == {"affixes": [{"name": "Universal Spell Lore", "type": "Artifact", "value": 6}]}, line
+    # Spell Lore lists the bare-wording sets under "Artifact lore", not "Artifact
+    # Universal lore", so the bare phrase has no reviewed meaning yet.
+    assert "quarantine" in _read("+6% Artifact Bonus to Spell Critical Chance")
+
+
+def test_spell_critical_damage_is_read_as_a_percentage():
+    assert _read("+15% Legendary bonus to Spell Critical Damage") == \
+        {"affixes": [{"name": "Spell Critical Damage", "type": "Legendary", "value": 15}]}
+    assert _read("10% Legendary bonus to Spell Critical Damage") == \
+        {"affixes": [{"name": "Spell Critical Damage", "type": "Legendary", "value": 10}]}
+    assert _crit_names(_read("+15% Legendary bonus to Universal Spell Critical Damage")) == ["Universal Spell Critical Damage"]
+
+
+def test_every_crit_chance_target_is_a_lore_the_set_catalog_carries_as_a_percentage():
+    path = os.path.join(ROOT, "data", "seed", "compendium", "raw", "gearplanner_sets.json")
+    with open(path, encoding="utf-8") as fh:
+        catalog = {a["name"] for tiers in json.load(fh).values() for t in tiers for a in t["affixes"]}
+    targets = {t for p, t in S.STAT_PHRASES.items() if "Crit" in p}
+    assert len(targets) >= 10, targets          # refuses to inspect an empty table
+    assert targets <= catalog, targets - catalog
+    assert targets <= S.PERCENT_STATS, targets - S.PERCENT_STATS
+    assert S.SHARED_STATS <= targets, S.SHARED_STATS - targets
