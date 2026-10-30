@@ -243,7 +243,47 @@ STAT_PHRASES = {
     # Universal Spell Power, which the build expands per element for set bonuses.
     "each Spell Power": "Universal Spell Power",
     "each Spellpower": "Universal Spell Power",
+    # Universal spell critical chance. ddowiki `Spell Lore` rev 682774 lists exactly
+    # the sets that say "Universal Spell Critical Chance" (template) or "each Spell
+    # Critical Chance" (page) under its "Artifact Universal lore" heading: Eminence
+    # of Autumn, Defender of Tanaroa, Deacon of the Auricular Sacrarium, each +6%.
+    # "each" is the U81.4 relabelling, as for "each Spell Power" above.
+    # Bare "Spell Critical Chance" is NOT here: the page lists those sets (Elder's
+    # Knowledge, Vol's Influence, Delight of the Devourer, Cooking by the Book) under
+    # a separate "Artifact lore" heading, with the Solar Gem, not as universal lore.
+    "Universal Spell Critical Chance": "Universal Spell Lore",
+    "each Spell Critical Chance": "Universal Spell Lore",
 }
+
+#: #951 — spell critical chance for one damage type -> the catalog's lore for it.
+#: ddowiki `Spell Lore` rev 682774, "Types of spell lore": "For each type of damage,
+#: there is a specific lore type": "Acid Lore, Fire Lore, Ice Lore, Lightning Lore,
+#: - matching elemental spells", "Healing Lore, - positive energy spells", "Kinetic -
+#: force, physical and untyped", "Radiance Lore ... - light and alignment spells",
+#: "Repair Lore - repair and rust spells", "Sonic Lore - sonic damage spells", "Void
+#: Lore - negative energy and poison spells". The catalog's names for Ice and Void
+#: are Cold Lore and Negative Lore (`wiki_enchantments.LORE`; the synonym registry
+#: folds Ice Lore and Void Lore there), and Electric's lore is Lightning (the
+#: registry folds Electric Lore into Lightning Lore).
+_CRIT_CHANCE_LORE = {
+    "Acid": "Acid Lore", "Fire": "Fire Lore", "Cold": "Cold Lore",
+    "Electric": "Lightning Lore", "Lightning": "Lightning Lore",
+    "Positive": "Healing Lore", "Force": "Kinetic Lore",
+    "Light": "Radiance Lore", "Alignment": "Radiance Lore", "Light/Alignment": "Radiance Lore",
+    "Repair": "Repair Lore", "Sonic": "Sonic Lore",
+    "Negative": "Negative Lore", "Poison": "Negative Lore",
+}
+#: The three spellings the set sources use for the stat.
+_CRIT_CHANCE_HEADS = ("Spell Critical Chance", "Spell Crit Chance", "Spellcrit Chance")
+STAT_PHRASES.update({f"{dt} {head}": lore for dt, lore in _CRIT_CHANCE_LORE.items()
+                     for head in _CRIT_CHANCE_HEADS})
+
+#: #951 — catalog stats that one wiki phrase list may name more than once, because
+#: the `Spell Lore` page states that one lore covers several damage types (Radiance:
+#: light and alignment; Void: negative energy and poison; Kinetic: force, physical
+#: and untyped). "Negative and Poison Spellcrit Chance" is ONE bonus to Void Lore,
+#: so its two members collapse. Any other repeated member stays ambiguous.
+SHARED_STATS = frozenset({"Radiance Lore", "Negative Lore", "Kinetic Lore"})
 
 #: #951 — stats the catalog names WITHOUT " (%)" because the stat is itself a
 #: percentage. A "+N%" line to one of these is a bonus of N to the bare name. The
@@ -265,6 +305,14 @@ PERCENT_STATS = frozenset({
     # ddowiki `Helpless`: "5% / 15%" per set, a percent extra damage
     # (docs/wiki-evidence/helpless-damage.md).
     "Damage vs. the Helpless",
+    # Spell critical chance. ddowiki `Spell critical` rev 725105: "Magical Training
+    # ... increases the chance by 5% for all damage types"; `Spell Lore` rev 682774
+    # tabulates "<Type> Lore %" and lists each set's lore as "+6%".
+    "Acid Lore", "Fire Lore", "Cold Lore", "Lightning Lore", "Healing Lore", "Kinetic Lore",
+    "Radiance Lore", "Repair Lore", "Sonic Lore", "Negative Lore", "Universal Spell Lore",
+    # Spell critical damage. ddowiki `Spell critical` rev 725105: "Spell criticals
+    # usually deal double damage, or +100% extra damage", and its items are percents.
+    "Spell Critical Damage", "Universal Spell Critical Damage",
 })
 
 
@@ -293,7 +341,7 @@ def expand_list(stat: str, suffix: str, stat_names):
     exactly one head length does that — two readings means the text is ambiguous,
     and it stays quarantined. A member resolves only as `resolve` allows: exactly a
     catalog name, or a reviewed `STAT_PHRASES` entry ("PRR and MRR"). Any other
-    member ("Spellcrit Chance", "Amp") makes the whole line unreadable.
+    member ("Amp") makes the whole line unreadable.
     """
     parts = [p.strip() for p in _LIST_SPLIT_RE.split(stat) if p.strip()]
     if len(parts) < 2:
@@ -306,8 +354,10 @@ def expand_list(stat: str, suffix: str, stat_names):
         members = [resolve(m, stat_names, suffix) for m in members]
         # A head that turns two members into one name is not a shared head: "Sneak
         # Attack and Sneak Attack Damage" is two stats, never Sneak Attack Damage twice.
-        if all(m in stat_names for m in members) and len(set(members)) == len(members):
-            readings.add(tuple(members))
+        # The exception is a `SHARED_STATS` name, which the wiki states covers both.
+        repeated = {m for m in members if members.count(m) > 1}
+        if all(m in stat_names for m in members) and repeated <= SHARED_STATS:
+            readings.add(tuple(dict.fromkeys(members)))
     return list(readings.pop()) if len(readings) == 1 else None
 
 
