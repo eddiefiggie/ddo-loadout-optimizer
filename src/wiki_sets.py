@@ -221,6 +221,28 @@ STAT_PHRASES = {
     "Damage vs. Helpless Opponents": "Damage vs. the Helpless",
     "Helplessness Damage": "Damage vs. the Helpless",
     "Additional Damage to Helpless Targets": "Damage vs. the Helpless",
+    # Spell power written as one word. Each "<Element> Spellpower" is a fold the
+    # reviewed synonym registry records under the catalog's "<Element> Spell Power"
+    # (affix_synonyms_registry.json; ddowiki `Spell power` names the stat both ways).
+    # Only the elements the set catalog carries: Light and Poison have no catalog
+    # spellpower, so a line naming them stays quarantined.
+    "Acid Spellpower": "Acid Spell Power",
+    "Cold Spellpower": "Cold Spell Power",
+    "Electric Spellpower": "Electric Spell Power",
+    "Fire Spellpower": "Fire Spell Power",
+    "Force Spellpower": "Force Spell Power",
+    "Negative Spellpower": "Negative Spell Power",
+    "Positive Spellpower": "Positive Spell Power",
+    "Sonic Spellpower": "Sonic Spell Power",
+    "Universal Spellpower": "Universal Spell Power",
+    # "each Spell Power". ddowiki `Update 81 Patch 4 Release Notes`: set bonuses that
+    # "say they grant bonuses to Universal Spell Power ... will now instead say what
+    # they are actually doing, which is to grant bonuses to each Spell power"
+    # (docs/wiki-evidence/set-bonus-universal-per-element.md, #870). The set pages
+    # are being relabelled to this wording; the catalog still names the stat
+    # Universal Spell Power, which the build expands per element for set bonuses.
+    "each Spell Power": "Universal Spell Power",
+    "each Spellpower": "Universal Spell Power",
 }
 
 #: #951 — stats the catalog names WITHOUT " (%)" because the stat is itself a
