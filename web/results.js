@@ -897,8 +897,14 @@ function statChipEntries(v, idx2, maps, contribIdx, craftStated) {
     // to the Stats section — restoring the duplication in a form no test that
     // reads the craft list would catch. The sweep's job is "a credited point
     // that reaches no row at all"; a point the Craft section states in place has
-    // a row, so it is not residual. Augment-granted points never reach this list
-    // (`hostIds` is null for that kind) but are named for the same reason.
+    // a row, so it is not residual.
+    // #964 — augment-granted points DO reach this list: `attributionByTarget`
+    // gives each augment row its host's id. The Augments section states them
+    // under their gem whether or not the item has a craft slot, so they are
+    // never residual. Gating them on `craftStated` printed an augment's
+    // Fortification +100 a second time as "item Fortification +100" on any
+    // host with no craft rows.
+    if (c.sourceKind === "augment") continue;
     if (craftStated && CRAFT_SOURCE_KINDS.has(c.sourceKind)) continue;
     covered.add(c.stat);
     entries.push({ affix: { name: c.stat, stat: c.stat, value: c.value, type: c.bonus_type }, source: null });

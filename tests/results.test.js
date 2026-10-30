@@ -3461,7 +3461,7 @@ test("#455: a cross-added credit keeps its (from <stat>) label", () => {
 test("#455: a credited point with no affix record still reaches a chip", () => {
   // The residual sweep, proven non-vacuous. On real data the four source kinds
   // are all covered (worn by printed affixes, the six craft families and set by
-  // their own branches, augments never credited to the host) so this fires zero
+  // their own branches, augments by the Augments section — #964) so this fires zero
   // times — but a credited point that renders NOWHERE is an invisible gap, and
   // this is the arm that makes that impossible.
   const v = { variant_id: "Legacy", set_bonus: [], parsed_set_bonuses: [] };  // no affixes at all
@@ -3948,6 +3948,34 @@ test("#471: every declared augment colour is a row, filled or not", () => {
   assert.strictEqual(rows.length, 3, "one filled and two open slots, all three on the card");
   assert.ok(/aug-filled aug-green/.test(html) && /aug-open aug-blue/.test(html) && /aug-open aug-colorless/.test(html),
     "each row carries its own slot colour");
+});
+
+test("#964: an augment's stat the host does not print is stated under the gem, not also as 'item'", () => {
+  // The player report: Legendary Strap of Savviness prints no Fortification, and
+  // its card read "item Fortification +100" above "Sapphire of Heavy
+  // Fortification · Fortification +100" — one point, shown twice, the first
+  // copy attributed to an item that does not carry it. The host has no craft
+  // slot, which is what let the residual sweep re-add the augment's point.
+  // The attribution comes from `attributionByTarget` over a solver-shaped
+  // result, because that is where the augment row gains its host's id.
+  const v = { variant_id: "Strap", slot: "Belt", augment_slots: ["Green"],
+    augment_slots_norm: { colors: ["Green"], quarantined: [] },
+    affixes: [{ name: "Charisma", type: "Insight", value: 6, unit: "flat" }] };
+  const gem = { variant_id: "Sapphire of Heavy Fortification", color: "Blue", slot_color: "Green",
+    affixes: [{ name: "Fortification", type: "Enhancement", value: 100, unit: "flat" }] };
+  const res = { chosen: [{ slot: "Belt", variant: v }], augmentsPlaced: [gem],
+    breakdown: { Fortification: [{ bonus_type: "Enhancement", value: 100,
+      source: gem.variant_id, sourceKind: "augment", slot: null, hostIds: null }] } };
+  const attr = R.attributionByTarget(res);
+  assert.deepStrictEqual(attr.Fortification[0].hostIds, ["Strap"],
+    "precondition: the augment row is credited to its host, as on the live path");
+  const maps = blockMaps({ byIndex: new Map([[0, [{ variant_id: gem.variant_id, color: "Blue" }]]]) });
+  const html = R.equippedBody(v, 0, maps, new Map([[gem.variant_id, gem]]), false, false,
+    { result: res, attr, targets: ["Charisma", "Fortification"] });
+  assert.strictEqual((html.match(/Fortification \+100/g) || []).length, 1,
+    "the augment's point appears exactly once on the card");
+  assert.ok(/aug-filled[\s\S]*Fortification \+100/.test(html), "…on the gem's row");
+  assert.strictEqual(countStatLines(html), 1, "Stats keeps only what the strap itself prints");
 });
 
 test("#471: Sun and Moon slots use the SAME glyphs as the Set Bonuses tab", () => {
