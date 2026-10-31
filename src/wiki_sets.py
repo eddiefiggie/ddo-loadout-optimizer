@@ -252,6 +252,16 @@ STAT_PHRASES = {
     # Amplification" expands member by member.
     "Positive Amplification": "Healing Amplification",
     "Positive Healing Amplification": "Healing Amplification",
+    # Attack and damage. ddowiki `Template:Accuracy` rev 644332 renders Accuracy N as
+    # "N ... bonus to [[attack roll]]s", and `Template:Deadly` rev 402602 renders
+    # Deadly N as "N ... bonus to weapon damage" ("Melee and Ranged damage" for a
+    # Roman amount). The reviewed synonym registry folds "Attack" into Accuracy and
+    # "Damage" into Deadly (affix_synonyms_registry.json). Only the bare words: any
+    # longer phrase ("Sneak Attack Damage", "Critical Damage") is its own stat.
+    "Attack": "Accuracy",
+    "attack": "Accuracy",
+    "Damage": "Deadly",
+    "damage": "Deadly",
     # Universal spell critical chance. ddowiki `Spell Lore` rev 682774 lists exactly
     # the sets that say "Universal Spell Critical Chance" (template) or "each Spell
     # Critical Chance" (page) under its "Artifact Universal lore" heading: Eminence

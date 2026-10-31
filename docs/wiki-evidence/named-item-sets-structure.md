@@ -364,3 +364,19 @@ Heroic **Cooking by the Book**'s 4-piece line reads `+5% Legendary Bonus to Spel
 - **Exact sets:** 75 to 85 (template), page stays at 30.
 - **Quarantined lines:** 158 to 147 (template), 44 to 43 (page).
 - **`ours-differs`:** stays at 1.
+
+## Attack and Damage (#951, 2026-10-31)
+
+| Wiki phrases | Catalog name | Evidence |
+|---|---|---|
+| `Attack`, `attack` | Accuracy | `Template:Accuracy` rev 644332 renders Accuracy N as "N ... bonus to [[attack roll]]s". The reviewed synonym registry folds `Attack` into Accuracy |
+| `Damage`, `damage` | Deadly | `Template:Deadly` rev 402602 renders Deadly N as "N ... bonus to weapon damage" ("Melee and Ranged damage" for a Roman amount). The registry folds `Damage` into Deadly |
+
+- **`Attack and Damage` expands member by member.** gear-planner carries every affected set (Raven's Eye in three tiers, Vulkoor's Might in three tiers, Forbidden Knowledge in two, The Legendary Dread Isle's Curse) as Accuracy and Deadly at the same type and value.
+- **Only the bare words.** `Sneak Attack Damage`, `Critical Damage` and `Attack Speed` are not read through this entry, and a test pins that.
+- **Legendary Vulkoor's Might stays `ours-differs`.** Its Attack and Damage lines now read, but the open Sneak Attack ruling is unchanged.
+
+**Measured on `pages-20261027`:**
+- **Exact sets:** 85 to 88 (template), page stays at 30.
+- **Quarantined lines:** 147 to 135 (template), page stays at 43.
+- **`ours-differs`:** stays at 1.
