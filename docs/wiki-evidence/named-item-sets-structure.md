@@ -380,3 +380,20 @@ Heroic **Cooking by the Book**'s 4-piece line reads `+5% Legendary Bonus to Spel
 - **Exact sets:** 85 to 88 (template), page stays at 30.
 - **Quarantined lines:** 147 to 135 (template), page stays at 43.
 - **`ours-differs`:** stays at 1.
+
+## Dodge, Dodge Cap and Missile Deflection percentages (#951, 2026-10-31)
+
+| Catalog name (in `PERCENT_STATS`) | Evidence it is a percentage |
+|---|---|
+| Dodge | `Template:Dodge` rev 537055 renders Dodge N as "N% ... bonus to Dodge" |
+| Dodge Cap | `Dodge bonus`: "The Maximum Dodge Bonus begins at 25%" (`intrinsic-stat-caps.md` §4) |
+| Missile Deflection | `Missile Deflection` rev 691737 (read 2026-10-31): "This grants a chance to have Missiles or Eldritch Blasts miss you", with its counter listed as "+5% Bypass" |
+
+- **A "+N%" line to one of these reads as N to the bare catalog name**, the way Doublestrike and Armor-Piercing already do. gear-planner carries each affected set the same way: Minion of the Mockery in two tiers and Seasons of the Feywild as `Dodge`, Eminence of Spring as `Dodge Cap` and `Missile Deflection`, and Beacon of Magic in two tiers as `Missile Deflection`, all at the same type and value.
+- **A percent line to any other bare name stays quarantined.** A test pins that with `Assassinate`.
+- **No set becomes exact.** Every affected set still has another quarantined line, such as `Assassinate DCs` or `Threat Generation`.
+
+**Measured on `pages-20261027`:**
+- **Exact sets:** template stays at 88, page stays at 30.
+- **Quarantined lines:** 135 to 128 (template), 43 to 41 (page).
+- **`ours-differs`:** stays at 1, and no other category count moves.
