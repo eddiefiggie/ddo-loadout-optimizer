@@ -349,3 +349,18 @@ Heroic **Cooking by the Book**'s 4-piece line reads `+5% Legendary Bonus to Spel
 - **Exact sets:** 61 to 75 (template), 27 to 30 (page).
 - **Quarantined lines:** 198 to 158 (template), 53 to 44 (page).
 - **`ours-differs`:** stays at 1.
+
+## Positive, Negative, and Repair Amplification (#951, 2026-10-31)
+
+| Wiki phrases | Catalog name | Evidence |
+|---|---|---|
+| `Positive Amplification`, `Positive Healing Amplification` | Healing Amplification | `Template:Fleshmaker` rev 479947 links `[[Healing Amplification#Positive Healing Amplification\|Positive Healing Amplification]]`: the positive kind is a section of the page named for the catalog's stat. The reviewed synonym registry folds both spellings there (`affix_synonyms_registry.json`) |
+
+- **Negative and Repair Amplification are already catalog names**, so `Positive, Negative, and Repair Amplification` and `Positive and Negative Amplification` expand member by member. gear-planner carries Adherent of the Mists (Legendary) as Healing, Negative and Repair Amplification, Profane 30, which matches.
+- **A test keeps the phrase table inside the registry.** Every `<X> Amplification` phrase must be a registry synonym of its target.
+- **Left quarantined:** the two Rune Arm lines that pack three sentences into one line ("+1 ... Critical Multiplier on a 19-20. +2 ... Rune Arm DCs. +10 ... Repair Amplification"). They are not one clause, and splitting them is a separate grammar change.
+
+**Measured on `pages-20261027`:**
+- **Exact sets:** 75 to 85 (template), page stays at 30.
+- **Quarantined lines:** 158 to 147 (template), 44 to 43 (page).
+- **`ours-differs`:** stays at 1.

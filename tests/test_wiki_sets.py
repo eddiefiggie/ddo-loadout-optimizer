@@ -453,3 +453,32 @@ def test_every_crit_chance_target_is_a_lore_the_set_catalog_carries_as_a_percent
     assert targets <= catalog, targets - catalog
     assert targets <= S.PERCENT_STATS, targets - S.PERCENT_STATS
     assert S.SHARED_STATS <= targets, S.SHARED_STATS - targets
+
+
+# --- #951: positive, negative, and repair amplification -------------------------
+
+AMP = {"Healing Amplification", "Negative Amplification", "Repair Amplification"}
+
+
+def test_an_amplification_list_reads_positive_as_healing_amplification():
+    names = NAMES | AMP
+    for line in ("+30 Profane bonus to Positive, Negative, and Repair Amplification",
+                 "+30 Artifact bonus to Positive, Negative and Repair Amplification"):
+        r = S.read_clause(line, BONUS_TYPES, names)
+        ty = line.split()[1]
+        assert r == {"affixes": [{"name": n, "type": ty, "value": 30} for n in
+                                 ("Healing Amplification", "Negative Amplification", "Repair Amplification")]}, (line, r)
+    r = S.read_clause("+10 Artifact Bonus to Positive and Negative Amplification", BONUS_TYPES, names)
+    assert r == {"affixes": [{"name": n, "type": "Artifact", "value": 10} for n in
+                             ("Healing Amplification", "Negative Amplification")]}, r
+
+
+def test_every_amplification_phrase_is_a_fold_the_synonym_registry_records():
+    path = os.path.join(ROOT, "data", "seed", "compendium", "affix_synonyms_registry.json")
+    with open(path, encoding="utf-8") as fh:
+        registry = json.load(fh)
+    folds = {s: e["name"] for e in _registry_entries(registry) for s in e["synonyms"]}
+    phrases = {p: t for p, t in S.STAT_PHRASES.items() if p.endswith("Amplification")}
+    assert len(phrases) >= 2, phrases          # refuses to inspect an empty table
+    wrong = {p: t for p, t in phrases.items() if folds.get(p) != t}
+    assert not wrong, wrong
