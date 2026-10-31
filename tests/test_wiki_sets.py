@@ -519,3 +519,22 @@ def test_every_attack_and_damage_phrase_is_a_fold_the_synonym_registry_records()
     assert len(phrases) == 4, phrases          # refuses to inspect an empty table
     wrong = {p: t for p, t in phrases.items() if folds.get(p.lower()) != t}
     assert not wrong, wrong
+
+
+# --- #951: dodge and missile deflection percentages -------------------------------
+
+DODGE = {"Dodge", "Dodge Cap", "Missile Deflection"}
+
+
+def test_dodge_and_missile_deflection_percent_lines_read_the_bare_catalog_name():
+    names = NAMES | DODGE
+    for line, stat, ty, v in (("+10% Artifact Bonus to Dodge", "Dodge", "Artifact", 10),
+                              ("+3% Legendary bonus to Dodge Cap", "Dodge Cap", "Legendary", 3),
+                              ("+2% Artifact Bonus to Missile Deflection.", "Missile Deflection", "Artifact", 2)):
+        r = S.read_clause(line, BONUS_TYPES, names)
+        assert r == {"affixes": [{"name": stat, "type": ty, "value": v}]}, (line, r)
+
+
+def test_a_percent_line_to_an_unreviewed_bare_name_stays_quarantined():
+    names = NAMES | DODGE | {"Assassinate"}
+    assert "quarantine" in S.read_clause("+3% Artifact bonus to Assassinate", BONUS_TYPES, names)

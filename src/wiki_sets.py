@@ -332,6 +332,13 @@ PERCENT_STATS = frozenset({
     # Spell critical damage. ddowiki `Spell critical` rev 725105: "Spell criticals
     # usually deal double damage, or +100% extra damage", and its items are percents.
     "Spell Critical Damage", "Universal Spell Critical Damage",
+    # Dodge. ddowiki `Template:Dodge` rev 537055 renders Dodge N as "N% ... bonus to
+    # Dodge". Its cap is a percent too: ddowiki `Dodge bonus` states "The Maximum Dodge
+    # Bonus begins at 25%" (docs/wiki-evidence/intrinsic-stat-caps.md §4).
+    "Dodge", "Dodge Cap",
+    # ddowiki `Missile Deflection` rev 691737: "This grants a chance to have Missiles
+    # or Eldritch Blasts miss you", and its counter is listed as "+5% Bypass".
+    "Missile Deflection",
 })
 
 
