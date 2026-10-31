@@ -243,6 +243,15 @@ STAT_PHRASES = {
     # Universal Spell Power, which the build expands per element for set bonuses.
     "each Spell Power": "Universal Spell Power",
     "each Spellpower": "Universal Spell Power",
+    # Positive amplification. ddowiki `Template:Fleshmaker` rev 479947 links
+    # "[[Healing Amplification#Positive Healing Amplification|Positive Healing
+    # Amplification]]": the positive kind is a section of the `Healing Amplification`
+    # page, the catalog's name for it. The reviewed synonym registry folds both
+    # spellings there (affix_synonyms_registry.json). Negative and Repair
+    # Amplification are already catalog names, so "Positive, Negative, and Repair
+    # Amplification" expands member by member.
+    "Positive Amplification": "Healing Amplification",
+    "Positive Healing Amplification": "Healing Amplification",
     # Universal spell critical chance. ddowiki `Spell Lore` rev 682774 lists exactly
     # the sets that say "Universal Spell Critical Chance" (template) or "each Spell
     # Critical Chance" (page) under its "Artifact Universal lore" heading: Eminence
