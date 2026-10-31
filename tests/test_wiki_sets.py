@@ -482,3 +482,40 @@ def test_every_amplification_phrase_is_a_fold_the_synonym_registry_records():
     assert len(phrases) >= 2, phrases          # refuses to inspect an empty table
     wrong = {p: t for p, t in phrases.items() if folds.get(p) != t}
     assert not wrong, wrong
+
+
+# --- #951: attack and damage ------------------------------------------------------
+
+AD = {"Accuracy", "Deadly", "Sneak Attack Damage"}
+
+
+def test_attack_and_damage_read_as_accuracy_and_deadly():
+    names = NAMES | AD
+    for line, ty, v in (("+3 Artifact bonus to Attack and Damage", "Artifact", 3),
+                        ("+1 Profane bonus to attack and damage", "Profane", 1)):
+        r = S.read_clause(line, BONUS_TYPES, names)
+        assert r == {"affixes": [{"name": "Accuracy", "type": ty, "value": v},
+                                 {"name": "Deadly", "type": ty, "value": v}]}, (line, r)
+    assert S.read_clause("+3 Artifact bonus to Attack", BONUS_TYPES, names) == \
+        {"affixes": [{"name": "Accuracy", "type": "Artifact", "value": 3}]}
+    assert S.read_clause("+3 Artifact bonus to Damage", BONUS_TYPES, names) == \
+        {"affixes": [{"name": "Deadly", "type": "Artifact", "value": 3}]}
+
+
+def test_a_longer_damage_phrase_is_not_read_as_deadly():
+    names = NAMES | AD
+    assert S.read_clause("+3 Artifact bonus to Sneak Attack Damage", BONUS_TYPES, names) == \
+        {"affixes": [{"name": "Sneak Attack Damage", "type": "Artifact", "value": 3}]}
+    for line in ("+3 Artifact bonus to Critical Damage", "+3 Artifact bonus to Attack Speed"):
+        assert "quarantine" in S.read_clause(line, BONUS_TYPES, names), line
+
+
+def test_every_attack_and_damage_phrase_is_a_fold_the_synonym_registry_records():
+    path = os.path.join(ROOT, "data", "seed", "compendium", "affix_synonyms_registry.json")
+    with open(path, encoding="utf-8") as fh:
+        registry = json.load(fh)
+    folds = {s.lower(): e["name"] for e in _registry_entries(registry) for s in e["synonyms"]}
+    phrases = {p: t for p, t in S.STAT_PHRASES.items() if p.lower() in ("attack", "damage")}
+    assert len(phrases) == 4, phrases          # refuses to inspect an empty table
+    wrong = {p: t for p, t in phrases.items() if folds.get(p.lower()) != t}
+    assert not wrong, wrong
