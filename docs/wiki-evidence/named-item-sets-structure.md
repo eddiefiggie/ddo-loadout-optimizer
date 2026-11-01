@@ -737,3 +737,44 @@ Both new behavioral tests fail on the pre-change tree; all **80** set-reader
 tests pass after the change. Removing any of seven guards (anchored span,
 anchor ownership, note span, preceding spans, new-anchor boundary, table
 boundary, continuation-cell layout) makes the rejection test fail.
+
+
+## Named equipment without an explicit count (#952, 2026-11-01)
+
+Checked both sources directly through the DDO Wiki API in Chromium:
+[template revision 723530](https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530)
+and [page revision 720202](https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202).
+This review covers these six entries and the page's complete **Planar Focus
+sets** and **Dragonscale Armor sets** sections:
+
+| Entries | Activation wording in the template |
+|---|---|
+| Draconic Ferocity | “While an Epic-level {{Item\|Helm of the Black Dragon}} is equipped at the same time as a Flawless Black Dragonscale Armor” |
+| Draconic Mind | “While an Epic-level {{Item\|Helm of the Blue Dragon}} is equipped at the same time as a Flawless Blue Dragonscale Armor” |
+| Draconic Resilience | “While an Epic-level {{Item\|Helm of the White Dragon}} is equipped at the same time as a Flawless White Dragonscale Armor” |
+| Planar Focus: Erudition, Prowess, Subterfuge | “When this item is equipped at the same time as a Planar Conflux” |
+
+The page adds this requirement above the Draconic rows:
+
+> Flawless Dragonscale armors and helms provide a set bonus when the helm and armor of the same color are equipped.
+
+The Planar Focus section says the relic weapons must first be upgraded to
+Planar Conflux weapons. Its numbers describing trinket variants, upgrade
+ingredients, favor, and minimum level are not activation counts. Its shared
+weapon cell's `rowspan="3"` describes table layout.
+
+These checked passages state equipment relationships but no numeric piece
+requirement or “both” count. **Neither source receives an inferred count of 2.**
+The named equipment, Epic-level and same-color requirements must not be reduced
+to an unrestricted piece-count rule. All six template entries retain their
+complete conditional prose; all six page records remain `threshold-unstated`.
+No production definitions or reader behavior change.
+
+The [source review report](../reports/2026-11-01-named-equipment-count-review.json)
+preserves the six template entries, page bonus cells, complete page sections,
+and classifications at `522311e`. This is evidence for these cited sources,
+not a claim that no other wiki page states a count. At this snapshot, these six
+sets account for six of the 45 unresolved template comparisons and six of the
+50 unresolved page comparisons; the other 39/44 comparisons are outside this
+review. Further source review remains under #952; representing equipment
+relationships remains under #908.
