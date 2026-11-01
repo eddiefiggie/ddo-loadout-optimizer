@@ -425,3 +425,43 @@ same page rev 720202 and template rev 723530 before and after the mapping:
 The new positive clause and Subtle Blade parity tests both fail against the
 pre-change tree. Negative tests retain the ambiguous/percent/missing-target
 boundaries. The source switch remains under #908; this is one family of #951.
+
+## Maximum hit points: flat and percent (#951, 2026-10-31)
+
+`Maximum Hit Points`, `maximum Hit Points`, and `maximum hit points` resolve to
+the catalog's False Life stat, retaining the unit from the bonus clause:
+
+| Wiki clause | Catalog stat |
+|---|---|
+| +10 Artifact bonus to your maximum hit points | False Life / Artifact / 10 |
+| +5% Legendary Bonus to Maximum Hit Points | False Life (%) / Legendary / 5 |
+| +10% Legendary bonus to Maximum Hit Points | False Life (%) / Legendary / 10 |
+
+`False Life (enchantment)` rev **718160**, read through the wiki API in Chromium,
+defines the enchantment as granting extra hit points and its named tiers as
+granting maximum health. The reviewed synonym registry folds `Maximum Hit Points`
+and `your maximum hit points` into `False Life`. The set sources explicitly state
+the percentage on the Archons and Legendary Bulwark lines, while Seasons of the
+Feywild states a flat +10. Their catalog records preserve exactly this distinction.
+The percentage is not a claim that the ordinary False Life enchantment scales HP.
+
+The existing resolver requires the correct catalog target for the stated unit.
+A percentage never falls back to flat False Life, and flat HP never falls back to
+False Life (%). Temporary HP, conditional text, and unsupported compound phrases
+remain quarantined. The page's Legendary Bulwark `InlineWht` wrapper remains an
+unexpanded template; this mapping does not change wrapper parsing.
+
+Measured on `pages-20261101-review` (page rev 720202, template rev 723530), after
+the Assassinate family:
+
+- Template exact sets: **91 → 94**; partial: **86 → 83**. Armaments of the Archons,
+  Legendary Armaments of the Archons, and Legendary Bulwark become exact.
+- Page exact sets stay **31**. Seasons of the Feywild gains its readable HP line
+  in both sources but still has other quarantined clauses.
+- Quarantined clauses under stated thresholds: **125 → 121** (template),
+  **40 → 39** (page). No other classification count changes.
+- `ours-differs` stays **1**, and all recorded exceptions still reproduce.
+
+Both new positive tests fail against commit `61878c5`; all 58 set-reader tests
+pass with the mapping. The negative tests explicitly check that neither unit can
+substitute for the other when only one catalog target is available.

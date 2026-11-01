@@ -196,6 +196,14 @@ STAT_PHRASES = {
     # synonym registry folds this exact set spelling into the same flat stat.
     # Neither bare "DCs" nor a percentage denotes this specific bonus.
     "Assassinate DCs": "Assassinate",
+    # Maximum hit points. False Life (enchantment) rev 718160 calls its amounts
+    # "maximum health"; the reviewed synonym registry folds Maximum Hit Points
+    # into False Life. The set sources state both flat and percent bonuses.
+    # resolve keeps the percent suffix: +10% requires False Life (%), never the
+    # flat False Life stat. These are the spellings in the two set sources.
+    "Maximum Hit Points": "False Life",
+    "maximum Hit Points": "False Life",
+    "maximum hit points": "False Life",
     # All ability scores. ddowiki `Template:Stat` rev 678248: its `well rounded`
     # case renders "... bonus to all abilities", and gear-planner's catalog carries
     # each of these set lines as `Well Rounded` at the same type and value. The
