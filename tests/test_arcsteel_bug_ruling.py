@@ -7,6 +7,7 @@ import io
 import json
 import os
 import tempfile
+from natural_armor_fixture import catalog_rows
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _spec = importlib.util.spec_from_file_location('arcsteel_diff', os.path.join(ROOT, 'scripts', 'diff_harvest_sets.py'))
@@ -46,6 +47,7 @@ def fixture():
         'Epic Double Helix Set': [{'threshold': 2, 'affixes': [
             {'name': 'Sheltering', 'type': 'Insight', 'value': '5'}]}],
     }
+    catalog.update(catalog_rows(ac_only=True))  # unrelated complete source guard population
     return pages, catalog
 
 

@@ -7,6 +7,7 @@ import io
 import json
 import os
 import tempfile
+from natural_armor_fixture import catalog_rows
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _spec = importlib.util.spec_from_file_location('slice_diff', os.path.join(ROOT, 'scripts', 'diff_harvest_sets.py'))
@@ -38,6 +39,7 @@ def fixture():
         {'name': 'Seeker', 'type': 'Quality', 'value': str(value)},
         {'name': 'Deception', 'type': 'Quality', 'value': str(value)}]}]
         for name, value in (("Slice 'n Dice", 1), ("Epic Slice 'n Dice", 2))}
+    catalog.update(catalog_rows(ac_only=True))  # unrelated complete source guard population
     return pages, catalog
 
 
@@ -167,7 +169,8 @@ def test_readable_source_disagreements_stay_visible_after_name_matching():
     pages[D.PAGE]['wikitext'] = PAGE.replace(
         '* {{HELstats|+1|+2}} [[Quality bonus]] bonus to [[Sneak Attack]]\n', '').replace(
         '[[Quality bonus]] bonus to', '[[Quality bonus]] to').replace('{{HELstats|+1|+2}}', '{{HELstats|+7|+2}}')
-    for tiers in catalog.values():
+    for name in ("Slice 'n Dice", "Epic Slice 'n Dice"):
+        tiers = catalog[name]
         tiers[0]['affixes'] = [a for a in tiers[0]['affixes'] if a['name'] == 'Seeker']
     code, report = run_cli(pages, catalog)
     assert report['sets']["Slice 'n Dice"]['template']['class'] == 'exact'

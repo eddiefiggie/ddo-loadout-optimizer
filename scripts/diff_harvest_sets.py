@@ -45,6 +45,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 
 from src import wiki_sets as S  # noqa: E402
+from src import natural_armor_sets  # noqa: E402
 from src.affix_parser import BONUS_TYPES  # noqa: E402
 import load_harvest as LH  # noqa: E402
 
@@ -141,7 +142,7 @@ COMPARISON_TYPES = {"Insightful": "Insight"}
 
 def comparison_affixes(affix):
     """Canonical comparison keys, without changing units, amounts or multiplicity."""
-    ty = affix.get("type")
+    ty = natural_armor_sets.canonical_type(affix.get("name"), affix.get("type"))
     return [(name, COMPARISON_TYPES.get(ty, ty), _num(affix.get("value")))
             for name in COMPARISON_EXPANSIONS.get(affix.get("name"), (affix.get("name"),))]
 
@@ -373,6 +374,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         "count_review": count_review,
         "name_alias_review": name_review,
         "wiki_bug_review": bug_review,
+        "natural_armor_review": natural_armor_sets.catalog_review(gp_sets, require_complete=True),
         "sets": per_set,
     }
 
@@ -398,7 +400,8 @@ def main(argv) -> int:
     if "--json" in argv:
         print(json.dumps(report, indent=1, ensure_ascii=False))
         return 0 if (report["count_review"]["complete"] and report["wiki_bug_review"]["complete"]
-                     and report["name_alias_review"]["complete"]) else 1
+                     and report["name_alias_review"]["complete"]
+                     and report["natural_armor_review"]["complete"]) else 1
     print(f"harvest {hid}: revids {report['harvest_revids']}")
     print(f"gear-planner sets {report['gear_planner_sets']}, template entries {report['template_entries']}, "
           f"page rows {report['page_rows']}")
@@ -419,6 +422,10 @@ def main(argv) -> int:
     print(f"\nsources disagree (both fully read): {len(report['sources_disagree'])}")
     for d in report["sources_disagree"][:n_ex]:
         print(f"  {json.dumps(d, ensure_ascii=False)[:300]}")
+    print(f"\nnatural armor review: {json.dumps(report['natural_armor_review'], ensure_ascii=False)}")
+    if not report["natural_armor_review"]["complete"]:
+        print("Natural Armor source review is stale: recheck the eight Wiki-supported flat AC clauses.")
+        return 1
     print(f"\ncount review: {json.dumps(report['count_review'], ensure_ascii=False)}")
     print(f"\nname alias review: {json.dumps(report['name_alias_review'], ensure_ascii=False)}")
     if not report["name_alias_review"]["complete"]:
