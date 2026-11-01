@@ -525,8 +525,8 @@ reclassify any exception or establish a new value ruling.
 These five comparisons require rulings under #951/#908. The source switch stays
 blocked; production set definitions still use the existing catalog.
 
-This is a bounded part of #952. Numeric `With 2 items equipped … With 3 items
-equipped …` sentences, Unbreakable Adamancy's separate introductory line,
+At this first measurement, numeric `With 2 items equipped … With 3 items
+equipped …` sentences (implemented below), Unbreakable Adamancy's separate introductory line,
 Risk and Reward's different sentence, Abishai's multi-tier prose, and conditions
 naming specific equipment are outside this table. The centered-state condition
 on Way of the Sun Soul is also retained unread. The remaining 53/51 classifications
@@ -538,3 +538,56 @@ All five new behavioral tests fail on the pre-change tree (`fdbe1cf`); the
 unreviewed/conditional boundary test deliberately passes there. After the change,
 all 64 set-reader tests pass, including the template-to-catalog path for Captain's
 Set. The synchronized build stamp advances to `11012026.1`.
+
+
+## Explicit numeric pairs: 2 and 3 items (#952, 2026-11-01)
+
+**Source checked directly:** [DDO Wiki, Template:Named item sets, revision
+723530](https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530).
+A Chromium same-origin API read on 2026-11-01 returned that revision again.
+These four entries state both counts explicitly; no count comes from an item
+list, the upstream catalog, or the number of effects:
+
+| Entry | Exact count wording in that entry |
+|---|---|
+| Glacial Assault | `With 2 items equipped -` … `With 3 items equipped -` |
+| Levik's Defender | `With 2 items equipped -` … `With 3 items equipped -` |
+| Lorikk's Champion | `With 2 items equipped -` … `With 3 items equipped -` |
+| Tharne's Wrath | `With 2 items equipped -` … `With 3 items equipped -` |
+
+For example, the Glacial Assault entry states, verbatim:
+
+> With 2 items equipped - [[Glaciation|Glaciation +72]].  With 3 items equipped - [[Glaciation|Glaciation +78]]
+
+The quoted 2/3 form is the entire new grammar. The parser separates those two
+bonus clauses, retaining their links, templates, numbers, and punctuation.
+A conditional header, another count, an extra numeric header, or a boundary
+inside a wiki link, template argument, or HTML attribute stays unread. It does
+not retroactively assign earlier unexplained text to a threshold.
+
+This establishes **piece counts only**. For example, this change does not assign
+a bonus type or canonical stat to `Glaciation +72`; both Glacial Assault clauses
+remain quarantined by the affix reader. The other three sets' bonus prose is also
+retained for separate, wiki-backed interpretation. No production set definitions
+are replaced.
+
+Against `aef26ea`, using page rev 720202/template rev 723530, the four sets move
+from `threshold-unstated` to `partial`. Among the 282 catalog sets compared:
+
+- Template threshold-unstated: **53 → 49**; partial: **99 → 103**.
+- Template exact stays **110** and ours-differs stays **6**.
+- Page classifications and recorded exceptions are unchanged.
+
+[The numeric-threshold report](../reports/2026-11-01-numeric-set-thresholds.json)
+records all four transitions and their quarantined clauses. Together with the
+first prefix slice, PR #973 now reads thresholds for 41 previously unresolved
+template sets (16 exact, 20 partial, five exposing comparison differences).
+Other prose forms remain under #952; value disputes are under #956 and
+comparison normalization under #951.
+
+The three new behavioral tests fail on the pre-change tree (`aef26ea`). All 68
+set-reader tests pass after the change. Removing either the extra-header guard
+or the markup-boundary guard makes the rejection test fail. The four source
+paragraphs are copied into the tests with the revision permalink above, and a
+reconstruction assertion verifies that recognizing the counts loses no bonus
+markup or punctuation.

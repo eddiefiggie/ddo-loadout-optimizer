@@ -158,6 +158,30 @@ PROSE_PIECE_HEADERS = {
 }
 
 
+# Template:Named item sets rev 723530 states this paired numeric form for
+# Glacial Assault, Levik's Defender, Lorikk's Champion and Tharne's Wrath.
+# https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530
+# Keep the bonus markup and punctuation; recognizing a threshold does not
+# establish an effect's stat, value or bonus type.
+_NUMERIC_PROSE_PAIR_RE = re.compile(
+    r"^With 2 items equipped - (.+\.)\s+With 3 items equipped - (.+)$")
+_NUMERIC_PROSE_MENTION_RE = re.compile(r"\bWith \d+ items equipped\b")
+
+
+def _numeric_prose_pair(raw: str):
+    """Read only the reviewed 2/3 sentence pair, outside nested markup."""
+    match = _NUMERIC_PROSE_PAIR_RE.fullmatch(raw.strip())
+    if not match or len(_NUMERIC_PROSE_MENTION_RE.findall(raw)) != 2:
+        return None
+    two, three = match.groups()
+    # A header inside a link label, template argument or HTML attribute is not
+    # another tier. The split must not cut through any of those constructs.
+    for opening, closing in (("[[", "]]"), ("{{", "}}"), ("<", ">")):
+        if two.count(opening) != two.count(closing):
+            return None
+    return two.strip(), three.strip()
+
+
 def _tiers_from_lines(lines) -> dict:
     """Bonus lines -> {threshold: [line, ...]}; unreviewed prefaces stay under None."""
     tiers, cur = {}, None
@@ -171,6 +195,12 @@ def _tiers_from_lines(lines) -> dict:
             rest = re.split(r"Equipped\s*(?:'''|'')?\s*[:\-]", raw, maxsplit=1, flags=re.I)
             if m.group(2) and len(rest) == 2 and plain(rest[1]):
                 tiers[cur].append(rest[1].strip())
+            continue
+        numeric = _numeric_prose_pair(raw)
+        if numeric:
+            tiers.setdefault(2, []).append(numeric[0])
+            tiers.setdefault(3, []).append(numeric[1])
+            cur = 3
             continue
         prose = next(((prefix, count) for prefix, count in PROSE_PIECE_HEADERS.items()
                       if raw.strip().startswith(prefix)), None)

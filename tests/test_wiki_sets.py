@@ -669,3 +669,72 @@ def test_unreviewed_or_conditional_prose_never_supplies_a_count():
             "When some items from the set are equipped, you gain a +3 Artifact bonus to Strength",
             "This set has three items.", "{{Item|One}} {{Item|Two}}"):
         assert S._tiers_from_lines([line]) == {None: [line]}, line
+
+
+# Numeric paired headers quoted from Template:Named item sets rev 723530.
+# https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530
+NUMERIC_PROSE_FIXTURES = {'glacial assault': 'With 2 items equipped - [[Glaciation|Glaciation +72]].  With 3 items equipped '
+                    '- [[Glaciation|Glaciation +78]]',
+ "levik's defender": 'With 2 items equipped - +3 [[Insight bonus]] to AC, 20% Additional Melee '
+                     'Threat, Unlisted Fortitude and Will Save +1 (Stacks with most but not '
+                     'Parrying/Greater Parrying).  With 3 items equipped - +5 insight AC, 30% '
+                     'Additional Melee Threat (Threat stacks, but only with non-like amounts)',
+ "lorikk's champion": 'With 2 items equipped - Provides a +72 [[Equipment bonus]] to healing spell '
+                      'power. With 3 items equipped - Provides a +78 Equipment bonus to healing '
+                      'spell '
+                      'power.{{#ifeq:{{NAMESPACE}}|Item|{{#ifeq:{{IO|{{{nocat|0}}}}}|1||[[Category:Nonstandard '
+                      'Spell Power items]]}}</includeonly>}}',
+ "tharne's wrath": 'With 2 items equipped - [[Ghost Touch]] and -20% Melee Threat.  With 3 items '
+                   'equipped - [[Feather Falling]].'}
+
+
+def test_numeric_prose_preserves_each_wiki_bonus_under_its_explicit_threshold():
+    for name, raw in NUMERIC_PROSE_FIXTURES.items():
+        tiers = S._tiers_from_lines([raw])
+        assert set(tiers) == {2, 3}, (name, tiers)
+        assert len(tiers[2]) == len(tiers[3]) == 1
+        # Reconstruct the source including links, templates and punctuation.
+        # Only the two stated headers and separator whitespace may be removed.
+        reconstructed = ("With 2 items equipped - " + tiers[2][0] +
+                         " With 3 items equipped - " + tiers[3][0])
+        assert " ".join(reconstructed.split()) == " ".join(raw.split()), name
+    assert S._tiers_from_lines([NUMERIC_PROSE_FIXTURES["glacial assault"]]) == {
+        2: ["[[Glaciation|Glaciation +72]]."], 3: ["[[Glaciation|Glaciation +78]]"]}
+
+
+def test_numeric_thresholds_reach_parity_without_inventing_affix_meanings():
+    raw = NUMERIC_PROSE_FIXTURES["glacial assault"]
+    template = ("<onlyinclude>{{#switch:x|unused\n| glacial assault = " + raw +
+                "{{#vardefine:set|Glacial Assault}}\n| #default = Undefined}}</onlyinclude>")
+    tiers = S.template_sets(template)["glacial assault"]["tiers"]
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    classification, detail = D.classify(
+        tiers, D.gp_tiers(catalog["Glacial Assault"]), {"Cold Spell Power"})
+    assert classification == "partial", (classification, detail)
+    assert {q["threshold"] for q in detail["quarantined"]} == {2, 3}
+    assert len(detail["quarantined"]) == 2  # No stat or bonus type inferred from Glaciation.
+
+
+def test_numeric_prose_keeps_prior_unknown_text_and_following_explicit_headers():
+    tiers = S._tiers_from_lines([
+        "Unreviewed preface", NUMERIC_PROSE_FIXTURES["tharne's wrath"],
+        "3 Pieces Equipped: +2 Artifact bonus to Spell Power"])
+    assert tiers == {None: ["Unreviewed preface"],
+                     2: ["[[Ghost Touch]] and -20% Melee Threat."],
+                     3: ["[[Feather Falling]].", "+2 Artifact bonus to Spell Power"]}
+
+
+def test_unreviewed_numeric_prose_or_embedded_headers_remain_unread():
+    # Unchanged rejection boundaries: do not invent additional grammar or remove
+    # a condition just because a sentence contains the digits 2 and 3.
+    for raw in (
+            "With 2 items equipped while raging - +2 Artifact bonus to Strength. With 3 items equipped - +3 Artifact bonus to Strength",
+            "With 2 items equipped - +2 Artifact bonus to Strength. With 3 items equipped while centered - +3 Artifact bonus to Strength",
+            "With 2 items equipped - +2 Artifact bonus to Strength. With 4 items equipped - +4 Artifact bonus to Strength",
+            "With 2 items equipped - +2 Artifact bonus to Strength. With 3 items equipped - +3 Artifact bonus to Strength. With 4 items equipped - +4 Artifact bonus to Strength",
+            "With 2 items equipped - [[Example|A description. With 3 items equipped - more description]]",
+            "With 2 items equipped - {{Example|A description. With 3 items equipped - more description}}",
+            'With 2 items equipped - <span title="A description. With 3 items equipped - more description">Text</span>',
+            "These 2 items are listed, with 3 bonuses."):
+        assert S._tiers_from_lines([raw]) == {None: [raw]}, raw
