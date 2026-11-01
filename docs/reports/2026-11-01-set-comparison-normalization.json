@@ -1,0 +1,175 @@
+{
+  "baseline_commit": "6ce0f9b4090fa62c35108ddbc44572b964b87ec7",
+  "wiki_checked_date": "2026-11-01",
+  "sources": {
+    "Insight bonus": {
+      "revid": 689072,
+      "citation": "https://ddowiki.com/index.php?title=Insight_bonus&oldid=689072"
+    },
+    "Named item sets": {
+      "revid": 720202,
+      "citation": "https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202"
+    },
+    "Template:Named item sets": {
+      "revid": 723530,
+      "citation": "https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530"
+    },
+    "Insightful bonus": {
+      "revid": 140374,
+      "citation": "https://ddowiki.com/index.php?title=Insightful_bonus&oldid=140374"
+    },
+    "Sheltering": {
+      "revid": 595036,
+      "citation": "https://ddowiki.com/index.php?title=Sheltering&oldid=595036"
+    },
+    "Template:Sheltering": {
+      "revid": 696462,
+      "citation": "https://ddowiki.com/index.php?title=Template:Sheltering&oldid=696462"
+    }
+  },
+  "population": "282 gear-planner catalog sets; each source compared independently",
+  "counts_before": {
+    "template": {
+      "exact": 110,
+      "threshold-unstated": 45,
+      "partial": 107,
+      "ours-differs": 6,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 50,
+      "exact": 31,
+      "partial": 28,
+      "upstream-stale": 1
+    }
+  },
+  "counts_after": {
+    "template": {
+      "exact": 111,
+      "threshold-unstated": 45,
+      "partial": 107,
+      "ours-differs": 5,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 50,
+      "exact": 31,
+      "partial": 28,
+      "upstream-stale": 1
+    }
+  },
+  "changed_sets": {
+    "Double Helix Set": {
+      "before": {
+        "template": {
+          "class": "ours-differs",
+          "extra": [
+            {
+              "threshold": 2,
+              "affix": [
+                "Sheltering",
+                "Insightful",
+                2
+              ]
+            }
+          ],
+          "quarantined": [],
+          "wiki_disagrees": [],
+          "upstream_stale": []
+        },
+        "page": {
+          "class": "no-wiki-name"
+        }
+      },
+      "after": {
+        "template": {
+          "class": "exact"
+        },
+        "page": {
+          "class": "no-wiki-name"
+        }
+      }
+    },
+    "Epic Double Helix Set": {
+      "before": {
+        "template": {
+          "class": "ours-differs",
+          "extra": [
+            {
+              "threshold": 2,
+              "affix": [
+                "Sheltering",
+                "Insightful",
+                4
+              ]
+            }
+          ],
+          "quarantined": [],
+          "wiki_disagrees": [],
+          "upstream_stale": []
+        },
+        "page": {
+          "class": "no-wiki-name"
+        }
+      },
+      "after": {
+        "template": {
+          "class": "ours-differs",
+          "extra": [
+            {
+              "threshold": 2,
+              "affix": [
+                "Physical Sheltering",
+                "Insight",
+                4
+              ]
+            },
+            {
+              "threshold": 2,
+              "affix": [
+                "Magical Sheltering",
+                "Insight",
+                4
+              ]
+            }
+          ],
+          "quarantined": [],
+          "wiki_disagrees": [],
+          "upstream_stale": []
+        },
+        "page": {
+          "class": "no-wiki-name"
+        }
+      }
+    }
+  },
+  "count_review": {
+    "complete": true,
+    "errors": [],
+    "sources": {
+      "template": {
+        "source_changed": false,
+        "unresolved": 45,
+        "missing": [],
+        "stale": [],
+        "invalid_findings": []
+      },
+      "page": {
+        "source_changed": false,
+        "unresolved": 50,
+        "missing": [],
+        "stale": [],
+        "invalid_findings": []
+      }
+    }
+  },
+  "stale_disagreement_records": [],
+  "stale_upstream_records": [],
+  "scope": "Comparison only; source affixes and production definitions unchanged. Epic +4/+5 conflict remains under #956."
+}

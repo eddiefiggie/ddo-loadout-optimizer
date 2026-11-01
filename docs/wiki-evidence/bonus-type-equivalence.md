@@ -72,6 +72,10 @@ rules out, and it would wrongly suppress a bonus that genuinely stacks.
   `tests/test_affix_parser.py:188` are **dormant against the live gear-planner path** — they
   guard a parser the shipping dataset does not flow through. Recorded because the rule reads
   as active protection and is not.
+  Separately, the [set parity comparison ruling](set-comparison-normalization.md)
+  (2026-11-01, #951) uses the wiki redirect and explicit link targets to compare
+  `Insightful` as `Insight`. That normalization is confined to comparison keys;
+  it does not change the shared parser or production stacking buckets.
 - **`Vitality` (all `False Life`), `Orb` (all `Orb Bonus`), `Festive`, `Penalty`** — all
   legitimate native types, no collapse warranted. Each names a distinct in-game bonus type,
   which is the actual collapse test: per the `Implement` entry below, *a stat appearing under
