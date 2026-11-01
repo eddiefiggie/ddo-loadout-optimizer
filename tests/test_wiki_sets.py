@@ -48,7 +48,7 @@ def test_threshold_header_alone_or_heading_its_first_clause():
     assert tiers == {3: ["* +2 Artifact bonus to Spell Power"], 5: ["+5 Artifact bonus to Spell Power"]}
 
 
-def test_a_prose_threshold_is_not_a_threshold():
+def test_an_unreviewed_prose_threshold_is_not_a_threshold():
     tiers = S._tiers_from_lines(["When both items are equipped, you gain a +2% Artifact bonus to X."])
     assert list(tiers) == [None]
 
@@ -604,3 +604,68 @@ def test_maximum_hit_points_requires_the_catalog_stat_for_the_stated_unit():
                  "+10 Artifact bonus to maximum hit points while raging",
                  "+10% Legendary bonus to Maximum Hit Points and Spell Points"):
         assert "quarantine" in S.read_clause(line, BONUS_TYPES, NAMES | {"False Life", "False Life (%)"}), line
+
+
+# --- #952: exact prose headers from Template:Named item sets rev 723530 ---------
+
+def test_reviewed_prose_headers_assign_the_stated_piece_counts():
+    for header, count in (
+            ("While wearing two pieces from the Anger of the Avalanche set, you gain:", 2),
+            ("While wearing three items from the Dreadkeeper set, you gain:", 3),
+            ("While wearing both items from the Brilliant Crescents set, you gain:", 2),
+            ("While wearing any five items from the The Devil's Handiwork, you gain:", 5),
+            ("When all three items from the set are equipped, you will gain a ", 3)):
+        clause = "+2 Artifact bonus to Spell Power"
+        assert S._tiers_from_lines([header + clause]) == {count: [clause]}, header
+
+
+def test_prose_header_preserves_inline_templates_and_links():
+    clause = "+1 [[Quality bonus]] to [[Strength]]"
+    assert S._tiers_from_lines([
+        "While wearing both items from the Captain's Set, you gain: " + clause
+    ]) == {2: [clause]}
+    # Unexpanded bonus templates must still reach the clause reader's quarantine.
+    assert S._tiers_from_lines([
+        "While wearing both items from the Captain's Set, you gain: {{Mystery|2}}"
+    ]) == {2: ["{{Mystery|2}}"]}
+
+
+def test_prose_header_reads_the_savant_context_sentence_without_a_stray_none_tier():
+    line = ("This item is one of the two pieces of the Air Savant set. "
+            "When both items are equipped, you gain a "
+            "+2% Artifact bonus to your Electric Spell Critical Chance.")
+    assert S._tiers_from_lines([line]) == {
+        2: ["+2% Artifact bonus to your Electric Spell Critical Chance."]}
+
+
+def test_prose_threshold_flows_through_template_reader_and_catalog_parity():
+    code = ("<onlyinclude>{{#switch:x|unused\n| captain's set = "
+            "While wearing both items from the Captain's Set, you gain: "
+            "+1 [[Quality bonus]] to [[Strength]]"
+            "{{#vardefine:set|Captain's Set}}\n| #default = Undefined set}}</onlyinclude>")
+    entry = S.template_sets(code)["captain's set"]
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    classification, detail = D.classify(
+        entry["tiers"], D.gp_tiers(catalog["Captain's Set"]), {"Strength"})
+    assert classification == "exact", (classification, detail)
+
+
+def test_prose_header_changes_tiers_without_reassigning_earlier_lines():
+    tiers = S._tiers_from_lines([
+        "Unreviewed preface", "While wearing both items from the Captain's Set, you gain:",
+        "+1 Quality bonus to Strength", "3 Pieces Equipped: +2 Artifact bonus to Spell Power"])
+    assert tiers == {None: ["Unreviewed preface"], 2: ["+1 Quality bonus to Strength"],
+                     3: ["+2 Artifact bonus to Spell Power"]}
+
+
+def test_unreviewed_or_conditional_prose_never_supplies_a_count():
+    # Deliberate unchanged boundaries: a word 'both', a near-match, or an item
+    # list is not permission to discard conditions or infer an equip threshold.
+    for line in (
+            "While wearing both items from the Captain's Set and raging, you gain: +1 Quality bonus to Strength",
+            "While wearing both items from an unknown set, you gain: +1 Quality bonus to Strength",
+            "When all three items from the set are equipped and you are centered, you will gain a +3 Artifact bonus to Strength",
+            "When some items from the set are equipped, you gain a +3 Artifact bonus to Strength",
+            "This set has three items.", "{{Item|One}} {{Item|Two}}"):
+        assert S._tiers_from_lines([line]) == {None: [line]}, line

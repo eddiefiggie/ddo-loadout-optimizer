@@ -16,8 +16,9 @@ a reason, never defaulted. Gear-planner's set catalog stays the build's source
 until the parity diff (`scripts/diff_harvest_sets.py`) shows ours-wrong = 0.
 
 NEVER INFER. Two specific temptations this module refuses:
-  * A row with no `N Pieces Equipped:` header has no stated threshold, even
-    when its item list has N entries. `threshold` is None and the diff reports it.
+  * A row with no explicit piece header or reviewed prose count has no stated
+    threshold, even when its item list has N entries. `threshold` is None and
+    the diff reports it.
   * A `HELstats` row's Legendary half has no anchor of its own. Its name is not
     invented (`Legendary <anchor>` is the obvious guess, and it is a guess); the
     row is keyed by its anchor plus the tier the template code assigns.
@@ -108,8 +109,57 @@ def plain(line: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
+# #952 — exact prose prefixes from Template:Named item sets rev 723530.
+# Each count is stated in the prefix itself; set names are part of the match so
+# new or conditional wording cannot silently broaden the grammar. Strip only
+# these prefixes and preserve the remaining markup for read_clause. Evidence and
+# deliberately unsupported forms: docs/wiki-evidence/named-item-sets-structure.md.
+PROSE_PIECE_HEADERS = {
+    'This item is one of the two pieces of the Air Savant set. When both items are equipped, you gain a ': 2,
+    'This item is one of the two pieces of the Archmage set. When both items are equipped, you gain a ': 2,
+    'This item is one of the two pieces of the Earth Savant set. When both items are equipped, you gain a ': 2,
+    'This item is one of the two pieces of the Fire Savant set. When both items are equipped, you gain a ': 2,
+    'This item is one of the two pieces of the Water Savant set. When both items are equipped, you gain a ': 2,
+    'When all three items from the set are equipped, you will gain a ': 3,
+    "While wearing any five items from the Epic The Devil's Handiwork, you gain:": 5,
+    "While wearing any five items from the The Devil's Handiwork, you gain:": 5,
+    'While wearing both items from the Brilliant Crescents set, you gain:': 2,
+    "While wearing both items from the Captain's Set, you gain:": 2,
+    'While wearing both items from the Double Helix Set, you gain:': 2,
+    "While wearing both items from the Epic Captain's Set, you gain:": 2,
+    'While wearing both items from the Epic Double Helix Set, you gain:': 2,
+    'While wearing both items from the Epic Griffon Set, you gain:': 2,
+    "While wearing both items from the Epic Slice 'n Dice Set, you gain:": 2,
+    'While wearing both items from the Griffon Set, you gain:': 2,
+    'While wearing both items from the Mountainskin Set, you gain:': 2,
+    "While wearing both items from the Slice 'n Dice Set, you gain:": 2,
+    'While wearing three items from the Arcsteel Battlemage set, you gain:': 3,
+    'While wearing three items from the Dreadkeeper set, you gain:': 3,
+    'While wearing three items from the Esoteric Initiate set, you gain:': 3,
+    'While wearing three items from the Feywild Dreamer set, you gain:': 3,
+    'While wearing three items from the Flamecleansed Fury set, you gain:': 3,
+    'While wearing three items from the Guardian of the Gates set, you gain:': 3,
+    "While wearing three items from the Hruit's Influence set, you gain:": 3,
+    'While wearing three items from the Part of the Family set, you gain:': 3,
+    'While wearing three items from the Wallwatch set, you gain:': 3,
+    'While wearing two pieces from the Anger of the Avalanche set, you gain:': 2,
+    'While wearing two pieces from the Astute Alchemist set, you gain:': 2,
+    'While wearing two pieces from the Chained Elemental set, you gain:': 2,
+    'While wearing two pieces from the Conduit of the Titans set, you gain:': 2,
+    'While wearing two pieces from the Fastidious Fabricator set, you gain:': 2,
+    'While wearing two pieces from the Legacy of Levikk set, you gain:': 2,
+    'While wearing two pieces from the Legacy of Lorikk set, you gain:': 2,
+    'While wearing two pieces from the Legacy of Tharne set, you gain:': 2,
+    'While wearing two pieces from the Mantle of Suulomades set, you gain:': 2,
+    'While wearing two pieces from the Masterful Magewright set, you gain:': 2,
+    'While wearing two pieces from the Mind and Matter set, you gain:': 2,
+    'While wearing two pieces from the One with the Swarm set, you gain:': 2,
+    'While wearing two pieces from the Tyrannical Tinkerer set, you gain:': 2,
+}
+
+
 def _tiers_from_lines(lines) -> dict:
-    """Bonus lines -> {threshold: [line, ...]}; lines before any header go under None."""
+    """Bonus lines -> {threshold: [line, ...]}; unreviewed prefaces stay under None."""
     tiers, cur = {}, None
     for raw in lines:
         m = _PIECES_RE.match(plain(raw))
@@ -121,6 +171,15 @@ def _tiers_from_lines(lines) -> dict:
             rest = re.split(r"Equipped\s*(?:'''|'')?\s*[:\-]", raw, maxsplit=1, flags=re.I)
             if m.group(2) and len(rest) == 2 and plain(rest[1]):
                 tiers[cur].append(rest[1].strip())
+            continue
+        prose = next(((prefix, count) for prefix, count in PROSE_PIECE_HEADERS.items()
+                      if raw.strip().startswith(prefix)), None)
+        if prose:
+            prefix, cur = prose
+            tiers.setdefault(cur, [])
+            rest = raw.strip()[len(prefix):].strip()
+            if plain(rest):
+                tiers[cur].append(rest)
             continue
         if plain(raw):
             tiers.setdefault(cur, []).append(raw.strip())

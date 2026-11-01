@@ -12,7 +12,7 @@ set with what the wiki states for it, per source:
 Each (set, source) lands in one class:
 
   no-wiki-name       — the source has no entry under this exact name
-  threshold-unstated — the source states bonus lines under no `N Pieces Equipped:`
+  threshold-unstated — bonus lines lack an explicit header or reviewed prose count
   threshold-differs  — the stated thresholds are not gear-planner's
   exact              — every line read, and the affixes equal gear-planner's
   partial            — some lines quarantined; every line read agrees with gear-planner

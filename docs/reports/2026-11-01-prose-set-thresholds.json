@@ -1,0 +1,1099 @@
+{
+  "baseline_commit": "fdbe1cf4e13eb5f4cfb4b9fd7de6d355de3b5a97",
+  "harvest_revids": {
+    "Named item sets": 720202,
+    "Template:Named item sets": 723530
+  },
+  "population": "282 gear-planner catalog sets; each wiki source compared independently",
+  "counts_before": {
+    "template": {
+      "exact": 94,
+      "threshold-unstated": 90,
+      "partial": 83,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "ours-differs": 1,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 51,
+      "exact": 31,
+      "partial": 27,
+      "upstream-stale": 1
+    }
+  },
+  "counts_after": {
+    "template": {
+      "exact": 110,
+      "threshold-unstated": 53,
+      "partial": 99,
+      "ours-differs": 6,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 51,
+      "exact": 31,
+      "partial": 27,
+      "upstream-stale": 1
+    }
+  },
+  "changed_template_sets": {
+    "Air Savant": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "This item is one of the two pieces of the Air Savant set. When both items are equipped, you gain a +2% Artifact bonus to your Electric Spell Critical Chance."
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Anger of the Avalanche": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the Anger of the Avalanche set, you gain:",
+          "+6% Artifact bonus to Cold, Sonic, and Electric Spell Crit Chance",
+          "+30 Artifact bonus to Cold, Sonic, and Electric Spell Power"
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Archmage": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "This item is one of the two pieces of the Archmage set. When both items are equipped, you gain a +1% Artifact bonus to your Critical Chance with all spells."
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "+1% Artifact bonus to your Critical Chance with all spells.",
+            "reason": "stat phrase not in the vocabulary: 'Critical Chance with all spells (%)'"
+          }
+        ]
+      }
+    },
+    "Arcsteel Battlemage": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing three items from the Arcsteel Battlemage set, you gain:",
+          "+25% Artifact bonus to Electric, Fire, Force, and Repair Spell Power",
+          "+5% Artifact bonus to Electric, Fire, Force, and Repair Spell Crit Chance",
+          "+2 Artifact bonus to Intelligence",
+          "+1 Artifact bonus to Spell DCs."
+        ]
+      },
+      "after": {
+        "class": "ours-differs",
+        "extra": [
+          {
+            "threshold": 3,
+            "affix": [
+              "Intelligence",
+              "Artifact",
+              2
+            ]
+          }
+        ],
+        "quarantined": [
+          {
+            "threshold": 3,
+            "line": "+25% Artifact bonus to Electric, Fire, Force, and Repair Spell Power",
+            "reason": "stat phrase not in the vocabulary: 'Electric, Fire, Force, and Repair Spell Power (%)'"
+          }
+        ],
+        "wiki_disagrees": [],
+        "upstream_stale": []
+      }
+    },
+    "Astute Alchemist": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the Astute Alchemist set, you gain:",
+          "+6% Artifact bonus to Fire, Poison, and Acid Spell Critical Chance",
+          "+30 Artifact bonus to Fire, Poison, and Acid Spell Power"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "+30 Artifact bonus to Fire, Poison, and Acid Spell Power",
+            "reason": "stat phrase not in the vocabulary: 'Fire, Poison, and Acid Spell Power'"
+          }
+        ]
+      }
+    },
+    "Brilliant Crescents": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing both items from the Brilliant Crescents set, you gain:",
+          "+20% Offhand Strike Chance."
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "+20% Offhand Strike Chance.",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          }
+        ]
+      }
+    },
+    "Captain's Set": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing both items from the Captain's Set, you gain: +1 Quality bonus to Strength"
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Chained Elementals": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the Chained Elemental set, you gain:",
+          "+6% Artifact bonus to Fire, Cold, Acid, and Electric Spell Critical Chance",
+          "+30 Artifact bonus to Fire, Cold, Acid, and Electric Spell Power"
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Conduit of the Titans": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the Conduit of the Titans set, you gain:",
+          "+3 Artifact bonus to Rune Arm DCs",
+          "+6% Artifact bonus to Electric, Repair, and Force Spell Critical Chance",
+          "+30 Artifact bonus to Electric, Repair, and Force Spell Power"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "+30 Artifact bonus to Electric, Repair, and Force Spell Power",
+            "reason": "stat phrase not in the vocabulary: 'Electric, Repair, and Force Spell Power'"
+          }
+        ]
+      }
+    },
+    "Double Helix Set": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing both items from the Double Helix Set, you gain: +2 Insightful bonus to Sheltering"
+        ]
+      },
+      "after": {
+        "class": "ours-differs",
+        "extra": [
+          {
+            "threshold": 2,
+            "affix": [
+              "Sheltering",
+              "Insightful",
+              2
+            ]
+          }
+        ],
+        "quarantined": [],
+        "wiki_disagrees": [],
+        "upstream_stale": []
+      }
+    },
+    "Dreadkeeper": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing three items from the Dreadkeeper set, you gain:",
+          "+25 Artifact bonus to Negative and Force Spell Power",
+          "+5% Artifact bonus to Negative and Force Spell Crit Chance",
+          "+2 Artifact bonus to Intelligence",
+          "+10 Artifact bonus to Physical Resistance Rating",
+          "+1 Artifact bonus to Spell DCs"
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Earth Savant": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "This item is one of the two pieces of the Earth Savant set. When both items are equipped, you gain a +2% Artifact bonus to your Acid Spell Critical Chance."
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Epic Captain's Set": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing both items from the Epic Captain's Set, you gain: +2 Quality bonus to Strength"
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Epic Double Helix Set": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing both items from the Epic Double Helix Set, you gain: +4 Insightful bonus to Sheltering"
+        ]
+      },
+      "after": {
+        "class": "ours-differs",
+        "extra": [
+          {
+            "threshold": 2,
+            "affix": [
+              "Sheltering",
+              "Insightful",
+              4
+            ]
+          }
+        ],
+        "quarantined": [],
+        "wiki_disagrees": [],
+        "upstream_stale": []
+      }
+    },
+    "Epic Griffon Set": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing both items from the Epic Griffon Set, you gain: +2 Quality bonus to Constitution"
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Epic The Devil's Handiwork": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing any five items from the Epic The Devil's Handiwork, you gain: +3 Quality bonus to all Ability stats"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 5,
+            "line": "+3 Quality bonus to all Ability stats",
+            "reason": "stat phrase not in the vocabulary: 'all Ability stats'"
+          }
+        ]
+      }
+    },
+    "Esoteric Initiate": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing three items from the Esoteric Initiate set, you gain:",
+          "+25 Artifact bonus to Universal Spell Power",
+          "+2 Artifact bonus to Intelligence, Wisdom, and Charisma",
+          "+2 Artifact bonus to Spell DCs",
+          "+10 Magical Resistance Rating Cap"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 3,
+            "line": "+10 Magical Resistance Rating Cap",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          }
+        ]
+      }
+    },
+    "Fastidious Fabricator": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the Fastidious Fabricator set, you gain:",
+          "+30 Artifact bonus to Magical Resistance Rating",
+          "+30 Artifact bonus to MRR Cap",
+          "+5 Artifact bonus to Balance and Repair"
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Feywild Dreamer": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing three items from the Feywild Dreamer set, you gain:",
+          "+25 Artifact bonus to Sonic, Force, Light and Acid Spell Power",
+          "+5% Artifact bonus to Sonic, Force, Light and Acid Spell Crit Chance",
+          "+2 Artifact bonus to Charisma",
+          "+1 Artifact bonus to Spell DCs"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 3,
+            "line": "+25 Artifact bonus to Sonic, Force, Light and Acid Spell Power",
+            "reason": "stat phrase not in the vocabulary: 'Sonic, Force, Light and Acid Spell Power'"
+          }
+        ]
+      }
+    },
+    "Fire Savant": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "This item is one of the two pieces of the Fire Savant set. When both items are equipped, you gain a +2% Artifact bonus to your Fire Spell Critical Chance."
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Flamecleansed Fury": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing three items from the Flamecleansed Fury set, you gain:",
+          "+25 Artifact bonus to Fire, Force, Light and Positive Spell Power",
+          "+5% Artifact bonus to Fire, Force, Light and Positive Spell Crit Chance",
+          "+2 Artifact bonus to Wisdom and Charisma",
+          "+1 Artifact bonus to Spell DCs"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 3,
+            "line": "+25 Artifact bonus to Fire, Force, Light and Positive Spell Power",
+            "reason": "stat phrase not in the vocabulary: 'Fire, Force, Light and Positive Spell Power'"
+          }
+        ]
+      }
+    },
+    "Griffon Set": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing both items from the Griffon Set, you gain: +1 Quality bonus to Constitution"
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Guardian of the Gates": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing three items from the Guardian of the Gates set, you gain:",
+          "+10% Artifact bonus to Armor Class",
+          "+5 Artifact bonus to Physical Resistance Rating",
+          "+15 Artifact bonus to Magical Resistance Rating",
+          "+75% Artifact bonus to Melee Threat Generation",
+          "+10% Artifact bonus to Fire, Cold, Acid, and Electric Absorption"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 3,
+            "line": "+75% Artifact bonus to Melee Threat Generation",
+            "reason": "stat phrase not in the vocabulary: 'Melee Threat Generation (%)'"
+          },
+          {
+            "threshold": 3,
+            "line": "+10% Artifact bonus to Fire, Cold, Acid, and Electric Absorption",
+            "reason": "stat phrase not in the vocabulary: 'Fire, Cold, Acid, and Electric Absorption (%)'"
+          }
+        ]
+      }
+    },
+    "Hruit's Influence": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing three items from the Hruit's Influence set, you gain:",
+          "+25 Artifact bonus to Fire, Cold, Lightning, and Positive Spell Power",
+          "+5% Artifact bonus to Fire, Cold, Lightning, and Positive Spell Crit Chance",
+          "+2 Artifact bonus to Wisdom",
+          "+1 Artifact bonus to Spell DCs"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 3,
+            "line": "+25 Artifact bonus to Fire, Cold, Lightning, and Positive Spell Power",
+            "reason": "stat phrase not in the vocabulary: 'Fire, Cold, Lightning, and Positive Spell Power'"
+          }
+        ]
+      }
+    },
+    "Legacy of Levikk": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the Legacy of Levikk set, you gain:",
+          "+10% Artifact bonus to Armor Class",
+          "+30 Artifact bonus to Physical Resistance Rating",
+          "+75% Artifact bonus to Melee Threat Generation"
+        ]
+      },
+      "after": {
+        "class": "ours-differs",
+        "extra": [
+          {
+            "threshold": 2,
+            "affix": [
+              "Armor Class (%)",
+              "Artifact",
+              10
+            ]
+          }
+        ],
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "+75% Artifact bonus to Melee Threat Generation",
+            "reason": "stat phrase not in the vocabulary: 'Melee Threat Generation (%)'"
+          }
+        ],
+        "wiki_disagrees": [],
+        "upstream_stale": []
+      }
+    },
+    "Legacy of Lorikk": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the Legacy of Lorikk set, you gain:",
+          "+6% Artifact bonus to Fire, Force, Light and Positive Spell Crit Chance",
+          "+30 Artifact bonus to Fire, Force, Light and Positive Spell Power"
+        ]
+      },
+      "after": {
+        "class": "ours-differs",
+        "extra": [
+          {
+            "threshold": 2,
+            "affix": [
+              "Fire Lore",
+              "Artifact",
+              6
+            ]
+          },
+          {
+            "threshold": 2,
+            "affix": [
+              "Kinetic Lore",
+              "Artifact",
+              6
+            ]
+          }
+        ],
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "+30 Artifact bonus to Fire, Force, Light and Positive Spell Power",
+            "reason": "stat phrase not in the vocabulary: 'Fire, Force, Light and Positive Spell Power'"
+          }
+        ],
+        "wiki_disagrees": [],
+        "upstream_stale": []
+      }
+    },
+    "Legacy of Tharne": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the Legacy of Tharne set, you gain:",
+          "+15% Artifact bonus to Doublestrike and Doubleshot",
+          "+3 Sneak Attack Dice",
+          "+5 Artifact bonus to Spot and Search"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "+3 Sneak Attack Dice",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          }
+        ]
+      }
+    },
+    "Mantle of Suulomades": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the Mantle of Suulomades set, you gain:",
+          "+30 Artifact bonus to Physical and Magical Resistance Rating",
+          "+15% Artifact bonus to Doublestrike and Doubleshot"
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Masterful Magewright": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the Masterful Magewright set, you gain:",
+          "+3 Artifact bonus to all Spell DCs",
+          "+3 Artifact bonus to Intelligence, Wisdom, and Charisma",
+          "+5 Artifact bonus to Perform and Concentration"
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Mind and Matter": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the Mind and Matter set, you gain:",
+          "+30 Artifact bonus to Physical and Magical Resistance Rating",
+          "+30 Artifact bonus to MRR Cap"
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Mountainskin Set": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing both items from the Mountainskin Set, you gain:",
+          "+30 Artifact bonus to Acid Spell Power",
+          "+6% Artifact bonus to Acid Spell Lore",
+          "When struck, you will occasionally have the Stoneskin spell cast on you."
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "+6% Artifact bonus to Acid Spell Lore",
+            "reason": "stat phrase not in the vocabulary: 'Acid Spell Lore (%)'"
+          },
+          {
+            "threshold": 2,
+            "line": "When struck, you will occasionally have the Stoneskin spell cast on you.",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          }
+        ]
+      }
+    },
+    "One with the Swarm": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the One with the Swarm set, you gain: You are protected by a swarm of hostile bees that lash out when you are struck in melee range. On vorpal melee strikes, they will also swarm your enemies, dealing Piercing damage over time."
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "You are protected by a swarm of hostile bees that lash out when you are struck in melee range. On vorpal melee strikes, they will also swarm your enemies, dealing Piercing damage over time.",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          }
+        ]
+      }
+    },
+    "Part of the Family": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing three items from the Part of the Family set, you gain:",
+          "+10% Artifact bonus to Doublestrike",
+          "+10 Artifact bonus to Melee Power",
+          "+5% Artifact bonus to damage vs the Helpless",
+          "+5% Artifact bonus to Fortification Bypass",
+          "| pathfinders|pathfinder's = To-Hit Bonus +2 (untyped, fully stacks)"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 3,
+            "line": "| pathfinders|pathfinder's = To-Hit Bonus +2 (untyped, fully stacks)",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          }
+        ]
+      }
+    },
+    "The Devil's Handiwork": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing any five items from the The Devil's Handiwork, you gain: +2 Quality bonus to all Ability stats"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 5,
+            "line": "+2 Quality bonus to all Ability stats",
+            "reason": "stat phrase not in the vocabulary: 'all Ability stats'"
+          }
+        ]
+      }
+    },
+    "Tyrannical Tinkerer": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing two pieces from the Tyrannical Tinkerer set, you gain:",
+          "+15 Artifact bonus to Melee and Ranged Power",
+          "+30% Artifact bonus to Fortification Bypass",
+          "+5 Artifact bonus to Open Lock and Disable Device"
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    },
+    "Wallwatch": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing three items from the Wallwatch set, you gain:",
+          "+1 Artifact bonus to Sneak Attack Dice",
+          "+15% Artifact bonus to Fortifiction Bypass",
+          "+10% Artifact bonus to Doubleshot",
+          "+10 Artifact bonus to Ranged Power"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 3,
+            "line": "+15% Artifact bonus to Fortifiction Bypass",
+            "reason": "stat phrase not in the vocabulary: 'Fortifiction Bypass (%)'"
+          }
+        ]
+      }
+    },
+    "Water Savant": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "This item is one of the two pieces of the Water Savant set. When both items are equipped, you gain a +2% Artifact bonus to your Cold Spell Critical Chance."
+        ]
+      },
+      "after": {
+        "class": "exact"
+      }
+    }
+  },
+  "remaining_threshold_unstated": {
+    "template": {
+      "Alchemist's Lore": [
+        "Reduces the cost of Empower, Empower Healing, and Maximize by 2 SP. Spells cost 10%/20%/30% less when you are below 50%/25%/10% hp."
+      ],
+      "Anger's Wrath": [
+        "To-Hit Bonus +2 (Untyped, stacks with competence)"
+      ],
+      "Arcane Archer": [
+        "Ranged alacrity 10% (Competence, stacks to enhancement bonuses such as Haste spell)"
+      ],
+      "Arcane Mind": [
+        "+24 Equipment bonus to your Universal Spell Power.{{#ifeq:{{NAMESPACE}}|Item|{{#ifeq:{{IO|{{{nocat|0}}}}}|1||Category:Nonstandard Spell Power items}}}}"
+      ],
+      "Archivist": [
+        "Spell Points +20 (Non-stacking)"
+      ],
+      "Assassin": [
+        "Bonus to hit and damage with sneak attacks (+2 to hit and +5 damage from attacks considered sneak attacks[both non-stacking even if it say exceptional]), 20% less threat. If have Assassin III Enhancement: chance with weapons to apply a Level Drain effect."
+      ],
+      "Corsair's Cunning": [
+        "2 Item Set Bonus: Underwater Action",
+        "3 Item Set Bonus: Feather Falling"
+      ],
+      "DM's Vision": [
+        "True Seeing"
+      ],
+      "Deepwood Sniper": [
+        "5% Ranged Alacrity, +2 To-Hit"
+      ],
+      "Defender of Siberys": [
+        "15% additional threat from melee attacks. If have Defender of Siberys III enhancement: +2 AC (Stacking)"
+      ],
+      "Devoted Heart": [
+        "+36 Equipment bonus to Healing Spell Power{{#ifeq:{{NAMESPACE}}|Item|{{#ifeq:{{IO|{{{nocat|0}}}}}|1||Category:Nonstandard Spell Power items}}}}"
+      ],
+      "Draconic Ferocity": [
+        "While an Epic-level {{Item|Helm of the Black Dragon}} is equipped at the same time as a Flawless Black Dragonscale Armor, you will gain a +3% artifact bonus to melee Doublestrike chance and a +2 artifact bonus to damage with ranged or thrown weapons."
+      ],
+      "Draconic Mind": [
+        "While an Epic-level {{Item|Helm of the Blue Dragon}} is equipped at the same time as a Flawless Blue Dragonscale Armor, you will gain a +15 artifact bonus to your Universal Spell Power.{{#ifeq:{{NAMESPACE}}|Item|{{#ifeq:{{IO|{{{nocat|0}}}}}|1||Category:Nonstandard Spell Power items}}}}"
+      ],
+      "Draconic Resilience": [
+        "While an Epic-level {{Item|Helm of the White Dragon}} is equipped at the same time as a Flawless White Dragonscale Armor, you will gain a +50 artifact bonus to your maximum Hit Points."
+      ],
+      "Dragonmark Heir": [
+        "2 additional uses of Greater Dragonmark per rest."
+      ],
+      "Elder's Knowledge": [
+        "+2% Artifact bonus to spell critical chance. 5% Legendary bonus to spell crit damage."
+      ],
+      "Epic Elemental Evil Set": [
+        "While wearing both an Elemental Evil Set Item weapon and an Elemental Evil Set Item armor, you gain:",
+        "+20 Quality bonus to Melee Power",
+        "+20 Quality bonus to Ranged Power",
+        "+20 Quality bonus to Universal Spell Power"
+      ],
+      "Exorcist of the Silver Flame": [
+        "3 additional Turn Undead attempts."
+      ],
+      "Fabricator's Ingenuity": [
+        "+25% stacking fortification and +2 artifact bonus to your attack and damage rolls."
+      ],
+      "Frenzied Berserker": [
+        "An additional rage after resting, addition 2 points of damage per swing. If Frenzied Berserker III enhancement: +2 Strength and Constitution (Stacking)"
+      ],
+      "Glacial Assault": [
+        "With 2 items equipped - Glaciation +72. With 3 items equipped - Glaciation +78"
+      ],
+      "Henshin Mystic": [
+        "1d6 Fire Damage per Attack-This extra damage is also applied to glancing blows."
+      ],
+      "Hunter of the Dead": [
+        "3 extra uses of Remove Disease per rest. If have Hunter of the Dead III Enhancement: additional weapon damage versus Undead."
+      ],
+      "Kensai": [
+        "+2 Exceptional Melee To-Hit, +3 Confirm Criticals. If have Kensei III Enhancement: +3 Exceptional Bonus To-Hit."
+      ],
+      "Knight of the Chalice": [
+        "Spell Resistance (22). If have Knight of the Chalice III Enhancement: additional damage with weapons versus Evil Outsiders."
+      ],
+      "Levik's Defender": [
+        "With 2 items equipped - +3 Insight bonus to AC, 20% Additional Melee Threat, Unlisted Fortitude and Will Save +1 (Stacks with most but not Parrying/Greater Parrying). With 3 items equipped - +5 insight AC, 30% Additional Melee Threat (Threat stacks, but only with non-like amounts)"
+      ],
+      "Lorikk's Champion": [
+        "With 2 items equipped - Provides a +72 Equipment bonus to healing spell power. With 3 items equipped - Provides a +78 Equipment bonus to healing spell power.{{#ifeq:{{NAMESPACE}}|Item|{{#ifeq:{{IO|{{{nocat|0}}}}}|1||Category:Nonstandard Spell Power items}}}}"
+      ],
+      "Magewright's Expertise": [
+        "Spell Focus I: +1 to DCs for all spells.",
+        "Magewright's Quick Wits: Chance to gain a 10 second buff of +12 Alchemical bonus to Universal Spell Power each time the wearer is hit by a physical attack.{{#ifeq:{{NAMESPACE}}|Item|{{#ifeq:{{IO|{{{nocat|0}}}}}|1||Category:Nonstandard Spell Power items}}}}"
+      ],
+      "Mechanic": [
+        "Open Locks +15, Disable Device +15, +2 Exceptional bonus to all Dexterity based Skills."
+      ],
+      "Nimble Hand": [
+        "To-Hit Bonus +1, +2 Damage to Sneak Attacks (non-stacking)"
+      ],
+      "Ninja Spy": [
+        "Bonus to hit (+2 exceptional bonus to hit) and damage with sneak attacks (+5 damage from attacks considered sneak attacks[non-stacking]), 20% less threat."
+      ],
+      "Occult Slayer": [
+        "+2 Exceptional bonus to Will saves, +2 Exceptional bonus to Reflex saves, Spell Resistance (22)."
+      ],
+      "Planar Focus: Erudition": [
+        "When this item is equipped at the same time as a Planar Conflux, you will gain the benefit of Spell Penetration IX, a +250 Enhancement bonus to your maximum Spell Point total, and a +15 Psionic bonus to your Universal Spell Power."
+      ],
+      "Planar Focus: Prowess": [
+        "When this item is equipped at the same time as a Planar Conflux, you will gain a +4 Artifact bonus to your attack and damage rolls, and a +15 Artifact bonus to your Physical Resistance rating."
+      ],
+      "Planar Focus: Subterfuge": [
+        "When this item is equipped at the same time as a Planar Conflux, you will gain True Seeing, a +5 Insight modifier to attack rolls on attacks that would be considered Sneak attacks, a +8 Insight modifier to Damage rolls on attacks that would be considered Sneak attacks, and a +3% bonus to your chance to Dodge enemy attacks."
+      ],
+      "Protector's Heart": [
+        "Light Fortification, Insight AC Bonus +1 (non-stacking)"
+      ],
+      "Purple Dragon Knight": [
+        "10% additional threat, +1 Exceptional bonus To-Hit."
+      ],
+      "Radiant Servant": [
+        "An additional Turn Undead attempt, Exceptional bonus to Turn Undead Cleric Level"
+      ],
+      "Ravager": [
+        "Chance to inflict damage over time effect (Ravager's Cut: 2d6 slashing damage vs creatures that can bleed on melee hit or glancing blow plus four rounds of additional damage. Does not work with handwraps.{{Ref|1={{Forums/old|p=3747293|label=This is working as intended}}}}.)"
+      ],
+      "Risk and Reward": [
+        "While both items from this set are equipped, your melee attacks deal an additional +0.5[W] damage dice. Your attacks also gain a 5% Chance on Hit to Bluff your target for four seconds. (Bluffed enemies can be affected by Sneak Attacks even while targeting you.)"
+      ],
+      "Shintao Monk": [
+        "+2 Exceptional bonus to To-Hit and Damage. If you have the Shintao Monk 3 Enhancement, your unarmed attacks bypass Good and Evil damage reduction."
+      ],
+      "Spell Singer": [
+        "2 additional Bard songs per rest."
+      ],
+      "Stalwart Defender": [
+        "15% additional threat from melee attacks. If have Stalwart Defender fifth core enhancement: +2 AC Bonus (Stacks)."
+      ],
+      "Tempest": [
+        "1d4 Additional Slash Damage. If have Tempest III Enhancement: +3 To-Hit Bonus."
+      ],
+      "Tharne's Wrath": [
+        "With 2 items equipped - Ghost Touch and -20% Melee Threat. With 3 items equipped - Feather Falling."
+      ],
+      "Thief Acrobat": [
+        "+15 to Jump, ? % chance weapons will unbalance an opponent, causing -2 to AC."
+      ],
+      "Tinker's Finesse": [
+        "True Seeing, and equivalent to Sneak Attack Bonus +5: Provides a +5 to attack rolls and +8 damage for any attack that would qualify as a Sneak Attack, even if the wielder is not a Rogue."
+      ],
+      "Troubleshooter": [
+        "+1 insight bonus to all saves, Open Lock +3, Disable Device +3 (typed competence, thus non-stacking)"
+      ],
+      "Unbreakable Adamancy": [
+        "This item is part of the Unbreakable Adamancy set.",
+        "When two items from this set are equipped, you gain a +5 Luck bonus to PRR and MRR."
+      ],
+      "Virtuoso": [
+        "Additional Bard Song per rest, Extend Spell 2 Spell Points less."
+      ],
+      "Warchanter": [
+        "Additional Bard Song after resting, Maximize Spell costs 4 Spell Points less, Extend Spell costs 1 Spell Point less."
+      ],
+      "Warpriest": [
+        "2 additional Turn Undead per rest, +2 Exceptional Melee Bonus To-Hit."
+      ],
+      "Wild Mage": [
+        "Spell Penetration VIII: Your 8th level spells and spells lower than 8th level gain a +2 bonus to the die roll to penetrate the target's Spell resistance. (Non-stacking)"
+      ]
+    },
+    "page": {
+      "Air Savant": [
+        "+2% Artifact bonus to your Electric Spell Critical Chance."
+      ],
+      "Alchemist's Lore": [
+        "Reduces the cost of Empower, Empower Heal, and Maximize by 2 SP.",
+        "Spells costs 10%/20%/30% less when you're below 50%/25%/10% hp."
+      ],
+      "Anger's Wrath": [
+        "To-Hit Bonus +2 (untyped, fully stacks)"
+      ],
+      "Arcane Archer": [
+        "Ranged alacrity 10% (competence, stacks with enhancement bonuses such as Haste spell)"
+      ],
+      "Arcane Mind": [
+        "{{SpellPower|Potency|24}} (Despite the description in-game, the set does not give any bonus to Universal Spell Power)"
+      ],
+      "Archivist": [
+        "Power II"
+      ],
+      "Archmage": [
+        "colspan=\"2\"|Note: The set bonuses of % chance to Spell Critical and Critical Damage Multiplier for the Archmage prestige set does not stack with Lore bonuses, but that they are two separate bonuses (e.g. One could use an item with Greater Arcane Lore for +9% Chance to Critical, and the set bonus effect for +0.50 Critical Damage Multiplier, effectively having Major Arcane Lore.)"
+      ],
+      "Assassin": [
+        "+2 Bonus to hit and +5 damage with sneak attacks [both nonstacking even though it says exceptional])",
+        "20% less threat",
+        "If have Assassin III Enhancement: chance with weapons to apply a Level Drain effect."
+      ],
+      "Corsair's Cunning": [
+        "2 Item version: {{Underwater Action}}",
+        "3 Item version: {{Feather Falling}}"
+      ],
+      "Deepwood Sniper": [
+        "5% Ranged Alacrity, +2 To-Hit"
+      ],
+      "Defender of Siberys": [
+        "15% additional threat from melee attacks",
+        "If have Defender of Siberys III Enhancement: +2 AC (stacking)"
+      ],
+      "Devoted Heart": [
+        "{{SpellPower|Devotion|36}}"
+      ],
+      "Draconic Ferocity": [
+        "+3% artifact bonus to Doublestrike",
+        "+2 artifact bonus to Hit and Damage with Ranged and Thrown weapons"
+      ],
+      "Draconic Mind": [
+        "+15 artifact bonus to Universal Spell Power"
+      ],
+      "Draconic Resilience": [
+        "+50 artifact bonus to Hit Points"
+      ],
+      "Dragonmark Heir": [
+        "+2 additional uses of Greater Dragonmark per rest"
+      ],
+      "Earth Savant": [
+        "+2% Artifact bonus to your Acid Spell Critical Chance."
+      ],
+      "Exorcist of the Silver Flame": [
+        "3 additional Turn Undead attempts after resting (Additional turns do not stack with other items that grant additional turns)"
+      ],
+      "Fabricator's Ingenuity": [
+        "+25% stacking fortification (The fortification bonus did not stack with {{Fortification|0}} until U14)",
+        "+2 Artifact bonus to attack bonus and damage. (bonus to attack stacks with the airship buff \"Hours of Practice\" (Artifact +2 to attack))"
+      ],
+      "Fire Savant": [
+        "+2% Artifact bonus to your Fire Spell Critical Chance."
+      ],
+      "Frenzied Berserker": [
+        "+1 additional rage after resting",
+        "+2 damage per swing (stacking)",
+        "If have Frenzied Berserker III enhancement: +2 Strength and Constitution (stacking)"
+      ],
+      "Henshin Mystic": [
+        "1d6 Fire Damage per Attack, extra damage is also applied to glancing blows"
+      ],
+      "Hunter of the Dead": [
+        "+3 extra uses of Remove Disease per rest",
+        "If have Hunter of the Dead III Enhancement: additional weapon damage versus Undead"
+      ],
+      "Kensai": [
+        "+2 Exceptional Melee To-Hit",
+        "+3 Confirm Criticals",
+        "If have Kensei III Enhancement: +3 Exceptional Bonus To-Hit"
+      ],
+      "Knight of the Chalice": [
+        "Spell Resistance (22)",
+        "If have Knight of the Chalice III Enhancement: additional 3d6 damage with weapons versus Evil Outsiders"
+      ],
+      "Magewright's Expertise": [
+        "Spell Focus Mastery +1",
+        "Magewright's Quick Wits: Guard proc on physical hit: Chance to gain a 10-second buff of +12 Alchemical bonus to Universal Spell Power."
+      ],
+      "Mechanic": [
+        "Open Locks +15 competence bonus",
+        "Disable Device +15 competence bonus",
+        "+2 Exceptional Bonus to all Dexterity based Skills"
+      ],
+      "Nimble Hand": [
+        "To-Hit Bonus +1, +2 Damage to Sneak Attacks (non-stacking)"
+      ],
+      "Ninja Spy": [
+        "+2 exceptional bonus to hit and +5 damage with sneak attacks (+5 damage from attacks typed backstabbing - [nonstacking])",
+        "20% less threat"
+      ],
+      "Occult Slayer": [
+        "+2 Exceptional Bonus to Will saves",
+        "+2 Exceptional Bonus to Reflex saves",
+        "Spell Resistance (22)"
+      ],
+      "Pale Master": [
+        "{{SpellPower|Nullification|78}}",
+        "If have Pale Master III Enhancement: {{SpellPower|Nullification|90}}"
+      ],
+      "Pathfinders": [
+        "To-Hit Bonus +2 (untyped, fully stacks)"
+      ],
+      "Planar Focus: Erudition": [
+        "{{Spellpen|IX}}, {{Wizardry|250}}, +15 psionic bonus to Universal Spell Power"
+      ],
+      "Planar Focus: Prowess": [
+        "+4 artifact bonus to attack and damage, +15 artifact bonus to Physical Resistance Rating"
+      ],
+      "Planar Focus: Subterfuge": [
+        "{{Sneak Attack Bonus|5|Insightful}}, True Seeing, {{Dodge|3}}"
+      ],
+      "Protector's Heart": [
+        "Set Bonus - {{Fortification|25}}, Insight AC Bonus +1 (non-stacking)"
+      ],
+      "Purple Dragon Knight": [
+        "10% additional threat",
+        "+1 Exceptional Bonus To-Hit"
+      ],
+      "Radiant Servant": [
+        "+1 additional Turn Undead attempt (Additional turns do not stack with other items that grant additional turns)",
+        "Exceptional Bonus to Turn Undead Cleric Level"
+      ],
+      "Ravager": [
+        "chance to inflict damage over time effect (Ravager's Cut: 2d6 slashing damage vs creatures that can bleed on melee hit or glancing blow plus four rounds of additional damage. Does not work with handwraps. This is {{Forums|3747293|Working As Intended}}.)"
+      ],
+      "Shintao Monk": [
+        "+2 Exceptional Bonus to To-Hit and Damage.",
+        "If have Shintao Monk III Enhancement:",
+        "Your unarmed attacks bypass Good and Evil damage reduction.",
+        "15% additional melee threat generation (not in item description but shows in the buff bar when equipped)."
+      ],
+      "Spell Singer": [
+        "+2 additional Bard songs per rest"
+      ],
+      "Stalwart Defender": [
+        "[[File:Icon ItemSet Prestige StalwartDefenderI.png|32px|frameless|left]] 15% additional threat from melee attacks{{-}}",
+        "[[File:Icon ItemSet Prestige StalwartDefenderII.png|32px|frameless|left]] If have Stalwart Defender fifth core enhancement: +2 AC Bonus (Stacks){{-}}"
+      ],
+      "Tempest": [
+        "1d4 Additional Slash Damage (does not work with handwraps (WAI?))",
+        "Seems to actually be some kind of bleed damage, despite description (undead and constructs are immune)",
+        "If have Tempest III Enhancement: +3 To-Hit Bonus"
+      ],
+      "Thief Acrobat": [
+        "+15 competence bonus to Jump",
+        "? % chance weapons will unbalance an opponent, causing -2 to AC"
+      ],
+      "Tinker's Finesse": [
+        "True Seeing",
+        "+5 to hit and +8 to damage to any attack that would qualify as a sneak attack. (non-stacking)"
+      ],
+      "Troubleshooter": [
+        "+1 all saves, Open Lock +3, Disable Device +3 (saves typed insight, stacks with resistance, skills typed competence, thus non-stacking)"
+      ],
+      "Virtuoso": [
+        "+1 additional Bard Song per rest",
+        "{{Efficient Metamagic|Extend|2}}"
+      ],
+      "Warchanter": [
+        "+1 additional Bard Song after resting",
+        "{{Efficient Metamagic|Maximize|2}}",
+        "{{Efficient Metamagic|Extend|1}}"
+      ],
+      "Warpriest": [
+        "+2 additional Turn Undead per rest (Additional turns do not stack with other items that grant additional turns)",
+        "+2 Exceptional Melee Bonus To-Hit"
+      ],
+      "Water Savant": [
+        "+2% Artifact bonus to your Cold Spell Critical Chance."
+      ],
+      "Wild Mage": [
+        "Your 8th level spells and spells lower than 8th level gain a +2 bonus to the die roll to penetrate the target's Spell resistance. (Non-stacking)"
+      ]
+    }
+  },
+  "stale_disagreement_records": [],
+  "stale_upstream_records": []
+}

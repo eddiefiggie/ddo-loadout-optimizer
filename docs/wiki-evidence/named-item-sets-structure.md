@@ -465,3 +465,67 @@ the Assassinate family:
 Both new positive tests fail against commit `61878c5`; all 58 set-reader tests
 pass with the mapping. The negative tests explicitly check that neither unit can
 substitute for the other when only one catalog target is available.
+
+
+## Exact prose piece counts (#952, 2026-11-01)
+
+`Template:Named item sets` rev **723530**, retained in the browser harvest
+`pages-20261101-review`, explicitly states counts in prose. The reader now
+recognizes 40 literal prefixes in `PROSE_PIECE_HEADERS`; each was checked against
+that revision. Set names remain part of the literal match. There is no wildcard
+for an unknown set or extra condition.
+
+| Observed wording | Count | Example |
+|---|---:|---|
+| While wearing two pieces from the … set, you gain: | 2 | Anger of the Avalanche |
+| While wearing three items from the … set, you gain: | 3 | Dreadkeeper |
+| While wearing both items from the …, you gain: | 2 | Captain's Set |
+| While wearing any five items from the …, you gain: | 5 | The Devil's Handiwork |
+| This item is one of the two pieces of the … set. When both items are equipped, you gain a | 2 | Air Savant |
+| When all three items from the set are equipped, you will gain a | 3 | Knight's Loyalty |
+
+The ellipses above summarize the table; they are **not** accepted wildcards.
+Only the prefix is removed. Inline links and templates in the bonus are retained
+for the existing clause reader, which still quarantines unsupported effects.
+An earlier unexplained line stays under `None`; discovering a later count never
+assigns that earlier text to the count retrospectively.
+
+Measured against `fdbe1cf`, with the same page rev **720202** and template rev
+**723530**, over the 282 catalog sets compared:
+
+| Classification | Template before | Template after | Page before/after |
+|---|---:|---:|---:|
+| threshold-unstated | 90 | 53 | 51 |
+| exact | 94 | 110 | 31 |
+| partial | 83 | 99 | 27 |
+| ours-differs | 1 | 6 | 0 |
+
+Other classification counts are unchanged, and recorded exceptions still
+reproduce. Of the 37 template sets newly assigned thresholds, 16 become exact,
+16 partial and 5 expose comparison differences that were previously hidden by
+`threshold-unstated`. These are **not adjudicated corrections**:
+
+| Newly exposed set | Template reading | Catalog comparison |
+|---|---|---|
+| Arcsteel Battlemage | Intelligence +2 Artifact at 3 pieces | +1 |
+| Double Helix Set | Sheltering +2 Insightful at 2 pieces | +2 Insight; comparison also expands catalog Sheltering into PRR/MRR |
+| Epic Double Helix Set | Sheltering +4 Insightful at 2 pieces | +5 Insight, with the same expansion difference |
+| Legacy of Levikk | Armor Class +10% Artifact at 2 pieces | +15% |
+| Legacy of Lorikk | Fire and Force spell critical chance +6% Artifact, alongside Light and Positive | catalog has only Light and Positive |
+
+These five comparisons require rulings under #951/#908. The source switch stays
+blocked; production set definitions still use the existing catalog.
+
+This is a bounded part of #952. Numeric `With 2 items equipped … With 3 items
+equipped …` sentences, Unbreakable Adamancy's separate introductory line,
+Risk and Reward's different sentence, Abishai's multi-tier prose, and conditions
+naming specific equipment are outside this table. The centered-state condition
+on Way of the Sun Soul is also retained unread. The remaining 53/51 classifications
+must not be described as proof that those sets state no count. Their exact
+unread lines, together with every changed classification, are recorded in
+[the measured report](../reports/2026-11-01-prose-set-thresholds.json).
+
+All five new behavioral tests fail on the pre-change tree (`fdbe1cf`); the
+unreviewed/conditional boundary test deliberately passes there. After the change,
+all 64 set-reader tests pass, including the template-to-catalog path for Captain's
+Set. The synchronized build stamp advances to `11012026.1`.
