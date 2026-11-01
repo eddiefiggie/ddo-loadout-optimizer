@@ -591,3 +591,65 @@ or the markup-boundary guard makes the rejection test fail. The four source
 paragraphs are copied into the tests with the revision permalink above, and a
 reconstruction assertion verifies that recognizing the counts loses no bonus
 markup or punctuation.
+
+
+## Additional stated counts and the Adamancy preface (#952, 2026-11-01)
+
+Both sources were checked directly through the DDO Wiki API in Chromium:
+[template revision 723530](https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530)
+and [page revision 720202](https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202).
+The new literal prefixes quote these statements:
+
+| Entry/source | Exact count wording | Count |
+|---|---|---:|
+| Unbreakable Adamancy / template | `When two items from this set are equipped, you gain a ` | 2 |
+| Risk and Reward / template | `While both items from this set are equipped, ` | 2 |
+| Greater Might of the Abishai / template | `When any three of the items are equipped you will gain a ` | 3 |
+| Greater Might of the Abishai / template | `When all five items are equipped you will gain a ` | 5 |
+| Corsair's Cunning / template | `2 Item Set Bonus: ` / `3 Item Set Bonus: ` | 2 / 3 |
+| Corsair's Cunning / page | `*2 Item version: ` / `*3 Item version: ` | 2 / 3 |
+
+Adamancy's complete opening is:
+
+> This item is part of the Unbreakable Adamancy set.<br />When two items from this set are equipped, you gain a +5 [[Luck bonus]] to PRR and MRR.
+
+The first sentence is a membership statement, not a bonus or a count. Only at
+that named template entry, and only immediately before the quoted count prefix,
+the tier reader skips that exact membership sentence. The stored `raw` source
+retains it. A changed sentence, a different entry, an intervening condition,
+or a different following header keeps the preface unread. No generic preface
+removal or retroactive threshold assignment is introduced.
+
+All effects remain subject to the existing affix checks. In particular:
+
+- Adamancy's **Luck** type is not in the reader's bonus-type vocabulary. Its
+  explicitly stated +5 PRR/MRR clause stays quarantined; no alternative type is
+  substituted. Vocabulary review remains under #951.
+- Risk and Reward's damage/proc sentence stays quarantined. Reading the word
+  **both** does not model its weapon dice or conditional proc.
+- Corsair's boolean effects and Greater Abishai's compound bonus sentences stay
+  quarantined. Greater Might of the Abishai is absent from the catalog; reading
+  its source does not create a production set or count it in catalog parity.
+
+Measured against `f814e3c`, with both source revisions above, over the 282 catalog
+sets compared:
+
+- Template threshold-unstated: **49 → 46**; partial: **103 → 106**. Adamancy,
+  Risk and Reward, and Corsair's Cunning are the three changed catalog sets.
+- Page threshold-unstated: **51 → 50**; partial: **27 → 28** (Corsair's Cunning).
+- Exact and ours-differs counts do not change; recorded exceptions still reproduce.
+- Outside that catalog population, Greater Might of the Abishai now has the
+  stated thresholds **3 and 5**, with its bonus sentences preserved.
+
+[The measurement report](../reports/2026-11-01-additional-stated-set-counts.json)
+records these changes and the separate non-catalog entry. Across PR #973, 44
+previously unresolved template sets now have readable thresholds: 16 exact,
+23 partial, and five exposing comparison differences. One page row also gains
+readable thresholds. Remaining unread sources are still work under #952, not
+proof that their counts are absent.
+
+All four new behavioral tests fail against the pre-change tree (`f814e3c`), and
+all 74 set-reader tests pass after the change. Removing any one of the three
+preface checks (entry identity, exact sentence, following count prefix) makes
+the boundary test fail. Fixtures quote the checked wiki paragraphs and preserve
+the remaining bonus prose; no count comes from counting listed items.

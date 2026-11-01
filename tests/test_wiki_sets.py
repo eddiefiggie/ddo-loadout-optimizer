@@ -738,3 +738,105 @@ def test_unreviewed_numeric_prose_or_embedded_headers_remain_unread():
             'With 2 items equipped - <span title="A description. With 3 items equipped - more description">Text</span>',
             "These 2 items are listed, with 3 bonuses."):
         assert S._tiers_from_lines([raw]) == {None: [raw]}, raw
+
+
+# Additional explicit counts, checked directly on the DDO Wiki on 2026-11-01:
+# https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530
+# https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202
+WORDED_COUNT_FIXTURES = {'unbreakable adamancy': 'This item is part of the Unbreakable Adamancy set.<br />When two items '
+                         'from this set are equipped, you gain a +5 [[Luck bonus]] to PRR and MRR.',
+ 'risk and reward': 'While both items from this set are equipped, your melee attacks deal an '
+                    'additional +0.5[W] damage dice. Your attacks also gain a 5% Chance on Hit to '
+                    'Bluff your target for four seconds. (Bluffed enemies can be affected by Sneak '
+                    'Attacks even while targeting you.)',
+ 'greater might of the abishai': '<br />When any three of the items are equipped you will gain a '
+                                 '+3 profane bonus to Natural Armor, a +3 profane bonus to '
+                                 'Strength, and a +3 bonus to your caster level on evocation '
+                                 'spells.<br />When all five items are equipped you will gain a +3 '
+                                 'profane bonus to Natural Armor, a +3 profane bonus to Strength '
+                                 'and Constitution, and a +3 bonus to your caster level on '
+                                 'evocation and conjuration spells.',
+ "corsair's cunning": '<br />2 Item Set Bonus: [[Underwater Action]]<br />3 Item Set Bonus: '
+                      '[[Feather Falling]]'}
+CORSAIR_COUNT_PAGE = '== Three Barrel Cove set ==\n{|class="wikitable"\n|-\n|{{Anchor|Corsair\'s Cunning}}\'\'\'Corsair\'s Cunning [ML:5]\'\'\'\n|\n* {{Item|Corsair\'s Bandana}} - Helm\n* {{Item|Corsair\'s Cufflinks}} - Bracers\n* {{Item|Corsair\'s Galoshes}} - Boots\n|\n*2 Item version: {{Underwater Action}}\n*3 Item version: {{Feather Falling}}\n\n|}'
+
+
+def _worded_count_entry(name, raw=None):
+    if raw is None:
+        raw = WORDED_COUNT_FIXTURES[name]
+    text = ("<onlyinclude>{{#switch:x|unused\n| " + name + " = " + raw +
+            "\n| #default = Undefined}}</onlyinclude>")
+    return S.template_sets(text)[name]
+
+
+def test_adamancy_exact_preface_and_count_reach_parity_without_bypassing_type_checks():
+    raw = WORDED_COUNT_FIXTURES["unbreakable adamancy"]
+    entry = _worded_count_entry("unbreakable adamancy")
+    assert entry["raw"] == raw  # The stored source still includes its preface.
+    assert entry["tiers"] == {2: ["+5 [[Luck bonus]] to PRR and MRR."]}
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    classification, detail = D.classify(entry["tiers"], D.gp_tiers(catalog["Unbreakable Adamancy"]),
+                                        {"Physical Sheltering", "Magical Sheltering"})
+    assert classification == "partial", (classification, detail)
+    assert detail["quarantined"] == [{
+        "threshold": 2, "line": "+5 Luck bonus to PRR and MRR.",
+        "reason": "unknown bonus type 'Luck'"}]
+
+
+def test_risk_and_reward_states_two_but_its_effect_remains_quarantined():
+    raw = WORDED_COUNT_FIXTURES["risk and reward"]
+    entry = _worded_count_entry("risk and reward")
+    assert set(entry["tiers"]) == {2}
+    clauses = entry["tiers"][2]
+    assert len(clauses) == 1
+    assert "While both items from this set are equipped, " + clauses[0] == raw
+    assert "quarantine" in S.read_clause(clauses[0], BONUS_TYPES, NAMES)
+
+
+def test_abishai_three_and_five_are_read_from_the_stated_sentences():
+    raw = WORDED_COUNT_FIXTURES["greater might of the abishai"]
+    entry = _worded_count_entry("greater might of the abishai")
+    assert set(entry["tiers"]) == {3, 5}
+    reconstructed = ("<br />When any three of the items are equipped you will gain a " +
+                     entry["tiers"][3][0] +
+                     "<br />When all five items are equipped you will gain a " +
+                     entry["tiers"][5][0])
+    assert reconstructed == raw
+    assert all("quarantine" in S.read_clause(line, BONUS_TYPES, NAMES)
+               for lines in entry["tiers"].values() for line in lines)
+
+
+def test_corsair_counts_are_read_from_each_sources_own_wording():
+    entry = _worded_count_entry("corsair's cunning")
+    assert entry["tiers"] == {2: ["[[Underwater Action]]"], 3: ["[[Feather Falling]]"]}
+    rows = S.page_sets(CORSAIR_COUNT_PAGE)
+    row = next(r for r in rows if "Corsair's Cunning" in r["anchors"])
+    assert row["tiers"] == {2: ["{{Underwater Action}}"], 3: ["{{Feather Falling}}"]}
+    assert all("quarantine" in S.read_clause(line, BONUS_TYPES, NAMES)
+               for lines in row["tiers"].values() for line in lines)
+
+
+def test_membership_preface_is_not_discarded_for_unreviewed_context():
+    # Deliberate unchanged boundaries: discard only the exact sourced preface
+    # at the exact entry and immediately before its reviewed count sentence.
+    raw = WORDED_COUNT_FIXTURES["unbreakable adamancy"]
+    for name, altered in (
+            ("unbreakable adamancy", raw.replace("set.", "set while raging.", 1)),
+            ("unbreakable adamancy", raw.replace("<br />", "<br />While centered:<br />", 1)),
+            ("unbreakable adamancy", raw.split("<br />", 1)[0]),
+            ("unbreakable adamancy", raw.replace("When two items from this set are equipped, you gain a ",
+                                                "2 Pieces Equipped: ")),
+            ("different set", raw)):
+        entry = _worded_count_entry(name, altered)
+        assert None in entry["tiers"], (name, entry)
+
+
+def test_unreviewed_worded_counts_and_conditions_remain_unread():
+    for raw in (
+            "While both items from this set are equipped and you are raging, your melee attacks gain a bonus.",
+            "When any three of the items are equipped while centered you will gain a +3 Artifact bonus to Strength",
+            "When all five items are equipped and you are centered you will gain a +3 Artifact bonus to Strength",
+            "When four items from this set are equipped, you gain a +5 Luck bonus to PRR and MRR.",
+            "4 Item Set Bonus: [[Feather Falling]]", "*2 Item version while raging: {{Underwater Action}}"):
+        assert S._tiers_from_lines([raw]) == {None: [raw]}, raw

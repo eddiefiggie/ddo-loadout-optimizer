@@ -109,12 +109,27 @@ def plain(line: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
-# #952 — exact prose prefixes from Template:Named item sets rev 723530.
-# Each count is stated in the prefix itself; set names are part of the match so
-# new or conditional wording cannot silently broaden the grammar. Strip only
+# #952 — exact prose prefixes from Template:Named item sets rev 723530 and
+# Named item sets rev 720202. Each count is stated in the prefix itself. Where
+# the source names a set, its name remains part of the literal match; new or
+# conditional wording cannot silently broaden the grammar. Strip only
 # these prefixes and preserve the remaining markup for read_clause. Evidence and
 # deliberately unsupported forms: docs/wiki-evidence/named-item-sets-structure.md.
+_ADAMANCY_MEMBERSHIP_PREFACE = "This item is part of the Unbreakable Adamancy set."
+_ADAMANCY_COUNT_PREFIX = "When two items from this set are equipped, you gain a "
+
 PROSE_PIECE_HEADERS = {
+    # Additional explicit counts in the same template revision. Only the equip
+    # count is read; the rest of each sentence still goes to read_clause.
+    _ADAMANCY_COUNT_PREFIX: 2,
+    "While both items from this set are equipped, ": 2,
+    "When any three of the items are equipped you will gain a ": 3,
+    "When all five items are equipped you will gain a ": 5,
+    "2 Item Set Bonus: ": 2,
+    "3 Item Set Bonus: ": 3,
+    # Corsair's Cunning, Named item sets page rev 720202 (not the template's form).
+    "*2 Item version: ": 2,
+    "*3 Item version: ": 3,
     'This item is one of the two pieces of the Air Savant set. When both items are equipped, you gain a ': 2,
     'This item is one of the two pieces of the Archmage set. When both items are equipped, you gain a ': 2,
     'This item is one of the two pieces of the Earth Savant set. When both items are equipped, you gain a ': 2,
@@ -230,6 +245,14 @@ def template_sets(wikitext: str) -> dict:
         name = m.group(1).strip() if m else None
         value = _VARDEFINE_RE.sub("", value).strip()
         lines = re.split(r"<br\s*/?>|</?li[^>]*>|\n", value)
+        # Rev 723530's Adamancy entry has this redundant membership sentence
+        # immediately before its explicit two-item count. Keep the raw source,
+        # and skip only that exact pair at this entry; never drop arbitrary or
+        # conditional prefaces to make an otherwise unreadable set look complete.
+        if (key == "unbreakable adamancy" and len(lines) >= 2
+                and lines[0].strip() == _ADAMANCY_MEMBERSHIP_PREFACE
+                and lines[1].strip().startswith(_ADAMANCY_COUNT_PREFIX)):
+            lines = lines[1:]
         out[key] = {"name": name, "tiers": _tiers_from_lines(lines), "raw": value}
     return out
 
