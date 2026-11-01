@@ -465,3 +465,382 @@ the Assassinate family:
 Both new positive tests fail against commit `61878c5`; all 58 set-reader tests
 pass with the mapping. The negative tests explicitly check that neither unit can
 substitute for the other when only one catalog target is available.
+
+
+## Exact prose piece counts (#952, 2026-11-01)
+
+`Template:Named item sets` rev **723530**, retained in the browser harvest
+`pages-20261101-review`, explicitly states counts in prose. The reader now
+recognizes 40 literal prefixes in `PROSE_PIECE_HEADERS`; each was checked against
+that revision. Set names remain part of the literal match. There is no wildcard
+for an unknown set or extra condition.
+
+| Observed wording | Count | Example |
+|---|---:|---|
+| While wearing two pieces from the … set, you gain: | 2 | Anger of the Avalanche |
+| While wearing three items from the … set, you gain: | 3 | Dreadkeeper |
+| While wearing both items from the …, you gain: | 2 | Captain's Set |
+| While wearing any five items from the …, you gain: | 5 | The Devil's Handiwork |
+| This item is one of the two pieces of the … set. When both items are equipped, you gain a | 2 | Air Savant |
+| When all three items from the set are equipped, you will gain a | 3 | Knight's Loyalty |
+
+The ellipses above summarize the table; they are **not** accepted wildcards.
+Only the prefix is removed. Inline links and templates in the bonus are retained
+for the existing clause reader, which still quarantines unsupported effects.
+An earlier unexplained line stays under `None`; discovering a later count never
+assigns that earlier text to the count retrospectively.
+
+Measured against `fdbe1cf`, with the same page rev **720202** and template rev
+**723530**, over the 282 catalog sets compared:
+
+| Classification | Template before | Template after | Page before/after |
+|---|---:|---:|---:|
+| threshold-unstated | 90 | 53 | 51 |
+| exact | 94 | 110 | 31 |
+| partial | 83 | 99 | 27 |
+| ours-differs | 1 | 6 | 0 |
+
+Other classification counts are unchanged, and recorded exceptions still
+reproduce. Of the 37 template sets newly assigned thresholds, 16 become exact,
+16 partial and 5 expose comparison differences that were previously hidden by
+`threshold-unstated`. These are **not adjudicated corrections**:
+
+| Newly exposed set | Template reading | Catalog comparison |
+|---|---|---|
+| Arcsteel Battlemage | Intelligence +2 Artifact at 3 pieces | +1 |
+| Double Helix Set | Sheltering +2 Insightful at 2 pieces | +2 Insight; comparison also expands catalog Sheltering into PRR/MRR |
+| Epic Double Helix Set | Sheltering +4 Insightful at 2 pieces | +5 Insight, with the same expansion difference |
+| Legacy of Levikk | Armor Class +10% Artifact at 2 pieces | +15% |
+| Legacy of Lorikk | Fire and Force spell critical chance +6% Artifact, alongside Light and Positive | catalog has only Light and Positive |
+
+The companion page, rev **720202**, supplies context for those reviews: its
+Arcsteel Battlemage row explicitly says "Bug: Heroic tier only gives +1 INT";
+its Double Helix `HELstats|+2|+5` states +2 Heroic and +5 Epic; Legacy of Levikk
+states +15% Armor Class; and Legacy of Lorikk lists only Positive and
+Light/Alignment spell power and critical chance. Thus several template readings
+conflict with the page, while Heroic Double Helix's value already agrees and
+exposes a comparison-normalization issue. These observations do not silently
+reclassify any exception or establish a new value ruling.
+
+These five comparisons require rulings under #951/#908. The source switch stays
+blocked; production set definitions still use the existing catalog.
+
+At this first measurement, numeric `With 2 items equipped … With 3 items
+equipped …` sentences (implemented below), Unbreakable Adamancy's separate introductory line,
+Risk and Reward's different sentence, Abishai's multi-tier prose, and conditions
+naming specific equipment are outside this table. The centered-state condition
+on Way of the Sun Soul is also retained unread. The remaining 53/51 classifications
+must not be described as proof that those sets state no count. Their exact
+unread lines, together with every changed classification, are recorded in
+[the measured report](../reports/2026-11-01-prose-set-thresholds.json).
+
+All five new behavioral tests fail on the pre-change tree (`fdbe1cf`); the
+unreviewed/conditional boundary test deliberately passes there. After the change,
+all 64 set-reader tests pass, including the template-to-catalog path for Captain's
+Set. The synchronized build stamp advances to `11012026.1`.
+
+
+## Explicit numeric pairs: 2 and 3 items (#952, 2026-11-01)
+
+**Source checked directly:** [DDO Wiki, Template:Named item sets, revision
+723530](https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530).
+A Chromium same-origin API read on 2026-11-01 returned that revision again.
+These four entries state both counts explicitly; no count comes from an item
+list, the upstream catalog, or the number of effects:
+
+| Entry | Exact count wording in that entry |
+|---|---|
+| Glacial Assault | `With 2 items equipped -` … `With 3 items equipped -` |
+| Levik's Defender | `With 2 items equipped -` … `With 3 items equipped -` |
+| Lorikk's Champion | `With 2 items equipped -` … `With 3 items equipped -` |
+| Tharne's Wrath | `With 2 items equipped -` … `With 3 items equipped -` |
+
+For example, the Glacial Assault entry states, verbatim:
+
+> With 2 items equipped - [[Glaciation|Glaciation +72]].  With 3 items equipped - [[Glaciation|Glaciation +78]]
+
+The quoted 2/3 form is the entire new grammar. The parser separates those two
+bonus clauses, retaining their links, templates, numbers, and punctuation.
+A conditional header, another count, an extra numeric header, or a boundary
+inside a wiki link, template argument, or HTML attribute stays unread. It does
+not retroactively assign earlier unexplained text to a threshold.
+
+This establishes **piece counts only**. For example, this change does not assign
+a bonus type or canonical stat to `Glaciation +72`; both Glacial Assault clauses
+remain quarantined by the affix reader. The other three sets' bonus prose is also
+retained for separate, wiki-backed interpretation. No production set definitions
+are replaced.
+
+Against `aef26ea`, using page rev 720202/template rev 723530, the four sets move
+from `threshold-unstated` to `partial`. Among the 282 catalog sets compared:
+
+- Template threshold-unstated: **53 → 49**; partial: **99 → 103**.
+- Template exact stays **110** and ours-differs stays **6**.
+- Page classifications and recorded exceptions are unchanged.
+
+[The numeric-threshold report](../reports/2026-11-01-numeric-set-thresholds.json)
+records all four transitions and their quarantined clauses. Together with the
+first prefix slice, PR #973 now reads thresholds for 41 previously unresolved
+template sets (16 exact, 20 partial, five exposing comparison differences).
+Other prose forms remain under #952; value disputes are under #956 and
+comparison normalization under #951.
+
+The three new behavioral tests fail on the pre-change tree (`aef26ea`). All 68
+set-reader tests pass after the change. Removing either the extra-header guard
+or the markup-boundary guard makes the rejection test fail. The four source
+paragraphs are copied into the tests with the revision permalink above, and a
+reconstruction assertion verifies that recognizing the counts loses no bonus
+markup or punctuation.
+
+
+## Additional stated counts and the Adamancy preface (#952, 2026-11-01)
+
+Both sources were checked directly through the DDO Wiki API in Chromium:
+[template revision 723530](https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530)
+and [page revision 720202](https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202).
+The new literal prefixes quote these statements:
+
+| Entry/source | Exact count wording | Count |
+|---|---|---:|
+| Unbreakable Adamancy / template | `When two items from this set are equipped, you gain a ` | 2 |
+| Risk and Reward / template | `While both items from this set are equipped, ` | 2 |
+| Greater Might of the Abishai / template | `When any three of the items are equipped you will gain a ` | 3 |
+| Greater Might of the Abishai / template | `When all five items are equipped you will gain a ` | 5 |
+| Corsair's Cunning / template | `2 Item Set Bonus: ` / `3 Item Set Bonus: ` | 2 / 3 |
+| Corsair's Cunning / page | `*2 Item version: ` / `*3 Item version: ` | 2 / 3 |
+
+Adamancy's complete opening is:
+
+> This item is part of the Unbreakable Adamancy set.<br />When two items from this set are equipped, you gain a +5 [[Luck bonus]] to PRR and MRR.
+
+The first sentence is a membership statement, not a bonus or a count. Only at
+that named template entry, and only immediately before the quoted count prefix,
+the tier reader skips that exact membership sentence. The stored `raw` source
+retains it. A changed sentence, a different entry, an intervening condition,
+or a different following header keeps the preface unread. No generic preface
+removal or retroactive threshold assignment is introduced.
+
+All effects remain subject to the existing affix checks. In particular:
+
+- Adamancy's **Luck** type is not in the reader's bonus-type vocabulary. Its
+  explicitly stated +5 PRR/MRR clause stays quarantined; no alternative type is
+  substituted. Vocabulary review remains under #951.
+- Risk and Reward's damage/proc sentence stays quarantined. Reading the word
+  **both** does not model its weapon dice or conditional proc.
+- Corsair's boolean effects and Greater Abishai's compound bonus sentences stay
+  quarantined. Greater Might of the Abishai is absent from the catalog; reading
+  its source does not create a production set or count it in catalog parity.
+
+Measured against `f814e3c`, with both source revisions above, over the 282 catalog
+sets compared:
+
+- Template threshold-unstated: **49 → 46**; partial: **103 → 106**. Adamancy,
+  Risk and Reward, and Corsair's Cunning are the three changed catalog sets.
+- Page threshold-unstated: **51 → 50**; partial: **27 → 28** (Corsair's Cunning).
+- Exact and ours-differs counts do not change; recorded exceptions still reproduce.
+- Outside that catalog population, Greater Might of the Abishai now has the
+  stated thresholds **3 and 5**, with its bonus sentences preserved.
+
+[The measurement report](../reports/2026-11-01-additional-stated-set-counts.json)
+records these changes and the separate non-catalog entry. Across PR #973, 44
+previously unresolved template sets now have readable thresholds: 16 exact,
+23 partial, and five exposing comparison differences. One page row also gains
+readable thresholds. Remaining unread sources are still work under #952, not
+proof that their counts are absent.
+
+All four new behavioral tests fail against the pre-change tree (`f814e3c`), and
+all 74 set-reader tests pass after the change. Removing any one of the three
+preface checks (entry identity, exact sentence, following count prefix) makes
+the boundary test fail. Fixtures quote the checked wiki paragraphs and preserve
+the remaining bonus prose; no count comes from counting listed items.
+
+
+## Explicit counts with unsupported activation conditions (#952, 2026-11-01)
+
+Checked directly through the DDO Wiki API in Chromium:
+[Template:Named item sets, revision 723530](https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530).
+The exact opening statements are:
+
+> While wearing both an Elemental Evil Set Item weapon and an Elemental Evil Set Item armor, you gain:
+
+> When all three item from the set are equipped and you are in a centered state, you will gain
+
+The first is the **Epic Elemental Evil Set** entry and explicitly says **both**;
+the second is **Way of the Sun Soul** and explicitly says **all three**. The
+reader records 2 and 3 respectively. It does not count item links or named
+pieces to derive either number.
+
+A count alone does not establish that the set is active. Epic Elemental Evil
+requires a weapon **and** armor; Way of the Sun Soul additionally requires the
+centered state and describes further conditional effects. These requirements
+are not converted into an ordinary "any N pieces" rule.
+
+For each exact entry/prefix pair, the **entire raw entry** is retained as one
+quarantined clause under the stated count. In particular, the three normally
+readable +20 Quality bonuses after Epic Elemental Evil's heading remain attached
+to the requirement, so none is returned as an unconditional affix. A different
+entry, changed count wording, or an added preface leaves the count unread.
+Production set definitions and activation behavior are unchanged. Condition
+modeling remains work under #952/#908.
+
+Against `3ae6e8a`, using page rev 720202/template rev 723530:
+
+- Epic Elemental Evil moves from `threshold-unstated` to `partial`, with its
+  entire conditional entry quarantined. Template threshold-unstated becomes
+  **45** (from 46), and partial becomes **107** (from 106).
+- Template exact stays **110**, ours-differs stays **6**, page classifications
+  are unchanged, and recorded exceptions still reproduce.
+- Way of the Sun Soul's stated count **3** is recorded separately because the
+  set is outside the 282-set catalog population. Its entire entry stays unread.
+
+[The conditional-count report](../reports/2026-11-01-conditional-set-counts.json)
+records the transition and retained condition text. Across PR #973, 45 previously
+unresolved template sets now have known counts: 16 exact, 24 partial, and five
+exposing comparison differences. This is count coverage, not permission to
+credit their unresolved effects.
+
+Both new behavioral tests fail against the pre-change tree (`3ae6e8a`); all 77
+set-reader tests pass afterward. Mutations that split off and admit the +20
+bonuses, remove the entry-identity check, or remove the exact-prefix check each
+make the corresponding guard test fail.
+
+
+## Archmage's continued bonus row (#952, 2026-11-01)
+
+Checked the wikitext and rendered table directly on the DDO Wiki:
+[Named item sets, revision 720202](https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202).
+Archmage's name cell has `rowspan="2"`. Its first row holds an explanatory note
+spanning the item and bonus columns; the second row holds the items and:
+
+> +1% Artifact bonus to Spell Critical Chance
+
+The reader previously retained only the note. It now retains the note and the
+following bonus cell together when this reviewed layout matches: one anchor in
+the two-row name cell, a two-column note, preceding cells that span the next
+row, and exactly two ordinary continuation cells with no new anchor. A table
+boundary stops continuation. The item cell is excluded, and the next named
+set, Pale Master, stays separate. Unsupported layouts remain unread.
+
+**The table's two-row span does not state an equipped-piece requirement.** No
+count is derived from it or from the two listed items. Archmage remains
+`threshold-unstated`; the explanatory restriction is preserved, and the
+recovered bonus does not become usable. Production set definitions are unchanged.
+
+Against `a8a2dfe`, all classification totals for the 282 catalog sets are
+unchanged: template threshold-unstated **45**, page threshold-unstated **50**.
+Only Archmage's page comparison detail changes, gaining the actual bonus line.
+Recorded exceptions still reproduce. The
+[row-association report](../reports/2026-11-01-archmage-row-association.json)
+records the rendered cells and before/after comparison.
+
+Both new behavioral tests fail on the pre-change tree; all **80** set-reader
+tests pass after the change. Removing any of seven guards (anchored span,
+anchor ownership, note span, preceding spans, new-anchor boundary, table
+boundary, continuation-cell layout) makes the rejection test fail.
+
+
+## Named equipment without an explicit count (#952, 2026-11-01)
+
+Checked both sources directly through the DDO Wiki API in Chromium:
+[template revision 723530](https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530)
+and [page revision 720202](https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202).
+This review covers these six entries and the page's complete **Planar Focus
+sets** and **Dragonscale Armor sets** sections:
+
+| Entries | Activation wording in the template |
+|---|---|
+| Draconic Ferocity | “While an Epic-level {{Item\|Helm of the Black Dragon}} is equipped at the same time as a Flawless Black Dragonscale Armor” |
+| Draconic Mind | “While an Epic-level {{Item\|Helm of the Blue Dragon}} is equipped at the same time as a Flawless Blue Dragonscale Armor” |
+| Draconic Resilience | “While an Epic-level {{Item\|Helm of the White Dragon}} is equipped at the same time as a Flawless White Dragonscale Armor” |
+| Planar Focus: Erudition, Prowess, Subterfuge | “When this item is equipped at the same time as a Planar Conflux” |
+
+The page adds this requirement above the Draconic rows:
+
+> Flawless Dragonscale armors and helms provide a set bonus when the helm and armor of the same color are equipped.
+
+The Planar Focus section says the relic weapons must first be upgraded to
+Planar Conflux weapons. Its numbers describing trinket variants, upgrade
+ingredients, favor, and minimum level are not activation counts. Its shared
+weapon cell's `rowspan="3"` describes table layout.
+
+These checked passages state equipment relationships but no numeric piece
+requirement or “both” count. **Neither source receives an inferred count of 2.**
+The named equipment, Epic-level and same-color requirements must not be reduced
+to an unrestricted piece-count rule. All six template entries retain their
+complete conditional prose; all six page records remain `threshold-unstated`.
+No production definitions or reader behavior change.
+
+The [source review report](../reports/2026-11-01-named-equipment-count-review.json)
+preserves the six template entries, page bonus cells, complete page sections,
+and classifications at `522311e`. This is evidence for these cited sources,
+not a claim that no other wiki page states a count. At this snapshot, these six
+sets account for six of the 45 unresolved template comparisons and six of the
+50 unresolved page comparisons; the other 39/44 comparisons are outside this
+review. Further source review remains under #952; representing equipment
+relationships remains under #908.
+
+
+## Remaining count review and staleness guard (#952, 2026-11-01)
+
+Rechecked both complete sources directly through the DDO Wiki API: page
+[revision 720202](https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202)
+and template
+[revision 723530](https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530).
+The review covers the remaining `threshold-unstated` comparisons in the
+282-set catalog, separately for each source:
+
+| Finding | Template comparisons | Page comparisons |
+|---|---:|---:|
+| Korthos: reward acquisition text, no explicit activation count | 7 | 8 |
+| Prestige: effects and class/enhancement conditions, no explicit activation count | 26 | 32 |
+| Secrets of the Artificers: upgrade prerequisite, no explicit activation count | 4 | 4 |
+| Draconic / Planar Focus: named-equipment requirements reviewed above | 6 | 6 |
+| Template lacks a count; page counterpart states one | 2 | 0 |
+| **Total** | **45** | **50** |
+
+The Korthos introduction describes the first and second quest reward and says:
+
+> Both pieces can also show up in The Maleficent Cabal reward list.
+
+This states where pieces are acquired, not an activation rule. The general
+page introduction says many sets require two items and some require three or
+more; it does not assign a count to these specific sets.
+
+The prestige introduction discusses class level 18 and enhancement-based
+benefits. Effect values, additional songs/turns/rages, enhancement tiers and
+table spans do not establish a piece count. The Sorcerer note about Lore and
+Archmage's explanatory note remain relevant context; this count review makes
+no ruling about stacking or conditional effects.
+
+The Secrets of the Artificers introduction explicitly says:
+
+> To trigger these set bonuses, items must first be upgraded and their Nearly Finished effects replaced at the Cannith Reforging Station.
+
+This prerequisite does not state a number. Its four rows are Alchemist's Lore,
+Fabricator's Ingenuity, Magewright's Expertise and Tinker's Finesse.
+
+DM's Vision and Elder's Knowledge have explicit page count headers while their
+template entries lack counts. Conversely, the page's four Savant entries and
+Archmage lack count statements while their template entries state them. The
+comparisons remain independent; this review does not copy counts between sources.
+
+[set-count-review.json](set-count-review.json) lists each reviewed source/name
+pair and its finding. **Coverage is checked on every set parity run**, in both
+text and JSON modes: the unresolved roster must match in both directions,
+findings must be present, the catalog must be nonempty, and each complete
+source's revision and SHA-256 must match the reviewed text. Hashing the complete
+source also detects changes outside the bonus cells, including section context.
+A mismatch reports the affected source/names and exits 1. Updating the registry
+requires checking the changed wiki evidence, not just refreshing hashes.
+
+The guard passes for these revisions, with all 45/50 findings accounted for.
+All previous parity fields remain unchanged. Six CLI tests pass and fail on the
+pre-change tree (`383b885`); they exercise successful review, missing and stale
+entries in each source, revision/context changes, empty input, invalid findings
+and both output modes. The existing 80 set-reader tests still pass.
+
+This completes the count-review scope in these two sources for #952, subject to
+the guard. It does not establish that other wiki pages lack counts, make the
+remaining effects readable, or change production set definitions. Conditional
+activation modeling remains under #908, normalization under #951, and value
+disagreements under #956.

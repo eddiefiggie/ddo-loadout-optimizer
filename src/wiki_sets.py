@@ -16,8 +16,9 @@ a reason, never defaulted. Gear-planner's set catalog stays the build's source
 until the parity diff (`scripts/diff_harvest_sets.py`) shows ours-wrong = 0.
 
 NEVER INFER. Two specific temptations this module refuses:
-  * A row with no `N Pieces Equipped:` header has no stated threshold, even
-    when its item list has N entries. `threshold` is None and the diff reports it.
+  * A row with no explicit piece header or reviewed prose count has no stated
+    threshold, even when its item list has N entries. `threshold` is None and
+    the diff reports it.
   * A `HELstats` row's Legendary half has no anchor of its own. Its name is not
     invented (`Legendary <anchor>` is the obvious guess, and it is a guess); the
     row is keyed by its anchor plus the tier the template code assigns.
@@ -108,8 +109,108 @@ def plain(line: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
+# #952 — exact prose prefixes from Template:Named item sets rev 723530 and
+# Named item sets rev 720202. Each count is stated in the prefix itself. Where
+# the source names a set, its name remains part of the literal match; new or
+# conditional wording cannot silently broaden the grammar. Strip only
+# these prefixes and preserve the remaining markup for read_clause. Evidence and
+# deliberately unsupported forms: docs/wiki-evidence/named-item-sets-structure.md.
+_ADAMANCY_MEMBERSHIP_PREFACE = "This item is part of the Unbreakable Adamancy set."
+_ADAMANCY_COUNT_PREFIX = "When two items from this set are equipped, you gain a "
+
+PROSE_PIECE_HEADERS = {
+    # Additional explicit counts in the same template revision. Only the equip
+    # count is read; the rest of each sentence still goes to read_clause.
+    _ADAMANCY_COUNT_PREFIX: 2,
+    "While both items from this set are equipped, ": 2,
+    "When any three of the items are equipped you will gain a ": 3,
+    "When all five items are equipped you will gain a ": 5,
+    "2 Item Set Bonus: ": 2,
+    "3 Item Set Bonus: ": 3,
+    # Corsair's Cunning, Named item sets page rev 720202 (not the template's form).
+    "*2 Item version: ": 2,
+    "*3 Item version: ": 3,
+    'This item is one of the two pieces of the Air Savant set. When both items are equipped, you gain a ': 2,
+    'This item is one of the two pieces of the Archmage set. When both items are equipped, you gain a ': 2,
+    'This item is one of the two pieces of the Earth Savant set. When both items are equipped, you gain a ': 2,
+    'This item is one of the two pieces of the Fire Savant set. When both items are equipped, you gain a ': 2,
+    'This item is one of the two pieces of the Water Savant set. When both items are equipped, you gain a ': 2,
+    'When all three items from the set are equipped, you will gain a ': 3,
+    "While wearing any five items from the Epic The Devil's Handiwork, you gain:": 5,
+    "While wearing any five items from the The Devil's Handiwork, you gain:": 5,
+    'While wearing both items from the Brilliant Crescents set, you gain:': 2,
+    "While wearing both items from the Captain's Set, you gain:": 2,
+    'While wearing both items from the Double Helix Set, you gain:': 2,
+    "While wearing both items from the Epic Captain's Set, you gain:": 2,
+    'While wearing both items from the Epic Double Helix Set, you gain:': 2,
+    'While wearing both items from the Epic Griffon Set, you gain:': 2,
+    "While wearing both items from the Epic Slice 'n Dice Set, you gain:": 2,
+    'While wearing both items from the Griffon Set, you gain:': 2,
+    'While wearing both items from the Mountainskin Set, you gain:': 2,
+    "While wearing both items from the Slice 'n Dice Set, you gain:": 2,
+    'While wearing three items from the Arcsteel Battlemage set, you gain:': 3,
+    'While wearing three items from the Dreadkeeper set, you gain:': 3,
+    'While wearing three items from the Esoteric Initiate set, you gain:': 3,
+    'While wearing three items from the Feywild Dreamer set, you gain:': 3,
+    'While wearing three items from the Flamecleansed Fury set, you gain:': 3,
+    'While wearing three items from the Guardian of the Gates set, you gain:': 3,
+    "While wearing three items from the Hruit's Influence set, you gain:": 3,
+    'While wearing three items from the Part of the Family set, you gain:': 3,
+    'While wearing three items from the Wallwatch set, you gain:': 3,
+    'While wearing two pieces from the Anger of the Avalanche set, you gain:': 2,
+    'While wearing two pieces from the Astute Alchemist set, you gain:': 2,
+    'While wearing two pieces from the Chained Elemental set, you gain:': 2,
+    'While wearing two pieces from the Conduit of the Titans set, you gain:': 2,
+    'While wearing two pieces from the Fastidious Fabricator set, you gain:': 2,
+    'While wearing two pieces from the Legacy of Levikk set, you gain:': 2,
+    'While wearing two pieces from the Legacy of Lorikk set, you gain:': 2,
+    'While wearing two pieces from the Legacy of Tharne set, you gain:': 2,
+    'While wearing two pieces from the Mantle of Suulomades set, you gain:': 2,
+    'While wearing two pieces from the Masterful Magewright set, you gain:': 2,
+    'While wearing two pieces from the Mind and Matter set, you gain:': 2,
+    'While wearing two pieces from the One with the Swarm set, you gain:': 2,
+    'While wearing two pieces from the Tyrannical Tinkerer set, you gain:': 2,
+}
+
+
+# Template:Named item sets rev 723530 states this paired numeric form for
+# Glacial Assault, Levik's Defender, Lorikk's Champion and Tharne's Wrath.
+# https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530
+# Keep the bonus markup and punctuation; recognizing a threshold does not
+# establish an effect's stat, value or bonus type.
+_NUMERIC_PROSE_PAIR_RE = re.compile(
+    r"^With 2 items equipped - (.+\.)\s+With 3 items equipped - (.+)$")
+_NUMERIC_PROSE_MENTION_RE = re.compile(r"\bWith \d+ items equipped\b")
+
+
+def _numeric_prose_pair(raw: str):
+    """Read only the reviewed 2/3 sentence pair, outside nested markup."""
+    match = _NUMERIC_PROSE_PAIR_RE.fullmatch(raw.strip())
+    if not match or len(_NUMERIC_PROSE_MENTION_RE.findall(raw)) != 2:
+        return None
+    two, three = match.groups()
+    # A header inside a link label, template argument or HTML attribute is not
+    # another tier. The split must not cut through any of those constructs.
+    for opening, closing in (("[[", "]]"), ("{{", "}}"), ("<", ">")):
+        if two.count(opening) != two.count(closing):
+            return None
+    return two.strip(), three.strip()
+
+
+# Template:Named item sets rev 723530 explicitly states these counts AND extra
+# activation requirements. Keep the WHOLE entry as one unread clause: splitting
+# off its ordinary numeric bonuses would silently drop the equip/state condition.
+# https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530
+CONDITIONAL_SET_COUNTS = {
+    "epic elemental evil set": (
+        "While wearing both an Elemental Evil Set Item weapon and an Elemental Evil Set Item armor, you gain:", 2),
+    "way of the sun soul": (
+        "When all three item from the set are equipped and you are in a centered state, you will gain ", 3),
+}
+
+
 def _tiers_from_lines(lines) -> dict:
-    """Bonus lines -> {threshold: [line, ...]}; lines before any header go under None."""
+    """Bonus lines -> {threshold: [line, ...]}; unreviewed prefaces stay under None."""
     tiers, cur = {}, None
     for raw in lines:
         m = _PIECES_RE.match(plain(raw))
@@ -121,6 +222,21 @@ def _tiers_from_lines(lines) -> dict:
             rest = re.split(r"Equipped\s*(?:'''|'')?\s*[:\-]", raw, maxsplit=1, flags=re.I)
             if m.group(2) and len(rest) == 2 and plain(rest[1]):
                 tiers[cur].append(rest[1].strip())
+            continue
+        numeric = _numeric_prose_pair(raw)
+        if numeric:
+            tiers.setdefault(2, []).append(numeric[0])
+            tiers.setdefault(3, []).append(numeric[1])
+            cur = 3
+            continue
+        prose = next(((prefix, count) for prefix, count in PROSE_PIECE_HEADERS.items()
+                      if raw.strip().startswith(prefix)), None)
+        if prose:
+            prefix, cur = prose
+            tiers.setdefault(cur, [])
+            rest = raw.strip()[len(prefix):].strip()
+            if plain(rest):
+                tiers[cur].append(rest)
             continue
         if plain(raw):
             tiers.setdefault(cur, []).append(raw.strip())
@@ -140,7 +256,19 @@ def template_sets(wikitext: str) -> dict:
         m = _VARDEFINE_RE.search(value)
         name = m.group(1).strip() if m else None
         value = _VARDEFINE_RE.sub("", value).strip()
+        conditional = CONDITIONAL_SET_COUNTS.get(key)
+        if conditional and value.startswith(conditional[0]):
+            out[key] = {"name": name, "tiers": {conditional[1]: [value]}, "raw": value}
+            continue
         lines = re.split(r"<br\s*/?>|</?li[^>]*>|\n", value)
+        # Rev 723530's Adamancy entry has this redundant membership sentence
+        # immediately before its explicit two-item count. Keep the raw source,
+        # and skip only that exact pair at this entry; never drop arbitrary or
+        # conditional prefaces to make an otherwise unreadable set look complete.
+        if (key == "unbreakable adamancy" and len(lines) >= 2
+                and lines[0].strip() == _ADAMANCY_MEMBERSHIP_PREFACE
+                and lines[1].strip().startswith(_ADAMANCY_COUNT_PREFIX)):
+            lines = lines[1:]
         out[key] = {"name": name, "tiers": _tiers_from_lines(lines), "raw": value}
     return out
 
@@ -426,8 +554,33 @@ def read_clause(line: str, bonus_types, stat_names) -> dict:
     return {"affixes": [{"name": n, "type": ty, "value": value} for n in names]}
 
 
+def _cell_rowspan(cell: str) -> int:
+    match = re.match(r'rowspan="(\d+)"\|', cell.lstrip())
+    return int(match.group(1)) if match else 1
+
+
+def _two_row_bonus_continuation(cells, anchors, next_row):
+    """The reviewed note/bonus layout in Named item sets rev 720202 (Archmage).
+
+    The anchored name spans two rows, the note spans the item/bonus columns,
+    and the next row supplies those two cells. This is table geometry, never an
+    equipped-piece count. Other spanning layouts remain unread.
+    """
+    if (len(cells) < 2 or len(anchors) != 1
+            or _cell_rowspan(cells[-2]) != 2
+            or _ANCHOR_RE.findall(cells[-2]) != anchors
+            or not cells[-1].lstrip().startswith('colspan="2"|')
+            or any(_cell_rowspan(cell) < 2 for cell in cells[:-2])
+            or _ANCHOR_RE.search(next_row)):
+        return None
+    following = _row_cells(next_row)
+    if len(following) != 2 or any(re.match(r'(?:rowspan|colspan)=', c.lstrip()) for c in following):
+        return None
+    return following[-1]
+
+
 def page_sets(wikitext: str) -> list:
-    """`Named item sets` -> one record per (row, tier).
+    """`Named item sets` -> one record per (anchored row group, tier).
 
     Each record: {anchors, section, tier, tiers, raw}. `tier` is None for a row with
     no HELstats; otherwise each tier the row's HELstats render gets its own record,
@@ -440,13 +593,20 @@ def page_sets(wikitext: str) -> list:
         if block.startswith("=="):
             section = plain(block.strip("= "))
             continue
-        for row in re.split(r"\n\|-[^\n]*", block)[1:]:
-            row = row.split("\n|}")[0]
+        rows = re.split(r"\n\|-[^\n]*", block)[1:]
+        for index, row_chunk in enumerate(rows):
+            row = row_chunk.split("\n|}")[0]
             anchors = [a.strip() for a in _ANCHOR_RE.findall(row)]
             if not anchors:
                 continue
             cells = _row_cells(row)
-            bonus = _CELL_STYLE_RE.sub("", cells[-1] if cells else "")
+            bonus = cells[-1] if cells else ""
+            if index + 1 < len(rows) and "\n|}" not in row_chunk:
+                continuation = _two_row_bonus_continuation(
+                    cells, anchors, rows[index + 1].split("\n|}")[0])
+                if continuation is not None:
+                    bonus += "\n" + continuation
+            bonus = _CELL_STYLE_RE.sub("", bonus)
             lines = bonus.split("\n")
             tiers = helstats_tiers(bonus)
             for tier in tiers or [None]:

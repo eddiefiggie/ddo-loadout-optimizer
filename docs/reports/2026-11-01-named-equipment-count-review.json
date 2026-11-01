@@ -1,0 +1,165 @@
+{
+  "reviewed_commit": "522311e7b554bc7a6ee5a75c3ac36c4c39fb558c",
+  "checked_date": "2026-11-01",
+  "citations": {
+    "Named item sets": "https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202",
+    "Template:Named item sets": "https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530"
+  },
+  "scope": "Six named sets in the two cited sources, including their page sections. No claim about other wiki pages or the remaining unresolved entries.",
+  "decision": "Retain threshold-unstated for both sources. Do not derive a count from named equipment, table spans, item-list length, level requirements, variants, or upgrade ingredients.",
+  "records": [
+    {
+      "name": "Draconic Ferocity",
+      "finding": "Equipment relationship stated; explicit piece count absent in the checked template entry and page section.",
+      "template_raw": "While an Epic-level {{Item|Helm of the Black Dragon}} is equipped at the same time as a Flawless Black [[Dragonscale Armor]], you will gain a +3% [[artifact bonus]] to melee Doublestrike chance and a +2 [[artifact bonus]] to damage with ranged or thrown weapons.",
+      "page_bonus_raw": "\n* +3% [[artifact bonus]] to [[Doublestrike]]\n* +2 [[artifact bonus]] to Hit and Damage with [[Ranged weapons|Ranged]] and [[Thrown weapons]]",
+      "page_section": "Dragonscale Armor sets",
+      "classification": {
+        "template": {
+          "class": "threshold-unstated",
+          "lines": [
+            "While an Epic-level {{Item|Helm of the Black Dragon}} is equipped at the same time as a Flawless Black Dragonscale Armor, you will gain a +3% artifact bonus to melee Doublestrike chance and a +2 artifact bonus to damage with ranged or thrown weapons."
+          ]
+        },
+        "page": {
+          "class": "threshold-unstated",
+          "lines": [
+            "+3% artifact bonus to Doublestrike",
+            "+2 artifact bonus to Hit and Damage with Ranged and Thrown weapons"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Draconic Mind",
+      "finding": "Equipment relationship stated; explicit piece count absent in the checked template entry and page section.",
+      "template_raw": "While an Epic-level {{Item|Helm of the Blue Dragon}} is equipped at the same time as a Flawless Blue [[Dragonscale Armor]], you will gain a +15 [[artifact bonus]] to your Universal Spell Power.{{#ifeq:{{NAMESPACE}}|Item|{{#ifeq:{{IO|{{{nocat|0}}}}}|1||[[Category:Nonstandard Spell Power items]]}}</includeonly>}}",
+      "page_bonus_raw": "\n+15 [[artifact bonus]] to [[Spell Power|Universal Spell Power]]",
+      "page_section": "Dragonscale Armor sets",
+      "classification": {
+        "template": {
+          "class": "threshold-unstated",
+          "lines": [
+            "While an Epic-level {{Item|Helm of the Blue Dragon}} is equipped at the same time as a Flawless Blue Dragonscale Armor, you will gain a +15 artifact bonus to your Universal Spell Power.{{#ifeq:{{NAMESPACE}}|Item|{{#ifeq:{{IO|{{{nocat|0}}}}}|1||Category:Nonstandard Spell Power items}}}}"
+          ]
+        },
+        "page": {
+          "class": "threshold-unstated",
+          "lines": [
+            "+15 artifact bonus to Universal Spell Power"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Draconic Resilience",
+      "finding": "Equipment relationship stated; explicit piece count absent in the checked template entry and page section.",
+      "template_raw": "While an Epic-level {{Item|Helm of the White Dragon}} is equipped at the same time as a Flawless White [[Dragonscale Armor]], you will gain a +50 [[artifact bonus]] to your maximum Hit Points.",
+      "page_bonus_raw": "\n+50 [[artifact bonus]] to [[HP|Hit Points]]",
+      "page_section": "Dragonscale Armor sets",
+      "classification": {
+        "template": {
+          "class": "threshold-unstated",
+          "lines": [
+            "While an Epic-level {{Item|Helm of the White Dragon}} is equipped at the same time as a Flawless White Dragonscale Armor, you will gain a +50 artifact bonus to your maximum Hit Points."
+          ]
+        },
+        "page": {
+          "class": "threshold-unstated",
+          "lines": [
+            "+50 artifact bonus to Hit Points"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Planar Focus: Erudition",
+      "finding": "Equipment relationship stated; explicit piece count absent in the checked template entry and page section.",
+      "template_raw": "When this item is equipped at the same time as a [[Planar Conflux]], you will gain the benefit of Spell Penetration IX, a +250 Enhancement bonus to your maximum Spell Point total, and a +15 Psionic bonus to your Universal Spell Power.",
+      "page_bonus_raw": " {{Spellpen|IX}}, {{Wizardry|250}}, +15 [[psionic bonus]] to Universal [[Spell Power]]",
+      "page_section": "Planar Focus sets",
+      "classification": {
+        "template": {
+          "class": "threshold-unstated",
+          "lines": [
+            "When this item is equipped at the same time as a Planar Conflux, you will gain the benefit of Spell Penetration IX, a +250 Enhancement bonus to your maximum Spell Point total, and a +15 Psionic bonus to your Universal Spell Power."
+          ]
+        },
+        "page": {
+          "class": "threshold-unstated",
+          "lines": [
+            "{{Spellpen|IX}}, {{Wizardry|250}}, +15 psionic bonus to Universal Spell Power"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Planar Focus: Prowess",
+      "finding": "Equipment relationship stated; explicit piece count absent in the checked template entry and page section.",
+      "template_raw": "When this item is equipped at the same time as a [[Planar Conflux]], you will gain a +4 Artifact bonus to your attack and damage rolls, and a +15 Artifact bonus to your Physical Resistance rating.",
+      "page_bonus_raw": "\n+4 [[artifact bonus]] to attack and damage, +15 [[artifact bonus]] to [[Physical Resistance Rating]]",
+      "page_section": "Planar Focus sets",
+      "classification": {
+        "template": {
+          "class": "threshold-unstated",
+          "lines": [
+            "When this item is equipped at the same time as a Planar Conflux, you will gain a +4 Artifact bonus to your attack and damage rolls, and a +15 Artifact bonus to your Physical Resistance rating."
+          ]
+        },
+        "page": {
+          "class": "threshold-unstated",
+          "lines": [
+            "+4 artifact bonus to attack and damage, +15 artifact bonus to Physical Resistance Rating"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Planar Focus: Subterfuge",
+      "finding": "Equipment relationship stated; explicit piece count absent in the checked template entry and page section.",
+      "template_raw": "When this item is equipped at the same time as a [[Planar Conflux]], you will gain True Seeing, a +5 Insight modifier to attack rolls on attacks that would be considered Sneak attacks, a +8 Insight modifier to Damage rolls on attacks that would be considered Sneak attacks, and a +3% bonus to your chance to Dodge enemy attacks.",
+      "page_bonus_raw": " {{Sneak Attack Bonus|5|Insightful}}, [[True Seeing]], {{Dodge|3}}",
+      "page_section": "Planar Focus sets",
+      "classification": {
+        "template": {
+          "class": "threshold-unstated",
+          "lines": [
+            "When this item is equipped at the same time as a Planar Conflux, you will gain True Seeing, a +5 Insight modifier to attack rolls on attacks that would be considered Sneak attacks, a +8 Insight modifier to Damage rolls on attacks that would be considered Sneak attacks, and a +3% bonus to your chance to Dodge enemy attacks."
+          ]
+        },
+        "page": {
+          "class": "threshold-unstated",
+          "lines": [
+            "{{Sneak Attack Bonus|5|Insightful}}, True Seeing, {{Dodge|3}}"
+          ]
+        }
+      }
+    }
+  ],
+  "page_sections_raw": {
+    "Planar Focus sets": "== Planar Focus sets ==\nThe trinkets for these sets drop from quests in [[The Demonweb]] Adventure Pack. The relic weapons drop from the [[Caught in the Web]] raid.\n\nTrinkets each have random ability bonus, making it effectively a choice from 6 items.\n\nRelic weapons must first be upgraded to '''[[Planar Conflux]]''' weapons by acquiring 3 [[Commendation of Heroism]] and 375 [[Purple Dragon Knights]] favor and speaking to Mikrom Sum, the [[Purple Dragon Knights]] favor vendor in [[Eveningstar]]. More information on PDK favor upgrades {{Forums|381612|here}}.\n\n{|class=\"wikitable\"\n!width=\"10%\"|Set name||colspan=\"2\"|Items||width=\"30%\"|Set bonus effect\n|-\n|{{Anchor|Planar Focus: Erudition}}'''Planar Focus: Erudition [ML:23]'''\n|width=\"30%\"|\n* {{Item|Planar Focus of Erudition}} - Trinket\n** ({{Stat|INT|8}}, {{Stat|INT|3|Insightful}}, {{Stat|WIS|8}}, {{Stat|WIS|3|Insightful}}, {{Stat|CHA|8}}, or {{Stat|CHA|3|Insightful}} variants)\n|width=\"30%\" rowspan=\"3\"|The relic weapons with Planar Conflux properties {{InlineTip|R}} {{InlineTip|CrReq}}: \n* {{Item|Agony, the Knife in the Dark}} - Dagger\n* {{Item|Antipode, Fist of the Horizon}} - Handwraps\n* {{Item|Balizarde, Protector of the King}} - Rapier\n* {{Item|Breach, The Dividing Blade}} - Falchion\n* {{Item|Celestia, Brightest Star of Day}} - Shortsword\n* {{Item|Cleaver, Hewer of Suffering}} - Greataxe\n* {{Item|Mornh, Hammer of the Mountains}} - Warhammer\n* {{Item|Needle, Quill-slinger}} - Repeating Light Crossbow\n* {{Item|Nightmare, the Fallen Moon}} - Bastard Sword\n* {{Item|Pinion, Cloud-piercer}} - Longbow\n* {{Item|Sireth, Spear of the Sky}} - Quarterstaff\n* {{Item|Tinah, Sword of the Sea}} - Longsword\n* {{Item|Twilight, Element of Magic}} - Quarterstaff\n\n| {{Spellpen|IX}}, {{Wizardry|250}}, +15 [[psionic bonus]] to Universal [[Spell Power]]\n|-\n|{{Anchor|Planar Focus: Prowess}}'''Planar Focus: Prowess [ML:23]'''\n|\n* {{Item|Planar Focus of Prowess}} - Trinket\n** ({{Stat|STR|8}}, {{Stat|STR|3|Insightful}}, {{Stat|DEX|8}}, {{Stat|DEX|3|Insightful}}, {{Stat|CON|8}}, or {{Stat|CON|3|Insightful}} variants)\n|{{Artifact}}\n+4 [[artifact bonus]] to attack and damage, +15 [[artifact bonus]] to [[Physical Resistance Rating]]\n|-\n|{{Anchor|Planar Focus: Subterfuge}}'''Planar Focus: Subterfuge [ML:23]'''\n|\n* {{Item|Planar Focus of Subterfuge}} - Trinket\n** ({{Stat|DEX|8}}, {{Stat|DEX|3|Insightful}}, {{Stat|INT|8}}, {{Stat|INT|3|Insightful}}, {{Stat|WIS|8}}, or {{Stat|WIS|3|Insightful}} variants)\n| {{Sneak Attack Bonus|5|Insightful}}, [[True Seeing]], {{Dodge|3}}\n|}\n\n",
+    "Dragonscale Armor sets": "== Dragonscale Armor sets ==\nFlawless Dragonscale armors and helms provide a set bonus when the helm and armor of the same color are equipped.<!--are these unlisted bonueses? and lvl12-14 heroic versions are included in the set or not? --> '''Note:''' Red Dragon sets are listed under [[#Vault of Night sets]].\n\n{|class=\"wikitable\"\n!width=\"10%\"|Set name||width=\"45%\"|Items||width=\"45%\"|Set bonus effect\n|-\n|{{Anchor|Draconic Ferocity}}'''Draconic Ferocity [ML:25]'''\n|\n* {{Item|Helm of the Black Dragon}}\nArmor: {{InlineTip|CrReq}}\n* {{Item|Flawless Black Dragonscale Robe}}\n* {{Item|Flawless Black Dragonhide Armor}}\n* {{Item|Flawless Black Dragonscale Armor}}\n* {{Item|Flawless Black Dragonplate Armor}}\n* {{Item|Flawless Black Dragonscale Docent}}\n\n|{{Artifact}}\n* +3% [[artifact bonus]] to [[Doublestrike]]\n* +2 [[artifact bonus]] to Hit and Damage with [[Ranged weapons|Ranged]] and [[Thrown weapons]]\n|-\n|{{Anchor|Draconic Mind}}'''Draconic Mind [ML:25]'''\n|\n* {{Item|Helm of the Blue Dragon}}\nArmor: {{InlineTip|CrReq}}\n* {{Item|Flawless Blue Dragonscale Robe}}\n* {{Item|Flawless Blue Dragonhide Armor}}\n* {{Item|Flawless Blue Dragonscale Armor}}\n* {{Item|Flawless Blue Dragonplate Armor}}\n* {{Item|Flawless Blue Dragonscale Docent}}\n|{{Artifact}}\n+15 [[artifact bonus]] to [[Spell Power|Universal Spell Power]]\n|-\n|{{Anchor|Draconic Resilience}}'''Draconic Resilience [ML:25]'''\n|\n* {{Item|Helm of the White Dragon}}\nArmor: {{InlineTip|CrReq}}\n* {{Item|Flawless White Dragonscale Robe}}\n* {{Item|Flawless White Dragonhide Armor}}\n* {{Item|Flawless White Dragonscale Armor}}\n* {{Item|Flawless White Dragonplate Armor}}\n* {{Item|Flawless White Dragonscale Docent}}\n|{{Artifact}}\n+50 [[artifact bonus]] to [[HP|Hit Points]]\n|}\n\n"
+  },
+  "classification_counts": {
+    "template": {
+      "exact": 110,
+      "threshold-unstated": 45,
+      "partial": 107,
+      "ours-differs": 6,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 50,
+      "exact": 31,
+      "partial": 28,
+      "upstream-stale": 1
+    }
+  },
+  "follow_up_issues": [
+    952,
+    908
+  ]
+}

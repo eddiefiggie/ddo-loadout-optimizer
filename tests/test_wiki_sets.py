@@ -48,7 +48,7 @@ def test_threshold_header_alone_or_heading_its_first_clause():
     assert tiers == {3: ["* +2 Artifact bonus to Spell Power"], 5: ["+5 Artifact bonus to Spell Power"]}
 
 
-def test_a_prose_threshold_is_not_a_threshold():
+def test_an_unreviewed_prose_threshold_is_not_a_threshold():
     tiers = S._tiers_from_lines(["When both items are equipped, you gain a +2% Artifact bonus to X."])
     assert list(tiers) == [None]
 
@@ -604,3 +604,368 @@ def test_maximum_hit_points_requires_the_catalog_stat_for_the_stated_unit():
                  "+10 Artifact bonus to maximum hit points while raging",
                  "+10% Legendary bonus to Maximum Hit Points and Spell Points"):
         assert "quarantine" in S.read_clause(line, BONUS_TYPES, NAMES | {"False Life", "False Life (%)"}), line
+
+
+# --- #952: exact prose headers from Template:Named item sets rev 723530 ---------
+
+def test_reviewed_prose_headers_assign_the_stated_piece_counts():
+    for header, count in (
+            ("While wearing two pieces from the Anger of the Avalanche set, you gain:", 2),
+            ("While wearing three items from the Dreadkeeper set, you gain:", 3),
+            ("While wearing both items from the Brilliant Crescents set, you gain:", 2),
+            ("While wearing any five items from the The Devil's Handiwork, you gain:", 5),
+            ("When all three items from the set are equipped, you will gain a ", 3)):
+        clause = "+2 Artifact bonus to Spell Power"
+        assert S._tiers_from_lines([header + clause]) == {count: [clause]}, header
+
+
+def test_prose_header_preserves_inline_templates_and_links():
+    clause = "+1 [[Quality bonus]] to [[Strength]]"
+    assert S._tiers_from_lines([
+        "While wearing both items from the Captain's Set, you gain: " + clause
+    ]) == {2: [clause]}
+    # Unexpanded bonus templates must still reach the clause reader's quarantine.
+    assert S._tiers_from_lines([
+        "While wearing both items from the Captain's Set, you gain: {{Mystery|2}}"
+    ]) == {2: ["{{Mystery|2}}"]}
+
+
+def test_prose_header_reads_the_savant_context_sentence_without_a_stray_none_tier():
+    line = ("This item is one of the two pieces of the Air Savant set. "
+            "When both items are equipped, you gain a "
+            "+2% Artifact bonus to your Electric Spell Critical Chance.")
+    assert S._tiers_from_lines([line]) == {
+        2: ["+2% Artifact bonus to your Electric Spell Critical Chance."]}
+
+
+def test_prose_threshold_flows_through_template_reader_and_catalog_parity():
+    code = ("<onlyinclude>{{#switch:x|unused\n| captain's set = "
+            "While wearing both items from the Captain's Set, you gain: "
+            "+1 [[Quality bonus]] to [[Strength]]"
+            "{{#vardefine:set|Captain's Set}}\n| #default = Undefined set}}</onlyinclude>")
+    entry = S.template_sets(code)["captain's set"]
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    classification, detail = D.classify(
+        entry["tiers"], D.gp_tiers(catalog["Captain's Set"]), {"Strength"})
+    assert classification == "exact", (classification, detail)
+
+
+def test_prose_header_changes_tiers_without_reassigning_earlier_lines():
+    tiers = S._tiers_from_lines([
+        "Unreviewed preface", "While wearing both items from the Captain's Set, you gain:",
+        "+1 Quality bonus to Strength", "3 Pieces Equipped: +2 Artifact bonus to Spell Power"])
+    assert tiers == {None: ["Unreviewed preface"], 2: ["+1 Quality bonus to Strength"],
+                     3: ["+2 Artifact bonus to Spell Power"]}
+
+
+def test_unreviewed_or_conditional_prose_never_supplies_a_count():
+    # Deliberate unchanged boundaries: a word 'both', a near-match, or an item
+    # list is not permission to discard conditions or infer an equip threshold.
+    for line in (
+            "While wearing both items from the Captain's Set and raging, you gain: +1 Quality bonus to Strength",
+            "While wearing both items from an unknown set, you gain: +1 Quality bonus to Strength",
+            "When all three items from the set are equipped and you are centered, you will gain a +3 Artifact bonus to Strength",
+            "When some items from the set are equipped, you gain a +3 Artifact bonus to Strength",
+            "This set has three items.", "{{Item|One}} {{Item|Two}}"):
+        assert S._tiers_from_lines([line]) == {None: [line]}, line
+
+
+# Numeric paired headers quoted from Template:Named item sets rev 723530.
+# https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530
+NUMERIC_PROSE_FIXTURES = {'glacial assault': 'With 2 items equipped - [[Glaciation|Glaciation +72]].  With 3 items equipped '
+                    '- [[Glaciation|Glaciation +78]]',
+ "levik's defender": 'With 2 items equipped - +3 [[Insight bonus]] to AC, 20% Additional Melee '
+                     'Threat, Unlisted Fortitude and Will Save +1 (Stacks with most but not '
+                     'Parrying/Greater Parrying).  With 3 items equipped - +5 insight AC, 30% '
+                     'Additional Melee Threat (Threat stacks, but only with non-like amounts)',
+ "lorikk's champion": 'With 2 items equipped - Provides a +72 [[Equipment bonus]] to healing spell '
+                      'power. With 3 items equipped - Provides a +78 Equipment bonus to healing '
+                      'spell '
+                      'power.{{#ifeq:{{NAMESPACE}}|Item|{{#ifeq:{{IO|{{{nocat|0}}}}}|1||[[Category:Nonstandard '
+                      'Spell Power items]]}}</includeonly>}}',
+ "tharne's wrath": 'With 2 items equipped - [[Ghost Touch]] and -20% Melee Threat.  With 3 items '
+                   'equipped - [[Feather Falling]].'}
+
+
+def test_numeric_prose_preserves_each_wiki_bonus_under_its_explicit_threshold():
+    for name, raw in NUMERIC_PROSE_FIXTURES.items():
+        tiers = S._tiers_from_lines([raw])
+        assert set(tiers) == {2, 3}, (name, tiers)
+        assert len(tiers[2]) == len(tiers[3]) == 1
+        # Reconstruct the source including links, templates and punctuation.
+        # Only the two stated headers and separator whitespace may be removed.
+        reconstructed = ("With 2 items equipped - " + tiers[2][0] +
+                         " With 3 items equipped - " + tiers[3][0])
+        assert " ".join(reconstructed.split()) == " ".join(raw.split()), name
+    assert S._tiers_from_lines([NUMERIC_PROSE_FIXTURES["glacial assault"]]) == {
+        2: ["[[Glaciation|Glaciation +72]]."], 3: ["[[Glaciation|Glaciation +78]]"]}
+
+
+def test_numeric_thresholds_reach_parity_without_inventing_affix_meanings():
+    raw = NUMERIC_PROSE_FIXTURES["glacial assault"]
+    template = ("<onlyinclude>{{#switch:x|unused\n| glacial assault = " + raw +
+                "{{#vardefine:set|Glacial Assault}}\n| #default = Undefined}}</onlyinclude>")
+    tiers = S.template_sets(template)["glacial assault"]["tiers"]
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    classification, detail = D.classify(
+        tiers, D.gp_tiers(catalog["Glacial Assault"]), {"Cold Spell Power"})
+    assert classification == "partial", (classification, detail)
+    assert {q["threshold"] for q in detail["quarantined"]} == {2, 3}
+    assert len(detail["quarantined"]) == 2  # No stat or bonus type inferred from Glaciation.
+
+
+def test_numeric_prose_keeps_prior_unknown_text_and_following_explicit_headers():
+    tiers = S._tiers_from_lines([
+        "Unreviewed preface", NUMERIC_PROSE_FIXTURES["tharne's wrath"],
+        "3 Pieces Equipped: +2 Artifact bonus to Spell Power"])
+    assert tiers == {None: ["Unreviewed preface"],
+                     2: ["[[Ghost Touch]] and -20% Melee Threat."],
+                     3: ["[[Feather Falling]].", "+2 Artifact bonus to Spell Power"]}
+
+
+def test_unreviewed_numeric_prose_or_embedded_headers_remain_unread():
+    # Unchanged rejection boundaries: do not invent additional grammar or remove
+    # a condition just because a sentence contains the digits 2 and 3.
+    for raw in (
+            "With 2 items equipped while raging - +2 Artifact bonus to Strength. With 3 items equipped - +3 Artifact bonus to Strength",
+            "With 2 items equipped - +2 Artifact bonus to Strength. With 3 items equipped while centered - +3 Artifact bonus to Strength",
+            "With 2 items equipped - +2 Artifact bonus to Strength. With 4 items equipped - +4 Artifact bonus to Strength",
+            "With 2 items equipped - +2 Artifact bonus to Strength. With 3 items equipped - +3 Artifact bonus to Strength. With 4 items equipped - +4 Artifact bonus to Strength",
+            "With 2 items equipped - [[Example|A description. With 3 items equipped - more description]]",
+            "With 2 items equipped - {{Example|A description. With 3 items equipped - more description}}",
+            'With 2 items equipped - <span title="A description. With 3 items equipped - more description">Text</span>',
+            "These 2 items are listed, with 3 bonuses."):
+        assert S._tiers_from_lines([raw]) == {None: [raw]}, raw
+
+
+# Additional explicit counts, checked directly on the DDO Wiki on 2026-11-01:
+# https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530
+# https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202
+WORDED_COUNT_FIXTURES = {'unbreakable adamancy': 'This item is part of the Unbreakable Adamancy set.<br />When two items '
+                         'from this set are equipped, you gain a +5 [[Luck bonus]] to PRR and MRR.',
+ 'risk and reward': 'While both items from this set are equipped, your melee attacks deal an '
+                    'additional +0.5[W] damage dice. Your attacks also gain a 5% Chance on Hit to '
+                    'Bluff your target for four seconds. (Bluffed enemies can be affected by Sneak '
+                    'Attacks even while targeting you.)',
+ 'greater might of the abishai': '<br />When any three of the items are equipped you will gain a '
+                                 '+3 profane bonus to Natural Armor, a +3 profane bonus to '
+                                 'Strength, and a +3 bonus to your caster level on evocation '
+                                 'spells.<br />When all five items are equipped you will gain a +3 '
+                                 'profane bonus to Natural Armor, a +3 profane bonus to Strength '
+                                 'and Constitution, and a +3 bonus to your caster level on '
+                                 'evocation and conjuration spells.',
+ "corsair's cunning": '<br />2 Item Set Bonus: [[Underwater Action]]<br />3 Item Set Bonus: '
+                      '[[Feather Falling]]'}
+CORSAIR_COUNT_PAGE = '== Three Barrel Cove set ==\n{|class="wikitable"\n|-\n|{{Anchor|Corsair\'s Cunning}}\'\'\'Corsair\'s Cunning [ML:5]\'\'\'\n|\n* {{Item|Corsair\'s Bandana}} - Helm\n* {{Item|Corsair\'s Cufflinks}} - Bracers\n* {{Item|Corsair\'s Galoshes}} - Boots\n|\n*2 Item version: {{Underwater Action}}\n*3 Item version: {{Feather Falling}}\n\n|}'
+
+
+def _worded_count_entry(name, raw=None):
+    if raw is None:
+        raw = WORDED_COUNT_FIXTURES[name]
+    text = ("<onlyinclude>{{#switch:x|unused\n| " + name + " = " + raw +
+            "\n| #default = Undefined}}</onlyinclude>")
+    return S.template_sets(text)[name]
+
+
+def test_adamancy_exact_preface_and_count_reach_parity_without_bypassing_type_checks():
+    raw = WORDED_COUNT_FIXTURES["unbreakable adamancy"]
+    entry = _worded_count_entry("unbreakable adamancy")
+    assert entry["raw"] == raw  # The stored source still includes its preface.
+    assert entry["tiers"] == {2: ["+5 [[Luck bonus]] to PRR and MRR."]}
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    classification, detail = D.classify(entry["tiers"], D.gp_tiers(catalog["Unbreakable Adamancy"]),
+                                        {"Physical Sheltering", "Magical Sheltering"})
+    assert classification == "partial", (classification, detail)
+    assert detail["quarantined"] == [{
+        "threshold": 2, "line": "+5 Luck bonus to PRR and MRR.",
+        "reason": "unknown bonus type 'Luck'"}]
+
+
+def test_risk_and_reward_states_two_but_its_effect_remains_quarantined():
+    raw = WORDED_COUNT_FIXTURES["risk and reward"]
+    entry = _worded_count_entry("risk and reward")
+    assert set(entry["tiers"]) == {2}
+    clauses = entry["tiers"][2]
+    assert len(clauses) == 1
+    assert "While both items from this set are equipped, " + clauses[0] == raw
+    assert "quarantine" in S.read_clause(clauses[0], BONUS_TYPES, NAMES)
+
+
+def test_abishai_three_and_five_are_read_from_the_stated_sentences():
+    raw = WORDED_COUNT_FIXTURES["greater might of the abishai"]
+    entry = _worded_count_entry("greater might of the abishai")
+    assert set(entry["tiers"]) == {3, 5}
+    reconstructed = ("<br />When any three of the items are equipped you will gain a " +
+                     entry["tiers"][3][0] +
+                     "<br />When all five items are equipped you will gain a " +
+                     entry["tiers"][5][0])
+    assert reconstructed == raw
+    assert all("quarantine" in S.read_clause(line, BONUS_TYPES, NAMES)
+               for lines in entry["tiers"].values() for line in lines)
+
+
+def test_corsair_counts_are_read_from_each_sources_own_wording():
+    entry = _worded_count_entry("corsair's cunning")
+    assert entry["tiers"] == {2: ["[[Underwater Action]]"], 3: ["[[Feather Falling]]"]}
+    rows = S.page_sets(CORSAIR_COUNT_PAGE)
+    row = next(r for r in rows if "Corsair's Cunning" in r["anchors"])
+    assert row["tiers"] == {2: ["{{Underwater Action}}"], 3: ["{{Feather Falling}}"]}
+    assert all("quarantine" in S.read_clause(line, BONUS_TYPES, NAMES)
+               for lines in row["tiers"].values() for line in lines)
+
+
+def test_membership_preface_is_not_discarded_for_unreviewed_context():
+    # Deliberate unchanged boundaries: discard only the exact sourced preface
+    # at the exact entry and immediately before its reviewed count sentence.
+    raw = WORDED_COUNT_FIXTURES["unbreakable adamancy"]
+    for name, altered in (
+            ("unbreakable adamancy", raw.replace("set.", "set while raging.", 1)),
+            ("unbreakable adamancy", raw.replace("<br />", "<br />While centered:<br />", 1)),
+            ("unbreakable adamancy", raw.split("<br />", 1)[0]),
+            ("unbreakable adamancy", raw.replace("When two items from this set are equipped, you gain a ",
+                                                "2 Pieces Equipped: ")),
+            ("different set", raw)):
+        entry = _worded_count_entry(name, altered)
+        assert None in entry["tiers"], (name, entry)
+
+
+def test_unreviewed_worded_counts_and_conditions_remain_unread():
+    for raw in (
+            "While both items from this set are equipped and you are raging, your melee attacks gain a bonus.",
+            "When any three of the items are equipped while centered you will gain a +3 Artifact bonus to Strength",
+            "When all five items are equipped and you are centered you will gain a +3 Artifact bonus to Strength",
+            "When four items from this set are equipped, you gain a +5 Luck bonus to PRR and MRR.",
+            "4 Item Set Bonus: [[Feather Falling]]", "*2 Item version while raging: {{Underwater Action}}"):
+        assert S._tiers_from_lines([raw]) == {None: [raw]}, raw
+
+
+# Explicit counts with additional activation requirements, quoted from:
+# https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530
+CONDITIONAL_REQUIREMENT_FIXTURES = {'epic elemental evil set': 'While wearing both an Elemental Evil Set Item weapon and an Elemental '
+                            'Evil Set Item armor, you gain:<br />+20 [[Quality bonus]] to Melee '
+                            'Power<br />+20 [[Quality bonus]] to Ranged Power<br />+20 [[Quality '
+                            'bonus]] to Universal Spell Power',
+ 'way of the sun soul': 'When all three item from the set are equipped and you are in a centered '
+                        'state, you will gain +2 [[artifact bonus]] to To-Hit and Damage rolls. In '
+                        'addition, when you roll a natural 20 on an attack roll that is confirmed '
+                        'as a critical hit, you will gain temporary benefit based on the elemental '
+                        'stance you are in, if any.'}
+
+
+def test_conditional_count_keeps_the_entire_requirement_and_bonus_block():
+    for name, count in (("epic elemental evil set", 2), ("way of the sun soul", 3)):
+        raw = CONDITIONAL_REQUIREMENT_FIXTURES[name]
+        entry = _worded_count_entry(name, raw)
+        assert entry["raw"] == raw
+        assert entry["tiers"] == {count: [raw]}
+        assert "quarantine" in S.read_clause(raw, BONUS_TYPES, NAMES)
+
+
+def test_conditional_count_does_not_make_readable_following_bonuses_unconditional():
+    raw = CONDITIONAL_REQUIREMENT_FIXTURES["epic elemental evil set"]
+    names = {"Melee Power", "Ranged Power", "Universal Spell Power"}
+    # Premise: these bonuses would be read if separated from the equip condition.
+    bonus_lines = raw.split("<br />")[1:]
+    assert len(bonus_lines) == 3
+    assert all("affixes" in S.read_clause(line, BONUS_TYPES, names) for line in bonus_lines)
+    entry = _worded_count_entry("epic elemental evil set", raw)
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    classification, detail = D.classify(entry["tiers"], D.gp_tiers(catalog["Epic Elemental Evil Set"]), names)
+    assert classification == "partial", (classification, detail)
+    assert len(detail["quarantined"]) == 1
+    assert detail["quarantined"][0]["threshold"] == 2
+    assert detail["quarantined"][0]["line"] == S.plain(raw)
+    assert all("affixes" not in S.read_clause(line, BONUS_TYPES, names)
+               for line in entry["tiers"][2])
+
+
+def test_unreviewed_conditional_count_wording_or_entry_is_not_assumed():
+    # Deliberate unchanged boundaries: only the reviewed entry/prefix pairs have
+    # a known count. Never invent one by counting the mentioned equipment.
+    evil = CONDITIONAL_REQUIREMENT_FIXTURES["epic elemental evil set"]
+    sun = CONDITIONAL_REQUIREMENT_FIXTURES["way of the sun soul"]
+    for name, raw in (
+            ("different set", evil),
+            ("epic elemental evil set", evil.replace("both an", "either an", 1)),
+            ("epic elemental evil set", "Another condition. " + evil),
+            ("way of the sun soul", sun.replace("all three item", "all four item", 1))):
+        assert None in _worded_count_entry(name, raw)["tiers"], (name, raw)
+
+
+# Named item sets rev 720202: Archmage's anchored cell explicitly spans two rows.
+# https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202
+ARCHMAGE_ROWSPAN_PAGE = """== Prestige Enhancements sets ==
+{| class="wikitable"
+|-
+|rowspan="4"|[[Wizard]]
+|rowspan="2"|{{Anchor|Archmage}}'''Archmage'''
+|colspan="2"|''Note: The set bonuses of % chance to Spell Critical and Critical Damage Multiplier for the Archmage prestige set does '''not''' stack with [[Lore]] bonuses, but that they are two separate bonuses (e.g. One could use an item with Greater Arcane Lore for +9% Chance to Critical, and the set bonus effect for +0.50 Critical Damage Multiplier, effectively having Major Arcane Lore.)
+|-
+|
+* {{Item|Rahkir's Sash}} - [[Belt]]
+* {{Item|Rahkir's Ring}} - [[Ring]]
+|{{Artifact}}
+* +1% Artifact bonus to Spell Critical Chance
+|-
+|{{Anchor|Pale Master}}'''Pale Master'''
+|
+* {{Item|Eerie Belt}} - [[Belt]]
+* {{Item|Sanura's Band}} - [[Ring]]
+|
+* {{SpellPower|Nullification|78}}
+* ''If have Pale Master III Enhancement:'' {{SpellPower|Nullification|90}}
+|-
+|{{Anchor|Wild Mage}}'''Wild Mage'''
+|
+* {{Item|Kormor's Belt}} - [[Belt]]
+* {{Item|Kormor's Ring}} - [[Ring]]
+|
+* Your 8th level spells and spells lower than 8th level gain a +2 bonus to the die roll to [[Spell penetration|penetrate]] the target's Spell resistance. (Non-stacking)
+|}"""
+
+
+def test_archmage_rowspan_keeps_the_note_and_recovers_its_following_bonus_cell():
+    rows = S.page_sets(ARCHMAGE_ROWSPAN_PAGE)
+    entry = next(r for r in rows if r["anchors"] == ["Archmage"])
+    assert "Critical Damage Multiplier" in entry["raw"]  # Preserve the explanatory restriction.
+    assert "* +1% Artifact bonus to Spell Critical Chance" in entry["raw"]
+    assert "{{Item|Rahkir's Sash}}" not in entry["raw"]  # The items cell is not a bonus.
+    assert "Nullification" not in entry["raw"]  # The next named set is separate.
+    assert list(entry["tiers"]) == [None]  # rowspan=2 is NOT an equipped-piece requirement.
+    assert len(rows) == 3
+    pale = next(r for r in rows if r["anchors"] == ["Pale Master"])
+    assert "{{SpellPower|Nullification|78}}" in pale["raw"]
+    assert "+1% Artifact" not in pale["raw"]
+
+
+def test_archmage_recovered_bonus_does_not_establish_an_activation_count():
+    entry = next(r for r in S.page_sets(ARCHMAGE_ROWSPAN_PAGE) if r["anchors"] == ["Archmage"])
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    classification, detail = D.classify(entry["tiers"], D.gp_tiers(catalog["Archmage"]), NAMES)
+    assert classification == "threshold-unstated", (classification, detail)
+    assert "+1% Artifact bonus to Spell Critical Chance" in detail["lines"]
+    assert len(detail["lines"]) == 2  # Note and actual bonus are both present.
+
+
+def test_rowspan_continuation_requires_the_reviewed_layout_and_same_table():
+    # Deliberate unchanged boundaries: an adjacent row alone is not evidence
+    # that its bonus belongs to the previous anchor.
+    continuation = "|\n* {{Item|Rahkir's Sash}}"
+    for page in (
+            ARCHMAGE_ROWSPAN_PAGE.replace('rowspan="2"|{{Anchor|Archmage}}', '{{Anchor|Archmage}}'),
+            ARCHMAGE_ROWSPAN_PAGE.replace('rowspan="2"|{{Anchor|Archmage}}', 'rowspan="3"|{{Anchor|Archmage}}'),
+            ARCHMAGE_ROWSPAN_PAGE.replace('rowspan="4"|[[Wizard]]', '[[Wizard]]'),
+            ARCHMAGE_ROWSPAN_PAGE.replace('colspan="2"|', 'colspan="3"|', 1),
+            ARCHMAGE_ROWSPAN_PAGE.replace('rowspan="2"|{{Anchor|Archmage}}', 'rowspan="2"|')
+                .replace('rowspan="4"|[[Wizard]]', 'rowspan="4"|{{Anchor|Archmage}}[[Wizard]]'),
+            ARCHMAGE_ROWSPAN_PAGE.replace('|{{Artifact}}', '|colspan="2"|{{Artifact}}', 1),
+            ARCHMAGE_ROWSPAN_PAGE.replace('|{{Artifact}}', '|Extra cell\n|{{Artifact}}', 1),
+            ARCHMAGE_ROWSPAN_PAGE.replace(continuation, "|{{Anchor|Different set}}\n* {{Item|Rahkir's Sash}}", 1),
+            ARCHMAGE_ROWSPAN_PAGE.replace('\n|-\n'+continuation, '\n|}\n{|class="wikitable"\n|-\n'+continuation, 1)):
+        entry = next(r for r in S.page_sets(page) if r["anchors"] == ["Archmage"])
+        assert "* +1% Artifact bonus to Spell Critical Chance" not in entry["raw"]

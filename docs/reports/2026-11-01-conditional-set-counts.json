@@ -1,0 +1,78 @@
+{
+  "baseline_commit": "3ae6e8a21099684bf99bd83830c3b290a0758021",
+  "wiki_citation": "https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530",
+  "wiki_checked_date": "2026-11-01",
+  "harvest_revids": {
+    "Named item sets": 720202,
+    "Template:Named item sets": 723530
+  },
+  "population": "282 gear-planner catalog sets; each source compared independently",
+  "counts_before": {
+    "template": {
+      "exact": 110,
+      "threshold-unstated": 46,
+      "partial": 106,
+      "ours-differs": 6,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 50,
+      "exact": 31,
+      "partial": 28,
+      "upstream-stale": 1
+    }
+  },
+  "counts_after": {
+    "template": {
+      "exact": 110,
+      "threshold-unstated": 45,
+      "partial": 107,
+      "ours-differs": 6,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 50,
+      "exact": 31,
+      "partial": 28,
+      "upstream-stale": 1
+    }
+  },
+  "changed_template_sets": {
+    "Epic Elemental Evil Set": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "While wearing both an Elemental Evil Set Item weapon and an Elemental Evil Set Item armor, you gain:",
+          "+20 Quality bonus to Melee Power",
+          "+20 Quality bonus to Ranged Power",
+          "+20 Quality bonus to Universal Spell Power"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "While wearing both an Elemental Evil Set Item weapon and an Elemental Evil Set Item armor, you gain:+20 Quality bonus to Melee Power+20 Quality bonus to Ranged Power+20 Quality bonus to Universal Spell Power",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          }
+        ]
+      }
+    }
+  },
+  "outside_catalog": {
+    "Way of the Sun Soul": {
+      "3": [
+        "When all three item from the set are equipped and you are in a centered state, you will gain +2 [[artifact bonus]] to To-Hit and Damage rolls. In addition, when you roll a natural 20 on an attack roll that is confirmed as a critical hit, you will gain temporary benefit based on the elemental stance you are in, if any."
+      ]
+    }
+  },
+  "stale_disagreement_records": [],
+  "stale_upstream_records": []
+}

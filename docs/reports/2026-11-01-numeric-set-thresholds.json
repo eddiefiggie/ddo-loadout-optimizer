@@ -1,0 +1,142 @@
+{
+  "baseline_commit": "aef26eaae227a2861d45b7e22df22a4267592fbf",
+  "wiki_citation": "https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530",
+  "wiki_checked_date": "2026-11-01",
+  "harvest_revids": {
+    "Named item sets": 720202,
+    "Template:Named item sets": 723530
+  },
+  "population": "282 gear-planner catalog sets; each wiki source compared independently",
+  "counts_before": {
+    "template": {
+      "exact": 110,
+      "threshold-unstated": 53,
+      "partial": 99,
+      "ours-differs": 6,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 51,
+      "exact": 31,
+      "partial": 27,
+      "upstream-stale": 1
+    }
+  },
+  "counts_after": {
+    "template": {
+      "exact": 110,
+      "threshold-unstated": 49,
+      "partial": 103,
+      "ours-differs": 6,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 51,
+      "exact": 31,
+      "partial": 27,
+      "upstream-stale": 1
+    }
+  },
+  "changed_template_sets": {
+    "Glacial Assault": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "With 2 items equipped - Glaciation +72. With 3 items equipped - Glaciation +78"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "Glaciation +72.",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          },
+          {
+            "threshold": 3,
+            "line": "Glaciation +78",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          }
+        ]
+      }
+    },
+    "Levik's Defender": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "With 2 items equipped - +3 Insight bonus to AC, 20% Additional Melee Threat, Unlisted Fortitude and Will Save +1 (Stacks with most but not Parrying/Greater Parrying). With 3 items equipped - +5 insight AC, 30% Additional Melee Threat (Threat stacks, but only with non-like amounts)"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "+3 Insight bonus to AC, 20% Additional Melee Threat, Unlisted Fortitude and Will Save +1 (Stacks with most but not Parrying/Greater Parrying).",
+            "reason": "stat phrase not in the vocabulary: 'AC, 20% Additional Melee Threat, Unlisted Fortitude and Will Save +1 (Stacks with most but not Parrying/Greater Parrying)'"
+          },
+          {
+            "threshold": 3,
+            "line": "+5 insight AC, 30% Additional Melee Threat (Threat stacks, but only with non-like amounts)",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          }
+        ]
+      }
+    },
+    "Lorikk's Champion": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "With 2 items equipped - Provides a +72 Equipment bonus to healing spell power. With 3 items equipped - Provides a +78 Equipment bonus to healing spell power.{{#ifeq:{{NAMESPACE}}|Item|{{#ifeq:{{IO|{{{nocat|0}}}}}|1||Category:Nonstandard Spell Power items}}}}"
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "Provides a +72 Equipment bonus to healing spell power.",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          },
+          {
+            "threshold": 3,
+            "line": "Provides a +78 Equipment bonus to healing spell power.{{#ifeq:{{NAMESPACE}}|Item|{{#ifeq:{{IO|{{{nocat|0}}}}}|1||Category:Nonstandard Spell Power items}}}}",
+            "reason": "unexpanded template"
+          }
+        ]
+      }
+    },
+    "Tharne's Wrath": {
+      "before": {
+        "class": "threshold-unstated",
+        "lines": [
+          "With 2 items equipped - Ghost Touch and -20% Melee Threat. With 3 items equipped - Feather Falling."
+        ]
+      },
+      "after": {
+        "class": "partial",
+        "quarantined": [
+          {
+            "threshold": 2,
+            "line": "Ghost Touch and -20% Melee Threat.",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          },
+          {
+            "threshold": 3,
+            "line": "Feather Falling.",
+            "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+          }
+        ]
+      }
+    }
+  },
+  "stale_disagreement_records": [],
+  "stale_upstream_records": []
+}

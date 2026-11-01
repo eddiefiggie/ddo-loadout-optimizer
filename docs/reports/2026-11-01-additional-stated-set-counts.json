@@ -1,0 +1,152 @@
+{
+  "baseline_commit": "f814e3c64a8ffd1f8f97bc74d864b3b5533bef80",
+  "wiki_citations": [
+    "https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530",
+    "https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202"
+  ],
+  "wiki_checked_date": "2026-11-01",
+  "harvest_revids": {
+    "Named item sets": 720202,
+    "Template:Named item sets": 723530
+  },
+  "population": "282 gear-planner catalog sets; each wiki source compared independently",
+  "counts_before": {
+    "template": {
+      "exact": 110,
+      "threshold-unstated": 49,
+      "partial": 103,
+      "ours-differs": 6,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 51,
+      "exact": 31,
+      "partial": 27,
+      "upstream-stale": 1
+    }
+  },
+  "counts_after": {
+    "template": {
+      "exact": 110,
+      "threshold-unstated": 46,
+      "partial": 106,
+      "ours-differs": 6,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 50,
+      "exact": 31,
+      "partial": 28,
+      "upstream-stale": 1
+    }
+  },
+  "changed_sets": {
+    "template": {
+      "Corsair's Cunning": {
+        "before": {
+          "class": "threshold-unstated",
+          "lines": [
+            "2 Item Set Bonus: Underwater Action",
+            "3 Item Set Bonus: Feather Falling"
+          ]
+        },
+        "after": {
+          "class": "partial",
+          "quarantined": [
+            {
+              "threshold": 2,
+              "line": "Underwater Action",
+              "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+            },
+            {
+              "threshold": 3,
+              "line": "Feather Falling",
+              "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+            }
+          ]
+        }
+      },
+      "Risk and Reward": {
+        "before": {
+          "class": "threshold-unstated",
+          "lines": [
+            "While both items from this set are equipped, your melee attacks deal an additional +0.5[W] damage dice. Your attacks also gain a 5% Chance on Hit to Bluff your target for four seconds. (Bluffed enemies can be affected by Sneak Attacks even while targeting you.)"
+          ]
+        },
+        "after": {
+          "class": "partial",
+          "quarantined": [
+            {
+              "threshold": 2,
+              "line": "your melee attacks deal an additional +0.5[W] damage dice. Your attacks also gain a 5% Chance on Hit to Bluff your target for four seconds. (Bluffed enemies can be affected by Sneak Attacks even while targeting you.)",
+              "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+            }
+          ]
+        }
+      },
+      "Unbreakable Adamancy": {
+        "before": {
+          "class": "threshold-unstated",
+          "lines": [
+            "This item is part of the Unbreakable Adamancy set.",
+            "When two items from this set are equipped, you gain a +5 Luck bonus to PRR and MRR."
+          ]
+        },
+        "after": {
+          "class": "partial",
+          "quarantined": [
+            {
+              "threshold": 2,
+              "line": "+5 Luck bonus to PRR and MRR.",
+              "reason": "unknown bonus type 'Luck'"
+            }
+          ]
+        }
+      }
+    },
+    "page": {
+      "Corsair's Cunning": {
+        "before": {
+          "class": "threshold-unstated",
+          "lines": [
+            "2 Item version: {{Underwater Action}}",
+            "3 Item version: {{Feather Falling}}"
+          ]
+        },
+        "after": {
+          "class": "partial",
+          "quarantined": [
+            {
+              "threshold": 2,
+              "line": "{{Underwater Action}}",
+              "reason": "unexpanded template"
+            },
+            {
+              "threshold": 3,
+              "line": "{{Feather Falling}}",
+              "reason": "unexpanded template"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "outside_catalog": {
+    "Greater Might of the Abishai": {
+      "3": [
+        "+3 profane bonus to Natural Armor, a +3 profane bonus to Strength, and a +3 bonus to your caster level on evocation spells."
+      ],
+      "5": [
+        "+3 profane bonus to Natural Armor, a +3 profane bonus to Strength and Constitution, and a +3 bonus to your caster level on evocation and conjuration spells."
+      ]
+    }
+  },
+  "stale_disagreement_records": [],
+  "stale_upstream_records": []
+}
