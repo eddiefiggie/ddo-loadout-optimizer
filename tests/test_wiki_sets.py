@@ -969,3 +969,106 @@ def test_rowspan_continuation_requires_the_reviewed_layout_and_same_table():
             ARCHMAGE_ROWSPAN_PAGE.replace('\n|-\n'+continuation, '\n|}\n{|class="wikitable"\n|-\n'+continuation, 1)):
         entry = next(r for r in S.page_sets(page) if r["anchors"] == ["Archmage"])
         assert "* +1% Artifact bonus to Spell Critical Chance" not in entry["raw"]
+
+
+# --- #951: comparison forms, not changes to source affixes -----------------------
+
+# Template:Named item sets rev 723530 explicitly links the displayed Insightful
+# spelling to Insight bonus. Sheltering rev 595036 grants X to both ratings.
+DOUBLE_HELIX_RAW = {
+    'Double Helix Set': 'While wearing both items from the Double Helix Set, you gain: +2 [[Insight bonus|Insightful]] bonus to [[Sheltering]]',
+    'Epic Double Helix Set': 'While wearing both items from the Epic Double Helix Set, you gain: +4 [[Insight bonus|Insightful]] bonus to [[Sheltering]]',
+}
+COMPARISON_NAMES = SHELTER | {'Sheltering'}
+
+
+def _comparison_catalog():
+    with open(D.GP_SETS, encoding='utf-8') as fh:
+        return json.load(fh)
+
+
+def test_double_helix_compares_exactly_using_the_wikis_stated_equivalences():
+    name = 'Double Helix Set'
+    entry = _worded_count_entry(name.lower(), DOUBLE_HELIX_RAW[name])
+    gp = D.gp_tiers(_comparison_catalog()[name])
+    assert D.classify(entry['tiers'], gp, COMPARISON_NAMES) == ('exact', {})
+
+
+def test_epic_double_helix_still_exposes_both_four_versus_five_disagreements():
+    name = 'Epic Double Helix Set'
+    entry = _worded_count_entry(name.lower(), DOUBLE_HELIX_RAW[name])
+    gp = D.gp_tiers(_comparison_catalog()[name])
+    classification, detail = D.classify(entry['tiers'], gp, COMPARISON_NAMES)
+    assert classification == 'ours-differs'
+    assert detail['extra'] == [
+        {'threshold': 2, 'affix': ['Physical Sheltering', 'Insight', 4]},
+        {'threshold': 2, 'affix': ['Magical Sheltering', 'Insight', 4]},
+    ]
+    assert set(gp[2]) == {('Physical Sheltering', 'Insight', 5), ('Magical Sheltering', 'Insight', 5)}
+
+
+def test_comparison_normalizes_both_catalog_and_wiki_spellings():
+    # Reverse the source representation to prove this is symmetric normalization.
+    gp = D.gp_tiers([{'threshold': 2, 'affixes': [
+        {'name': 'Sheltering', 'type': 'Insightful', 'value': '2'}]}])
+    wiki = {2: ['+2 Insight bonus to Physical Resistance Rating',
+                '+2 Insight bonus to Magical Resistance Rating']}
+    assert D.classify(wiki, gp, COMPARISON_NAMES) == ('exact', {})
+
+
+def test_wiki_to_wiki_comparison_uses_the_same_reviewed_forms():
+    # Synthetic wrappers isolate representation from the real page's HELstats
+    # identity problem; this does not assign its Epic row an inferred name.
+    template = '<onlyinclude>{{#switch:{{lc:{{{1|unknown}}}}}\n| double helix set = ' + DOUBLE_HELIX_RAW['Double Helix Set'] + '\n| #default = Undefined set\n}}</onlyinclude>'
+    page = """== Comparison fixture ==
+{|class="wikitable"
+|-
+|{{Anchor|Double Helix Set}}
+|Test items
+|2 Pieces Equipped:
+* +2 [[Insight bonus]] to [[Physical Resistance Rating]]
+* +2 [[Insight bonus]] to [[Magical Resistance Rating]]
+|}"""
+    pages = {D.PAGE: {'wikitext': page, 'revid': 720202},
+             D.TEMPLATE: {'wikitext': template, 'revid': 723530}}
+    catalog = _comparison_catalog()
+    assert D.diff(pages, catalog)['sources_disagree'] == []
+    pages[D.PAGE]['wikitext'] = page.replace('+2', '+5')
+    disagreements = D.diff(pages, catalog)['sources_disagree']
+    assert len(disagreements) == 1
+    assert disagreements[0]['template'][2] == [('Magical Sheltering', 'Insight', 2), ('Physical Sheltering', 'Insight', 2)]
+    assert disagreements[0]['page'][2] == [('Magical Sheltering', 'Insight', 5), ('Physical Sheltering', 'Insight', 5)]
+
+
+def test_sheltering_comparison_does_not_supply_a_missing_rating():
+    gp = D.gp_tiers([{'threshold': 2, 'affixes': [
+        {'name': 'Physical Sheltering', 'type': 'Insight', 'value': 2}]}])
+    classification, detail = D.classify({2: ['+2 Insightful bonus to Sheltering']}, gp, COMPARISON_NAMES)
+    assert classification == 'ours-differs'
+    assert detail['extra'] == [{'threshold': 2, 'affix': ['Magical Sheltering', 'Insight', 2]}]
+
+
+def test_comparison_keeps_other_types_values_multiplicity_and_quarantine():
+    # Deliberate unchanged boundaries: normalization cannot erase disagreements.
+    gp = D.gp_tiers(_comparison_catalog()['Double Helix Set'])
+    ordinary = '+2 Insightful bonus to Sheltering'
+    for lines in (['+4 Insightful bonus to Sheltering'],
+                  ['+2 Quality bonus to Sheltering'],
+                  ['+2 Enhancement bonus to Sheltering'], [ordinary, ordinary]):
+        assert D.classify({2: lines}, gp, COMPARISON_NAMES)[0] == 'ours-differs', lines
+    for line in ('+2% Insightful bonus to Sheltering', '+2 bonus to Sheltering',
+                 'While centered, +2 Insightful bonus to Sheltering'):
+        classification, detail = D.classify({2: [line]}, gp, COMPARISON_NAMES)
+        assert classification == 'partial' and len(detail['quarantined']) == 1, (line, detail)
+
+
+def test_comparison_leaves_reader_and_catalog_affixes_unchanged():
+    # Deliberate unchanged boundary: the canonical keys belong only to parity.
+    catalog = _comparison_catalog()['Double Helix Set']
+    original = json.dumps(catalog, sort_keys=True)
+    clause = '+2 [[Insight bonus|Insightful]] bonus to [[Sheltering]]'
+    expected = {'affixes': [{'name': 'Sheltering', 'type': 'Insightful', 'value': 2}]}
+    assert S.read_clause(clause, BONUS_TYPES, COMPARISON_NAMES) == expected
+    D.classify({2: [clause]}, D.gp_tiers(catalog), COMPARISON_NAMES)
+    assert S.read_clause(clause, BONUS_TYPES, COMPARISON_NAMES) == expected
+    assert json.dumps(catalog, sort_keys=True) == original

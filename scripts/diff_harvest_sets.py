@@ -90,11 +90,19 @@ def _num(v):
         return v
 
 
-#: gear-planner folds a set's equal PRR and MRR lines into one `Sheltering` affix.
-#: docs/wiki-evidence/sheltering.md: Sheltering is "a +X bonus to both your
-#: Physical Resistance Rating and Magical Resistance Rating", so it compares as
-#: the two affixes the wiki states.
-GP_EXPANSIONS = {"Sheltering": ("Physical Sheltering", "Magical Sheltering")}
+#: Comparison forms only; the reader's affixes and production data stay intact.
+#: Sheltering rev 595036 explicitly grants the same X to both PRR and MRR.
+#: Insightful bonus rev 140374 redirects to Insight bonus, and the Double Helix
+#: entries link [[Insight bonus|Insightful]]. Evidence: set-comparison-normalization.md.
+COMPARISON_EXPANSIONS = {"Sheltering": ("Physical Sheltering", "Magical Sheltering")}
+COMPARISON_TYPES = {"Insightful": "Insight"}
+
+
+def comparison_affixes(affix):
+    """Canonical comparison keys, without changing units, amounts or multiplicity."""
+    ty = affix.get("type")
+    return [(name, COMPARISON_TYPES.get(ty, ty), _num(affix.get("value")))
+            for name in COMPARISON_EXPANSIONS.get(affix.get("name"), (affix.get("name"),))]
 
 
 def gp_tiers(tiers) -> dict:
@@ -103,8 +111,7 @@ def gp_tiers(tiers) -> dict:
     for t in tiers or []:
         c = out.setdefault(t.get("threshold"), collections.Counter())
         for a in t.get("affixes") or []:
-            for name in GP_EXPANSIONS.get(a.get("name"), (a.get("name"),)):
-                c[(name, a.get("type"), _num(a.get("value")))] += 1
+            c.update(comparison_affixes(a))
     return out
 
 
@@ -176,7 +183,7 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
             r = S.read_clause(line, BONUS_TYPES, stat_names)
             if "affixes" in r:
                 for a in r["affixes"]:
-                    read[(a["name"], a["type"], a["value"])] += 1
+                    read.update(comparison_affixes(a))
             else:
                 quarantined.append({"threshold": th, "line": S.plain(line), "reason": r["quarantine"]})
         extra += [{"threshold": th, "affix": list(k)} for k in (read - gp.get(th, collections.Counter()))]
@@ -231,7 +238,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
             rs = [S.read_clause(x, BONUS_TYPES, stat_names) for x in lines]
             if any("quarantine" in r for r in rs):
                 return None
-            out[th] = sorted((a["name"], a["type"], a["value"]) for r in rs for a in r["affixes"])
+            out[th] = sorted(key for r in rs for a in r["affixes"] for key in comparison_affixes(a))
         return out
 
     disagree = []

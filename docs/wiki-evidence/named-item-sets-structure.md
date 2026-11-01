@@ -844,3 +844,15 @@ the guard. It does not establish that other wiki pages lack counts, make the
 remaining effects readable, or change production set definitions. Conditional
 activation modeling remains under #908, normalization under #951, and value
 disagreements under #956.
+
+
+## Sheltering and Insightful comparison forms (#951, 2026-11-01)
+
+[The comparison ruling](set-comparison-normalization.md) records fresh wiki
+citations establishing Sheltering's two rating components and the Insightful
+spelling's identity with Insight. Both catalog and wiki affixes now use the
+same comparison keys, while the reader's original affixes remain unchanged.
+Heroic Double Helix becomes exact; Epic Double Helix retains its +4/+5 dispute
+under #956. Template exact rises 110 → 111 and ours-differs falls 6 → 5; page
+counts and the complete 45/50 count review remain unchanged. Production set
+definitions and solver behavior are unchanged.
