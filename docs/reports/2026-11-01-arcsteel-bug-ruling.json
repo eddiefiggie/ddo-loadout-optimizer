@@ -1,0 +1,147 @@
+{
+  "base": "50f041bbe8f466e34132b50385b6ffeb9c55a5de",
+  "revisions": {
+    "Named item sets": 720202,
+    "Template:Named item sets": 723530
+  },
+  "catalog_sets": 282,
+  "before_counts": {
+    "template": {
+      "exact": 112,
+      "threshold-unstated": 45,
+      "partial": 106,
+      "ours-differs": 5,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 50,
+      "exact": 32,
+      "partial": 27,
+      "upstream-stale": 1
+    }
+  },
+  "after_counts": {
+    "template": {
+      "exact": 112,
+      "threshold-unstated": 45,
+      "partial": 106,
+      "wiki-bug": 1,
+      "wiki-disagrees": 4,
+      "ours-differs": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 50,
+      "exact": 32,
+      "partial": 27,
+      "upstream-stale": 1
+    }
+  },
+  "changed_sets": {
+    "Arcsteel Battlemage": {
+      "before": {
+        "template": {
+          "class": "ours-differs",
+          "extra": [
+            {
+              "threshold": 3,
+              "affix": [
+                "Intelligence",
+                "Artifact",
+                2
+              ]
+            }
+          ],
+          "quarantined": [
+            {
+              "threshold": 3,
+              "line": "+25% Artifact bonus to Electric, Fire, Force, and Repair Spell Power",
+              "reason": "stat phrase not in the vocabulary: 'Electric, Fire, Force, and Repair Spell Power (%)'"
+            }
+          ],
+          "wiki_disagrees": [],
+          "upstream_stale": []
+        },
+        "page": {
+          "class": "no-wiki-name"
+        }
+      },
+      "after": {
+        "template": {
+          "class": "wiki-bug",
+          "quarantined": [
+            {
+              "threshold": 3,
+              "line": "+25% Artifact bonus to Electric, Fire, Force, and Repair Spell Power",
+              "reason": "stat phrase not in the vocabulary: 'Electric, Fire, Force, and Repair Spell Power (%)'"
+            }
+          ],
+          "wiki_disagrees": [],
+          "upstream_stale": [],
+          "wiki_bug_rulings": [
+            {
+              "threshold": 3,
+              "affix": [
+                "Intelligence",
+                "Artifact",
+                2
+              ],
+              "actual": [
+                "Intelligence",
+                "Artifact",
+                1
+              ]
+            }
+          ]
+        },
+        "page": {
+          "class": "no-wiki-name"
+        }
+      }
+    }
+  },
+  "wiki_bug_review": {
+    "applicable": true,
+    "complete": true,
+    "errors": [],
+    "evidence": {
+      "page": "https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202",
+      "template": "https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530",
+      "note": "+2 Artifact bonus to Intelligence Bug: Heroic tier only gives +1 INT.",
+      "actual": [
+        "Intelligence",
+        "Artifact",
+        1
+      ]
+    }
+  },
+  "count_review": {
+    "complete": true,
+    "errors": [],
+    "sources": {
+      "template": {
+        "source_changed": false,
+        "unresolved": 45,
+        "missing": [],
+        "stale": [],
+        "invalid_findings": []
+      },
+      "page": {
+        "source_changed": false,
+        "unresolved": 50,
+        "missing": [],
+        "stale": [],
+        "invalid_findings": []
+      }
+    }
+  },
+  "stale_disagreements": [],
+  "stale_upstream": [],
+  "other_sets_identical": 281,
+  "prebuild_dataset_sha256": "6e7c0b1ad25d7d0da5feb4ad77152fcde299d95e54ca9cb4009a0417fe72cd90"
+}
