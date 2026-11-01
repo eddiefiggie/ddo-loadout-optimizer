@@ -784,7 +784,7 @@ def build() -> dict:
     # label and leaves a player who ranks what the item prints scoring nothing.
     _legendary_fold_cov_sets = legendary_fold_mod.apply(
         [t for tiers in _sets_raw.values() for t in tiers])
-    _set_catalog = set_catalog_mod.catalog_from_raw(_sets_raw)
+    _set_catalog = set_catalog_mod.catalog_from_raw(_sets_raw, require_complete=True)
     # #541 — the raw dump is read ONCE here and threaded to both consumers below:
     # build_dino derives each blank's intrinsic set membership from the native
     # records it shadows, and the artifact carry-over reads the same list.

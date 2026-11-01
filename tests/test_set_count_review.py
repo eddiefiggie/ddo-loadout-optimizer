@@ -7,6 +7,7 @@ import io
 import json
 import os
 import tempfile
+from natural_armor_fixture import catalog_rows
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _spec = importlib.util.spec_from_file_location('count_review_diff', os.path.join(ROOT, 'scripts', 'diff_harvest_sets.py'))
@@ -36,7 +37,7 @@ def fixture():
     for source, title in (('template', D.TEMPLATE), ('page', D.PAGE)):
         review['sources'][source] = {'revid': pages[title]['revid'],
             'sha256': hashlib.sha256(pages[title]['wikitext'].encode()).hexdigest()}
-    return pages, {"Anger's Wrath": []}, review
+    return pages, {"Anger's Wrath": [], **catalog_rows(ac_only=True)}, review
 
 
 def run_cli(pages, catalog, review, as_json=True):

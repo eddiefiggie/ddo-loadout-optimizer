@@ -47,6 +47,13 @@ the golden suite confirms zero drift. It prevents a wrong sum the moment such an
 **Do not collapse any of these to `Natural`.** That is the reading the first quoted sentence
 rules out, and it would wrongly suppress a bonus that genuinely stacks.
 
+**2026-11-01 set-channel correction (#951):** the historical "latent" statement
+above applied to the then-built dataset. The [Natural Armor set ruling](natural-armor-sets.md)
+restores six Profane AC clauses in the three Abishai tiers, so their maximum now
+competes with the two Lunar Gems. It also restores two Artifact AC clauses for
+Wayward Warrior. The source catalog's composite types are normalized at the set
+boundary; this adds no item type or global parser alias.
+
 ---
 
 ## 2. Checked and found correct — do not re-investigate

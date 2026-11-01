@@ -31,6 +31,7 @@ import os
 import re
 
 from src.affix_parser import BONUS_TYPES
+from src import natural_armor_sets
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CATALOG_PATH = os.path.join(HERE, "..", "data", "seed", "compendium", "raw", "gearplanner_sets.json")
@@ -118,7 +119,7 @@ def _clause(affix: dict):
     clause, or return `(None, reason)` when it must be flagged (strict — never mint).
     Known bonus type (or untyped) + numeric value only."""
     name = (affix.get("name") or "").strip()
-    ty = affix.get("type")
+    ty = natural_armor_sets.canonical_type(name, affix.get("type"))
     val = affix.get("value")
     if ty == "Bool":
         return None, f"proc/flag, not a magnitude (Bool {name})"
@@ -175,8 +176,9 @@ def load_raw(path: str = CATALOG_PATH) -> dict:
         return json.load(fh)
 
 
-def catalog_from_raw(raw: dict) -> dict:
+def catalog_from_raw(raw: dict, *, require_complete=False) -> dict:
     """Synthesize the catalog from an already-loaded (and possibly corrected) raw."""
+    natural_armor_sets.check_catalog(raw, require_complete=require_complete)
     out = {}
     for name, tiers in raw.items():
         ckey = canonical(name)
@@ -216,7 +218,7 @@ def load_catalog(path: str = CATALOG_PATH) -> dict:
     `set_bonus` list; a set whose every affix flagged yields `set_bonus=None`
     (membership-only, disclosed).
     """
-    return catalog_from_raw(load_raw(path))
+    return catalog_from_raw(load_raw(path), require_complete=True)
 
 
 def base_defs_from_seed(seed_items) -> dict:

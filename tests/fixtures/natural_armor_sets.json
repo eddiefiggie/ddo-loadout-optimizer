@@ -1,0 +1,281 @@
+{
+  "sources": {
+    "Named item sets": {
+      "revid": 720202,
+      "url": "https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202"
+    },
+    "Template:Named item sets": {
+      "revid": 723530,
+      "url": "https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530"
+    },
+    "Natural armor bonus": {
+      "revid": 682710,
+      "url": "https://ddowiki.com/index.php?title=Natural_armor_bonus&oldid=682710"
+    },
+    "Stack": {
+      "revid": 669682,
+      "url": "https://ddowiki.com/index.php?title=Stack&oldid=669682"
+    }
+  },
+  "note": "Verbatim bonus bodies; table/switch wrappers are test scaffolding. Test data only, never read by production.",
+  "template_bodies": {
+    "Might of the Abishai": "3 Piece Equipped:<br>+3 Profane bonus to Natural Armor<br>+1 Profane bonus to all Ability Scores<br>+1 Profane bonus to DCs<br>5 Piece Equipped:<br>+5 Profane bonus to Natural Armor<br>+2 Profane bonus to all Ability Scores<br>+2 Profane bonus to DCs",
+    "Epic Might of the Abishai": "3 Piece Equipped:<br>+10 Profane bonus to PRR and MRR<br>+5 Profane bonus to Natural Armor<br>+2 Profane bonus to all Ability Scores<br>+2 Profane bonus to DCs<br>5 Piece Equipped:<br>+15 Profane bonus to PRR and MRR<br>+8 Profane bonus to Natural Armor<br>+2 Profane bonus to all Ability Scores<br>+2 Profane bonus to DCs",
+    "Legendary Might of the Abishai": "3 Piece Equipped:<br>+20 Profane bonus to PRR and MRR<br>+10 Profane bonus to Natural Armor<br>+2 Profane bonus to all Ability Scores<br>+2 Profane bonus to DCs<br>+10 Profane bonus to Heal Amp (all types)<br>5 Piece Equipped:<br>+30 Profane bonus to PRR and MRR<br>+10 Profane bonus to Natural Armor<br>+3 Profane bonus to all Ability Scores<br>+3 Profane bonus to DCs<br>+30 Profane bonus to Heal Amp (all types)",
+    "Wayward Warrior": "2 Pieces Equipped:<br />+2 Artifact Bonus to Natural Armor<br />+1 Artifact Bonus to Constitution",
+    "Wayward Warrior (Legendary)": "2 Pieces Equipped:<br />+5 Artifact Bonus to Natural Armor<br />+3 Artifact Bonus to Constitution"
+  },
+  "page_bodies": [
+    {
+      "anchors": [
+        "Might of the Abishai",
+        "Epic Might of the Abishai",
+        "Legendary Might of the Abishai"
+      ],
+      "raw": "{{Profane}}\n3 Pieces Equipped: \n* {{HELstats|E=+10|L=+20}} Profane bonus to Sheltering \n* {{HELstats|+3|+5|+10}} Profane bonus to Natural Armor \n* {{HELstats|+1|+2|+2}} Profane bonus to all Ability Scores\n* {{HELstats|+1|+2|+2}} Profane bonus to DCs.\n* {{HELstats|L=+10}} Profane bonus to Positive, Negative and Repair Amplification\n5 Pieces Equipped: \n* {{HELstats|E=+15|L=+30}} Profane bonus to Sheltering \n* {{HELstats|+5|+8|+10}} Profane bonus to Natural Armor\n* {{HELstats|+2|+2|+3}} Profane bonus to all Ability Scores\n* {{HELstats|+2|+2|+3}} Profane bonus to DCs ''('''Note:''' Tactical DCs are not affected, only Spell DCs)''\n* {{HELstats|L=+30}} Profane bonus to Positive, Negative and Repair Amplification"
+    },
+    {
+      "anchors": [
+        "Wayward Warrior",
+        "Wayward Warrior (Legendary)"
+      ],
+      "raw": "\n2 Pieces Equipped:\n* {{HELstats|+2|L=+5}} Artifact Bonus to Natural Armor\n* {{HELstats|+1|L=+3}} Artifact Bonus to Constitution\n"
+    }
+  ],
+  "clauses": [
+    {
+      "set": "Might of the Abishai",
+      "tier": "Heroic",
+      "pieces": 3,
+      "bonus_type": "Profane",
+      "value": 3
+    },
+    {
+      "set": "Might of the Abishai",
+      "tier": "Heroic",
+      "pieces": 5,
+      "bonus_type": "Profane",
+      "value": 5
+    },
+    {
+      "set": "Epic Might of the Abishai",
+      "tier": "Epic",
+      "pieces": 3,
+      "bonus_type": "Profane",
+      "value": 5
+    },
+    {
+      "set": "Epic Might of the Abishai",
+      "tier": "Epic",
+      "pieces": 5,
+      "bonus_type": "Profane",
+      "value": 8
+    },
+    {
+      "set": "Legendary Might of the Abishai",
+      "tier": "Legendary",
+      "pieces": 3,
+      "bonus_type": "Profane",
+      "value": 10
+    },
+    {
+      "set": "Legendary Might of the Abishai",
+      "tier": "Legendary",
+      "pieces": 5,
+      "bonus_type": "Profane",
+      "value": 10
+    },
+    {
+      "set": "Wayward Warrior",
+      "tier": "Heroic",
+      "pieces": 2,
+      "bonus_type": "Artifact",
+      "value": 2
+    },
+    {
+      "set": "Wayward Warrior (Legendary)",
+      "tier": "Legendary",
+      "pieces": 2,
+      "bonus_type": "Artifact",
+      "value": 5
+    }
+  ],
+  "cases": [
+    {
+      "name": "Might of the Abishai 2 pieces",
+      "items": [
+        "Belt of the Black Abishai",
+        "Boots of Corrosion"
+      ],
+      "current_observed_gear_ac": 0,
+      "required_correct_gear_ac": 0,
+      "required_set_ac": 0
+    },
+    {
+      "name": "Might of the Abishai 3 pieces",
+      "items": [
+        "Belt of the Black Abishai",
+        "Boots of Corrosion",
+        "Ring of the Black Abishai"
+      ],
+      "current_observed_gear_ac": 0,
+      "required_correct_gear_ac": 3,
+      "required_set_ac": 3
+    },
+    {
+      "name": "Might of the Abishai 4 pieces",
+      "items": [
+        "Belt of the Black Abishai",
+        "Boots of Corrosion",
+        "Ring of the Black Abishai",
+        "Pendant of the Black Abishai"
+      ],
+      "current_observed_gear_ac": 0,
+      "required_correct_gear_ac": 3,
+      "required_set_ac": 3
+    },
+    {
+      "name": "Might of the Abishai 5 pieces",
+      "items": [
+        "Belt of the Black Abishai",
+        "Boots of Corrosion",
+        "Ring of the Black Abishai",
+        "Pendant of the Black Abishai",
+        "Scorched Bracers"
+      ],
+      "current_observed_gear_ac": 4,
+      "required_correct_gear_ac": 9,
+      "required_set_ac": 5
+    },
+    {
+      "name": "Epic Might of the Abishai 2 pieces",
+      "items": [
+        "Epic Belt of the Black Abishai",
+        "Epic Boots of Corrosion"
+      ],
+      "current_observed_gear_ac": 0,
+      "required_correct_gear_ac": 0,
+      "required_set_ac": 0
+    },
+    {
+      "name": "Epic Might of the Abishai 3 pieces",
+      "items": [
+        "Epic Belt of the Black Abishai",
+        "Epic Boots of Corrosion",
+        "Epic Ring of the Black Abishai"
+      ],
+      "current_observed_gear_ac": 0,
+      "required_correct_gear_ac": 5,
+      "required_set_ac": 5
+    },
+    {
+      "name": "Epic Might of the Abishai 4 pieces",
+      "items": [
+        "Epic Belt of the Black Abishai",
+        "Epic Boots of Corrosion",
+        "Epic Ring of the Black Abishai",
+        "Epic Pendant of the Black Abishai"
+      ],
+      "current_observed_gear_ac": 0,
+      "required_correct_gear_ac": 5,
+      "required_set_ac": 5
+    },
+    {
+      "name": "Epic Might of the Abishai 5 pieces",
+      "items": [
+        "Epic Belt of the Black Abishai",
+        "Epic Boots of Corrosion",
+        "Epic Ring of the Black Abishai",
+        "Epic Pendant of the Black Abishai",
+        "Epic Scorched Bracers"
+      ],
+      "current_observed_gear_ac": 9,
+      "required_correct_gear_ac": 17,
+      "required_set_ac": 8
+    },
+    {
+      "name": "Legendary Might of the Abishai 2 pieces",
+      "items": [
+        "Legendary Belt of the Black Abishai",
+        "Legendary Boots of Corrosion"
+      ],
+      "current_observed_gear_ac": 0,
+      "required_correct_gear_ac": 0,
+      "required_set_ac": 0
+    },
+    {
+      "name": "Legendary Might of the Abishai 3 pieces",
+      "items": [
+        "Legendary Belt of the Black Abishai",
+        "Legendary Boots of Corrosion",
+        "Legendary Ring of the Black Abishai"
+      ],
+      "current_observed_gear_ac": 0,
+      "required_correct_gear_ac": 10,
+      "required_set_ac": 10
+    },
+    {
+      "name": "Legendary Might of the Abishai 4 pieces",
+      "items": [
+        "Legendary Belt of the Black Abishai",
+        "Legendary Boots of Corrosion",
+        "Legendary Ring of the Black Abishai",
+        "Legendary Pendant of the Black Abishai"
+      ],
+      "current_observed_gear_ac": 0,
+      "required_correct_gear_ac": 10,
+      "required_set_ac": 10
+    },
+    {
+      "name": "Legendary Might of the Abishai 5 pieces",
+      "items": [
+        "Legendary Belt of the Black Abishai",
+        "Legendary Boots of Corrosion",
+        "Legendary Ring of the Black Abishai",
+        "Legendary Pendant of the Black Abishai",
+        "Legendary Scorched Bracers"
+      ],
+      "current_observed_gear_ac": 14,
+      "required_correct_gear_ac": 24,
+      "required_set_ac": 10
+    },
+    {
+      "name": "Wayward Warrior single",
+      "items": [
+        "Giant's Platter"
+      ],
+      "current_observed_gear_ac": 22,
+      "required_correct_gear_ac": 22,
+      "required_set_ac": 0
+    },
+    {
+      "name": "Wayward Warrior pair",
+      "items": [
+        "Giant's Platter",
+        "Scales of the Exile"
+      ],
+      "current_observed_gear_ac": 45,
+      "required_correct_gear_ac": 47,
+      "required_set_ac": 2
+    },
+    {
+      "name": "Wayward Warrior (Legendary) single",
+      "items": [
+        "Legendary Giant's Platter"
+      ],
+      "current_observed_gear_ac": 46,
+      "required_correct_gear_ac": 46,
+      "required_set_ac": 0
+    },
+    {
+      "name": "Wayward Warrior (Legendary) pair",
+      "items": [
+        "Legendary Giant's Platter",
+        "Legendary Scales of the Exile"
+      ],
+      "current_observed_gear_ac": 92,
+      "required_correct_gear_ac": 97,
+      "required_set_ac": 5
+    }
+  ]
+}

@@ -494,6 +494,11 @@ def resolve(phrase: str, stat_names, suffix: str = ""):
     """A stat phrase (+ its " (%)" suffix) -> its catalog name, or None: exactly a
     catalog name, a `STAT_PHRASES` entry whose target the catalog carries, or a
     `PERCENT_STATS` name (directly or through `STAT_PHRASES`) stated with "%"."""
+    # #951: Natural armor bonus rev 682710 explicitly contributes to AC.
+    # Only the reviewed flat wording; a percentage could refer to a component
+    # of AC, and is not established by the eight cited set clauses.
+    if phrase == "Natural Armor":
+        return "Armor Class" if not suffix and "Armor Class" in stat_names else None
     if phrase + suffix in stat_names:
         return phrase + suffix
     target = STAT_PHRASES.get(phrase)
