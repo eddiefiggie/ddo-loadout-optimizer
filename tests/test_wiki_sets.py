@@ -659,6 +659,21 @@ def test_prose_header_changes_tiers_without_reassigning_earlier_lines():
                      3: ["+2 Artifact bonus to Spell Power"]}
 
 
+def test_unreviewed_header_after_known_tier_does_not_inherit_its_count():
+    for header in ("While wearing four pieces from the Imaginary set, you gain:",
+                   "When four items are equipped you gain a bonus.",
+                   "Equip four pieces:"):
+        bonus = "+4 Artifact bonus to Intelligence"
+        tiers = S._tiers_from_lines([
+            "2 Pieces Equipped: +2 Artifact bonus to Intelligence", header, bonus,
+            "3 Pieces Equipped: +3 Artifact bonus to Intelligence"])
+        assert tiers == {2: ["+2 Artifact bonus to Intelligence"],
+                         None: [header, bonus],
+                         3: ["+3 Artifact bonus to Intelligence"]}, header
+        classification, _ = D.classify(tiers, {}, {"Intelligence"})
+        assert classification == "threshold-unstated"
+
+
 def test_unreviewed_or_conditional_prose_never_supplies_a_count():
     # Deliberate unchanged boundaries: a word 'both', a near-match, or an item
     # list is not permission to discard conditions or infer an equip threshold.
