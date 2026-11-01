@@ -50,6 +50,69 @@ def canonical(name: str) -> str:
     return name
 
 
+# #953/#951 — only these four item memberships and the Quality Seeker lines are
+# directly established by the Wiki. Values still come from the ONE catalog;
+# these expectations reject drift, never supply replacement bonus definitions.
+# docs/wiki-evidence/slice-dice-membership.md (item revisions + template 723530).
+SLICE_DICE_PAIRS = {
+    "Slice 'n Dice": ("Slice", "Dice"),
+    "Epic Slice 'n Dice": ("Epic Slice", "Epic Dice"),
+}
+_SLICE_DICE_SEEKER = {"Slice 'n Dice": 1, "Epic Slice 'n Dice": 2}
+SLICE_DICE_QUARANTINE = (
+    "unverified set effect: the Wiki says Sneak Attack, without establishing "
+    "the catalog's Deception accuracy-and-damage effect"
+)
+
+
+def correct_slice_dice_membership(item: dict) -> dict:
+    """Correct four explicit Bool markers, without promoting arbitrary flags.
+
+    Work on a copy; raw vendor and harvest inputs remain evidence, unchanged.
+    Refuse changed/missing markers or an upstream membership repair for review.
+    """
+    name = item.get("name")
+    for set_name, members in SLICE_DICE_PAIRS.items():
+        if name not in members:
+            continue
+        marker = set_name + " Set"
+        sets = item.get("sets") or []
+        flags = [a for a in item.get("affixes") or [] if a.get("name") == marker]
+        if (any(canonical(n) == set_name for n in sets)
+                or len(flags) != 1 or flags[0].get("type") != "Bool"
+                or str(flags[0].get("value")) != "1"):
+            raise ValueError(f"Slice/Dice membership source changed for {name!r}; recheck Wiki and retire/update the correction")
+        corrected = copy.deepcopy(item)
+        corrected["sets"] = list(sets) + [marker]
+        corrected["affixes"] = [a for a in corrected["affixes"] if a.get("name") != marker]
+        return corrected
+    return item
+
+
+def check_slice_dice_members(records) -> None:
+    """Fail on missing/duplicate members or unreviewed additions, including zero."""
+    for set_name, expected in SLICE_DICE_PAIRS.items():
+        actual = sorted(it.get("name") for it in records
+                        if any(canonical(n) == set_name for n in it.get("sets") or []))
+        if actual != sorted(expected):
+            raise ValueError(f"Slice/Dice membership population changed for {set_name}: {actual!r}; expected {list(expected)!r}")
+
+
+def _slice_dice_verified_tiers(name, tiers):
+    """Validate the two catalog rows; keep Seeker, quarantine the disputed row."""
+    amount = _SLICE_DICE_SEEKER[name]
+    expected = sorted([("Seeker", "Quality", str(amount)), ("Deception", "Quality", str(amount))])
+    actual = sorted((str(a.get("name")), str(a.get("type")), str(a.get("value")))
+                    for t in tiers or [] for a in t.get("affixes") or [])
+    if len(tiers or []) != 1 or tiers[0].get("threshold") != 2 or actual != expected:
+        raise ValueError(f"Slice/Dice set source changed for {name!r}; recheck the Wiki before admitting bonuses")
+    kept = copy.deepcopy(tiers)
+    kept[0]["affixes"] = [a for a in kept[0]["affixes"] if a["name"] == "Seeker"]
+    return kept, [{"threshold": 2, "raw": f"+{amount} Quality bonus to Sneak Attack",
+                   "affix": next(copy.deepcopy(a) for a in tiers[0]["affixes"] if a["name"] == "Deception"),
+                   "reason": SLICE_DICE_QUARANTINE}]
+
+
 def _clause(affix: dict):
     """Render one catalog affix `{name,type,value}` to a value-first `piece_bonuses`
     clause, or return `(None, reason)` when it must be flagged (strict — never mint).
@@ -117,7 +180,11 @@ def catalog_from_raw(raw: dict) -> dict:
     out = {}
     for name, tiers in raw.items():
         ckey = canonical(name)
+        quarantined = []
+        if ckey in SLICE_DICE_PAIRS:
+            tiers, quarantined = _slice_dice_verified_tiers(ckey, tiers)
         piece_bonuses, flagged = _synthesize(tiers)
+        flagged.extend(quarantined)
         entry = None
         if piece_bonuses:
             entry = {
@@ -127,6 +194,15 @@ def catalog_from_raw(raw: dict) -> dict:
                 "piece_bonuses": piece_bonuses,
                 "wiki_url": WIKI_URL,
             }
+            if ckey in SLICE_DICE_PAIRS:
+                members = list(SLICE_DICE_PAIRS[ckey])
+                entry["required_items"] = members
+                entry["quarantined"] = {"2 Pieces": quarantined}
+                entry["verification_note"] = (
+                    f"Only {' + '.join(members)} activates the verified Seeker bonus here. "
+                    "Two copies of one dagger and mixed Heroic/Epic pairs are unverified and receive no set credit. "
+                    "The set's Sneak Attack bonus is excluded because its exact effect is unverified."
+                )
         # A duplicate canonical key (rare) keeps the first non-empty definition.
         if ckey not in out or (out[ckey]["set_bonus"] is None and entry is not None):
             out[ckey] = {"set_bonus": entry, "flagged": flagged}

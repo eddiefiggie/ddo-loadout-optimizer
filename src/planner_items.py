@@ -37,6 +37,7 @@ import re
 from src.seal import normalize_seal_type
 from src import slavers as slavers_mod
 from src import essence_pool
+from src import set_catalog
 
 RAW_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "seed",
                         "compendium", "raw", "gearplanner_items.json")
@@ -281,6 +282,7 @@ def _lost_purpose(crafting):
 
 
 def _record(it, verified_seal_types, nc_per_item_hosts=None):
+    it = set_catalog.correct_slice_dice_membership(it)
     slot = _slot(it.get("slot"))
     quests = it.get("quests") or []
     rec = {

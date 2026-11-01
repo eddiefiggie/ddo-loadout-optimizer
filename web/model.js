@@ -606,6 +606,25 @@ function variantSets(variant) {
   return new Set((variant.set_bonus || []).map((s) => s.set).filter(Boolean));
 }
 
+// #953 — only explicitly reviewed set definitions carry required_items. A
+// normal piece threshold remains unchanged; a documented pair needs each name.
+function setItemIdentity(variant) {
+  return variant.source_item || originalIdOf(variant.variant_id || variant.name);
+}
+function requiredSetItems(setName, variants) {
+  const required = new Set();
+  for (const v of variants || []) {
+    for (const t of [...(v.set_bonus || []), ...(v.parsed_set_bonuses || [])]) {
+      if (t.set === setName) for (const name of t.required_items || []) required.add(name);
+    }
+  }
+  return [...required];
+}
+function setRequirementsMet(setName, variants) {
+  const present = new Set((variants || []).filter((v) => variantSets(v).has(setName)).map(setItemIdentity));
+  return requiredSetItems(setName, variants).every((name) => present.has(name));
+}
+
 /** Augment-slot colors this variant carries (worn items only). */
 function variantAugColors(variant) {
   return (variant.augment_slots || []).filter(Boolean);
@@ -1489,7 +1508,13 @@ function classifySetPins(query, elig, augmentSetDefs, membershipSetDefs, setAugG
     // Membership and augment sets are supplied by crafting slots rather than by
     // distinct worn carriers, so the slot count below does not describe them.
     const craftSupplied = isAugmentSet || !!(membershipSetDefs && membershipSetDefs[set]);
-    if (!craftSupplied) {
+    const requiredItems = requiredSetItems(set, elig);
+    if (requiredItems.length && !setRequirementsMet(set, elig)) {
+      report.push({ set, verdict: "unreachable", pieces_required: tier,
+        why: `the verified pair requires ${requiredItems.join(" + ")} in the eligible pool` });
+      continue;
+    }
+    if (!craftSupplied && !requiredItems.length) {
       const slots = intrinsicPieceSlots(set, elig);
       if (slots < tier) {
         report.push({ set, verdict: "unreachable", pieces_required: tier, available: slots,
@@ -1533,6 +1558,12 @@ function dominates(A, B, targetSet, mlCap, ncPerItemLiveHosts = null, essencePoo
   }
   const sa = variantSets(A);
   for (const s of variantSets(B)) if (!sa.has(s)) return false;
+  // A required member cannot replace the other named member of the pair,
+  // even when it wins every ranked item-affix bucket.
+  for (const sb of B.set_bonus || []) {
+    if ((sb.required_items || []).includes(setItemIdentity(B))
+        && setItemIdentity(A) !== setItemIdentity(B)) return false;
+  }
   // augment-color multiset: A must have at least as many of each color
   const ca = countColors(variantAugColors(A));
   const cb = countColors(variantAugColors(B));
@@ -2767,7 +2798,7 @@ if (typeof module !== "undefined" && module.exports) {
     slotReachabilityFor, slotReachabilityReport, filterEligiblePool,
     classifySetPins, setAugmentGateReasons, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, pinnedAugmentIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,
-    variantBuckets, variantSets, scaledValue, ncTier, NC_HEROIC_ML, NC_LEGENDARY_ML,
+    variantBuckets, variantSets, setItemIdentity, requiredSetItems, setRequirementsMet, scaledValue, ncTier, NC_HEROIC_ML, NC_LEGENDARY_ML,
     NICHE_CRAFTING_POOLS, nicheCraftingClause,
     lamordiaTier, lamordiaSlotKeys, lamordiaWeaponVariant,
     dinoWeaponVariant, dinoSlotKeys,

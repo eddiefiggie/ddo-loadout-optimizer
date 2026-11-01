@@ -1971,10 +1971,11 @@ const NOTICES = [
     render: (c) => mrrCapNotice(c.query, c.result) },
   // #713 — QUALIFYING, like #683: the player can act (drop the stat, set a Max)
   // but the notice is a fact about the DATA — the wiki states the condition and
-  // the catalog credits the full value — not a defect in the query. The jump is
-  // offered because the one thing they might do lives on the priorities step.
-  { name: "conditionalNotice", id: "conditional-effect", title: "CREDITED IN FULL, GRANTED ON A CONDITION",
-    subject: "conditional effect", cls: NOTICE_QUALIFYING,
+  // the catalog credits the full value — not a defect in the query. #953 also
+  // carries equipped sets' excluded effects here, so the heading must not claim
+  // every disclosed effect was credited. The body states the limit in each case.
+  { name: "conditionalNotice", id: "conditional-effect", title: "EFFECT CONDITIONS AND LIMITS",
+    subject: "effect limits", cls: NOTICE_QUALIFYING,
     jump: { label: "Edit priorities \u2192", step: "priorities", anchor: null },
     render: (c) => conditionalNotice(c.query, c.result) },
   // #850 — QUALIFYING, like #683 directly below and for the same reason: the

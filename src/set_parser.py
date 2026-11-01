@@ -132,6 +132,7 @@ def parse_set_bonuses(set_bonus_list) -> list:
         for label, text in (s.get("piece_bonuses") or {}).items():
             n = _pieces_required(label)
             affixes, flagged = parse_piece_text(text)
+            flagged += list((s.get("quarantined") or {}).get(label) or [])
             if n is None:
                 flagged = flagged + [{"raw": label, "reason": "no numeric piece count"}]
             out.append({
@@ -142,6 +143,8 @@ def parse_set_bonuses(set_bonus_list) -> list:
                 "flagged": flagged,
                 "wiki_url": wiki_url,
                 "raw": text,
+                **({"required_items": list(s["required_items"])} if s.get("required_items") else {}),
+                **({"verification_note": s["verification_note"]} if s.get("verification_note") else {}),
             })
     return out
 

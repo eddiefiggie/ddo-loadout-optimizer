@@ -422,7 +422,8 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // #901 — 45,775: -131, exactly the post-normalize affix count of the 82 retired
   // Epic Lunar/Solar gems (every one unreleased: a red link on the wiki), measured
   // on those records alone in the pre-#901 build. Nothing else moved.
-  assert.strictEqual(total, 45775, "post-normalize pool size");
+  // #953: four Slice/Dice Boolean set flags became membership; no override-eligible affix changed.
+  assert.strictEqual(total, 45771, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.

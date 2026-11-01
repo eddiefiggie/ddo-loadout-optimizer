@@ -33,6 +33,11 @@
     return null;
   }
 
+  // #953 — share the reviewed member requirements with the model. Bridge this
+  // name explicitly so browser and Node paths use the same rule.
+  const _setRequirementsMet = (typeof setRequirementsMet !== "undefined") ? setRequirementsMet
+    : (typeof require !== "undefined" ? require("./model.js").setRequirementsMet : () => false);
+
   // #346 (U4) — the ladder's normalizer, over the same bridge. Fails open to the
   // top rung so a hand-edited backup produces a wrong-but-harmless notice rather
   // than throwing inside the projection every surface reads from.
@@ -1549,15 +1554,23 @@
    *  quoting the ruling's own sentence, so the app and every export carry the
    *  same words. Reads the map dataset.js installed into model.js at load
    *  (`conditionalDisclosureFor`), which is the build's rulings and nothing
-   *  inferred here. Silent when no ranked stat carries a disclosure — the
-   *  ordinary case, and the #449 R15 rule against boilerplate. */
+   *  inferred here. Also carries reviewed limits of equipped sets, even when
+   *  their excluded effects are not ranked. Silent for unrelated loadouts. */
   function conditionalNoticeLines(rec) {
     const snap = (rec && rec.snapshot) || rec || {};
     const q = (rec && rec.query) || snap.query || {};
     const targets = Array.isArray(q.targets) ? q.targets : [];
     const forStat = _conditionalDisclosureFor;
-    if (typeof forStat !== "function") return [];
     const out = [];
+    // Reviewed set limits travel with the equipped items, including saved
+    // snapshots. The same notice reaches the live result and every export.
+    const notedSets = new Set();
+    for (const c of snap.chosen || []) for (const sb of c.variant.set_bonus || []) {
+      if (!sb.verification_note || notedSets.has(sb.set)) continue;
+      notedSets.add(sb.set);
+      out.push(`${sb.set}: ${sb.verification_note}`);
+    }
+    if (typeof forStat !== "function") return out;
     for (const stat of targets) {
       const d = forStat(stat);
       if (!d || !d.sentence) continue;
@@ -1969,6 +1982,7 @@
   function satisfiedSets(chosen, setsActive, suppressed) {
     suppressed = suppressed || new Set();
     const counts = new Map();
+    const eligibleMembers = (chosen || []).filter((c) => !suppressed.has(c.variant.variant_id)).map((c) => c.variant);
     const minReq = new Map();
     for (const c of chosen || []) {
       const isSuppressed = suppressed.has(c.variant.variant_id);
@@ -1982,8 +1996,10 @@
       }
     }
     const out = new Set();
-    for (const [set, need] of minReq) if ((counts.get(set) || 0) >= need) out.add(set);
-    for (const s of setsActive || []) if (s.set) out.add(s.set);
+    for (const [set, need] of minReq) {
+      if ((counts.get(set) || 0) >= need && _setRequirementsMet(set, eligibleMembers)) out.add(set);
+    }
+    for (const s of setsActive || []) if (s.set && _setRequirementsMet(s.set, eligibleMembers)) out.add(s.set);
     return out;
   }
 
@@ -2092,7 +2108,11 @@
         if (!tierAffixes.has(k) && (t.affixes || []).length) tierAffixes.set(k, t.affixes);
       }
     }
-    return ((result && result.setsActive) || []).map((s) => ({
+    const suppressed = suppressedHostIds(result);
+    const eligibleMembers = ((result && result.chosen) || [])
+      .filter((c) => !suppressed.has(c.variant.variant_id)).map((c) => c.variant);
+    return ((result && result.setsActive) || [])
+      .filter((s) => _setRequirementsMet(s.set, eligibleMembers)).map((s) => ({
       set: s.set, pieces: s.pieces_required,
       slots: yields.get(s.set) || [],
       // #252 — collapsed HERE, at the producer, so all four reading surfaces get the
@@ -2167,7 +2187,9 @@
       addMember(sa.set, { slot: slotOfHost.get(sa.host) || null, item: sa.host, kind: "augmentset" });
     }
     const bySet = new Map();
+    const eligibleMembers = (build.chosen || []).filter((c) => !suppressed.has(c.variant.variant_id)).map((c) => c.variant);
     for (const [set, byN] of tiers) {
+      if (!_setRequirementsMet(set, eligibleMembers)) continue;
       const have = counts.get(set) || 0;
       let best = null;
       for (const [n, affixes] of byN) if (n <= have && (best == null || n > best.pieces)) best = { pieces: n, affixes };

@@ -84,6 +84,8 @@ const _isWeaponTwinEligible = (typeof isWeaponTwinEligible !== "undefined")
   ? isWeaponTwinEligible
   // eslint-disable-next-line global-require
   : require("./model.js").isWeaponTwinEligible;
+const _setItemIdentity = (typeof setItemIdentity !== "undefined")
+  ? setItemIdentity : require("./model.js").setItemIdentity;
 const _twinIdOf = (typeof twinIdOf !== "undefined")
   ? twinIdOf
   // eslint-disable-next-line global-require
@@ -1613,6 +1615,18 @@ function buildProgram(model) {
         lhs += hostsVar.has(p) ? ` - ${p} + ${hostsVar.get(p)}` : ` - ${p}`;
       }
       extraConstraints.push(`${lhs} <= 0`);
+      // #953 — the two reviewed Slice/Dice definitions require BOTH named
+      // members. Twins remain legal equipment and still count for other sets.
+      // Apply the same Set-Augment suppression as the piece-count constraint.
+      for (const member of tier.required_items || []) {
+        let pairLhs = sa;
+        for (const xv of xVars) {
+          if (_setItemIdentity(xv.variant) !== member
+              || !(xv.variant.set_bonus || []).some((sb) => sb.set === setName)) continue;
+          pairLhs += hostsVar.has(xv.name) ? ` - ${xv.name} + ${hostsVar.get(xv.name)}` : ` - ${xv.name}`;
+        }
+        extraConstraints.push(`${pairLhs} <= 0`);
+      }
       // #539 — the pin itself. `sa = 1` plus the indicator above forces
       // `Σ pieces >= pieces_required`: the set must be delivered, or the program
       // is infeasible and `solveLexicographic` names the pins as the cause.
