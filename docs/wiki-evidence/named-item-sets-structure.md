@@ -397,3 +397,71 @@ Heroic **Cooking by the Book**'s 4-piece line reads `+5% Legendary Bonus to Spel
 - **Exact sets:** template stays at 88, page stays at 30.
 - **Quarantined lines:** 135 to 128 (template), 43 to 41 (page).
 - **`ours-differs`:** stays at 1, and no other category count moves.
+
+## Assassinate difficulty-class wording (#951, 2026-10-31)
+
+`Assassinate DCs` reads as the flat catalog stat `Assassinate`, preserving the
+stated value and bonus type. `Template:Assassinate` rev **401923**, read through
+the wiki API in Chromium, renders Assassinate N as an "N ... bonus to the DC of
+character's Assassinate attempts." The reviewed `affix_synonyms_registry.json`
+already folds this exact phrase into `Assassinate`; the augment-set ruling also
+records Subtle Blade's +3 Artifact Assassinate DCs.
+
+This does not admit bare `DCs`, a percentage bonus, or the compound phrase
+`all Tactical DCs and Assassinate`. A target absent from the catalog remains
+quarantined, as does a phrase with an additional condition.
+
+Measured with `diff_harvest_sets.py pages-20261101-review --json`, comparing the
+same page rev 720202 and template rev 723530 before and after the mapping:
+
+- Template exact sets: **88 → 91**; partial: **89 → 86**. Minion of the Mockery,
+  Legendary Minion of the Mockery, and Subtle Blade become exact.
+- Page exact sets: **30 → 31**; partial: **28 → 27**. Subtle Blade becomes exact.
+- Quarantined clauses under stated thresholds: **128 → 125** (template),
+  **41 → 40** (page). Threshold-unstated sets are excluded from these clause counts.
+- `ours-differs` remains **1** (Legendary Vulkoor's Might). All disagreement and
+  upstream-stale records continue to reproduce.
+
+The new positive clause and Subtle Blade parity tests both fail against the
+pre-change tree. Negative tests retain the ambiguous/percent/missing-target
+boundaries. The source switch remains under #908; this is one family of #951.
+
+## Maximum hit points: flat and percent (#951, 2026-10-31)
+
+`Maximum Hit Points`, `maximum Hit Points`, and `maximum hit points` resolve to
+the catalog's False Life stat, retaining the unit from the bonus clause:
+
+| Wiki clause | Catalog stat |
+|---|---|
+| +10 Artifact bonus to your maximum hit points | False Life / Artifact / 10 |
+| +5% Legendary Bonus to Maximum Hit Points | False Life (%) / Legendary / 5 |
+| +10% Legendary bonus to Maximum Hit Points | False Life (%) / Legendary / 10 |
+
+`False Life (enchantment)` rev **718160**, read through the wiki API in Chromium,
+defines the enchantment as granting extra hit points and its named tiers as
+granting maximum health. The reviewed synonym registry folds `Maximum Hit Points`
+and `your maximum hit points` into `False Life`. The set sources explicitly state
+the percentage on the Archons and Legendary Bulwark lines, while Seasons of the
+Feywild states a flat +10. Their catalog records preserve exactly this distinction.
+The percentage is not a claim that the ordinary False Life enchantment scales HP.
+
+The existing resolver requires the correct catalog target for the stated unit.
+A percentage never falls back to flat False Life, and flat HP never falls back to
+False Life (%). Temporary HP, conditional text, and unsupported compound phrases
+remain quarantined. The page's Legendary Bulwark `InlineWht` wrapper remains an
+unexpanded template; this mapping does not change wrapper parsing.
+
+Measured on `pages-20261101-review` (page rev 720202, template rev 723530), after
+the Assassinate family:
+
+- Template exact sets: **91 → 94**; partial: **86 → 83**. Armaments of the Archons,
+  Legendary Armaments of the Archons, and Legendary Bulwark become exact.
+- Page exact sets stay **31**. Seasons of the Feywild gains its readable HP line
+  in both sources but still has other quarantined clauses.
+- Quarantined clauses under stated thresholds: **125 → 121** (template),
+  **40 → 39** (page). No other classification count changes.
+- `ours-differs` stays **1**, and all recorded exceptions still reproduce.
+
+Both new positive tests fail against commit `61878c5`; all 58 set-reader tests
+pass with the mapping. The negative tests explicitly check that neither unit can
+substitute for the other when only one catalog target is available.

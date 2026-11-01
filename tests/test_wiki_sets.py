@@ -538,3 +538,69 @@ def test_dodge_and_missile_deflection_percent_lines_read_the_bare_catalog_name()
 def test_a_percent_line_to_an_unreviewed_bare_name_stays_quarantined():
     names = NAMES | DODGE | {"Assassinate"}
     assert "quarantine" in S.read_clause("+3% Artifact bonus to Assassinate", BONUS_TYPES, names)
+
+
+# --- #951: Assassinate difficulty-class wording ---------------------------------
+
+def test_assassinate_dcs_reads_the_flat_stat_and_preserves_value_and_bonus_type():
+    names = NAMES | {"Assassinate"}
+    for line, ty, value in (("+1 Artifact Bonus to Assassinate DCs", "Artifact", 1),
+                            ("+3 Artifact bonus to Assassinate DCs", "Artifact", 3),
+                            ("+2 Insight bonus to Assassinate DCs.", "Insight", 2)):
+        assert S.read_clause(line, BONUS_TYPES, names) == {
+            "affixes": [{"name": "Assassinate", "type": ty, "value": value}]}
+
+
+def test_subtle_blade_stated_bonus_reaches_exact_catalog_parity():
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    names = {a["name"] for tiers in catalog.values() for tier in tiers for a in tier["affixes"]}
+    # Named item sets rev 720202 and its template rev 723530 state this same line.
+    classification, detail = D.classify(
+        {3: ["+3 Artifact bonus to Assassinate DCs"]},
+        D.gp_tiers(catalog["Subtle Blade"]), names, "Subtle Blade")
+    assert classification == "exact", (classification, detail)
+
+
+def test_assassinate_dcs_does_not_admit_percentages_or_ambiguous_dc_phrases():
+    names = NAMES | {"Assassinate"}
+    for line in ("+3% Artifact bonus to Assassinate DCs",
+                 "+3 Artifact bonus to DCs",
+                 "+3 Artifact bonus to all Tactical DCs and Assassinate",
+                 "+3 Artifact bonus to Assassinate DCs against undead"):
+        assert "quarantine" in S.read_clause(line, BONUS_TYPES, names), line
+    assert "quarantine" in S.read_clause("+3 Artifact bonus to Assassinate DCs", BONUS_TYPES, NAMES)
+
+
+# --- #951: maximum hit points retain the flat/percent unit distinction ------------
+
+def test_maximum_hit_points_preserves_flat_and_percent_stats():
+    names = NAMES | {"False Life", "False Life (%)"}
+    for line, name, ty, value in (
+            ("+5% Legendary Bonus to Maximum Hit Points", "False Life (%)", "Legendary", 5),
+            ("+10% Legendary bonus to Maximum Hit Points", "False Life (%)", "Legendary", 10),
+            ("+10 Artifact bonus to your maximum Hit Points", "False Life", "Artifact", 10),
+            ("+10 Artifact bonus to your maximum hit points", "False Life", "Artifact", 10)):
+        assert S.read_clause(line, BONUS_TYPES, names) == {
+            "affixes": [{"name": name, "type": ty, "value": value}]}
+
+
+def test_legendary_bulwark_maximum_hit_points_reaches_exact_catalog_parity():
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    names = {a["name"] for tiers in catalog.values() for tier in tiers for a in tier["affixes"]}
+    classification, detail = D.classify(
+        {3: ["+10% Legendary bonus to Maximum Hit Points"]},
+        D.gp_tiers(catalog["Legendary Bulwark"]), names, "Legendary Bulwark")
+    assert classification == "exact", (classification, detail)
+
+
+def test_maximum_hit_points_requires_the_catalog_stat_for_the_stated_unit():
+    percent = "+10% Legendary bonus to Maximum Hit Points"
+    flat = "+10 Artifact bonus to your maximum hit points"
+    assert "quarantine" in S.read_clause(percent, BONUS_TYPES, NAMES | {"False Life"})
+    assert "quarantine" in S.read_clause(flat, BONUS_TYPES, NAMES | {"False Life (%)"})
+    for line in ("+10 Artifact bonus to temporary hit points",
+                 "+10 Artifact bonus to maximum hit points while raging",
+                 "+10% Legendary bonus to Maximum Hit Points and Spell Points"):
+        assert "quarantine" in S.read_clause(line, BONUS_TYPES, NAMES | {"False Life", "False Life (%)"}), line

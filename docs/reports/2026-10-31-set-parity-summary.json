@@ -1,0 +1,33 @@
+{
+  "harvest_revids": {
+    "Named item sets": 720202,
+    "Template:Named item sets": 723530
+  },
+  "gear_planner_sets": 282,
+  "template_entries": 293,
+  "page_rows": {
+    "named": 115,
+    "helstats_tier_records": 173
+  },
+  "counts": {
+    "template": {
+      "exact": 88,
+      "threshold-unstated": 90,
+      "partial": 89,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "ours-differs": 1,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 51,
+      "exact": 30,
+      "partial": 28,
+      "upstream-stale": 1
+    }
+  },
+  "sources_disagree": [],
+  "stale_disagreement_records": [],
+  "stale_upstream_records": []
+}

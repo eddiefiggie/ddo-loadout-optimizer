@@ -47,8 +47,11 @@ RECORDS_RE = re.compile(r"([\d,]+)\s+(?:[a-zA-Z][\w-]*\s+){0,3}records")
 # nothing passes; so does one whose regex silently stopped matching two of
 # three sites while both stale numbers stayed on the page. If a claim is
 # legitimately removed, lower these in the same commit — deliberately.
-MIN_VARIANT_SITES = 3
-MIN_RECORD_SITES = 2
+# #972 moved the old Project state narrative into the historical report. The
+# live README retains two variant claims (intro and capability table) and one
+# seed-record claim (intro); the archived figures are not current-size claims.
+MIN_VARIANT_SITES = 2
+MIN_RECORD_SITES = 1
 
 _METADATA = None
 
