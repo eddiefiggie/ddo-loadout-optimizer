@@ -25,10 +25,15 @@ remaining difference is classified. Sets where the two wiki sources disagree are
 listed separately — that is a wiki question, not a parser one.
 
 Usage: python3 scripts/diff_harvest_sets.py [HARVEST_ID] [--examples N] [--json]
+
+Both output modes exit 1 when the source-scoped count review is stale or
+incomplete. Review changed wiki text and unresolved entries before updating
+docs/wiki-evidence/set-count-review.json; the review never supplies game data.
 """
 from __future__ import annotations
 
 import collections
+import hashlib
 import json
 import os
 import sys
@@ -44,6 +49,38 @@ import load_harvest as LH  # noqa: E402
 TITLES = os.path.join(ROOT, "data", "harvest_titles", "named-item-sets.json")
 GP_SETS = os.path.join(ROOT, "data", "seed", "compendium", "raw", "gearplanner_sets.json")
 PAGE, TEMPLATE = "Named item sets", "Template:Named item sets"
+COUNT_REVIEW = os.path.join(ROOT, "docs", "wiki-evidence", "set-count-review.json")
+
+
+def count_review_status(pages, per_set, review):
+    """Invalidate source-scoped findings when the text or unresolved roster moves.
+
+    This checks review coverage only. It never supplies a threshold or an affix.
+    Hash the whole sources so changes to section context also require review.
+    """
+    errors = []
+    if review.get("schema_version") != 1:
+        errors.append("unsupported count-review schema")
+    if not per_set:
+        errors.append("no catalog sets inspected")
+    sources = {}
+    for source, title in (("template", TEMPLATE), ("page", PAGE)):
+        expected = review.get("sources", {}).get(source, {})
+        actual = pages[title]
+        changed = (expected.get("revid") != actual["revid"] or
+                   expected.get("sha256") != hashlib.sha256(actual["wikitext"].encode("utf-8")).hexdigest())
+        unresolved = {name for name, rec in per_set.items()
+                      if rec[source]["class"] == "threshold-unstated"}
+        recorded = review.get("records", {}).get(source, {})
+        missing = sorted(unresolved - recorded.keys())
+        stale = sorted(recorded.keys() - unresolved)
+        invalid = sorted(name for name, reason in recorded.items()
+                         if reason not in review.get("findings", {}) or not review["findings"][reason])
+        sources[source] = {"source_changed": changed, "unresolved": len(unresolved),
+                           "missing": missing, "stale": stale, "invalid_findings": invalid}
+    complete = not errors and all(not any(r[k] for k in
+        ("source_changed", "missing", "stale", "invalid_findings")) for r in sources.values())
+    return {"complete": complete, "errors": errors, "sources": sources}
 
 
 def _num(v):
@@ -203,6 +240,8 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         if a is not None and b is not None and a != b:
             disagree.append({"set": entry["name"] or key, "template": a, "page": b})
 
+    with open(COUNT_REVIEW, encoding="utf-8") as fh:
+        count_review = count_review_status(pages, per_set, json.load(fh))
     return {
         "harvest_revids": {PAGE: page["revid"], TEMPLATE: template["revid"]},
         "gear_planner_sets": len(gp_sets),
@@ -213,6 +252,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         "sources_disagree": disagree,
         "stale_disagreement_records": stale,
         "stale_upstream_records": stale_up,
+        "count_review": count_review,
         "sets": per_set,
     }
 
@@ -237,7 +277,7 @@ def main(argv) -> int:
     report = diff(pages, gp_sets)
     if "--json" in argv:
         print(json.dumps(report, indent=1, ensure_ascii=False))
-        return 0
+        return 0 if report["count_review"]["complete"] else 1
     print(f"harvest {hid}: revids {report['harvest_revids']}")
     print(f"gear-planner sets {report['gear_planner_sets']}, template entries {report['template_entries']}, "
           f"page rows {report['page_rows']}")
@@ -258,6 +298,11 @@ def main(argv) -> int:
     print(f"\nsources disagree (both fully read): {len(report['sources_disagree'])}")
     for d in report["sources_disagree"][:n_ex]:
         print(f"  {json.dumps(d, ensure_ascii=False)[:300]}")
+    print(f"\ncount review: {json.dumps(report['count_review'], ensure_ascii=False)}")
+    if not report["count_review"]["complete"]:
+        print("Count review is stale or incomplete: check the changed sources and named entries "
+              "against DDO Wiki before updating set-count-review.json. Never infer counts.")
+        return 1
     return 0
 
 

@@ -778,3 +778,69 @@ sets account for six of the 45 unresolved template comparisons and six of the
 50 unresolved page comparisons; the other 39/44 comparisons are outside this
 review. Further source review remains under #952; representing equipment
 relationships remains under #908.
+
+
+## Remaining count review and staleness guard (#952, 2026-11-01)
+
+Rechecked both complete sources directly through the DDO Wiki API: page
+[revision 720202](https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202)
+and template
+[revision 723530](https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530).
+The review covers the remaining `threshold-unstated` comparisons in the
+282-set catalog, separately for each source:
+
+| Finding | Template comparisons | Page comparisons |
+|---|---:|---:|
+| Korthos: reward acquisition text, no explicit activation count | 7 | 8 |
+| Prestige: effects and class/enhancement conditions, no explicit activation count | 26 | 32 |
+| Secrets of the Artificers: upgrade prerequisite, no explicit activation count | 4 | 4 |
+| Draconic / Planar Focus: named-equipment requirements reviewed above | 6 | 6 |
+| Template lacks a count; page counterpart states one | 2 | 0 |
+| **Total** | **45** | **50** |
+
+The Korthos introduction describes the first and second quest reward and says:
+
+> Both pieces can also show up in The Maleficent Cabal reward list.
+
+This states where pieces are acquired, not an activation rule. The general
+page introduction says many sets require two items and some require three or
+more; it does not assign a count to these specific sets.
+
+The prestige introduction discusses class level 18 and enhancement-based
+benefits. Effect values, additional songs/turns/rages, enhancement tiers and
+table spans do not establish a piece count. The Sorcerer note about Lore and
+Archmage's explanatory note remain relevant context; this count review makes
+no ruling about stacking or conditional effects.
+
+The Secrets of the Artificers introduction explicitly says:
+
+> To trigger these set bonuses, items must first be upgraded and their Nearly Finished effects replaced at the Cannith Reforging Station.
+
+This prerequisite does not state a number. Its four rows are Alchemist's Lore,
+Fabricator's Ingenuity, Magewright's Expertise and Tinker's Finesse.
+
+DM's Vision and Elder's Knowledge have explicit page count headers while their
+template entries lack counts. Conversely, the page's four Savant entries and
+Archmage lack count statements while their template entries state them. The
+comparisons remain independent; this review does not copy counts between sources.
+
+[set-count-review.json](set-count-review.json) lists each reviewed source/name
+pair and its finding. **Coverage is checked on every set parity run**, in both
+text and JSON modes: the unresolved roster must match in both directions,
+findings must be present, the catalog must be nonempty, and each complete
+source's revision and SHA-256 must match the reviewed text. Hashing the complete
+source also detects changes outside the bonus cells, including section context.
+A mismatch reports the affected source/names and exits 1. Updating the registry
+requires checking the changed wiki evidence, not just refreshing hashes.
+
+The guard passes for these revisions, with all 45/50 findings accounted for.
+All previous parity fields remain unchanged. Six CLI tests pass and fail on the
+pre-change tree (`383b885`); they exercise successful review, missing and stale
+entries in each source, revision/context changes, empty input, invalid findings
+and both output modes. The existing 80 set-reader tests still pass.
+
+This completes the count-review scope in these two sources for #952, subject to
+the guard. It does not establish that other wiki pages lack counts, make the
+remaining effects readable, or change production set definitions. Conditional
+activation modeling remains under #908, normalization under #951, and value
+disagreements under #956.
