@@ -18,6 +18,7 @@ Each (set, source) lands in one class:
   partial            — some lines quarantined; every line read agrees with gear-planner
   wiki-disagrees     — the only difference is a recorded WIKI_DISAGREEMENTS line
   upstream-stale     — the only difference is a recorded UPSTREAM_STALE line
+  wiki-bug           — an explicit, checked wiki bug note explains the difference
   ours-differs       — a line read to an affix gear-planner does not carry   <- review
 
 `ours-differs` is the switch gate: Phase 3 switches once it is 0 and every
@@ -26,9 +27,9 @@ listed separately — that is a wiki question, not a parser one.
 
 Usage: python3 scripts/diff_harvest_sets.py [HARVEST_ID] [--examples N] [--json]
 
-Both output modes exit 1 when the source-scoped count review is stale or
-incomplete. Review changed wiki text and unresolved entries before updating
-docs/wiki-evidence/set-count-review.json; the review never supplies game data.
+Both output modes exit 1 when the source-scoped count review or explicit wiki
+bug ruling is stale or incomplete. Review changed wiki text and unresolved
+entries before updating their evidence; these reviews never supply game data.
 """
 from __future__ import annotations
 
@@ -152,6 +153,51 @@ UPSTREAM_STALE = [
 ]
 
 
+# #956 — Named item sets rev 720202 explicitly says the HEROIC tier grants +1
+# INT despite its printed +2. Template rev 723530 still prints +2. This is a
+# comparison ruling, never a rewrite of either source or of production data.
+# Full evidence and scope: docs/wiki-evidence/arcsteel-intelligence-bug.md.
+ARCSTEEL_SET = "Arcsteel Battlemage"
+ARCSTEEL_BUG_LINE = "+2 Artifact bonus to Intelligence Bug: Heroic tier only gives +1 INT."
+ARCSTEEL_PRINTED = {"threshold": 3, "affix": ["Intelligence", "Artifact", 2]}
+
+
+def arcsteel_bug_review(template_entries, page_rows, gp_sets):
+    """Allow this one exception only while its source context and catalog agree.
+
+    Small comparisons may omit Arcsteel; report that as not applicable, not as
+    evidence checked. The existing count-review gate rejects an empty catalog.
+    Full-source revision/hash checks remain in count_review_status.
+    """
+    review = {"applicable": ARCSTEEL_SET in gp_sets, "complete": True, "errors": []}
+    if not review["applicable"]:
+        return review
+    review["evidence"] = {
+        "page": "https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202",
+        "template": "https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530",
+        "note": ARCSTEEL_BUG_LINE,
+        "actual": ["Intelligence", "Artifact", 1],
+    }
+    rows = [r for r in page_rows if ARCSTEEL_SET in r["anchors"] and r["tier"] == "Heroic"]
+    if (len(rows) != 1 or set(rows[0]["tiers"]) != {3}
+            or [S.plain(x) for x in rows[0]["tiers"][3] if "Intelligence" in S.plain(x)]
+            != [ARCSTEEL_BUG_LINE]):
+        review["errors"].append("Arcsteel's exact heroic three-piece Intelligence bug note changed or is missing")
+    entry = template_entries.get(ARCSTEEL_SET.lower(), {})
+    tiers = entry.get("tiers", {})
+    intelligence = [S.read_clause(x, BONUS_TYPES, {"Intelligence"})
+                    for x in tiers.get(3, []) if "Intelligence" in S.plain(x)]
+    if set(tiers) != {3} or intelligence != [{"affixes": [
+            {"name": "Intelligence", "type": "Artifact", "value": 2}]}]:
+        review["errors"].append("Arcsteel's template no longer states exactly one three-piece +2 Artifact Intelligence bonus")
+    catalog = gp_tiers(gp_sets[ARCSTEEL_SET])
+    intelligence = collections.Counter({k: v for k, v in catalog.get(3, {}).items() if k[0] == "Intelligence"})
+    if set(catalog) != {3} or intelligence != collections.Counter({("Intelligence", "Artifact", 1): 1}):
+        review["errors"].append("Arcsteel's catalog no longer carries exactly one three-piece +1 Artifact Intelligence bonus")
+    review["complete"] = not review["errors"]
+    return review
+
+
 def _upstream_stale(set_name, th, affix, gp, records):
     name, ty, value = affix
     return next((u for u in records if (u["set"], u["threshold"], u["name"], u["type"], u["wiki"])
@@ -211,6 +257,8 @@ def diff(pages: dict, gp_sets: dict) -> dict:
             for a in r["anchors"]:
                 by_anchor.setdefault(a.lower(), r)
     stat_names = {a.get("name") for t in gp_sets.values() for tier in t for a in tier.get("affixes") or []}
+    bug_review = arcsteel_bug_review(T, rows, gp_sets)
+    bug_applied = False
 
     per_set, counts = {}, {"template": collections.Counter(), "page": collections.Counter()}
     for name, tiers in gp_sets.items():
@@ -220,9 +268,22 @@ def diff(pages: dict, gp_sets: dict) -> dict:
             cls, detail = ("no-wiki-name", {}) if entry is None else classify(
                 entry["tiers"], gp, stat_names, name, WIKI_DISAGREEMENTS if src == "template" else (),
                 UPSTREAM_STALE)
+            if name == ARCSTEEL_SET and src == "template" and bug_review["complete"]:
+                if ARCSTEEL_PRINTED in detail.get("extra", []):
+                    # Remove only the explained comparison difference. Other
+                    # differences and every quarantined clause remain visible.
+                    detail["extra"].remove(ARCSTEEL_PRINTED)
+                    detail["wiki_bug_rulings"] = [dict(ARCSTEEL_PRINTED, actual=["Intelligence", "Artifact", 1])]
+                    if not detail["extra"]:
+                        del detail["extra"]
+                        cls = "wiki-bug"
+                    bug_applied = True
             counts[src][cls] += 1
             rec[src] = {"class": cls, **detail}
         per_set[name] = rec
+    if bug_review["applicable"] and bug_review["complete"] and not bug_applied:
+        bug_review["complete"] = False
+        bug_review["errors"].append("Arcsteel's expected comparison difference is absent; re-review the ruling")
     seen = {(name, e["threshold"], e["affix"][0]) for name, rec in per_set.items()
             for e in rec["template"].get("wiki_disagrees", [])}
     stale = [d for d in WIKI_DISAGREEMENTS if (d["set"], d["threshold"], d["name"]) not in seen]
@@ -260,6 +321,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         "stale_disagreement_records": stale,
         "stale_upstream_records": stale_up,
         "count_review": count_review,
+        "wiki_bug_review": bug_review,
         "sets": per_set,
     }
 
@@ -284,7 +346,7 @@ def main(argv) -> int:
     report = diff(pages, gp_sets)
     if "--json" in argv:
         print(json.dumps(report, indent=1, ensure_ascii=False))
-        return 0 if report["count_review"]["complete"] else 1
+        return 0 if report["count_review"]["complete"] and report["wiki_bug_review"]["complete"] else 1
     print(f"harvest {hid}: revids {report['harvest_revids']}")
     print(f"gear-planner sets {report['gear_planner_sets']}, template entries {report['template_entries']}, "
           f"page rows {report['page_rows']}")
@@ -306,6 +368,11 @@ def main(argv) -> int:
     for d in report["sources_disagree"][:n_ex]:
         print(f"  {json.dumps(d, ensure_ascii=False)[:300]}")
     print(f"\ncount review: {json.dumps(report['count_review'], ensure_ascii=False)}")
+    print(f"\nwiki bug review: {json.dumps(report['wiki_bug_review'], ensure_ascii=False)}")
+    if not report["wiki_bug_review"]["complete"]:
+        print("Wiki bug ruling is stale or unsupported: recheck Arcsteel's heroic Intelligence note, "
+              "template and catalog before accepting this comparison.")
+        return 1
     if not report["count_review"]["complete"]:
         print("Count review is stale or incomplete: check the changed sources and named entries "
               "against DDO Wiki before updating set-count-review.json. Never infer counts.")
