@@ -513,6 +513,15 @@ reproduce. Of the 37 template sets newly assigned thresholds, 16 become exact,
 | Legacy of Levikk | Armor Class +10% Artifact at 2 pieces | +15% |
 | Legacy of Lorikk | Fire and Force spell critical chance +6% Artifact, alongside Light and Positive | catalog has only Light and Positive |
 
+The companion page, rev **720202**, supplies context for those reviews: its
+Arcsteel Battlemage row explicitly says "Bug: Heroic tier only gives +1 INT";
+its Double Helix `HELstats|+2|+5` states +2 Heroic and +5 Epic; Legacy of Levikk
+states +15% Armor Class; and Legacy of Lorikk lists only Positive and
+Light/Alignment spell power and critical chance. Thus several template readings
+conflict with the page, while Heroic Double Helix's value already agrees and
+exposes a comparison-normalization issue. These observations do not silently
+reclassify any exception or establish a new value ruling.
+
 These five comparisons require rulings under #951/#908. The source switch stays
 blocked; production set definitions still use the existing catalog.
 
