@@ -1,8 +1,8 @@
 name: CI
 
-# Runs the full gate on every pull request. Deploy (deploy.yml) runs the same gate
-# again on push to main before publishing, so this does not replace it — it moves the
-# signal to *before* the merge instead of after.
+# Runs the full gate on every pull request. Deploy (deploy.yml) repeats the dataset
+# build and both test suites on push to main; the Utility perf and directional stamp
+# checks below are PR CI-only.
 #
 # Until this existed, `main` was the first place a red suite could surface, and main
 # auto-deploys: a failure there blocks the live site rather than a branch.

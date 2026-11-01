@@ -238,7 +238,14 @@ def _tiers_from_lines(lines) -> dict:
             if plain(rest):
                 tiers[cur].append(rest)
             continue
-        if plain(raw):
+        # Common unreviewed header shapes must not inherit a preceding tier.
+        # This is a conservative boundary, not a general condition detector.
+        line = plain(raw)
+        if (line.endswith(":") or
+                (re.match(r"^(?:When|While)\b", line, re.I)
+                 and re.search(r"\b(?:items?|pieces?|equipped|wearing)\b", line, re.I))):
+            cur = None
+        if line:
             tiers.setdefault(cur, []).append(raw.strip())
     return tiers
 
