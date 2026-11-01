@@ -5,13 +5,13 @@ Reads a set-page harvest (`load_harvest.py --titles data/harvest_titles/
 named-item-sets.json`) through src/wiki_sets.py and compares every gear-planner
 set with what the wiki states for it, per source:
 
-  template — `Template:Named item sets`, matched by switch key (lower-cased name)
+  template — `Template:Named item sets`, matched by switch key or a reviewed alias
   page     — `Named item sets`, matched by anchor; a HELstats row is NOT matched by
-             name (its anchor names at most one of its tiers) and is counted apart
+             name unless an individually evidenced name/tier ruling exists
 
 Each (set, source) lands in one class:
 
-  no-wiki-name       — the source has no entry under this exact name
+  no-wiki-name       — no usable exact name or reviewed alias match
   threshold-unstated — bonus lines lack an explicit header or reviewed prose count
   threshold-differs  — the stated thresholds are not gear-planner's
   exact              — every line read, and the affixes equal gear-planner's
@@ -27,9 +27,10 @@ listed separately — that is a wiki question, not a parser one.
 
 Usage: python3 scripts/diff_harvest_sets.py [HARVEST_ID] [--examples N] [--json]
 
-Both output modes exit 1 when the source-scoped count review or explicit wiki
-bug ruling is stale or incomplete. Review changed wiki text and unresolved
-entries before updating their evidence; these reviews never supply game data.
+Both output modes exit 1 when the source-scoped count review, name-alias review,
+or explicit wiki bug ruling is stale or incomplete. Review changed wiki text
+and unresolved entries before updating their evidence; these reviews never
+supply game data.
 """
 from __future__ import annotations
 
@@ -51,6 +52,45 @@ TITLES = os.path.join(ROOT, "data", "harvest_titles", "named-item-sets.json")
 GP_SETS = os.path.join(ROOT, "data", "seed", "compendium", "raw", "gearplanner_sets.json")
 PAGE, TEMPLATE = "Named item sets", "Template:Named item sets"
 COUNT_REVIEW = os.path.join(ROOT, "docs", "wiki-evidence", "set-count-review.json")
+
+
+# #953 — the set page and all four member item pages explicitly name these two
+# sets. These are individual identity/tier rulings, never a suffix or prefix
+# rule. Evidence: docs/wiki-evidence/slice-dice-set-names.md.
+REVIEWED_SET_NAMES = {
+    "Slice 'n Dice": {"wiki_name": "Slice 'n Dice Set", "page_tier": "Heroic"},
+    "Epic Slice 'n Dice": {"wiki_name": "Epic Slice 'n Dice Set", "page_tier": "Epic"},
+}
+
+
+def reviewed_name_matches(template_entries, rows, gp_sets):
+    """Match only the two cited identities; reject missing or ambiguous targets.
+
+    This does not read or change a count, clause, bonus type or value. The
+    existing full-source hash/revision gate also guards changed source context.
+    A small comparison can omit these sets; an empty catalog fails count review.
+    """
+    matches = {}
+    review = {"applicable": [], "applied": {}, "complete": True, "errors": []}
+    catalog_names = {n.lower() for n in gp_sets}
+    for name, identity in REVIEWED_SET_NAMES.items():
+        if name not in gp_sets:
+            continue
+        review["applicable"].append(name)
+        key = identity["wiki_name"].lower()
+        page = [r for r in rows if key in {a.lower() for a in r["anchors"]}
+                and r["tier"] == identity["page_tier"]]
+        old_name_present = name.lower() in template_entries or any(
+            name.lower() in {a.lower() for a in r["anchors"]} for r in rows)
+        if old_name_present or key in catalog_names:
+            review["errors"].append(f"{name}: direct name or catalog alias collision; re-review identity")
+        elif key not in template_entries or len(page) != 1:
+            review["errors"].append(f"{name}: expected template name and unique {identity['page_tier']} page target are missing or ambiguous")
+        else:
+            matches[name] = {"template": template_entries[key], "page": page[0]}
+            review["applied"][name] = dict(identity)
+    review["complete"] = not review["errors"]
+    return matches, review
 
 
 def count_review_status(pages, per_set, review):
@@ -257,6 +297,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
             for a in r["anchors"]:
                 by_anchor.setdefault(a.lower(), r)
     stat_names = {a.get("name") for t in gp_sets.values() for tier in t for a in tier.get("affixes") or []}
+    name_matches, name_review = reviewed_name_matches(T, rows, gp_sets)
     bug_review = arcsteel_bug_review(T, rows, gp_sets)
     bug_applied = False
 
@@ -264,7 +305,9 @@ def diff(pages: dict, gp_sets: dict) -> dict:
     for name, tiers in gp_sets.items():
         gp = gp_tiers(tiers)
         rec = {}
-        for src, entry in (("template", T.get(name.lower())), ("page", by_anchor.get(name.lower()))):
+        entries = (name_matches.get(name, {"template": None, "page": None}) if name in REVIEWED_SET_NAMES
+                   else {"template": T.get(name.lower()), "page": by_anchor.get(name.lower())})
+        for src, entry in entries.items():
             cls, detail = ("no-wiki-name", {}) if entry is None else classify(
                 entry["tiers"], gp, stat_names, name, WIKI_DISAGREEMENTS if src == "template" else (),
                 UPSTREAM_STALE)
@@ -278,6 +321,10 @@ def diff(pages: dict, gp_sets: dict) -> dict:
                         del detail["extra"]
                         cls = "wiki-bug"
                     bug_applied = True
+            if name in name_matches:
+                detail["name_alias"] = {"wiki_name": REVIEWED_SET_NAMES[name]["wiki_name"]}
+                if src == "page":
+                    detail["name_alias"]["page_tier"] = REVIEWED_SET_NAMES[name]["page_tier"]
             counts[src][cls] += 1
             rec[src] = {"class": cls, **detail}
         per_set[name] = rec
@@ -303,8 +350,11 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         return out
 
     disagree = []
+    comparison_pages = dict(by_anchor)
+    for name, entries in name_matches.items():
+        comparison_pages[REVIEWED_SET_NAMES[name]["wiki_name"].lower()] = entries["page"]
     for key, entry in T.items():
-        a, b = readable(entry), readable(by_anchor.get(key))
+        a, b = readable(entry), readable(comparison_pages.get(key))
         if a is not None and b is not None and a != b:
             disagree.append({"set": entry["name"] or key, "template": a, "page": b})
 
@@ -321,6 +371,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         "stale_disagreement_records": stale,
         "stale_upstream_records": stale_up,
         "count_review": count_review,
+        "name_alias_review": name_review,
         "wiki_bug_review": bug_review,
         "sets": per_set,
     }
@@ -346,7 +397,8 @@ def main(argv) -> int:
     report = diff(pages, gp_sets)
     if "--json" in argv:
         print(json.dumps(report, indent=1, ensure_ascii=False))
-        return 0 if report["count_review"]["complete"] and report["wiki_bug_review"]["complete"] else 1
+        return 0 if (report["count_review"]["complete"] and report["wiki_bug_review"]["complete"]
+                     and report["name_alias_review"]["complete"]) else 1
     print(f"harvest {hid}: revids {report['harvest_revids']}")
     print(f"gear-planner sets {report['gear_planner_sets']}, template entries {report['template_entries']}, "
           f"page rows {report['page_rows']}")
@@ -368,6 +420,10 @@ def main(argv) -> int:
     for d in report["sources_disagree"][:n_ex]:
         print(f"  {json.dumps(d, ensure_ascii=False)[:300]}")
     print(f"\ncount review: {json.dumps(report['count_review'], ensure_ascii=False)}")
+    print(f"\nname alias review: {json.dumps(report['name_alias_review'], ensure_ascii=False)}")
+    if not report["name_alias_review"]["complete"]:
+        print("Name alias review is stale or ambiguous: recheck the named template, page anchor and tier before accepting this comparison.")
+        return 1
     print(f"\nwiki bug review: {json.dumps(report['wiki_bug_review'], ensure_ascii=False)}")
     if not report["wiki_bug_review"]["complete"]:
         print("Wiki bug ruling is stale or unsupported: recheck Arcsteel's heroic Intelligence note, "

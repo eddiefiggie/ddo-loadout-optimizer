@@ -1,0 +1,222 @@
+{
+  "base": "88c8dea28bc971d2b9e4671ee8310693cf12c350",
+  "sources": {
+    "Named item sets": {
+      "revid": 720202,
+      "sha256": "73ee1aa49cbf1ccf4bd660af325d53b9e96da17d0a840950b46e81606946441d"
+    },
+    "Template:Named item sets": {
+      "revid": 723530,
+      "sha256": "319adf3d1643d50397b103672a16aa2136f27c5e31e131128a1eb1a84bcd977a"
+    },
+    "Item:Slice": {
+      "revid": 671155,
+      "sha256": "29db47ea33a1b688728e8a6de263a7ba338ae3c0f20e52698bd77720b0b772d9"
+    },
+    "Item:Dice": {
+      "revid": 677125,
+      "sha256": "e4cdd907210939676242f5b7c59af466391f8f90c5f069b250a1cb0ca05a8701"
+    },
+    "Item:Epic Slice": {
+      "revid": 671208,
+      "sha256": "b00c680a4921bb84bcc6a976276e54861bbfc47852bb334671870b2eabe2d836"
+    },
+    "Item:Epic Dice": {
+      "revid": 677116,
+      "sha256": "cde57fdb88b9856dda79e9a996effe1eac67f940e61ca045ae3ff8be2d333a47"
+    }
+  },
+  "catalog_sets": 282,
+  "before_counts": {
+    "template": {
+      "exact": 112,
+      "threshold-unstated": 45,
+      "partial": 106,
+      "wiki-bug": 1,
+      "wiki-disagrees": 4,
+      "ours-differs": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 50,
+      "exact": 32,
+      "partial": 27,
+      "upstream-stale": 1
+    }
+  },
+  "after_counts": {
+    "template": {
+      "exact": 112,
+      "threshold-unstated": 45,
+      "partial": 108,
+      "wiki-bug": 1,
+      "wiki-disagrees": 4,
+      "ours-differs": 4,
+      "no-wiki-name": 7,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 170,
+      "threshold-unstated": 50,
+      "exact": 32,
+      "partial": 29,
+      "upstream-stale": 1
+    }
+  },
+  "changed_sets": {
+    "Epic Slice 'n Dice": {
+      "before": {
+        "template": {
+          "class": "no-wiki-name"
+        },
+        "page": {
+          "class": "no-wiki-name"
+        }
+      },
+      "after": {
+        "template": {
+          "class": "partial",
+          "quarantined": [
+            {
+              "threshold": 2,
+              "line": "+2 Quality bonus to Sneak Attack",
+              "reason": "stat phrase not in the vocabulary: 'Sneak Attack'"
+            },
+            {
+              "threshold": 2,
+              "line": "They make julienne fries.",
+              "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+            }
+          ],
+          "name_alias": {
+            "wiki_name": "Epic Slice 'n Dice Set"
+          }
+        },
+        "page": {
+          "class": "partial",
+          "quarantined": [
+            {
+              "threshold": 2,
+              "line": "+2 Quality bonus bonus to Seeker",
+              "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+            },
+            {
+              "threshold": 2,
+              "line": "+2 Quality bonus bonus to Sneak Attack",
+              "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+            }
+          ],
+          "name_alias": {
+            "wiki_name": "Epic Slice 'n Dice Set",
+            "page_tier": "Epic"
+          }
+        }
+      }
+    },
+    "Slice 'n Dice": {
+      "before": {
+        "template": {
+          "class": "no-wiki-name"
+        },
+        "page": {
+          "class": "no-wiki-name"
+        }
+      },
+      "after": {
+        "template": {
+          "class": "partial",
+          "quarantined": [
+            {
+              "threshold": 2,
+              "line": "+1 Quality bonus to Sneak Attack",
+              "reason": "stat phrase not in the vocabulary: 'Sneak Attack'"
+            },
+            {
+              "threshold": 2,
+              "line": "They make julienne fries.",
+              "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+            }
+          ],
+          "name_alias": {
+            "wiki_name": "Slice 'n Dice Set"
+          }
+        },
+        "page": {
+          "class": "partial",
+          "quarantined": [
+            {
+              "threshold": 2,
+              "line": "+1 Quality bonus bonus to Seeker",
+              "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+            },
+            {
+              "threshold": 2,
+              "line": "+1 Quality bonus bonus to Sneak Attack",
+              "reason": "not a typed '+N <Type> bonus to <stat>' clause"
+            }
+          ],
+          "name_alias": {
+            "wiki_name": "Slice 'n Dice Set",
+            "page_tier": "Heroic"
+          }
+        }
+      }
+    }
+  },
+  "other_sets_identical": 280,
+  "quarantined_compared_clauses": {
+    "before": {
+      "template": 154,
+      "page": 40
+    },
+    "after": {
+      "template": 158,
+      "page": 44
+    }
+  },
+  "count_review": {
+    "complete": true,
+    "errors": [],
+    "sources": {
+      "template": {
+        "source_changed": false,
+        "unresolved": 45,
+        "missing": [],
+        "stale": [],
+        "invalid_findings": []
+      },
+      "page": {
+        "source_changed": false,
+        "unresolved": 50,
+        "missing": [],
+        "stale": [],
+        "invalid_findings": []
+      }
+    }
+  },
+  "name_alias_review": {
+    "applicable": [
+      "Slice 'n Dice",
+      "Epic Slice 'n Dice"
+    ],
+    "applied": {
+      "Slice 'n Dice": {
+        "wiki_name": "Slice 'n Dice Set",
+        "page_tier": "Heroic"
+      },
+      "Epic Slice 'n Dice": {
+        "wiki_name": "Epic Slice 'n Dice Set",
+        "page_tier": "Epic"
+      }
+    },
+    "complete": true,
+    "errors": []
+  },
+  "wiki_bug_review_unchanged": true,
+  "source_disagreements_unchanged": true,
+  "stale_disagreement_records": [],
+  "stale_upstream_records": [],
+  "prebuild_dataset_sha256": "6e7c0b1ad25d7d0da5feb4ad77152fcde299d95e54ca9cb4009a0417fe72cd90"
+}
