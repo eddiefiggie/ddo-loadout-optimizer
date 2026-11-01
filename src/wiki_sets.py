@@ -16,8 +16,8 @@ a reason, never defaulted. Gear-planner's set catalog stays the build's source
 until the parity diff (`scripts/diff_harvest_sets.py`) shows ours-wrong = 0.
 
 NEVER INFER. Two specific temptations this module refuses:
-  * A row with no `N Pieces Equipped:` header has no stated threshold, even
-    when its item list has N entries. `threshold` is None and the diff reports it.
+  * A row without a numeric header or an explicitly reviewed prose phrase has no
+    stated threshold, even when its item list has N entries. `threshold` is None.
   * A `HELstats` row's Legendary half has no anchor of its own. Its name is not
     invented (`Legendary <anchor>` is the obvious guess, and it is a guess); the
     row is keyed by its anchor plus the tier the template code assigns.
@@ -109,9 +109,26 @@ def plain(line: str) -> str:
 
 
 def _tiers_from_lines(lines) -> dict:
-    """Bonus lines -> {threshold: [line, ...]}; lines before any header go under None."""
+    """Bonus lines -> {threshold: [line, ...]}; unestablished counts go under None."""
     tiers, cur = {}, None
     for raw in lines:
+        # Only exact reviewed source wording can open a prose threshold. The
+        # raw remainder retains wiki markup for read_clause, like a numeric
+        # header. Non-header sentences retain their whole text for quarantine.
+        stripped = raw.strip()
+        header = next((h for h in PROSE_THRESHOLD_HEADERS if stripped.startswith(h)), None)
+        if header is not None:
+            cur = PROSE_THRESHOLD_HEADERS[header]
+            tiers.setdefault(cur, [])
+            rest = stripped[len(header):].strip()
+            if plain(rest):
+                tiers[cur].append(rest)
+            continue
+        sentence = next((h for h in PROSE_THRESHOLD_SENTENCES if stripped.startswith(h)), None)
+        if sentence is not None:
+            cur = PROSE_THRESHOLD_SENTENCES[sentence]
+            tiers.setdefault(cur, []).append(stripped)
+            continue
         m = _PIECES_RE.match(plain(raw))
         if m:
             cur = int(m.group(1))
@@ -122,7 +139,15 @@ def _tiers_from_lines(lines) -> dict:
             if m.group(2) and len(rest) == 2 and plain(rest[1]):
                 tiers[cur].append(rest[1].strip())
             continue
-        if plain(raw):
+        # Guard common unreviewed header shapes against inheriting a prior tier.
+        # This is not a general natural-language condition detector, and it
+        # never derives a count from the words.
+        line = plain(raw)
+        if (line.endswith(":") or
+                (re.match(r"^(?:When|While)\b", line, re.I)
+                 and re.search(r"\b(?:items?|pieces?|equipped|wearing)\b", line, re.I))):
+            cur = None
+        if line:
             tiers.setdefault(cur, []).append(raw.strip())
     return tiers
 
@@ -161,6 +186,58 @@ def _row_cells(row: str) -> list:
         cells.append(cur)
     return ["\n".join(c) for c in cells]
 
+
+
+# #952 — exact source headers from Template:Named item sets rev 723530
+# https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530
+# Each literal is a complete observed header, not a pattern over set names.
+# A changed or unfamiliar sentence is not interpreted.
+PROSE_THRESHOLD_HEADERS = {
+    'While wearing two pieces from the Anger of the Avalanche set, you gain:': 2,
+    'While wearing three items from the Arcsteel Battlemage set, you gain:': 3,
+    'While wearing two pieces from the Astute Alchemist set, you gain:': 2,
+    'While wearing both items from the Brilliant Crescents set, you gain:': 2,
+    "While wearing both items from the Captain's Set, you gain:": 2,
+    'While wearing two pieces from the Chained Elemental set, you gain:': 2,
+    'While wearing two pieces from the Conduit of the Titans set, you gain:': 2,
+    'While wearing three items from the Dreadkeeper set, you gain:': 3,
+    'While wearing both items from the Double Helix Set, you gain:': 2,
+    "While wearing both items from the Epic Captain's Set, you gain:": 2,
+    'While wearing both items from the Epic Double Helix Set, you gain:': 2,
+    'While wearing both items from the Epic Griffon Set, you gain:': 2,
+    "While wearing both items from the Epic Slice 'n Dice Set, you gain:": 2,
+    "While wearing any five items from the Epic The Devil's Handiwork, you gain:": 5,
+    'While wearing three items from the Esoteric Initiate set, you gain:': 3,
+    'While wearing two pieces from the Fastidious Fabricator set, you gain:': 2,
+    'While wearing three items from the Flamecleansed Fury set, you gain:': 3,
+    'While wearing three items from the Feywild Dreamer set, you gain:': 3,
+    'While wearing both items from the Griffon Set, you gain:': 2,
+    'While wearing three items from the Guardian of the Gates set, you gain:': 3,
+    "While wearing three items from the Hruit's Influence set, you gain:": 3,
+    'While wearing two pieces from the Legacy of Levikk set, you gain:': 2,
+    'While wearing two pieces from the Legacy of Lorikk set, you gain:': 2,
+    'While wearing two pieces from the Legacy of Tharne set, you gain:': 2,
+    'While wearing two pieces from the Mantle of Suulomades set, you gain:': 2,
+    'While wearing two pieces from the Masterful Magewright set, you gain:': 2,
+    'While wearing two pieces from the Mind and Matter set, you gain:': 2,
+    'While wearing both items from the Mountainskin Set, you gain:': 2,
+    'While wearing two pieces from the One with the Swarm set, you gain:': 2,
+    'While wearing three items from the Part of the Family set, you gain:': 3,
+    "While wearing both items from the Slice 'n Dice Set, you gain:": 2,
+    "While wearing any five items from the The Devil's Handiwork, you gain:": 5,
+    'While wearing two pieces from the Tyrannical Tinkerer set, you gain:': 2,
+    'While wearing three items from the Wallwatch set, you gain:': 3,
+}
+
+# The four source sentences beginning with this exact phrase (Amaunator's
+# Blessing, Battle Arcanist, Knight's Loyalty, Woodsman's Guile) state three;
+# keep the whole sentence for the closed effect reader to quarantine.
+PROSE_THRESHOLD_SENTENCES = {
+    # The Air, Earth, Fire and Water Savants and Archmage explicitly say both.
+    **{f"This item is one of the two pieces of the {name} set. When both items are equipped, you gain ": 2
+       for name in ("Air Savant", "Earth Savant", "Fire Savant", "Water Savant", "Archmage")},
+    "When all three items from the set are equipped, you will gain ": 3,
+}
 
 # One typed clause: "+30 Profane bonus to Physical Sheltering", "+6% Artifact bonus to X".
 _CLAUSE_RE = re.compile(r"^([+-]?\d+)(%?) ([A-Za-z]+) [Bb]onus to (?:your )?(.+?)\.?$")

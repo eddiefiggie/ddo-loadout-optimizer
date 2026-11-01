@@ -397,3 +397,13 @@ Heroic **Cooking by the Book**'s 4-piece line reads `+5% Legendary Bonus to Spel
 - **Exact sets:** template stays at 88, page stays at 30.
 - **Quarantined lines:** 135 to 128 (template), 43 to 41 (page).
 - **`ours-differs`:** stays at 1, and no other category count moves.
+
+## Explicit prose thresholds (partial #952, 2026-11-01)
+
+The source text was read again through the Wiki's browser view: [Template:Named item sets, rev 723530](https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530) and [Named item sets, rev 720202](https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202). These are the same revisions as the 2026-10-27 harvest above. This is a parser-only comparison; the generated dataset still uses gear-planner for set definitions.
+
+`PROSE_THRESHOLD_HEADERS` records the exact observed headers and their counts, not a generic rule over names or number words. For example, the template says “While wearing two pieces from the Anger of the Avalanche set, you gain:” and “While wearing three items from the Dreadkeeper set, you gain:”. It also explicitly says “While wearing both items from the Captain's Set, you gain:”. The remainder of a header line keeps its markup; following bonus lines go under the stated threshold. The template's Savant sentences say “When both items are equipped”; four other entries say “When all three items from the set are equipped”. These are retained whole under the stated count so the clause reader can quarantine effects it cannot parse. The Epic Elemental Evil wording also specifies a weapon and armor, so it remains quarantined rather than losing that constraint in a bare two-piece tier. The table cites the revision containing each literal; unknown wording is not generalized or inferred from item lists.
+
+With the same two revision texts and the current gear-planner catalog, the template's matched `threshold-unstated` class moves from 90 to 53; `exact` from 88 to 100; `partial` from 89 to 109; and `ours-differs` from 1 to 6. The page's `threshold-unstated` class remains 51. Five newly visible differences need review: Arcsteel Battlemage, Double Helix Set, Epic Double Helix Set, Legacy of Levikk and Legacy of Lorikk. The existing Legendary Vulkoor's Might difference remains. These are comparison findings, not rulings on which source is correct. No disagreement or upstream-stale record became stale.
+
+This is **not** a completeness claim for #952: remaining `threshold-unstated` entries include both genuinely unstated counts and other explicit sentence shapes not yet reviewed (for example, multi-threshold prose). They must not be described as all stating no count. The parity diff lists the remaining set names and their source lines when run against this snapshot.
