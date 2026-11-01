@@ -864,6 +864,7 @@ def build() -> dict:
         harvest_meta=(harvest_meta_mod.load(), harvest_meta_mod.load_rulings()),
         # #907 — the switched families' enchantments from our own wiki harvest.
         harvest_affixes=harvest_affixes_mod.load())
+    set_catalog_mod.check_slice_dice_members(planner_records)
     # #262 — the "no known live drop source" evidence shard. check() runs HERE,
     # against the planner records pre-variant-expansion, because the staleness
     # guard keys off the raw `quests` array (KTD8: the list, not the derived

@@ -75,3 +75,21 @@ test("#855: the twin-id helper is read for twin ids only", () => {
     }
   }
 });
+
+test('#953: reviewed pair requirements reach the browser set display', () => {
+  const ctx = page();
+  ctx.members = ['Slice', 'Dice'].map((name) => ({variant_id:name,source_item:name,slot:'Weapon',
+    set_bonus:[{set:'Reviewed pair',required_items:['Slice','Dice']}],
+    parsed_set_bonuses:[{set:'Reviewed pair',pieces_required:2,required_items:['Slice','Dice'],
+      affixes:[{stat:'Seeker',bonus_type:'Quality',value:1}]}]}));
+  const duplicate = vm.runInContext(`(() => {
+    const chosen = [{slot:'Main Hand',variant:members[0]},
+      {slot:'Off Hand',variant:{...members[0],variant_id:'Slice::twin'}}];
+    return {glow:Projection.satisfiedSets(chosen,[]).size,
+      cards:Projection.satisfiedSetDetail({chosen,setsActive:[]}).length};
+  })()`,ctx);
+  assert.strictEqual(duplicate.glow,0,'two copies cannot stand in for the missing member');
+  assert.strictEqual(duplicate.cards,0);
+  assert.strictEqual(vm.runInContext(`Projection.satisfiedSets(
+    members.map((variant,i)=>({slot:i?'Off Hand':'Main Hand',variant})),[]).size`,ctx),1);
+});

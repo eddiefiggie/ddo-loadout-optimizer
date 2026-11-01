@@ -2737,7 +2737,7 @@ test("#449 U5 (KTD5): the classification table is asserted entry by entry", () =
       mrrCapNotice: ["MAGICAL SHELTERING ABOVE YOUR ARMOR'S CAP", "actionable"],
       // #713 — qualifying like #683: the wiki states the condition and the catalog
       // credits the full value; that is a fact about the data, not the query.
-      conditionalNotice: ["CREDITED IN FULL, GRANTED ON A CONDITION", "qualifying"],
+      conditionalNotice: ["EFFECT CONDITIONS AND LIMITS", "qualifying"],
       // #850 — qualifying like #683 directly below: the player can rank the sibling
       // name, but the wiki rules the names distinct, so offering that as the fix
       // would take a side the app declined to take.

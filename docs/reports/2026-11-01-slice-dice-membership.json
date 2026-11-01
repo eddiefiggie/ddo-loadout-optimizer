@@ -1,0 +1,184 @@
+{
+  "checked_at_utc": "2026-11-01T20:48:26.116494+00:00",
+  "base_commit": "5e16b41692da063f0df7e2dc077ce3e04c04f807",
+  "sources": [
+    {
+      "title": "Named item sets",
+      "revision": 720202,
+      "url": "https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202",
+      "read_at_utc": "2026-11-01T20:41:15.756175+00:00",
+      "wikitext_sha256": "73ee1aa49cbf1ccf4bd660af325d53b9e96da17d0a840950b46e81606946441d"
+    },
+    {
+      "title": "Template:Named item sets",
+      "revision": 723530,
+      "url": "https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530",
+      "read_at_utc": "2026-11-01T20:41:17.704557+00:00",
+      "wikitext_sha256": "319adf3d1643d50397b103672a16aa2136f27c5e31e131128a1eb1a84bcd977a"
+    },
+    {
+      "title": "Item:Slice",
+      "revision": 671155,
+      "url": "https://ddowiki.com/index.php?title=Item:Slice&oldid=671155",
+      "read_at_utc": "2026-11-01T20:41:19.634369+00:00",
+      "wikitext_sha256": "29db47ea33a1b688728e8a6de263a7ba338ae3c0f20e52698bd77720b0b772d9"
+    },
+    {
+      "title": "Item:Dice",
+      "revision": 677125,
+      "url": "https://ddowiki.com/index.php?title=Item:Dice&oldid=677125",
+      "read_at_utc": "2026-11-01T20:41:21.573346+00:00",
+      "wikitext_sha256": "e4cdd907210939676242f5b7c59af466391f8f90c5f069b250a1cb0ca05a8701"
+    },
+    {
+      "title": "Item:Epic Slice",
+      "revision": 671208,
+      "url": "https://ddowiki.com/index.php?title=Item:Epic_Slice&oldid=671208",
+      "read_at_utc": "2026-11-01T20:41:23.537109+00:00",
+      "wikitext_sha256": "b00c680a4921bb84bcc6a976276e54861bbfc47852bb334671870b2eabe2d836"
+    },
+    {
+      "title": "Item:Epic Dice",
+      "revision": 677116,
+      "url": "https://ddowiki.com/index.php?title=Item:Epic_Dice&oldid=677116",
+      "read_at_utc": "2026-11-01T20:41:25.460645+00:00",
+      "wikitext_sha256": "cde57fdb88b9856dda79e9a996effe1eac67f940e61ca045ae3ff8be2d333a47"
+    },
+    {
+      "title": "Sneak Attack",
+      "revision": 1711,
+      "url": "https://ddowiki.com/index.php?title=Sneak_Attack&oldid=1711",
+      "read_at_utc": "2026-11-01T20:45:25.078831+00:00",
+      "wikitext_sha256": "a77768a46d54bc14934c79ef3aafe9dacfe41014f8af520b0a942d0278c0cb3b"
+    },
+    {
+      "title": "Sneak Attack Bonus",
+      "revision": 37462,
+      "url": "https://ddowiki.com/index.php?title=Sneak_Attack_Bonus&oldid=37462",
+      "read_at_utc": "2026-11-01T20:45:27.017295+00:00",
+      "wikitext_sha256": "d081409365d01404cd63cb1fd7b3e2cbcf8a718c3a3db676978cbeda7337072f"
+    },
+    {
+      "title": "Seeker",
+      "revision": 682718,
+      "url": "https://ddowiki.com/index.php?title=Seeker&oldid=682718",
+      "read_at_utc": "2026-11-01T20:45:29.032519+00:00",
+      "wikitext_sha256": "f239bb07be1d50cbe64e6dcb70fe505e879c8f12ba1da71036330d2dd737805e"
+    },
+    {
+      "title": "Sneak attack",
+      "revision": 695237,
+      "url": "https://ddowiki.com/index.php?title=Sneak_attack&oldid=695237",
+      "read_at_utc": "2026-11-01T20:46:00.222372+00:00",
+      "wikitext_sha256": "42bed55ea74e34e9627c763fda2887b09cc9a2a527c6fe2a8e56db1b247e03c1"
+    },
+    {
+      "title": "Backstabbing",
+      "revision": 621583,
+      "url": "https://ddowiki.com/index.php?title=Backstabbing&oldid=621583",
+      "read_at_utc": "2026-11-01T20:46:02.160692+00:00",
+      "wikitext_sha256": "4b9e6f49d591423e6aa9877b50fc160fa94b720df6e384bb6c815359e9ed6600"
+    },
+    {
+      "title": "Deception",
+      "revision": 704007,
+      "url": "https://ddowiki.com/index.php?title=Deception&oldid=704007",
+      "read_at_utc": "2026-11-01T20:46:44.883577+00:00",
+      "wikitext_sha256": "6dba3f78fe0fddbe74c3e715391d45b61068ef756e5dfde659b707d4ab752f75"
+    },
+    {
+      "title": "Quality bonus",
+      "revision": 364683,
+      "url": "https://ddowiki.com/index.php?title=Quality_bonus&oldid=364683",
+      "read_at_utc": "2026-11-01T20:46:46.846027+00:00",
+      "wikitext_sha256": "88206adb4094570738b113cb3dc59db32bea1dab92b5e3398e2e06105de77eaf"
+    }
+  ],
+  "memberships": [
+    {
+      "items": [
+        "Slice",
+        "Dice"
+      ],
+      "set": "Slice 'n Dice Set",
+      "tier": "Heroic",
+      "piece_requirement": 2,
+      "supported_quality_seeker": 1
+    },
+    {
+      "items": [
+        "Epic Slice",
+        "Epic Dice"
+      ],
+      "set": "Epic Slice 'n Dice Set",
+      "tier": "Epic",
+      "piece_requirement": 2,
+      "supported_quality_seeker": 2
+    }
+  ],
+  "unresolved": [
+    "Set-specific Sneak Attack wording does not specify dice, flat damage, or an accuracy-and-damage pair. The general Sneak attack article distinguishes these mechanics; Quality Deception explicitly affects hit and damage. That does not prove the set means Deception.",
+    "Same-name duplicate dagger activation is unverified. Preserve ability to equip copies and existing other-set membership; admit this set only for the explicitly documented distinct pair until evidence supports more.",
+    "Named item sets table has doubled bonus markup; clean template Seeker text is independently available. Parser-format problems do not justify inventing the disputed Sneak Attack mapping."
+  ],
+  "before": {
+    "pair": {
+      "Seeker": 3,
+      "Armor-Piercing": 15,
+      "Deception": 2
+    },
+    "Epic pair": {
+      "Seeker": 6,
+      "Armor-Piercing": 20,
+      "Deception": 6
+    }
+  },
+  "scope": "Exactly four memberships; verified Quality Seeker; ambiguous Sneak Attack and unsupported duplicate activation excluded and disclosed.",
+  "dataset_comparison": {
+    "changed_items": {
+      "Epic Slice": [
+        "affixes",
+        "eligible_affix_count",
+        "parsed_set_bonuses",
+        "set_bonus",
+        "sets"
+      ],
+      "Epic Dice": [
+        "affixes",
+        "eligible_affix_count",
+        "parsed_set_bonuses",
+        "set_bonus",
+        "sets"
+      ],
+      "Slice": [
+        "affixes",
+        "eligible_affix_count",
+        "parsed_set_bonuses",
+        "set_bonus",
+        "sets"
+      ],
+      "Dice": [
+        "affixes",
+        "eligible_affix_count",
+        "parsed_set_bonuses",
+        "set_bonus",
+        "sets"
+      ]
+    },
+    "added": [],
+    "removed": [],
+    "non_item_changed_keys": [
+      "metadata"
+    ]
+  },
+  "catalog_comparison": {
+    "catalog_sets": 282,
+    "changed_sets": [
+      "Epic Slice 'n Dice",
+      "Slice 'n Dice"
+    ],
+    "unchanged_sets": 280,
+    "no_names_added_or_removed": true
+  },
+  "candidate_build": "11012026.4"
+}

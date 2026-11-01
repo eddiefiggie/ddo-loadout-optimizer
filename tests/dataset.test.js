@@ -1293,7 +1293,7 @@ const KICK = "Kick 'Em While They're Down";
 // evidence). The ones below that LOOK named were checked and ruled OUT — do not
 // re-raise them:
 //   * `Greater Bane of the Unnatural`, all four `... Litany of the Crimson
-//     Covenant`, `Legendary Cooking By the Book`, `Epic Slice 'n Dice Set` —
+//     Covenant`, `Legendary Cooking By the Book` —
 //     no wiki page exists under the name (404); each is described only on its
 //     carrier's item page. (Bare `Cooking By the Book` is already suggested.)
 //   * `Embrace of the Spider Queen` — the page under that name is the ARMOR
@@ -1309,7 +1309,7 @@ const WORD_CAP_CASUALTIES = [
   "Choco-Bacon-Berry Dream Bar (Lasting Bear's Endurance and Lasting Bear's Stamina, 1 hour)",
   "Dark Chocolate 'Magma' Truffle (Lasting Haste, 3 minutes)",
   "Embrace of the Spider Queen",
-  "Epic Slice 'n Dice Set",
+  // #953: Epic Slice/Dice now carry real membership, not a Boolean effect.
   "Final Litany of the Crimson Covenant",
   "First Litany of the Crimson Covenant",
   "Greater Bane of the Unnatural",
