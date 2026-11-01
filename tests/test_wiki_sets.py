@@ -538,3 +538,35 @@ def test_dodge_and_missile_deflection_percent_lines_read_the_bare_catalog_name()
 def test_a_percent_line_to_an_unreviewed_bare_name_stays_quarantined():
     names = NAMES | DODGE | {"Assassinate"}
     assert "quarantine" in S.read_clause("+3% Artifact bonus to Assassinate", BONUS_TYPES, names)
+
+
+# --- #951: Assassinate difficulty-class wording ---------------------------------
+
+def test_assassinate_dcs_reads_the_flat_stat_and_preserves_value_and_bonus_type():
+    names = NAMES | {"Assassinate"}
+    for line, ty, value in (("+1 Artifact Bonus to Assassinate DCs", "Artifact", 1),
+                            ("+3 Artifact bonus to Assassinate DCs", "Artifact", 3),
+                            ("+2 Insight bonus to Assassinate DCs.", "Insight", 2)):
+        assert S.read_clause(line, BONUS_TYPES, names) == {
+            "affixes": [{"name": "Assassinate", "type": ty, "value": value}]}
+
+
+def test_subtle_blade_stated_bonus_reaches_exact_catalog_parity():
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    names = {a["name"] for tiers in catalog.values() for tier in tiers for a in tier["affixes"]}
+    # Named item sets rev 720202 and its template rev 723530 state this same line.
+    classification, detail = D.classify(
+        {3: ["+3 Artifact bonus to Assassinate DCs"]},
+        D.gp_tiers(catalog["Subtle Blade"]), names, "Subtle Blade")
+    assert classification == "exact", (classification, detail)
+
+
+def test_assassinate_dcs_does_not_admit_percentages_or_ambiguous_dc_phrases():
+    names = NAMES | {"Assassinate"}
+    for line in ("+3% Artifact bonus to Assassinate DCs",
+                 "+3 Artifact bonus to DCs",
+                 "+3 Artifact bonus to all Tactical DCs and Assassinate",
+                 "+3 Artifact bonus to Assassinate DCs against undead"):
+        assert "quarantine" in S.read_clause(line, BONUS_TYPES, names), line
+    assert "quarantine" in S.read_clause("+3 Artifact bonus to Assassinate DCs", BONUS_TYPES, NAMES)

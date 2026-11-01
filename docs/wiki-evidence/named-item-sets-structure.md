@@ -397,3 +397,31 @@ Heroic **Cooking by the Book**'s 4-piece line reads `+5% Legendary Bonus to Spel
 - **Exact sets:** template stays at 88, page stays at 30.
 - **Quarantined lines:** 135 to 128 (template), 43 to 41 (page).
 - **`ours-differs`:** stays at 1, and no other category count moves.
+
+## Assassinate difficulty-class wording (#951, 2026-10-31)
+
+`Assassinate DCs` reads as the flat catalog stat `Assassinate`, preserving the
+stated value and bonus type. `Template:Assassinate` rev **401923**, read through
+the wiki API in Chromium, renders Assassinate N as an "N ... bonus to the DC of
+character's Assassinate attempts." The reviewed `affix_synonyms_registry.json`
+already folds this exact phrase into `Assassinate`; the augment-set ruling also
+records Subtle Blade's +3 Artifact Assassinate DCs.
+
+This does not admit bare `DCs`, a percentage bonus, or the compound phrase
+`all Tactical DCs and Assassinate`. A target absent from the catalog remains
+quarantined, as does a phrase with an additional condition.
+
+Measured with `diff_harvest_sets.py pages-20261101-review --json`, comparing the
+same page rev 720202 and template rev 723530 before and after the mapping:
+
+- Template exact sets: **88 → 91**; partial: **89 → 86**. Minion of the Mockery,
+  Legendary Minion of the Mockery, and Subtle Blade become exact.
+- Page exact sets: **30 → 31**; partial: **28 → 27**. Subtle Blade becomes exact.
+- Quarantined clauses under stated thresholds: **128 → 125** (template),
+  **41 → 40** (page). Threshold-unstated sets are excluded from these clause counts.
+- `ours-differs` remains **1** (Legendary Vulkoor's Might). All disagreement and
+  upstream-stale records continue to reproduce.
+
+The new positive clause and Subtle Blade parity tests both fail against the
+pre-change tree. Negative tests retain the ambiguous/percent/missing-target
+boundaries. The source switch remains under #908; this is one family of #951.

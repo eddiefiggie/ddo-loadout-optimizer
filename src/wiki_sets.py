@@ -191,6 +191,11 @@ STAT_PHRASES = {
     # not say spell, and tactical DCs are DCs too.
     "Spell DCs": "Spell Focus Mastery",
     "all Spell DCs": "Spell Focus Mastery",
+    # Assassinate. Template:Assassinate rev 401923 renders Assassinate N as an
+    # "N ... bonus to the DC of character's Assassinate attempts". The reviewed
+    # synonym registry folds this exact set spelling into the same flat stat.
+    # Neither bare "DCs" nor a percentage denotes this specific bonus.
+    "Assassinate DCs": "Assassinate",
     # All ability scores. ddowiki `Template:Stat` rev 678248: its `well rounded`
     # case renders "... bonus to all abilities", and gear-planner's catalog carries
     # each of these set lines as `Well Rounded` at the same type and value. The
