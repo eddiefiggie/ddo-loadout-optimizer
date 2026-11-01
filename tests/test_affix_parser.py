@@ -44,6 +44,22 @@ def test_typed_leading_word():
     assert (a["stat"], a["bonus_type"], a["value"]) == ("Constitution", "Insightful", 4)
 
 
+def test_luck_keeps_its_type_in_explicit_numeric_clauses():
+    # Luck bonus rev 606272; Adamancy's +5 is explicit in set template rev 723530.
+    for line in ("+5 Luck bonus to Sheltering", "Luck Sheltering +5",
+                 "Sheltering +5 (Luck)"):
+        a = _one(line)
+        assert (a["stat"], a["bonus_type"], a["value"], a["unit"]) == (
+            "Sheltering", "Luck", 5, "flat"), line
+
+
+def test_luck_admission_does_not_peel_a_bare_stat_or_good_luck():
+    # Deliberate unchanged guards: a known type needs a following stat name.
+    for stat in ("Luck", "Good Luck"):
+        a = _one(f"{stat} +5")
+        assert (a["stat"], a["bonus_type"], a["value"]) == (stat, "Enhancement", 5)
+
+
 def test_non_type_leading_word_stays_in_stat():
     # "Physical" is not a bonus type — it is part of the stat name.
     a = _one("Physical Sheltering +24")

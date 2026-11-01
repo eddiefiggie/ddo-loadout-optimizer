@@ -10,6 +10,19 @@
 //   node tests/parity/capture_golden.js
 //
 // Ratifications:
+//   #951 (2026-11-01) — TWO fixtures improve when Unbreakable Adamancy's sourced
+//   two-piece Luck +5 PRR/MRR reaches the solver. Current code with the original
+//   dataset reproduces both old goldens exactly; all other data is unchanged.
+//     * endgame-tank-ml34: Constitution 37 and Fortification 283 unchanged;
+//       PRR 126 -> 131 is the new Luck +5. MRR 142 -> 146 is Luck +5 minus one
+//       Enhancement point (39 on the outgoing docent -> 38 from Viktranium).
+//       Epic Emerald Guard + Epic Emerald Gaze complete Adamancy.
+//     * endgame-dex-ml36: Dexterity 37 and Dodge 36 unchanged; PRR 136 -> 138
+//       is Luck +5 minus three Quality points (14 on the outgoing docent -> 11
+//       on Legendary Abyssal Compass). Epic Chain of Conviction + Epic Emerald
+//       Gaze complete Adamancy.
+//   The other 22 fixtures are identical. Only these two golden entries change.
+//
 //   #901 (2026-10-17) — ONE fixture moved: absorption-sonic-flag-ml26, Fire Absorption
 //   41 -> 38, loadout unchanged. The retired `Solar Gem of Elemental Absorption (Epic)`
 //   (+6 Artifact, a red link on the wiki: never released) was the ML26 augment; the

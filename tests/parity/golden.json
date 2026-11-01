@@ -150,24 +150,28 @@
    "status": "optimal",
    "perTarget": {
     "Constitution": 37,
-    "Physical Sheltering": 126,
-    "Magical Sheltering": 142,
+    "Physical Sheltering": 131,
+    "Magical Sheltering": 146,
     "Fortification": 283
    },
    "effective": {
     "Constitution": 37,
-    "Physical Sheltering": 126,
-    "Magical Sheltering": 142,
+    "Physical Sheltering": 131,
+    "Magical Sheltering": 146,
     "Fortification": 283
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Docent of the Artblade's Reflection"
+     "variant": "Epic Emerald Guard"
     },
     {
      "slot": "Belt",
      "variant": "Lindal's Mighty Belt"
+    },
+    {
+     "slot": "Boots",
+     "variant": "Legendary Deepsnow Boots"
     },
     {
      "slot": "Bracers",
@@ -187,7 +191,7 @@
     },
     {
      "slot": "Helmet",
-     "variant": "Malicia's Crown (level 12)"
+     "variant": "Epic Emerald Gaze"
     },
     {
      "slot": "Main Hand",
@@ -203,11 +207,15 @@
     },
     {
      "slot": "Ring",
+     "variant": "Legendary Nocturne Ring"
+    },
+    {
+     "slot": "Ring",
      "variant": "Ring of Shadows (level 23)"
     },
     {
      "slot": "Trinket",
-     "variant": "Symbol of the Slave Lords"
+     "variant": "Legendary Golden Souvenir Coin"
     }
    ]
   },
@@ -216,17 +224,17 @@
    "perTarget": {
     "Dexterity": 37,
     "Dodge": 36,
-    "Physical Sheltering": 136
+    "Physical Sheltering": 138
    },
    "effective": {
     "Dexterity": 37,
     "Dodge": 36,
-    "Physical Sheltering": 136
+    "Physical Sheltering": 138
    },
    "chosen": [
     {
      "slot": "Armor",
-     "variant": "Legendary Duergarcraft Docent"
+     "variant": "Epic Chain of Conviction"
     },
     {
      "slot": "Belt",
@@ -241,8 +249,12 @@
      "variant": "The Queen of Rot"
     },
     {
+     "slot": "Goggles",
+     "variant": "Legendary Doctor Gustav's Warped Lenses"
+    },
+    {
      "slot": "Helmet",
-     "variant": "Legendary Duergarcraft Cowl"
+     "variant": "Epic Emerald Gaze"
     },
     {
      "slot": "Main Hand",

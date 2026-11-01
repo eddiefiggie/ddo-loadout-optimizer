@@ -24,6 +24,10 @@ BONUS_TYPES = {
     # are legitimate DDO bonus types that also appear on other gear. "Insight" is
     # a distinct type from "Insightful" (both occur in-game), preserved verbatim.
     "Equipment", "Resistance", "Insight",
+    # Luck bonus rev 606272: highest of the same type, its own stacking bucket.
+    # Adamancy's two-piece +5 PRR/MRR: Template:Named item sets rev 723530.
+    # Shared-consumer audit and source evidence: docs/wiki-evidence/adamancy-luck.md.
+    "Luck",
 }
 # Tokens inside a trailing "(A/B)" that we expand to multiple stats.
 MULTI_STAT_TOKENS = {"PRR", "MRR"}

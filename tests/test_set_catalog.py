@@ -35,6 +35,20 @@ def test_catalog_def_round_trips_through_set_parser():
     assert not tier["flagged"], f"no clause should flag for a clean set: {tier['flagged']}"
 
 
+def test_adamancy_luck_round_trips_from_the_real_catalog():
+    # Source: Template:Named item sets rev 723530, rechecked 2026-11-01.
+    entry = _catalog()["Unbreakable Adamancy"]
+    assert entry["set_bonus"] is not None, entry["flagged"]
+    assert entry["flagged"] == []
+    tiers = set_parser.parse_set_bonuses([entry["set_bonus"]])
+    assert len(tiers) == 1
+    tier = tiers[0]
+    assert tier["pieces_required"] == 2
+    assert tier["flagged"] == []
+    assert [(a["stat"], a["bonus_type"], a["value"], a["unit"])
+            for a in tier["affixes"]] == [("Sheltering", "Luck", 5, "flat")]
+
+
 def test_unknown_bonus_type_is_flagged_not_minted():
     # The provenance gate (KTD5): an unknown type must be flagged, never folded into
     # the stat as a bogus 'Deflection bonus to Armor Class'.
