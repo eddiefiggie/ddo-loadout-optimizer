@@ -653,3 +653,53 @@ all 74 set-reader tests pass after the change. Removing any one of the three
 preface checks (entry identity, exact sentence, following count prefix) makes
 the boundary test fail. Fixtures quote the checked wiki paragraphs and preserve
 the remaining bonus prose; no count comes from counting listed items.
+
+
+## Explicit counts with unsupported activation conditions (#952, 2026-11-01)
+
+Checked directly through the DDO Wiki API in Chromium:
+[Template:Named item sets, revision 723530](https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530).
+The exact opening statements are:
+
+> While wearing both an Elemental Evil Set Item weapon and an Elemental Evil Set Item armor, you gain:
+
+> When all three item from the set are equipped and you are in a centered state, you will gain
+
+The first is the **Epic Elemental Evil Set** entry and explicitly says **both**;
+the second is **Way of the Sun Soul** and explicitly says **all three**. The
+reader records 2 and 3 respectively. It does not count item links or named
+pieces to derive either number.
+
+A count alone does not establish that the set is active. Epic Elemental Evil
+requires a weapon **and** armor; Way of the Sun Soul additionally requires the
+centered state and describes further conditional effects. These requirements
+are not converted into an ordinary "any N pieces" rule.
+
+For each exact entry/prefix pair, the **entire raw entry** is retained as one
+quarantined clause under the stated count. In particular, the three normally
+readable +20 Quality bonuses after Epic Elemental Evil's heading remain attached
+to the requirement, so none is returned as an unconditional affix. A different
+entry, changed count wording, or an added preface leaves the count unread.
+Production set definitions and activation behavior are unchanged. Condition
+modeling remains work under #952/#908.
+
+Against `3ae6e8a`, using page rev 720202/template rev 723530:
+
+- Epic Elemental Evil moves from `threshold-unstated` to `partial`, with its
+  entire conditional entry quarantined. Template threshold-unstated becomes
+  **45** (from 46), and partial becomes **107** (from 106).
+- Template exact stays **110**, ours-differs stays **6**, page classifications
+  are unchanged, and recorded exceptions still reproduce.
+- Way of the Sun Soul's stated count **3** is recorded separately because the
+  set is outside the 282-set catalog population. Its entire entry stays unread.
+
+[The conditional-count report](../reports/2026-11-01-conditional-set-counts.json)
+records the transition and retained condition text. Across PR #973, 45 previously
+unresolved template sets now have known counts: 16 exact, 24 partial, and five
+exposing comparison differences. This is count coverage, not permission to
+credit their unresolved effects.
+
+Both new behavioral tests fail against the pre-change tree (`3ae6e8a`); all 77
+set-reader tests pass afterward. Mutations that split off and admit the +20
+bonuses, remove the entry-identity check, or remove the exact-prefix check each
+make the corresponding guard test fail.

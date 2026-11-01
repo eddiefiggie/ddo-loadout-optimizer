@@ -840,3 +840,57 @@ def test_unreviewed_worded_counts_and_conditions_remain_unread():
             "When four items from this set are equipped, you gain a +5 Luck bonus to PRR and MRR.",
             "4 Item Set Bonus: [[Feather Falling]]", "*2 Item version while raging: {{Underwater Action}}"):
         assert S._tiers_from_lines([raw]) == {None: [raw]}, raw
+
+
+# Explicit counts with additional activation requirements, quoted from:
+# https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530
+CONDITIONAL_REQUIREMENT_FIXTURES = {'epic elemental evil set': 'While wearing both an Elemental Evil Set Item weapon and an Elemental '
+                            'Evil Set Item armor, you gain:<br />+20 [[Quality bonus]] to Melee '
+                            'Power<br />+20 [[Quality bonus]] to Ranged Power<br />+20 [[Quality '
+                            'bonus]] to Universal Spell Power',
+ 'way of the sun soul': 'When all three item from the set are equipped and you are in a centered '
+                        'state, you will gain +2 [[artifact bonus]] to To-Hit and Damage rolls. In '
+                        'addition, when you roll a natural 20 on an attack roll that is confirmed '
+                        'as a critical hit, you will gain temporary benefit based on the elemental '
+                        'stance you are in, if any.'}
+
+
+def test_conditional_count_keeps_the_entire_requirement_and_bonus_block():
+    for name, count in (("epic elemental evil set", 2), ("way of the sun soul", 3)):
+        raw = CONDITIONAL_REQUIREMENT_FIXTURES[name]
+        entry = _worded_count_entry(name, raw)
+        assert entry["raw"] == raw
+        assert entry["tiers"] == {count: [raw]}
+        assert "quarantine" in S.read_clause(raw, BONUS_TYPES, NAMES)
+
+
+def test_conditional_count_does_not_make_readable_following_bonuses_unconditional():
+    raw = CONDITIONAL_REQUIREMENT_FIXTURES["epic elemental evil set"]
+    names = {"Melee Power", "Ranged Power", "Universal Spell Power"}
+    # Premise: these bonuses would be read if separated from the equip condition.
+    bonus_lines = raw.split("<br />")[1:]
+    assert len(bonus_lines) == 3
+    assert all("affixes" in S.read_clause(line, BONUS_TYPES, names) for line in bonus_lines)
+    entry = _worded_count_entry("epic elemental evil set", raw)
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    classification, detail = D.classify(entry["tiers"], D.gp_tiers(catalog["Epic Elemental Evil Set"]), names)
+    assert classification == "partial", (classification, detail)
+    assert len(detail["quarantined"]) == 1
+    assert detail["quarantined"][0]["threshold"] == 2
+    assert detail["quarantined"][0]["line"] == S.plain(raw)
+    assert all("affixes" not in S.read_clause(line, BONUS_TYPES, names)
+               for line in entry["tiers"][2])
+
+
+def test_unreviewed_conditional_count_wording_or_entry_is_not_assumed():
+    # Deliberate unchanged boundaries: only the reviewed entry/prefix pairs have
+    # a known count. Never invent one by counting the mentioned equipment.
+    evil = CONDITIONAL_REQUIREMENT_FIXTURES["epic elemental evil set"]
+    sun = CONDITIONAL_REQUIREMENT_FIXTURES["way of the sun soul"]
+    for name, raw in (
+            ("different set", evil),
+            ("epic elemental evil set", evil.replace("both an", "either an", 1)),
+            ("epic elemental evil set", "Another condition. " + evil),
+            ("way of the sun soul", sun.replace("all three item", "all four item", 1))):
+        assert None in _worded_count_entry(name, raw)["tiers"], (name, raw)

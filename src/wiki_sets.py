@@ -197,6 +197,18 @@ def _numeric_prose_pair(raw: str):
     return two.strip(), three.strip()
 
 
+# Template:Named item sets rev 723530 explicitly states these counts AND extra
+# activation requirements. Keep the WHOLE entry as one unread clause: splitting
+# off its ordinary numeric bonuses would silently drop the equip/state condition.
+# https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530
+CONDITIONAL_SET_COUNTS = {
+    "epic elemental evil set": (
+        "While wearing both an Elemental Evil Set Item weapon and an Elemental Evil Set Item armor, you gain:", 2),
+    "way of the sun soul": (
+        "When all three item from the set are equipped and you are in a centered state, you will gain ", 3),
+}
+
+
 def _tiers_from_lines(lines) -> dict:
     """Bonus lines -> {threshold: [line, ...]}; unreviewed prefaces stay under None."""
     tiers, cur = {}, None
@@ -244,6 +256,10 @@ def template_sets(wikitext: str) -> dict:
         m = _VARDEFINE_RE.search(value)
         name = m.group(1).strip() if m else None
         value = _VARDEFINE_RE.sub("", value).strip()
+        conditional = CONDITIONAL_SET_COUNTS.get(key)
+        if conditional and value.startswith(conditional[0]):
+            out[key] = {"name": name, "tiers": {conditional[1]: [value]}, "raw": value}
+            continue
         lines = re.split(r"<br\s*/?>|</?li[^>]*>|\n", value)
         # Rev 723530's Adamancy entry has this redundant membership sentence
         # immediately before its explicit two-item count. Keep the raw source,
