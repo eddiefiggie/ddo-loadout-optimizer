@@ -554,8 +554,33 @@ def read_clause(line: str, bonus_types, stat_names) -> dict:
     return {"affixes": [{"name": n, "type": ty, "value": value} for n in names]}
 
 
+def _cell_rowspan(cell: str) -> int:
+    match = re.match(r'rowspan="(\d+)"\|', cell.lstrip())
+    return int(match.group(1)) if match else 1
+
+
+def _two_row_bonus_continuation(cells, anchors, next_row):
+    """The reviewed note/bonus layout in Named item sets rev 720202 (Archmage).
+
+    The anchored name spans two rows, the note spans the item/bonus columns,
+    and the next row supplies those two cells. This is table geometry, never an
+    equipped-piece count. Other spanning layouts remain unread.
+    """
+    if (len(cells) < 2 or len(anchors) != 1
+            or _cell_rowspan(cells[-2]) != 2
+            or _ANCHOR_RE.findall(cells[-2]) != anchors
+            or not cells[-1].lstrip().startswith('colspan="2"|')
+            or any(_cell_rowspan(cell) < 2 for cell in cells[:-2])
+            or _ANCHOR_RE.search(next_row)):
+        return None
+    following = _row_cells(next_row)
+    if len(following) != 2 or any(re.match(r'(?:rowspan|colspan)=', c.lstrip()) for c in following):
+        return None
+    return following[-1]
+
+
 def page_sets(wikitext: str) -> list:
-    """`Named item sets` -> one record per (row, tier).
+    """`Named item sets` -> one record per (anchored row group, tier).
 
     Each record: {anchors, section, tier, tiers, raw}. `tier` is None for a row with
     no HELstats; otherwise each tier the row's HELstats render gets its own record,
@@ -568,13 +593,20 @@ def page_sets(wikitext: str) -> list:
         if block.startswith("=="):
             section = plain(block.strip("= "))
             continue
-        for row in re.split(r"\n\|-[^\n]*", block)[1:]:
-            row = row.split("\n|}")[0]
+        rows = re.split(r"\n\|-[^\n]*", block)[1:]
+        for index, row_chunk in enumerate(rows):
+            row = row_chunk.split("\n|}")[0]
             anchors = [a.strip() for a in _ANCHOR_RE.findall(row)]
             if not anchors:
                 continue
             cells = _row_cells(row)
-            bonus = _CELL_STYLE_RE.sub("", cells[-1] if cells else "")
+            bonus = cells[-1] if cells else ""
+            if index + 1 < len(rows) and "\n|}" not in row_chunk:
+                continuation = _two_row_bonus_continuation(
+                    cells, anchors, rows[index + 1].split("\n|}")[0])
+                if continuation is not None:
+                    bonus += "\n" + continuation
+            bonus = _CELL_STYLE_RE.sub("", bonus)
             lines = bonus.split("\n")
             tiers = helstats_tiers(bonus)
             for tier in tiers or [None]:

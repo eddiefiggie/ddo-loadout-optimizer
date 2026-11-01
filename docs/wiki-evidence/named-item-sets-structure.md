@@ -703,3 +703,37 @@ Both new behavioral tests fail against the pre-change tree (`3ae6e8a`); all 77
 set-reader tests pass afterward. Mutations that split off and admit the +20
 bonuses, remove the entry-identity check, or remove the exact-prefix check each
 make the corresponding guard test fail.
+
+
+## Archmage's continued bonus row (#952, 2026-11-01)
+
+Checked the wikitext and rendered table directly on the DDO Wiki:
+[Named item sets, revision 720202](https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202).
+Archmage's name cell has `rowspan="2"`. Its first row holds an explanatory note
+spanning the item and bonus columns; the second row holds the items and:
+
+> +1% Artifact bonus to Spell Critical Chance
+
+The reader previously retained only the note. It now retains the note and the
+following bonus cell together when this reviewed layout matches: one anchor in
+the two-row name cell, a two-column note, preceding cells that span the next
+row, and exactly two ordinary continuation cells with no new anchor. A table
+boundary stops continuation. The item cell is excluded, and the next named
+set, Pale Master, stays separate. Unsupported layouts remain unread.
+
+**The table's two-row span does not state an equipped-piece requirement.** No
+count is derived from it or from the two listed items. Archmage remains
+`threshold-unstated`; the explanatory restriction is preserved, and the
+recovered bonus does not become usable. Production set definitions are unchanged.
+
+Against `a8a2dfe`, all classification totals for the 282 catalog sets are
+unchanged: template threshold-unstated **45**, page threshold-unstated **50**.
+Only Archmage's page comparison detail changes, gaining the actual bonus line.
+Recorded exceptions still reproduce. The
+[row-association report](../reports/2026-11-01-archmage-row-association.json)
+records the rendered cells and before/after comparison.
+
+Both new behavioral tests fail on the pre-change tree; all **80** set-reader
+tests pass after the change. Removing any of seven guards (anchored span,
+anchor ownership, note span, preceding spans, new-anchor boundary, table
+boundary, continuation-cell layout) makes the rejection test fail.

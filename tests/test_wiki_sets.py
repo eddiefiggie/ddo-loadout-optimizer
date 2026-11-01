@@ -894,3 +894,78 @@ def test_unreviewed_conditional_count_wording_or_entry_is_not_assumed():
             ("epic elemental evil set", "Another condition. " + evil),
             ("way of the sun soul", sun.replace("all three item", "all four item", 1))):
         assert None in _worded_count_entry(name, raw)["tiers"], (name, raw)
+
+
+# Named item sets rev 720202: Archmage's anchored cell explicitly spans two rows.
+# https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202
+ARCHMAGE_ROWSPAN_PAGE = """== Prestige Enhancements sets ==
+{| class="wikitable"
+|-
+|rowspan="4"|[[Wizard]]
+|rowspan="2"|{{Anchor|Archmage}}'''Archmage'''
+|colspan="2"|''Note: The set bonuses of % chance to Spell Critical and Critical Damage Multiplier for the Archmage prestige set does '''not''' stack with [[Lore]] bonuses, but that they are two separate bonuses (e.g. One could use an item with Greater Arcane Lore for +9% Chance to Critical, and the set bonus effect for +0.50 Critical Damage Multiplier, effectively having Major Arcane Lore.)
+|-
+|
+* {{Item|Rahkir's Sash}} - [[Belt]]
+* {{Item|Rahkir's Ring}} - [[Ring]]
+|{{Artifact}}
+* +1% Artifact bonus to Spell Critical Chance
+|-
+|{{Anchor|Pale Master}}'''Pale Master'''
+|
+* {{Item|Eerie Belt}} - [[Belt]]
+* {{Item|Sanura's Band}} - [[Ring]]
+|
+* {{SpellPower|Nullification|78}}
+* ''If have Pale Master III Enhancement:'' {{SpellPower|Nullification|90}}
+|-
+|{{Anchor|Wild Mage}}'''Wild Mage'''
+|
+* {{Item|Kormor's Belt}} - [[Belt]]
+* {{Item|Kormor's Ring}} - [[Ring]]
+|
+* Your 8th level spells and spells lower than 8th level gain a +2 bonus to the die roll to [[Spell penetration|penetrate]] the target's Spell resistance. (Non-stacking)
+|}"""
+
+
+def test_archmage_rowspan_keeps_the_note_and_recovers_its_following_bonus_cell():
+    rows = S.page_sets(ARCHMAGE_ROWSPAN_PAGE)
+    entry = next(r for r in rows if r["anchors"] == ["Archmage"])
+    assert "Critical Damage Multiplier" in entry["raw"]  # Preserve the explanatory restriction.
+    assert "* +1% Artifact bonus to Spell Critical Chance" in entry["raw"]
+    assert "{{Item|Rahkir's Sash}}" not in entry["raw"]  # The items cell is not a bonus.
+    assert "Nullification" not in entry["raw"]  # The next named set is separate.
+    assert list(entry["tiers"]) == [None]  # rowspan=2 is NOT an equipped-piece requirement.
+    assert len(rows) == 3
+    pale = next(r for r in rows if r["anchors"] == ["Pale Master"])
+    assert "{{SpellPower|Nullification|78}}" in pale["raw"]
+    assert "+1% Artifact" not in pale["raw"]
+
+
+def test_archmage_recovered_bonus_does_not_establish_an_activation_count():
+    entry = next(r for r in S.page_sets(ARCHMAGE_ROWSPAN_PAGE) if r["anchors"] == ["Archmage"])
+    with open(D.GP_SETS, encoding="utf-8") as fh:
+        catalog = json.load(fh)
+    classification, detail = D.classify(entry["tiers"], D.gp_tiers(catalog["Archmage"]), NAMES)
+    assert classification == "threshold-unstated", (classification, detail)
+    assert "+1% Artifact bonus to Spell Critical Chance" in detail["lines"]
+    assert len(detail["lines"]) == 2  # Note and actual bonus are both present.
+
+
+def test_rowspan_continuation_requires_the_reviewed_layout_and_same_table():
+    # Deliberate unchanged boundaries: an adjacent row alone is not evidence
+    # that its bonus belongs to the previous anchor.
+    continuation = "|\n* {{Item|Rahkir's Sash}}"
+    for page in (
+            ARCHMAGE_ROWSPAN_PAGE.replace('rowspan="2"|{{Anchor|Archmage}}', '{{Anchor|Archmage}}'),
+            ARCHMAGE_ROWSPAN_PAGE.replace('rowspan="2"|{{Anchor|Archmage}}', 'rowspan="3"|{{Anchor|Archmage}}'),
+            ARCHMAGE_ROWSPAN_PAGE.replace('rowspan="4"|[[Wizard]]', '[[Wizard]]'),
+            ARCHMAGE_ROWSPAN_PAGE.replace('colspan="2"|', 'colspan="3"|', 1),
+            ARCHMAGE_ROWSPAN_PAGE.replace('rowspan="2"|{{Anchor|Archmage}}', 'rowspan="2"|')
+                .replace('rowspan="4"|[[Wizard]]', 'rowspan="4"|{{Anchor|Archmage}}[[Wizard]]'),
+            ARCHMAGE_ROWSPAN_PAGE.replace('|{{Artifact}}', '|colspan="2"|{{Artifact}}', 1),
+            ARCHMAGE_ROWSPAN_PAGE.replace('|{{Artifact}}', '|Extra cell\n|{{Artifact}}', 1),
+            ARCHMAGE_ROWSPAN_PAGE.replace(continuation, "|{{Anchor|Different set}}\n* {{Item|Rahkir's Sash}}", 1),
+            ARCHMAGE_ROWSPAN_PAGE.replace('\n|-\n'+continuation, '\n|}\n{|class="wikitable"\n|-\n'+continuation, 1)):
+        entry = next(r for r in S.page_sets(page) if r["anchors"] == ["Archmage"])
+        assert "* +1% Artifact bonus to Spell Critical Chance" not in entry["raw"]

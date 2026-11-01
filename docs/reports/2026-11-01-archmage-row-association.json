@@ -1,0 +1,125 @@
+{
+  "baseline_commit": "a8a2dfe60530189f7bc3318906b9444a88c0170f",
+  "wiki_citation": "https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202",
+  "wiki_checked_date": "2026-11-01",
+  "harvest_revids": {
+    "Named item sets": 720202,
+    "Template:Named item sets": 723530
+  },
+  "population": "282 gear-planner catalog sets; each source compared independently",
+  "rendered_evidence": {
+    "url": "https://ddowiki.com/page/Named_item_sets",
+    "revision": 720202,
+    "anchorCellRowSpan": 2,
+    "currentCells": [
+      {
+        "rowSpan": 4,
+        "colSpan": 1,
+        "text": "Wizard"
+      },
+      {
+        "rowSpan": 2,
+        "colSpan": 1,
+        "text": "Archmage"
+      },
+      {
+        "rowSpan": 1,
+        "colSpan": 2,
+        "text": "Note: The set bonuses of\u00a0% chance to Spell Critical and Critical Damage Multiplier for the Archmage prestige set does not stack with Lore bonuses, but that they are two separate bonuses (e.g. One could use an item with Greater Arcane Lore for +9% Chance to Critical, and the set bonus effect for +0.50 Critical Damage Multiplier, effectively having Major Arcane Lore.)"
+      }
+    ],
+    "nextCells": [
+      {
+        "rowSpan": 1,
+        "colSpan": 1,
+        "text": "Rahkir's Sash - Belt\nRahkir's Ring - Ring"
+      },
+      {
+        "rowSpan": 1,
+        "colSpan": 1,
+        "text": "+1% Artifact bonus to Spell Critical Chance"
+      }
+    ],
+    "followingRowText": "Pale Master\t\nEerie Belt - Belt\nSanura's Band - Ring\n\t\nNullification +78\nIf have Pale Master III Enhancement: Nullification +90"
+  },
+  "counts_before": {
+    "template": {
+      "exact": 110,
+      "threshold-unstated": 45,
+      "partial": 107,
+      "ours-differs": 6,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 50,
+      "exact": 31,
+      "partial": 28,
+      "upstream-stale": 1
+    }
+  },
+  "counts_after": {
+    "template": {
+      "exact": 110,
+      "threshold-unstated": 45,
+      "partial": 107,
+      "ours-differs": 6,
+      "wiki-disagrees": 4,
+      "no-wiki-name": 9,
+      "upstream-stale": 1
+    },
+    "page": {
+      "no-wiki-name": 172,
+      "threshold-unstated": 50,
+      "exact": 31,
+      "partial": 28,
+      "upstream-stale": 1
+    }
+  },
+  "changed_sets": {
+    "Archmage": {
+      "before": {
+        "template": {
+          "class": "partial",
+          "quarantined": [
+            {
+              "threshold": 2,
+              "line": "+1% Artifact bonus to your Critical Chance with all spells.",
+              "reason": "stat phrase not in the vocabulary: 'Critical Chance with all spells (%)'"
+            }
+          ]
+        },
+        "page": {
+          "class": "threshold-unstated",
+          "lines": [
+            "colspan=\"2\"|Note: The set bonuses of % chance to Spell Critical and Critical Damage Multiplier for the Archmage prestige set does not stack with Lore bonuses, but that they are two separate bonuses (e.g. One could use an item with Greater Arcane Lore for +9% Chance to Critical, and the set bonus effect for +0.50 Critical Damage Multiplier, effectively having Major Arcane Lore.)"
+          ]
+        }
+      },
+      "after": {
+        "template": {
+          "class": "partial",
+          "quarantined": [
+            {
+              "threshold": 2,
+              "line": "+1% Artifact bonus to your Critical Chance with all spells.",
+              "reason": "stat phrase not in the vocabulary: 'Critical Chance with all spells (%)'"
+            }
+          ]
+        },
+        "page": {
+          "class": "threshold-unstated",
+          "lines": [
+            "colspan=\"2\"|Note: The set bonuses of % chance to Spell Critical and Critical Damage Multiplier for the Archmage prestige set does not stack with Lore bonuses, but that they are two separate bonuses (e.g. One could use an item with Greater Arcane Lore for +9% Chance to Critical, and the set bonus effect for +0.50 Critical Damage Multiplier, effectively having Major Arcane Lore.)",
+            "+1% Artifact bonus to Spell Critical Chance"
+          ]
+        }
+      }
+    }
+  },
+  "interpretation": "The rowspan is table geometry, not an equipped-piece count. The note and bonus are retained together; Archmage remains threshold-unstated.",
+  "stale_disagreement_records": [],
+  "stale_upstream_records": []
+}
