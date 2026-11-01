@@ -793,10 +793,12 @@ def test_adamancy_exact_preface_and_count_reach_parity_without_bypassing_type_ch
         catalog = json.load(fh)
     classification, detail = D.classify(entry["tiers"], D.gp_tiers(catalog["Unbreakable Adamancy"]),
                                         {"Physical Sheltering", "Magical Sheltering"})
-    assert classification == "partial", (classification, detail)
-    assert detail["quarantined"] == [{
-        "threshold": 2, "line": "+5 Luck bonus to PRR and MRR.",
-        "reason": "unknown bonus type 'Luck'"}]
+    assert classification == "exact", (classification, detail)
+    assert detail == {}
+    # An unknown type is still rejected; recognizing the count grants no type.
+    unread = S.read_clause("+5 Imaginary bonus to PRR and MRR.", BONUS_TYPES,
+                           {"Physical Sheltering", "Magical Sheltering"})
+    assert unread == {"quarantine": "unknown bonus type 'Imaginary'"}
 
 
 def test_risk_and_reward_states_two_but_its_effect_remains_quarantined():
