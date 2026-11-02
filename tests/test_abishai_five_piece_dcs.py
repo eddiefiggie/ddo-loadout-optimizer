@@ -185,10 +185,12 @@ def test_catalog_disagreement_is_exposed_rather_than_used_to_choose_wiki_value()
 
 def test_unrelated_clauses_and_page_name_reconciliation_are_preserved():
     pages, catalog = fixture()
-    # The Legendary healing wording and multi-tier identity gate stay unresolved.
+    # Amplification has its own scoped ruling; multi-tier page identity is separate.
     _, report = invoke(pages, catalog)
     rec = report['sets'][NAMES[2]]['template']
-    assert len([q for q in rec['quarantined'] if 'Heal Amp (all types)' in q['line']]) == 2
+    assert [a['threshold'] for a in rec['amplification_rulings']] == [3, 5]
+    assert not [q for q in rec['quarantined'] if 'Heal Amp (all types)' in q['line']]
+    assert [q['threshold'] for q in rec['quarantined'] if 'DCs' in q['line']] == [3]
     assert all(report['sets'][n]['page'] == {'class': 'no-wiki-name'} for n in NAMES)
     assert report['sets']['Wayward Warrior']['template'] == {'class': 'exact'}
     assert report['sets']['Wayward Warrior (Legendary)']['template'] == {'class': 'exact'}

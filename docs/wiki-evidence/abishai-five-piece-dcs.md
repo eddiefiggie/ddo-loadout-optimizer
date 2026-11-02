@@ -82,7 +82,9 @@ readings and makes either CLI format exit nonzero. The complete-source
 revision/hash guard still catches wider source drift.
 
 All three three-piece DC clauses remain quarantined. The Legendary Heal Amp
-phrases remain unread. The multi-tier page-name matching gap remains separate
+phrases were unread at this ruling; their separately guarded interpretation is
+now recorded in [abishai-amplification.md](abishai-amplification.md).
+The multi-tier page-name matching gap remains separate
 under #953; this ruling does not install a general HELstats identity rule.
 Thus no set changes comparison category: template exact/partial remain 114/106,
 and only three five-piece DC quarantines disappear. The other 279 catalog sets,
