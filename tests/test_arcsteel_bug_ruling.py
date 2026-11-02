@@ -7,7 +7,7 @@ import io
 import json
 import os
 import tempfile
-from natural_armor_fixture import catalog_rows
+from natural_armor_fixture import catalog_rows, with_abishai_sources
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _spec = importlib.util.spec_from_file_location('arcsteel_diff', os.path.join(ROOT, 'scripts', 'diff_harvest_sets.py'))
@@ -33,6 +33,9 @@ TEMPLATE = """<onlyinclude>{{#switch:{{lc:{{{1|unknown}}}}}
 | epic double helix set = While wearing both items from the Epic Double Helix Set, you gain: +4 [[Insight bonus|Insightful]] bonus to [[Sheltering]]
 | #default = Undefined set
 }}</onlyinclude>"""
+
+
+PAGE, TEMPLATE = with_abishai_sources(PAGE, TEMPLATE)
 
 
 def fixture():

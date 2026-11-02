@@ -19,7 +19,8 @@ _spec.loader.exec_module(D)
 
 def sources():
     template = '<onlyinclude>{{#switch:{{lc:{{{1|unknown}}}}}\n' + '\n'.join(
-        '| ' + n.lower() + ' = ' + text for n, text in FIXTURE['template_bodies'].items()) + '\n| #default = Undefined set\n}}</onlyinclude>'
+        '| ' + n.lower() + ' = {{#vardefine:set|' + n + '}}' + text
+        for n, text in FIXTURE['template_bodies'].items()) + '\n| #default = Undefined set\n}}</onlyinclude>'
     page = '== Reviewed sets ==\n{|class="wikitable"\n' + '\n'.join(
         '|-\n|' + ''.join('{{Anchor|' + a + '}}' for a in r['anchors']) + '\n|Items omitted\n|' + r['raw']
         for r in FIXTURE['page_bodies']) + '\n|}'
