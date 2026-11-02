@@ -38,6 +38,7 @@ import collections
 import hashlib
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -246,13 +247,82 @@ def _upstream_stale(set_name, th, affix, gp, records):
                  and gp.get(th, {}).get((name, ty, u["gear_planner"]))), None)
 
 
+# #951 — the page's spell-only note is attached to FIVE pieces, not three.
+# These tuples reject source drift; values read by the comparison still come
+# from the template clause. No production reader imports this script.
+# Direct captures: 2026-11-01 22:07 UTC, page 720202 / template 723530.
+# Fresh access was challenged at 23:52 UTC; see abishai-five-piece-dcs.md.
+ABISHAI_DCS = {
+    "Might of the Abishai": ("Heroic", 1, 2),
+    "Epic Might of the Abishai": ("Epic", 2, 2),
+    "Legendary Might of the Abishai": ("Legendary", 2, 3),
+}
+ABISHAI_NOTE = "(Note: Tactical DCs are not affected, only Spell DCs)"
+
+
+def abishai_dc_review(pages, template_entries, page_rows, gp_sets):
+    """Verify all three named five-piece contexts before admitting any of them.
+
+    The three-piece lines are checked for context drift, never interpreted.
+    A missing/empty population is a failed review. Full-page hashes are also
+    checked by count_review_status; this guard independently checks the ruling.
+    """
+    review = {"complete": False, "reviewed_clauses": 3, "verified": [], "errors": []}
+    review["evidence"] = {
+        "page": "https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202",
+        "template": "https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530",
+        "captured_at_utc": {"page": "2026-11-01T22:07:07.452869+00:00",
+                            "template": "2026-11-01T22:07:09.432316+00:00"},
+        "scope": "Five-piece Spell DCs only; tactical DCs excluded",
+        "note": ABISHAI_NOTE,
+        "freshness": "Retained direct captures; fresh access challenged 2026-11-01 23:52 UTC",
+    }
+    for title, revision in ((PAGE, 720202), (TEMPLATE, 723530)):
+        if pages[title].get("revid") != revision:
+            review["errors"].append(f"{title}: Abishai source revision changed")
+
+    def dc_lines(tiers):
+        return {th: lines for th, raw in tiers.items()
+                if (lines := [S.plain(x) for x in raw if re.search(r"\bDCs\b", S.plain(x))])}
+
+    named_rows = [r for r in page_rows if set(r["anchors"]) & ABISHAI_DCS.keys()]
+    if len(named_rows) != 3:
+        review["errors"].append("Abishai page must have exactly three tier records")
+    for name, (tier, three, five) in ABISHAI_DCS.items():
+        errors = []
+        if name not in gp_sets:
+            errors.append("catalog identity is missing")
+        entry = template_entries.get(name.lower(), {})
+        keys = re.findall(r"(?mi)^\s*\|\s*" + re.escape(name) + r"\s*=", pages[TEMPLATE]["wikitext"])
+        expected_template = {3: [f"+{three} Profane bonus to DCs"],
+                             5: [f"+{five} Profane bonus to DCs"]}
+        if (len(keys) != 1 or entry.get("name") != name
+                or set(entry.get("tiers", {})) != {3, 5}
+                or dc_lines(entry.get("tiers", {})) != expected_template):
+            errors.append("exact template identity, thresholds or DC clauses changed")
+        rows = [r for r in named_rows if r["tier"] == tier]
+        expected_page = {3: [f"+{three} Profane bonus to DCs."],
+                         5: [f"+{five} Profane bonus to DCs {ABISHAI_NOTE}"]}
+        if (len(rows) != 1 or rows[0]["anchors"] != list(ABISHAI_DCS)
+                or set(rows[0]["tiers"]) - {None} != {3, 5}
+                or dc_lines(rows[0]["tiers"]) != expected_page):
+            errors.append("exact five-piece page note, tier, identities or DC clauses changed")
+        if errors:
+            review["errors"].extend(f"{name}: {e}" for e in errors)
+        else:
+            review["verified"].append({"set": name, "tier": tier, "threshold": 5,
+                                       "line": expected_template[5][0]})
+    review["complete"] = not review["errors"] and len(review["verified"]) == 3
+    return review
+
+
 def _disagreement(set_name, th, affix, records):
     name, _, value = affix
     return next((d for d in records if (d["set"], d["threshold"], d["name"], d["template"]) == (set_name, th, name, value)), None)
 
 
 def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreements=(),
-             upstream=()) -> tuple[str, dict]:
+             upstream=(), clause_rulings=()) -> tuple[str, dict]:
     """One source's {threshold: [lines]} against gear-planner's tiers -> (class, detail).
 
     An extra affix that matches a recorded `WIKI_DISAGREEMENTS` entry is a wiki
@@ -263,11 +333,21 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
         return "threshold-unstated", {"lines": [S.plain(x) for x in wiki_tiers[None]]}
     if set(wiki_tiers) != set(gp):
         return "threshold-differs", {"wiki": sorted(wiki_tiers), "gear-planner": sorted(k for k in gp if k is not None)}
-    quarantined, extra = [], []
+    quarantined, extra, applied = [], [], []
     for th, lines in wiki_tiers.items():
         read = collections.Counter()
         for line in lines:
             r = S.read_clause(line, BONUS_TYPES, stat_names)
+            # Only a complete cross-source review can supply these exact keys.
+            # Reuse the existing explicit Spell DCs reader and its vocabulary
+            # gate; never add a global meaning for the bare word DCs.
+            ruling = next((x for x in clause_rulings if x["set"] == set_name
+                           and x["threshold"] == th and x["line"] == S.plain(line)), None)
+            if ruling is not None:
+                r = S.read_clause(S.plain(line).removesuffix("DCs") + "Spell DCs", BONUS_TYPES, stat_names)
+                if "affixes" in r:
+                    applied.append({"threshold": th, "line": S.plain(line),
+                                    "scope": "Spell DCs only; tactical DCs excluded"})
             if "affixes" in r:
                 for a in r["affixes"]:
                     read.update(comparison_affixes(a))
@@ -278,14 +358,15 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
     extra = [e for e in extra if e not in known]
     stale_gp = [e for e in extra if _upstream_stale(set_name, e["threshold"], e["affix"], gp, upstream)]
     extra = [e for e in extra if e not in stale_gp]
+    ruling_detail = {"spell_dc_rulings": applied} if applied else {}
     if extra:
         return "ours-differs", {"extra": extra, "quarantined": quarantined, "wiki_disagrees": known,
-                                "upstream_stale": stale_gp}
+                                "upstream_stale": stale_gp, **ruling_detail}
     if known:
-        return "wiki-disagrees", {"wiki_disagrees": known, "quarantined": quarantined, "upstream_stale": stale_gp}
+        return "wiki-disagrees", {"wiki_disagrees": known, "quarantined": quarantined, "upstream_stale": stale_gp, **ruling_detail}
     if stale_gp:
-        return "upstream-stale", {"upstream_stale": stale_gp, "quarantined": quarantined}
-    return ("partial", {"quarantined": quarantined}) if quarantined else ("exact", {})
+        return "upstream-stale", {"upstream_stale": stale_gp, "quarantined": quarantined, **ruling_detail}
+    return ("partial", {"quarantined": quarantined, **ruling_detail}) if quarantined else ("exact", ruling_detail)
 
 
 def diff(pages: dict, gp_sets: dict) -> dict:
@@ -300,6 +381,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
     stat_names = {a.get("name") for t in gp_sets.values() for tier in t for a in tier.get("affixes") or []}
     name_matches, name_review = reviewed_name_matches(T, rows, gp_sets)
     bug_review = arcsteel_bug_review(T, rows, gp_sets)
+    dc_review = abishai_dc_review(pages, T, rows, gp_sets)
     bug_applied = False
 
     per_set, counts = {}, {"template": collections.Counter(), "page": collections.Counter()}
@@ -311,7 +393,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         for src, entry in entries.items():
             cls, detail = ("no-wiki-name", {}) if entry is None else classify(
                 entry["tiers"], gp, stat_names, name, WIKI_DISAGREEMENTS if src == "template" else (),
-                UPSTREAM_STALE)
+                UPSTREAM_STALE, dc_review["verified"] if src == "template" and dc_review["complete"] else ())
             if name == ARCSTEEL_SET and src == "template" and bug_review["complete"]:
                 if ARCSTEEL_PRINTED in detail.get("extra", []):
                     # Remove only the explained comparison difference. Other
@@ -374,6 +456,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         "count_review": count_review,
         "name_alias_review": name_review,
         "wiki_bug_review": bug_review,
+        "abishai_dc_review": dc_review,
         "natural_armor_review": natural_armor_sets.catalog_review(gp_sets, require_complete=True),
         "sets": per_set,
     }
@@ -401,6 +484,7 @@ def main(argv) -> int:
         print(json.dumps(report, indent=1, ensure_ascii=False))
         return 0 if (report["count_review"]["complete"] and report["wiki_bug_review"]["complete"]
                      and report["name_alias_review"]["complete"]
+                     and report["abishai_dc_review"]["complete"]
                      and report["natural_armor_review"]["complete"]) else 1
     print(f"harvest {hid}: revids {report['harvest_revids']}")
     print(f"gear-planner sets {report['gear_planner_sets']}, template entries {report['template_entries']}, "
@@ -427,6 +511,7 @@ def main(argv) -> int:
         print("Natural Armor source review is stale: recheck the eight Wiki-supported flat AC clauses.")
         return 1
     print(f"\ncount review: {json.dumps(report['count_review'], ensure_ascii=False)}")
+    print(f"\nabishai DC review: {json.dumps(report['abishai_dc_review'], ensure_ascii=False)}")
     print(f"\nname alias review: {json.dumps(report['name_alias_review'], ensure_ascii=False)}")
     if not report["name_alias_review"]["complete"]:
         print("Name alias review is stale or ambiguous: recheck the named template, page anchor and tier before accepting this comparison.")
@@ -435,6 +520,9 @@ def main(argv) -> int:
     if not report["wiki_bug_review"]["complete"]:
         print("Wiki bug ruling is stale or unsupported: recheck Arcsteel's heroic Intelligence note, "
               "template and catalog before accepting this comparison.")
+        return 1
+    if not report["abishai_dc_review"]["complete"]:
+        print("Abishai DC ruling is stale or unsupported: recheck the three exact five-piece spell-only notes and clauses.")
         return 1
     if not report["count_review"]["complete"]:
         print("Count review is stale or incomplete: check the changed sources and named entries "
