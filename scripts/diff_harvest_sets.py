@@ -316,13 +316,79 @@ def abishai_dc_review(pages, template_entries, page_rows, gp_sets):
     return review
 
 
+# #951 — only this set's two "all types" clauses have an explicit three-member
+# list in the retained page. Pin the local tier context as well as each clause:
+# a condition on a separate line must not leave the scoped reading enabled.
+ABISHAI_AMP_SET = "Legendary Might of the Abishai"
+ABISHAI_AMP_CHANNELS = "Positive, Negative and Repair Amplification"
+ABISHAI_AMP_CONTEXT = {
+    "template": "4b56e12cbe4479af076f72d59bbc3358c516bcb6fdb52e5095cbd45251b4ab33",
+    "page": "7783971e747d88c5970abc3d016923b1e4a74f13cf947d136e84bc3ad3912e75",
+}
+
+
+def abishai_amplification_review(pages, template_entries, page_rows, gp_sets):
+    """Validate two exact Legendary contexts; never define 'all types' globally."""
+    review = {"complete": False, "reviewed_clauses": 2, "verified": [], "errors": [],
+              "evidence": {
+                  "page": "https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202",
+                  "template": "https://ddowiki.com/index.php?title=Template:Named_item_sets&oldid=723530",
+                  "captured_at_utc": {"page": "2026-11-01T22:07:07.452869+00:00",
+                                      "template": "2026-11-01T22:07:09.432316+00:00"},
+                  "scope": ABISHAI_AMP_CHANNELS,
+                  "context_sha256": dict(ABISHAI_AMP_CONTEXT),
+                  "freshness": "Retained direct captures; fresh access challenged 2026-11-01 23:52 UTC"}}
+
+    def context_digest(tiers):
+        context = {str(th): [S.plain(x) for x in lines] for th, lines in tiers.items()}
+        return hashlib.sha256(json.dumps(context, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+    def amplification_lines(tiers):
+        return {th: lines for th, raw in tiers.items()
+                if (lines := [S.plain(x) for x in raw
+                              if re.search(r"\b(?:Amp|Amplification)\b", S.plain(x), re.I)])}
+
+    for title, revision in ((PAGE, 720202), (TEMPLATE, 723530)):
+        if pages[title].get("revid") != revision:
+            review["errors"].append(f"{title}: amplification source revision changed")
+    if ABISHAI_AMP_SET not in gp_sets:
+        review["errors"].append("Legendary Abishai catalog identity is missing")
+    entry = template_entries.get(ABISHAI_AMP_SET.lower(), {})
+    tiers = entry.get("tiers", {})
+    keys = re.findall(r"(?mi)^\s*\|\s*" + re.escape(ABISHAI_AMP_SET) + r"\s*=", pages[TEMPLATE]["wikitext"])
+    expected_template = {th: [f"+{v} Profane bonus to Heal Amp (all types)"] for th, v in ((3, 10), (5, 30))}
+    if (len(keys) != 1 or entry.get("name") != ABISHAI_AMP_SET
+            or sum(e.get("name") == ABISHAI_AMP_SET for e in template_entries.values()) != 1
+            or set(tiers) != {3, 5} or amplification_lines(tiers) != expected_template
+            or context_digest(tiers) != ABISHAI_AMP_CONTEXT["template"]):
+        review["errors"].append("Legendary template identity, clauses or surrounding tier context changed")
+    rows = [r for r in page_rows if set(r["anchors"]) & ABISHAI_DCS.keys()]
+    legendary = [r for r in rows if r["tier"] == "Legendary"]
+    page_tiers = legendary[0]["tiers"] if len(legendary) == 1 else {}
+    expected_page = {th: [f"+{v} Profane bonus to {ABISHAI_AMP_CHANNELS}"] for th, v in ((3, 10), (5, 30))}
+    if (len(rows) != 3 or sorted(r["tier"] or "" for r in rows) != ["Epic", "Heroic", "Legendary"]
+            or any(r["anchors"] != list(ABISHAI_DCS) for r in rows)
+            or len(legendary) != 1 or amplification_lines(page_tiers) != expected_page
+            or context_digest(page_tiers) != ABISHAI_AMP_CONTEXT["page"]
+            or any(amplification_lines(r["tiers"]) for r in rows if r["tier"] != "Legendary")):
+        review["errors"].append("Legendary page identity, named channels or surrounding tier context changed")
+    if not review["errors"]:
+        page_lines = amplification_lines(page_tiers)
+        template_lines = amplification_lines(tiers)
+        review["verified"] = [{"set": ABISHAI_AMP_SET, "threshold": th,
+                               "line": template_lines[th][0], "explicit_line": page_lines[th][0]}
+                              for th in (3, 5)]
+        review["complete"] = len(review["verified"]) == 2
+    return review
+
+
 def _disagreement(set_name, th, affix, records):
     name, _, value = affix
     return next((d for d in records if (d["set"], d["threshold"], d["name"], d["template"]) == (set_name, th, name, value)), None)
 
 
 def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreements=(),
-             upstream=(), clause_rulings=()) -> tuple[str, dict]:
+             upstream=(), clause_rulings=(), amplification_rulings=()) -> tuple[str, dict]:
     """One source's {threshold: [lines]} against gear-planner's tiers -> (class, detail).
 
     An extra affix that matches a recorded `WIKI_DISAGREEMENTS` entry is a wiki
@@ -333,7 +399,7 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
         return "threshold-unstated", {"lines": [S.plain(x) for x in wiki_tiers[None]]}
     if set(wiki_tiers) != set(gp):
         return "threshold-differs", {"wiki": sorted(wiki_tiers), "gear-planner": sorted(k for k in gp if k is not None)}
-    quarantined, extra, applied = [], [], []
+    quarantined, extra, applied, amplification_applied = [], [], [], []
     for th, lines in wiki_tiers.items():
         read = collections.Counter()
         for line in lines:
@@ -348,6 +414,15 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
                 if "affixes" in r:
                     applied.append({"threshold": th, "line": S.plain(line),
                                     "scope": "Spell DCs only; tactical DCs excluded"})
+            amplification = next((x for x in amplification_rulings if x["set"] == set_name
+                                  and x["threshold"] == th and x["line"] == S.plain(line)), None)
+            if amplification is not None:
+                # Read the page's exact explicit list through the existing reader,
+                # including its vocabulary gate. Neither input is rewritten.
+                r = S.read_clause(amplification["explicit_line"], BONUS_TYPES, stat_names)
+                if "affixes" in r:
+                    amplification_applied.append({"threshold": th, "line": S.plain(line),
+                                                  "scope": ABISHAI_AMP_CHANNELS})
             if "affixes" in r:
                 for a in r["affixes"]:
                     read.update(comparison_affixes(a))
@@ -359,6 +434,8 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
     stale_gp = [e for e in extra if _upstream_stale(set_name, e["threshold"], e["affix"], gp, upstream)]
     extra = [e for e in extra if e not in stale_gp]
     ruling_detail = {"spell_dc_rulings": applied} if applied else {}
+    if amplification_applied:
+        ruling_detail["amplification_rulings"] = amplification_applied
     if extra:
         return "ours-differs", {"extra": extra, "quarantined": quarantined, "wiki_disagrees": known,
                                 "upstream_stale": stale_gp, **ruling_detail}
@@ -382,6 +459,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
     name_matches, name_review = reviewed_name_matches(T, rows, gp_sets)
     bug_review = arcsteel_bug_review(T, rows, gp_sets)
     dc_review = abishai_dc_review(pages, T, rows, gp_sets)
+    amplification_review = abishai_amplification_review(pages, T, rows, gp_sets)
     bug_applied = False
 
     per_set, counts = {}, {"template": collections.Counter(), "page": collections.Counter()}
@@ -393,7 +471,8 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         for src, entry in entries.items():
             cls, detail = ("no-wiki-name", {}) if entry is None else classify(
                 entry["tiers"], gp, stat_names, name, WIKI_DISAGREEMENTS if src == "template" else (),
-                UPSTREAM_STALE, dc_review["verified"] if src == "template" and dc_review["complete"] else ())
+                UPSTREAM_STALE, dc_review["verified"] if src == "template" and dc_review["complete"] else (),
+                amplification_review["verified"] if src == "template" and amplification_review["complete"] else ())
             if name == ARCSTEEL_SET and src == "template" and bug_review["complete"]:
                 if ARCSTEEL_PRINTED in detail.get("extra", []):
                     # Remove only the explained comparison difference. Other
@@ -457,6 +536,7 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         "name_alias_review": name_review,
         "wiki_bug_review": bug_review,
         "abishai_dc_review": dc_review,
+        "abishai_amplification_review": amplification_review,
         "natural_armor_review": natural_armor_sets.catalog_review(gp_sets, require_complete=True),
         "sets": per_set,
     }
@@ -485,6 +565,7 @@ def main(argv) -> int:
         return 0 if (report["count_review"]["complete"] and report["wiki_bug_review"]["complete"]
                      and report["name_alias_review"]["complete"]
                      and report["abishai_dc_review"]["complete"]
+                     and report["abishai_amplification_review"]["complete"]
                      and report["natural_armor_review"]["complete"]) else 1
     print(f"harvest {hid}: revids {report['harvest_revids']}")
     print(f"gear-planner sets {report['gear_planner_sets']}, template entries {report['template_entries']}, "
@@ -512,6 +593,7 @@ def main(argv) -> int:
         return 1
     print(f"\ncount review: {json.dumps(report['count_review'], ensure_ascii=False)}")
     print(f"\nabishai DC review: {json.dumps(report['abishai_dc_review'], ensure_ascii=False)}")
+    print(f"\nabishai amplification review: {json.dumps(report['abishai_amplification_review'], ensure_ascii=False)}")
     print(f"\nname alias review: {json.dumps(report['name_alias_review'], ensure_ascii=False)}")
     if not report["name_alias_review"]["complete"]:
         print("Name alias review is stale or ambiguous: recheck the named template, page anchor and tier before accepting this comparison.")
@@ -523,6 +605,9 @@ def main(argv) -> int:
         return 1
     if not report["abishai_dc_review"]["complete"]:
         print("Abishai DC ruling is stale or unsupported: recheck the three exact five-piece spell-only notes and clauses.")
+        return 1
+    if not report["abishai_amplification_review"]["complete"]:
+        print("Abishai amplification ruling is stale or unsupported: recheck the two exact Legendary clauses and named channels.")
         return 1
     if not report["count_review"]["complete"]:
         print("Count review is stale or incomplete: check the changed sources and named entries "
