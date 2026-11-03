@@ -11,6 +11,9 @@ For both pages, `revid` and `html_revid` match, so the wikitext and the renderin
 
 This file records structure only. No set value is ruled on here. The reader and the parity diff (#908) come next.
 
+The [Renegade Champion paragraph review](renegade-champion-paragraphs.md) records
+the bounded comparison-only splitting of two exact entries from revision 723530.
+
 ## Two sources, not one
 
 The page is not the only place set bonuses live. **`Template:Named item sets` is a second source**, a `#switch` with 296 entries (293 real sets, plus `#default`, `this template!` and the usage example `some off the wall set`). Item pages call it as `{{Named item sets|<set>}}`, and it renders the set's bonus in a popup.
