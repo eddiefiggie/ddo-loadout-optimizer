@@ -400,6 +400,20 @@ RENEGADE_PARAGRAPHS = {
 }
 
 
+# #951 — the three Kundarak entries in the same revision also contain three
+# explicit sentences. The raw Heroic entry includes the following alphabetic
+# section comment; pin that context too. No new stat meaning or type is supplied.
+# Evidence: docs/wiki-evidence/kundarak-delving-paragraphs.md.
+KUNDARAK_PARAGRAPHS = {
+    "kundarak delving equipment": ("Kundarak Delving Equipment",
+                                  "d583d0d248bf6e3a2d9f6302ec04f179a3d1c7cb9dde853a8511a248b50534eb"),
+    "epic kundarak delving equipment": ("Epic Kundarak Delving Equipment",
+                                       "18699c247498aa998ffaac34c5533d5f483c26bd48ccaeb7e592834fcfb31a94"),
+    "legendary kundarak delving equipment": ("Legendary Kundarak Delving Equipment",
+                                            "3ca06dc6919c9f1da8dbeddcfbfa6d0fd32873aabebd7354a8e02e9e1b1abb1c"),
+}
+
+
 def comparison_template_entry(key, entry):
     """Split only a reviewed full entry, in a comparison copy of its tiers.
 
@@ -407,13 +421,17 @@ def comparison_template_entry(key, entry):
     new parsing. The aggregate source revision/hash gate remains authoritative
     for changed source pages. Neither the shared reader nor raw text is changed.
     """
-    reviewed = RENEGADE_PARAGRAPHS.get(key)
+    reviewed = RENEGADE_PARAGRAPHS.get(key) or KUNDARAK_PARAGRAPHS.get(key)
     if (reviewed is None or entry["name"] != reviewed[0]
             or hashlib.sha256(entry["raw"].encode()).hexdigest() != reviewed[1]):
         return entry
     lines = entry["tiers"].get(3, [])
+    raw = entry["raw"]
+    if key == "kundarak delving equipment":
+        # This exact suffix is already covered by the full raw-text hash above.
+        raw = raw.removesuffix("\n<!-- L -->")
     if (set(entry["tiers"]) != {3} or len(lines) != 1
-            or entry["raw"] != "3 Pieces Equipped: " + lines[0]):
+            or raw != "3 Pieces Equipped: " + lines[0]):
         return entry
     return {**entry, "tiers": {3: lines[0].split(". ")}}
 
