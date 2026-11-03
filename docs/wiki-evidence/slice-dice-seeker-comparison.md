@@ -59,14 +59,16 @@ The existing identity ruling rejects missing or ambiguous matches. The complete
 comparison's whole-source revision/hash review separately rejects changed outer
 context; a helper match alone does not certify a changed source capture.
 
-The raw sources, shared reader and production inputs remain unchanged. Epic's
-page clauses, Heroic Sneak Attack and the Template flavor sentence stay quarantined;
+The raw sources, shared reader and production inputs remain unchanged. This
+Heroic helper does not alter Epic rows; the separately guarded
+[Epic helper](epic-slice-seeker-comparison.md) handles Epic's Seeker clause.
+Heroic Sneak Attack and the Template flavor sentence stay quarantined;
 the overall set stays **partial**. No Sneak Attack/Deception equivalence, dice
 size, damage formula, activation, stacking or live-game behavior is inferred.
 This does not authorize production-source adoption. Issues #908, #951, #953 and
 #956 remain open.
 
-## Measured validation
+## Original isolated validation
 
 Both complete CLI formats pass across **282 sets**. Only Heroic Slice 'n Dice's
 page quarantine list changes: page quarantines **43 to 42**. The other **281 set
@@ -87,3 +89,20 @@ The rebuilt dataset and all **190 production hashes** are unchanged. Build
 `11012026.5` remains unchanged because this comparison-only change has no
 player-facing behavior. Independent source/mechanics and adversarial code reviews
 cover the paired contexts, ambiguity, conditional wording and report scope.
+
+## Reconciliation with the Epic comparison
+
+The original Heroic commit `616511b67480ad5df1b807af9d0e837741e6dac1` and
+its receipts are preserved. The local combined tree keeps its helper unchanged
+and adds Epic's separately evidenced helper. The reciprocal negative test now
+asserts that the Heroic helper returns an Epic row unchanged, rather than asking
+the entire comparator to ignore Epic's independently supported clause. The
+unrelated-anchor exclusion remains. A new opposite-direction evidence test
+confirms that changing Epic's own Template amount disables Epic's correction
+without supplying or changing Heroic's reading.
+
+Across both complete report formats, only the two page Seeker quarantine entries
+change against main `8120158b`: 43 to 41. All other 280 set records, all Template
+results, all 153 prior exact comparisons and every other report field remain
+unchanged. Both sets remain partial. This is comparison progress only; it does
+not change production definitions or validate altered source captures.
