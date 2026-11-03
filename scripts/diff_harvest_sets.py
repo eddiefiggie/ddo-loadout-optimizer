@@ -436,6 +436,41 @@ def comparison_template_entry(key, entry):
     return {**entry, "tiers": {3: lines[0].split(". ")}}
 
 
+# #951 — only the six-piece clause of Seasons of the Feywild in these retained
+# sources spells "all spell DCs" with a lower-case s. Pin the complete raw bonus
+# context and identity before reusing the existing "all Spell DCs" reader. This
+# does not admit the independent maximum-Spell-Points clause or any new mechanic.
+# Evidence: docs/wiki-evidence/feywild-six-piece-clause.md.
+FEYWILD_NAME = "Seasons of the Feywild"
+FEYWILD_CLAUSE = "+1 Artifact bonus to all spell DCs"
+FEYWILD_CONTEXT = {
+    TEMPLATE: (723530, "652cc329eeb176d820ffad8aaebb6b64b299de196cfadf3faae493c6ec78f987"),
+    PAGE: (720202, "24f0b53deb373e34f086e9e0ee18c86376315ba1fe0d1239bb6484a2e2e3f092"),
+}
+
+
+def comparison_feywild_entry(entry, source, key=None):
+    """Change one spelling in a comparison copy; preserve all original text."""
+    title = source.get("title")
+    reviewed = FEYWILD_CONTEXT.get(title)
+    if (reviewed is None or source.get("revid") != reviewed[0]
+            or hashlib.sha256(entry["raw"].encode()).hexdigest() != reviewed[1]):
+        return entry
+    if title == TEMPLATE:
+        if key != FEYWILD_NAME.lower() or entry["name"] != FEYWILD_NAME:
+            return entry
+        line = FEYWILD_CLAUSE
+    else:
+        if (entry["anchors"] != [FEYWILD_NAME] or entry["tier"] is not None
+                or entry["section"] != "Fables of the Feywild sets"):
+            return entry
+        line = "* " + FEYWILD_CLAUSE
+    if set(entry["tiers"]) != {2, 3, 4, 5, 6, 7} or entry["tiers"].get(6) != [line]:
+        return entry
+    return {**entry, "tiers": {**entry["tiers"],
+                              6: [line.replace("all spell DCs", "all Spell DCs")]}}
+
+
 def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreements=(),
              upstream=(), clause_rulings=(), amplification_rulings=()) -> tuple[str, dict]:
     """One source's {threshold: [lines]} against gear-planner's tiers -> (class, detail).
@@ -508,9 +543,9 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
 
 def diff(pages: dict, gp_sets: dict) -> dict:
     page, template = pages[PAGE], pages[TEMPLATE]
-    T = {key: comparison_template_entry(key, entry)
+    T = {key: comparison_feywild_entry(comparison_template_entry(key, entry), template, key)
          for key, entry in S.template_sets(template["wikitext"]).items()}
-    rows = S.page_sets(page["wikitext"])
+    rows = [comparison_feywild_entry(row, page) for row in S.page_sets(page["wikitext"])]
     by_anchor = {}
     for r in rows:
         if r["tier"] is None:
