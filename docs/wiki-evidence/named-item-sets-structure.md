@@ -139,6 +139,9 @@ The clause reader is closed. It reads `+N <Type> bonus to <stat>` only when the 
   - Legendary Vulkoor's Might's template entry states both `+3 Artifact bonus to Sneak Attack` and `+3 Artifact bonus to Sneak Attack Damage`.
   - gear-planner carries a single `Deception` +3 in their place.
   - Whether these are the same stat needs a ruling. Do not resolve it by renaming.
+  - The [2026-11-02 own-item popup review](vulkoor-sneak-fields.md) confirms the
+    separate literal fields and adds comparison guards. It does not settle the
+    ambiguous field or change the production Deception grant.
 - **Sources disagree (both fully read): 0 today.** Arcane Mind's disagreement (the template says Universal Spell Power; the page says Potency and that the set gives no Universal Spell Power) is not counted yet, because neither side's line is readable. It surfaces once those phrases are mapped.
 
 ## Coordinated lists (#951, 2026-10-27)
