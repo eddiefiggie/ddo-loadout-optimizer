@@ -499,6 +499,35 @@ def comparison_silent_avenger_entry(key, entry, source):
                                    for line in lines]}}
 
 
+# #951 — one Heroic page clause repeats "bonus". Its own named Template entry
+# independently states the same two-piece +1 Quality Seeker clause. Require both
+# complete retained contexts; this is no generic grammar or Sneak Attack ruling.
+# Evidence: docs/wiki-evidence/slice-dice-seeker-comparison.md.
+SLICE_SEEKER_PAGE_CONTEXT = "178ceeaceca14fbae264e99e08ff19f94d54fcfcd6d03f046216f989c19ef47d"
+SLICE_SEEKER_TEMPLATE_CONTEXT = "c6bbb2a271eed7a901c5475ef34d28f37db8f5ef2354e004951b917745419573"
+
+
+def comparison_slice_seeker_row(row, page, template, template_entries):
+    """Read one jointly evidenced Seeker clause in a Heroic comparison copy."""
+    if (page.get("title") != PAGE or page.get("revid") != 720202
+            or template.get("title") != TEMPLATE or template.get("revid") != 723530
+            or row["section"] != "The Devil's Gambit sets" or row["tier"] != "Heroic"
+            or row["anchors"] != ["Slice 'n Dice Set", "Epic Slice 'n Dice Set"]
+            or hashlib.sha256(row["raw"].encode()).hexdigest() != SLICE_SEEKER_PAGE_CONTEXT):
+        return row
+    original = ["* +1 [[Quality bonus]] bonus to [[Seeker]]",
+                "* +1 [[Quality bonus]] bonus to [[Sneak Attack]]"]
+    entry = template_entries.get("slice 'n dice set", {})
+    expected = ["+1 [[Quality bonus]] to [[Seeker]]",
+                "+1 Quality bonus to [[Sneak Attack]]", "They make julienne fries."]
+    keys = re.findall(r"(?mi)^\s*\|\s*slice 'n dice set\s*=", template["wikitext"])
+    if (row["tiers"] != {2: original} or len(keys) != 1
+            or entry.get("name") is not None or entry.get("tiers") != {2: expected}
+            or hashlib.sha256(entry.get("raw", "").encode()).hexdigest() != SLICE_SEEKER_TEMPLATE_CONTEXT):
+        return row
+    return {**row, "tiers": {2: [original[0].replace("]] bonus to", "]] to", 1), original[1]]}}
+
+
 def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreements=(),
              upstream=(), clause_rulings=(), amplification_rulings=()) -> tuple[str, dict]:
     """One source's {threshold: [lines]} against gear-planner's tiers -> (class, detail).
@@ -576,7 +605,8 @@ def diff(pages: dict, gp_sets: dict) -> dict:
         entry = comparison_template_entry(key, entry)
         entry = comparison_feywild_entry(entry, template, key)
         T[key] = comparison_silent_avenger_entry(key, entry, template)
-    rows = [comparison_feywild_entry(row, page) for row in S.page_sets(page["wikitext"])]
+    rows = [comparison_slice_seeker_row(comparison_feywild_entry(row, page), page, template, T)
+            for row in S.page_sets(page["wikitext"])]
     by_anchor = {}
     for r in rows:
         if r["tier"] is None:
