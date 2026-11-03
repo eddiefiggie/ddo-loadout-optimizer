@@ -14,16 +14,18 @@ Each (set, source) lands in one class:
   no-wiki-name       — no usable exact name or reviewed alias match
   threshold-unstated — bonus lines lack an explicit header or reviewed prose count
   threshold-differs  — the stated thresholds are not gear-planner's
-  exact              — every line read, and the affixes equal gear-planner's
+  exact              — every line read, and the affix multisets are equal
+  catalog-unmatched  — every line read, but catalog affix occurrences lack a match
   partial            — some lines quarantined; every line read agrees with gear-planner
   wiki-disagrees     — the only difference is a recorded WIKI_DISAGREEMENTS line
   upstream-stale     — the only difference is a recorded UPSTREAM_STALE line
   wiki-bug           — an explicit, checked wiki bug note explains the difference
   ours-differs       — a line read to an affix gear-planner does not carry   <- review
 
-`ours-differs` is the switch gate: Phase 3 switches once it is 0 and every
-remaining difference is classified. Sets where the two wiki sources disagree are
-listed separately — that is a wiki question, not a parser one.
+`ours-differs` and `catalog-unmatched` need review before a source switch. The
+latter records missing comparison evidence, not a claim that the Wiki grants
+zero or that the catalog is wrong. Phase 3 also requires every other difference
+to have a safe disposition. Wiki-to-Wiki disagreements are listed separately.
 
 Usage: python3 scripts/diff_harvest_sets.py [HARVEST_ID] [--examples N] [--json]
 
@@ -423,12 +425,17 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
     An extra affix that matches a recorded `WIKI_DISAGREEMENTS` entry is a wiki
     question, not ours-differs: the set lands in `wiki-disagrees` instead. One that
     matches a recorded `UPSTREAM_STALE` entry (and gear-planner still carries the
-    recorded older value) lands in `upstream-stale`."""
+    recorded older value) lands in `upstream-stale`.
+
+    Only a fully read, otherwise matching comparison can be catalog-unmatched.
+    Quarantined text may contain the unmatched fields; a scoped value ruling
+    already explains a difference. Neither case is a claim of exact parity.
+    """
     if None in wiki_tiers:
         return "threshold-unstated", {"lines": [S.plain(x) for x in wiki_tiers[None]]}
     if set(wiki_tiers) != set(gp):
         return "threshold-differs", {"wiki": sorted(wiki_tiers), "gear-planner": sorted(k for k in gp if k is not None)}
-    quarantined, extra, applied, amplification_applied = [], [], [], []
+    quarantined, extra, catalog_unmatched, applied, amplification_applied = [], [], [], [], []
     for th, lines in wiki_tiers.items():
         read = collections.Counter()
         for line in lines:
@@ -457,7 +464,9 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
                     read.update(comparison_affixes(a))
             else:
                 quarantined.append({"threshold": th, "line": S.plain(line), "reason": r["quarantine"]})
-        extra += [{"threshold": th, "affix": list(k)} for k in (read - gp.get(th, collections.Counter()))]
+        catalog = gp.get(th, collections.Counter())
+        extra += [{"threshold": th, "affix": list(k)} for k in (read - catalog).elements()]
+        catalog_unmatched += [{"threshold": th, "affix": list(k)} for k in (catalog - read).elements()]
     known = [e for e in extra if _disagreement(set_name, e["threshold"], e["affix"], disagreements)]
     extra = [e for e in extra if e not in known]
     stale_gp = [e for e in extra if _upstream_stale(set_name, e["threshold"], e["affix"], gp, upstream)]
@@ -472,7 +481,11 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
         return "wiki-disagrees", {"wiki_disagrees": known, "quarantined": quarantined, "upstream_stale": stale_gp, **ruling_detail}
     if stale_gp:
         return "upstream-stale", {"upstream_stale": stale_gp, "quarantined": quarantined, **ruling_detail}
-    return ("partial", {"quarantined": quarantined, **ruling_detail}) if quarantined else ("exact", ruling_detail)
+    if quarantined:
+        return "partial", {"quarantined": quarantined, **ruling_detail}
+    if catalog_unmatched:
+        return "catalog-unmatched", {"catalog_unmatched": catalog_unmatched, **ruling_detail}
+    return "exact", ruling_detail
 
 
 def diff(pages: dict, gp_sets: dict) -> dict:
