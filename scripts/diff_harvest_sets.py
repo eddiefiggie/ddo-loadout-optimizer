@@ -471,6 +471,34 @@ def comparison_feywild_entry(entry, source, key=None):
                               6: [line.replace("all spell DCs", "all Spell DCs")]}}
 
 
+# #951 — these two complete Template rev 723530 entries explicitly introduce
+# four bonus clauses with "You gain". Admit only their literal prefixes in a
+# comparison copy; all names, units, types and amounts still go to read_clause.
+# Evidence and the older Helpless-note value discrepancy are recorded in
+# docs/wiki-evidence/silent-avenger-comparison.md. No live-game ruling is made.
+SILENT_AVENGER_ENTRIES = {
+    "silent avenger set (heroic)": ("Silent Avenger Set (Heroic)",
+                                     "dd3981b49bf916991b0c145dd249997513bd4e244f2dd5516956ce2a4413d227"),
+    "silent avenger set (legendary)": ("Silent Avenger Set (Legendary)",
+                                        "98de6298a004e28f1b70f2927f3d629a3adbc2c75bb58ee7f034c153a27b7f5d"),
+}
+
+
+def comparison_silent_avenger_entry(key, entry, source):
+    """Read literal prefixes only inside these two unchanged source entries."""
+    reviewed = SILENT_AVENGER_ENTRIES.get(key)
+    if (source.get("title") != TEMPLATE or source.get("revid") != 723530
+            or reviewed is None or entry["name"] != reviewed[0]
+            or hashlib.sha256(entry["raw"].encode()).hexdigest() != reviewed[1]):
+        return entry
+    lines = entry["tiers"].get(3, [])
+    if (set(entry["tiers"]) != {3} or len(lines) != 4
+            or entry["raw"] != "3 Pieces Equipped:<br />" + "<br />".join(lines)):
+        return entry
+    return {**entry, "tiers": {3: [line.removeprefix("You gain a ").removeprefix("You gain ")
+                                   for line in lines]}}
+
+
 def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreements=(),
              upstream=(), clause_rulings=(), amplification_rulings=()) -> tuple[str, dict]:
     """One source's {threshold: [lines]} against gear-planner's tiers -> (class, detail).
@@ -543,8 +571,11 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
 
 def diff(pages: dict, gp_sets: dict) -> dict:
     page, template = pages[PAGE], pages[TEMPLATE]
-    T = {key: comparison_feywild_entry(comparison_template_entry(key, entry), template, key)
-         for key, entry in S.template_sets(template["wikitext"]).items()}
+    T = {}
+    for key, entry in S.template_sets(template["wikitext"]).items():
+        entry = comparison_template_entry(key, entry)
+        entry = comparison_feywild_entry(entry, template, key)
+        T[key] = comparison_silent_avenger_entry(key, entry, template)
     rows = [comparison_feywild_entry(row, page) for row in S.page_sets(page["wikitext"])]
     by_anchor = {}
     for r in rows:
