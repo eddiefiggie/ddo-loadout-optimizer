@@ -557,6 +557,30 @@ def comparison_epic_slice_seeker_row(row, page, template, template_entries):
     return {**row, "tiers": {2: [original[0].replace("]] bonus to", "]] to", 1), original[1]]}}
 
 
+# #951 — the non-Legendary Profane Experiment entry alone spells Imbue Dice
+# with a lower-case d. Preserve the full retained context and reuse the existing
+# vocabulary gate; no generic case folding or new meaning for dice is supplied.
+# Evidence: docs/wiki-evidence/profane-experiment-comparison.md.
+PROFANE_EXPERIMENT_NAME = "Profane Experiment"
+PROFANE_EXPERIMENT_CLAUSE = "+1 Artifact bonus to [[Imbue]] dice."
+PROFANE_EXPERIMENT_CONTEXT = "c3d31c20b0788e4b77b5040e61db47a3e0be9ba1a3080eb87ac65774adf92558"
+
+
+def comparison_profane_experiment_entry(key, entry, source):
+    """Capitalize one reviewed clause in a comparison copy, never in raw text."""
+    if (source.get("title") != TEMPLATE or source.get("revid") != 723530
+            or key != PROFANE_EXPERIMENT_NAME.lower()
+            or entry["name"] != PROFANE_EXPERIMENT_NAME
+            or hashlib.sha256(entry["raw"].encode()).hexdigest() != PROFANE_EXPERIMENT_CONTEXT):
+        return entry
+    lines = entry["tiers"].get(3, [])
+    if (set(entry["tiers"]) != {3} or len(lines) != 4
+            or lines[-1] != PROFANE_EXPERIMENT_CLAUSE
+            or entry["raw"] != "3 Pieces Equipped: <br />" + " <br />".join(lines[:3]) + " <br/>" + lines[-1]):
+        return entry
+    return {**entry, "tiers": {3: [*lines[:3], lines[-1].replace("dice.", "Dice.")]}}
+
+
 def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreements=(),
              upstream=(), clause_rulings=(), amplification_rulings=()) -> tuple[str, dict]:
     """One source's {threshold: [lines]} against gear-planner's tiers -> (class, detail).
@@ -633,7 +657,8 @@ def diff(pages: dict, gp_sets: dict) -> dict:
     for key, entry in S.template_sets(template["wikitext"]).items():
         entry = comparison_template_entry(key, entry)
         entry = comparison_feywild_entry(entry, template, key)
-        T[key] = comparison_silent_avenger_entry(key, entry, template)
+        entry = comparison_silent_avenger_entry(key, entry, template)
+        T[key] = comparison_profane_experiment_entry(key, entry, template)
     rows = [comparison_epic_slice_seeker_row(
                 comparison_slice_seeker_row(comparison_feywild_entry(row, page), page, template, T),
                 page, template, T)
