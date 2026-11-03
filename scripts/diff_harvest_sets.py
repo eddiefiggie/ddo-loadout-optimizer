@@ -387,6 +387,35 @@ def _disagreement(set_name, th, affix, records):
     return next((d for d in records if (d["set"], d["threshold"], d["name"], d["template"]) == (set_name, th, name, value)), None)
 
 
+# #951 — two unconditional paragraphs in Template:Named item sets rev 723530.
+# Pin the complete entry text and its display-name metadata before splitting its
+# three sentences. These hashes supply no affixes; read_clause still reads every
+# value/type/name. Evidence: docs/wiki-evidence/renegade-champion-paragraphs.md.
+RENEGADE_PARAGRAPHS = {
+    "renegade champion": (None, "b70b36b0396b2f17198b636765d2fb84a537dc42243da6fd45b99b35ae8c95ab"),
+    "renegade champion (legendary)": ("Renegade Champion (Legendary)",
+                                      "2f9e04420b7305905cb072ab6dad36113b228382cef00f2b6d3803cd857aaa3a"),
+}
+
+
+def comparison_template_entry(key, entry):
+    """Split only a reviewed full entry, in a comparison copy of its tiers.
+
+    An edited paragraph, count, name, or surrounding entry context receives no
+    new parsing. The aggregate source revision/hash gate remains authoritative
+    for changed source pages. Neither the shared reader nor raw text is changed.
+    """
+    reviewed = RENEGADE_PARAGRAPHS.get(key)
+    if (reviewed is None or entry["name"] != reviewed[0]
+            or hashlib.sha256(entry["raw"].encode()).hexdigest() != reviewed[1]):
+        return entry
+    lines = entry["tiers"].get(3, [])
+    if (set(entry["tiers"]) != {3} or len(lines) != 1
+            or entry["raw"] != "3 Pieces Equipped: " + lines[0]):
+        return entry
+    return {**entry, "tiers": {3: lines[0].split(". ")}}
+
+
 def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreements=(),
              upstream=(), clause_rulings=(), amplification_rulings=()) -> tuple[str, dict]:
     """One source's {threshold: [lines]} against gear-planner's tiers -> (class, detail).
@@ -448,7 +477,8 @@ def classify(wiki_tiers: dict, gp: dict, stat_names, set_name=None, disagreement
 
 def diff(pages: dict, gp_sets: dict) -> dict:
     page, template = pages[PAGE], pages[TEMPLATE]
-    T = S.template_sets(template["wikitext"])
+    T = {key: comparison_template_entry(key, entry)
+         for key, entry in S.template_sets(template["wikitext"]).items()}
     rows = S.page_sets(page["wikitext"])
     by_anchor = {}
     for r in rows:

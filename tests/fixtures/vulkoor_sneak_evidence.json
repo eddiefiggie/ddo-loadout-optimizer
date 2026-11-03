@@ -1,0 +1,332 @@
+{
+  "scope": "Retained public Wiki excerpts for comparison regression tests, not production definitions or a gameplay ruling. Exact excerpt text and selected public source metadata are preserved; private transfer identities and workspace paths are omitted.",
+  "bundles": [
+    {
+      "sha256": "dd6dd628b8ac0c68f1942d92136762771b31489a468435042816d509223b8c71",
+      "sources": [
+        {
+          "sourceId": "SNEAK-695237",
+          "receiptSHA256": "7e449cc37c01ccca5b587a02cfb33844cbd197bc62f130893f31a8fc27b1c369",
+          "normalUrl": "https://ddowiki.com/page/Sneak_attack",
+          "observedRevisionUrl": "https://ddowiki.com/index.php?title=Sneak_attack&oldid=695237",
+          "bodyObservation": {
+            "start": "2026-11-02T03:31:02.106Z",
+            "end": "2026-11-02T03:31:02.399Z"
+          },
+          "metadataObservation": {
+            "permalinkObservedAt": "2026-11-02T03:46:16.232Z",
+            "footerRecheckStart": "2026-11-02T03:46:06.575Z",
+            "footerRecheckEnd": "2026-11-02T03:46:06.849Z"
+          },
+          "metadataRelation": "The original body-reading window remains 2026-11-02T03:31:02.106Z–2026-11-02T03:31:02.399Z. The original truncated link display is retained as that earlier observation; the full href was recovered later. Observing this permalink does not prove that the historical endpoint was read or that its content is identical to the earlier body capture.",
+          "historicalRead": false
+        },
+        {
+          "sourceId": "SETS-720202",
+          "receiptSHA256": "20c6b1aad1c9fc3b419439e07aab53a6b08075c85075c3ddd3a074d5be48b5fa",
+          "normalUrl": "https://ddowiki.com/page/Named_item_sets#Wallwatch",
+          "observedRevisionUrl": "https://ddowiki.com/index.php?title=Named_item_sets&oldid=720202#Wallwatch",
+          "bodyObservation": {
+            "observedAt": "2026-11-02T16:20:49.970Z"
+          },
+          "metadataObservation": {
+            "observedAt": "2026-11-02T16:20:49.970Z"
+          },
+          "metadataRelation": "Body and permalink retained in the same normal-page capture. Fragment is the observed Wallwatch location; the retained full body also contains the Red Fens rows. No historical page read.",
+          "historicalRead": false
+        },
+        {
+          "sourceId": "OPHAEL-685480",
+          "receiptSHA256": "b47297f2467dda5d7cfa11f46f177af6fe956d631a6e2ff6195c0cec6c228d8a",
+          "normalUrl": "https://ddowiki.com/page/Item:Ophael%27s_Cincture",
+          "observedRevisionUrl": "https://ddowiki.com/index.php?title=Item:Ophael%27s_Cincture&oldid=685480",
+          "bodyObservation": {
+            "observedAt": null,
+            "reason": "Retained November 1 direct browser capture contains no timestamp field; an exact capture instant is not reconstructed."
+          },
+          "metadataObservation": {
+            "observedAt": null,
+            "reason": "Permalink is retained in the same decoded capture, but observation time is absent."
+          },
+          "metadataRelation": "Own-page body and actual expanded popup strings are retained together; no generic Deception-page read is asserted.",
+          "historicalRead": false,
+          "decode": {
+            "outerPointer": "/content/1/text",
+            "decoder": "JSON.parse string value; no code execution",
+            "pagePointer": "/0"
+          }
+        },
+        {
+          "sourceId": "BURROWER-707408",
+          "receiptSHA256": "b47297f2467dda5d7cfa11f46f177af6fe956d631a6e2ff6195c0cec6c228d8a",
+          "normalUrl": "https://ddowiki.com/page/Item:Legendary_Belt_of_the_Burrower",
+          "observedRevisionUrl": "https://ddowiki.com/index.php?title=Item:Legendary_Belt_of_the_Burrower&oldid=707408",
+          "bodyObservation": {
+            "observedAt": null,
+            "reason": "Retained November 1 direct browser capture contains no timestamp field; an exact capture instant is not reconstructed."
+          },
+          "metadataObservation": {
+            "observedAt": null,
+            "reason": "Permalink is retained in the same decoded capture, but observation time is absent."
+          },
+          "metadataRelation": "Own-page body and actual expanded popup strings are retained together; no generic Deception-page read is asserted.",
+          "historicalRead": false,
+          "decode": {
+            "outerPointer": "/content/1/text",
+            "decoder": "JSON.parse string value; no code execution",
+            "pagePointer": "/6"
+          }
+        }
+      ],
+      "excerpts": [
+        {
+          "excerptId": "SNEAK-PROPERTY-2",
+          "sourceId": "SNEAK-695237",
+          "pointer": "/sections/sneak_attack/exact_excerpts/3/list/2",
+          "exactText": "An extra sneak attack dice/die is a +1d6 sneak attack damage (average of 3.5 damage)",
+          "support": "Explicit general sneak-damage property.",
+          "limitations": "Does not identify the semantics of a particular item field by name, certify mixed-source stacking, target uptime, or complete DPS."
+        },
+        {
+          "excerptId": "SNEAK-PROPERTY-5",
+          "sourceId": "SNEAK-695237",
+          "pointer": "/sections/sneak_attack/exact_excerpts/3/list/5",
+          "exactText": "Sneak Attack damage is split into two types: Dice, and Bonus Damage. Dice add 1d6 damage, meanwhile Bonus Damage directly adds a flat amount to each Sneak Attack.",
+          "support": "Explicit general sneak-damage property.",
+          "limitations": "Does not identify the semantics of a particular item field by name, certify mixed-source stacking, target uptime, or complete DPS."
+        },
+        {
+          "excerptId": "VULKOOR-MIGHT",
+          "sourceId": "SETS-720202",
+          "pointer": {
+            "jsonPointer": "/text",
+            "start": 12072,
+            "end": 12572,
+            "unit": "Unicode code points; half-open"
+          },
+          "exactText": "Vulkoor's Might [ML:7/20/30]\t\nGem of Many Facets/(Epic)/(Legendary) - Trinket (prefix)\nBracers of the Claw/(Epic)/(Legendary) - Bracers\nGloves of the Claw/(Epic)/(Legendary) - Gloves\n\t\n\n2 Pieces Equipped:\n\n+20% Artifact bonus to Threat Generation (all tier)\n+3 Artifact bonus to Attack (all tier)\n+3 Artifact bonus to Damage (all tier)\n●+3★+3 Artifact bonus to Critical Confirmation\n●+3★+3 Artifact bonus to Critical Damage\n★+3 Artifact bonus to Sneak Attack\n★+3 Artifact bonus to Sneak Attack Damage",
+          "support": "Aggregate Claw-family membership, 2-piece threshold and all tier-labelled printed bonuses.",
+          "limitations": "This body prints Sneak Attack and Sneak Attack Damage separately. It does NOT print Sneak Attack Dice or 3d6 in this row. No own Claw item tooltip/native effects are captured here; do not map a field to dice by category inference alone."
+        },
+        {
+          "excerptId": "DECEPTION-EXAMPLE-0-2",
+          "sourceId": "OPHAEL-685480",
+          "pointer": {
+            "outerPointer": "/content/1/text",
+            "decode": "JSON",
+            "innerPointer": "/0/tooltips/2"
+          },
+          "exactText": " Deception +12: +12 Enhancement bonus to hit and +18 to damage for any hit that would qualify as a sneak attack.",
+          "support": "Actual expanded own-item effect popup: qualifying-hit attack and flat damage amounts, with its printed bonus type.",
+          "limitations": "Native examples only; these are not the general Deception page or either Vulkoor Claw item. No proc chance, generic multiplier formula, shared-type stacking or dice conversion is inferred."
+        },
+        {
+          "excerptId": "DECEPTION-EXAMPLE-0-3",
+          "sourceId": "OPHAEL-685480",
+          "pointer": {
+            "outerPointer": "/content/1/text",
+            "decode": "JSON",
+            "innerPointer": "/0/tooltips/3"
+          },
+          "exactText": "Insightful Deception +6: +6 Insight bonus to hit and +9 to damage for any hit that would qualify as a sneak attack.",
+          "support": "Actual expanded own-item effect popup: qualifying-hit attack and flat damage amounts, with its printed bonus type.",
+          "limitations": "Native examples only; these are not the general Deception page or either Vulkoor Claw item. No proc chance, generic multiplier formula, shared-type stacking or dice conversion is inferred."
+        },
+        {
+          "excerptId": "DECEPTION-EXAMPLE-6-4",
+          "sourceId": "BURROWER-707408",
+          "pointer": {
+            "outerPointer": "/content/1/text",
+            "decode": "JSON",
+            "innerPointer": "/6/tooltips/4"
+          },
+          "exactText": "Quality Deception +3: +3 Quality bonus to hit and +5 to damage for any hit that would qualify as a sneak attack.",
+          "support": "Actual expanded own-item effect popup: qualifying-hit attack and flat damage amounts, with its printed bonus type.",
+          "limitations": "Native examples only; these are not the general Deception page or either Vulkoor Claw item. No proc chance, generic multiplier formula, shared-type stacking or dice conversion is inferred."
+        }
+      ],
+      "label": "source-cards"
+    },
+    {
+      "sha256": "24c7064b76874d7b05f805d8825a6dc68d9d3a4a0037d4125cdda280fc325ee5",
+      "sources": [
+        {
+          "sourceId": "CLAW-BRACERS-631874",
+          "receiptSHA256": "ae414492328d4dc5788523abefd37dcce0c089c6eb709d1a3e01b3322407b5e2",
+          "rawToolReceiptSHA256": "29c13311f60d64fa833b790bae64de7b15b868e37ddc597248a409d0244d6fdf",
+          "normalUrl": "https://ddowiki.com/page/Item:Legendary_Bracers_of_the_Claw",
+          "observedRevisionUrl": "https://ddowiki.com/index.php?title=Item:Legendary_Bracers_of_the_Claw&oldid=631874",
+          "oldid": "631874",
+          "bodyObservedAt": "2026-11-02T17:27:41.202Z",
+          "metadataObservedAt": "2026-11-02T17:27:41.202Z",
+          "metadataRelation": "same_capture",
+          "historicalRead": false,
+          "footer": [
+            "This page was last modified 19:27, April 21, 2025 (Update 73.1) by The Sneaky One. Based on work by Thomas Barker and good old Jan.\nAttribution-ShareAlike 2.5\nPrivacy policy\nDisclaimers"
+          ],
+          "bodyPointer": "/data/body",
+          "popupPointer": "/data/popups",
+          "scope": "Actual current normal-page capture with observed permalink; expanded set DOM tooltip separately bound when present. Native labels are not silently expanded to missing definitions/types.",
+          "limitations": [
+            "Anonymous page reports possible cache age: up to 8 hours.",
+            "No historical endpoint was opened; no gameplay experiment performed."
+          ]
+        },
+        {
+          "sourceId": "CLAW-GLOVES-632339",
+          "receiptSHA256": "42cfb8767ea954b17c67515e2e71d5c0c1cf28a8a78bb504b0241fa98eb37614",
+          "rawToolReceiptSHA256": "572fdfcbff6675b56389bd52018a8750e597aa00ef83ae17b77e029228ffcba5",
+          "normalUrl": "https://ddowiki.com/page/Item:Legendary_Gloves_of_the_Claw",
+          "observedRevisionUrl": "https://ddowiki.com/index.php?title=Item:Legendary_Gloves_of_the_Claw&oldid=632339",
+          "oldid": "632339",
+          "bodyObservedAt": "2026-11-02T17:28:00.220Z",
+          "metadataObservedAt": "2026-11-02T17:28:00.220Z",
+          "metadataRelation": "same_capture",
+          "historicalRead": false,
+          "footer": [
+            "This page was last modified 19:58, April 21, 2025 (Update 73.1) by The Sneaky One. Based on work by others.\nAttribution-ShareAlike 2.5\nPrivacy policy\nDisclaimers"
+          ],
+          "bodyPointer": "/data/body",
+          "popupPointer": "/data/popups",
+          "scope": "Actual current normal-page capture with observed permalink; expanded set DOM tooltip separately bound when present. Native labels are not silently expanded to missing definitions/types.",
+          "limitations": [
+            "Anonymous page reports possible cache age: up to 8 hours.",
+            "No historical endpoint was opened; no gameplay experiment performed."
+          ]
+        },
+        {
+          "sourceId": "DECEPTION-704007",
+          "receiptSHA256": "448a5b687aebbfacff0d3c16a6a7d2b7c33535d13b8d8804e4c74d33ea7ef963",
+          "rawToolReceiptSHA256": "07195b4b132db024f8de470ab140d59157df131f74ab77b374fb3532e1a50d81",
+          "normalUrl": "https://ddowiki.com/page/Deception",
+          "observedRevisionUrl": "https://ddowiki.com/index.php?title=Deception&oldid=704007",
+          "oldid": "704007",
+          "bodyObservedAt": "2026-11-02T17:28:54.762Z",
+          "metadataObservedAt": "2026-11-02T17:28:54.762Z",
+          "metadataRelation": "same_capture",
+          "historicalRead": false,
+          "footer": [
+            "This page was last modified 11:02, August 7, 2026 (Update 81.1.1) by ShoeMaker. Based on work by others.\nAttribution-ShareAlike 2.5\nPrivacy policy\nDisclaimers"
+          ],
+          "bodyPointer": "/data/body",
+          "popupPointer": null,
+          "scope": "Actual current normal-page capture with observed permalink; expanded set DOM tooltip separately bound when present. Native labels are not silently expanded to missing definitions/types.",
+          "limitations": [
+            "Anonymous page reports possible cache age: up to 6 hours.",
+            "No historical endpoint was opened; no gameplay experiment performed."
+          ]
+        }
+      ],
+      "excerpts": [
+        {
+          "excerptId": "CLAW-BRACERS-631874-SET-MARKUP",
+          "sourceId": "CLAW-BRACERS-631874",
+          "pointer": "/data/popups/0/html",
+          "exactText": "<b><a href=\"/page/Named_item_sets#Legendary_Vulkoor's_Might\" title=\"Named item sets\">Legendary Vulkoor's Might</a>:</b> 2 Pieces Equipped:<br>+20% Artifact bonus to Threat Generation<br>+3 Artifact bonus to Attack<br>+3 Artifact bonus to Damage<br>+3 Artifact bonus to Critical Confirmation<br>+3 Artifact bonus to Critical Damage<br>+3 Artifact bonus to Sneak Attack<br>+3 Artifact bonus to Sneak Attack Damage",
+          "support": "Actual DOM popup markup confirms separate line boundaries and exact set link.",
+          "limitations": "Markup is source content, not code to execute. Field names must not be normalized into unrelated effect families without an applicable rule."
+        },
+        {
+          "excerptId": "CLAW-GLOVES-632339-SET-MARKUP",
+          "sourceId": "CLAW-GLOVES-632339",
+          "pointer": "/data/popups/0/html",
+          "exactText": "<b><a href=\"/page/Named_item_sets#Legendary_Vulkoor's_Might\" title=\"Named item sets\">Legendary Vulkoor's Might</a>:</b> 2 Pieces Equipped:<br>+20% Artifact bonus to Threat Generation<br>+3 Artifact bonus to Attack<br>+3 Artifact bonus to Damage<br>+3 Artifact bonus to Critical Confirmation<br>+3 Artifact bonus to Critical Damage<br>+3 Artifact bonus to Sneak Attack<br>+3 Artifact bonus to Sneak Attack Damage",
+          "support": "Actual DOM popup markup confirms separate line boundaries and exact set link.",
+          "limitations": "Markup is source content, not code to execute. Field names must not be normalized into unrelated effect families without an applicable rule."
+        },
+        {
+          "excerptId": "DECEPTION-ARABIC",
+          "sourceId": "DECEPTION-704007",
+          "pointer": {
+            "jsonPointer": "/data/body",
+            "start": 1098,
+            "end": 1208,
+            "unit": "Unicode code points; half-open"
+          },
+          "exactText": "Deception +X items : +X (type) bonus to hit and +Y to damage for any hit that would qualify as a sneak attack.",
+          "support": "Arabic-numbered +X item family: attack X and damage Y; bonus type is a placeholder in this overview.",
+          "limitations": "No generic Y=1.5X formula or proc is supplied by this family definition."
+        },
+        {
+          "excerptId": "DECEPTION-INSIGHT",
+          "sourceId": "DECEPTION-704007",
+          "pointer": {
+            "jsonPointer": "/data/body",
+            "start": 4598,
+            "end": 4699,
+            "unit": "Unicode code points; half-open"
+          },
+          "exactText": "Effect: +X Insightful bonus to hit and +X to damage for any hit that would qualify as a sneak attack.",
+          "support": "Exact Insightful overview wording.",
+          "limitations": "This overview’s X/X differs from actual Ophael +6 Insight attack/+9 damage popup retained in v2. Preserve both; do not overwrite a named item’s actual values from this synopsis."
+        },
+        {
+          "excerptId": "DECEPTION-QUALITY",
+          "sourceId": "DECEPTION-704007",
+          "pointer": {
+            "jsonPointer": "/data/body",
+            "start": 6252,
+            "end": 6350,
+            "unit": "Unicode code points; half-open"
+          },
+          "exactText": "Effect: +X Quality bonus to hit and +X to damage for any hit that would qualify as a sneak attack.",
+          "support": "Exact Quality overview wording.",
+          "limitations": "This overview’s X/X differs from actual Burrower Quality3 attack/+5 damage popup retained in v2. Preserve both; no universal numeric conversion follows."
+        },
+        {
+          "excerptId": "DECEPTION-ROMAN",
+          "sourceId": "DECEPTION-704007",
+          "pointer": {
+            "jsonPointer": "/data/body",
+            "start": 8858,
+            "end": 9088,
+            "unit": "Unicode code points; half-open"
+          },
+          "exactText": "Deception (Roman Numeral) items: 5% Chance on Hit: Your target becomes Bluffed for four seconds. (Bluffed enemies can be affected by Sneak Attacks even while targeting you.) On sneak attack: +(X) to Attack Rolls, +(X*2) to Damage.",
+          "support": "Explicit Roman-numeral family proc and attack/damage rule.",
+          "limitations": "Not automatically applicable to Arabic +X properties, Improved Deception or Vulkoor’s Might."
+        },
+        {
+          "excerptId": "DECEPTION-UNNUMBERED",
+          "sourceId": "DECEPTION-704007",
+          "pointer": {
+            "jsonPointer": "/data/body",
+            "start": 9606,
+            "end": 9808,
+            "unit": "Unicode code points; half-open"
+          },
+          "exactText": "5% chance on hit: Your target becomes bluffed for 4 seconds. Bluffed enemies can be targeted by sneak attacks even while targeting you.\nOn sneak attack: +X to attack rolls, +1.5X to Sneak Attack damage.",
+          "support": "Explicit separate unnumbered Deception section.",
+          "limitations": "Do not move this 1.5X/proc rule into every family sharing the word Deception or into the differently named Vulkoor set."
+        },
+        {
+          "excerptId": "DECEPTION-IMPROVED",
+          "sourceId": "DECEPTION-704007",
+          "pointer": {
+            "jsonPointer": "/data/body",
+            "start": 7377,
+            "end": 8157,
+            "unit": "Unicode code points; half-open"
+          },
+          "exactText": "Effect: This weapon/item is hard to focus upon and thus provides a +5 enhancement bonus to Bluff checks. In addition, Improved Deception weapons has a 10%1 chance to envelop the target in darkness, making them vulnerable to sneak attacks for a short time. This chance is double the chance of weapons with normal Deception. This does not remove the sneak attack immunity that certain creature types such as undead, plants or constructs have.\n\n1According to a developer post, Improved Deception has double the chance to proc over regular deception.\n\nThe Improved Deception on Golden Guile and Ring of Lies applies to your currently equipped weapons, and will stack with weapons that already have Improved Deception or Deception. This will give a higher chance to trigger the effect.",
+          "support": "Improved Deception’s own proc/Bluff/stacking wording, including its cited-developer explanation and named jewelry exception.",
+          "limitations": "This is not a universal duplicate-item stack rule. Keep its named Golden Guile/Ring of Lies exception and immunity limitation; linked developer post was not independently read."
+        },
+        {
+          "excerptId": "DECEPTION-HISTORIC",
+          "sourceId": "DECEPTION-704007",
+          "pointer": {
+            "jsonPointer": "/data/body",
+            "start": 10301,
+            "end": 10598,
+            "unit": "Unicode code points; half-open"
+          },
+          "exactText": "Deception (historic)\n\nType: Suffix\nBase price modifier: +1\nEffect: This weapon is hard to focus upon and thus provides a +3 enhancement bonus to Bluff checks. In addition, Deception weapons have a chance to envelop the target in darkness, making them vulnerable to sneak attacks for a short time.\n",
+          "support": "Explicitly historical section, separately labelled.",
+          "limitations": "Not promoted to current Arabic-numbered effects or the Vulkoor set."
+        }
+      ],
+      "label": "addendum"
+    }
+  ]
+}
