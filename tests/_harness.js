@@ -16,6 +16,8 @@
 //     settles, never when the promise was merely started (the vacuous-green trap
 //     tests/augment-pin.test.js records). `await test(...)` works; `atest` is the
 //     same function under the name the async files already use.
+//     A promise still pending at process exit is FAIL, named and counted: a
+//     promise alone does not keep Node alive. No timeout or keep-alive is added.
 //   * The summary prints from `process.on("exit")`, so it cannot matter where a
 //     test is declared, and it always carries BOTH counts.
 //   * `JS_TEST_FILTER=<substring> node tests/x.test.js` runs only the tests whose
@@ -26,24 +28,40 @@
 //     prepare); they keep the counts honest instead of `failed++` in a file.
 "use strict";
 
+const { writeSync } = require("fs");
+const { format } = require("util");
 const FILTER = process.env.JS_TEST_FILTER || "";
 const counts = { passed: 0, failed: 0, skipped: 0 };
+const pending = new Set();
+
+function report(...args) {
+  // Exit listeners cannot drain console.log's asynchronous pipe writes. Use one
+  // synchronous path for every result so names and the summary stay complete
+  // and ordered. A slow reader can hold this loop until it consumes the output.
+  const bytes = Buffer.from(format(...args) + "\n");
+  for (let offset = 0; offset < bytes.length;) {
+    try { offset += writeSync(1, bytes, offset, bytes.length - offset); }
+    catch (err) {
+      if (!["EAGAIN", "EWOULDBLOCK", "EINTR"].includes(err.code)) throw err;
+    }
+  }
+}
 
 function pass(name) {
   counts.passed++;
-  console.log("  PASS", name);
+  report("  PASS", name);
 }
 
 function fail(name, err) {
   counts.failed++;
   process.exitCode = 1;
   const why = err && (err.stack || err.message) ? (err.stack || err.message) : String(err);
-  console.log("  FAIL", name, "\n   ", why);
+  report("  FAIL", name, "\n   ", why);
 }
 
 function skip(name, why) {
   counts.skipped++;
-  console.log("  SKIP", name, why ? `— ${why}` : "");
+  report("  SKIP", name, why ? `— ${why}` : "");
 }
 
 function test(name, fn) {
@@ -52,15 +70,24 @@ function test(name, fn) {
   try { r = fn(); }
   catch (e) { fail(name, e); return undefined; }
   if (r && typeof r.then === "function") {
-    return r.then(() => { pass(name); }, (e) => { fail(name, e); });
+    // Track invocations, not names: simultaneous tests may share a label.
+    const entry = { name };
+    pending.add(entry);
+    return r.then(
+      () => { pending.delete(entry); pass(name); },
+      (e) => { pending.delete(entry); fail(name, e); }
+    );
   }
   pass(name);
   return undefined;
 }
 
 process.on("exit", () => {
+  for (const { name } of pending) {
+    fail(name, "Test returned a promise that did not settle before process exit");
+  }
   const skipped = counts.skipped ? `, ${counts.skipped} skipped` : "";
-  console.log(`\n${counts.passed} passed, ${counts.failed} failed${skipped}`);
+  report(`\n${counts.passed} passed, ${counts.failed} failed${skipped}`);
 });
 
 module.exports = { test, atest: test, skip, pass, fail, counts };
