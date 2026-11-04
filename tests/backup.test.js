@@ -97,7 +97,7 @@ test("reviver strips __proto__ nested inside snapshot (exercises the reviver, no
   // __proto__ buried in app-produced snapshot data — the field allowlist passes
   // snapshot through, so only the reviver + scrub can catch this.
   const hostile = '{"schema_version":1,"characters":{"Sook":{"name":"Sook",'
-    + '"snapshot":{"status":"optimal","chosen":[],"__proto__":{"polluted":true}}}}}';
+    + '"inputs":{},"snapshot":{"status":"optimal","chosen":[],"__proto__":{"polluted":true}}}}}';
   const res = parseBackup(hostile, { current: 1, window: 3 });
   assert.strictEqual(({}).polluted, undefined, "Object.prototype polluted via nested __proto__");
   assert.strictEqual(res.ok, true);
@@ -654,4 +654,57 @@ test("#530: an INVENTED kind is refused, not silently protected forever", () => 
   const res = parseBackup(file);
   assert.strictEqual(res.ok, true, res.message);
   assert.deepStrictEqual(res.versions, [], "normalized to auto, then dropped");
+});
+
+
+// A file with unreadable settings must never reach the same-name overwrite.
+const malformedInputs = [undefined, null, [], [{ ml: 1 }], "lost settings", 1, false];
+for (const [index, inputs] of malformedInputs.entries()) {
+  test(`unreadable inputs ${index}: backup refuses before overwriting a saved build`, () => {
+    const Store = require("../web/persist.js");
+    const values = new Map();
+    let writes = 0;
+    const storage = {
+      getItem: (key) => values.get(key) || null,
+      setItem: (key, value) => { writes++; values.set(key, value); },
+    };
+    const original = Store.serializeCharacter("Keeper", {
+      ml: 30, race: "Elf", priorities: ["Constitution"], blocklist: ["Keep blocked"],
+      targetCaps: { Constitution: 42 },
+    });
+    assert.ok(Store.saveCharacter(original, storage).ok);
+    const before = values.get(Store.STORE_KEY);
+    const bad = Object.assign({}, original, { inputs });
+    const parsed = parseAny(JSON.stringify(serializeAll({
+      New: rec("New", 10), Keeper: bad,
+    })));
+    // The production import handler writes only when parseAny succeeds.
+    if (parsed.ok) Store.saveMany(parsed.characters, storage);
+    assert.strictEqual(values.get(Store.STORE_KEY), before, "existing settings must remain byte-identical");
+    assert.strictEqual(writes, 1, "refused file must not write even its valid character");
+    assert.strictEqual(parsed.ok, false);
+    assert.strictEqual(parsed.error, "invalid");
+    assert.match(parsed.message, /nothing was imported/i);
+  });
+  test(`unreadable inputs ${index}: portable loadout refuses instead of reporting a restored build`, () => {
+    const envelope = toPortableJSON(rec("Shared", 30));
+    envelope.core.inputs = inputs;
+    const parsed = parseAny(JSON.stringify(envelope));
+    assert.strictEqual(parsed.ok, false);
+    assert.strictEqual(parsed.error, "invalid");
+  });
+}
+
+test("input container validation keeps sparse legacy and empty settings readable", () => {
+  for (const schema_version of [1, 2, 3]) {
+    for (const inputs of [{}, { ml: 20 }, { priorities: [] }]) {
+      const character = Object.assign(rec("Legacy", 20), { inputs });
+      const backup = parseAny(JSON.stringify({ schema_version, characters: { Legacy: character } }));
+      assert.ok(backup.ok, backup.message);
+      assert.deepStrictEqual(backup.characters.Legacy.inputs, inputs);
+      const portable = parseAny(JSON.stringify(toPortableJSON(character)));
+      assert.ok(portable.ok, portable.message);
+      assert.deepStrictEqual(portable.character.inputs, inputs);
+    }
+  }
 });

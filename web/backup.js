@@ -91,7 +91,7 @@
 
   // Rebuild a character from an allowlist of known fields so no unexpected key
   // (including a pollution key that slipped a reviver) rides along. Returns null
-  // for a structurally-invalid record (missing/non-string name), which the caller
+  // for a structurally-invalid record (unreadable name or inputs), which the caller
   // treats as a full-file refusal.
   function sanitizeCharacter(raw) {
     if (!raw || typeof raw !== "object") return null;
@@ -100,8 +100,13 @@
     // silent-data-loss path this guard exists to close.
     const keys = inputKeys();
     if (!keys) return null;
+    // Every saved-record writer, including v1, emits an inputs object. Missing
+    // or malformed settings are not an empty build: accepting them would let a
+    // same-name backup overwrite valid settings and then report success.
+    // Sparse/empty objects remain valid for legacy and unfinished builds.
+    if (!raw.inputs || typeof raw.inputs !== "object" || Array.isArray(raw.inputs)) return null;
     const inputs = {};
-    const rawInputs = (raw.inputs && typeof raw.inputs === "object") ? raw.inputs : {};
+    const rawInputs = raw.inputs;
     for (const k of keys) {
       if (!isPollutionKey(k) && rawInputs[k] !== undefined) inputs[k] = scrub(rawInputs[k]);
     }
