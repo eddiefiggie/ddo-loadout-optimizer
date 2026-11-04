@@ -302,16 +302,18 @@
     return null;
   }
 
-  function readProgress(storage) {
-    const st = resolveStorage(storage);
-    if (!st) return {};
-    let raw = null;
-    try { raw = st.getItem(PROGRESS_KEY); } catch (e) { return {}; }
-    if (!raw) return {};
+  function readProgress(storage, strict = false) {
+    // Import merges must preserve bytes they cannot read, rather than treating
+    // a read failure as an empty progress map and replacing the store.
+    const failed = () => strict ? null : {};
     try {
+      const st = resolveStorage(storage);
+      if (!st) return failed();
+      const raw = st.getItem(PROGRESS_KEY);
+      if (raw === null) return {};
       const parsed = JSON.parse(raw);
-      return (parsed && typeof parsed === "object" && !Array.isArray(parsed)) ? parsed : {};
-    } catch (e) { return {}; }
+      return (parsed && typeof parsed === "object" && !Array.isArray(parsed)) ? parsed : failed();
+    } catch (e) { return failed(); }
   }
 
   /** plan 2026-08-25-001 U8 — install a whole progress map, for a backup restore.
@@ -341,9 +343,10 @@
    *  for that build (it is the same build) while every other local key survives,
    *  matching the by-name merge the character store already performs. */
   function mergeProgress(incoming, storage) {
+    const existing = readProgress(storage, true);
+    if (!existing) return { ok: false, error: "read" };
     const st = resolveStorage(storage);
-    if (!st) return { ok: false };
-    const merged = Object.assign({}, readProgress(storage));
+    const merged = Object.assign({}, existing);
     const src = (incoming && typeof incoming === "object") ? incoming : {};
     for (const key of Object.keys(src)) {
       const one = src[key];
