@@ -1285,6 +1285,15 @@ function buildPickerVocabulary(dataset) {
   for (const [name, type] of _craftingAffixTriples(ds)) {
     if (PRESENCE_TYPES.has(type) && _isPresenceTargetable(name)) { const c = canonical(name); suggest.add(c); presence.add(c); }
   }
+  // #928 / galvarian: the colon hides this existing, free-typeable catalog
+  // target from partial autocomplete. Restore discovery only when a Bool
+  // carrier exists. This is NOT a PRESENCE_ALLOW adjudication: its conditional
+  // bonuses remain unverified, and presence/Utility eligibility stay unchanged.
+  for (const [name, type] of _itemAffixTriples(ds)) {
+    if (name === "Melody: Imperial Resonance" && PRESENCE_TYPES.has(type)) {
+      suggest.add(canonical(name));
+    }
+  }
   // #91 (U1) — untyped weapon procs the utility-procs review ADMITTED (Holy,
   // Vampirism... once evidenced). They join the picker on the PRESENCE path —
   // suggested + on/off badge — and deliberately NOT via rankable_affixes: a
