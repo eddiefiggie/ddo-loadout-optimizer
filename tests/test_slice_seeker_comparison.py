@@ -168,10 +168,15 @@ def test_parsed_drift_cannot_hide_behind_unchanged_raw_context():
             seeker_unread(page_result(pages, catalog))
 
 
-def test_epic_and_other_rows_get_no_duplicate_word_rule():
+def test_heroic_helper_rejects_epic_and_unrelated_rows_stay_unread():
     pages, catalog = fixture()
-    seeker_unread(page_result(pages, catalog, EPIC))
     rows = S.page_sets(pages[D.PAGE]['wikitext'])
+    epic = next(row for row in rows if row['tier'] == 'Epic')
+    before = copy.deepcopy(epic)
+    entries = S.template_sets(pages[D.TEMPLATE]['wikitext'])
+    assert D.comparison_slice_seeker_row(
+        epic, pages[D.PAGE], pages[D.TEMPLATE], entries) is epic
+    assert epic == before
     # A lookalike row with a different anchor cannot borrow this identity.
     rows[0]['anchors'] = ['Different Set']
     catalog['Different Set'] = catalog.pop(NAME)
@@ -189,3 +194,14 @@ def test_raw_sources_parsed_inputs_and_shared_reader_are_unchanged():
         D.diff(pages, catalog)
     assert (pages, catalog, entries, rows) == original
     assert 'quarantine' in S.read_clause(ORIGINAL, BONUS_TYPES, {'Seeker'})
+
+
+def test_heroic_uses_its_own_template_not_the_epic_amount():
+    pages, catalog = fixture()
+    pages[D.TEMPLATE]['wikitext'] = pages[D.TEMPLATE]['wikitext'].replace(
+        EPIC_ENTRY, EPIC_ENTRY.replace('+2 [[Quality bonus]]', '+9 [[Quality bonus]]'))
+    result = page_result(pages, catalog)
+    assert result['class'] == 'partial' and len(result['quarantined']) == 1
+    assert 'Sneak Attack' in result['quarantined'][0]['line']
+    seeker_unread(page_result(pages, catalog, EPIC))
+    assert D.diff(pages, catalog)['sets'][EPIC]['template']['class'] == 'ours-differs'
