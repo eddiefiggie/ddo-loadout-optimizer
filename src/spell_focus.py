@@ -250,7 +250,38 @@ INTENSITY_TARGETS = [
     "Radiance Intensity", "Repair Intensity", "Sonic Intensity",
 ]
 
+# #928 — exact, fully representable compound grants from the retained rendered
+# tooltips, independently verified for spellpower and lore. Component order is
+# the tooltip's order (also the saved-priority migration order). The source's
+# bonus type and magnitude survive unchanged; these are ordinary same-type
+# grants, not Universal cross-add sources. See
+# docs/wiki-evidence/compound-spell-attribution.md for sources and exclusions.
+# Blight, Moonlit Haunt and Flames of Purity deliberately remain outside: their
+# Evil-only, Force-only and Light-only portions cannot fill Radiance/Impulse's
+# broader buckets. Expanding just part would silently discard the remainder.
+COMPOUND_SPELLPOWERS = {
+    "power of creeping dust": ["Glaciation", "Corrosion"],
+    "power of the dark restoration": ["Nullification", "Devotion"],
+    "power of the firestorm": ["Combustion", "Magnetism"],
+    "power of the frozen depths": ["Nullification", "Glaciation"],
+    "power of the frozen storm": ["Glaciation", "Magnetism"],
+    "power of the frozen thunderstorm": ["Glaciation", "Resonance", "Magnetism"],
+    "power of the silver flame": ["Devotion", "Radiance"],
+    "power of the thunderstorm": ["Resonance", "Magnetism"],
+}
+COMPOUND_LORES = {
+    "creeping dust lore": ["Ice Lore", "Acid Lore"],
+    "dark restoration lore": ["Void Lore", "Healing Lore"],
+    "firestorm lore": ["Fire Lore", "Lightning Lore"],
+    "frozen depths lore": ["Void Lore", "Ice Lore"],
+    "frozen storm lore": ["Ice Lore", "Lightning Lore"],
+    "silver flame lore": ["Healing Lore", "Radiance Lore"],
+    "thunderstorm lore": ["Sonic Lore", "Lightning Lore"],
+}
+
 _UNIVERSAL = {
+    **COMPOUND_SPELLPOWERS,
+    **COMPOUND_LORES,
     "spell focus mastery": SCHOOLS,
     "spell focus": SCHOOLS,
     "spell dcs": SCHOOLS,
@@ -457,7 +488,12 @@ def _expand_affix(affix: dict, table=_UNIVERSAL) -> list:
     if not targets:
         return [affix]
     label = source_label(affix.get("stat"), affix.get("bonus_type"))
-    return [{**affix, "stat": stat, PROVENANCE_KEY: label} for stat in targets]
+    # A saved exclusion on the old compound names the source, not every native
+    # bonus to its component. Keep that identity separate from display wording.
+    origin = ({"origin_stat": affix["stat"].strip()}
+              if affix["stat"].strip().lower() in {**COMPOUND_SPELLPOWERS, **COMPOUND_LORES}
+              else {})
+    return [{**affix, **origin, "stat": stat, PROVENANCE_KEY: label} for stat in targets]
 
 
 def _expand_list(affixes, table=_UNIVERSAL):

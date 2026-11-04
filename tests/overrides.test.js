@@ -312,7 +312,7 @@ test("the X Natural family is still overridable, just not offered as a replaceme
   assert.ok(xn.every((a) => O.isEligible(a)), "each may be overridden");
 });
 
-test("the classified population is 20,578 eligible of 42,185", () => {
+test("the classified affix population matches the reviewed dataset census", () => {
   let total = 0, eligible = 0;
   const byCat = {};
   for (const v of pool.items) for (const a of v.affixes || []) {
@@ -423,7 +423,9 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // Epic Lunar/Solar gems (every one unreleased: a red link on the wiki), measured
   // on those records alone in the pre-#901 build. Nothing else moved.
   // #953: four Slice/Dice Boolean set flags became membership; no override-eligible affix changed.
-  assert.strictEqual(total, 45771, "post-normalize pool size");
+  // #928 — 45,844: +73, exactly 144 components replacing 71 compound
+  // records on 41 items. All other normalized affixes are identical to base.
+  assert.strictEqual(total, 45844, "post-normalize pool size");
   // 20,578 not 20,774: the earlier figure was derived with a `via`-only test,
   // which counts the unstamped composite components (161 then, 565 now) as engraved. Applying all
   // five classes through the real predicate is what produces this number.
@@ -537,7 +539,10 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // 20,648 since #907 tier 3: +2, the Distant Incite on both Cloaks of the
   // Crownblade, which gear-planner left untyped and our own wiki harvest types as
   // the Enhancement bonus the template renders. Nothing else changed eligibility.
-  assert.strictEqual(eligible, 20648, "engraved, eligible affixes");
+  // #928 — 20,577: -71. Every replaced compound was engraved/eligible;
+  // all 144 components carry via and are ineligible under existing rule 5.
+  // These are generated components, so none becomes individually overridable.
+  assert.strictEqual(eligible, 20577, "engraved, eligible affixes");
   // item 13,611 not 13,548 since #313: +63, and the independent cross-check on the
   // line above. The overlay covers 33 WORN Cannith variants and no weapon or augment,
   // so the whole eligible delta must land in `item` and the other two must not move at
@@ -619,7 +624,9 @@ test("the classified population is 20,578 eligible of 42,185", () => {
   // is an augment, so the whole loss must land in one category, and it does.
   // item 13,484 since #907 tier 3: +2, weapon and augment UNCHANGED — both Cloaks
   // of the Crownblade are worn, so the whole +2 above must land in `item`, and it does.
-  assert.deepStrictEqual(byCat, { item: 13484, weapon: 6259, augment: 905 });
+  // #928 — item -41, weapon -30, augment unchanged: the 71 old compound
+  // affixes counted by carrier category through the actual isEligible predicate.
+  assert.deepStrictEqual(byCat, { item: 13443, weapon: 6229, augment: 905 });
 });
 
 test("chained overrides do not clobber the catalog type", () => {

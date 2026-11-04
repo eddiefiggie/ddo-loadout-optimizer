@@ -1,0 +1,186 @@
+{
+  "base": "96614a5f53e111c1fa5a7b4e1d6d04e48f52f8f6",
+  "items_before": 9173,
+  "items_after": 9173,
+  "new_ids": [],
+  "removed_ids": [],
+  "changed_items": 41,
+  "removed_affixes": 71,
+  "added_affixes": 144,
+  "changed_fields": {
+    "affixes": 41,
+    "eligible_affix_count": 41
+  },
+  "top_level_other_changed": [],
+  "metadata_changed": [
+    "affix_type_cross_check",
+    "build_id",
+    "compound_spell_evidence",
+    "expanded_away_names",
+    "provenance_labels",
+    "rankable_affixes",
+    "umbrella_detector"
+  ],
+  "changed_item_ids": [
+    "Alaric's Grim Gauntlets",
+    "Black Pearl Ring",
+    "Bottled Rainstorm",
+    "Bullywug Priestess' Staff",
+    "Cloak of the Artblade",
+    "Creeping Dust Conduit",
+    "Drow Priestess' Mantle",
+    "Echo of Wave",
+    "Epic Bullywug Priestess' Staff",
+    "Epic Pillar of Light",
+    "Epic Shining Crest of St. Markus",
+    "Epic Storm",
+    "Firestorm Conduit",
+    "Gloryborne Gloves",
+    "Helm of the Artblade",
+    "Lantern of the Abyss",
+    "Legendary Bullywug Priestess' Staff",
+    "Legendary Cloak of the Artblade",
+    "Legendary Creeping Dust Conduit",
+    "Legendary Drow Priestess' Mantle",
+    "Legendary Echo of Wave",
+    "Legendary Firestorm Conduit",
+    "Legendary Helm of the Artblade",
+    "Legendary Lantern of the Abyss",
+    "Legendary Ring of the Dread Seas",
+    "Legendary Sacred Band",
+    "Legendary Shining Crest of St. Markus",
+    "Legendary Storm",
+    "Marro, the Bone of Demons",
+    "Osfield's Lightning Boots",
+    "Perfected Vulkoorim Pendant",
+    "Pillar of Light",
+    "Pomura's Memento",
+    "Reflection of Wave",
+    "Ring of the Dread Seas",
+    "Shining Crest of St. Markus",
+    "Snare, the Chained Band",
+    "Sphere of Waves",
+    "Storm",
+    "The Demon Engine",
+    "The Volley's Aria"
+  ],
+  "source_counts": [
+    {
+      "name": "Creeping Dust Lore",
+      "type": "Equipment",
+      "count": 2
+    },
+    {
+      "name": "Dark Restoration Lore",
+      "type": "Equipment",
+      "count": 2
+    },
+    {
+      "name": "Firestorm Lore",
+      "type": "Equipment",
+      "count": 6
+    },
+    {
+      "name": "Frozen Depths Lore",
+      "type": "Equipment",
+      "count": 6
+    },
+    {
+      "name": "Frozen Storm Lore",
+      "type": "Equipment",
+      "count": 4
+    },
+    {
+      "name": "Power of Creeping Dust",
+      "type": "Equipment",
+      "count": 4
+    },
+    {
+      "name": "Power of the Dark Restoration",
+      "type": "Equipment",
+      "count": 4
+    },
+    {
+      "name": "Power of the Firestorm",
+      "type": "Equipment",
+      "count": 8
+    },
+    {
+      "name": "Power of the Frozen Depths",
+      "type": "Equipment",
+      "count": 6
+    },
+    {
+      "name": "Power of the Frozen Storm",
+      "type": "Equipment",
+      "count": 4
+    },
+    {
+      "name": "Power of the Frozen Storm",
+      "type": "Insight",
+      "count": 1
+    },
+    {
+      "name": "Power of the Frozen Storm",
+      "type": "Quality",
+      "count": 1
+    },
+    {
+      "name": "Power of the Frozen Thunderstorm",
+      "type": "Equipment",
+      "count": 2
+    },
+    {
+      "name": "Power of the Silver Flame",
+      "type": "Equipment",
+      "count": 7
+    },
+    {
+      "name": "Power of the Thunderstorm",
+      "type": "Equipment",
+      "count": 4
+    },
+    {
+      "name": "Silver Flame Lore",
+      "type": "Equipment",
+      "count": 6
+    },
+    {
+      "name": "Thunderstorm Lore",
+      "type": "Equipment",
+      "count": 4
+    }
+  ],
+  "normalized_override_census": {
+    "base": {
+      "total": 45771,
+      "eligible": 20648,
+      "byCat": {
+        "weapon": 6259,
+        "item": 13484,
+        "augment": 905
+      }
+    },
+    "current": {
+      "total": 45844,
+      "eligible": 20577,
+      "byCat": {
+        "weapon": 6229,
+        "item": 13443,
+        "augment": 905
+      }
+    },
+    "delta": {
+      "total": 73,
+      "eligible": -71
+    },
+    "removed": 71,
+    "added": 144,
+    "lostByCat": {
+      "item": 41,
+      "weapon": 30
+    },
+    "allRemovedEligible": true,
+    "allAddedIneligible": true
+  }
+}

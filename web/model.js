@@ -2018,7 +2018,62 @@ function filterEligiblePool(eligAll, query) {
   return { elig, blocked, setExcluded, packExcluded, packUncheckable, excludedSets, ownedPacks, pinnedThrough };
 }
 
+/** #928 — a saved compound/type exclusion follows its SOURCE after expansion.
+ * Filter before dominance and per-carrier max, so an excluded compound cannot
+ * eliminate a lower native source. This is a scoring view only: restore the
+ * original records before returning the model/program so item receipts still
+ * show every enchantment physically on the item. No caller's dataset is mutated.
+ * Only explicit origin_stat participates; display labels are never parsed. */
+function originExclusionView(exclusions) {
+  const keys = new Set(normalizeExclusions(exclusions).map((e) =>
+    `${e.stat.toLowerCase()}||${equivType(e.bonus_type)}`));
+  const originals = new WeakMap();
+  let changed = false;
+  const excluded = (a) => a && typeof a.origin_stat === "string" && keys.has(
+    `${a.origin_stat.toLowerCase()}||${equivType(a.type || a.bonus_type)}`);
+  function filter(value, affixes = false) {
+    if (!keys.size || !value || typeof value !== "object") return value;
+    if (value instanceof Map || value instanceof Set) return value;
+    let out;
+    if (Array.isArray(value)) {
+      out = value.filter((v) => !affixes || !excluded(v)).map((v) => filter(v));
+      if (out.length === value.length && out.every((v, i) => v === value[i])) return value;
+    } else {
+      out = {};
+      let same = true;
+      for (const [k, v] of Object.entries(value)) {
+        out[k] = filter(v, k === "affixes");
+        if (out[k] !== v) same = false;
+      }
+      if (same) return value;
+    }
+    changed = true;
+    originals.set(out, value);
+    return out;
+  }
+  function restore(value, seen = new WeakMap()) {
+    if (!changed || !value || typeof value !== "object") return value;
+    if (originals.has(value)) return originals.get(value);
+    if (seen.has(value)) return seen.get(value);
+    if (value instanceof Set) return value;
+    const out = value instanceof Map ? new Map() : Array.isArray(value) ? [] : {};
+    seen.set(value, out);
+    if (value instanceof Map) {
+      for (const [k, v] of value) out.set(k, restore(v, seen));
+    } else {
+      for (const [k, v] of Object.entries(value)) out[k] = restore(v, seen);
+    }
+    return out;
+  }
+  return { filter, restore };
+}
+
 function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], viktranium = [], seal = [], membershipSetDefs = {}, legendaryGreenSteel = [], augmentSetDefs = {}, utilityCountingSet = null, nearlyCompletePerItem = {}, essenceCrafting = [], slavers = []) {
+  const originView = originExclusionView(query.excludedTypes);
+  [variants, dinoInserts, nearlyComplete, viktranium, seal, membershipSetDefs,
+    legendaryGreenSteel, augmentSetDefs, nearlyCompletePerItem, essenceCrafting, slavers] =
+    originView.filter([variants, dinoInserts, nearlyComplete, viktranium, seal, membershipSetDefs,
+      legendaryGreenSteel, augmentSetDefs, nearlyCompletePerItem, essenceCrafting, slavers]);
   // #245 — the niche-crafting opt-out. A craftable option slot makes its host a
   // wildcard for every rankable stat (the Viktranium pool alone reaches 126), so
   // under strict lexicographic priority a Lamordia base is never worse and
@@ -2510,7 +2565,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   const _setAugGated = setAugmentGateReasons(variants, query, augmentSetDefs);
   const _setPins = classifySetPins(query, elig, augmentSetDefs, membershipSetDefs, _setAugGated);
 
-  return {
+  return originView.restore({
     query, targets: query.targets, worn, augments,
     // #742 — gate 3 rides on the model rather than being re-read from the query
     // in solver.js, so the solver and the pool agree on one resolved set.
@@ -2630,7 +2685,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
     credits: normalizeCredits(query.declaredCredits),
     // The other half of the same picker — see `normalizeExclusions`.
     excludedTypes: normalizeExclusions(query.excludedTypes),
-  };
+  });
 }
 
 // KTD3 — the closed bonus-type vocabulary a declared credit may name. Curated,
@@ -2794,7 +2849,7 @@ function poolStatNames(model) {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { poolStatNames, setIntrinsicCaps, setIntrinsicSoftCaps, softCapFor, setSplitMechanics, splitMechanicFor, setConditionalDisclosures, conditionalDisclosureFor, setTierRenameFamilies, tierRenamesFor,
     intrinsicCapFor, statCeilingHintFor, CEILING_DISCLOSURES, MRR_CAP_BY_ARMOR, setEssenceCoverage, essenceCoverage, craftedMlOf, queryGates, DUPLICABLE_RINGS, twinIdOf, isTwinId, originalIdOf, isTwinEligible, isWeaponTwinEligible,
-    buildModel, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
+    buildModel, originExclusionView, normalizeCredits, normalizeExclusions, CREDIT_BONUS_TYPES, MAX_CREDIT_VALUE, eligible, variantConflict,
     slotReachabilityFor, slotReachabilityReport, filterEligiblePool,
     classifySetPins, setAugmentGateReasons, lowestSetTier, intrinsicPieceSlots, pinConflict, pinnedVariantIds, pinnedAugmentIds, dominanceFilter, dominates,
     offHandItemsExcluded, twfDeclaredButInert, allowedOffHandWeaponTypes, pinSlotConflict,

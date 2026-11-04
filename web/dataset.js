@@ -1787,12 +1787,30 @@ function migrateLoadout(snapshot) {
 // `speed`'s movement and attack-speed magnitudes differ. Extend deliberately,
 // per key, with the wiki evidence — never derive from the expandedAway map,
 // which encodes redirect targets, not grant semantics.
+var COMPOUND_SPELL_NAMES = new Set([
+  // #928 — every admitted compound gives its FULL value to every component.
+  // Exact retained tooltips: docs/wiki-evidence/compound-spell-attribution.md.
+  // Keep partial-category and unverified compounds OUT, as in spell_focus.py.
+  "power of creeping dust", "power of the dark restoration",
+  "power of the firestorm", "power of the frozen depths",
+  "power of the frozen storm", "power of the frozen thunderstorm",
+  "power of the silver flame", "power of the thunderstorm",
+  "creeping dust lore", "dark restoration lore", "firestorm lore",
+  "frozen depths lore", "frozen storm lore", "silver flame lore", "thunderstorm lore",
+]);
+
+function compoundSpellTargets(vocab, name) {
+  return COMPOUND_SPELL_NAMES.has(String(name || "").trim().toLowerCase())
+    ? expandedAwayFor(vocab, name) : null;
+}
+
 var CREDIT_SPLITTABLE = new Set([
   "spell focus mastery", "spell focus", "spell dcs", "resistance",
   "all saving throws", "saving throws", "combat mastery", "tactical dcs",
   "elemental resonance", "charisma skills", "dexterity skills",
   "intelligence skills", "constitution skills", "strength skills",
   "wisdom skills", "well rounded", "all ability scores", "all ability score",
+  ...COMPOUND_SPELL_NAMES,
 ]);
 
 function migrateCredits(credits, vocab) {
@@ -1827,11 +1845,11 @@ function migrateCredits(credits, vocab) {
 // Browser: expose a global so app.js can normalize the fetched dataset without a
 // module system. Node: CommonJS export for the tests + parity harness.
 if (typeof window !== "undefined") {
-  window.DatasetNormalizer = { COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES, companionHintFor, COMPANION_STATS, familyHintFor, AFFIX_FAMILIES, familyCarrierCounts, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
+  window.DatasetNormalizer = { COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES, companionHintFor, COMPANION_STATS, familyHintFor, AFFIX_FAMILIES, familyCarrierCounts, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, compoundSpellTargets, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { UTILITY_CONTAINER_DEFAULT_ORDER, defaultUtilityOrder,
     COMPANION_STATS, companionHintFor,
     AFFIX_FAMILIES, familyHintFor, familyCarrierCounts,
-    COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
+    COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, compoundSpellTargets, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };
 }

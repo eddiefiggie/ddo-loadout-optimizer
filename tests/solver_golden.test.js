@@ -10,6 +10,16 @@
 //   node tests/parity/capture_golden.js
 //
 // Ratifications:
+//   Compound spell attribution (2026-11-04) — exactly THREE fixtures improve.
+//   Alaric's Grim Gauntlets' retained Power of the Dark Restoration supplies
+//   Equipment 155 Devotion: caster 377 -> 382, additive pair 422/410 -> 424/412.
+//   Earlier caster priorities remain 54/411/387; later gains include ordinary-
+//   source reoptimization. Sacred +12 and the pair's identical loadout
+//   remain intact. Independent old-data solves reproduce all three old records;
+//   mechanics and code reviewers reconciled every bucket before ratification.
+//   Other 21 records are untouched. Exact sources and downstream arithmetic:
+//   docs/reports/2026-11-04-compound-spell-validation.md#three-solver-ratifications
+//
 //   #951 (2026-11-01) — TWO fixtures improve when Unbreakable Adamancy's sourced
 //   two-piece Luck +5 PRR/MRR reaches the solver. Current code with the original
 //   dataset reproduces both old goldens exactly; all other data is unchanged.
@@ -328,6 +338,22 @@ const { test, fail } = require("./_harness");
       "and the loadout is byte-identical — a credit that competes with nothing must move nothing");
     assert.strictEqual(on.perTarget.Wisdom, off.perTarget.Wisdom);
     assert.strictEqual(on.perTarget["Universal Spell Power"], off.perTarget["Universal Spell Power"]);
+  });
+
+  test("compound spell ratification retains the sourced Dark Restoration carrier", () => {
+    const gloves = dataset().items.find((v) => v.variant_id === "Alaric's Grim Gauntlets");
+    assert.ok(gloves, "the real compound carrier must remain in the dataset");
+    const parts = gloves.affixes.filter((a) => a.origin_stat === "Power of the Dark Restoration");
+    assert.deepStrictEqual(parts.map((a) => [a.name, a.type, Number(a.value), a.via]), [
+      ["Nullification", "Equipment", 155, "Power of the Dark Restoration"],
+      ["Devotion", "Equipment", 155, "Power of the Dark Restoration"],
+    ], "the retained engraving credits both exact components at the original type and magnitude");
+    for (const name of ["endgame-caster-ml32", "trance-credit-additive-ml32",
+                        "trance-credit-additive-ml32-baseline"]) {
+      assert.ok(solves[name].chosen.some((v) =>
+        v.slot === "Gloves" && v.variant === gloves.variant_id),
+      `${name} must still exercise the compound carrier behind its ratification`);
+    }
   });
 
   // ---------------------------------------------------------------------------

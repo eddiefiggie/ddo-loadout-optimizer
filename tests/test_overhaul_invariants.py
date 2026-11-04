@@ -31,7 +31,10 @@ _LEGACY_AFFIX_KEYS = {"stat", "bonus_type", "unit", "minimum_level"}
 # and share exports must show what is engraved on the item rather than the stat
 # the value was credited to. Already allowed here, so R12 needed no widening —
 # the coverage test below is what proves every family actually writes it.
-_ALLOWED_AFFIX_KEYS = {"name", "type", "value", "eligible", "via"}
+# #928: origin_stat is the exact compound source identity, separate from the
+# engraved via label. Saved source/type exclusions use it without suppressing
+# native component bonuses. It is intentional native metadata, not a legacy key.
+_ALLOWED_AFFIX_KEYS = {"name", "type", "value", "eligible", "via", "origin_stat"}
 
 
 def _load():

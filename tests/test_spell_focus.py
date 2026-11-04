@@ -231,7 +231,7 @@ def test_all_universal_names_map_to_their_family_targets():
                          "good luck",
                          # #876 (U81.4) — spell critical damage is per-element.
                          "spell critical damage",
-                         "universal spell critical damage"}
+                         "universal spell critical damage"} | set(spell_focus.COMPOUND_SPELLPOWERS) | set(spell_focus.COMPOUND_LORES)
     assert away["spell critical damage"] == spell_focus.INTENSITY_TARGETS
     assert away["universal spell critical damage"] == spell_focus.INTENSITY_TARGETS
     assert away["alluring skills bonus"] == spell_focus.SKILLS_ALLURING

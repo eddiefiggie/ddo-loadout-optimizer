@@ -310,7 +310,11 @@ def test_the_shipped_adjudications_cover_the_built_dataset_and_the_stamp_matches
     data = json.load(open(ITEMS, encoding="utf-8"))
     st = T.cross_check(T.load_shard(), data["items"], T.load_crosscheck_adjudications())
     assert data["metadata"]["affix_type_cross_check"] == st, "the stamp is the check — rebuild after changing either"
-    assert st["compared"] >= 170 and st["agree"] >= 160, st
+    # #928: 15 source names move from direct agreement to agreement through
+    # expanded components (164 + 7 -> 149 + 22). The compared population and
+    # total agreements stay unchanged; both forms must count toward coverage.
+    assert st["compared"] >= 170, st
+    assert st["agree"] + len(st["agree_via_components"]) >= 170, st
     # The three rulings shipped: two harvest defects (the wrong tooltip was
     # captured for the key), one deliberate model divergence (#614 types a
     # cursed -1 as Penalty). None is a type defect in the catalog.

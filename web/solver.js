@@ -258,6 +258,9 @@ function slotConstraintBodies(xVars, slotConstraints) {
 }
 
 function buildProgram(model) {
+  const originView = (typeof originExclusionView === "function" ? originExclusionView
+    : require("./model.js").originExclusionView)(model.excludedTypes);
+  model = originView.filter(model);
   const mlCap = model.mlCap;
   // U1 — capped stats = the wiki-sourced intrinsic ceilings plus any user-set
   // per-stat caps. When both cap a stat, the tighter (min) wins. Each capped stat is
@@ -995,7 +998,7 @@ function buildProgram(model) {
         item: xv.variant.variant_id, category,
         ...(opt.name ? { name: opt.name } : {}),
         // The whole option rides along, so a placement is self-describing.
-        affixes: affixes.map((a) => ({
+        affixes: originView.restore(affixes).map((a) => ({
           stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat",
           ...(a.via ? { via: a.via } : {}),
         })),
@@ -1135,7 +1138,7 @@ function buildProgram(model) {
           name: opt.name,
           // The whole option rides along, so a placement is self-describing (a
           // multi-affix craft is findable by any affix it grants).
-          affixes: affixes.map((a) => ({
+          affixes: originView.restore(affixes).map((a) => ({
             stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat",
             ...(a.via ? { via: a.via } : {}),
           })),
@@ -1225,7 +1228,7 @@ function buildProgram(model) {
         const lead = onTarget[0];
         slaversMeta.set(n, {
           item: xv.variant.variant_id, slot: slot.slot, tier: slot.tier, name: opt.name,
-          affixes: affixes.map((a) => ({
+          affixes: originView.restore(affixes).map((a) => ({
             stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat",
             ...(a.via ? { via: a.via } : {}),
           })),
@@ -1276,7 +1279,7 @@ function buildProgram(model) {
           item: xv.variant.variant_id, tier: slot.tier, item_class: slot.item_class, name: opt.name,
           // The whole option rides along, so a placement is self-describing and a
           // multi-affix craft is findable by any affix it grants (Viktranium's rule).
-          affixes: affixes.map((a) => ({
+          affixes: originView.restore(affixes).map((a) => ({
             stat: a.stat, bonus_type: a.bonus_type, value: a.value, unit: a.unit || "flat",
             ...(a.via ? { via: a.via } : {}),
           })),
@@ -1755,7 +1758,7 @@ function buildProgram(model) {
     }
   }
 
-  return {
+  return originView.restore({
     // creditBuckets (bucket key -> declared-credit floor) rides out for the
     // #322 visibility guard (visibleGateSet) rather than being re-derived.
     xVars, zByBucket, cappedStats, intrinsicCaps: { ...(model.intrinsicCaps || {}) },
@@ -1803,7 +1806,7 @@ function buildProgram(model) {
           && model.utilityNotCountedSet.has(s)
           && !(utilityCountingSet && utilityCountingSet.has(s)))
       : [],
-  };
+  });
 }
 
 /** Raw stacked expression (terms) for a stat: sum over its buckets of value*z.
