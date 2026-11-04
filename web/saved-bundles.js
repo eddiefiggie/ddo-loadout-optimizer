@@ -110,16 +110,19 @@
   /** Every stored bundle, newest first. A malformed payload reads as empty rather
    *  than throwing: a corrupt store must not take the priority step down with it.
    *  Mirrors `listVersions`. */
-  function listBundles(storage) {
-    const st = resolveStorage(storage);
-    if (!st) return [];
-    let raw = null;
-    try { raw = st.getItem(STORE_KEY); } catch (e) { return []; }
-    if (!raw) return [];
-    let parsed = null;
-    try { parsed = JSON.parse(raw); } catch (e) { return []; }
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((r) => r && typeof r === "object" && r.id);
+  function listBundles(storage, strict = false) {
+    // An import must distinguish an unreadable store from an absent key, or its
+    // merge would silently replace data that the display reader could not show.
+    const failed = () => strict ? null : [];
+    try {
+      const st = resolveStorage(storage);
+      if (!st) return failed();
+      const raw = st.getItem(STORE_KEY);
+      if (raw === null) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return failed();
+      return parsed.filter((r) => r && typeof r === "object" && r.id);
+    } catch (e) { return failed(); }
   }
 
   /** Write the list back. Returns `{ ok }`, and on a quota failure
@@ -188,7 +191,8 @@
    *  overwriting; a matching name is the same bundle coming home, and the incoming
    *  copy wins so a re-import is idempotent rather than duplicating. */
   function mergeIn(incoming, storage) {
-    const existing = listBundles(storage);
+    const existing = listBundles(storage, true);
+    if (!existing) return { ok: false, full: false, error: "read" };
     const byId = new Map(existing.map((r) => [r.id, r]));
     const out = existing.slice();
     let ids = existing;

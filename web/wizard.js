@@ -7540,9 +7540,11 @@ ${(() => {
               const w = CharacterStore.saveMany(one);
               if (!w.ok) {
                 s.className = "wz-filestat warn";
-                s.textContent = w.error === "quota"
-                  ? "Storage full — remove some saves and try again."
-                  : "Could not save the imported loadout.";
+                s.textContent = w.error === "read"
+                  ? "Could not read your saved characters. Nothing was imported."
+                  : w.error === "quota"
+                    ? "Storage full — remove some saves and try again."
+                    : "Could not save the imported loadout.";
                 return;
               }
               s.className = "wz-filestat";
@@ -7573,12 +7575,13 @@ ${(() => {
             // while the status line claimed only one.
             let extra = "";
             const failed = [];
+            let unreadable = false;
             if (w.ok) {
               const SB = _savedBundles();
               if (SB && (res.bundles || []).length) {
                 const r = SB.mergeIn(res.bundles);
                 if (r.ok) extra += `, ${res.bundles.length} bundle${res.bundles.length === 1 ? "" : "s"}`;
-                else failed.push("saved bundles");
+                else { failed.push("saved bundles"); unreadable = unreadable || r.error === "read"; }
               }
               // #530 — the authored snapshots. Merged like the bundles above and
               // for the same reason: this path is reached when something already
@@ -7591,14 +7594,14 @@ ${(() => {
                 if (r.ok) {
                   const nv = res.versions.length;
                   extra += `, ${nv} version snapshot${nv === 1 ? "" : "s"}`;
-                } else failed.push("version snapshots");
+                } else { failed.push("version snapshots"); unreadable = unreadable || r.error === "read"; }
               }
               // eslint-disable-next-line no-undef
               if (typeof FarmingList !== "undefined" && Object.keys(res.farming || {}).length) {
                 // eslint-disable-next-line no-undef
                 const r = FarmingList.mergeProgress(res.farming);
                 if (r.ok) extra += ", farming progress";
-                else failed.push("farming progress");
+                else { failed.push("farming progress"); unreadable = unreadable || r.error === "read"; }
               }
             }
             s.className = "wz-filestat" + (w.ok && !failed.length ? "" : " warn");
@@ -7606,9 +7609,12 @@ ${(() => {
             // is the one path where the player's original data is already gone, so
             // a false success is the failure they cannot recover from.
             s.textContent = !w.ok
-              ? (w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.")
+              ? (w.error === "read" ? "Could not read your saved characters. Nothing was imported."
+                : w.error === "quota" ? "Storage full — remove some saves and try again." : "Could not save the import.")
               : failed.length
-                ? `Imported ${n} character${n === 1 ? "" : "s"}${extra}, but ${failed.join(" and ")} could not be saved — your storage may be full.`
+                ? `Imported ${n} character${n === 1 ? "" : "s"}${extra}, but ${failed.join(" and ")} could not be saved — ${unreadable
+                  ? "existing stored data could not be read. Unreadable stores were left unchanged."
+                  : "your storage may be full."}`
                 : `Imported ${n} character${n === 1 ? "" : "s"}${extra} (merged).`;
             renderRail();
             renderStored();

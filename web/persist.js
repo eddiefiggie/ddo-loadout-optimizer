@@ -372,20 +372,21 @@
     return null;
   }
 
-  function readAll(storage) {
-    const st = resolveStorage(storage);
-    // null-prototype map so a character literally named "__proto__" is stored as
-    // an own key (hitting the proto setter would silently drop it and mutate the
-    // object's prototype).
+  function readAll(storage, strict = false) {
+    // Display readers can tolerate a broken store; an import must not overwrite
+    // bytes it could not read. Only a missing key is an empty store in that path.
     const empty = () => Object.create(null);
-    if (!st) return empty();
+    const failed = () => strict ? null : empty();
     try {
+      const st = resolveStorage(storage);
+      if (!st) return failed();
       const raw = st.getItem(STORE_KEY);
-      const parsed = raw ? JSON.parse(raw) : null;
-      return (parsed && typeof parsed === "object")
-        ? Object.assign(empty(), parsed) : empty();
+      if (raw === null) return empty();
+      const parsed = JSON.parse(raw);
+      return (parsed && typeof parsed === "object" && (!strict || !Array.isArray(parsed)))
+        ? Object.assign(empty(), parsed) : failed();
     } catch (e) {
-      return empty();
+      return failed();
     }
   }
 
@@ -434,7 +435,8 @@
   }
 
   function saveMany(records, storage) {
-    const all = readAll(storage);
+    const all = readAll(storage, true);
+    if (!all) return { ok: false, error: "read" };
     for (const name of Object.keys(records || {})) all[name] = records[name];
     return writeAll(all, storage);
   }
