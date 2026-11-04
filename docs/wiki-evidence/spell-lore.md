@@ -155,6 +155,19 @@ dataset vocabulary at build time). **Exclusions, recorded deliberately:**
   statement ties a universal name to a combined-lore name, so extension is
   deferred until a report warrants it (never infer).
 
+**Correction, 2026-11-04 (#928):** the absence of compound-level cross-add
+rules does not prevent same-type expansion into directly stated elements.
+Seven fully representable compound lores now expand; each resulting elemental
+bucket receives the existing Universal Spell Lore cross-add. Blighted,
+Moonlit Haunt and Purifying Flame remain unchanged because their Evil-only,
+Force-only and Light-only portions cannot fill the broader existing buckets;
+other unsupported lore names remain unchanged for lack of direct definitions.
+See [compound spell attribution](compound-spell-attribution.md) for the retained
+independent lore evidence, exact map and remaining scope. The old exclusion
+above records the previous implementation, not a bar on evidence-backed
+component expansion.
+
+
 ## Roman-numeral magnitudes: element lores are the numeral + 10 (#884)
 
 **Ruled:** 2026-10-15, read same-origin through the in-app Browser pane per `harvest-method.md`.

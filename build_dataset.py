@@ -60,6 +60,7 @@ from src import elemental_resistance_split as er_split_mod
 from src import enchantment_split as enchantment_split_mod
 from src import umbrella as umbrella_mod
 from src import spell_focus as spell_focus_mod
+from src import compound_spell_evidence as compound_spell_evidence_mod
 from src import cross_add as cross_add_mod
 from src import provenance as provenance_mod
 from src import value_corrections as value_corrections_mod
@@ -1437,6 +1438,13 @@ def build() -> dict:
     # existing max-per-(stat, stacking type) bucketing reproduce both wiki rules:
     # same type collapses to the highest, different types stack. Covers BOTH the
     # item and set-bonus channels (516 set tiers grant it).
+    # #928 — inspect actual source names before expansion removes compounds.
+    _compound_source_names = [a.get("stat") for v in variants
+                              for a in v.get("affixes", [])]
+    _compound_source_names += [a.get("stat") for v in variants
+                               for tier in v.get("parsed_set_bonuses", [])
+                               for a in tier.get("affixes", [])]
+    compound_spell_evidence_mod.check_compound_evidence(_compound_source_names)
     _spell_focus_counts = spell_focus_mod.expand_variants(variants)
     # The crafting/choice pools are a THIRD channel the variant pass cannot reach:
     # their options live in their own top-level arrays, not on a variant. Because
@@ -2794,6 +2802,11 @@ def build() -> dict:
     out["metadata"]["upgraded_item_coverage"] = _upgraded["coverage"]
     out["metadata"]["wiki_supplement_coverage"] = _supplement["coverage"]
 
+    # Include every emitted carrier channel as well: a newly named craft or set
+    # compound must not evade the source census just because it is not worn.
+    out["metadata"]["compound_spell_evidence"] = compound_spell_evidence_mod.check_compound_evidence(
+        _compound_source_names + [name for name, _ in _every_carrier_affix(out)])
+
     # build_id hashes the full assembled dataset (everything except metadata) so
     # drift in sets, augments, or crafting inputs — not just base variants —
     # marks a saved snapshot stale.
@@ -2828,6 +2841,8 @@ def _native_affix(a: dict) -> dict:
     # The key check is generic on purpose: every expansion family stamps it.
     if spell_focus_mod.PROVENANCE_KEY in a:
         out[spell_focus_mod.PROVENANCE_KEY] = a[spell_focus_mod.PROVENANCE_KEY]
+    if "origin_stat" in a:
+        out["origin_stat"] = a["origin_stat"]
     return out
 
 

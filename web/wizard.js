@@ -872,9 +872,14 @@ function bonusTypeStatus(skipped, credited) {
  *  number IS the softer answer. The UI enforces that; this refuses it a second
  *  time, for a hand-edited backup.
  */
-function cleanExclusionMap(m, vocab, credits) {
+function cleanExclusionMap(m, vocab, credits, sourceCredits) {
   const canonical = vocab && typeof vocab.canonical === "function" ? vocab.canonical : (s) => s;
   const out = {};
+  // Resolve a same-source credit/skip conflict before splitting the credit loses
+  // that source identity. A separately declared component credit does not cancel
+  // a compound-only skip.
+  const sourceCreditKeys = new Set(_normalizeCreditsW(Object.values(sourceCredits || {}))
+    .map((c) => creditKey(canonical(c.stat) || c.stat, c.bonus_type)));
   if (!m || typeof m !== "object") return out;
   for (const row of Object.values(m)) {
     if (!row) continue;
@@ -889,10 +894,18 @@ function cleanExclusionMap(m, vocab, credits) {
     const key = creditKey(stat, bonusType);
     // A credit on the same pair wins: it is the more specific instruction, and
     // the solver would otherwise carry a floor into a bucket it just deleted.
-    if (credits && Object.prototype.hasOwnProperty.call(credits, key)) continue;
+    if (sourceCreditKeys.has(key) || (credits && Object.prototype.hasOwnProperty.call(credits, key))) continue;
     out[key] = { stat, bonus_type: bonusType };
   }
   return out;
+}
+
+/** Preserve saved full-value credits and source-specific skips together. */
+function migrateSavedBonusChoices(state, vocab) {
+  const declaredCredits = cleanCreditMap(state.declaredCredits, vocab);
+  const excludedTypes = cleanExclusionMap(state.excludedTypes, vocab,
+    declaredCredits, state.declaredCredits);
+  return { declaredCredits, excludedTypes };
 }
 
 /** The count phrase on a collapsed row's Advanced summary — "" when nothing is
@@ -925,6 +938,22 @@ function creditIsUsable(v) {
  *
  *  `badgeCount` counts applied settings — a floor, a cap, and each USABLE credit
  *  — so a half-typed credit row does not inflate the badge. Pure; unit-tested. */
+// #928 — keep legacy source-specific skips visible/removable on each affected
+// component, without turning them into exclusions of native component bonuses.
+function originExclusionsFor(stat, state, vocab) {
+  const DN = _datasetNormalizer();
+  if (!DN || !DN.compoundSpellTargets) return [];
+  return Object.entries((state && state.excludedTypes) || {}).filter(([, e]) => {
+    const targets = e && DN.compoundSpellTargets(vocab, e.stat);
+    return targets && targets.includes(stat);
+  }).map(([key, e]) => ({ key, stat: e.stat, bonus_type: e.bonus_type }));
+}
+
+function originExclusionsHTML(rows) {
+  return (rows || []).map((e) => `<p class="wz-help">Saved exclusion: ${wzEsc(e.stat)} (${wzEsc(e.bonus_type)}) only. `
+    + `<button type="button" class="btn ghost sm" data-origin-skip="${wzEsc(e.key)}">Remove exclusion</button></p>`).join("");
+}
+
 function advancedRowModel(stat, state, vocab) {
   const s = state || {};
   // #91 (U4/R15) — the Utility tier row renders NO Advanced panel at all: no
@@ -979,13 +1008,14 @@ function advancedRowModel(stat, state, vocab) {
   const skipped = Object.entries(allSkips)
     .filter(([, e]) => e && e.stat === stat)
     .map(([key, e]) => ({ key, stat: e.stat, bonus_type: e.bonus_type }));
+  const originSkipped = originExclusionsFor(stat, s, vocab);
   const badgeCount = (floor != null ? 1 : 0) + (cap != null ? 1 : 0)
-    + credits.filter((c) => c.usable).length + skipped.length;
+    + credits.filter((c) => c.usable).length + skipped.length + originSkipped.length;
   // `canCredit` drives the AFFORDANCE, not just the list. Suppressing the rows
   // while still rendering "+ already have" left a button that silently wrote
   // state the query then discarded: clicking it on an on/off row produced no
   // visible row, no error, and one more orphan entry per click.
-  return { canCredit: canDeclareCredit(stat, vocab), floor, cap, credits, skipped, badgeCount,
+  return { canCredit: canDeclareCredit(stat, vocab), floor, cap, credits, skipped, originSkipped, badgeCount,
     required: floor != null && Number(floor) > 0 };
 }
 
@@ -1208,7 +1238,7 @@ function buildQuery(state, vocab, items) {
     // pre-feature one; nothing hashes or diffs it.
     declaredCredits: cleanCreditMap(state.declaredCredits, vocab),
     excludedTypes: cleanExclusionMap(state.excludedTypes, vocab,
-      cleanCreditMap(state.declaredCredits, vocab)),
+      cleanCreditMap(state.declaredCredits, vocab), state.declaredCredits),
     // #88 U8 (R14/KTD6) — the overrides actually IN FORCE for this solve, which is
     // the overlay's APPLY REPORT, never the player's saved declaration. The two
     // differ exactly where it matters: a suspended, unmatched, or ineligible
@@ -3123,7 +3153,7 @@ function yieldToPaint() {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor, groupsOf, spanOf, movePriorityGroup, snapDropToGroup, dropIndexForRun, linksAfterDelete, linksAfterBundle, pruneLinks, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, AUGMENT_PIN_NOTE, augmentPinnable, addAugmentPin, removeAugmentPin, augmentPinStale, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
+  module.exports = { armorTypesFor, canSolve, DRUID_ARMOR, WIZARD_STEPS, ADVANCED_PANEL_HELP, canAdvance, nextStep, prevStep, wizIsForged, buildQuery, cleanBoundMap, cleanCreditMap, cleanExclusionMap, migrateSavedBonusChoices, bonusTypeStatus, creditKey, creditIsUsable, isPresenceOnly, isUntypedOnly, canDeclareCredit, advancedRowModel, originExclusionsFor, originExclusionsHTML, advancedBadgeText, openPanels, openPanelToggle, openPanelSweep, openPanelClear, panelOpenAttr, stepAfterLoad, savedStep, stepOnLoad, nameCollides, runBelongsTo, overwriteConfirmText, renameRefusalText, farmingTakeover, farmingTakeoverText, deleteBuildConfirmText, storedItemsModel, storedItemsHTML, railModel, saveControl, saveOkText, saveErrorText, resolveBannerShowing, resolveBannerPrimary, CHARACTER_REQUIRED, missingRequired, missingRequiredMessage, weaponGroupSummary, curatedStats, pickerVocabulary, setAugSummaryLabel, setAugStatus, PRESET_BUNDLES, BUNDLE_GROUPS, BUNDLE_CONTAINERS, bundleContainerHTML, bundleBoxHTML, savedBundlesHTML, bundleFromRanking, applySavedBundle, bundleStaleNames, staleBundleText, applyBundleConfirmText, deleteBundleConfirmText, resolveBundle, addBundle, twfMigrationNeeded, styleMissingOnLoad, pinWornSlotOf, pinHandsFor, pinIdOf, applyPin, applyPinId, removePinFrom, reconcilePinLegality, pinnedIdSet, ownedPoolAdmits, pinnedUnownedNames, dualPinMutexConflict, yieldToPaint, PAINT_STALL_FALLBACK_MS, resolvePriorityAdd, newPriorityList, insertAboveTrailingSentinel, movePriority, movePriorityDest, lastRankedIndex, dragScrollVelocity, DRAG_SCROLL_EDGE, DRAG_SCROLL_MAX, dropIndexFor, groupsOf, spanOf, movePriorityGroup, snapDropToGroup, dropIndexForRun, linksAfterDelete, linksAfterBundle, pruneLinks, healUtilityTier, healUtilityContainer, restoredRenderQuery, datalistStats, addBlocks, blockDisplacesPinText, removeBlock, pinBlockedConflict, reachHintHTML, wzEsc, AUGMENT_PIN_NOTE, augmentPinnable, addAugmentPin, removeAugmentPin, augmentPinStale, craftOptionIndex, filterCraftOptions, craftOptionName, craftOptionWhere, craftIdIsKnown, CRAFT_FAMILY_LABEL,
     restoreCustomItems, nextCustomUid, customVariantsFor, isPlayerAuthored,
     pinnableSets, addSetPins, removeSetPin, setPinStale, setPinSlowNotice, blockPinOverlap, blockPinSlotOf, blockStale, blockLoadMessage, noDropNote, rungFromInputs, restoreOverrides, OVERRIDE_LIMIT, overrideLoadMessage, staleNote, addOverrideTo, removeOverrideAt, reconfirmOverrideAt, findOverrideFor,
     // #348 (U6) — the Utility container's pure logic.
@@ -5395,6 +5425,7 @@ ${(() => {
           <span class="wz-help wz-btype-stat">${esc(bonusTypeStatus(skipped.size, usableCredits))}</span>
         </div>
         <div class="wz-btype-grid">${rows}</div>
+        ${originExclusionsHTML(model.originSkipped)}
       </div>`;
     }
 
@@ -5549,6 +5580,9 @@ ${(() => {
             }
           }
           openPanelSweep(p);   // KTD1 — and its open-panel entry, for the same reason
+        }
+        else if (b.dataset.originSkip != null) {
+          if (state.excludedTypes) delete state.excludedTypes[b.dataset.originSkip];
         }
         else if (b.dataset.btall != null) {
           // Skip every bonus type. The whole point of the bulk pair: the old
@@ -5961,6 +5995,7 @@ ${(() => {
       // row). Mirrors the saved-character load path, deliberately — DROPPED, never
       // remapped. "min 4 Parrying" is not "min 4 Armor Class", and copying it onto four
       // stats would invent four constraints the player never set.
+      Object.assign(state, migrateSavedBonusChoices(state, vocab));
       const droppedBounds = [];
       const droppedCredits = [];
       for (const sub of res.substitutions) {
@@ -6897,6 +6932,8 @@ ${(() => {
       const _dnMig = _datasetNormalizer();
       state.expandedAwayMigrated = null;
       if (_dnMig && _dnMig.migratePriorities) {
+        // Split full-value credits before the orphan-removal loop below.
+        Object.assign(state, migrateSavedBonusChoices(state, pickerVocabulary(dataset)));
         const migrated = _dnMig.migratePriorities(state.priorities, pickerVocabulary(dataset));
         const _retiredSubs = migrated.retired || [];
         if (migrated.substitutions.length || _retiredSubs.length) {

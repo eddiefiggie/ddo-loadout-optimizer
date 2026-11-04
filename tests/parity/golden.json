@@ -357,30 +357,30 @@
     "Universal Spell Power": 54,
     "Combustion": 411,
     "Corrosion": 387,
-    "Devotion": 377,
-    "Glaciation": 278,
-    "Impulse": 169,
-    "Magnetism": 169,
-    "Nullification": 290,
-    "Radiance": 169,
-    "Reconstruction": 169,
-    "Resonance": 169,
-    "Wisdom": 26,
+    "Devotion": 382,
+    "Glaciation": 345,
+    "Impulse": 290,
+    "Magnetism": 345,
+    "Nullification": 352,
+    "Radiance": 290,
+    "Reconstruction": 290,
+    "Resonance": 290,
+    "Wisdom": 27,
     "Charisma": 25
    },
    "effective": {
     "Universal Spell Power": 54,
     "Combustion": 411,
     "Corrosion": 387,
-    "Devotion": 377,
-    "Glaciation": 278,
-    "Impulse": 169,
-    "Magnetism": 169,
-    "Nullification": 290,
-    "Radiance": 169,
-    "Reconstruction": 169,
-    "Resonance": 169,
-    "Wisdom": 26,
+    "Devotion": 382,
+    "Glaciation": 345,
+    "Impulse": 290,
+    "Magnetism": 345,
+    "Nullification": 352,
+    "Radiance": 290,
+    "Reconstruction": 290,
+    "Resonance": 290,
+    "Wisdom": 27,
     "Charisma": 25
    },
    "chosen": [
@@ -390,7 +390,7 @@
     },
     {
      "slot": "Belt",
-     "variant": "Legendary Lion-headed Belt Buckle"
+     "variant": "Belt of the Burrower"
     },
     {
      "slot": "Boots",
@@ -398,23 +398,23 @@
     },
     {
      "slot": "Bracers",
-     "variant": "Legendary Bracers of the Hunter"
+     "variant": "Legendary Mystic Wrappings"
     },
     {
      "slot": "Cloak",
-     "variant": "Gravekeeper's Elegant Cloak"
+     "variant": "Dread Pirate's Cloak (level 32)"
     },
     {
      "slot": "Gloves",
-     "variant": "Darstil's Gloves"
+     "variant": "Alaric's Grim Gauntlets"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Black Earth Guardian's Lenses"
+     "variant": "Legendary Dusk Lenses"
     },
     {
      "slot": "Helmet",
-     "variant": "Epic Halcyonia"
+     "variant": "Legendary Alchemist's Crown"
     },
     {
      "slot": "Main Hand",
@@ -422,7 +422,7 @@
     },
     {
      "slot": "Necklace",
-     "variant": "Legendary Pendant of Subtle Pain"
+     "variant": "Legendary Alchemist's Pendant"
     },
     {
      "slot": "Off Hand",
@@ -587,12 +587,12 @@
   "trance-credit-additive-ml32": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 422,
+    "Devotion": 424,
     "Wisdom": 34,
     "Universal Spell Power": 54
    },
    "effective": {
-    "Devotion": 422,
+    "Devotion": 424,
     "Wisdom": 34,
     "Universal Spell Power": 54
    },
@@ -610,16 +610,20 @@
      "variant": "Legendary Sunken Slippers"
     },
     {
+     "slot": "Bracers",
+     "variant": "Bracelets of Flourishing Fauna"
+    },
+    {
      "slot": "Cloak",
      "variant": "Dread Pirate's Cloak (level 4)"
     },
     {
      "slot": "Gloves",
-     "variant": "Balorskin Gauntlets"
+     "variant": "Alaric's Grim Gauntlets"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Raven's Sight"
+     "variant": "Legendary Collective Sight"
     },
     {
      "slot": "Helmet",
@@ -654,12 +658,12 @@
   "trance-credit-additive-ml32-baseline": {
    "status": "optimal",
    "perTarget": {
-    "Devotion": 410,
+    "Devotion": 412,
     "Wisdom": 34,
     "Universal Spell Power": 54
    },
    "effective": {
-    "Devotion": 410,
+    "Devotion": 412,
     "Wisdom": 34,
     "Universal Spell Power": 54
    },
@@ -677,16 +681,20 @@
      "variant": "Legendary Sunken Slippers"
     },
     {
+     "slot": "Bracers",
+     "variant": "Bracelets of Flourishing Fauna"
+    },
+    {
      "slot": "Cloak",
      "variant": "Dread Pirate's Cloak (level 4)"
     },
     {
      "slot": "Gloves",
-     "variant": "Balorskin Gauntlets"
+     "variant": "Alaric's Grim Gauntlets"
     },
     {
      "slot": "Goggles",
-     "variant": "Legendary Raven's Sight"
+     "variant": "Legendary Collective Sight"
     },
     {
      "slot": "Helmet",

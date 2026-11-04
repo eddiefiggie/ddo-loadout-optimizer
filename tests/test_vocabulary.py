@@ -648,8 +648,10 @@ def test_the_real_seed_resolves_the_real_vocabulary():
     # of a registered expansion family (Spell Critical Damage -> the ten Intensities,
     # U81.4), so the detector skips them as handled, and their atomic rulings were
     # retired into `_meta.retired` with the reading kept. 35 - 2 = 33.
-    assert report["candidates"] == 33
-    assert report["atomic"] == 33   # #876: the same two retired rulings
+    # #928: seven fully representable Combined Spell Lores now expand from
+    # their retained tooltips; three partial-category compounds stay unchanged.
+    assert report["candidates"] == 26
+    assert report["atomic"] == 26
     # The detector's first sweep found three live umbrellas; they must stay
     # MODELED (expanded away), never re-enter the rankable vocabulary silently.
     for name in ("Resistance", "Elemental Resonance", "Combat Mastery",

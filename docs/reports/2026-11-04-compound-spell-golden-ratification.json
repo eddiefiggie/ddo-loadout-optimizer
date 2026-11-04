@@ -1,0 +1,3099 @@
+{
+  "base": "96614a5f53e111c1fa5a7b4e1d6d04e48f52f8f6",
+  "scope": "Only these three fixture records ratified; other 21 and fixture definitions unchanged.",
+  "capture_sha256": {
+    "golden-base-three.json": "1183965407d1ea78a5a4579d084256da8db07d427f4787e05e34db0f0a13e573",
+    "golden-current-three.json": "f69132bb6c2b9b6cefceea06c1a19b1ab0be92c6ae6c4006b289323ad97c89e0"
+  },
+  "reviews": {
+    "mechanics": "Goldfinger PASS",
+    "architecture_and_arithmetic": "Blofeld PASS"
+  },
+  "fixtures": {
+    "endgame-caster-ml32": {
+      "base_solve": {
+        "status": "optimal",
+        "perTarget": {
+          "Universal Spell Power": 54,
+          "Combustion": 411,
+          "Corrosion": 387,
+          "Devotion": 377,
+          "Glaciation": 278,
+          "Impulse": 169,
+          "Magnetism": 169,
+          "Nullification": 290,
+          "Radiance": 169,
+          "Reconstruction": 169,
+          "Resonance": 169,
+          "Wisdom": 26,
+          "Charisma": 25
+        },
+        "effective": {
+          "Universal Spell Power": 54,
+          "Combustion": 411,
+          "Corrosion": 387,
+          "Devotion": 377,
+          "Glaciation": 278,
+          "Impulse": 169,
+          "Magnetism": 169,
+          "Nullification": 290,
+          "Radiance": 169,
+          "Reconstruction": 169,
+          "Resonance": 169,
+          "Wisdom": 26,
+          "Charisma": 25
+        },
+        "chosen": [
+          {
+            "slot": "Armor",
+            "variant": "Dinosaur Bone Docent"
+          },
+          {
+            "slot": "Belt",
+            "variant": "Legendary Lion-headed Belt Buckle"
+          },
+          {
+            "slot": "Boots",
+            "variant": "Legendary Boots of Corrosion"
+          },
+          {
+            "slot": "Bracers",
+            "variant": "Legendary Bracers of the Hunter"
+          },
+          {
+            "slot": "Cloak",
+            "variant": "Gravekeeper's Elegant Cloak"
+          },
+          {
+            "slot": "Gloves",
+            "variant": "Darstil's Gloves"
+          },
+          {
+            "slot": "Goggles",
+            "variant": "Legendary Black Earth Guardian's Lenses"
+          },
+          {
+            "slot": "Helmet",
+            "variant": "Epic Halcyonia"
+          },
+          {
+            "slot": "Main Hand",
+            "variant": "Legendary Green Steel Bastard Sword"
+          },
+          {
+            "slot": "Necklace",
+            "variant": "Legendary Pendant of Subtle Pain"
+          },
+          {
+            "slot": "Off Hand",
+            "variant": "Dethek Runestone"
+          },
+          {
+            "slot": "Ring",
+            "variant": "Legendary Ring of the Black Abishai"
+          },
+          {
+            "slot": "Ring",
+            "variant": "Legendary Ring of the Red Abishai"
+          },
+          {
+            "slot": "Trinket",
+            "variant": "Epic Dragon's Eye"
+          }
+        ]
+      },
+      "branch_solve": {
+        "status": "optimal",
+        "perTarget": {
+          "Universal Spell Power": 54,
+          "Combustion": 411,
+          "Corrosion": 387,
+          "Devotion": 382,
+          "Glaciation": 345,
+          "Impulse": 290,
+          "Magnetism": 345,
+          "Nullification": 352,
+          "Radiance": 290,
+          "Reconstruction": 290,
+          "Resonance": 290,
+          "Wisdom": 27,
+          "Charisma": 25
+        },
+        "effective": {
+          "Universal Spell Power": 54,
+          "Combustion": 411,
+          "Corrosion": 387,
+          "Devotion": 382,
+          "Glaciation": 345,
+          "Impulse": 290,
+          "Magnetism": 345,
+          "Nullification": 352,
+          "Radiance": 290,
+          "Reconstruction": 290,
+          "Resonance": 290,
+          "Wisdom": 27,
+          "Charisma": 25
+        },
+        "chosen": [
+          {
+            "slot": "Armor",
+            "variant": "Dinosaur Bone Docent"
+          },
+          {
+            "slot": "Belt",
+            "variant": "Belt of the Burrower"
+          },
+          {
+            "slot": "Boots",
+            "variant": "Legendary Boots of Corrosion"
+          },
+          {
+            "slot": "Bracers",
+            "variant": "Legendary Mystic Wrappings"
+          },
+          {
+            "slot": "Cloak",
+            "variant": "Dread Pirate's Cloak (level 32)"
+          },
+          {
+            "slot": "Gloves",
+            "variant": "Alaric's Grim Gauntlets"
+          },
+          {
+            "slot": "Goggles",
+            "variant": "Legendary Dusk Lenses"
+          },
+          {
+            "slot": "Helmet",
+            "variant": "Legendary Alchemist's Crown"
+          },
+          {
+            "slot": "Main Hand",
+            "variant": "Legendary Green Steel Bastard Sword"
+          },
+          {
+            "slot": "Necklace",
+            "variant": "Legendary Alchemist's Pendant"
+          },
+          {
+            "slot": "Off Hand",
+            "variant": "Dethek Runestone"
+          },
+          {
+            "slot": "Ring",
+            "variant": "Legendary Ring of the Black Abishai"
+          },
+          {
+            "slot": "Ring",
+            "variant": "Legendary Ring of the Red Abishai"
+          },
+          {
+            "slot": "Trinket",
+            "variant": "Epic Dragon's Eye"
+          }
+        ]
+      },
+      "changed_targets": {
+        "Devotion": {
+          "base": 377,
+          "branch": 382,
+          "delta": 5,
+          "base_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 150,
+              "source": "Epic Halcyonia",
+              "sourceKind": "worn",
+              "slot": "Helmet",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Halcyonia"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 71,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 37,
+              "source": "Legendary Green Steel Tier 2",
+              "sourceKind": "lgs",
+              "slot": "Main Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Green Steel Bastard Sword"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ],
+          "branch_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 155,
+              "source": "Alaric's Grim Gauntlets",
+              "sourceKind": "worn",
+              "slot": "Gloves",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Alaric's Grim Gauntlets"
+              ],
+              "via": "Power of the Dark Restoration",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 71,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 37,
+              "source": "Legendary Green Steel Tier 2",
+              "sourceKind": "lgs",
+              "slot": "Main Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Green Steel Bastard Sword"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ]
+        },
+        "Glaciation": {
+          "base": 278,
+          "branch": 345,
+          "delta": 67,
+          "base_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 139,
+              "source": "Legendary Green Steel Tier 1",
+              "sourceKind": "lgs",
+              "slot": "Main Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Green Steel Bastard Sword"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 20,
+              "source": "Gravekeeper's Elegant Cloak",
+              "sourceKind": "worn",
+              "slot": "Cloak",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Gravekeeper's Elegant Cloak"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ],
+          "branch_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 153,
+              "source": "Dread Pirate's Cloak (level 32)",
+              "sourceKind": "worn",
+              "slot": "Cloak",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dread Pirate's Cloak (level 32)"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 49,
+              "source": "Legendary Dusk Lenses",
+              "sourceKind": "worn",
+              "slot": "Goggles",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Dusk Lenses"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 24,
+              "source": "Legendary Mystic Wrappings",
+              "sourceKind": "worn",
+              "slot": "Bracers",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Mystic Wrappings"
+              ],
+              "via": "Quality Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ]
+        },
+        "Impulse": {
+          "base": 169,
+          "branch": 290,
+          "delta": 121,
+          "base_receipt": [
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Equipment",
+              "value": 30,
+              "source": "Darstil's Gloves",
+              "sourceKind": "worn",
+              "slot": "Gloves",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Darstil's Gloves"
+              ],
+              "via": "Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 20,
+              "source": "Gravekeeper's Elegant Cloak",
+              "sourceKind": "worn",
+              "slot": "Cloak",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Gravekeeper's Elegant Cloak"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ],
+          "branch_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 98,
+              "source": "Legendary Dusk Lenses",
+              "sourceKind": "worn",
+              "slot": "Goggles",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Dusk Lenses"
+              ],
+              "via": "Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 49,
+              "source": "Legendary Dusk Lenses",
+              "sourceKind": "worn",
+              "slot": "Goggles",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Dusk Lenses"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 24,
+              "source": "Legendary Mystic Wrappings",
+              "sourceKind": "worn",
+              "slot": "Bracers",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Mystic Wrappings"
+              ],
+              "via": "Quality Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ]
+        },
+        "Magnetism": {
+          "base": 169,
+          "branch": 345,
+          "delta": 176,
+          "base_receipt": [
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Equipment",
+              "value": 30,
+              "source": "Darstil's Gloves",
+              "sourceKind": "worn",
+              "slot": "Gloves",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Darstil's Gloves"
+              ],
+              "via": "Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 20,
+              "source": "Gravekeeper's Elegant Cloak",
+              "sourceKind": "worn",
+              "slot": "Cloak",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Gravekeeper's Elegant Cloak"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ],
+          "branch_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 153,
+              "source": "Dread Pirate's Cloak (level 32)",
+              "sourceKind": "worn",
+              "slot": "Cloak",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dread Pirate's Cloak (level 32)"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 49,
+              "source": "Legendary Dusk Lenses",
+              "sourceKind": "worn",
+              "slot": "Goggles",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Dusk Lenses"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 24,
+              "source": "Legendary Mystic Wrappings",
+              "sourceKind": "worn",
+              "slot": "Bracers",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Mystic Wrappings"
+              ],
+              "via": "Quality Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ]
+        },
+        "Nullification": {
+          "base": 290,
+          "branch": 352,
+          "delta": 62,
+          "base_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 151,
+              "source": "Legendary Boots of Corrosion",
+              "sourceKind": "worn",
+              "slot": "Boots",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Boots of Corrosion"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 20,
+              "source": "Gravekeeper's Elegant Cloak",
+              "sourceKind": "worn",
+              "slot": "Cloak",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Gravekeeper's Elegant Cloak"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ],
+          "branch_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 155,
+              "source": "Alaric's Grim Gauntlets",
+              "sourceKind": "worn",
+              "slot": "Gloves",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Alaric's Grim Gauntlets"
+              ],
+              "via": "Power of the Dark Restoration",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 49,
+              "source": "Legendary Dusk Lenses",
+              "sourceKind": "worn",
+              "slot": "Goggles",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Dusk Lenses"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 30,
+              "source": "Astute Alchemist",
+              "sourceKind": "set",
+              "slot": null,
+              "setYieldingSlots": [
+                "Helmet",
+                "Necklace"
+              ],
+              "hostIds": [
+                "Legendary Alchemist's Crown",
+                "Legendary Alchemist's Pendant"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 24,
+              "source": "Legendary Mystic Wrappings",
+              "sourceKind": "worn",
+              "slot": "Bracers",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Mystic Wrappings"
+              ],
+              "via": "Quality Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ]
+        },
+        "Radiance": {
+          "base": 169,
+          "branch": 290,
+          "delta": 121,
+          "base_receipt": [
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Equipment",
+              "value": 30,
+              "source": "Darstil's Gloves",
+              "sourceKind": "worn",
+              "slot": "Gloves",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Darstil's Gloves"
+              ],
+              "via": "Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 20,
+              "source": "Gravekeeper's Elegant Cloak",
+              "sourceKind": "worn",
+              "slot": "Cloak",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Gravekeeper's Elegant Cloak"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ],
+          "branch_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 98,
+              "source": "Legendary Dusk Lenses",
+              "sourceKind": "worn",
+              "slot": "Goggles",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Dusk Lenses"
+              ],
+              "via": "Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 49,
+              "source": "Legendary Dusk Lenses",
+              "sourceKind": "worn",
+              "slot": "Goggles",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Dusk Lenses"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 24,
+              "source": "Legendary Mystic Wrappings",
+              "sourceKind": "worn",
+              "slot": "Bracers",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Mystic Wrappings"
+              ],
+              "via": "Quality Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ]
+        },
+        "Reconstruction": {
+          "base": 169,
+          "branch": 290,
+          "delta": 121,
+          "base_receipt": [
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Equipment",
+              "value": 30,
+              "source": "Darstil's Gloves",
+              "sourceKind": "worn",
+              "slot": "Gloves",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Darstil's Gloves"
+              ],
+              "via": "Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 20,
+              "source": "Gravekeeper's Elegant Cloak",
+              "sourceKind": "worn",
+              "slot": "Cloak",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Gravekeeper's Elegant Cloak"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ],
+          "branch_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 98,
+              "source": "Legendary Dusk Lenses",
+              "sourceKind": "worn",
+              "slot": "Goggles",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Dusk Lenses"
+              ],
+              "via": "Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 49,
+              "source": "Legendary Dusk Lenses",
+              "sourceKind": "worn",
+              "slot": "Goggles",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Dusk Lenses"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 24,
+              "source": "Legendary Mystic Wrappings",
+              "sourceKind": "worn",
+              "slot": "Bracers",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Mystic Wrappings"
+              ],
+              "via": "Quality Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ]
+        },
+        "Resonance": {
+          "base": 169,
+          "branch": 290,
+          "delta": 121,
+          "base_receipt": [
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Equipment",
+              "value": 30,
+              "source": "Darstil's Gloves",
+              "sourceKind": "worn",
+              "slot": "Gloves",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Darstil's Gloves"
+              ],
+              "via": "Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 20,
+              "source": "Gravekeeper's Elegant Cloak",
+              "sourceKind": "worn",
+              "slot": "Cloak",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Gravekeeper's Elegant Cloak"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ],
+          "branch_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 98,
+              "source": "Legendary Dusk Lenses",
+              "sourceKind": "worn",
+              "slot": "Goggles",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Dusk Lenses"
+              ],
+              "via": "Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 49,
+              "source": "Legendary Dusk Lenses",
+              "sourceKind": "worn",
+              "slot": "Goggles",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Dusk Lenses"
+              ],
+              "via": "Insightful Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 25,
+              "source": "Solar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 24,
+              "source": "Legendary Mystic Wrappings",
+              "sourceKind": "worn",
+              "slot": "Bracers",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Mystic Wrappings"
+              ],
+              "via": "Quality Potency",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Fang insert",
+              "sourceKind": "dino",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ]
+        },
+        "Wisdom": {
+          "base": 26,
+          "branch": 27,
+          "delta": 1,
+          "base_receipt": [
+            {
+              "bonus_type": "Enhancement",
+              "value": 14,
+              "source": "Diamond of Wisdom +14",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 5,
+              "source": "Diamond of Insightful Wisdom +5",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 2,
+              "source": "Legendary Might of the Abishai",
+              "sourceKind": "set",
+              "slot": null,
+              "setYieldingSlots": [
+                "Ring",
+                "Ring",
+                "Boots"
+              ],
+              "hostIds": [
+                "Legendary Ring of the Black Abishai",
+                "Legendary Ring of the Red Abishai",
+                "Legendary Boots of Corrosion"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 2,
+              "source": "Epic Halcyonia",
+              "sourceKind": "worn",
+              "slot": "Helmet",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Halcyonia"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Festive",
+              "value": 2,
+              "source": "Diamond of Festive Wisdom +2",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 1,
+              "source": "Globe of True Imperial Blood",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ],
+          "branch_receipt": [
+            {
+              "bonus_type": "Enhancement",
+              "value": 14,
+              "source": "Alaric's Grim Gauntlets",
+              "sourceKind": "worn",
+              "slot": "Gloves",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Alaric's Grim Gauntlets"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 5,
+              "source": "Diamond of Insightful Wisdom +5",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 3,
+              "source": "Nearly Finished",
+              "sourceKind": "nc",
+              "slot": "Helmet",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Alchemist's Crown"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 2,
+              "source": "Legendary Might of the Abishai",
+              "sourceKind": "set",
+              "slot": null,
+              "setYieldingSlots": [
+                "Ring",
+                "Ring",
+                "Boots"
+              ],
+              "hostIds": [
+                "Legendary Ring of the Black Abishai",
+                "Legendary Ring of the Red Abishai",
+                "Legendary Boots of Corrosion"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Festive",
+              "value": 2,
+              "source": "Diamond of Festive Wisdom +2",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 1,
+              "source": "Globe of True Imperial Blood",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ]
+        }
+      },
+      "base_utility_count": 7,
+      "branch_utility_count": 7,
+      "base_utility": {
+        "secured": [
+          "Ghostly",
+          "Blindness Immunity",
+          "Deathblock",
+          "Feather Falling",
+          "Ethereal",
+          "Soundproof",
+          "Immunity to Fear"
+        ],
+        "unsecured": [
+          {
+            "name": "True Seeing",
+            "reason": "outbid"
+          },
+          {
+            "name": "Blurry",
+            "reason": "outbid"
+          },
+          {
+            "name": "Freedom of Movement",
+            "reason": "outbid"
+          },
+          {
+            "name": "Ghost Touch",
+            "reason": "outbid"
+          },
+          {
+            "name": "Whelming Shockwave",
+            "reason": "outbid"
+          },
+          {
+            "name": "Blunt Trauma",
+            "reason": "outbid"
+          },
+          {
+            "name": "Lesser Boneshatter",
+            "reason": "outbid"
+          },
+          {
+            "name": "Lesser Displacement",
+            "reason": "outbid"
+          },
+          {
+            "name": "Dusk",
+            "reason": "outbid"
+          }
+        ],
+        "price": {
+          "name": "True Seeing",
+          "stat": "Universal Spell Power",
+          "give": 0,
+          "free": true
+        }
+      },
+      "branch_utility": {
+        "secured": [
+          "Ghostly",
+          "Blindness Immunity",
+          "Deathblock",
+          "Feather Falling",
+          "Ethereal",
+          "Soundproof",
+          "Immunity to Fear"
+        ],
+        "unsecured": [
+          {
+            "name": "True Seeing",
+            "reason": "outbid"
+          },
+          {
+            "name": "Blurry",
+            "reason": "outbid"
+          },
+          {
+            "name": "Freedom of Movement",
+            "reason": "outbid"
+          },
+          {
+            "name": "Ghost Touch",
+            "reason": "outbid"
+          },
+          {
+            "name": "Whelming Shockwave",
+            "reason": "outbid"
+          },
+          {
+            "name": "Blunt Trauma",
+            "reason": "outbid"
+          },
+          {
+            "name": "Lesser Boneshatter",
+            "reason": "outbid"
+          },
+          {
+            "name": "Lesser Displacement",
+            "reason": "outbid"
+          },
+          {
+            "name": "Dusk",
+            "reason": "outbid"
+          }
+        ],
+        "price": {
+          "name": "True Seeing",
+          "stat": "Universal Spell Power",
+          "give": 0,
+          "free": true
+        }
+      }
+    },
+    "trance-credit-additive-ml32": {
+      "base_solve": {
+        "status": "optimal",
+        "perTarget": {
+          "Devotion": 422,
+          "Wisdom": 34,
+          "Universal Spell Power": 54
+        },
+        "effective": {
+          "Devotion": 422,
+          "Wisdom": 34,
+          "Universal Spell Power": 54
+        },
+        "chosen": [
+          {
+            "slot": "Armor",
+            "variant": "Epic Docent of Grace"
+          },
+          {
+            "slot": "Belt",
+            "variant": "Belt of the Burrower"
+          },
+          {
+            "slot": "Boots",
+            "variant": "Legendary Sunken Slippers"
+          },
+          {
+            "slot": "Cloak",
+            "variant": "Dread Pirate's Cloak (level 4)"
+          },
+          {
+            "slot": "Gloves",
+            "variant": "Balorskin Gauntlets"
+          },
+          {
+            "slot": "Goggles",
+            "variant": "Legendary Raven's Sight"
+          },
+          {
+            "slot": "Helmet",
+            "variant": "Epic Sacred Helm"
+          },
+          {
+            "slot": "Main Hand",
+            "variant": "Legendary Green Steel Bastard Sword"
+          },
+          {
+            "slot": "Necklace",
+            "variant": "Legendary Pendant of the Sky"
+          },
+          {
+            "slot": "Off Hand",
+            "variant": "Dethek Runestone"
+          },
+          {
+            "slot": "Ring",
+            "variant": "Celestial Topaz Ring"
+          },
+          {
+            "slot": "Ring",
+            "variant": "Epic Sacred Band"
+          },
+          {
+            "slot": "Trinket",
+            "variant": "Epic Dragon's Eye"
+          }
+        ]
+      },
+      "branch_solve": {
+        "status": "optimal",
+        "perTarget": {
+          "Devotion": 424,
+          "Wisdom": 34,
+          "Universal Spell Power": 54
+        },
+        "effective": {
+          "Devotion": 424,
+          "Wisdom": 34,
+          "Universal Spell Power": 54
+        },
+        "chosen": [
+          {
+            "slot": "Armor",
+            "variant": "Epic Docent of Grace"
+          },
+          {
+            "slot": "Belt",
+            "variant": "Belt of the Burrower"
+          },
+          {
+            "slot": "Boots",
+            "variant": "Legendary Sunken Slippers"
+          },
+          {
+            "slot": "Bracers",
+            "variant": "Bracelets of Flourishing Fauna"
+          },
+          {
+            "slot": "Cloak",
+            "variant": "Dread Pirate's Cloak (level 4)"
+          },
+          {
+            "slot": "Gloves",
+            "variant": "Alaric's Grim Gauntlets"
+          },
+          {
+            "slot": "Goggles",
+            "variant": "Legendary Collective Sight"
+          },
+          {
+            "slot": "Helmet",
+            "variant": "Epic Sacred Helm"
+          },
+          {
+            "slot": "Main Hand",
+            "variant": "Legendary Green Steel Bastard Sword"
+          },
+          {
+            "slot": "Necklace",
+            "variant": "Legendary Pendant of the Sky"
+          },
+          {
+            "slot": "Off Hand",
+            "variant": "Dethek Runestone"
+          },
+          {
+            "slot": "Ring",
+            "variant": "Celestial Topaz Ring"
+          },
+          {
+            "slot": "Ring",
+            "variant": "Epic Sacred Band"
+          },
+          {
+            "slot": "Trinket",
+            "variant": "Epic Dragon's Eye"
+          }
+        ]
+      },
+      "changed_targets": {
+        "Devotion": {
+          "base": 422,
+          "branch": 424,
+          "delta": 2,
+          "base_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 153,
+              "source": "Ruby of Devotion 153",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 74,
+              "source": "Legendary Pendant of the Sky",
+              "sourceKind": "worn",
+              "slot": "Necklace",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Pendant of the Sky"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 37,
+              "source": "Legendary Green Steel Tier 2",
+              "sourceKind": "lgs",
+              "slot": "Main Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Green Steel Bastard Sword"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 37,
+              "source": "Legendary Green Steel Tier 3",
+              "sourceKind": "lgs",
+              "slot": "Main Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Green Steel Bastard Sword"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 30,
+              "source": "Epic Divine Blessing",
+              "sourceKind": "set",
+              "slot": null,
+              "setYieldingSlots": [
+                "Helmet",
+                "Ring"
+              ],
+              "hostIds": [
+                "Epic Sacred Helm",
+                "Epic Sacred Band"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Sacred",
+              "value": 12,
+              "source": "declared, not from gear",
+              "sourceKind": "declared",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ],
+          "branch_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 155,
+              "source": "Alaric's Grim Gauntlets",
+              "sourceKind": "worn",
+              "slot": "Gloves",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Alaric's Grim Gauntlets"
+              ],
+              "via": "Power of the Dark Restoration",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 74,
+              "source": "Legendary Pendant of the Sky",
+              "sourceKind": "worn",
+              "slot": "Necklace",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Pendant of the Sky"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 37,
+              "source": "Legendary Green Steel Tier 2",
+              "sourceKind": "lgs",
+              "slot": "Main Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Green Steel Bastard Sword"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 37,
+              "source": "Legendary Green Steel Tier 3",
+              "sourceKind": "lgs",
+              "slot": "Main Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Green Steel Bastard Sword"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 30,
+              "source": "Epic Divine Blessing",
+              "sourceKind": "set",
+              "slot": null,
+              "setYieldingSlots": [
+                "Helmet",
+                "Ring"
+              ],
+              "hostIds": [
+                "Epic Sacred Helm",
+                "Epic Sacred Band"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Sacred",
+              "value": 12,
+              "source": "declared, not from gear",
+              "sourceKind": "declared",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            }
+          ]
+        }
+      },
+      "base_utility_count": 12,
+      "branch_utility_count": 13,
+      "base_utility": {
+        "secured": [
+          "Ghostly",
+          "True Seeing",
+          "Blurry",
+          "Freedom of Movement",
+          "Blindness Immunity",
+          "Deathblock",
+          "Feather Falling",
+          "Lesser Displacement",
+          "Ethereal",
+          "Dusk",
+          "Soundproof",
+          "Immunity to Fear"
+        ],
+        "unsecured": [
+          {
+            "name": "Ghost Touch",
+            "reason": "outbid"
+          },
+          {
+            "name": "Whelming Shockwave",
+            "reason": "outbid"
+          },
+          {
+            "name": "Blunt Trauma",
+            "reason": "outbid"
+          },
+          {
+            "name": "Lesser Boneshatter",
+            "reason": "outbid"
+          }
+        ],
+        "price": {
+          "name": "Ghost Touch",
+          "stat": "Devotion",
+          "give": 3,
+          "free": false
+        }
+      },
+      "branch_utility": {
+        "secured": [
+          "Ghostly",
+          "True Seeing",
+          "Blurry",
+          "Freedom of Movement",
+          "Blindness Immunity",
+          "Deathblock",
+          "Feather Falling",
+          "Ghost Touch",
+          "Lesser Displacement",
+          "Ethereal",
+          "Dusk",
+          "Soundproof",
+          "Immunity to Fear"
+        ],
+        "unsecured": [
+          {
+            "name": "Whelming Shockwave",
+            "reason": "outbid"
+          },
+          {
+            "name": "Blunt Trauma",
+            "reason": "outbid"
+          },
+          {
+            "name": "Lesser Boneshatter",
+            "reason": "outbid"
+          }
+        ],
+        "price": {
+          "name": "Whelming Shockwave",
+          "stat": "Devotion",
+          "give": 24,
+          "free": false
+        }
+      }
+    },
+    "trance-credit-additive-ml32-baseline": {
+      "base_solve": {
+        "status": "optimal",
+        "perTarget": {
+          "Devotion": 410,
+          "Wisdom": 34,
+          "Universal Spell Power": 54
+        },
+        "effective": {
+          "Devotion": 410,
+          "Wisdom": 34,
+          "Universal Spell Power": 54
+        },
+        "chosen": [
+          {
+            "slot": "Armor",
+            "variant": "Epic Docent of Grace"
+          },
+          {
+            "slot": "Belt",
+            "variant": "Belt of the Burrower"
+          },
+          {
+            "slot": "Boots",
+            "variant": "Legendary Sunken Slippers"
+          },
+          {
+            "slot": "Cloak",
+            "variant": "Dread Pirate's Cloak (level 4)"
+          },
+          {
+            "slot": "Gloves",
+            "variant": "Balorskin Gauntlets"
+          },
+          {
+            "slot": "Goggles",
+            "variant": "Legendary Raven's Sight"
+          },
+          {
+            "slot": "Helmet",
+            "variant": "Epic Sacred Helm"
+          },
+          {
+            "slot": "Main Hand",
+            "variant": "Legendary Green Steel Bastard Sword"
+          },
+          {
+            "slot": "Necklace",
+            "variant": "Legendary Pendant of the Sky"
+          },
+          {
+            "slot": "Off Hand",
+            "variant": "Dethek Runestone"
+          },
+          {
+            "slot": "Ring",
+            "variant": "Celestial Topaz Ring"
+          },
+          {
+            "slot": "Ring",
+            "variant": "Epic Sacred Band"
+          },
+          {
+            "slot": "Trinket",
+            "variant": "Epic Dragon's Eye"
+          }
+        ]
+      },
+      "branch_solve": {
+        "status": "optimal",
+        "perTarget": {
+          "Devotion": 412,
+          "Wisdom": 34,
+          "Universal Spell Power": 54
+        },
+        "effective": {
+          "Devotion": 412,
+          "Wisdom": 34,
+          "Universal Spell Power": 54
+        },
+        "chosen": [
+          {
+            "slot": "Armor",
+            "variant": "Epic Docent of Grace"
+          },
+          {
+            "slot": "Belt",
+            "variant": "Belt of the Burrower"
+          },
+          {
+            "slot": "Boots",
+            "variant": "Legendary Sunken Slippers"
+          },
+          {
+            "slot": "Bracers",
+            "variant": "Bracelets of Flourishing Fauna"
+          },
+          {
+            "slot": "Cloak",
+            "variant": "Dread Pirate's Cloak (level 4)"
+          },
+          {
+            "slot": "Gloves",
+            "variant": "Alaric's Grim Gauntlets"
+          },
+          {
+            "slot": "Goggles",
+            "variant": "Legendary Collective Sight"
+          },
+          {
+            "slot": "Helmet",
+            "variant": "Epic Sacred Helm"
+          },
+          {
+            "slot": "Main Hand",
+            "variant": "Legendary Green Steel Bastard Sword"
+          },
+          {
+            "slot": "Necklace",
+            "variant": "Legendary Pendant of the Sky"
+          },
+          {
+            "slot": "Off Hand",
+            "variant": "Dethek Runestone"
+          },
+          {
+            "slot": "Ring",
+            "variant": "Celestial Topaz Ring"
+          },
+          {
+            "slot": "Ring",
+            "variant": "Epic Sacred Band"
+          },
+          {
+            "slot": "Trinket",
+            "variant": "Epic Dragon's Eye"
+          }
+        ]
+      },
+      "changed_targets": {
+        "Devotion": {
+          "base": 410,
+          "branch": 412,
+          "delta": 2,
+          "base_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 153,
+              "source": "Ruby of Devotion 153",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 74,
+              "source": "Legendary Pendant of the Sky",
+              "sourceKind": "worn",
+              "slot": "Necklace",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Pendant of the Sky"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 37,
+              "source": "Legendary Green Steel Tier 2",
+              "sourceKind": "lgs",
+              "slot": "Main Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Green Steel Bastard Sword"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 37,
+              "source": "Legendary Green Steel Tier 3",
+              "sourceKind": "lgs",
+              "slot": "Main Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Green Steel Bastard Sword"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 30,
+              "source": "Epic Divine Blessing",
+              "sourceKind": "set",
+              "slot": null,
+              "setYieldingSlots": [
+                "Helmet",
+                "Ring"
+              ],
+              "hostIds": [
+                "Epic Sacred Helm",
+                "Epic Sacred Band"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            }
+          ],
+          "branch_receipt": [
+            {
+              "bonus_type": "Equipment",
+              "value": 155,
+              "source": "Alaric's Grim Gauntlets",
+              "sourceKind": "worn",
+              "slot": "Gloves",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Alaric's Grim Gauntlets"
+              ],
+              "via": "Power of the Dark Restoration",
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Insight",
+              "value": 74,
+              "source": "Legendary Pendant of the Sky",
+              "sourceKind": "worn",
+              "slot": "Necklace",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Pendant of the Sky"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Implement",
+              "value": 39,
+              "source": "Dethek Runestone",
+              "sourceKind": "worn",
+              "slot": "Off Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Dethek Runestone"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            },
+            {
+              "bonus_type": "Quality",
+              "value": 37,
+              "source": "Legendary Green Steel Tier 2",
+              "sourceKind": "lgs",
+              "slot": "Main Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Green Steel Bastard Sword"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 37,
+              "source": "Legendary Green Steel Tier 3",
+              "sourceKind": "lgs",
+              "slot": "Main Hand",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Legendary Green Steel Bastard Sword"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Artifact",
+              "value": 30,
+              "source": "Epic Divine Blessing",
+              "sourceKind": "set",
+              "slot": null,
+              "setYieldingSlots": [
+                "Helmet",
+                "Ring"
+              ],
+              "hostIds": [
+                "Epic Sacred Helm",
+                "Epic Sacred Band"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Profane",
+              "value": 25,
+              "source": "Lunar Gem of Spellpower (Legendary)",
+              "sourceKind": "augment",
+              "slot": null,
+              "setYieldingSlots": null,
+              "hostIds": null,
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": null
+            },
+            {
+              "bonus_type": "Exceptional",
+              "value": 15,
+              "source": "Epic Dragon's Eye",
+              "sourceKind": "worn",
+              "slot": "Trinket",
+              "setYieldingSlots": null,
+              "hostIds": [
+                "Epic Dragon's Eye"
+              ],
+              "via": null,
+              "overriddenFrom": null,
+              "crossAdd": "Universal Spell Power"
+            }
+          ]
+        }
+      },
+      "base_utility_count": 12,
+      "branch_utility_count": 13,
+      "base_utility": {
+        "secured": [
+          "Ghostly",
+          "True Seeing",
+          "Blurry",
+          "Freedom of Movement",
+          "Blindness Immunity",
+          "Deathblock",
+          "Feather Falling",
+          "Lesser Displacement",
+          "Ethereal",
+          "Dusk",
+          "Soundproof",
+          "Immunity to Fear"
+        ],
+        "unsecured": [
+          {
+            "name": "Ghost Touch",
+            "reason": "outbid"
+          },
+          {
+            "name": "Whelming Shockwave",
+            "reason": "outbid"
+          },
+          {
+            "name": "Blunt Trauma",
+            "reason": "outbid"
+          },
+          {
+            "name": "Lesser Boneshatter",
+            "reason": "outbid"
+          }
+        ],
+        "price": {
+          "name": "Ghost Touch",
+          "stat": "Devotion",
+          "give": 3,
+          "free": false
+        }
+      },
+      "branch_utility": {
+        "secured": [
+          "Ghostly",
+          "True Seeing",
+          "Blurry",
+          "Freedom of Movement",
+          "Blindness Immunity",
+          "Deathblock",
+          "Feather Falling",
+          "Ghost Touch",
+          "Lesser Displacement",
+          "Ethereal",
+          "Dusk",
+          "Soundproof",
+          "Immunity to Fear"
+        ],
+        "unsecured": [
+          {
+            "name": "Whelming Shockwave",
+            "reason": "outbid"
+          },
+          {
+            "name": "Blunt Trauma",
+            "reason": "outbid"
+          },
+          {
+            "name": "Lesser Boneshatter",
+            "reason": "outbid"
+          }
+        ],
+        "price": {
+          "name": "Whelming Shockwave",
+          "stat": "Devotion",
+          "give": 24,
+          "free": false
+        }
+      }
+    }
+  }
+}
