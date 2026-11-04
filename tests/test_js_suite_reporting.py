@@ -37,7 +37,9 @@ _LOCAL_SUMMARY = re.compile(r'process\.on\("exit"|\$\{passed\}\s+passed')
 
 _H_COUNTER = re.compile(r"\bcounts\.failed\+\+")
 _H_EXIT = re.compile(r"process\.exitCode\s*=\s*1")
-_H_SUMMARY = re.compile(r"console\.log\(`[^`]*\$\{counts\.passed\}\s+passed,\s+\$\{counts\.failed\}\s+failed[^`]*`\)")
+# The harness's synchronous reporter keeps exit-time output complete on pipes;
+# harness.test.js checks its actual output, including backpressure and counts.
+_H_SUMMARY = re.compile(r"\breport\(`[^`]*\$\{counts\.passed\}\s+passed,\s+\$\{counts\.failed\}\s+failed[^`]*`\)")
 _H_HANDLER = re.compile(r'process\.on\("exit",')
 
 

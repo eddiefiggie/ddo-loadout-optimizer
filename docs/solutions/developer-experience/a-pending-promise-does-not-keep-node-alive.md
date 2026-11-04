@@ -86,5 +86,14 @@ exit output, discard partial writes, or refuse temporary backpressure.
 When mutating a harness, keep the observer's failure-reporting path intact;
 breaking that path too can produce red assertions with a zero outer exit code.
 
+Both language suites inspect the shared harness: Python's
+`test_js_suite_reporting.py` pins the summary emitter, counters, and exit
+handler even though the Python tests contain no JavaScript runtime. When the
+emitter moved from `console.log` to the synchronous `report` helper, that exact
+source expectation needed to move too, retaining both-count and exit-handler
+requirements. A Python pass obtained before the final harness edit is stale
+evidence even if no Python file changed. Finish the edit before running both
+full suites, then verify the tested files did not change during the runs.
+
 See [the aborted-run lesson](an-aborted-test-run-reads-as-a-pass.md) and
 [the pre-change test rule](../conventions/prove-a-test-fails-against-the-pre-change-tree.md).
