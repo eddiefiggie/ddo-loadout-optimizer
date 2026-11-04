@@ -78,11 +78,13 @@ def run(filter_sub=None):
         # In a `finally` so the totals survive any escape this function did not
         # anticipate. A run that ends without them is one a reader mistakes for
         # a clean one.
+        if passed == failed == 0 and not interrupted:
+            print("\n  FAIL no tests ran — check test discovery and the module filter")
         print(f"\n{passed} passed, {failed} failed")
         for name, tb in failures:
             print(f"\n----- {name} -----\n{tb}")
 
-    return 0 if (failed == 0 and not interrupted) else 1
+    return 0 if (passed > 0 and failed == 0 and not interrupted) else 1
 
 
 if __name__ == "__main__":

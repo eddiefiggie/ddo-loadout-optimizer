@@ -2,6 +2,7 @@
 title: "An aborted test run reads as a pass — isolate every test and always print totals"
 module: tests
 date: 2026-08-10
+last_updated: 2026-11-04
 problem_type: developer_experience
 component: testing_framework
 severity: high
@@ -158,8 +159,9 @@ one passing, one offending, one containing a genuine `AssertionError` ordered af
 | `import a_module_that_does_not_exist` | aborts the whole remaining suite; no totals | `2 passed, 1 failed`; later modules still run; exit 1 |
 | `KeyboardInterrupt` | aborts; no totals | `INTERRUPTED`, partial totals, exit 1 |
 
-The `KeyboardInterrupt` row is deliberately not covered by a test — a test that raises it
-would stop the suite proving it. It was verified by hand against a scratch copy.
+The `KeyboardInterrupt` row was initially verified by hand against a scratch copy.
+Subprocess regressions now cover interruption both during import and during a test,
+including partial totals and stopping later work, without interrupting the parent suite.
 
 **Proving the regression tests were real**, per the standing convention: they were
 written and run while `run_tests.py` was still unmodified.
@@ -174,6 +176,35 @@ PASS test_the_totals_line_is_printed_for_an_ordinary_clean_run
 
 The fourth is a deliberate happy-path control and passes on both sides — the exception
 the convention allows for "nothing changed" guards.
+
+## An empty run can also read as a pass (2026-11-04)
+
+The isolation fix did not cover a run that never called a test. Actual main
+`0b89b7c3` returned exit 0 with `0 passed, 0 failed` for a misspelled module
+substring, an empty test directory, and imported modules with no callable
+`test_*` names. The last case also includes class-method-only tests, which this
+runner deliberately does not collect. No exception is raised, so the isolation
+handlers cannot detect the empty run.
+
+The runner now requires at least one passed test, no failures, and no interruption
+to return success. A zero-result, uninterrupted run prints
+`FAIL no tests ran — check test discovery and the module filter` before its usual
+`0 passed, 0 failed` summary. Those counts stay zero: no assertion failed, so the
+diagnostic describes a failed run rather than inventing a failed test. Import
+failures and interruptions already fail; they retain their own diagnostics and
+counts. Empty helper modules beside genuine tests remain allowed.
+
+`tests/test_run_tests_runner.py` exercises the real CLI in subprocesses over
+temporary fixture directories. It covers incorrect and successful substring
+selection, genuinely empty discovery, noncallable-only and class-method-only
+modules, an empty selected module beside an unselected real test, mixed modules,
+the empty-string filter, assertion/import failures, `SystemExit`, and interrupts.
+New empty-run assertions must fail against the actual archived pre-change runner;
+removing either the status guard or diagnostic must also make them fail.
+
+This is an overall-run guard. It does not promise every imported module contains
+tests, collect class methods, or add async test support. The top-level-function
+convention still applies, and a mixed suite's test count still matters.
 
 ## Related
 
