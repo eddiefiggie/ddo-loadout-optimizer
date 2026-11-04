@@ -188,7 +188,7 @@
    *  path must sanitize through the store that OWNS the shape rather than trust a
    *  hand-edited file. */
   function _versions() {
-    if (typeof globalThis !== "undefined" && globalThis.Versions) return globalThis.Versions;
+    if (typeof globalThis !== "undefined" && globalThis.VersionStore) return globalThis.VersionStore;
     if (typeof require !== "undefined") { try { return require("./versions.js"); } catch (e) { /* absent */ } }
     return null;
   }
@@ -299,7 +299,7 @@
     const versions = V
       ? (Array.isArray(migrated.versions) ? migrated.versions : [])
         .filter((r) => r && typeof r === "object" && r.id)
-        .map((r) => V.makeVersion(r))
+        .map((r) => V.sanitizeVersion(r))
         .filter((r) => V.isAuthoredKind(r))
       : [];
     return { ok: true, characters: clean, bundles, farming, versions,

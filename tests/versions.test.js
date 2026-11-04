@@ -289,3 +289,16 @@ test("#530: re-importing the SAME file twice does not duplicate", () => {
   assert.strictEqual(V.listVersions(store).length, 1, "the same save arriving twice is one save");
 });
 
+
+test("restoring a stored version preserves its snapshot and catalog stamp", () => {
+  const store = fakeStorage();
+  const record = V.makeVersion({ id: "v1", name: "Named", kind: "named", savedAt: "2026-01-01",
+    inputs: { ml: 20 }, query: { targets: ["Constitution"] }, buildId: "original-catalog",
+    result: { status: "optimal", chosen: [], effective: { Constitution: 7 }, program: "not persisted" } });
+  // Live-run argument names in a hand-edited file must not override stored data.
+  const incoming = Object.assign({}, record, { result: { effective: { Constitution: 999 } }, buildId: "wrong-catalog" });
+  assert.ok(V.mergeIn([incoming], store).ok);
+  assert.deepStrictEqual(V.listVersions(store)[0], record);
+  assert.ok(V.mergeIn([incoming], store).ok);
+  assert.deepStrictEqual(V.listVersions(store), [record], "re-import preserves the same authored snapshot");
+});

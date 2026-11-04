@@ -69,6 +69,17 @@
     };
   }
 
+  // A backup carries stored records, not live solve arguments. Translate at
+  // both restore boundaries so sanitizing never drops the snapshot or its stamp.
+  function sanitizeVersion(raw) {
+    const r = raw || {};
+    return makeVersion({
+      id: r.id, name: r.name, kind: r.kind, savedAt: r.savedAt,
+      query: r.query, inputs: r.inputs,
+      result: r.snapshot, buildId: r.stampedBuildId,
+    });
+  }
+
   // ---- storage -------------------------------------------------------------
 
   function resolveStorage(storage) {
@@ -217,7 +228,7 @@
     const key = (r) => `${String(r.savedAt || "")}::${String(r.name || "").trim().toLowerCase()}`;
     for (const raw of Array.isArray(incoming) ? incoming : []) {
       if (!raw || typeof raw !== "object" || !raw.id) continue;
-      const rec = makeVersion(raw);
+      const rec = sanitizeVersion(raw);
       if (!isAuthoredKind(rec)) continue;
       const clash = byId.get(rec.id);
       if (clash && key(clash) !== key(rec)) {
@@ -398,7 +409,7 @@
   }
 
   const api = {
-    STORE_KEY, KINDS, nextId, makeVersion,
+    STORE_KEY, KINDS, nextId, makeVersion, sanitizeVersion,
     listVersions, saveVersion, deleteVersion, clearVersions, writeAll,
     usageBytes, countByKind, pruneAuto, pruneAutoList, RECLAIM_LADDER,
     isAuthoredKind, authoredVersions, mergeIn,

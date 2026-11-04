@@ -7464,11 +7464,11 @@ ${(() => {
               // a true sentence for autos, a false one for the kinds a player
               // actually cares about.
               // eslint-disable-next-line no-undef
-              const vrec = (typeof Versions !== "undefined")
-                ? Versions.listVersions().find((x) => x && x.id === id) : null;
+              const vrec = (typeof VersionStore !== "undefined")
+                ? VersionStore.listVersions().find((x) => x && x.id === id) : null;
               // eslint-disable-next-line no-undef
-              const inBackup = vrec && typeof Versions !== "undefined"
-                && Versions.isAuthoredKind(vrec);
+              const inBackup = vrec && typeof VersionStore !== "undefined"
+                && VersionStore.isAuthoredKind(vrec);
               if (!window.confirm(inBackup
                 ? "Delete this version snapshot? You can restore it from a backup taken while it still existed."
                 : "Delete this snapshot? It was captured automatically and is not carried in a backup, so it cannot be restored.")) return;
@@ -7499,7 +7499,7 @@ ${(() => {
           // what it will never reclaim, so the backup and the reclaim ladder
           // cannot disagree about which snapshots are work.
           // eslint-disable-next-line no-undef
-          versions: (typeof Versions !== "undefined") ? Versions.authoredVersions() : [],
+          versions: (typeof VersionStore !== "undefined") ? VersionStore.authoredVersions() : [],
         });
         downloadFile(`ddo-characters-${new Date().toISOString().slice(0, 10)}.json`,
           JSON.stringify(payload, null, 2), "application/json");
@@ -7588,9 +7588,9 @@ ${(() => {
               // went wrong, so replacing would delete what the player has made
               // since their last export.
               // eslint-disable-next-line no-undef
-              if (typeof Versions !== "undefined" && (res.versions || []).length) {
+              if (typeof VersionStore !== "undefined" && (res.versions || []).length) {
                 // eslint-disable-next-line no-undef
-                const r = Versions.mergeIn(res.versions);
+                const r = VersionStore.mergeIn(res.versions);
                 if (r.ok) {
                   const nv = res.versions.length;
                   extra += `, ${nv} version snapshot${nv === 1 ? "" : "s"}`;
