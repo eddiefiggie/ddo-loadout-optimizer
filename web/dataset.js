@@ -802,7 +802,12 @@ const PRESENCE_DENY = new Set([
 // wiki-verified: the effect has its own DDO wiki page naming it exactly this way.
 // Everything else the cap catches stays hidden and free-typeable via `known`;
 // tests/dataset.test.js pins that set so a new one surfaces instead of vanishing.
+// Imperial Resonance is a separate owner-approved carrier preference; its entry
+// does not claim a Wiki mechanics adjudication.
 const PRESENCE_ALLOW = new Set([
+  // Owner-approved carrier-only preference, not a sonic mechanics adjudication.
+  // Report: galvarian, forum post #397 / ID458263; see imperial-resonance-utility.md.
+  "Melody: Imperial Resonance",
   "Kick 'Em While They're Down",
   // #231 — the 2026-08-12 adjudication of the word-cap casualty list. Each entry
   // verified against the wiki that day; the ones it did NOT admit are recorded in
@@ -843,6 +848,8 @@ const PRESENCE_ALLOW = new Set([
 // MIRRORED in src/utility_procs.py (the stamp derivation) — the stamped-set
 // parity test in tests/dataset.test.js guards the two copies against drift.
 const UTILITY_TIER1_PRESENCE = new Set([
+  // Explicit opt-in; defaultUtilityOrder and buildModel keep defaults unchanged.
+  "Melody: Imperial Resonance",
   // The plan's Product Contract examples (must count for AE1/AE2/AE4):
   "Ghost Touch",
   "Whelming Shockwave",
@@ -1040,8 +1047,10 @@ function familyHintFor(stat, priorities, counts) {
  *  in it consumes an order — order is read only by the solver stage and the
  *  curation panel. A mirrored copy would be a second thing to drift for no
  *  consumer. `tests/dataset.test.js` instead asserts this order covers the
- *  stamped counting set exactly, so a roster change that skips this list fails.
+ *  stamped counting set minus explicit opt-ins, so unplanned roster changes fail.
  */
+// Supported only when explicitly added; these names never join default builds.
+const UTILITY_CONTAINER_OPT_IN = new Set(["Melody: Imperial Resonance"]);
 const UTILITY_CONTAINER_DEFAULT_ORDER = [
   // The #343 worn defensive toggles, first.
   "Ghostly",
@@ -1073,9 +1082,10 @@ const UTILITY_CONTAINER_DEFAULT_ORDER = [
 ];
 
 /** #348 (U3) — the default container for a given counting set: the declared order,
- *  restricted to names the dataset actually stamps, with any stamped name the order
+ *  restricted to names the dataset actually stamps, with any non-opt-in stamped name the order
  *  does not mention appended in sorted order rather than dropped.
  *
+ *  Explicit opt-ins are searchable but never silently added.
  *  The append tail is a safety net, not a design: the dataset.test.js guard fails
  *  when it is non-empty, so a widened roster (#349) is forced through a deliberate
  *  ordering decision instead of silently landing at the bottom in alphabetical
@@ -1085,7 +1095,7 @@ function defaultUtilityOrder(counting) {
   const have = (counting && typeof counting.has === "function") ? counting : new Set();
   const out = UTILITY_CONTAINER_DEFAULT_ORDER.filter((n) => have.has(n));
   const named = new Set(out);
-  const rest = [...have].filter((n) => !named.has(n)).sort();
+  const rest = [...have].filter((n) => !named.has(n) && !UTILITY_CONTAINER_OPT_IN.has(n)).sort();
   return out.concat(rest);
 }
 
@@ -1284,15 +1294,6 @@ function buildPickerVocabulary(dataset) {
   }
   for (const [name, type] of _craftingAffixTriples(ds)) {
     if (PRESENCE_TYPES.has(type) && _isPresenceTargetable(name)) { const c = canonical(name); suggest.add(c); presence.add(c); }
-  }
-  // #928 / galvarian: the colon hides this existing, free-typeable catalog
-  // target from partial autocomplete. Restore discovery only when a Bool
-  // carrier exists. This is NOT a PRESENCE_ALLOW adjudication: its conditional
-  // bonuses remain unverified, and presence/Utility eligibility stay unchanged.
-  for (const [name, type] of _itemAffixTriples(ds)) {
-    if (name === "Melody: Imperial Resonance" && PRESENCE_TYPES.has(type)) {
-      suggest.add(canonical(name));
-    }
   }
   // #91 (U1) — untyped weapon procs the utility-procs review ADMITTED (Holy,
   // Vampirism... once evidenced). They join the picker on the PRESENCE path —
@@ -1857,7 +1858,7 @@ if (typeof window !== "undefined") {
   window.DatasetNormalizer = { COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES, companionHintFor, COMPANION_STATS, familyHintFor, AFFIX_FAMILIES, familyCarrierCounts, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, compoundSpellTargets, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK };
 }
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { UTILITY_CONTAINER_DEFAULT_ORDER, defaultUtilityOrder,
+  module.exports = { UTILITY_CONTAINER_OPT_IN, UTILITY_CONTAINER_DEFAULT_ORDER, defaultUtilityOrder,
     COMPANION_STATS, companionHintFor,
     AFFIX_FAMILIES, familyHintFor, familyCarrierCounts,
     COMPOSITE_COMPONENTS, COMPOSITE_COMPONENT_TYPES, normalizeDataset, normalizeItem, normalizeAffix, isNoiseAffix, parseAffixValue, buildPickerVocabulary, presenceWordCapCasualties, migrateLoadout, expandedAwayFor, expandedAwayMessage, migratePriorities, migrationMessage, migrateCredits, compoundSpellTargets, isProvenanceLabel, retiredLabelFor, retiredLabelMessage, PROVENANCE_LABEL_FALLBACK, EXPANDED_AWAY_FALLBACK, UTILITY_TIER1_PRESENCE };

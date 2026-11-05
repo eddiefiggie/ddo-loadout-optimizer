@@ -53,6 +53,8 @@ _PRESENCE_NOISE = re.compile(
     r"|\bper (?:rest|day)\b|\bcharges?\b|\(\d|\d/day", re.IGNORECASE)
 PRESENCE_DENY = frozenset()
 PRESENCE_ALLOW = frozenset({
+    # Owner-approved carrier preference only; no conditional sonic credit.
+    "Melody: Imperial Resonance",
     "Kick 'Em While They're Down",
     "Way of the Sun Soul",
     "Lifeblood of the Undead Prince",
@@ -77,6 +79,8 @@ PRESENCE_ALLOW = frozenset({
 # Keep in lockstep with web/dataset.js — the stamped-set parity test in
 # tests/dataset.test.js fails on drift.
 UTILITY_TIER1_PRESENCE = frozenset({
+    # Opt-in only in the browser; eligibility is not a numerical bonus ruling.
+    "Melody: Imperial Resonance",
     "Ghost Touch",
     "Whelming Shockwave",
     "Blunt Trauma",
