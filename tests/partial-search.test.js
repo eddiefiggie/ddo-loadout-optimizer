@@ -1,4 +1,4 @@
-// #928: discovery of an existing exact-name target must not reclassify effects.
+// #928: discovery and owner-approved carrier-only Utility support.
 const assert = require('assert');
 const { test } = require("./_harness");
 const D = require('../web/dataset.js');
@@ -25,7 +25,7 @@ test('partial discovery: colon noise and parsed compound names remain excluded',
   for (const name of blocked) assert.ok(!v.suggestions.includes(name), name);
 });
 
-test('partial discovery: the shipped target is discoverable without changing classification', () => {
+test('partial discovery: the shipped target is discoverable as opt-in presence without numerical credit', () => {
   const raw = require('../web/data/items.json');
   const ds = D.normalizeDataset(JSON.parse(JSON.stringify(raw)));
   const before = JSON.stringify(ds);
@@ -33,12 +33,24 @@ test('partial discovery: the shipped target is discoverable without changing cla
   assert.ok(ds.items.some(it => it.affixes.some(a => a.name === NAME && a.type === 'Bool')));
   assert.ok(v.suggestions.includes(NAME));
   assert.ok(v.known.has(NAME));
-  assert.ok(!v.presence.has(NAME));
+  assert.ok(v.presence.has(NAME));
   assert.ok(!v.magnitude.has(NAME));
-  assert.ok(!v.utilityCounting.has(NAME));
+  assert.ok(v.utilityCounting.has(NAME));
   assert.ok(!v.utilityNotCounted.has(NAME));
   assert.ok(!v.utilityOrder.includes(NAME));
-  assert.deepStrictEqual(W.containerAddable(v, [], 'imperial'), []);
+  for (const q of ['melody', 'imperial', 'resonance', NAME])
+    assert.ok(W.containerAddable(v, [], q).includes(NAME), q);
   assert.ok(W.resolvePriorityAdd(NAME, v, []).ok);
   assert.strictEqual(JSON.stringify(ds), before, 'vocabulary construction does not mutate item data');
+});
+
+
+test('Imperial Utility: default, empty and saved custom containers retain their meaning', () => {
+  const v = D.buildPickerVocabulary(D.normalizeDataset(require('../web/data/items.json')));
+  assert.ok(!W.containerList({utilityContainer:null}, v).includes(NAME));
+  assert.deepStrictEqual(W.containerList({utilityContainer:[]}, v), []);
+  assert.deepStrictEqual(W.containerList({utilityContainer:['Ghostly']}, v), ['Ghostly']);
+  assert.deepStrictEqual(W.containerList({utilityContainer:[NAME]}, v), [NAME]);
+  assert.deepStrictEqual(W.containerAddable(v, [NAME], 'imperial'), []);
+  assert.ok(!v.magnitude.has(NAME));
 });

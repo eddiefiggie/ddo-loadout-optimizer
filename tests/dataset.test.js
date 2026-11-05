@@ -2257,7 +2257,7 @@ test("#91/KTD10: the stamped counting set and UTILITY_TIER1_PRESENCE cannot drif
 test("#348 U3/KTD8: the declared container order covers the stamped counting set exactly", () => {
   const v = builtVocab();
   if (!v) return console.log("  (skipped — web/data/items.json not built)");
-  const { UTILITY_CONTAINER_DEFAULT_ORDER, defaultUtilityOrder } = require("../web/dataset.js");
+  const { UTILITY_CONTAINER_OPT_IN, UTILITY_CONTAINER_DEFAULT_ORDER, defaultUtilityOrder } = require("../web/dataset.js");
 
   // No duplicates: a name listed twice would be pursued twice and consume two
   // container slots for one effect.
@@ -2284,7 +2284,9 @@ test("#348 U3/KTD8: the declared container order covers the stamped counting set
     `the stamped counting set gained ${JSON.stringify(tail)} with no position in the declared order — ` +
     "widening the roster is also an ordering decision (R9); place these in UTILITY_CONTAINER_DEFAULT_ORDER");
 
-  assert.strictEqual(ordered.length, v.utilityCounting.size,
+  assert.deepStrictEqual([...UTILITY_CONTAINER_OPT_IN], ["Melody: Imperial Resonance"]);
+  assert.ok([...UTILITY_CONTAINER_OPT_IN].every(n => v.utilityCounting.has(n) && !ordered.includes(n)));
+  assert.strictEqual(ordered.length + UTILITY_CONTAINER_OPT_IN.size, v.utilityCounting.size,
     "the default container must cover every counted name exactly once");
 });
 

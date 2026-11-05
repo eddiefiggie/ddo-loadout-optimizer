@@ -2201,7 +2201,7 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // counting set, and silently solved with zero utility indicators. That is the
   // exact failure the guard exists to prevent, reachable through the shape this
   // change introduced. Resolve first, then validate what was resolved.
-  const _uCounting = (utilityCountingSet && typeof utilityCountingSet.has === "function")
+  let _uCounting = (utilityCountingSet && typeof utilityCountingSet.has === "function")
     ? utilityCountingSet
     : (utilityCountingSet && utilityCountingSet.counting) || null;
   const _uNotCounted = (utilityCountingSet && !(typeof utilityCountingSet.has === "function")
@@ -2214,6 +2214,14 @@ function buildModel(variants, query, dinoInserts = [], nearlyComplete = [], vikt
   // through vocab.utilityOrder.
   const _uOrder = (utilityCountingSet && typeof utilityCountingSet.has !== "function"
     && Array.isArray(utilityCountingSet.order)) ? utilityCountingSet.order.slice() : null;
+  // Carrier-only Imperial Resonance is opt-in, not a new default preference.
+  // Filter BEFORE target widening/dominance and indicator construction, so
+  // existing default solves and incidental Utility receipts remain unchanged.
+  // Clone rather than mutate the shared vocabulary's authoritative stamp.
+  if (_uCounting && !(_uOrder || []).includes("Melody: Imperial Resonance")) {
+    _uCounting = new Set(_uCounting);
+    _uCounting.delete("Melody: Imperial Resonance");
+  }
   // Fail fast rather than silently solving with zero indicators: utilityCountingSet
   // is a defaulted 11th positional param, so a forgotten call site would otherwise
   // widen nothing and the utility stage would place no gear with no error anywhere.
