@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Open reviewable PRs for GitHub Actions only; never auto-merge.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
